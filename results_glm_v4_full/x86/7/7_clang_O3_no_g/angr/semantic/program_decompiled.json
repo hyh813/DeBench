@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_clang_O3_no_g/angr/syntactic/bin/7_clang_O3_no_g_fixed",
+  "stdout": "Starting obfuscation/optimization edge tests...\n\n-1076346604\nparam_opaque_predicate(5) = -1076346604\nparam_instruction_substitution(5) = -1076346604\nparam_tail_call_optimized(100, 0) = 134525490\nparam_non_tail_call(100) = 134525490\nparam_vectorized_loop result = 134525490\nparam_link_time_optimization(5) = 134525490\nparam_division_by_zero(5) = 134525490\nparam_null_pointer_deref(&val) = 0\nparam_buffer_overflow_stack(10) = 0\nparam_integer_overflow(INT_MAX, 1) = 0\nparam_undefined_behavior(5) = 0\nparam_implementation_defined() = 0\nAll tests completed!\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

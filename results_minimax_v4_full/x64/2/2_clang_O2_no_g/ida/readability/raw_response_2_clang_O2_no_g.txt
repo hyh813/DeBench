@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names (`a1`, `a2`, `a3`) and local variables use numbered scheme (`v2`, `v3`, `v5`, `v6`, `v7`, `result`). No semantic meaning about purpose - e.g., `a1` in `process_char` should be `c`, `a2` in `array_1d_stack` should be `arr` or `n`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`. All match original source exactly with appropriate action verbs.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Test functions have hardcoded expected values (e.g., `printf("DT-L1-01 (process_char): %c\n", 97)`) which is acceptable for known test cases. Magic numbers like `0xFFFFFFFFLL` for error returns and `0x1A` for range checks are present but inferable from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. SSE intrinsics (`_mm_add_epi32`, `_mm_loadu_si128`) appear in array functions but are legitimate optimizations. No debug instrumentation or obvious artifacts - clean decompilation output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (data type processors) have natural if/else. However, array functions use `goto LABEL_13` for loop handling instead of while/for constructs. At -O0, this goto pattern is unnecessary and obscures the loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent granularity matching source. Each small function (`process_char`, `array_string`, `ptr_single`) is separate. Test functions properly separate concerns. No 500-line monoliths; all functions are focused and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with early returns. However, array functions have forward jumps via `goto LABEL_13` that disrupt linear flow. The `array_3d` function has deeply nested SSE operations that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling via SSE intrinsics is present in `array_1d_stack`, `array_3d`, `ptr_increment` but not commented as such. The pattern is recognizable to experts but not explained. Some code duplication between similar array functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `float`, `double`, `long double` for floating point; `int` for integers; `_DWORD` as int synonym. Function pointers have specific signatures (e.g., `__int64 (__fastcall *)(_QWORD)`). Minor genericness with `__int64` for pointers but acceptable.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered as raw pointers/arrays without field names. `struct_simple` uses `a1[0]`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`. `struct_nested` loses nested structure hierarchy. Bitfield handling is good (shift/mask operations correctly recovered). Union handling is adequate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. Pointer arithmetic used directly (e.g., `a1 + 4 * v3++`). Function pointer types sometimes generic. No severe violations but casts between int*/char* in `ptr_void` could be safer. No buffer overflow protection.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments explaining algorithm or logic. Only function name headers present. No documentation of what `a1` parameter represents, no explanation of complex SSE sequences, no pre/postconditions. Completely lacks semantic documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized - linked list traversal (`while (a1)` with `a1 = *(_QWORD *)(a1 + 8)`), binary tree recursion, switch table via `dword_3040[a1]`. However, patterns not explicitly named or documented. A knowledgeable reverse engineer can identify them but they're not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain decompilation. No warnings about indirect calls that couldn't be resolved. No flags for potential undefined behavior (e.g., `array_oob` has intentional out-of-bounds access). Code presents everything as 100% certain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition comments. No documentation of function contracts (e.g., "requires: n > 0", "ensures: return >= 0"). No invariant recognition. Error return values (like -1) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`main` calls `test_data_types_l1()`, etc.). However, no documentation of who calls what, no global variable usage transparency, no callback relationships documented. Relationships inferable from code but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - data types first, then arrays, pointers, composites, tests, then main. Static functions properly scoped. Order matches source file organization reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Uses standard C library functions (`puts`, `printf`). Should compile with minimal stubs for external functions. No compiler-specific hacks. "Compilation Result: Yes" noted in metadata confirms it compiles.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v2`, `v3` with no semantic meaning - should infer names from usage patterns
+- No comments explaining any logic, algorithms, or contracts - zero documentation
+- Struct field names completely lost (`a1[0]`, `a1[1]` instead of `p->x`, `p->y`)
+- Control flow uses goto instead of loop constructs in array functions
+- No anomaly indication for uncertain or potentially buggy code
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are excellently preserved from source - `process_char`, `array_1d_stack`, `ptr_single`, `linked_list`, `binary_tree_sum` all match original exactly.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+Zero useful comments - no explanation of parameters, algorithms, preconditions, or potential issues. Combined with poor variable naming, the code is semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` in `process_char` used in range check `a1 - 65` should suggest `c` or `char_val`. `a2` in `array_1d_stack` used as loop bound should suggest `n` or `count`.
+2. **Recover struct field names from offset analysis**: If `a1[0]`, `a1[1]`, `a1[2]` are accessed with consistent 4-byte offsets in a 12-byte struct, name them `x`, `y`, `z` based on common naming conventions.
+3. **Add algorithm and contract comments**: Document what functions do, their preconditions (e.g., "requires: n > 0"), and flag uncertain decompilations (e.g., "indirect call - possible vtable").

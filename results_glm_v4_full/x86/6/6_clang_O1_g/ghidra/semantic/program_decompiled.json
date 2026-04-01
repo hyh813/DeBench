@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_O1_g/ghidra/syntactic/bin/6_clang_O1_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\nstrlen result: 8\nstrcmp result: 0\ncall_strlen result: 12\nmemcpy result: 90\nmemcmp result: -1\nValue: 42, Name: TestName\nprintf returned: 26\nscanf sum: 579\nfopen result: 42\nfread_fwrite result: 42\nmalloc_free result: 90\nmemset result: 0\nstrchr_strstr result: 15\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed quality - parameter names like `dst`, `src`, `buffer`, `filename` are preserved well, but temporaries use generic names (`iVar1`, `lVar1`, `uVar1`, `pcVar3`) that obscure purpose. Thread functions particularly suffer with `arg_local`, `piVar2`, `puVar2`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_strcpy`, `thread_compute`, `consumer_thread`, `producer_thread`). Only internal functions like `FUN_00102020` use generic naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many unexplained magic numbers: `0x2a` (42/success), `0x7f` (127/exit code), signal numbers as `10` and `0xe` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2`, `1` instead of `AF_INET`, `SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_fail()`) in every function, frame pointer manipulation (`in_FS_OFFSET`), unused local shadows (`dst_local`, `src_local`), and repetitive "WARNING: Unknown calling convention" comments.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if-else and for-loop structures. However, `param_fread_fwrite` and `param_pthread_join` use goto labels (`LAB_00102e4a`, `LAB_00103cac`) that disrupt flow unnecessarily.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity - functions are appropriately sized (most under 100 lines). Thread functions properly separated. Test functions correctly call parameterized functions. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels in `param_pthread_join` create forward jumps that disrupt linear reading. The do-while with goto pattern is particularly awkward.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Unused local variable shadows (`dst_local`, `src_local` declared but never used), repeated stack canary code in every function, redundant type casts throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good preservation of `size_t`, `FILE*`, `pthread_t`, `pid_t`. However, many integers remain generic `int` instead of `int32_t`, and atomic operations degraded to `LOCK()/UNLOCK()` macros instead of proper `__atomic_*` intrinsics.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` partially recovered. However, TLS variables in `thread_tls_test` degraded to offset arithmetic (`*(undefined4 *)((long)in_FS_OFFSET + -0x24)`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts: `(int)sVar1`, `(ulong)(uint)x`, `(void*)0x0`, `(pthread_attr_t *)0x0`. Atomic operations use `LOCK()/UNLOCK()` macros which are undefined. Pointer arithmetic in TLS code is error-prone.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated warnings like "WARNING: Subroutine does not return". No algorithm explanations, no API contracts, no parameter documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). Thread patterns visible but not named. Producer-consumer pattern in condition variable code not identified. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Basic warnings present ("Unknown calling convention", "Subroutine does not return", "Removing unreachable block"). However, no indication of decompilation uncertainty for complex patterns like atomic operations or TLS.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions inferred. Return value meanings not explained (e.g., `0x2a` = 42 = success). Error conditions visible but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear within file. Global variables visible (`signal_received`, `shared_counter`). However, string references in test functions shown as `DAT_001050b0` instead of actual strings. Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, thread functions together). However, all in single output file with no header separation. Static variables visible but not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile without significant work. `LOCK()/UNLOCK()` macros undefined. `ThreadData`, `stat`, `sockaddr_in` types need definitions. External dependencies (pthread, libc) not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+4+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):   (7+8+6+5)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type System):  (7+6+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):     (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):   (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.47/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x2a`, `0x7f`, `10`, `0xe`, `2`, `1` used without explanation or named constants
+- **No meaningful comments**: Zero documentation of algorithm intent, preconditions, or return value semantics
+- **TLS variable recovery failed**: `thread_tls_test` uses raw offset arithmetic instead of TLS variable access
+- **Atomic operations degraded**: `__atomic_*` intrinsics replaced with undefined `LOCK()/UNLOCK()` macros
+- **String literals lost in test functions**: References like `DAT_001050b0` instead of actual format strings
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source code, making high-level purpose immediately clear
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation makes understanding complex logic (signal handling, threading) extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover magic numbers to named constants**: Detect common values (signal numbers, socket constants, success codes) and replace with symbolic names or add explanatory comments
+2. **Add semantic comments for complex patterns**: Auto-generate comments for recognized patterns (producer-consumer, signal handling, atomic operations) explaining the high-level intent
+3. **Improve TLS and atomic operation recovery**: Better recognize thread-local storage patterns and preserve `__atomic_*` intrinsic calls instead of degrading to lock macros

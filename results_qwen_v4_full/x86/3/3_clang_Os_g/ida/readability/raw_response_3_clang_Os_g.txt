@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `i`, `j`) with no semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `global_var_access`), but helper functions use generic names (`sub_1030`, `sub_1130`) and some test functions show constant folding instead of actual calls.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0xFFFFFFF0`, `0xFFFFFFFE`, `0x14u`, `0x28u`) without explanation. Test functions hardcode expected values (e.g., `printf("MEM-L1-01: %d\n", 20)`) instead of showing actual computation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(_DWORD *)`, `(char *)`), calling convention annotations (`__usercall`, `__cdecl`), and register hints (`@<eax>`, `@<ebx>`) clutter the code throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions collapsed entirely (`stack_alias` returns constant 20, losing all pointer aliasing logic). Loops recovered but some use do-while instead of original for constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but aggressive constant folding removed intermediate computation steps (e.g., `local_struct` returns `3 * x` directly instead of showing struct field access).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but test functions have confusing variable reuse (`v6` used for multiple unrelated values in `test_stack_memory`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding removed meaningful intermediate variables. Type casts repeated unnecessarily. Some dead code from optimization artifacts remains.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `_DWORD`, `void*`, `char*` instead of proper types. `set_file_static` incorrectly casts `int` to `int*`. Function pointer types degraded to `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields, but `Point` struct access collapsed to arithmetic. Many struct accesses shown as pointer offset calculations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `global_func_ptr = (int)f`, `global_heap_ptr = (int)p`, `set_file_static` casts int to pointer. `get_file_static` returns wrong type (`int*` instead of `int`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no comments in decompiled output. Original source had extensive documentation explaining each test case. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Memory allocation patterns, linked list traversal, and tree operations not identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: External functions marked "FAILED to decompile" but no warnings about collapsed functions (`stack_alias`), type errors, or constant-folded test functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition or invariant documentation. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variable usage not explained. Callback relationships (`set_global_callback` → `call_global_callback`) not clarified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in somewhat logical order but no file organization visible. Static functions not properly scoped. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 16 external functions marked "FAILED to decompile" requiring stubs. Type mismatches (`set_file_static`, `get_file_static`) would prevent compilation. Would need significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 4.04/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **`stack_alias` function completely collapsed** - Returns constant 20 instead of showing pointer aliasing logic, losing critical security test semantics
+- **Test functions hardcoded with expected values** - `test_stack_memory` prints constants instead of calling actual functions, hiding real behavior
+- **Type safety violations** - `set_file_static` casts `int` to `int*`, `get_file_static` returns wrong type, would not compile correctly
+- **No comments or documentation** - Original source had extensive comments explaining each test; decompiled output has zero semantic documentation
+- **16 external functions failed to decompile** - Requires stubs for all standard library functions (malloc, free, printf, etc.)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`local_vars`, `heap_basic`, `global_var_access`), making it possible to identify function purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent impossible; even basic decompilation confidence indicators would help.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve semantic structure over aggressive optimization** - Do not constant-fold test functions; show actual function calls even when result is computable at compile time
+2. **Add decompilation confidence annotations** - Flag collapsed functions, type uncertainties, and unresolved calls with warnings (e.g., `// DECOMPILER_WARNING: Function logic simplified`)
+3. **Recover variable names from usage patterns** - Analyze how variables are used (loop counters, pointers, sizes) to suggest meaningful names instead of `v0`, `v1`, `v2`

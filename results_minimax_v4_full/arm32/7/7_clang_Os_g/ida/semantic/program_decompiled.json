@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_Os_g/ida/syntactic/bin/7_clang_Os_g_fixed",
+  "stdout": "Test obfuscation and optimization edge cases:\nObf L4 02: param_opaque_predicate(x=10): 10\nObf L4 03: call_opaque_predicate: 20\nObf L4 04: instruction_substitution: 225\nObf L4 05: string_encryption: 36\nOpt L4 01: tail_call_optimized: 500500\nOpt L4 01: non_tail_call: 5050\nOpt L4 02: vectorized_loop: 396\nOpt L5 01: link_time_optimization: 20\nEdge L3 01: division_by_zero: 1\nEdge L3 02: null_pointer_deref: 41\nEdge L3 03: buffer_overflow: 30\nEdge L3 04: integer_overflow: 2000000000\nEdge L4 01: undefined_behavior: 10\nEdge L4 02: implementation_defined: 44\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,1517 @@
+{
+  "file_name": "results_minimax_v4_full/x64/3/3_clang_O2_g/angr/syntactic/fix_3_clang_O2_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 28,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14374,
+        "completion_tokens": 749,
+        "total_tokens": 15123
+      },
+      "time_cost": 35.52825403213501,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14464,
+        "completion_tokens": 781,
+        "total_tokens": 15245
+      },
+      "time_cost": 19.257251977920532,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14492,
+        "completion_tokens": 685,
+        "total_tokens": 15177
+      },
+      "time_cost": 14.787404775619507,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14509,
+        "completion_tokens": 674,
+        "total_tokens": 15183
+      },
+      "time_cost": 19.216217041015625,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14578,
+        "completion_tokens": 744,
+        "total_tokens": 15322
+      },
+      "time_cost": 18.365086793899536,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14601,
+        "completion_tokens": 596,
+        "total_tokens": 15197
+      },
+      "time_cost": 17.272228240966797,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14635,
+        "completion_tokens": 683,
+        "total_tokens": 15318
+      },
+      "time_cost": 28.369537591934204,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14690,
+        "completion_tokens": 630,
+        "total_tokens": 15320
+      },
+      "time_cost": 43.23037910461426,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14725,
+        "completion_tokens": 1098,
+        "total_tokens": 15823
+      },
+      "time_cost": 26.603440284729004,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14788,
+        "completion_tokens": 676,
+        "total_tokens": 15464
+      },
+      "time_cost": 19.840699434280396,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14787,
+        "completion_tokens": 827,
+        "total_tokens": 15614
+      },
+      "time_cost": 17.462301015853882,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14879,
+        "completion_tokens": 969,
+        "total_tokens": 15848
+      },
+      "time_cost": 17.495251655578613,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14901,
+        "completion_tokens": 891,
+        "total_tokens": 15792
+      },
+      "time_cost": 42.794782876968384,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14951,
+        "completion_tokens": 694,
+        "total_tokens": 15645
+      },
+      "time_cost": 30.16188144683838,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 14997,
+        "completion_tokens": 1799,
+        "total_tokens": 16796
+      },
+      "time_cost": 59.58276700973511,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15023,
+        "completion_tokens": 1099,
+        "total_tokens": 16122
+      },
+      "time_cost": 34.137518882751465,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15005,
+        "completion_tokens": 682,
+        "total_tokens": 15687
+      },
+      "time_cost": 22.042775869369507,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15122,
+        "completion_tokens": 764,
+        "total_tokens": 15886
+      },
+      "time_cost": 16.257567882537842,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15108,
+        "completion_tokens": 2653,
+        "total_tokens": 17761
+      },
+      "time_cost": 68.66602635383606,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15203,
+        "completion_tokens": 840,
+        "total_tokens": 16043
+      },
+      "time_cost": 18.873053550720215,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15284,
+        "completion_tokens": 912,
+        "total_tokens": 16196
+      },
+      "time_cost": 21.60380458831787,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15482,
+        "completion_tokens": 650,
+        "total_tokens": 16132
+      },
+      "time_cost": 24.817434787750244,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15666,
+        "completion_tokens": 847,
+        "total_tokens": 16513
+      },
+      "time_cost": 17.32545828819275,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15684,
+        "completion_tokens": 762,
+        "total_tokens": 16446
+      },
+      "time_cost": 16.32228684425354,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15725,
+        "completion_tokens": 669,
+        "total_tokens": 16394
+      },
+      "time_cost": 35.665565967559814,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15735,
+        "completion_tokens": 969,
+        "total_tokens": 16704
+      },
+      "time_cost": 18.352164268493652,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15721,
+        "completion_tokens": 732,
+        "total_tokens": 16453
+      },
+      "time_cost": 40.807586908340454,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15878,
+        "completion_tokens": 761,
+        "total_tokens": 16639
+      },
+      "time_cost": 13.22104549407959,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15868,
+        "completion_tokens": 1163,
+        "total_tokens": 17031
+      },
+      "time_cost": 29.795893907546997,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15861,
+        "completion_tokens": 1057,
+        "total_tokens": 16918
+      },
+      "time_cost": 29.633260250091553,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15908,
+        "completion_tokens": 1247,
+        "total_tokens": 17155
+      },
+      "time_cost": 22.805638313293457,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16203,
+        "completion_tokens": 715,
+        "total_tokens": 16918
+      },
+      "time_cost": 15.875516653060913,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16224,
+        "completion_tokens": 707,
+        "total_tokens": 16931
+      },
+      "time_cost": 19.093711137771606,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16535,
+        "completion_tokens": 928,
+        "total_tokens": 17463
+      },
+      "time_cost": 22.57414174079895,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16616,
+        "completion_tokens": 877,
+        "total_tokens": 17493
+      },
+      "time_cost": 18.246301889419556,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16697,
+        "completion_tokens": 1006,
+        "total_tokens": 17703
+      },
+      "time_cost": 19.020124435424805,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17008,
+        "completion_tokens": 1025,
+        "total_tokens": 18033
+      },
+      "time_cost": 40.31992292404175,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17089,
+        "completion_tokens": 888,
+        "total_tokens": 17977
+      },
+      "time_cost": 33.75689482688904,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17319,
+        "completion_tokens": 875,
+        "total_tokens": 18194
+      },
+      "time_cost": 47.01518392562866,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17549,
+        "completion_tokens": 933,
+        "total_tokens": 18482
+      },
+      "time_cost": 32.05467462539673,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17432,
+        "completion_tokens": 1322,
+        "total_tokens": 18754
+      },
+      "time_cost": 25.16208505630493,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17356,
+        "completion_tokens": 683,
+        "total_tokens": 18039
+      },
+      "time_cost": 15.98440670967102,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17142,
+        "completion_tokens": 1054,
+        "total_tokens": 18196
+      },
+      "time_cost": 32.95178961753845,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16912,
+        "completion_tokens": 978,
+        "total_tokens": 17890
+      },
+      "time_cost": 17.43280601501465,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16912,
+        "completion_tokens": 1344,
+        "total_tokens": 18256
+      },
+      "time_cost": 59.36334848403931,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16912,
+        "completion_tokens": 841,
+        "total_tokens": 17753
+      },
+      "time_cost": 18.226546049118042,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16977,
+        "completion_tokens": 864,
+        "total_tokens": 17841
+      },
+      "time_cost": 27.184390544891357,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16747,
+        "completion_tokens": 1144,
+        "total_tokens": 17891
+      },
+      "time_cost": 26.185810089111328,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17047,
+        "completion_tokens": 940,
+        "total_tokens": 17987
+      },
+      "time_cost": 17.441161394119263,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16817,
+        "completion_tokens": 1165,
+        "total_tokens": 17982
+      },
+      "time_cost": 38.471349239349365,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 836730,
+    "total_time_seconds": 1366.65,
+    "initial_state": {
+      "error_count": 1,
+      "error_types": {
+        "Missing Header": 1
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.0,
+        "error_trajectory": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "max_error_count": 1,
+        "min_error_count": 1
+      },
+      "effort": {
+        "initial_error_count": 1,
+        "lowest_error_count": 1,
+        "lowest_at_iteration": 1,
+        "error_reduction": 0,
+        "error_reduction_ratio": 0
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Missing Header": 1
+        },
+        "final_types": {
+          "Missing Header": 1
+        },
+        "types_eliminated": [],
+        "types_introduced": []
+      },
+      "score": {
+        "effort_score": 0,
+        "stability_score": 50.0,
+        "total_score": 50.0,
+        "grade": "C-"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 1,
+    "type_breakdown": {
+      "Missing Header": {
+        "initial_count": 1,
+        "max_count": 1,
+        "final_count": "unknown"
+      }
+    }
+  }
+}

@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler uses entirely generic variable names like `v1`, `v2`, `v3`, `mem`, `mem2`, `mem3`, `v4`, `v5`, etc. These names provide no semantic information about the variable's purpose. For example, in `heap_realloc`, the variable `mem` is used for the first allocation but `mem2` for reallocation - these should be named `old_ptr` and `new_ptr` respectively. The name `v1` in `large_stack_frame` is used as a loop counter but conveys no meaning. This is a severe degradation from the original source where variables like `arr`, `new_node`, `head`, `temp` were semantically meaningful.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Some function names are correctly recovered (e.g., `main`, `test_stack_memory`, `test_heap_memory`, `test_static_global`, `tree_heap_traversal`, `heap_realloc`). However, there are significant issues: `alloca_usage_constprop_0` reveals internal decompiler optimization naming rather than the original function name. The function `function_ffff0fa0` is clearly a placeholder. The `__sync_synchronize` is incorrectly treated as a regular function returning int32_t instead of an intrinsic. The original function `double_value` is never recovered - it's inlined and called through `global_func_ptr` with hardcoded value 10.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The decompiler has replaced computation logic with hardcoded result values. For example, in `test_stack_memory`, instead of showing `local_vars(5)` computation, it directly prints `20`. Similarly, `local_array(2)` is replaced with `10`, and `alloca_usage(10)` is replaced with `15`. This loses the algorithmic logic entirely. Magic numbers like `40` for malloc (should be `10 * sizeof(int)`), `20` for realloc (should be `5 * sizeof(int) * 2`), and `12` for tree node allocation (should be `sizeof(TreeNode)`) are unexplained. The string literals are encoded in UTF-8 hex (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`) rather than readable Chinese characters.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Significant compiler artifacts pollute the code. The `__stack_chk_fail()` calls appear at function ends as unreachable code. The `__printf_chk()` wrapper replaces standard `printf()` calls. In `large_stack_frame`, there's an unusual pattern with `__stack_chk_fail()` appearing mid-function after the return statement. The goto-based control flow in `test_heap_memory` (with labels like `lab_0x110fc`, `lab_0x110e4`) creates spaghetti code. However, there are no obvious register spilling artifacts or debug instrumentation, which is positive.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The control flow in `large_stack_frame` is highly unnatural - it uses pointer arithmetic with `&v4` comparison instead of a proper for/while loop. In `test_heap_memory`, the linked list creation uses goto-based flow control with labels instead of natural while/for loops. The `tree_heap_traversal` function has confusing nested if-else chains that don't clearly represent the original logic. However, some functions like `main` and simple test functions have relatively natural flow. At `-O0`, this level of control flow distortion is excessive.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+The decompiler has kept functions reasonably separated, which is good. However, `test_heap_memory` is a massive 80+ line function that combines multiple test cases - this should ideally be decomposed. The `alloca_usage` function was constant-propagated to a trivial function `alloca_usage_constprop_0` returning 15, losing the original algorithm. The original source had separate functions for each test case (MEM-L1-01, MEM-L1-02, etc.), but the decompiled version inlines many computations directly into test functions.
+
+### 7. Code Linearization
+**Score: 4/10**
+
+The code has poor linearization, particularly in `test_heap_memory` where there are multiple goto jumps (`goto lab_0x110fc`, `goto lab_0x110e4`) creating non-linear execution paths. The `large_stack_frame` function has a backward jump pattern that could be recognized as a loop but isn't presented clearly. The linked list traversal and cleanup code in `test_heap_memory` has deeply nested while loops with complex break conditions that disrupt top-to-bottom reading.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some redundancy exists but is manageable. The repeated pattern of checking `if (mem != NULL)` before operations appears multiple times, which is expected from decompilation. The loop unrolling in `test_heap_memory` for initializing arrays (writing values at offsets 0, 4, 8, 12, 16, etc.) is a direct representation of the compiled code but could be recognized as a loop. No significant dead code was observed, but the constant propagation on `alloca_usage` created a trivial function that could have been inlined as a comment.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+The decompiler uses `int32_t` consistently but loses precision in several areas: malloc sizes use literal numbers instead of `n * sizeof(int)` (e.g., `malloc(40)` instead of `malloc(n * sizeof(int))`). The `size_t` type is not used anywhere. Function pointers are treated as `int32_t (*)(int32_t)` which loses the original function signature accuracy. The `fork()` return type should be `pid_t` not `uint32_t`. The `waitpid` status variable should be `int*` not a raw stack variable. The original had proper `size_t` for memory sizes and `pid_t` for process IDs.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+This is severely degraded. The original source defined `Point` struct and `Node` struct and `TreeNode` struct, but the decompiled code has completely lost these types. Instead of `Point p = {x, x*2}`, we see raw pointer arithmetic like `*(int32_t *)(v1 + 4) = 2`. The linked list is represented as `int32_t*` pointers with manual offset calculations instead of proper `Node*` with `->data` and `->next` fields. The tree structure similarly loses all type information. This is a critical failure - the decompiler should have recovered these struct types.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Multiple unsafe operations exist. In `large_stack_frame`, there's pointer arithmetic with `(char *)v3` casts that are potentially dangerous. The code uses raw integer types for pointers (e.g., `int32_t * mem = malloc(40)` then `int32_t v1 = (int32_t)mem`) with explicit casts that lose type safety. In `test_heap_memory`, the linked list code performs arithmetic like `*(int32_t *)(v16 + 4) = 0` which is error-prone. There's no use of `const` anywhere, and the function pointer assignment `*(int32_t *)&global_func_ptr = 0x10798` is completely unsafe. The original code had proper type safety with `Point*`, `Node*`, `TreeNode*`.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Comments are minimal and mostly auto-generated. The only comments are the module/address range headers (e.g., "From module: /work/src/3.c"). There are no comments explaining the algorithm, the purpose of complex code blocks, or the logic behind computations. The original source had extensive comments describing each test case (e.g., "MEM-L1-01: 局部变量（基础类型）"). No decompilation confidence indicators are present. The code presents the hardcoded results as if they were computed, with no indication that constant propagation occurred.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+The decompiler fails to recognize any programming patterns. The linked list creation, traversal, and cleanup in `test_heap_memory` should be recognized as a linked list pattern but is presented as raw pointer manipulation. The tree creation and traversal in `tree_heap_traversal` should be recognized as a binary tree pattern. The memory allocation followed by initialization should be recognized as object construction. No design patterns, algorithms, or data structure patterns are identified or named.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Some anomalies are present but not flagged. The unreachable code after `exit(0)` in the child process fork is not marked. The `__stack_chk_fail()` calls appearing after return statements are not explained. The `function_ffff0fa0` at address `0xffff0fa0` (which looks like a trap/placeholder) is not identified as anomalous. The constant-propagated `alloca_usage_constprop_0` function is not explained. No warnings about potential undefined behavior in the dangling pointer test section.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No contract information is recovered. The original source had explicit checks like `if (arr == NULL) return -1;` which represent preconditions, but these are sometimes lost. For example, in `heap_realloc`, the original had `if (!p) return -1;` but the decompiled version just proceeds with the allocation. No preconditions, postconditions, or invariants are documented. The error return values (-1, -2, -3) are not explained as part of the function's contract.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Some relationships are clear: `main` calls the four test functions. The `global_func_ptr` is set and called. However, the relationship between `extern_function` and its declaration is not clear. The callback mechanism through `set_global_callback` and `call_global_callback` is obscured by the raw pointer assignment. The relationship between `tree_heap_traversal` and `create_tree_node` (which was inlined) is lost. No call graph or usage documentation is provided.
+
+### 17. Module Organization
+**Score: 5/10**
+
+The code is in a single file which is reasonable for decompiled output. However, the original source had clear sections (stack memory, heap memory, static memory, memory operations) which are not reflected in the organization. The functions are somewhat arbitrarily ordered based on their addresses in the binary rather than logical grouping. Static functions are not explicitly marked as static in all cases.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+The code does compile with appropriate headers. However, it requires stub implementations for `__printf_chk`, `__stack_chk_fail`, and `__sync_synchronize`. The `extern_global_var` is defined in the decompiled file but was originally in a separate file. The code uses `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>` which are all standard. The main issue is that the code won't run correctly because the constant-propagated results are hardcoded rather than computed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 4) / 4 = 3.5
+L2_avg = (4 + 6 + 4 + 5) / 4 = 4.75
+L3_avg = (4 + 2 + 3) / 3 = 3.0
+L4_avg = (3 + 2 + 3 + 2) / 4 = 2.5
+L5_avg = (4 + 5 + 6) / 3 = 5.0
+
+Overall = (3.5 × 0.30) + (4.75 × 0.25) + (3.0 × 0.20) + (2.5 × 0.15) + (5.0 × 0.10)
+        = 1.05 + 1.1875 + 0.6 + 0.375 + 0.5
+        = 3.7125 ≈ 3.7/10
+```
+
+### Overall Readability Score: 3.7/10
+
+### Critical Defects
+
+1. **Composite type recovery failure**: All struct types (`Point`, `Node`, `TreeNode`) are lost, replaced with raw pointer arithmetic and magic offsets (e.g., `*(int32_t *)(v1 + 4) = 2` instead of `node->data = 2`)
+
+2. **Variable naming is completely generic**: Variables like `v1`, `v2`, `mem`, `mem2` provide zero semantic information about their purpose
+
+3. **Computation replaced with constants**: The decompiler performed constant propagation that replaced algorithms with hardcoded results (e.g., `alloca_usage_constprop_0` returns 15 instead of computing `arr[n/2]`)
+
+4. **Struct type loss in heap operations**: The linked list code should use `Node*` with `->data` and `->next` fields, but instead uses raw `int32_t*` with manual offset calculations
+
+5. **Control flow unnaturalness**: The `large_stack_frame` function uses pointer comparison instead of a recognizable loop, and `test_heap_memory` uses goto-based flow control
+
+### Best Quality Aspect: Module Organization (5/10)
+The code is in a single compilable file with standard headers. Functions are separated and the overall structure is recognizable, even if not optimally organized.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+The complete loss of struct types is the most severe issue. The original source had well-defined `Point`, `Node`, and `TreeNode` structures that are entirely absent in the decompiled output, making the code extremely difficult to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types from allocation patterns**: When seeing `malloc(sizeof(Point))` or sequential field assignments at known offsets, the decompiler should reconstruct the struct type with field names rather than treating everything as raw memory.
+
+2. **Preserve computation logic over constant results**: Instead of replacing `alloca_usage(10)` with the constant `15`, the decompiler should preserve the original function call and computation. Constant propagation loses the algorithmic intent.
+
+3. **Infer variable names from usage patterns**: Variables used as loop counters, array indices, or pointing to specific data structures should be named accordingly (e.g., `counter`, `index`, `node`, `head`) based on their usage in the code.

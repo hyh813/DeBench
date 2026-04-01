@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `str`, `result`, `a1`, `a2`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `shared_counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_strcpy`, `call_strcpy`, `thread_compute`) but many degraded to address-based names (`function_c68`, `function_c74`, `function_c80`). Inconsistent naming strategy throughout.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals preserved well ("HelloLib", "BinBench Test Data"), but magic numbers like `66` (should be `O_CREAT | O_RDWR`), `0x1000` (4096), and `12` appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: generic struct definitions with `e0`, `e1` fields, 51 global variables (`g1`-`g51`), and numerous wrapper functions that just call standard library functions directly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage for loop constructs (`param_pthread_join` uses `lab_0x1f68`, `param_mutex_lock` uses `lab_0x20ac`). At `-O0` optimization, natural loop structures should be recoverable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Mixed granularity - some functions reasonable size, but many unnecessary wrapper functions (`function_da0` just calls `strcpy`). Thread functions maintain some cohesion but parameter lists expose implementation details.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps and goto labels disrupt top-to-bottom reading. Functions like `param_thread_local_storage` have multiple labeled blocks (`lab_0x2620`, `lab_0x25dc_2`) making linear comprehension difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions for standard library calls create redundancy. Some loop patterns show duplication. No dead code removal evident from compiler artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - everything becomes `int32_t` or `char *`. Original types like `size_t`, `pid_t`, `pthread_t`, `FILE *` lost. Function signatures use generic `int32_t` instead of proper parameter types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions use meaningless field names (`e0`, `e1`, `e2`...). Original `ThreadData` struct with `start`, `end`, `result` fields completely lost. `struct stat`, `struct sockaddr` fields not recovered semantically.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)`, `(char *)`, `(struct sockaddr *)`. Pointer arithmetic on generic integers. Function pointer types degraded to `int32_t * (*)(int32_t *)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially no useful comments. Only auto-generated header comments present. No explanation of non-trivial logic, algorithm intent, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library patterns (`strcpy`, `strcmp`, `pthread_create`) recognized by name but not documented as idioms. Thread synchronization patterns (mutex, condition variable) not identified as concurrency patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Incorrect logic presented confidently (e.g., `param_signal_handling` uses `SIGBUS` instead of `SIGUSR1`, `SIGALARM` instead of `SIGALRM`). No flags for potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred. Error conditions not documented. Return value semantics unclear.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage opaque (`g5`, `g6` used in signal handling without explanation). No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with prototype section. No logical grouping beyond alphabetical. No header file separation between API and implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present for standard libraries. Should compile with minor adjustments. Dependencies on pthread and standard libraries visible. Some type mismatches may require fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+6+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.16/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable names completely generic** - `v1`, `v2`, `str`, `result` provide no semantic information about purpose
+- **Excessive goto usage** - Functions like `param_pthread_join`, `param_mutex_lock` use goto labels instead of natural loop constructs despite `-O0` compilation
+- **Struct field names lost** - All struct fields named `e0`, `e1`, `e2` instead of semantic names like `start`, `end`, `result`
+- **Type information severely degraded** - `int32_t` used everywhere instead of `size_t`, `pid_t`, `pthread_t`, `FILE *`
+- **Incorrect signal handling logic** - `param_signal_handling` uses `SIGBUS` (signal 7) instead of `SIGUSR1` (signal 10), and `SIGALARM` instead of `SIGALRM`
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - The code includes necessary headers and should compile with minor adjustments, making it at least executable for testing purposes.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.25/10 average)** - Complete absence of comments, no anomaly indication, and no contract recovery makes understanding the code's intent extremely difficult without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable name inference** - Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop counter → `iteration_count`) to generate semantic names instead of `v1`, `v2`.
+
+2. **Recover high-level control structures from jump patterns** - Detect backward jumps as loops and forward conditional jumps as if/else constructs, especially at `-O0` where such patterns should be clear.
+
+3. **Add decompilation confidence annotations** - Flag uncertain transformations with comments like `// DECOMPILER UNCERTAINTY: signal number may be incorrect` to help analysts identify potential errors.

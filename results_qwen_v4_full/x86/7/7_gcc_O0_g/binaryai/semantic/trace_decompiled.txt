@@ -1,0 +1,8 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1208665744,Arg1=-1079899936,Arg2=0,Arg3=-1210712159|eax=0x452fdc,ebx=0x0,ecx=0xbfa208e0,edx=0xbfa20904,esi=0xb7f1f000,edi=0x0
+TRACE_ENT|1|call_fake_branch|1|Arg0=-1079899972,Arg1=0,Arg2=-1079899900,Arg3=-1079899936|eax=0x452fdc,ebx=0x452fdc,ecx=0xbfa208e0,edx=0xbfa20904,esi=0xb7f1f000,edi=0x0
+TRACE_ENT|2|param_fake_branch|2|Arg0=10,Arg1=-1079899976,Arg2=-1208858353,Arg3=-1079899972|eax=0x452fdc,ebx=0x452fdc,ecx=0xbfa208e0,edx=0xbfa20904,esi=0xb7f1f000,edi=0x0
+TRACE_EXT|2|param_fake_branch|2|10
+TRACE_EXT|1|call_fake_branch|1|10
+TRACE_ENT|3|call_opaque_predicate|1|Arg0=-1079899972,Arg1=0,Arg2=-1079899900,Arg3=10|eax=0x452fdc,ebx=0x452fdc,ecx=0xbfa208e0,edx=0xbfa20904,esi=0xb7f1f000,edi=0x0
+TRACE_ENT|4|param_opaque_predicate|2|Arg0=5,Arg1=-1079899976,Arg2=-1208857841,Arg3=-1079899972|eax=0x452fdc,ebx=0x452fdc,ecx=0xbfa208e0,edx=0xbfa20904,esi=0xb7f1f000,edi=0x0
+TRACE_EXT|4|param_opaque_predicate|2|20

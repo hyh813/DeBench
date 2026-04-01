@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar1`, `local_28`) with zero semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from original source (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`). This is excellent recovery, though helper functions like `__aeabi_idiv` are compiler-generated.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex (`0x14`, `0x1e`, `0x32`, `0x3e9`) without explanation. Test functions have hardcoded expected values instead of actual function calls, obscuring test intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "WARNING: Could not recover jumptable" messages. Stack canary checks (`__stack_chk_fail()`) and compiler helpers (`__aeabi_idiv`) add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic patterns (if/else, loops) recovered well in simple functions. Complex patterns like `duffs_device` and `switch_fallthrough` become convoluted with goto labels. Recursion converted to loops (expected at O2).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions maintain reasonable boundaries. However, test functions (`test_control_flow_l1/2/3`) are bloated with inline array initialization and hardcoded values instead of calling actual functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but `indirect_recursion_a` has tangled control flow with `LAB_00010fb0` labels. Test functions use goto patterns (`goto LAB_00010b8c`) disrupting linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions repeat array initialization code multiple times. `recursion_factorial` shows optimization artifact (recursion→loop) which is legitimate but not commented as such.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of specific widths. Some return types incorrect (`if_else` returns `bool` instead of `int`). Function pointers degraded to `code *`. `undefined4` appears inconsistently.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Local arrays recovered (`local_28[7]`, `local_44[13]`). Function pointer arrays recovered but with generic element types. No struct definitions visible in this code sample.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)param_1`, `(uint)bVar5`). Function pointer calls show "Treating indirect jump as call" warnings. `call_func_ptr` has `UNRECOVERED_JUMPTABLE` parameter indicating type uncertainty.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and expected behavior. Only compiler warnings present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized. Complex idioms like Duff's device not properly identified or commented. State machine patterns not explicitly named despite clear structure.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning messages for problematic areas ("WARNING: Could not recover jumptable at 0x0001104c. Too many branches"). `UNRECOVERED_JUMPTABLE` labels clearly indicate unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or parameter validation documented. Original had test verification comments (e.g., "输入5,7,3应返回21"). Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships use generic `code *` types. Global variable `jump_buffer` referenced without type context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping between L1/L2/L3 test functions. Helper functions mixed with test functions without clear separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires many external stubs (`__printf_chk`, `puts`, `__aeabi_idiv`, `__longjmp_chk`). Some functions marked "WARNING: Subroutine does not return". Would need significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (6+6+5+6)/4 = 5.75  × 0.25 = 1.438
+Level 3 (Type):        (5+6+4)/3   = 5.00  × 0.20 = 1.000
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.01/10
+```
+
+### Overall Readability Score: **5.0/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `uVar1`) - should infer semantic names from usage patterns
+- **Test functions heavily optimized** with hardcoded values instead of actual function calls, losing test verification capability
+- **No comments recovered** from original source documentation explaining function purpose and expected behavior
+- **Function pointer types degraded** to `code *` with `UNRECOVERED_JUMPTABLE` warnings indicating resolution failures
+- **Type inconsistencies** - some functions return `bool` instead of `int`, `undefined4` used inconsistently with `int`
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Symbol names preserved from original source, making function identification straightforward despite other readability issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation that existed in original source; decompiler should recover and preserve source comments when debug symbols are available (-g flag was used).
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** when debug symbols (-g) are available, especially function documentation and test case expectations
+2. **Infer semantic variable names** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+3. **Annotate optimization transformations** explicitly (e.g., "// Original: recursive, optimized to iterative loop") to help analysts understand structural changes

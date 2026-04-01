@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/1/1_gcc_O2_g/angr/syntactic/bin/1_gcc_O2_g_fixed",
+  "stdout": "",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true
+}

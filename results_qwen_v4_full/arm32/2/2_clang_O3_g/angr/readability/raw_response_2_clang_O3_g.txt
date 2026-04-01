@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1`, `flag1`, `flag124` with no semantic meaning. For example, `process_char` uses `a0` instead of `c` or `character`, and `array_1d_stack` uses `i` for what should be `count` or `n`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use mechanical names (`sub_4003d8`, `sub_401640`). Runtime functions like `__muldf3`, `__adddf3` are identifiable but not human-friendly.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation: `0x80000000`, `2047`, `255`, `0xff000000`, `0x100000`. In `process_char`, `65` and `32` should be `'A'` and `'a'-'A'`. Floating point constants like `0x3f000000` are IEEE 754 representations without context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from ARM condition calculations (`armg_calculate_condition` appears 200+ times), `vvar_XXX{r64|4b}` variables, and compiler runtime stubs. Functions like `__muldf3` span 400+ lines of incomprehensible bit manipulation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive `goto` usage instead of natural loops. `array_1d_stack` uses `do-while` with `goto LABEL_XXXX` pattern instead of clean `for` loop. `volatile_access` collapsed from two reads to `*(a0) * 2`, losing volatile semantics entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User functions maintain reasonable granularity, but runtime functions are monolithic (`__muldf3` is 400+ lines). Test functions like `test_array_types` have 126 stack variables (`flag1` through `flag126`) indicating failed optimization recovery.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Heavy forward jumps disrupt reading flow. `array_complex_index` has nested conditionals with `armg_calculate_condition` calls that branch to multiple labels. `binary_tree_sum` has unreachable code paths with `Goto None` statements.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repeated `armg_calculate_condition` calls with identical parameters. `test_data_types_l1` prints duplicate lines (`volatile_access` printed twice). `ptr_func_complex` calls the function pointer twice with identical arguments.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion. `process_char` takes `unsigned int` instead of `char`. `process_short` uses `unsigned short` but returns `unsigned int`. `process_float` and `process_double` return `void` instead of their respective types. All pointer types collapsed to `unsigned int*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs recovered as `struct_0`, `struct_1`, `struct_2` with fields `field_0`, `field_4`, `field_8`. `Point3D` becomes `unsigned int[3]` array access. `Node` linked list structure lost - `field_4` should be `next` pointer. Bitfield struct `Flags` reduced to bit manipulation on `unsigned short*`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(char*)`, `(int*)`, `(void*)` throughout. `ptr_void` uses type parameter for casting instead of proper type system. `opaque_handle_create` returns `int` instead of `void*`. Pointer arithmetic on `unsigned int` loses type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation (e.g., `// DT-L1-01: 字符类型（char）⭐`). No decompilation confidence indicators or uncertainty warnings.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal in `linked_list` not identified as such. Tree recursion in `binary_tree_sum` appears as generic recursion. Switch-on-enum in `enum_switch` recovered as jump table access without explanation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly warnings despite severe issues. `volatile_access` lost volatile semantics silently. `array_oob` out-of-bounds access not flagged. `Goto None` statements in `binary_tree_sum` indicate decompilation failure without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions. `array_complex_index` bounds checking present but not documented as contract. Error returns (`-1`, `4294967295`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but relationships unclear. `double_value` referenced in `ptr_func_simple` test but not shown in call graph. Global variables like `g_4024fb`, `g_413008` have no semantic names. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Runtime functions mixed with user code. No header file separation. Test functions (`test_data_types_l1`, `test_array_types`) grouped but not separated from implementation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Won't compile standalone. Missing dependencies: `__libc_start_main`, `__gmon_start__`, `__cxa_finalize`, `armg_calculate_condition`. External globals (`g_4024fb`, `g_413008`) undefined. Architecture-specific ARM code not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+3+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (3+5+3+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type System):  (2+2+3)/3   = 2.33 × 0.20 = 0.467
+Level 4 (Semantic):     (1+2+1+1)/4 = 1.25 × 0.15 = 0.188
+Level 5 (Contextual):   (3+4+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  2.80/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Variable `a0`, `v0`, `v1`** should be named semantically (e.g., `character`, `sum`, `index`) based on usage context
+- **Control flow uses `goto LABEL_XXXX`** instead of natural `for`/`while` loops throughout
+- **Struct fields all generic** (`field_0`, `field_4`, `field_8`) losing all semantic meaning from original `x`, `y`, `z`, `next`, `prev`
+- **Type information completely lost** - `char`, `float`, `double` all became `unsigned int`
+- **200+ `armg_calculate_condition` calls** create severe noise obscuring actual logic
+- **`volatile_access` semantics destroyed** - two reads collapsed to single `*(a0) * 2`
+- **Zero comments** despite complex floating-point runtime functions spanning 400+ lines
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - User-defined function names were preserved from original source (`process_char`, `array_1d_stack`, `struct_simple`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or uncertainty warnings makes the 3656 LOC output practically unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures** - Convert `goto`/`LABEL` patterns back to `for`/`while`/`if-else` constructs using pattern matching on jump targets
+2. **Implement type inference from usage** - Analyze how variables are used (character comparisons, pointer arithmetic, float operations) to recover original types instead of defaulting to `unsigned int`
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// UNCERTAIN: indirect call target unknown` and flag semantic losses like volatile elimination

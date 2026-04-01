@@ -1,0 +1,15 @@
+Obfuscation - Level 1: Fake Branch
+ObfL402: 10
+ObfL403: 20
+ObfL404: 225
+ObfL405: 63
+OptL401: 500500
+OptL402: 5050
+OptL403: 72
+OptL501: 20
+EdgeL301: 1
+EdgeL302: 41
+EdgeL303: 30
+EdgeL304: 2000000000
+EdgeL401: 10
+EdgeL402: 44

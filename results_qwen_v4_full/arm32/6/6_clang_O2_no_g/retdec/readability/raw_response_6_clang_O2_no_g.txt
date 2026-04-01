@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `str`, `result`, `a1`, `a2`) with no semantic meaning. Original parameters like `dst`, `src`, `thread_count`, `iterations` are lost. For example, `param_strcpy` uses `str` for both destination and source pointers.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`param_strcpy`, `call_memcpy`, `param_mutex_lock`), but many wrapper functions have meaningless names (`function_c68`, `function_c74`, `function_c8c`). Some signatures are wrong (`param_strcpy(void)` has no parameters but original had `char *dst, const char *src`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved but some encoded in hex (`g21 = "LIB-L1-01: %d (\xe6\x9c\x9f\xe6\x9c\x9b: 8)\n"`). Magic numbers like `42`, `127`, `0x1000` appear without explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Relatively clean for decompiled code. Some redundant casts visible (`(int32_t *)`, `(char *)`). Frame pointer manipulation minimal. No severe compiler artifact pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto labels instead of natural loops in several functions (`param_mutex_lock`, `param_thread_local_storage` with `lab_0x22e8`, `lab_0x2818_2`). At -O0, this is unacceptable—source had clean for/while loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity mostly matches original (one function per test). However, wrapper functions like `function_c68` (strstr) are unnecessary fragmentation. Parameter lists sometimes expose implementation details.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Mixed quality—some functions read top-to-bottom (`param_printf`), but others have disruptive forward jumps (`param_thread_local_storage` has multiple goto targets breaking flow).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code. Some redundant patterns from type casting. Loop structures sometimes duplicated across branches instead of unified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—everything is `int32_t` or `char*`. Original types like `size_t`, `ssize_t`, `pid_t`, `pthread_t`, `FILE*` all become `int32_t`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs defined (`struct _IO_FILE`, `struct stat`, `struct shmid_ds`) but all fields are generic (`e0`, `e1`, `e2`...). Original field names like `st_size`, `sin_family` completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(int32_t *)`, `(char *)`, `(struct sockaddr *)`). Function pointer types degraded to generic signatures. Pointer arithmetic on `int32_t` instead of proper types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Completely bare code.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `memcpy`, `pthread_create`, `socket`). However, no pattern naming (e.g., "producer-consumer pattern" for condition_variable test not indicated).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite obvious issues. `param_strcpy(void)` has wrong signature but presented confidently. Incorrect function signatures not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. Error conditions not explained. Original comments about expected values completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1` through `g51`) used without explanation of purpose. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Original section structure (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) lost. No logical grouping comments.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims "Compilation Result: Yes". Includes present but some function signatures wrong. Would likely need patches for actual compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+6+5+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (5+6+5+6)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type System):  (4+5+4)/3   = 4.33  × 0.20 = 0.866
+Level 4 (Semantic):     (1+6+2+2)/4 = 2.75  × 0.15 = 0.4125
+Level 5 (Contextual):   (5+5+6)/3   = 5.33  × 0.10 = 0.533
+
+Overall Score: 4.69/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `str` everywhere** — should be named based on semantic usage (e.g., `thread_count`, `iterations`, `buffer_ptr`)
+- **Function `param_strcpy(void)` has wrong signature** — original had `(char *dst, const char *src)` but decompiler lost all parameters
+- **All struct fields named `e0`, `e1`, `e2`** — completely loses semantic meaning of fields like `st_size`, `sin_family`
+- **Zero comments** — no explanation of logic, no decompilation confidence indicators, no API documentation
+- **Goto labels instead of loops** — `param_mutex_lock` and `param_thread_local_storage` use `lab_0xXXXX` labels instead of natural for/while constructs
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** — Core test function names preserved (`param_strcpy`, `call_memcpy`, `param_mutex_lock`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** — Absolutely zero comments in 1863 lines of code. Even basic decompilation confidence indicators or function purpose summaries would dramatically improve usability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol variable names** — At -O0 with `-g` flag, DWARF debug info should provide original variable names; integrate this into decompilation output.
+2. **Add decompilation confidence annotations** — Flag uncertain reconstructions (wrong signatures, unresolved calls) with comments like `// DECOMPILER_UNCERTAIN: parameter count may be incorrect`.
+3. **Recover loop constructs from control flow** — Detect backward jump patterns and emit proper for/while loops instead of goto labels, especially at -O0 where source structure should be preserved.

@@ -1,0 +1,85 @@
+### === LEVEL1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_38`, `alStack_118` that obscure semantic purpose. While `callback_func` is correctly named, most parameters and locals lack meaningful identifiers that would match the source (e.g., should be `a`, `b` for cdecl_func).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions correctly match source names: `cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`. Minor issues include `FUN_00101020` and some internal labels, but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of magic numbers without explanation: `0xf` (15), `0x32` (50), `0x15` (21), `0x40091eb851eb851f` (3.14 as double). String literals referenced via `&DAT_00102xxx` addresses with no recovery of actual content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) present throughout. Some redundant constructs like `if (local_10 == *(long *)(in_FS_OFFSET + 0x28))` checking canary. External function stubs create noise but are necessary. Overall manageable at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use while/for constructs, conditionals are clear. The `test_calling_conventions` function has some complex loop manipulation but is readable. At -O0, flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (typically 5-30 lines). The `test_calling_conventions` at ~80 lines is reasonable for a test harness. No over-fragmentation or inlining issues at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. The `varargs_func` has some forward jumps but overall linear flow is preserved.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `test_calling_conventions` (manual loop copying). No significant dead code. Minor redundancy from stack frame setup but acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, long). However, uses generic `int` instead of `int32_t` or `uint32_t`. Function pointers use `code *` which is imprecise. Parameter types mostly correct but not precise.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. `func_struct_byval` accesses stack via raw `&stack0x00000008` pointer arithmetic. `SmallStruct` and `LargeStruct` completely lost - uses raw pointer/index access instead of field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. `param_ptr_array` uses `long` for pointer arithmetic. `ret_small_struct` uses bitwise OR to combine struct fields which is unusual. Generally safe but some concerning constructs.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. Zero explanation of algorithm intent, parameter purposes, or return value semantics. Completely lacks documentation that would aid understanding.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (va_list handling, struct by-value return via hidden pointer) but not explicitly named or documented. The varargs pattern is visible but not labeled as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The `param_complex_cast` function has type confusion (void* to int* to char* to int*) but no warning. Indirect calls not flagged. Code presents everything as confident when some should be uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `func_struct_byptr` with NULL checks don't document the NULL tolerance. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. However, no documentation of who calls whom, callback relationships, or global variable usage. Basic call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped by test category (calling conventions, parameter passing, return values). Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions declared with stubs. Should compile with libc/printf stubs. No compiler-specific hacks. Minimal patching needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`/`param_2`/`local_xxx` instead of semantic names like `a`, `b`, `count`
+- No struct recovery - `func_struct_byval` uses raw stack pointer arithmetic losing field semantics
+- Zero comments - no explanation of algorithm intent, parameter purposes, or return values
+- Magic numbers everywhere (0xf, 0x32, 0x15) without named constant recovery
+- No anomaly indication for uncertain decompilations (e.g., type casts, indirect calls)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Core test functions correctly match source names (cdecl_func, stdcall_func, varargs_func), making the codebase navigable.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+Complete absence of comments leaves decompiled code without any semantic context, making it significantly harder to understand algorithm intent and parameter meanings.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns**: `param_1 + param_2` in `cdecl_func` clearly suggests parameters should be named `a` and `b`
+2. **Add struct/union recovery**: Detect stack frame access patterns to reconstruct struct layouts with field names
+3. **Generate meaningful comments**: Add basic documentation explaining function purpose, parameters, and return values based on analysis

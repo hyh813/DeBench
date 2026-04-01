@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `i`, `result` throughout. For example, in `param_opaque_predicate`, variables `v1` (used as x+1), `v2` (gcd accumulator), and `v3` (boolean result) obscure their semantic purpose. The parameter `x` is well-named but inconsistent with the rest of the codebase.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Target functions like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` are correctly identified and named. However, 40+ functions use generic names like `sub_1030`, `sub_1040`, `sub_1050` with no semantic meaning. Runtime functions like `deregister_tm_clones` are correctly named but mixed with application logic.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are meaningful: `90` (0x5A key for XOR decryption), `0x14u` (stack canary offset), `0x20u` (buffer size). However, magic numbers like `60` in `param_tail_call_optimized` (should be 1000 iterations), `8` in vectorized loop, and `100` in `param_non_tail_call` lack explanation. The decompiler correctly identified constant results like `500500` and `225`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The `__usercall` and `__cdecl` calling convention annotations are present but don't impede readability. Stack canary checks (`__readgsdword(0x14u)`) are visible but expected at -O0. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. The `while` loop in `param_opaque_predicate` correctly implements the GCD algorithm. The `param_tail_call_optimized` uses a while loop instead of recursion, which is a reasonable decompilation choice. Conditional expressions are clear. No goto statements or spaghetti code observed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate. Each function has a single responsibility (e.g., `decrypt_string` handles decryption, `param_fake_branch` handles fake branch logic). Parameter lists are reasonable - `param_vectorized_loop(int *a, int *b, int *c, int n)` matches the source signature. No 500-line monoliths; functions average 15-30 lines.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in `param_division_by_zero` and `param_null_pointer_deref` are appropriate. No forward jumps into loop bodies. No deep nesting (>4 levels). The code flows naturally from setup to computation to return.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The `param_instruction_substitution` correctly combines operations: `return 15 * x + (x & 0xF) + ((unsigned int)x >> 1) + 6 * x` - this is mathematically equivalent to the source but simplified. No obvious common subexpression elimination artifacts that obscure logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct: `int` for parameters and returns, `char*` for strings. However, `param_string_encryption` returns `__int64` while source returns `int` - this is a type inflation. The `size_t` in `decrypt_string` is correct. Some inconsistency: `call_fake_branch` returns `int` but `call_string_encryption` returns `__int64`. Signed/unsigned handling is mostly correct (e.g., `(unsigned int)x >> 1`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The bitfield in `param_implementation_defined` source is completely lost - decompiled to just `return 43`. Arrays like `a[8]`, `b[8]`, `c[8]` in `call_vectorized_loop` are correctly identified as arrays, but the struct with bitfields in the source is not reconstructed. All composite types reduced to primitives or raw pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `decrypt_string`: `buffer[len - 1] = 0` could underflow if len=0. The XOR loop `*(i - 1) = v5` is unusual and potentially unsafe. Stack canary checks (`__readgsdword`) suggest security features. No obvious buffer overflows in the decompiled code, but the type-confused returns (int vs __int64) could cause issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments in decompiled functions. The header comment is auto-generated ("Decompiled by IDA Pro 9.1"). No explanation of algorithms (e.g., GCD implementation, opaque predicate logic). No decompilation confidence indicators. The source had rich comments explaining obfuscation techniques - none recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions correctly identified: `signal`, `setjmp`/`longjmp`, `malloc`, `free`, `strlen`, `strncpy`. The opaque predicate pattern in source is partially recognized as a conditional but not identified as "opaque predicate" or "always-true condition". The fake branch (dead code) is completely eliminated - not recognized as intentional obfuscation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations are noted at the end: 12 functions failed to decompile including `__libc_start_main`, `malloc`, `signal`. Stack canary presence is visible via `__readgsdword(0x14u)`. However, no warnings about the architecture mismatch (source ARM64 → decompiled x86). No flags for suspicious patterns like the always-false conditions in fake branch.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. The source had explicit comments about expected behavior (e.g., "期望: 10" for call_fake_branch) - none recovered. Error handling via signal handlers is present but contracts aren't documented. No indication that `param_division_by_zero` can return -1 on error.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are partially visible - `call_fake_branch` calls `param_fake_branch`. However, the relationship between `test_obf_opt_edge` and the various call_* functions is clear from the code but not explicitly documented. Global variables like `jmp_buffer`, `segv_buffer`, `encrypted_0` are referenced but their scope isn't explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order (sub_1030, sub_1040, ...) rather than logically grouped. Runtime functions (init_proc, frame_dummy, register_tm_clones) are interspersed with application functions. The source had clear section comments (OBF-L4-02, OPT-L4-01, EDGE-L3-01) - no equivalent organization in decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile standalone. External functions like `_gmon_start__`, `frame_dummy`, `__libc_start_main` are referenced but not defined. No header includes or dependency documentation. The metadata mentions "Compilation Result: Yes" but the decompiled code shows "FAILED to decompile" for 12 functions including critical ones like `__libc_start_main`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Architecture mismatch**: Source compiled for ARM64, decompiled code shows x86 (ebx, eax registers) - fundamental mismatch that undermines analysis
+- **Variable naming**: Generic names like `v1`, `v2`, `v3`, `v4` throughout obscure semantic purpose
+- **No struct recovery**: Composite types (bitfields, structs) completely lost - reduced to primitives
+- **No comment recovery**: Rich source comments explaining obfuscation techniques not present
+- **Fake branch eliminated**: The OBF-L4-02 fake branch (always-false condition) is completely optimized away - `param_fake_branch` just returns `x`
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- Control flow structures (loops, conditionals) are natural and readable. The GCD algorithm in `param_opaque_predicate` is correctly decompiled as a while loop.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic single-letter variable names with numbers (v1, v2, v3, v4, i, result) make it extremely difficult to track data flow and understand function logic.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `v1` in `param_opaque_predicate` is used as `x + 1` (the second GCD operand), so name it `y` or `b`. `v2` is the GCD accumulator, name it `gcd_result`.
+2. **Recover composite types**: The bitfield in `param_implementation_defined` should be reconstructed as a struct with named bit-fields.
+3. **Flag optimization artifacts**: The fake branch (OBF-L4-02) was completely eliminated by the compiler - add a comment noting "Dead code eliminated: x*x < 0 is always false" to preserve semantic information.

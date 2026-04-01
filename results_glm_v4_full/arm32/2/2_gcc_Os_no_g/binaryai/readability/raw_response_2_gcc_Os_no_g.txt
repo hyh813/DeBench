@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `iVar1`, `local_24`, `uVar1`), providing no semantic context about their role in the calculation or data structure.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are accurately recovered from the symbol table (e.g., `process_char`, `array_2d_stack`, `struct_bitfields`), perfectly matching the original source intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants are replaced by magic numbers; character checks use `0x41` instead of `'A'`, and floating-point values appear as raw hex integers like `0x400c0000` (3.5f), severely obscuring logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is bloated with hundreds of lines of software floating-point library code (`__muldf3`, `__addsf3`, etc.) which are implementation details rather than user logic, significantly distracting from the actual source code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple loops are often obfuscated; `array_2d_stack` uses a `do-while` loop with a magic increment of `0xb` (11) and limit `0x6e` (110) instead of a standard `for` loop, making the iteration logic hard to follow.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: User functions are correctly separated into distinct units, but the test functions (`test_data_types_l1`) contain constant-folded logic (e.g., `0x61` instead of `process_char('A')`), which fragments the original structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read top-to-bottom, but the presence of computed jumps and the obfuscated loop counter in `array_2d_stack` disrupts the linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The inclusion of the entire soft-float library implementation in the decompiled output represents massive redundancy, as these functions are likely linked rather than part of the core source logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost; `process_float` and `process_double` are decompiled as returning `void` despite calculating values, and `process_ll` (long long) is split into two parameters (`uint`, `int`) instead of a single 64-bit argument.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; `struct_simple` treats a `Point3D*` as an `int*` and accesses fields via array indexing (`param_1[1]`), completely erasing the semantic structure of the data.
+
+**11. Type Safety:** Score: 4/10
+Justification: Types are frequently degraded to generic `undefined4` or `void*`, and floating-point values are handled as integers, requiring manual interpretation to ensure safe usage.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic; the only header is a decompiler attribution, leaving complex operations like bit-field extraction or hex float literals unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns are not recognized; the range check `c >= 'A' && c <= 'Z'` is decompiled as an unsigned subtraction trick (`param_1 - 0x41 < 0x1a`), and bit-fields are shown as raw shift/mask operations.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags indirect calls with `UNRECOVERED_JUMPTABLE` (e.g., in `ptr_func_simple`), clearly indicating where static analysis failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the requirement for non-null pointers in `ptr_single` is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but the reliance on generic types and the massive amount of library code makes it difficult to trace the relationships between the core user functions.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are generally ordered in a way that roughly follows the source flow (tests after implementations), but the interleaving of library functions reduces the organizational clarity.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `code *`, and the missing return types on float functions would cause compilation errors or logic bugs if ported.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Return Value Loss:** Functions `process_float` and `process_double` are decompiled with `void` return types, discarding the calculated results.
+- **Struct Erasure:** Composite types like `Point3D` and `Rect` are completely lost, replaced by raw pointer arithmetic (e.g., `param_1[1]`).
+- **Literal Obfuscation:** Floating-point constants are displayed as raw hex (e.g., `0x400c0000` instead of `3.5f`), making values unintelligible.
+- **Loop Obfuscation:** The loop in `array_2d_stack` uses magic constants (`0xb`, `0x6e`) for iteration control instead of standard loop variables.
+- **Noise Pollution:** The output includes hundreds of lines of soft-float library implementation (`__muldf3`, etc.), cluttering the view of the actual source code.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover `struct` and `union` definitions reduces complex data manipulation to confusing pointer arithmetic, which is the single biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Floating-Point Return Values:** Fix the type analysis to correctly identify floating-point return values in registers (e.g., `s0` on ARM64) instead of defaulting to `void`.
+2.  **Reconstruct Composite Types:** Implement stack frame analysis or signature matching to recover `struct` layouts and replace raw pointer offsets with named field accesses (e.g., `p->x` instead of `param_1[0]`).
+3.  **Annotate Floating-Point Literals:** Convert raw hex representations of floating-point constants back to human-readable decimal or float notation in the decompiled view.

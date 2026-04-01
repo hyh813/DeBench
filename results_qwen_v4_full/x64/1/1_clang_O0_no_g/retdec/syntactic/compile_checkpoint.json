@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 4,
+  "source_file": "decompiled/retdec_out/x64/1/1_clang_O0_no_g.c",
+  "fixed_file": "results_qwen_v4_full/x64/1/1_clang_O0_no_g/retdec/syntactic/fix_1_clang_O0_no_g.c"
+}

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3`. Temporary variables use auto-generated names like `uVar1`, `iVar1`, `lVar1`. Stack variables are named `local_10`, `local_20`, `local_24`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered from the source: `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_dynamic_code`. However, some internal functions like `FUN_00101020` use auto-generated names. The primary function names match the original source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40` (64), `0x200` (512), `0xdf22` appear without explanation. The original source had named constants MAX_SIZE (1024), BUFFER_COUNT (16) that are not recovered. String literals like `"LOG: Values: %d, %d, %d\n"` are preserved but macro semantics are lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. The `__stack_chk_fail` calls are legitimate stack protection checks. No redundant casts or debug instrumentation clutter the code. The decompiled output is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and readable. Loops use `for` constructs (`for (uVar2 = 0; (int)uVar2 < param_2; uVar2++)`), conditionals use `if` statements. At -O0, the control flow closely matches the source. One minor issue: ternary operators sometimes expanded to if-else.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a clear single responsibility. Parameter lists are reasonable. No over-fragmentation or monoliths observed. The decomposition matches the original source structure.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive forward jumps. The code flow is highly linear and easy to follow, matching the -O0 compilation level expectations.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. At -O0, there's minimal optimization, so the code closely represents the source. Loop unrolling is not present (as expected for -O0). Clean output without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type precision is inconsistent. Parameters use `int` correctly, but return types mix `undefined4`, `undefined8`, and `undefined1`. Pointers are properly typed as `int*`, `void*`. However, the use of `undefined1` for byte arrays and `undefined8` for return values shows type erosion. The original had precise types like `size_t`, `int*` which are partially lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct or union recovery is evident. Arrays are represented as `undefined1` with sizes (e.g., `undefined1 local_24 [20]`). The original source had no complex structs either, but the decompiler doesn't attempt to reconstruct any composite types. Everything is flattened to primitives.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Pointer arithmetic is used correctly (e.g., `param_1 + uVar2 * 4` for array indexing). No obvious unsafe casts. Function pointers are properly typed as `code*`. Minor issues with `undefined*` types but no dangerous operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present. Header indicates "Decompiled by Ghidra 12.0" with binary path. Some warnings like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return" are auto-generated. No explanation of algorithm logic, macro semantics, or inline assembly behavior. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. The decompiler recovers inline assembly as C code (good) but doesn't annotate it as such. Atomic operations show `LOCK()` and `UNLOCK()` macros but don't explain the atomic semantics. No recognition of preprocessing patterns, SIMD operations, or other idioms from the source.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present: "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", "WARNING: Do nothing block with infinite loop". However, these are generic and don't explain the root cause. No indication of the preprocessing or inline assembly challenges in the original source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No assertion or contract recovery. Preconditions, postconditions, and invariants are not documented. The original source had no explicit assertions, but the decompiler could have inferred some contracts (e.g., "requires: param_1 != NULL" for pointer parameters).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships are not documented. No indication of which functions call which others. Global variable `global_var` is used in `param_memory_clobber_demo` but no context provided. Callback relationships not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in an arbitrary order based on address rather than logical grouping. The original source had clear sections: preprocessing functions, assembly functions, test functions. This organization is lost. Static functions not explicitly marked as such.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard library functions (`__printf_chk`, `mmap`, `munmap`, `mprotect`, `sysconf`). These require linking against libc but are otherwise portable. No compiler-specific hacks. The code should compile with appropriate headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 8) / 4 = 5.75
+L2_avg = (9 + 9 + 9 + 9) / 4 = 9.00
+L3_avg = (5 + 4 + 7) / 3 = 5.33
+L4_avg = (4 + 4 + 6 + 2) / 4 = 4.00
+L5_avg = (4 + 5 + 7) / 3 = 5.33
+
+Overall = (5.75 × 0.30) + (9.00 × 0.25) + (5.33 × 0.20) + 
+          (4.00 × 0.15) + (5.33 × 0.10)
+Overall = 1.725 + 2.25 + 1.066 + 0.6 + 0.533 = 6.17/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects (Bullet List)
+- Variable naming is entirely generic (`param_1`, `uVar1`, `local_10`) losing all semantic meaning from the original source
+- No recovery of preprocessor macro semantics - constants like MAX_SIZE, BUFFER_COUNT remain as magic numbers
+- No comments explaining the inline assembly, atomic operations, or SIMD code patterns
+- Type precision degraded with `undefined4`, `undefined8`, `undefined1` types instead of proper types
+- No cross-reference documentation showing function call relationships or global variable usage
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (scored 9/10)** - At -O0, the decompiled control flow closely matches the source with natural loops and conditionals. No goto abuse or spaghetti code.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (scored 2/10)** - All variable names are auto-generated generics. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` that are completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests `size` or `threshold`; `param_1 * param_1` suggests `square` or `value`)
+2. **Recover macro semantics**: Detect magic numbers that correspond to common patterns (comparisons, arithmetic) and suggest original macro names based on context
+3. **Add semantic annotations**: Include comments explaining recovered idioms (inline assembly, atomic operations, SIMD) and flag anomalies with specific explanations rather than generic warnings

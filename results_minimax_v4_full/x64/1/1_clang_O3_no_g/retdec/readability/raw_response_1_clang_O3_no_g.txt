@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables use cryptic names like `v1`, `v2`, `v3` throughout. For example, in `sequential_ops`, parameters should be `a, b, c` but are `a1, a2, a3`. In `single_if`, parameter should be `x` but is `a1` with 3 unused extra parameters.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `goto_backward`, `recursion_factorial`, etc. The decompiler correctly recovered 82 function names. Minor deduction for some helper functions with numeric names like `function_1030`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with magic numbers and bit manipulation obscures intent. `0x66666667` (division constant), `0x100000000 * a1 >> 32` (division by 10), and `& 0xffffffff` masks everywhere make the code nearly unreadable. The simple expression `(a + b) * 2 - c` becomes `2 * (a2 + a1) - a3 & 0xffffffff`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: spurious functions `function_13a6`, `function_13ac`, `function_13b2` that return constants; dummy global variables `g1`-`g31`; excessive `& 0xffffffff` masks on every operation; unnecessary type conversions between int32_t/int64_t; and undefined assembly intrinsics like `__asm_pxor`, `__asm_movdqa`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if/else, switch, loops) are correctly recovered. However, `ternary_op` became an overly complex expression with nested comparisons: `v2 < 0 == ((v2 ^ v1) & (int32_t)(a2 ^ a1)) < 0 == (v2 != 0)`. The `goto_backward` function correctly preserved the goto-based loop structure. At -O0, control flow should be more natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each test function was correctly extracted as separate functions. Function sizes are reasonable, though some are large due to loop unrolling (e.g., `loop_continue` at ~140 lines). Parameter count errors exist: `single_if(int64_t a1, int64_t a2, int64_t a3, int64_t a4)` has 4 parameters instead of 1.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with reasonable flow. Some forward jumps in switch statements and goto patterns interrupt linearity slightly. Deep nesting in `nested_if_deep` is manageable (5 levels).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from repeated `& 0xffffffff` masks on every arithmetic operation. Loop unrolling in `loop_continue`, `goto_backward`, `recursion_factorial` is present but recognizable as optimization. Some dead code from unused variables.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` for most integers instead of original `int` type. Function pointer types are completely wrong - `int64_t (*f)(int)` becomes `int64_t` parameter. Some use of `uint32_t`, `int32_t` for specific operations. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The decompiler recovered `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` for setjmp/longjmp, which are compiler-generated structures. The original source had no custom structs to recover, so this is acceptable. Array access patterns are preserved but use pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: pointer arithmetic in `loop_multi_exit` using `0x100000000 * v1 >> 30` for array indexing; extensive bit manipulation with `& 0xffffffff` causing signed/unsigned confusion; no bounds checking on array access; function pointer calls use raw addresses.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only mechanical comments present: `// Address range: 0x1170 - 0x1178` for each function. No algorithmic explanations, no documentation of what functions do, no recovery of original comments from debug symbols. Auto-generated address comments provide no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. State machines, Duff's device, tail recursion, and other idioms are not recognized or named. The code presents these patterns as raw control flow without identifying their purpose.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The decompiler presents everything with equal confidence, including incorrect or confusing code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of original assertions or error handling contracts. The code provides no guidance on expected input ranges or error conditions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls exist but relationships aren't documented. No information about which functions call which, no callback relationships identified, no global variable usage documented. The code is presented in isolation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 82 functions in a single file with no logical grouping. Functions appear in somewhat arbitrary order based on address. No header file with API declarations. Static vs. non-static function distinction not clear.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile: undefined `int128_t` type; undefined assembly intrinsics (`__asm_pxor`, `__asm_movdqa`, `__asm_paddd`); missing standard library function declarations; dummy global variables that shouldn't exist. Requires extensive patching to even attempt compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) with no semantic meaning
+- Excessive bit manipulation (`& 0xffffffff` masks) obscures all arithmetic operations
+- Magic numbers like `0x66666667` for division not explained
+- Type precision lost - all `int` became `int64_t`, function pointers broken
+- No comments explaining algorithm intent or function purpose
+- Code contains undefined constructs (`int128_t`, `__asm_*` intrinsics) preventing compilation
+- Spurious functions (`function_13a6`, `function_13ac`) and dummy globals (`g1`-`g31`) add noise
+
+**Best Quality Aspect:** Function Naming (scored 9/10)  
+The decompiler correctly recovered nearly all function names from the original source, showing excellent symbol recovery capability.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)  
+The decompiler provides no meaningful semantic information - no comments, no pattern recognition, no anomaly flagging, no contract recovery. The code is a mechanical translation with no added value for human understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indices, arithmetic operations, comparisons) to suggest meaningful names like `index`, `sum`, `count` instead of `v1`, `v2`
+2. **Eliminate redundant bit masks**: Recognize `& 0xffffffff` as sign-extension artifacts and remove them when not semantically necessary; explain division-by-constant patterns
+3. **Add semantic comments**: Include algorithm identification (e.g., "State machine pattern"), function purpose summaries, and flag uncertain decompilations with confidence levels

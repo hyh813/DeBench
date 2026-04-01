@@ -1,0 +1,1775 @@
+{
+  "file_name": "results_minimax_v4_full/x64/5-1/5-1_gcc_O0_g/ghidra/syntactic/fix_5-1_gcc_O0_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 43,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 448,
+        "stats": {
+          "Other": 220,
+          "Syntax Error": 228
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30104,
+        "completion_tokens": 896,
+        "total_tokens": 31000
+      },
+      "time_cost": 41.829126834869385,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 441,
+        "stats": {
+          "Other": 215,
+          "Syntax Error": 226
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30141,
+        "completion_tokens": 954,
+        "total_tokens": 31095
+      },
+      "time_cost": 21.27843165397644,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 413,
+        "stats": {
+          "Other": 196,
+          "Syntax Error": 215,
+          "Argument Count Mismatch": 1,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 6 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30294,
+        "completion_tokens": 545,
+        "total_tokens": 30839
+      },
+      "time_cost": 11.087845802307129,
+      "phase": "compile",
+      "new_errors_introduced": 9
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 411,
+        "stats": {
+          "Other": 193,
+          "Syntax Error": 216,
+          "Argument Count Mismatch": 1,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30308,
+        "completion_tokens": 680,
+        "total_tokens": 30988
+      },
+      "time_cost": 13.743208408355713,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 411,
+        "stats": {
+          "Other": 193,
+          "Syntax Error": 216,
+          "Argument Count Mismatch": 1,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30395,
+        "completion_tokens": 1019,
+        "total_tokens": 31414
+      },
+      "time_cost": 19.408605575561523,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 581,
+        "stats": {
+          "Other": 320,
+          "Syntax Error": 192,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 321 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30804,
+        "completion_tokens": 701,
+        "total_tokens": 31505
+      },
+      "time_cost": 13.802472829818726,
+      "phase": "compile",
+      "new_errors_introduced": 78
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 573,
+        "stats": {
+          "Other": 314,
+          "Syntax Error": 190,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30664,
+        "completion_tokens": 630,
+        "total_tokens": 31294
+      },
+      "time_cost": 12.237689971923828,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 573,
+        "stats": {
+          "Other": 314,
+          "Syntax Error": 190,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 149 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30711,
+        "completion_tokens": 215,
+        "total_tokens": 30926
+      },
+      "time_cost": 5.756963729858398,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 566,
+        "stats": {
+          "Other": 303,
+          "Syntax Error": 194,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 35 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30666,
+        "completion_tokens": 677,
+        "total_tokens": 31343
+      },
+      "time_cost": 18.096885442733765,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 566,
+        "stats": {
+          "Other": 303,
+          "Syntax Error": 194,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 141 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30679,
+        "completion_tokens": 545,
+        "total_tokens": 31224
+      },
+      "time_cost": 11.274129867553711,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 546,
+        "stats": {
+          "Other": 280,
+          "Syntax Error": 197,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 147 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30553,
+        "completion_tokens": 572,
+        "total_tokens": 31125
+      },
+      "time_cost": 13.983206987380981,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 506,
+        "stats": {
+          "Other": 240,
+          "Syntax Error": 197,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 166 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30416,
+        "completion_tokens": 560,
+        "total_tokens": 30976
+      },
+      "time_cost": 12.292752027511597,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 459,
+        "stats": {
+          "Other": 206,
+          "Syntax Error": 185,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 6
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30302,
+        "completion_tokens": 564,
+        "total_tokens": 30866
+      },
+      "time_cost": 29.00477123260498,
+      "phase": "compile",
+      "new_errors_introduced": 13
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 459,
+        "stats": {
+          "Other": 206,
+          "Syntax Error": 185,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 6
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 24 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30327,
+        "completion_tokens": 659,
+        "total_tokens": 30986
+      },
+      "time_cost": 13.250042200088501,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 457,
+        "stats": {
+          "Other": 203,
+          "Syntax Error": 186,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 6
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 110 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30345,
+        "completion_tokens": 648,
+        "total_tokens": 30993
+      },
+      "time_cost": 19.717922925949097,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 397,
+        "stats": {
+          "Other": 159,
+          "Syntax Error": 174,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30134,
+        "completion_tokens": 644,
+        "total_tokens": 30778
+      },
+      "time_cost": 43.52211856842041,
+      "phase": "compile",
+      "new_errors_introduced": 8
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 397,
+        "stats": {
+          "Other": 160,
+          "Syntax Error": 173,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 76 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30257,
+        "completion_tokens": 602,
+        "total_tokens": 30859
+      },
+      "time_cost": 31.93077254295349,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 397,
+        "stats": {
+          "Other": 160,
+          "Syntax Error": 173,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 76 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30242,
+        "completion_tokens": 513,
+        "total_tokens": 30755
+      },
+      "time_cost": 9.796311378479004,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 159,
+          "Syntax Error": 173,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30152,
+        "completion_tokens": 599,
+        "total_tokens": 30751
+      },
+      "time_cost": 16.65138077735901,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 159,
+          "Syntax Error": 173,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30202,
+        "completion_tokens": 632,
+        "total_tokens": 30834
+      },
+      "time_cost": 13.040144681930542,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 159,
+          "Syntax Error": 173,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30223,
+        "completion_tokens": 710,
+        "total_tokens": 30933
+      },
+      "time_cost": 12.66303014755249,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 159,
+          "Syntax Error": 173,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30362,
+        "completion_tokens": 563,
+        "total_tokens": 30925
+      },
+      "time_cost": 12.967843532562256,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 164,
+          "Syntax Error": 168,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30371,
+        "completion_tokens": 780,
+        "total_tokens": 31151
+      },
+      "time_cost": 22.382798194885254,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 165,
+          "Syntax Error": 167,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30359,
+        "completion_tokens": 1008,
+        "total_tokens": 31367
+      },
+      "time_cost": 24.655372381210327,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 396,
+        "stats": {
+          "Other": 164,
+          "Syntax Error": 168,
+          "Incomplete Type": 61,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30390,
+        "completion_tokens": 659,
+        "total_tokens": 31049
+      },
+      "time_cost": 13.51656198501587,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 395,
+        "stats": {
+          "Other": 162,
+          "Syntax Error": 167,
+          "Incomplete Type": 61,
+          "Member Access Error": 2,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30397,
+        "completion_tokens": 583,
+        "total_tokens": 30980
+      },
+      "time_cost": 26.90351176261902,
+      "phase": "compile",
+      "new_errors_introduced": 7
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 395,
+        "stats": {
+          "Other": 162,
+          "Syntax Error": 167,
+          "Incomplete Type": 61,
+          "Member Access Error": 2,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30428,
+        "completion_tokens": 649,
+        "total_tokens": 31077
+      },
+      "time_cost": 12.108773231506348,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 395,
+        "stats": {
+          "Other": 162,
+          "Syntax Error": 167,
+          "Incomplete Type": 61,
+          "Member Access Error": 2,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30504,
+        "completion_tokens": 624,
+        "total_tokens": 31128
+      },
+      "time_cost": 13.058939933776855,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 395,
+        "stats": {
+          "Other": 161,
+          "Syntax Error": 167,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1,
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 50 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30501,
+        "completion_tokens": 708,
+        "total_tokens": 31209
+      },
+      "time_cost": 15.852997064590454,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 389,
+        "stats": {
+          "Other": 153,
+          "Syntax Error": 166,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30444,
+        "completion_tokens": 630,
+        "total_tokens": 31074
+      },
+      "time_cost": 21.592310667037964,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 389,
+        "stats": {
+          "Other": 153,
+          "Syntax Error": 166,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30474,
+        "completion_tokens": 1772,
+        "total_tokens": 32246
+      },
+      "time_cost": 27.486636638641357,
+      "phase": "compile",
+      "new_errors_introduced": 5
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 415,
+        "stats": {
+          "Other": 181,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 30970,
+        "completion_tokens": 932,
+        "total_tokens": 31902
+      },
+      "time_cost": 24.331783533096313,
+      "phase": "compile",
+      "new_errors_introduced": 14
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 415,
+        "stats": {
+          "Other": 181,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31079,
+        "completion_tokens": 852,
+        "total_tokens": 31931
+      },
+      "time_cost": 39.41572165489197,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 419,
+        "stats": {
+          "Other": 185,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31264,
+        "completion_tokens": 748,
+        "total_tokens": 32012
+      },
+      "time_cost": 33.98679161071777,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 419,
+        "stats": {
+          "Other": 185,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31456,
+        "completion_tokens": 660,
+        "total_tokens": 32116
+      },
+      "time_cost": 13.35573935508728,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 419,
+        "stats": {
+          "Other": 185,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31408,
+        "completion_tokens": 715,
+        "total_tokens": 32123
+      },
+      "time_cost": 26.657923221588135,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 419,
+        "stats": {
+          "Other": 185,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 37 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31425,
+        "completion_tokens": 524,
+        "total_tokens": 31949
+      },
+      "time_cost": 10.182570695877075,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 409,
+        "stats": {
+          "Other": 177,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31386,
+        "completion_tokens": 788,
+        "total_tokens": 32174
+      },
+      "time_cost": 15.19838261604309,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 409,
+        "stats": {
+          "Other": 177,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31530,
+        "completion_tokens": 1047,
+        "total_tokens": 32577
+      },
+      "time_cost": 27.578888177871704,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 409,
+        "stats": {
+          "Other": 177,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31719,
+        "completion_tokens": 1108,
+        "total_tokens": 32827
+      },
+      "time_cost": 36.17803430557251,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 409,
+        "stats": {
+          "Other": 177,
+          "Redefinition": 4,
+          "Syntax Error": 163,
+          "Incomplete Type": 61,
+          "Member Access Error": 3,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced 1st occurrence (2 total found; use replace_all=true to replace all at once)"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31703,
+        "completion_tokens": 1354,
+        "total_tokens": 33057
+      },
+      "time_cost": 35.08000564575195,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 414,
+        "stats": {
+          "Other": 178,
+          "Redefinition": 4,
+          "Syntax Error": 166,
+          "Incomplete Type": 61,
+          "Member Access Error": 4,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31764,
+        "completion_tokens": 754,
+        "total_tokens": 32518
+      },
+      "time_cost": 19.63698148727417,
+      "phase": "compile",
+      "new_errors_introduced": 4
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 410,
+        "stats": {
+          "Other": 174,
+          "Redefinition": 4,
+          "Syntax Error": 166,
+          "Incomplete Type": 61,
+          "Member Access Error": 4,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31743,
+        "completion_tokens": 786,
+        "total_tokens": 32529
+      },
+      "time_cost": 13.294692516326904,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 409,
+        "stats": {
+          "Other": 174,
+          "Redefinition": 4,
+          "Syntax Error": 165,
+          "Incomplete Type": 61,
+          "Member Access Error": 4,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31672,
+        "completion_tokens": 747,
+        "total_tokens": 32419
+      },
+      "time_cost": 13.573570251464844,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 408,
+        "stats": {
+          "Other": 174,
+          "Redefinition": 4,
+          "Syntax Error": 165,
+          "Incomplete Type": 60,
+          "Member Access Error": 4,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31659,
+        "completion_tokens": 1309,
+        "total_tokens": 32968
+      },
+      "time_cost": 23.624260187149048,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 408,
+        "stats": {
+          "Other": 174,
+          "Redefinition": 4,
+          "Syntax Error": 165,
+          "Incomplete Type": 60,
+          "Member Access Error": 4,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31711,
+        "completion_tokens": 1092,
+        "total_tokens": 32803
+      },
+      "time_cost": 21.594046115875244,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 407,
+        "stats": {
+          "Other": 172,
+          "Redefinition": 4,
+          "Syntax Error": 165,
+          "Incomplete Type": 60,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31690,
+        "completion_tokens": 820,
+        "total_tokens": 32510
+      },
+      "time_cost": 18.09383726119995,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 406,
+        "stats": {
+          "Other": 172,
+          "Redefinition": 4,
+          "Syntax Error": 164,
+          "Incomplete Type": 60,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31707,
+        "completion_tokens": 791,
+        "total_tokens": 32498
+      },
+      "time_cost": 15.699660778045654,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 411,
+        "stats": {
+          "Other": 168,
+          "Redefinition": 4,
+          "Syntax Error": 173,
+          "Incomplete Type": 60,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31647,
+        "completion_tokens": 1036,
+        "total_tokens": 32683
+      },
+      "time_cost": 35.19069027900696,
+      "phase": "compile",
+      "new_errors_introduced": 4
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 413,
+        "stats": {
+          "Other": 169,
+          "Redefinition": 5,
+          "Syntax Error": 173,
+          "Incomplete Type": 60,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 31683,
+        "completion_tokens": 981,
+        "total_tokens": 32664
+      },
+      "time_cost": 33.764018058776855,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 1579950,
+    "total_time_seconds": 1031.33,
+    "initial_state": {
+      "error_count": 448,
+      "error_types": {
+        "Other": 220,
+        "Syntax Error": 228
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.1224,
+        "error_trajectory": [
+          448,
+          441,
+          413,
+          411,
+          411,
+          581,
+          573,
+          573,
+          566,
+          566,
+          546,
+          506,
+          459,
+          459,
+          457,
+          397,
+          397,
+          397,
+          396,
+          396,
+          396,
+          396,
+          396,
+          396,
+          396,
+          395,
+          395,
+          395,
+          395,
+          389,
+          389,
+          415,
+          415,
+          419,
+          419,
+          419,
+          419,
+          409,
+          409,
+          409,
+          409,
+          414,
+          410,
+          409,
+          408,
+          408,
+          407,
+          406,
+          411,
+          413
+        ],
+        "max_error_count": 581,
+        "min_error_count": 389
+      },
+      "effort": {
+        "initial_error_count": 448,
+        "lowest_error_count": 389,
+        "lowest_at_iteration": 30,
+        "error_reduction": 59,
+        "error_reduction_ratio": 0.1317
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 220,
+          "Syntax Error": 228
+        },
+        "final_types": {
+          "Other": 169,
+          "Redefinition": 5,
+          "Syntax Error": 173,
+          "Incomplete Type": 60,
+          "Member Access Error": 5,
+          "Void Value Error": 1
+        },
+        "types_eliminated": [],
+        "types_introduced": [
+          "Incomplete Type",
+          "Member Access Error",
+          "Redefinition",
+          "Void Value Error"
+        ]
+      },
+      "score": {
+        "effort_score": 6.58,
+        "stability_score": 43.88,
+        "total_score": 50.46,
+        "grade": "C-"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 7,
+    "type_breakdown": {
+      "Other": {
+        "initial_count": 220,
+        "max_count": 320,
+        "final_count": "unknown"
+      },
+      "Member Access Error": {
+        "initial_count": 0,
+        "max_count": 5,
+        "final_count": "unknown"
+      },
+      "Argument Count Mismatch": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Incomplete Type": {
+        "initial_count": 0,
+        "max_count": 61,
+        "final_count": "unknown"
+      },
+      "Void Value Error": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 0,
+        "max_count": 7,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 228,
+        "max_count": 228,
+        "final_count": "unknown"
+      }
+    }
+  }
+}

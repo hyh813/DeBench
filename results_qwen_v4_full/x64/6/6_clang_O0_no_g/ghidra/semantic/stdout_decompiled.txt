@@ -1,0 +1,4 @@
+Testing standard library functions
+call_strcpy result: 0
+call_strcmp result: -2
+call_strlen result: 0

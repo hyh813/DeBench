@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_clang_O1_g/binaryai/syntactic/bin/5-23_clang_O1_g_fixed",
+  "stdout": "Testing preprocessing features\nparam_macro_constants result: 64\ncall_macro_constants result: 30\nparam_conditional_compile result: 32\ncall_multi_branch_compile result: 57122\ncall_macro_recursion result: 116\ncall_stringize result: 19\ncall_token_paste result: 60\nLOG: Values: 10, 20, 30\ncall_macro_override result: 60\ncall_include_guard result: 16\nparam_include_guard result: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:15\ncall_builtin_macros result: 382\nTesting assembly features\ncall_asm_basic result: 15\ncall_asm_clobber result: 15\ncall_asm_multi_insn result: 42\ncall_asm_simd result: 36\ncall_asm_atomic result: 30\ncall_asm_privileged result: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

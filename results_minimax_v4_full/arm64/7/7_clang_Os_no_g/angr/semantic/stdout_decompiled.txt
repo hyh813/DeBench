@@ -1,0 +1,5 @@
+Test Complete
+
+Obfuscation tests:
+opaque_predicate result: 35
+instruction_substitution result: 225

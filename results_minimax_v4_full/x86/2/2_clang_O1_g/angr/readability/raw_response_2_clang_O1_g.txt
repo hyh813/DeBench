@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `i`, `j` throughout. Even when semantic purpose is clear from usage (e.g., `ptr + idx * 4` for array access), no meaningful names like `array_ptr` or `element_index` were recovered. Debug symbols from `-g` flag were not utilized.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions correctly named (`process_char`, `process_short`, `process_int`), but many use generic addresses (`sub_401030`, `sub_401070`, `sub_4010ab`). Wrapper functions like `sub_401216` for `process_short` add unnecessary indirection without semantic value.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `65` (for 'A'), `32` (for case conversion), `26` (alphabet length) appear without explanation. No named constants recovered. The literal `4294967295` (0xFFFFFFFF) used for error returns is unexplained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution from decompilation failures. Multiple `[D] unsupported_<class 'pyvex.expr.GetI'>` markers, `PutI` expressions with VEX IR (`[D] PutI(72:F64x8)[t3,0] = t6()`), and meaningless constructs like `goto ptr[2]` in `sub_401030`. Code is nearly unreadable due to artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops correctly recovered as do-while constructs. However, `sub_401030` uses `goto ptr[2]` which is nonsensical, and some control flow in `register_tm_clones` is convoluted. At `-O0`, more natural flow should be recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated with reasonable granularity. Test functions like `test_data_types_l1` correctly call individual test cases. Some wrapper functions (sub_401216 for process_short) add unnecessary layers but don't severely impact readability.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with few forward jumps. Some goto statements present (`sub_401030`, `sub_401070`). The `register_tm_clones` function has complex nested conditionals that disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No significant dead code observed. Some repeated calculations in loops are present but represent actual computation, not redundancy. Loop unrolling is minimal at `-O0` level.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. All integer types collapsed to `unsigned int` (should be `char`, `short`, `int`, `long`, `long long`). No `float`/`double` recovery - `process_float` and `process_double` return `int` with VEX artifacts. No `bool` type (`_Bool` becomes `unsigned int`). Pointers are generic `unsigned int` instead of typed pointers.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered with generic names (`struct_0`, `struct_1`) and generic fields (`field_0`, `field_1`, `field_4`). The `Node` structure in `linked_list` correctly shows self-referential pointer. However, `Point3D` becomes `unsigned int*` with array indexing, losing type information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. The `ptr_diff` function has operator precedence issue: `return a0 - a1 >> 2;` should be `return a0 - a1;` then divide by sizeof(int). Pointer arithmetic generally correct but unchecked. No bounds checking on array accesses.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no useful comments. Only decompilation failure markers (`[D] unsupported...`) and auto-generated variable declarations. No algorithm explanation, no recovery confidence indicators, no API contracts. Original source comments about test scenarios completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns like loops and conditionals recognized. No design patterns identified (e.g., linked list traversal could be named). The test driver pattern in `test_*` functions not recognized or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some `[D] unsupported` markers present for VEX expression failures. However, many anomalies silently produce incorrect code (e.g., `process_float` returns `&_GLOBAL_OFFSET_TABLE_` which is clearly wrong). No flags for potential undefined behavior in `array_oob` (intentional out-of-bounds).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The `volatile_access` function should document that it performs two separate reads (volatile semantics), but this is lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present in test functions but relationships not documented. No indication that `double_value` is used as callback in `ptr_func_simple`. Global variables like `g_405f10` referenced without explanation of their purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions loosely grouped by type (data types, arrays, pointers, composites) but no clear organization. Static functions not properly scoped in output. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations present but incomplete. Functions like `process_float` would not compile (returns address of global). Missing stdio.h declarations for printf/puts. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `ptr`, `idx`) with no semantic recovery from debug symbols
+- Type precision completely lost - all integers are `unsigned int`, no `float`/`double`/`bool` types
+- Severe decompilation artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>` markers, VEX IR expressions, meaningless goto statements
+- No comments explaining algorithms, magic numbers, or recovery confidence
+- Function `process_float` returns `&_GLOBAL_OFFSET_TABLE_` - completely incorrect code generation
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+Functions are appropriately separated and test functions correctly call individual test cases. The basic code structure is maintained.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+No useful comments whatsoever - only decompilation failure markers. Original source had extensive comments explaining test scenarios (DT-L1-01, ARR-L1-01, etc.) that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize debug symbols**: The source was compiled with `-g` but variable names like `arr`, `n`, `sum` were not recovered. Extract and apply debug info to variable/function names.
+2. **Recover type information**: Implement better type inference from instruction operands, register usage patterns, and debug info to restore `char`, `short`, `float`, `double`, `bool` types.
+3. **Handle decompilation failures gracefully**: Instead of emitting VEX IR artifacts (`PutI`, `GetI`), emit clear placeholder comments like `// DECOMPILER ERROR: Could not resolve floating-point operation` and provide structurally valid fallback code.

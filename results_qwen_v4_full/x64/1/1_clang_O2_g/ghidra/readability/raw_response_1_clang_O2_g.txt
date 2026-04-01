@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `uVar2`, `auVar5[16]`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost. Comments like "Unresolved local var: int temp1@[???]" acknowledge the loss but don't recover it.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names are preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`). However, some helper functions have generic names (`FUN_00101020`) and the decompiler couldn't recover all symbol information.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0x12`, `0xfffffff8`, `0x103280`) without explanation. Original constants like loop bounds are replaced with hex values. Some literals are recoverable (e.g., `100` in timeout checks) but many obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts from optimization: vectorization variables (`auVar5[16]`, `auVar6[16]`), redundant type casts, and "WARNING: Removing unreachable block" comments. The `goto_backward` function has 40+ temporary variables from loop unrolling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) retain natural flow, but complex functions are severely degraded. `loop_continue` uses goto labels (`LAB_001014eb`) instead of structured loops. `goto_backward`'s factorial loop is unrolled into 200+ lines of vectorized arithmetic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved, but internal structure is compromised. `recursion_factorial` and `tail_recursion` are expanded with vectorization code instead of remaining as simple recursive functions. No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt reading flow in several functions. `duffs_device` uses goto-based switch cases (`goto switchD_00101a86_caseD_1`). `infinite_loop` has redundant condition checks that break linear reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling. `goto_backward` contains nearly identical computation blocks repeated 8+ times. `recursion_factorial` has duplicated vector arithmetic that obscures the simple n! semantics.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `uint`, `ulong`), but signedness is sometimes ambiguous. Function pointer types partially recovered (`_func_int_int *`). Vector variables use `undefined1[16]` which loses semantic meaning.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as pointer arithmetic (`*(int *)(&DAT_00103280 + (long)op * 4)`). No struct recovery needed for this code, but matrix access in `loop_multi_exit` uses raw pointer math instead of `matrix[i][j]`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(ulong)(n - 2) * (ulong)(n - 1) >> 1`). Pointer arithmetic visible but not dangerously incorrect. No buffer overflow patterns introduced by decompiler.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present ("Unresolved local var", "WARNING: Removing unreachable block"). No algorithm explanations or semantic documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (switch→if-else conversion in `if_elseif_chain`), but loop idioms lost to unrolling. `loop_for_fixed` correctly simplified to formula `(n-2)*(n-1)/2 + n - 1` but this obscures the original loop intent.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning comments for problematic areas: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return". These help identify decompiler uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Original test case comments (e.g., "输入5,7,3应返回21") completely lost. No error condition documentation recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no call graph documentation. External dependencies (`printf`, `puts`, `__libc_start_main`) visible but not documented. No relationship information between test functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 72 functions in single output with no logical grouping. Original source's three test sections (L1, L2, L3) not preserved in organization. Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External function declarations present. Some architecture mismatch (source arm64, decompiled x86) but code appears structurally compilable with proper headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+8+5+4)/4 = 5.00
+Level 2 Average: (4+6+5+3)/4 = 4.50
+Level 3 Average: (6+5+6)/3 = 5.67
+Level 4 Average: (4+4+7+3)/4 = 4.50
+Level 5 Average: (5+5+7)/3 = 5.67
+
+Overall = (5.00 × 0.30) + (4.50 × 0.25) + (5.67 × 0.20) + (4.50 × 0.15) + (5.67 × 0.10)
+        = 1.50 + 1.125 + 1.134 + 0.675 + 0.567
+        = 5.00/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely lost**: `iVar1`, `uVar2`, `auVar5[16]` provide zero semantic information compared to original `temp1`, `sum`, `count`
+- **Aggressive loop unrolling destroys readability**: `goto_backward` factorial function expanded from 15 lines to 200+ lines of vectorized arithmetic
+- **Switch fallthrough logic obscured**: `switch_fallthrough` converted to nested if-else that's harder to understand than original
+- **Test function bodies replaced with constants**: `test_control_flow_l1` prints hardcoded expected values instead of calling actual functions
+- **Vectorization artifacts create noise**: 40+ `undefined1[16]` variables in recursive functions that serve no analytical purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, allowing immediate identification of test purposes
+
+### Most Needs Improvement:
+- **Variable Naming Quality (3/10)** - Complete loss of semantic variable names is the single biggest barrier to understanding decompiled code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming**: Analyze how variables are used (e.g., `iVar1` accumulates values → name it `sum`; `uVar2` counts iterations → name it `count`)
+2. **Detect and comment loop unrolling**: When aggressive unrolling is detected, add comments explaining the original loop structure and iteration count
+3. **Preserve test function call structure**: Instead of replacing function calls with constant results, maintain the actual call structure to show test relationships

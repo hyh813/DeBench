@@ -1,0 +1,5 @@
+Standard Library Tests
+
+Testing string functions
+Testing strcmp: 2
+Testing strlen: 12

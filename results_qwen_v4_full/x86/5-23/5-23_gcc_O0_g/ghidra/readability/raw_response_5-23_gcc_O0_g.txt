@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter names often preserved (`size`, `x`, `y`, `counter`) but temporary variables are generic (`iVar1`, `iVar2`, `local_10`). `temp__LINE__` shows partial macro name recovery but `in_GS_OFFSET` is opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions retain original names (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`). Only compiler helpers use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers replace macros: `0x401` (MAX_SIZE+1), `0x200` (MAX_SIZE/2), `0x40` (BUFFER_COUNT*4), `0xdef0` without explanation. String literals preserved but line numbers hardcoded ("155").
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Repeated warnings clutter output ("WARNING: Function: __x86.get_pc_thunk.ax replaced", "Unknown calling convention"). Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) add noise to simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Conditionals recover well (`if (size < 0x401)`). Assembly loops convert to natural for-loops (`param_asm_clobber`). Conditional compilation branches correctly resolved to single paths.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved accurately. Helper functions remain separate (`my_func`, `header_func`). No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Functions read top-to-bottom naturally. No spurious gotos or forward jumps. Early returns used appropriately where source had them.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Stack canary checks repeat across functions but serve security purpose. Macro expansions don't create unnecessary duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, void*, size_t). Array declarations accurate (`int arr[5]`, `char dst[32]`). Some pointer arithmetic loses specificity with generic casts.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays reconstruct properly. No complex structs in source to evaluate. Function pointer types not present. Limited by source complexity but accurate where applicable.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Casts present but contextually appropriate (`(void *)((int)dst + 1)`). No obvious type confusion. Stack protection adds safety overhead. Atomic operations shown as LOCK()/UNLOCK().
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler warnings as comments ("WARNING: Unknown calling convention"). Original source comments explaining macro semantics completely lost. No algorithm or purpose documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Atomic operations shown as LOCK()/UNLOCK() but not labeled as atomic patterns. Assembly-to-C conversions lack idiom identification. Macro expansion patterns not annotated.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Warnings flag calling convention uncertainty and inlined functions. Unreachable blocks noted. Stack protection mechanisms marked. Doesn't present uncertain code as confident.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error conditions unexplained. Return value semantics not documented. Original assertions and expected values lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships preserved accurately. Global variables identifiable (`global_var`, `completed_1`). No call graph visualization but relationships traceable through code.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in source order. Test functions grouped separately from implementations. Related preprocessing and assembly functions maintain logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies visible but printf strings reference `&DAT_00012088` instead of inline literals. Would need stubs for `mmap`, `sysconf`, `__stack_chk_fail`. Not standalone compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (6+8+5+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):   (8+8+8+7)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):         (7+7+7)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):     (3+5+7+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):   (7+8+5)/3   = 6.67 × 0.10 = 0.667
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.56/10
+```
+
+**Overall Readability Score:** 6.6/10
+
+### Critical Defects:
+- **Magic numbers replace macros**: `0x401`, `0x200`, `0x40` should indicate original `MAX_SIZE`, `BUFFER_COUNT` semantics
+- **Generic temporary variables**: `iVar1`, `iVar2`, `local_10` obscure intermediate computation purposes
+- **No semantic comments**: Original documentation explaining macro behavior completely lost
+- **String literals externalized**: printf format strings reference `&DAT_00012088` instead of inline strings
+- **No contract documentation**: Expected return values and preconditions not recovered
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately from source, making code navigation intuitive
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Zero semantic documentation recovered; only compiler warnings present, losing all original intent explanations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics**: Detect constant folding patterns and annotate with original macro names (e.g., `// MAX_SIZE = 1024`)
+2. **Infer variable names from usage**: Analyze variable roles (loop counter, accumulator, size check) to generate meaningful names instead of `iVar1`
+3. **Inline string literals**: Resolve data section references for printf format strings to improve immediate readability

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core function names preserved (`param_strcpy`, `call_strcpy`, `param_mutex_lock`) but surrounded by meaningless wrapper functions (`sub_402020`, `sub_4024a9`, `sub_4033ef`). About 40% of functions have auto-generated names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers: `4294967295` (unsigned -1), `4294967294`, `4294967293` for error codes, syscall numbers `2`, `3`, `10`, `14` without explanation, signal constants as raw integers instead of `SIGUSR1`, `SIGALRM`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including redundant temporary variables (`v0 = v2`), unnecessary wrapper functions, and complex SIMD vector operations (`InterleaveLOV`, `AddV`, `uint128_t`) in `param_malloc_free` and `param_memset` that obscure simple loops.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use natural if-else structures, but others have awkward patterns like `return -(v3)` instead of proper ternary operators. The `-O0` compilation should preserve structure better but decompiler introduces unnecessary complexity.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but many unnecessary wrapper functions exist (`sub_4024a9` just calls `param_strcpy`). Original helper functions like `thread_compute` are preserved but parameter passing is degraded.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but contains goto patterns (`goto LABEL_4028e8`, `goto LABEL_40291f`) in optimized loops that disrupt flow. Some functions have deep nesting from error handling.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling in `param_malloc_free` and `param_memset` with complex vector operations. Multiple assignments to same variables (`v0 = v2`, `ptr = ptr`) add no value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `unsigned long long`, `const char*` becomes `char*`, `size_t` becomes `unsigned long`. Return type of `param_strcpy` changed from `int` to `long long`. Many `void*` where specific types existed.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`FILE`, `sockaddr`, `struct_0`) but with generic field names (`field_0`, `field_5`, `sa_data`). Thread-local storage accessed via raw pointer arithmetic (`p[18446744073709551568]`) instead of TLS variables.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `param_strlen()` missing parameter entirely, `pthread_mutex_unlock()` called without argument in `consumer_thread`, incorrect pointer arithmetic in TLS access, `call_memcmp` returns `4294967295` instead of proper comparison result.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected behavior. No decompiler confidence indicators or uncertainty markers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition for standard library calls (`strcpy`, `strcmp`, `memcpy`), threading patterns (producer-consumer, mutex protection), or system call sequences. SIMD optimizations not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`Unsupported jumpkind Ijk_SigTRAP`). Critical issues like missing parameters (`param_strlen`), incorrect return values (`call_memcmp`), and broken logic not flagged for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc results), no postconditions (e.g., "returns string length"), no error condition documentation. Return value meanings (42, -1, -2, -3) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) declared as `extern` without usage context. No call graph or dependency information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but requires many external stubs (pthread functions, libc calls). Some function signatures mismatch original (missing parameters, wrong return types) would cause runtime issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+
+Overall = 1.125 + 1.250 + 0.734 + 0.300 + 0.500 = 3.91/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **`param_strlen()` missing parameter entirely** - function signature broken, cannot be used
+- **`call_memcmp` returns `4294967295`** instead of actual comparison result (-1)
+- **All variables named generically** (`v0`, `v1`, `a0`, `a1`) losing all semantic meaning
+- **Magic numbers everywhere** - `4294967295`, `4294967294`, syscall numbers `2`, `3`, `10`, `14` unexplained
+- **SIMD loop unrolling in `param_malloc_free`** creates 100+ lines of unreadable vector operations for a simple 5-element loop
+- **Thread-local storage accessed via raw pointer arithmetic** (`p[18446744073709551568]`) instead of TLS variables
+- **Zero comments** despite complex logic requiring explanation
+
+### Best Quality Aspect: **Build System Compatibility (6/10)**
+- The decompiled code at least compiles successfully per metadata, providing a baseline for manual repair.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding the decompiled logic extremely difficult, especially for complex threading and system call code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - analyze how variables are used (e.g., `a0` passed to `strcpy` as destination should be `dst`)
+2. **Detect and simplify compiler optimization artifacts** - recognize SIMD loop unrolling and present as original simple loops with optional optimization notes
+3. **Add decompiler confidence annotations** - flag uncertain decompilations (missing parameters, unusual patterns) with comments like `// DECOMPILER UNCERTAIN: parameter may be missing`

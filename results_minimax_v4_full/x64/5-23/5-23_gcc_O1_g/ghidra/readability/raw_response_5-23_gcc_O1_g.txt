@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Variables like `iVar1`, `uVar2`, `lVar1`, `param_1` are generic and uninformative. While some like `arr`, `src`, `dst`, `result` are descriptive, the majority use the decompiler's default naming pattern that obscures semantic purpose.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Many function names from the original source are preserved (e.g., `param_macro_constants`, `param_asm_basic`, `call_asm_atomic`). However, some functions like `FUN_00101020` and standard library stubs (`__do_global_dtors_aux`) remain generic.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x200`, `0x40`, `0x400` appear without explanation. While some values like `0x2a` (42) can be inferred from context, most constants lack semantic naming (e.g., `MAX_SIZE` should be 1024, not `0x400`).
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts; stack canary checks (`__stack_chk_fail`) and some unreachable block warnings are present but don't significantly impede readability. The code is relatively clean for decompiled output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural with clear loops (`for` loops in `param_asm_clobber`, `param_asm_multi_insn`) and conditionals. At `-O0`, the decompiled code closely matches the original source structure with no spurious goto statements.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity. Each function has a single responsibility (e.g., `param_asm_basic` just adds 10, `param_dynamic_code` handles code generation). Parameter lists are reasonable and don't expose excessive implementation details.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns in error handling (`if (__addr == MAP_FAILED) return -1;`) are appropriately placed. No deep nesting or computed jumps disrupt flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant redundancy. Loop unrolling in `param_asm_simd` is appropriately recognized as separate array element operations. Some minor duplication in `call_asm_atomic` but nothing severe.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Basic types are correct (`int`, `char`, `size_t`). However, `int` is used generically where `int32_t` or specific sizes would be clearer. Pointer types are preserved but without const-correctness in many cases.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Arrays are partially recovered (e.g., `int arr [5]`, `char src [10]`). However, struct recovery is minimal - the decompiler uses raw pointer arithmetic in some cases rather than reconstructing the original `header_func` struct.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe with correct pointer usage. Minor issues include some void pointer casts and the unresolved local variable comment in `call_asm_atomic`. No severe type safety violations that would cause undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 6/10**
+Justification: Header comments identify the decompiler and binary. Some warnings about unknown calling conventions. However, no explanation of preprocessing macro behavior, inline assembly semantics, or algorithm intent. Auto-generated comments dominate.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Preprocessor macros are completely invisible in decompiled output (e.g., `SQUARE(x)`, `MAX(a,b)` become `x * x` and conditional expressions). Inline assembly is recognized but not annotated as such. No pattern naming for the various test scenarios.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Some warnings present ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). However, the indirect function call in `param_dynamic_code` (`(*__addr)(x)`) lacks a warning about the unresolved call target.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No recovery of preconditions, postconditions, or invariants. Error return values (-1, -2, -3) are not documented with their semantic meaning. The contracts from the original source are completely lost.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are implicit in the code (e.g., `call_*` functions call `param_*` functions). However, no explicit documentation of call graphs, global variable usage, or callback relationships.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped logically in the binary but don't reflect the original source organization (preprocessing tests vs. assembly tests). Static functions like `my_func` are properly scoped.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: The decompiled code compiles successfully (as indicated by "Compilation Result: Yes"). External dependencies like `__printf_chk`, `mmap`, `mprotect` are properly declared. Minimal patching needed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4+7+5+7)/4 = 5.75
+L2_avg = (8+8+8+7)/4 = 7.75
+L3_avg = (7+6+7)/3 = 6.67
+L4_avg = (6+4+6+3)/4 = 4.75
+L5_avg = (5+6+8)/3 = 6.33
+
+Overall = (5.75 × 0.30) + (7.75 × 0.25) + (6.67 × 0.20) + 
+          (4.75 × 0.15) + (6.33 × 0.10)
+        = 1.725 + 1.9375 + 1.334 + 0.7125 + 0.633
+        = 6.34/10
+```
+
+### Overall Readability Score: 6.34/10
+
+### Critical Defects
+- **Variable naming**: Generic names like `iVar1`, `uVar2`, `param_1` obscure semantic purpose throughout the code
+- **Macro semantics lost**: All preprocessor macros (SQUARE, MAX, ADD_16, etc.) are completely invisible - only their expanded forms remain
+- **Idiom recognition failure**: No indication that code originated from macros, inline assembly, or conditional compilation
+- **Contract recovery absent**: No documentation of preconditions, postconditions, or error semantics
+- **Magic numbers unexplained**: Constants like `0x200`, `0x40`, `0xdef0` lack semantic naming that would match original macros
+
+### Best Quality Aspect
+**Control Flow Naturalness (8/10)** - At -O0 optimization, the decompiled code preserves natural loop constructs and conditional logic that closely matches the original source structure.
+
+### Most Needs Improvement
+**Idiom Recognition (4/10)** - The decompiler fails to identify that code originated from preprocessor macros, inline assembly, or conditional compilation blocks. This is the core challenge for this test file which focuses on preprocessing and assembly features.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Macro semantic recovery**: Detect patterns like `((x) * (x))` and suggest they originated from `SQUARE(x)` macro; identify conditional compilation branches
+2. **Variable name inference**: Use usage patterns to rename `iVar1` to semantically meaningful names (e.g., `sum` for accumulator variables, `size` for boundary check variables)
+3. **Contract documentation**: Add inferred preconditions/postconditions based on error returns and parameter validation (e.g., "requires: counter != NULL")

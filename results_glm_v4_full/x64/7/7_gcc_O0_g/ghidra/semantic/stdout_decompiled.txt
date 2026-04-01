@@ -1,0 +1,3 @@
+Fake branch test
+  Result: 10
+Opaque predicate testInstruction substitution test

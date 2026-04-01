@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_gcc_Os_no_g/angr/syntactic/bin/5-23_gcc_Os_no_g_fixed",
+  "stdout": "macro constant: -749221864\nmacro value: 64\nmacro conditional: 30\nmacro multi: 32\nmacro compile: 57122\nmacro recursion: 116\nmacro token: 19\nmacro variadic: 60\nLOG: Values: 10, 20, 30\nmacro override: 60\nmacro override: 16\ninclude guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:41\nbuiltin macros: 382\nasm basic: 0\nasm clobber: 420152511\nasm multi: -1\nasm simd: 6\nasm atomic: 35\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

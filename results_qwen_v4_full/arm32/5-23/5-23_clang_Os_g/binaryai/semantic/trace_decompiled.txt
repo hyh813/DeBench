@@ -1,0 +1,6 @@
+TRACE_ENT|0|call_asm_simd|0|Arg0=24,Arg1=0,Arg2=-426339328,Arg3=-426339328|r0=0x18,r1=0x0,r2=0xe6969400,r3=0xe6969400,r4=0xa,r5=0x10cc6,r6=0x0,r7=0x0
+TRACE_EXT|0|call_asm_simd|0|36
+TRACE_ENT|1|param_dynamic_code|0|Arg0=10,Arg1=0,Arg2=-426339328,Arg3=-426339328|r0=0xa,r1=0x0,r2=0xe6969400,r3=0xe6969400,r4=0xa,r5=0x10cc6,r6=0x0,r7=0x0
+TRACE_EXT|1|param_dynamic_code|0|15
+TRACE_ENT|2|param_memory_protection|0|Arg0=15,Arg1=4096,Arg2=7,Arg3=-1225068544|r0=0xf,r1=0x1000,r2=0x7,r3=0xb6faf000,r4=0xf,r5=0x21218,r6=0x0,r7=0x0
+TRACE_EXT|2|param_memory_protection|0|42

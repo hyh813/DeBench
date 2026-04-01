@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `puVar1`, `local_c`, `acStack_2c` with no semantic meaning recovered. For example, `acStack_2c` holds the class name "Test" but isn't named `class_name` or `obj_name`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names are preserved well (`test_cpp_member_func`, `test_cpp_constructor`), and class methods have reasonable names (`Base::virtual_func`, `Container<int>::push`). However, some functions use mechanical names (`FUN_0001092c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x125c`, `0x3e9`, `0x2a`, `0x47` appear without explanation. These are constant-folded expected results but lack documentation connecting them to original computations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs create significant noise (e.g., `operator_new` that just calls itself). Stack checking code (`__stack_chk_fail`) and initialization functions add clutter without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions are constant-folded to simple returns, losing original structure entirely. Functions like `test_cpp_rtti` show actual logic but with awkward pointer arithmetic instead of natural C++ patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized and template instantiations are separated (`template_max_int_`, `template_max_double_`). However, some functions appear multiple times with different signatures (`DiamondDerived::~DiamondDerived` appears 4 times).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. However, complex pointer arithmetic in diamond inheritance functions disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor overloads for the same class create redundancy. External function stubs are repetitive (each just calls itself with no implementation).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are present (`int`, `char*`, `size_t`, `double`), but class types are often reduced to pointers (`Base*`, `MultiDerived*`). Template types are distinguished (`Container_int_`, `Container_double_`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures aren't properly recovered—pointer arithmetic like `*(int *)(this + 4)` replaces field access. No struct definitions are shown for `SimpleClass`, `LifecycleClass`, etc.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts appear (`undefined4*`, `int*` to `type_info*`). Extensive pointer arithmetic is used instead of proper field access, risking undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explain the logic. The decompiled code has zero documentation about what functions do, why certain patterns exist, or decompiler confidence levels.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns like vtable calls, exception handling, and RTTI are present but not identified or explained. No recognition of RAII, smart pointer patterns, or lambda capture semantics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The decompiler presents uncertain code confidently (like complex pointer arithmetic in diamond inheritance) without warning about potential inaccuracies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Exception handling contracts and null pointer checks aren't identified.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function relationships are somewhat clear through naming, but virtual dispatch relationships aren't explicitly documented. Inheritance hierarchies aren't visually represented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed but not logically grouped. Class methods are scattered throughout the file rather than organized by class.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has unresolved external dependencies (`operator_new`, `__cxa_throw`, `__dynamic_cast`). Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (2×10 + 7×10 + 4×5 + 5×5) / 30 = 4.5/10
+Level 2 (25%): (4×8 + 6×7 + 6×5 + 5×5) / 25 = 5.16/10
+Level 3 (20%): (5×8 + 3×7 + 4×5) / 20 = 4.05/10
+Level 4 (15%): (2×5 + 3×3 + 3×3 + 2×4) / 15 = 2.4/10
+Level 5 (10%): (5×4 + 4×3 + 4×3) / 10 = 4.4/10
+
+Overall = (4.5×0.30) + (5.16×0.25) + (4.05×0.20) + (2.4×0.15) + (4.4×0.10)
+        = 1.35 + 1.29 + 0.81 + 0.36 + 0.44
+        = 4.25/10
+```
+
+**Overall Readability Score:** 4.25/10
+
+### Critical Defects:
+- **Variable `acStack_2c`** should be named `class_name` based on its usage storing "Test"
+- **Class structures completely lost**—pointer arithmetic `*(int *)(this + 4)` instead of `this->multiplier`
+- **Constant folding obscures logic**—test functions return expected values directly (`0x2a` = 42) instead of showing computation
+- **No comments** explaining C++ idioms (vtable calls, exception handling, RTTI)
+- **Multiple destructor overloads** for same class without clear differentiation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Test function names are preserved from source (`test_cpp_member_func`, `test_cpp_constructor`), and class methods retain meaningful names (`Base::virtual_func`, `Container<int>::push`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Zero documentation exists; no explanation of C++ mechanisms, decompiler confidence, or semantic intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions** from vtable layouts and field access patterns instead of raw pointer arithmetic
+2. **Add semantic comments** for C++ idioms (e.g., "// vtable indirect call", "// exception throw site", "// RTTI type check")
+3. **Infer variable names** from usage context (e.g., variables used in string operations should be named descriptively)

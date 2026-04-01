@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_clang_O2_g/ida/syntactic/bin/6_clang_O2_g_fixed",
+  "stdout": "Testing standard library functions\nLib L101: 8\nLib L102: 0\nLib L103: 12\nLib L104: 90\nLib L105: 0\nValue: 42, Name: Test\nLib L106: 22\nLib L107: 579\nLib L108: 42\nLib L109: 42\nLib L110: 90\nLib L111: 0\nLib L112: 15\nTesting system calls\nSys L301: 42\nSys L302: 42\nSys L303: 42\nSys L304: 42\nSys L305: 42\nSys L306: -1\nSys L307: 42\nTesting thread and concurrency functions\nThr L301: 49\nThr L302: 0\nThr L303: 42\nThr L304: 42\nThr L305: 42\nThr L306: -3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

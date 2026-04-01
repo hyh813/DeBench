@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `i`, `j` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy magic numbers throughout (`0xffffffff`, `0x100000000`, `0x66666667`) that are compiler artifacts from type conversions, not original code logic. String literals stored as opaque globals (`g1`, `g2`, `g3`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`), excessive bit masking (`& 0xffffffff`), and type conversion noise throughout every function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `single_if`) recovered reasonably, but loops converted to complex while constructs with manual increment patterns. Some functions use goto (`loop_break` has `goto lab_0x1640_2`) instead of structured breaks.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but parameter lists corrupted - `loop_for_fixed` has 5 parameters when original had 1, indicating stack variable leakage into signature.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks at function ends create non-linear return patterns. Forward jumps in `loop_break` and `loop_multi_exit` disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Bit masking operations (`& 0xffffffff`) repeated in nearly every return statement. Type conversion patterns duplicated throughout without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all `int` parameters became `int64_t`. Original `int32_t` distinctions lost. Function pointers degraded to `int64_t` (e.g., `call_func_ptr` parameters).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) but with generic field names (`e0`, `e1`, `e2`). Array handling degraded to pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(int32_t)a1`, `(uint32_t)(int32_t)a2`). Bit masking used to simulate type conversions creates potential undefined behavior patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level - all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Patterns like factorial (`recursion_factorial`), state machines (`state_machine`), and Duff's device not explicitly recognized or documented despite being recoverable.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about decompilation uncertainty. Stack canary checks present but unexplained. No indication of potentially incorrect recovery in complex functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite being present in original.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear but global variables (`g1`, `g2`, `g3`, `g4`) referenced without documentation of their purpose. Function pointer relationships partially recovered.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping beyond alphabetical order. Static helper functions not properly scoped or documented.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes standard headers but requires significant patching. Type mismatches (`int64_t` vs `int`), missing implementations, and compiler-specific constructs prevent standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- Variable `v1`, `v2`, `a1`, `a2` should be named based on semantic usage (e.g., `sum`, `count`, `index`)
+- All `int` types incorrectly promoted to `int64_t` losing original type semantics
+- Compiler artifacts (bit masking `& 0xffffffff`, stack canary checks) pollute every function
+- Zero comments despite original source having extensive documentation
+- Loop constructs degraded from `for` to complex `while` with manual increment patterns
+- Function signatures corrupted with leaked stack variables as parameters
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names were successfully preserved, making it possible to identify each function's purpose despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding non-trivial logic extremely difficult, especially for complex patterns like Duff's device or state machines.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `i`, `count`, `index`; accumulators should be `sum`, `total`, `result`)
+2. **Strip compiler artifacts** by recognizing and removing bit masking patterns (`& 0xffffffff`), stack canary checks, and type conversion noise that don't reflect original source logic
+3. **Recover high-level control structures** by pattern-matching loop constructs from backward jumps and converting them back to `for`/`while`/`do-while` with proper initialization, condition, and increment clauses

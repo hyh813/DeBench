@@ -1,0 +1,5 @@
+Testing Obfuscation & Optimization:
+
+Fake branch: 10
+Opaque predicate: 0
+Instruction substitution: 0

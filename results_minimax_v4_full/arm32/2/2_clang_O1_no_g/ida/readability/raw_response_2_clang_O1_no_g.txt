@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`, `i`, `j`, `k`. The original source has meaningful names like `arr`, `n`, `sum`, `c`, but these are completely lost. For example, in `array_1d_stack`, parameters should be `arr` and `n`, not `a1` and `a2`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellent and match the original source almost perfectly: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The decompiler correctly recovered all function names from debug symbols.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers are prevalent without explanation. For example, in `process_char`: `(unsigned __int8)(result - 65) < 0x1A` uses magic numbers 65 and 0x1A (should be 'A' and 26). The value 32 (for case conversion) is also unexplained. Test functions print hardcoded results like `97`, `98`, `300` without context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. No obvious register spilling debris, redundant casts, or debug instrumentation visible. Some minor artifacts like `LODWORD`/`HIDWORD` macros for 64-bit operations are present but acceptable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with `do-while` loops correctly representing `for` loops at `-O0`. Example: `array_1d_stack` uses proper loop structure. Some minor awkwardness in complex functions like `array_3d` with nested loops, but overall readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and cohesive. Each function has a single responsibility matching the source. No 500-line monoliths; all functions are under 50 lines. Parameter counts match original (e.g., `ptr_func_complex` correctly has 2 parameters).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `if (a2 < 1) return 0;`). Some forward jumps in complex index calculations but manageable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Loop unrolling is minimal at `-O0`. Common subexpression elimination artifacts are not prominent. Code is clean without duplicate logic blocks.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results. Basic types preserved: `int`, `float`, `double`, `bool`. However, `char` is often treated as `int` or `unsigned __int8`, `short` as `__int16`, `long` as `int`. The distinction between `int` and `long` on 64-bit is lost. `long double` is incorrectly shown as `double`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. Original `Point3D {x, y, z}` becomes raw pointer arithmetic: `a1[1] + *a1 + a1[2]`. Original `Rect` with nested `Point3D` and `Size` becomes `a1[3] + *a1`. No struct definitions recovered - all accessed as raw memory offsets. Union `UnionData` is partially recovered but field names lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present. In `ptr_void`: `(unsigned __int8 *)a1` then casts to `int*` and `char*` without safety checks. In `ptr_cast`: direct `(int*)a1` then `(char*)int_ptr` then `(int*)char_ptr` - aliasing concerns. Multiple pointer arithmetic operations without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments present. Only basic function names in headers like `/* Function: process_char @ 0x5C8 */`. No algorithm explanations, no documentation of non-obvious logic, no API contracts (@param, @return). The decompilation is essentially naked code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (linked list traversal, binary tree recursion) but not explicitly named or documented. The original source's test scenarios (SCENE-ALL, SCENE-DESK, etc.) are not indicated. No recognition of specific algorithms like "pointer arithmetic traversal" or "recursive tree sum".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. The decompiler silently fails on 7 functions (marked as "FAILED to decompile") but doesn't explain why or flag them in the working code. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior (like the intentional OOB access in `array_oob`).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "ptr != NULL" are not documented. Postconditions not inferred. The original source has no explicit assertions, but the decompiler could note implicit requirements (e.g., "requires: n >= 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are not documented. The callback relationship in `ptr_func_simple` (calls function pointer `f`) and `ptr_func_complex` (calls with args) is not explained. No indication of which functions call which others or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output, roughly matching the source's test functions: data types, array types, pointer types, composite types. Static functions like `double_value` are not shown (likely inlined). Overall reasonable organization.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The metadata shows "Compilation Result: Yes", indicating the code compiles. External dependencies (printf, puts, memset) are properly referenced. No compiler-specific hacks visible. The code is standalone-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are completely generic (`a1`, `a2`, `v1`, `v2`, `i`, `j`, `k`) - loses all semantic meaning from source
+- No struct/union type recovery - all composite types accessed as raw pointer arithmetic (`a1[1] + *a1 + a1[2]` instead of `p->x + p->y + p->z`)
+- No comments explaining algorithms, magic numbers, or contracts
+- Type precision issues: `long double` shown as `double`, `char` as `int`, no distinction between `int` and `long`
+- No anomaly indication for 7 failed functions and potential undefined behavior (array_oob)
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are nearly perfect matches to the original source, clearly indicating purpose (process_char, array_1d_stack, ptr_double, struct_simple, etc.).
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`, `i`, `j`, `k`, `m`, `n`, `ii`, `jj`. The original source has meaningful names like `arr`, `n`, `sum`, `c`, `p`, `str`, `pts` that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → `arr`/`buffer`, loop counter → `i`/`j`/`index`, size parameter → `n`/`size`/`count`) to generate semantically meaningful names
+2. **Recover struct/union definitions**: Instead of raw pointer arithmetic like `a1[1] + *a1 + a1[2]`, reconstruct the original struct layout and generate `p->x + p->y + p->z` with proper typedef
+3. **Add explanatory comments for magic numbers**: Detect patterns like ASCII values (65='A', 32=space for case conversion), array strides, and flag them with comments explaining the semantic meaning

@@ -1,0 +1,14 @@
+Testing Preprocessing Features:
+Macro constants: 64
+Macro functions: 30
+Conditional compile: 32
+Multi branch: 57122
+Macro recursion: 116
+Stringize: 19
+Token paste: 60
+LOG: Values: 10, 20, 30
+Variadic macro: 50
+
+Testing ASM Features:
+ASM basic: 5
+ASM clobber: 0

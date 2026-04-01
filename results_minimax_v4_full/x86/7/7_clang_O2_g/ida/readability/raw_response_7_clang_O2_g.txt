@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch` and related functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic single-letter names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`) throughout. For example, in `param_opaque_predicate`, `v1` represents `2*x`, `v2` is the GCD result, and `v5` is the opaque predicate result - all should have semantic names like `doubled_x`, `gcd_result`, `predicate_result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Target functions like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` are correctly recovered with exact source names. However, helper functions like `decrypt_string` appear as inlined code in `param_string_encryption` without proper extraction.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xDEADBEEF` (in source fake branch) are completely lost - the decompiled `param_fake_branch` just returns `x`. The value `0x5A` (encryption key) appears but without explanation. Constants like `10` in `call_fake_branch` are correctly preserved.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation. The code is readable despite other issues.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: At `-O0`, control flow should closely match source, but `param_fake_branch` is reduced to trivial `return x` (fake branches optimized away). The GCD loop in `param_opaque_predicate` uses do-while which is reasonable. However, `param_tail_call_optimized` shows formulaic computation instead of recursive call structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated. The issue is that `param_string_encryption` and `call_string_encryption` have nearly identical duplicated code for string decryption that should be a shared helper function (the original `decrypt_string`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom. The GCD loop in `call_opaque_predicate` is well-structured. Early returns in `param_division_by_zero` are appropriate.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The duplicated decryption logic between `param_string_encryption` and `call_string_encryption` is significant redundancy. Loop unrolling in `param_vectorized_loop` is present but appropriate for the optimization level shown.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally precise - `int` for integers, `char*` for strings, `size_t` for lengths. The decompiler correctly uses `unsigned int` for bit operations in `param_instruction_substitution`. Minor issue: `signal` handler casts could be cleaner.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in target functions. The `jmp_buf` is correctly recognized as a type (used in `param_division_by_zero`). Bitfields in `param_implementation_defined` are reduced to simple arithmetic but that's acceptable.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. Minor issues: some pointer arithmetic in string functions (`v5 = *v1++`), but these are standard patterns. No dangerous casts observed.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present (e.g., "Decompiled by IDA Pro 9.1"). No comments explaining the fake branch logic, opaque predicates, or the mathematical transformations. The source had rich comments about obfuscation techniques - none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The GCD algorithm (Euclidean) is recognizable in the loop structure but not named. The opaque predicate logic is present but its purpose (obfuscation) is completely lost. No indication these are intentional obfuscation patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly identifies some failed decompilations (e.g., `__libc_start_main`, `printf`). However, it doesn't flag that `param_fake_branch` returning just `x` is semantically different from the source (fake branches eliminated).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had explicit comments about "永假条件" (always-false conditions) - none of this semantic information is recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `call_fake_branch` calls `param_fake_branch`). However, the relationship between `param_string_encryption` and the original `decrypt_string` helper is lost - it's inlined twice.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output. However, the original source had clear section comments (OBF-L4-02, OPT-L4-01, etc.) that are completely lost. The test function `test_obf_opt_edge` bundles everything together.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The code uses standard library functions (`signal`, `printf`, `strlen`, `strncpy`, `longjmp`, `setjmp`) correctly. It would compile with minimal stubs for the encrypted string data.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are all generic (`v1`-`v6`) losing all semantic meaning about what values represent
+- `param_fake_branch` reduced to trivial `return x` - the obfuscation intent (fake branches) is completely lost
+- No comments explaining the obfuscation techniques (fake branches, opaque predicates, instruction substitution)
+- Duplicated decryption logic in `param_string_encryption` and `call_string_encryption` instead of shared helper
+- The decompiled binary is x86 (not arm64 as stated in metadata) - architecture mismatch
+
+**Best Quality Aspect:** Build System Compatibility (9/10)  
+The code uses standard C library functions correctly and would compile with minimal effort.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic single-letter variable names make it extremely difficult to understand what each value represents. The decompiler should infer names from usage patterns (e.g., `v1` used as loop accumulator should be `sum` or `accumulator`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v1` in GCD loop is clearly `remainder` or `b`, `v3` is `a`
+2. Recover the fake branch logic - the source shows intentional always-false conditions that should be flagged as "dead code from obfuscation"
+3. Add semantic comments explaining obfuscation patterns - label opaque predicates, instruction substitutions, and fake branches with their original intent

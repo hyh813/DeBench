@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Variables rely heavily on generic names like `iVar1`, `local_c`, and `param_1`. While stack objects like `aSStack_2c` (SimpleClass) hint at the type, they lack semantic names like `obj` or `result` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent recovery of mangled C++ symbols; functions like `test_cpp_lambda()::$_1::operator()` and `template_max_int_` clearly reflect the original structure and template instantiations.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals (e.g., `"Test"`, `"Derived"`) are recovered perfectly. However, magic numbers like `0x2a` (42) and `0x1234` are used directly without the named constants or context provided in the source comments.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The output is heavily polluted with expanded standard library internals (e.g., `std::tuple`, `std::__uniq_ptr_impl` implementations), which significantly bloats the file (2237 LOC vs 540 LOC) and obscures the user's actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The `-O0` optimization preserves natural control flow well, with clear `if` statements and loops. However, exception handling in `test_cpp_exception` is decompiled as a raw throw without the surrounding `try-catch` structure, breaking readability.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: User-defined functions are distinct and cohesive. The decompiler correctly separates lambda functors and template instantiations, though the inclusion of verbose library helper functions reduces the perceived granularity quality.
+
+**7. Code Linearization:** Score: 9/10
+Justification: Code reads linearly from top to bottom with minimal jumps. The lack of optimization artifacts allows for a straightforward trace of execution in most functions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No loop unrolling or dead code artifacts are present. The code is clean in terms of execution logic, with redundancy only arising from the explicit expansion of library calls.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Class types like `SimpleClass` and `Derived` are recovered, but primitive types often degrade to `undefined4` or `undefined *`. Virtual table pointers are exposed as raw `code ***` rather than abstracted vtable types.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs for classes like `Point` and `Container` are reconstructed with correct field offsets. However, complex inheritance (diamond inheritance) relies on raw pointer arithmetic (e.g., `*(int *)(local_20[0] + -0xc)`) rather than showing the base class sub-object structure clearly.
+
+**11. Type Safety:** Score: 7/10
+Justification: Code is generally type-safe, but the use of `undefined4` and explicit casts for `this` pointer adjustments in multiple inheritance scenarios (e.g., `(Base *)aDStack_14`) introduces manual type management that wasn't in the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic, algorithms, or the purpose of complex template metaprogramming code. The output is purely mechanical.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: High-level C++ idioms are lowered to C mechanics. Virtual function calls appear as raw indirect calls (`(***(code ***)param_1)(param_1,param_2)`) rather than being annotated as "Virtual Call".
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings or flags are present for complex or potentially confusing code segments, such as the pointer arithmetic for virtual inheritance or the exception handling flow.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no documentation of preconditions (e.g., non-null pointers) or postconditions. The logic of `test_cpp_exception` implies a contract (catching an int) that is invisible in the decompiled throw path.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls use the recovered mangled names, making it easy to trace calls to specific class methods or template instantiations (e.g., `SimpleClass::getValue`).
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions mixing user code and standard library internals. There is no logical separation or namespace grouping to mirror the source file's structure.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on numerous undefined types and external symbols from the standard library. It would require significant patching and header inclusion to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- **Variable Naming**: Generic names like `iVar1` and `local_c` obscure the semantic intent of variables like `result` or `capture_by_ref`.
+- **Semantic Transparency**: Virtual function calls are presented as raw pointer dereferences (`(***(code ***)param_1)`) instead of high-level virtual dispatch notation.
+- **Noise Pollution**: The output includes massive amounts of expanded standard library code (`std::tuple`, `std::__uniq_ptr_impl`), making it difficult to locate the user's actual logic.
+- **Exception Handling**: The `try-catch` block in `test_cpp_exception` is not reconstructed; only the `throw` mechanism is visible.
+- **Type Precision**: Use of `undefined4` for integers and raw pointer arithmetic for inheritance reduces type safety and clarity.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- The decompiler successfully demangled complex C++ symbols, including template instantiations and lambda closure types, preserving the original function identifiers.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 2.5/10)
+- The decompiler fails to map low-level C++ mechanics (like vtable calls or inheritance pointer adjustments) back to their high-level semantic meaning, resulting in "C-style" decompilation of C++ code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Reconstruct High-Level C++ Constructs**: Implement pattern matching to convert raw vtable calls (`(***(code ***)this)`) into annotated "Virtual Call" comments or pseudo-syntax.
+2. **Filter Library Internals**: Provide an option to hide or collapse standard library template implementations (e.g., `std::unique_ptr` internals) to focus on the user's code.
+3. **Recover Exception Handling**: Improve control flow analysis to reconstruct `try-catch` blocks rather than displaying them as disjointed basic blocks or just the throw path.

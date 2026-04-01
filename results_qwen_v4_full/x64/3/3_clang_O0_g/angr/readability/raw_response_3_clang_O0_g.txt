@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `p`) losing semantic meaning from original names like `global_counter`, `large_buf`, `new_node`. Only occasional meaningful names like `flag1`, `iter`, `cur` appear.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions recovered with original names (`local_vars`, `heap_basic`, `linked_list_heap`), but numerous wrapper functions (`sub_401209`, `sub_401234`) add noise without semantic value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1), `4294967294`, `4294967293` used without explanation. Original error codes (-1, -2, -3) lost semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Wrapper functions duplicating calls, `[D] Unsupported jumpkind` artifacts, unnecessary type casts throughout, and stack frame variables that don't add clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops generally recovered as `for` constructs, conditionals preserved. Some `goto` usage (e.g., `sub_401020`), but at `-O0` most control flow should be cleaner.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Unnecessary wrapper functions created (`sub_401209` calls `local_vars`), fragmenting code. Original function boundaries preserved but duplicated with call wrappers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but forward references and some jumps disrupt flow. Generally traceable with moderate effort.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create significant redundancy. Some expressions repeated unnecessarily. No dead code removal evident despite `-O0` compilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `unsigned int`, `unsigned long`, `char*` instead of specific types (`size_t`, `int32_t`). Pointer types often degraded to `void*` or `char*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_1`, `field_8`). Original meaningful names (`Point`, `Node`, `TreeNode`) completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`char*` to `int*`, `void*` conversions), pointer arithmetic on generic types, no const correctness preserved from original.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original had extensive section headers and test explanations. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Data structures (linked list, tree) not recognized or named. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] MBusEvent-Imbe_Fence()`), but most potential issues (dangling pointer, double free) not highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). Error return values (-1, -2, -3) not explained. Original had clear error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved, global variables declared as `extern`. Callback relationships somewhat clear but no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Original had clear sections (stack, heap, static, memory ops) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Contains `extern` declarations but may not compile standalone. Dependencies not documented. Some platform-specific constructs present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+5+6+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (6+5+5)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from original (`global_counter`, `large_buf`, `new_node`)
+- **Struct field names generic** (`field_0`, `field_1`, `field_8`) instead of meaningful names (`x`, `y`, `data`, `next`, `left`, `right`)
+- **Magic numbers unexplained** (`4294967295`, `4294967294`) instead of named error constants
+- **Wrapper function proliferation** (`sub_401xxx`) creating unnecessary code duplication
+- **No comments recovered** despite original having extensive documentation for each test case
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names were successfully recovered matching original source (`local_vars`, `heap_basic`, `linked_list_heap`, `tree_heap_traversal`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments recovered despite original having comprehensive section headers, test descriptions, and expected value documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `ptr`, `buffer`)
+2. **Recover and preserve struct field semantics** - Use type analysis and access patterns to suggest meaningful field names instead of `field_0`, `field_1`
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, document magic numbers with inferred meanings, and preserve original comments where possible

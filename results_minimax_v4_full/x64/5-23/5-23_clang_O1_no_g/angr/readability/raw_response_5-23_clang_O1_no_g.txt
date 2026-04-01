@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2` throughout. The original source uses meaningful names like `size`, `x`, `y`, `result`, `count`, `arr`, `sum` - all completely lost. Even `idx` (for loop index) is better than the generic alternatives.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered (`param_macro_constants`, `call_macro_constants`, `my_func`, `param_asm_basic`), but many use mechanical address-based names like `sub_4011a4`, `sub_4011b6`. The original function names are completely lost for wrapper functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `1025` (should indicate MAX_SIZE boundary), `0x200` (should be 64), `57072` (should be 0xDEF0), `57122` (should be 0xDF22). The decompiler computed values correctly but lost the symbolic constant names. The uint128_t arrays like `316912650112397582603894390785` are incomprehensible.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. Some unusual constructs like `*((void*)&result) = 0;` for zeroing, and `uint128_t` type appears where it shouldn't (e.g., treating stack arrays as 128-bit integers). Overall relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Uses `for` loops and `if` statements naturally. No goto abuse. The control flow matches the original source well - conditions like `(unsigned int)idx < a1` are appropriately cast. At -O0, the structure is quite close to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original - each small test function remains separate. Parameter lists are reasonable. The wrapper functions (e.g., `sub_4011a4` calling `call_macro_constants`) are artifacts but don't impede understanding significantly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns used appropriately. No forward jumps into loop bodies. The flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `call_asm_clobber` and `call_asm_simd` where arrays are expanded as uint128_t constants. This is expected at -O0. No significant dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` mostly correctly. However, `param_asm_simd` returns `double` incorrectly (should be `int`). Some confusion between `int` and `unsigned int` for return types. The `uint128_t` is used incorrectly in many places.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The original source has minimal struct usage, but the decompiler does show `struct_0` definition and uses `uint128_t` for array representations. Not much to recover, but what's there is reasonable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts like `*((void*)&result) = 0;` and `*((unsigned short *)&ptr[4]) = 49925;`. Pointer arithmetic is mostly correct. The `param_asm_simd` returning `double` when it should return `int` is a type error. Multiple instances of questionable type usage with uint128_t.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled code. The original source has extensive comments explaining each test case (PP-L2-01, PP-L3-04, ASM-L4-01, etc.). All semantic context is lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, function calls). However, no explicit naming of patterns like "macro expansion", "inline assembly", "atomic operation", "self-modifying code". The dynamic code generation in `param_dynamic_code` is just shown as raw memory writes.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. The indirect function call `ptr(a0)` in `param_dynamic_code` should be flagged as potentially unsafe. The uint128_t array literals should have warnings. The decompiler silently produces potentially misleading code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contracts or preconditions documented. The original source has implicit contracts (e.g., `param_asm_atomic` requires valid pointer, `mmap` return value checking). None of this is recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`param_macro_constants()`, `call_macro_constants()`), but relationships aren't documented. No indication of which functions call which, or global variable usage. The `extern` declarations show external references but not their purposes.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions organized by address (0x401000, 0x401020, etc.) rather than logically. The original groups preprocessing tests together, then assembly tests together. This grouping is lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for globals. Should compile with some stubs. The `uint128_t` type may need definition. Some moderate patching needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`, `v1`, `a0`, `a1` instead of semantic names like `size`, `x`, `result`
+- No comments at all - all semantic context from source comments lost
+- Magic numbers like `1025`, `0x200`, `57072` replace symbolic constants MAX_SIZE, BUFFER_COUNT, 0xDEF0
+- Function names like `sub_4011a4` lose the original `call_macro_constants` naming
+- Type errors: `param_asm_simd` returns `double` instead of `int`
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- The decompiler correctly recovers loop and conditional structures matching the original source logic
+
+**Most Needs Improvement:** Comment Quality (scored 1/10)  
+- Zero comments in the entire decompiled output; all explanatory context from the original source is completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns**: `v0` used in `if (1025 > a0)` should suggest `size` or `max_size`. Variables used as loop indices should be named `i`, `idx`, or `count`.
+2. **Add comments explaining preprocessing and assembly**: When macro constants are inlined, add comments like "/* MAX_SIZE = 1024 */". For inline assembly, document what operations the asm block performs.
+3. **Flag anomalies and indirect calls**: The dynamic code generation `ptr(a0)` is an indirect call that couldn't be resolved - this should be flagged. The uint128_t array literals are suspicious and should have explanatory comments.

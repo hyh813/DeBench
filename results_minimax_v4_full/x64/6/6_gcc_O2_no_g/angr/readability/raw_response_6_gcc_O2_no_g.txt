@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of descriptive names like `dst`, `src`. Local variables are `v1`, `v2`, `v3`, `v4` - completely opaque. Even in functions like `param_strcpy`, the parameters should be `dst` and `src` based on usage pattern (strcpy call and strlen on result).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test target functions (`param_strcpy`, `param_strcmp`, `param_strlen`, etc.) are correctly named matching source. However, many wrapper/thunk functions use generic `sub_XXXXX` naming (e.g., `sub_402020`, `sub_402ad1`). The main function and test entry points are properly named, but internal helpers are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used extensively for error returns without explanation. Constants like `42` used as success indicators. The string format in `param_printf` is correctly recovered as `"Value: %d, Name: %s\n"` but the return value calculation is confusing (`__printf_chk` result masked).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive CRT startup code pollution (50+ trivial functions from `sub_402020` to `sub_402350` that just set values and call each other). These are compiler-generated initialization functions that add no value to understanding the actual test code. The decompilation includes 3000+ lines of boilerplate.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Core functions like `param_strcpy` have straightforward control flow (strcpy + strlen). However, functions like `param_pthread_join` have complex nested loops with pointer arithmetic that obscures the logic. At -O0, control flow should be more direct.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and focused. The test functions properly call their helper functions. However, some functions like `param_fork_exec` have multiple responsibilities (fork, exec, waitpid) that could be better separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but `param_pthread_join` has complex pointer arithmetic with `v8 += 12` and `v9 += 8` that makes tracking difficult. Some early returns present but not excessive.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns in `param_shmget_shmat` where it writes string "SharedMemory" but then overwrites with `ptr->field_8 = 2037542765` (which is "Shar" as int). The logic is confusing and appears to have optimization artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mixed type usage - `int`, `unsigned int`, `long long`, `unsigned long` all used inconsistently. Parameters like `param_strcpy(char *a0, char *a1)` use `char*` but source uses `const char*` for src. Return types vary between `int` and `unsigned long long` for similar functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (e.g., `struct sockaddr` with `sin_family`, `sa_data`), but many are incomplete. The `ThreadData` struct in pthread_join is not recovered - uses raw pointer arithmetic instead. The FILE struct is empty.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe patterns: `param_strlen` returns `long long` but source returns `int`. In `param_strchr_strstr`, the return calculation `ptr - a0 & 4294967295` is confusing and potentially unsafe. Pointer arithmetic in `param_pthread_join` with `v8 += 12` is error-prone.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present in the decompiled output. The only comments are auto-generated like "Other Possible Types" for some variables. No explanation of algorithm logic, no documentation of what functions do.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcpy, strcmp, strlen, memcpy, printf, etc.) are correctly identified and named. Threading primitives (pthread_create, pthread_mutex_lock) recognized. However, no explicit pattern naming or documentation of common patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indicators. The decompiled code presents everything as definitive, even when there are issues like the confusing return value calculation in `param_strchr_strstr` or the overwritten data in `param_shmget_shmat`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error handling is present (checking for NULL returns, negative values) but not explained. The meaning of return values (42 for success, various negative values for errors) is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from the code structure (e.g., `main` calls `test_standard_library_functions`). However, no explicit documentation of who calls what or global variable usage. External dependencies (libc functions) are implicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by category (string functions, file functions, thread functions) but the massive noise from CRT startup code (50+ functions) pollutes the namespace. No clear separation between test code and runtime support.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations present but incomplete. Functions like `param_linux_syscall` use `syscall(2)` without the pathname parameter passed - this is incorrect. The code would not compile as-is due to missing parameter passing and incomplete declarations.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a0`, `a1`, `v1`, `v2`, `v3`) - should infer names from usage patterns
+- `param_strcpy` uses `stpcpy` with confusing return calculation instead of `strcpy` + `strlen`
+- Massive noise from 50+ CRT initialization functions obscuring actual test code
+- Type inconsistencies: `param_strlen` returns `long long` but source returns `int`
+- No comments explaining any function logic or return value semantics
+- `param_linux_syscall` is incorrectly decompiled - missing pathname parameter in syscall call
+
+**Best Quality Aspect:** Function Naming Quality (6/10)  
+The target test functions (`param_strcpy`, `param_strcmp`, etc.) are correctly named, matching the source function names. This makes it clear which functions are the test targets.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10) and Comment Quality (2/10)  
+Variables are completely generic with no semantic information. Combined with almost no comments, the code requires significant reverse-engineering effort to understand even simple functions like `param_strcpy`.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: `a0` in `param_strcpy` is used as destination for `stpcpy` and passed to strlen, so it should be named `dst` or `dest`. `a1` should be `src`.
+2. **Remove CRT noise**: Filter out or collapse the 50+ trivial initialization functions (sub_402020 through sub_402350) that add no value to understanding the test code.
+3. **Add semantic comments**: Document what functions do, their return value meanings (e.g., "returns 42 on success, -1 on error"), and any non-obvious logic.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `a1`, `a2`, `result`, `result2`) with no semantic meaning. Original source had meaningful names like `x`, `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `test_obf_opt_edge`), but helper functions are generic (`function_10d0`, `function_10e0`, `function_10f0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0xffffffff`, `0xfffffffe`, `0x100000000`, `0x12345678`) with no explanation. String literals stored as globals (`g1`, `g2`) with UTF-8 encoded Chinese text unrecovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword`, `__stack_chk_fail`) add noise. Dead code from fake branches correctly eliminated, but redundant masking operations (`& 0xffffffff`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops converted to while constructs appropriately, but `param_opaque_predicate` has convoluted control flow that's hard to follow. The fake branch elimination is correct but not documented.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but parameter lists are wrong (`param_opaque_predicate` has 5 parameters instead of 1, `call_division_by_zero` has 2 parameters instead of 0).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate while loops. No excessive gotos, though some while loops could be cleaner for loops.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from always-false conditions correctly eliminated. However, redundant type masking (`& 0xffffffff`, `& 0xfffffffe`) appears throughout without justification.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t`, `int32_t` for ARM64, but many parameters should be `int` not `int64_t`. Pointer types degraded (`param_null_pointer_deref` takes `int64_t*` instead of `int*`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` struct recovered with field names (`e0`, `e1`, `e2`), but field names are generic. No complex structs from source recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit casts (`int64_t` to `int32_t`), pointer arithmetic with generic types, and masking operations suggest type confusion throughout the code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No explanation of function purposes, no decompilation confidence indicators, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: setjmp/longjmp exception handling pattern not identified. Signal handler pattern not documented. No recognition of obfuscation techniques.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about suspicious code. Parameter count mismatches not flagged. Fake branch elimination not noted as optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions. No error condition documentation for signal handlers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g21`) unexplained. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in one file with prototypes separated from implementations. Global variables grouped. Reasonable but not optimal organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard headers included, but some functions may not compile (`__asm_hlt`, `__asm_rep_stosd_memset` undefined). External dependencies not fully documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+5+7+6)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (5+6+4)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+6+5)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.85/10
+```
+
+**Overall Readability Score:** 4.85/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `a1`** should be named based on semantic usage (e.g., `input_value`, `loop_counter`, `divisor`)
+- **Function `param_opaque_predicate`** has 5 parameters instead of 1 - signature completely wrong
+- **Zero comments** explaining function purposes, obfuscation techniques, or decompilation confidence
+- **Magic numbers** (`0xffffffff`, `0x100000000`) used without explanation or named constants
+- **Signal handler patterns** (setjmp/longjmp) not identified or documented as exception handling
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main function names preserved from source code, maintaining semantic connection to original intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding decompiler decisions and code purpose nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, accumulators, pointers) to infer semantic names like `counter`, `sum`, `buffer_ptr`
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target` or `// OPTIMIZATION: dead code eliminated`
+3. **Detect and document common patterns** - Recognize setjmp/longjmp as exception handling, signal handlers as error recovery, and document these idioms explicitly

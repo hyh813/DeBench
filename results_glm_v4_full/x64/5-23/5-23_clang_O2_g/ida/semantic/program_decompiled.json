@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_clang_O2_g/ida/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\nPPL201: macro_constants = 64\nPPL202: macro_functions = 30\nPPL203: conditional_compile = 32\nPPL204: multi_branch_compile = 57122\nPPL301: macro_recursion = 116\nPPL302: stringize = 19\nPPL303: token_paste = 60\nLOG: Values: 10, 20, 30\nPPL304: variadic_macro = 60\nPPL305: macro_override = 16\nPPL306: include_guard = 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:50\nPPL307: builtin_macros = 382\n=== ASM Features Test ===\nASM401: basic = 15\nASM402: clobber = -1843073088 (v0=0 i=5 v1=19 v2=0 v12=7fff9224f1c0 v13=7980b0e87dda)\nASM403: multi_insn = 42 (str= flags=0 v5=86 v6=0 v12=5341206f6c6c6548 v13=4d v14=0)\nASM404: simd = 330\nASM405: atomic = 30\nASM406: privileged = 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/4/4_gcc_O3_g/binaryai/syntactic/bin/4_gcc_O3_g_fixed",
+  "stdout": "",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false
+}

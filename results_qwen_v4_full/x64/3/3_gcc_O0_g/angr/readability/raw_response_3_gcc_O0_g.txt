@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `i`) with no semantic meaning. Original names like `large_buf`, `vla`, `head`, `current` are completely lost. Only `result`, `cur`, `iter` in `linked_list_heap` show minimal inference.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core application functions recovered well (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). However, runtime functions use mechanical names (`sub_401020`, `sub_401030`) and there are 20+ such functions cluttering the output.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (unsigned -1) appears 30+ times without explanation. Array sizes like `20`, `40`, `16` are hardcoded instead of derived from struct sizes. Original constants and meaningful literals are lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame artifacts (`[bp-0x8]`, `[bp-0x10]`) present throughout. Excessive type casts (`(unsigned long long)`, `(char *)`) clutter expressions. VLA/alloca functions contain alignment code that obscures core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple loops recovered as `for` constructs. However, `vla_stack` and `alloca_usage` contain confusing `while` loops for stack alignment that don't match source intent. Conditional logic mostly preserved but obscured by type conversions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved from original source. Each test function remains separate. However, 20+ runtime initialization functions (`sub_401020` through `sub_401110`) represent over-fragmentation of compiler boilerplate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Some forward references in complex functions disrupt flow. The VLA alignment code creates non-linear reading patterns that don't exist in source.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: VLA/alloca functions contain redundant alignment calculations. Multiple struct_0 definitions with conflicting layouts. Type cast redundancy throughout (`& 4294967295` appears repeatedly for no clear reason).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered but with precision loss. `int` becomes `unsigned int` or `unsigned long long` inconsistently. Pointer types often generic (`void*`, `unsigned long long`). Return types mismatch (functions returning `long long` that should be `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). Original `Point { int x, y; }` loses semantic meaning. Multiple conflicting `struct_0` definitions throughout file. `Node` struct fields named generically instead of `data`, `next`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(char *)`, `(unsigned long long *)`). Pointer arithmetic obscures type safety (`*((unsigned int *)(ptr + i * 4))`). Function pointer types degraded to `unsigned long long`. Signed/unsigned confusion throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case purpose. No decompilation confidence indicators or uncertainty markers for complex reconstructions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns (malloc/free pairs) recognized. Loop patterns mostly identified. No design pattern identification. VLA and alloca patterns not recognized as such (appear as raw pointer arithmetic).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). VLA/alloca decompilation complexity not flagged. Potential undefined behavior in `dangling_pointer` not indicated. No warnings about type mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. Error return values (4294967295) not explained as error codes. No postcondition documentation. Original safety checks (e.g., `n <= 0 || n > 1000`) preserved but not annotated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`global_counter`, `global_array`) but usage patterns unclear. Callback relationship (`global_func_ptr`) partially recovered but type degraded.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly logical order matching source. Test functions grouped together. However, 20+ runtime functions interspersed disrupt organization. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (malloc, free, printf). Multiple conflicting struct definitions would cause compilation errors. Extern globals referenced but not defined. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 3 + 5) / 4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6 + 7 + 6 + 5) / 4 = 6.00 × 0.25 = 1.500
+Level 3 (Type System): (5 + 4 + 4) / 3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2 + 5 + 4 + 3) / 4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6 + 6 + 5) / 3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 4.88/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Magic number `4294967295`** appears 30+ times representing -1, completely obscuring error handling logic
+- **Struct field names lost** - `Point.x`, `Point.y` become `field_0`, `field_8` losing all semantic meaning
+- **VLA/alloca decompilation failure** - `vla_stack` and `alloca_usage` contain 50+ lines of alignment code obscuring simple array logic
+- **Zero comments** - Original source had extensive documentation; decompiled output has none
+- **Multiple conflicting `struct_0` definitions** - Would cause compilation errors if used as-is
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core application functions (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`) recovered with accurate names matching source intent
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments means no explanation of complex logic, error codes, or decompilation uncertainty
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Detect and annotate magic numbers** - recognize `4294967295` as error code `-1` and add comments or named constants
+3. **Improve composite type recovery** - infer struct field names from access patterns (e.g., `field_0` used as data should be `data`, `field_8` used as link should be `next`)

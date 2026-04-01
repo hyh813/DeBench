@@ -1,0 +1,138 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `idx`, `ptr`. The original source used meaningful names like `x`, `c`, `sum`, `len`, `i`, `n`. For example, in `process_char`, the parameter should be named `c` not `a0`, and the local variable should be `result` or `converted` not `v0`.
+
+### 2. Function Naming Quality
+**Score: 9/10**  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, etc. The decompiler correctly preserved the semantic naming from the source code.
+
+### 3. Literal Clarity
+**Score: 4/10**  
+Justification: Magic numbers are prevalent and unexplained. Character range checks use `65` and `90` instead of `'A'` and 'Z'`. Float constants like `0x3fc00000` (should be 1.5f) and `0x3f000000` (should be 0.5f) are not recognized. The value `4294967294` is used for -2 without explanation. Only array sizes like `10` are somewhat clear.
+
+### 4. Noise Reduction
+**Score: 6/10**  
+Justification: Floating-point library functions (`__mulsf3`, `__addsf3`, `__divdf3`, etc.) are inlined as complex code blocks rather than being called as external functions. Some redundant calculations exist in these library functions. However, there's no debug instrumentation or obvious register spilling artifacts in user code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**  
+Justification: Most control flow is natural - loops are correctly identified as `for` loops, conditionals are clear `if-else` structures. The `process_bool` function has overly complex boolean expression deconstruction. At -O0, goto usage should be minimal, and it's mostly absent in user functions.
+
+### 6. Function Decomposition
+**Score: 8/10**  
+Justification: The decompiler correctly kept all small functions separate, matching the original source's granularity. Each function has a single responsibility. The test functions properly call individual testee functions. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 7/10**  
+Justification: Code generally reads top-to-bottom. The `test_*` functions have sequential calls that flow naturally. Some complexity in `array_complex_index` with nested conditions, but overall good linearity.
+
+### 8. Redundancy Elimination
+**Score: 5/10**  
+Justification: The floating-point library functions have significant redundancy with repeated calculations. In `test_data_types_l1`, there are redundant calls like `volatile_access` called twice with same result. However, user-defined functions are clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**  
+Justification: Severe type degradation observed. Most `int` parameters became `unsigned int` (e.g., `process_int(unsigned int a0)`). `short` became `unsigned short`. Float/double parameters are passed as `unsigned int` due to ABI but should be documented. `char` is correctly preserved in `process_char`. Const/volatile qualifiers mostly lost.
+
+### 10. Composite Type Recovery
+**Score: 4/10**  
+Justification: Most composite types are lost. `struct_simple`, `struct_array`, `struct_nested` use raw pointer arithmetic (`a0[1]`, `a0[2]`, `ptr + idx * 12`) instead of struct access. However, `struct_with_ptr`, `linked_list`, `doubly_linked_list`, and `graph_traverse` have partial struct recovery with generic names (`struct_0`, `struct_1`, `field_0`, `field_4`).
+
+### 11. Type Safety
+**Score: 5/10**  
+Justification: Moderate type safety issues. Many pointer casts from `unsigned int` to `int*`. Pointer arithmetic on generic pointers. The `ptr_diff` function has operator precedence issues (`a0 - a1 >> 2` should be `(a0 - a1) >> 2`). Some signed/unsigned mixing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型", "// ARR-L1-01: 一维int数组"). None of this was recovered.
+
+### 13. Idiom Recognition
+**Score: 4/10**  
+Justification: Some patterns are implicitly recognizable (loop traversal, pointer walking, recursive tree traversal) but not explicitly named or documented. The test structure (test_ functions calling individual functions) isn't documented as a pattern.
+
+### 14. Anomaly Indication
+**Score: 1/10**  
+Justification: No anomaly indication. The `array_oob` function has intentional out-of-bounds access (undefined behavior) but this isn't flagged. No warnings about indirect calls or unusual stack layouts.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**  
+Justification: No contract information recovered. Preconditions like "array must not be NULL" or postconditions aren't documented. The original source had no explicit assertions but the semantics are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**  
+Justification: Function calls are explicit and clear. The `test_*` functions call their respective testee functions. However, the relationship between functions (who calls whom, callbacks like `complex_callback`) isn't documented. Global variable usage isn't highlighted.
+
+### 17. Module Organization
+**Score: 8/10**  
+Justification: Functions are logically grouped - data types, array types, pointer types, composite types, and test functions. This matches the original source organization. Static functions are correctly identified. Single file structure is appropriate.
+
+### 18. Build System Compatibility
+**Score: 7/10**  
+Justification: The code uses `extern` declarations for standard library functions (`printf`). It should compile with standard C library headers. However, the floating-point library functions (`__mulsf3`, etc.) are defined inline rather than declared extern, which could cause linking issues if not careful.
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 6) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 5) / 4 = 6.75
+L3_avg = (4 + 4 + 5) / 3 = 4.33
+L4_avg = (1 + 4 + 1 + 1) / 4 = 1.75
+L5_avg = (5 + 8 + 7) / 3 = 6.67
+
+Overall = (5.25 × 0.30) + (6.75 × 0.25) + (4.33 × 0.20) + (1.75 × 0.15) + (6.67 × 0.10)
+        = 1.575 + 1.6875 + 0.866 + 0.2625 + 0.667 = 5.06/10
+```
+
+**Overall Readability Score: 5.06/10**
+
+---
+
+### Critical Defects
+
+1. **No variable name recovery**: All variables use generic names (`v0`, `v1`, `a0`, `idx`) instead of meaningful names from source (`x`, `c`, `sum`, `len`)
+
+2. **No comments recovered**: The extensive source code comments explaining test scenarios and semantics are completely absent
+
+3. **Severe type degradation**: Most `int` types became `unsigned int`, losing sign information; const/volatile qualifiers lost
+
+4. **Composite type loss**: Struct/union types mostly lost, replaced with raw pointer arithmetic (`a0[1]`, `ptr + idx * 12`)
+
+5. **Magic numbers not resolved**: Character codes (65, 90), float constants (0x3fc00000), and other literals not converted to meaningful constants
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (9/10)**  
+The decompiler almost perfectly preserved function names from the original source (`process_char`, `array_1d_stack`, `ptr_single`, `linked_list`, etc.), making it easy to locate specific functions.
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.75/10)**  
+This dimension scored lowest due to complete absence of comments, no idiom recognition documentation, no anomaly indication for undefined behavior, and no contract recovery. The decompiled code provides no semantic context about what the code does or any warnings about potential issues.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., `if (c >= 'A' && c <= 'Z')` suggests `c` is a character; `sum += arr[i]` suggests `sum` and `arr`)
+
+2. **Resolve magic numbers to constants**: Detect common patterns (ASCII values, float bit patterns) and convert to meaningful literals ('A', 'Z', 1.5f, 0.5f)
+
+3. **Add semantic documentation**: Include comments explaining function purpose, recovered from debug symbols or inferred from behavior; flag potential undefined behavior (like the intentional out-of-bounds in `array_oob`)

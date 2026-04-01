@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `cur`) with no semantic meaning. Original names like `dst`, `src`, `buffer`, `thread_count` are completely lost. Only a few variables like `fp`, `count`, `result` have minimal clarity.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retained original names (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`), but dozens of initialization functions are generically named (`sub_402020` through `sub_402390`). Some signatures are corrupted with extra parameters.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved (`"HelloLib"`, `"/etc/passwd"`), but error codes appear as magic numbers (`4294967295` for -1, `4294967294` for -2). No named constants recovered; numeric values like `42`, `1000`, `18` lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: 80+ initialization stub functions (`sub_402xxx`), `__printf_chk` instead of `printf`, stack annotations (`[bp-0x8]`), and unsupported jump error. Output is 2.1x larger than source (2496 vs 1174 LOC).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops and conditionals mostly recognizable, but some awkward patterns exist (e.g., `param_memcmp` returns `-(v2)` instead of proper ternary). `param_signal_handling` has deeply nested conditionals that could be flattened.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved (`param_strcpy`/`call_strcpy` pairs), but initialization code fragmented into 80+ tiny functions. Some functions have incorrect parameter lists (e.g., `call_strcmp` has 4 extra parameters).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_signal_handling` has excessive nesting (6+ levels). Some functions use awkward loop patterns instead of natural for/while constructs.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Error codes repeated across functions (`4294967295`, `4294967294`, `4294967293`). Initialization stubs duplicate identical patterns. Type casts appear repeatedly without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `unsigned long long` used everywhere instead of `size_t`, `pid_t`, `FILE*`. `FILE` struct declared empty. Function parameters use `unsigned long` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `FILE` struct is empty `{}`, `sockaddr` has incorrect fields, `ThreadData` struct not recovered (uses raw array access). TLS variables accessed through pointer arithmetic (`ptr[18446744073709551580]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)ptr`, `(char *)`), pointer arithmetic instead of array indexing, function pointers often `void*`. `param_malloc_free` accesses freed memory (`*(ptr)` after `free(ptr)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining function purposes, test scenarios, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `strlen`), pthread patterns somewhat visible. Atomic operations incorrectly represented (`atomic_fetch_add` vs `__atomic_fetch_add`). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4204389()`. No indication of uncertain decompilation, indirect call resolution issues, or architecture mismatch warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values unexplained. No documentation of expected behavior or function contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables use generic names (`g_406fe8`, `g_404099`). Callback relationships (thread functions) not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Initialization functions scattered throughout. No header file or interface/implementation separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile without significant fixes: undefined `_ccall` function, incorrect signatures, architecture mismatch (ARM64 source → AMD64 decompilation), empty struct definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+5+5+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):     (6+6+6+5)/4 = 5.75  × 0.25 = 1.438
+Level 3 (Type System):    (4+3+4)/3   = 3.67  × 0.20 = 0.734
+Level 4 (Semantic):       (1+4+3+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):     (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────────
+Overall Score:                                    4.22/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled to AMD64 decompilation without warning
+- **Variable `a0`, `a1`, `ptr`** should be named based on semantic usage (e.g., `dst`, `src`, `thread_id`)
+- **Magic error codes** `4294967295`, `4294967294`, `4294967293` should be `-1`, `-2`, `-3` or named constants
+- **Empty `FILE` struct** loses all type information for file operations
+- **80+ initialization stub functions** (`sub_402xxx`) are compiler artifacts that should be filtered
+- **Function signature corruption**: `call_strcmp` has 4 extra parameters not in original source
+- **Zero comments** despite original having extensive documentation
+
+### Best Quality Aspect:
+- **Structural Intelligibility (5.75/10)** - Core function boundaries preserved and control flow mostly recoverable despite optimization artifacts
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.50/10)** - Complete absence of comments, no contract documentation, and minimal anomaly indication makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables passed to `strcpy` as first argument should be `dst`)
+2. **Filter compiler initialization stubs** - Recognize and collapse repetitive initialization functions (`sub_402020`-`sub_402390` pattern) into comments or single initialization block
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, architecture mismatches, and unresolved indirect calls with explicit warnings

@@ -1,0 +1,2 @@
+Testing obfuscation & optimization edge cases:
+Opaque Predicate result: 10

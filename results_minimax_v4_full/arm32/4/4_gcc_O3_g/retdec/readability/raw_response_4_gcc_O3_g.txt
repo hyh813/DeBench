@@ -1,0 +1,143 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+This is a unique case where the decompiled output shows only the **test harness** (main function calling test functions), not the actual implementations being tested. The decompiler appears to have performed aggressive constant propagation, replacing function calls with their computed results. The original source contains 665 lines of calling convention and parameter passing tests, but the decompiled output only shows 133 lines of mostly hardcoded test output.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality
+**Score: 2/10**  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`, `a4`, `a5`) with no semantic meaning. These should be named according to their purpose (e.g., `count`, `arg1`, `arg2`) based on usage patterns in the function body.
+
+#### 2. Function Naming Quality
+**Score: 4/10**  
+Justification: Function names like `param_varargs_constprop_0` and `varargs_func_constprop_0` contain the "constprop_0" suffix which is a compiler artifact, not a meaningful name. The base names suggest varargs functionality but don't indicate the actual purpose (testing calling conventions).
+
+#### 3. Literal Clarity
+**Score: 6/10**  
+Justification: Test results like `15`, `50`, `6` are printed as expected values, which is somewhat helpful. However, the Chinese strings are encoded as `\x` escape sequences (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`) making them unreadable without decoding.
+
+#### 4. Noise Reduction
+**Score: 5/10**  
+Justification: The "constprop_0" suffixes are compiler artifacts. The `__printf_chk` internal function is used instead of standard `printf`. However, there's no dead code or redundant casts - the main issue is what's MISSING (the actual function implementations).
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness
+**Score: 9/10**  
+Justification: The code is trivially simple - just sequential function calls in main(). No complex control flow exists to evaluate. This is appropriate for a test harness.
+
+#### 6. Function Decomposition
+**Score: 2/10**  
+Justification: **CRITICAL DEFECT** - The decompiled output does NOT show the actual functions being tested (`cdecl_func`, `stdcall_func`, `fastcall_func`, etc.). Only the test harness is present. The 665-line source with ~20+ test functions is reduced to just 6 functions in output. This is a severe decomposition failure.
+
+#### 7. Code Linearization
+**Score: 9/10**  
+Justification: The code reads linearly top-to-bottom. main() calls three test functions in sequence. No forward jumps or complex branching to disrupt flow.
+
+#### 8. Redundancy Elimination
+**Score: 7/10**  
+Justification: No obvious redundancy in the decompiled output. The constant propagation has eliminated redundant computations by replacing them with literal values.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision
+**Score: 8/10**  
+Justification: Uses `int32_t` for integer parameters, which is precise. The original source used `int` which is platform-dependent, so `int32_t` is actually more precise than the source.
+
+#### 10. Composite Type Recovery
+**Score: 1/10**  
+Justification: **CRITICAL DEFECT** - The original source defined `LargeStruct` (128 bytes), `SmallStruct`, `TestIntPair`, `BigStruct`, `SmallPoint`, and `LargeData` structures. NONE of these appear in the decompiled output. All struct implementations are missing.
+
+#### 11. Type Safety
+**Score: 8/10**  
+Justification: No unsafe casts observed. The code is simple and type-safe. The use of `int32_t` throughout is consistent.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence
+**Score: 4/10**  
+Justification: Comments like "From module: /work/src/4.c" and "Address range: 0x1042c - 0x10444" are metadata but don't explain what the code does. No explanation of the calling convention tests or what the expected results mean.
+
+#### 13. Idiom Recognition
+**Score: 3/10**  
+Justification: The decompiler doesn't recognize this as a calling convention test suite. No indication that these are testing cdecl, stdcall, fastcall, etc. The "constprop_0" suffix doesn't indicate this is a constant-propagated version of a test.
+
+#### 14. Anomaly Indication
+**Score: 5/10**  
+Justification: No anomalies are flagged. The fact that most original functions are missing should be flagged as a significant information loss.
+
+#### 15. Assertion & Contract Recovery
+**Score: 3/10**  
+Justification: No preconditions, postconditions, or invariants are documented. The expected test results (e.g., "期望: 15") in the strings could serve as postconditions but aren't extracted as comments.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity
+**Score: 3/10**  
+Justification: The test functions call helper functions (e.g., `call_cdecl()`, `call_stdcall()`) but these are not shown - only their hardcoded results appear. No function call graph is recoverable.
+
+#### 17. Module Organization
+**Score: 5/10**  
+Justification: All code is in a single file. The original source had clear sections (calling conventions, parameter passing, return values) which are not reflected in the decompiled output structure.
+
+#### 18. Build System Compatibility
+**Score: 5/10**  
+Justification: The code includes standard headers but uses `__printf_chk` which is a glibc internal. The Chinese strings encoded as escape sequences may cause issues. The code would require modification to compile cleanly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 6 + 5) / 4 = 4.25
+L2_avg = (9 + 2 + 9 + 7) / 4 = 6.75
+L3_avg = (8 + 1 + 8) / 3 = 5.67
+L4_avg = (4 + 3 + 5 + 3) / 4 = 3.75
+L5_avg = (3 + 5 + 5) / 3 = 4.33
+
+Overall = (4.25 × 0.30) + (6.75 × 0.25) + (5.67 × 0.20) + 
+          (3.75 × 0.15) + (4.33 × 0.10)
+        = 1.275 + 1.6875 + 1.134 + 0.5625 + 0.433
+        = 5.09/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+---
+
+### Critical Defects
+
+- **Function Decomposition Failure**: The actual implementations of `cdecl_func`, `stdcall_func`, `fastcall_func`, `thiscall_method`, `arm_aapcs_func`, `mips_func`, `amd64_sysv_func`, `ms_x64_func`, `vectorcall_func`, and all parameter/return test functions are completely missing from the decompiled output
+- **Composite Type Loss**: All struct types (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`, `TestIntPair`) are lost - not a single struct definition appears
+- **Variable Naming**: Generic parameter names (`a1`, `a2`, `a3`, `a4`, `a5`) provide no semantic information about their purpose
+- **Missing Context**: No indication this is a calling convention test suite; the "constprop_0" suffix is meaningless without explanation
+
+### Best Quality Aspect
+- **Control Flow Naturalness** (scored 9/10)  
+- The simple sequential structure of main() calling three test functions is natural and easy to follow
+
+### Most Needs Improvement
+- **Function Decomposition** (scored 2/10)  
+- The decompiler failed to recover the actual functions being tested, showing only the test harness with hardcoded results. This makes the decompiled output useless for analyzing calling convention implementations.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve Function Bodies**: When constant propagation occurs, still preserve the original function implementation as a comment or alternative version. Analysts need to see `cdecl_func(int a, int b) { return a + b; }`, not just its computed result.
+
+2. **Recover Struct Types**: Implement better composite type recovery by analyzing memory access patterns. The original defined 6+ struct types - these should be reconstructed with field names where possible.
+
+3. **Improve Variable Naming**: Use usage analysis to infer semantic names. For example, `param_varargs_constprop_0(a1, a2, a3, a4, a5)` where `a1` is used in a loop counter context should be named `count` or `num_args`.

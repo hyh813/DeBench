@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_O3_g/binaryai/syntactic/bin/7_gcc_O3_g_fixed",
+  "stdout": "Test: %s\n\nResult: 10\nOpaque: 20\nSub: 225\nDecrypted: 36\nTail: 500500\nNonTail: 5050\nVector: 72\nLTO: 20\nDivZero: 1\nNullPtr: 41\nBuffer: 30\nIntOverflow: 2000000000\nUndefBehav: 10\nImplDef: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

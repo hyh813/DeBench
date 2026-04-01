@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic auto-generated names like `param_1`, `lVar1`, `iVar2`, `puVar3`, `local_810`. The original source used meaningful names like `x`, `arr`, `n`, `head`, `p` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly recovered: `local_vars`, `heap_basic`, `test_stack_memory`, `double_value`. However, some internal functions like `FUN_001008e0`, `FUN_00100afc` remain generic. Overall, function names are much better than variable names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"MEM-L1-01 (local_vars): %d\n"` are preserved, but magic numbers lack explanation. Values like `0x2a` (42), `0x14` (20), `0xf` (15) appear without context. Some constants like `0x3c` (60) are used in output but not explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise in functions like `large_stack_frame` and `vla_stack` with extensive CONCAT operations and bit manipulation. The 2KB stack buffer initialization is rendered as 64 lines of unreadable CONCAT17/CONCAT16 expressions instead of a simple loop.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions like `local_vars` correctly show `return param_1 * 2 + 10`. However, loop unrolling at -O0 is unexpected - functions like `heap_basic` show unrolled loops instead of `for` loops. Some control flow is acceptable given -O0 baseline.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Test functions properly call sub-functions. No 500-line monoliths. Functions like `test_stack_memory` correctly invoke 9 different test cases. Parameter counts match original.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns present in null-check patterns. Some forward jumps in complex functions like `linked_list_heap` but manageable. Generally good flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling in `heap_basic`, `heap_array`, `vla_stack`, `alloca_usage` - these show 8-iteration unrolled patterns. At -O0 this is unexpected. Some dead code elimination present but not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses imprecise types: `undefined4`, `undefined8`, `ulong`, `uint` instead of `int`, `long`, `size_t`. Parameter types like `int param_1` are sometimes correct but mixed with `uint`. No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery at all. The `Point` struct and `Node` struct are completely lost. All access is raw pointer arithmetic like `*(undefined4 *)(param_1 + 8)`. Field names like `data`, `next`, `x`, `y` are never recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present: `(undefined4 *)malloc(0x10)`, `(int *)((long)__ptr + param_1 * 4)`. Pointer arithmetic is raw without bounds checking. Function pointer stored as `(code *)0x0` but used unsafely.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled output whatsoever. String literals preserved but no explanation of algorithm logic, preconditions, or intent. Zero documentation for non-trivial logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal (`while (piVar4 != (int *)0x0)`) are somewhat recognizable. Memory allocation/free patterns visible. No explicit naming of patterns like "linked list", "binary tree", etc.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `dangling_pointer` function accesses memory after `free()` - this dangerous pattern is presented without any warning. No indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. Null checks visible but not explained as preconditions. No documentation of what functions return on error. No invariant detection.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`free(__ptr)`, `malloc()`). Global variables like `global_counter`, `extern_global_var` are accessible. No documentation of call relationships or who calls what.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: stack memory functions together, heap functions together, test functions at bottom. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard library functions correctly (`memcpy`, `printf`, `malloc`, `free`). External declarations present. Should compile with minimal patching. No compiler-specific hacks.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is completely unusable (`param_1`, `lVar1`, `puVar3` instead of semantic names like `x`, `arr`, `head`)
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Severe noise pollution in stack/heap initialization functions (CONCAT operations)
+- No comments or documentation whatsoever
+- Type precision severely degraded (`undefined4` instead of `int`, no struct field names)
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function granularity closely matches original source. Test functions properly invoke sub-functions with appropriate parameter counts. No over-fragmentation or monoliths.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every local variable uses cryptic auto-generated names. Parameters like `param_1` should be `x`, `n`, `arr`. Loop indices like `iVar8` should be `i`. This makes tracking data flow practically impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `param_1` is used as array index, name it `index` or `i`. When `param_1 * 2` appears, infer it's a numeric multiplier.
+2. **Recover struct types from pointer arithmetic**: When code accesses `*(int*)(ptr + 8)`, recognize this as `ptr->field_name` and attempt struct layout recovery.
+3. **Add minimal comments for complex expressions**: Comment loop unrolling patterns with "// original: for loop" to aid understanding.

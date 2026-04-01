@@ -1,0 +1,108 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_fake_branch` demonstrates obfuscation via "fake branches" (always-false conditions). The original source shows:
+- Input: `int x`
+- Logic: Two mathematically impossible conditions (`x*x < 0` and `strlen(str) < 0`)
+- Output: Returns input value unchanged
+
+The decompiled version shows a **critical semantic error**: the constant `0xDEADBEEF` (3,735,928,559) was incorrectly transformed to `-559038737` (subtraction instead of addition), fundamentally changing the code's behavior.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v2`, `v3`, `v4`, `i`, `ptr`. The original variable `result` is lost, replaced with stack variable `v2`. While `v2` is somewhat inferable as the return value, it lacks semantic meaning compared to `result`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names match original source exactly: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, etc. The decompiler correctly preserved all function names from the symbol table.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: **Critical defect**: The magic number `0xDEADBEEF` (a well-known sentinel value in debugging) was incorrectly decompiled as `-559038737` (or `2*x - 559038737`). This is a semantic error—the original constant is recognizable but the decompiler transformed it incorrectly. Other constants like `0xF` for modulo 16 are correctly shown.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Stack frame annotations like `[xsp+8h] [xbp-8h]` are present but don't impede readability. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow matches source closely. The if-else structures are preserved naturally. The `strlen("test")` call without using the result is correctly shown (dead code from unreachable branch), though it would benefit from a comment explaining it's from the fake branch.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines each). The `call_*` wrapper functions correctly separate caller from the main logic. Good separation between distinct test cases.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal jumps. The fake branch conditions are straightforward if statements. No goto abuse or confusing forward jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in the opaque predicate function where `x*x + 2*x + 1` and `(x+1)*(x+1)` could be recognized as equivalent. The decompiler shows both sides of the comparison literally rather than recognizing the mathematical identity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct (`int x`, `int result`). However, in `param_null_pointer_deref`, the parameter is incorrectly typed as `unsigned int *p` instead of `int *p`. The `size_t` for string lengths is correctly preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this specific function. The buffer overflow functions correctly show `char buffer[32]` and `_BYTE v3[8]`. Bitfields in `param_implementation_defined` are not reconstructed (shown as simple return value).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe patterns present: In `param_string_encryption`, the encrypted string is accessed via `param_string_encryption_encrypted` without type safety. In `param_division_by_zero`, the parameter `x` could be zero but no runtime check is documented. The `signal` calls use raw integer constants (8, 11) instead of named constants.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments explaining the obfuscation techniques. The fake branch logic (`x*x < 0`) has no indication that this is intentional obfuscation. The source code has extensive comments explaining OBF-L4-02, but these are completely lost in decompilation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The fake branch pattern (always-false condition) is not recognized or named. The opaque predicate pattern (complex but determinable conditions) is shown literally without recognition. No indication that these are deliberate obfuscation techniques.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly marks 12 functions as "FAILED to decompile" (strlen, _setjmp, etc.), which is appropriate. However, the incorrect constant transformation (`0xDEADBEEF` → `-559038737`) is presented confidently without any warning that it may be inaccurate.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions or postconditions recovered. The source has explicit comments about expected behavior (e.g., "期望: 10" for call_fake_branch), but these are completely lost. No documentation of the fake branch semantics.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear (`call_fake_branch` calls `param_fake_branch`). However, the relationship to the broader test framework (`test_obf_opt_edge`) is not documented. Global variables like `jmp_buffer`, `segv_buffer` are used without explaining their role in signal handling.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by test category (OBF-*, OPT-*, EDGE-*). The decompiled output maintains this grouping. However, all functions are in a single flat output rather than organized into logical sections.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code states "Compilation Result: Yes" - it compiles. External dependencies (libc functions) are implicitly available. No build system information is provided but the code is standard C compatible.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Semantic Error**: The constant `0xDEADBEEF` (3,735,928,559) was incorrectly decompiled as `2*x - 559038737`, fundamentally changing the code's behavior
+- **Variable Naming**: Generic stack variables (`v2`, `v3`, `v4`) lose the semantic meaning of original variable `result`
+- **Comment Loss**: All source code comments explaining obfuscation techniques (OBF-L4-02, fake branches, opaque predicates) are completely lost
+- **Pattern Recognition**: The fake branch and opaque predicate patterns are not recognized or named
+- **Type Error**: `param_null_pointer_deref` uses `unsigned int *p` instead of correct `int *p`
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- All function names match the original source exactly, preserving the semantic intent of the test framework
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)  
+- The incorrect transformation of `0xDEADBEEF` is a critical semantic error that fundamentally misrepresents the code's behavior
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Validate constant transformations**: The decompiler should verify that constant expressions like `result * 2 + 0xDEADBEEF` are correctly preserved, not algebraically transformed into different expressions
+2. **Recover variable semantics from usage**: Variables like `v2` that are assigned from input and returned should be named `result` or `return_value` based on usage patterns
+3. **Add pattern recognition for obfuscation**: Recognize fake branch patterns (always-false conditions) and opaque predicates, adding comments to explain these are intentional obfuscation techniques

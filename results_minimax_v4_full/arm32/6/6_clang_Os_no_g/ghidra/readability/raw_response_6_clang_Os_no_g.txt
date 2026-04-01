@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Looking at the specific function `param_strcpy` and the broader decompiled output, I'll provide a comprehensive evaluation.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled `param_strcpy` uses generic names `param_1`, `param_2` for parameters and `__s` for the local variable. The original source uses semantic names `dst` and `src`. Throughout the broader decompiled code, variables like `local_28`, `iVar1`, `uVar2`, `acStack_24` dominate, making it very difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names match the source almost exactly - `param_strcpy`, `call_strcpy`, `param_strcmp`, etc. The naming is excellent and clearly indicates function purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: In `param_strcpy`, the return value of `strlen(__s)` is computed but not returned - this is a semantic bug. Throughout the code, magic numbers like `0x2a` (42) appear without explanation. String literals are placed in DATA sections with cryptic names like `DAT_0001287d`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The `param_strcpy` function is relatively clean. However, there are Ghidra warnings about "Removing unreachable block" scattered throughout, and some frame pointer manipulations in other functions. Overall, moderate noise level.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: The `param_strcpy` function has linear, natural flow. However, in broader code like `param_pthread_join`, there are complex do-while loops with negative counters that are harder to follow. The control flow is generally natural but some loop constructs are awkward.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 6 lines, which is good granularity. The decomposition matches the source well with separate functions for each test case.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The `param_strcpy` function reads top-to-bottom cleanly. Some functions like `param_pthread_join` have more complex jumps, but overall linearization is acceptable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: In `param_strcpy`, the result of `strlen(__s)` is computed but discarded - this is a significant semantic redundancy/error. The function should return this value but doesn't. Some loop unrolling is present in other functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: In `param_strcpy`, parameters are `char *param_1, char *param_2` but source uses `char *dst, const char *src`. The `const` qualifier is lost. Many types are `undefined4` or `undefined` throughout the code. The decompiler uses generic types rather than precise ones like `size_t`, `int32_t`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some struct-like usage is visible (e.g., `stat sStack_60`, `sockaddr local_24`), but field names are often generic. The `ThreadData` struct in source is not explicitly recovered - instead raw memory offsets are used.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. No obvious unsafe casts in `param_strcpy`. Some potential issues in thread functions where pointer arithmetic is used. The code is reasonably safe but not perfect.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: The decompiled code has almost no useful comments. Ghidra's header comment is generic ("Decompiled by Ghidra 12.0"). No explanation of algorithm logic, no recovery of source comments. The "WARNING: Subroutine does not return" comments are auto-generated and not particularly useful.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions like `strcpy`, `strlen`, `pthread_create` are recognized by name. However, the pattern of "strcpy + strlen" as a string copy with length return is not identified as an idiom. Threading patterns (mutex, condition variables) are recognized but not explicitly named as patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The critical anomaly in `param_strcpy` (not returning the computed strlen value) is not flagged. Ghidra does show some "WARNING" messages about unreachable blocks, but these are generic. The semantic error where the function returns void instead of int is not highlighted as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no formal contracts either, but the decompiler makes no attempt to infer any. The fact that `param_strcpy` should return a value (based on calling context) is not noted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Standard library functions like `strcpy`, `strlen`, `strcmp` are properly recognized and named. The relationship between `call_strcpy` and `param_strcpy` is clear from naming. However, global variables like `signal_received`, `shared_counter` are used without clear documentation of which functions access them.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - standard library tests, system calls, thread functions. The organization roughly matches the source file structure. However, all functions are in one large file without clear section markers.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code would compile but has semantic errors. The `param_strcpy` function returns void instead of int, which would cause a compilation warning/error. External dependencies (libc, pthread) are implicitly available but not documented. The `undefined4` types would need fixing for clean compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- `param_strcpy` returns `void` instead of `int` - the return value of `strlen(__s)` is computed but discarded, fundamentally breaking the function's contract
+- Variable names are almost entirely generic (`param_1`, `param_2`, `local_28`, `iVar1`) with no semantic meaning
+- The `const` qualifier is lost from parameter types (`const char *src` becomes `char *param_2`)
+- No comments explaining algorithm logic or recovery decisions
+- Magic numbers like `0x2a` appear without explanation
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler preserved the exact function names from the source (`param_strcpy`, `call_strcpy`, `param_strcmp`, etc.), making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names like `param_1`, `param_2`, `local_28`, `iVar1`, `uVar2` make it extremely difficult to understand code logic. The decompiler should infer names from usage patterns (e.g., `dst` for the destination buffer in strcpy calls).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., destination in strcpy → name as `dst`, source → `src`, size parameter → `size` or `count`)
+2. **Preserve return values**: The `param_strcpy` function computes `strlen(__s)` but doesn't return it - the decompiler should detect when a function clearly should return a computed value
+3. **Recover const qualifiers**: Analyze pointer usage to determine if parameters should be `const` (e.g., `const char *src` since it's only read from)

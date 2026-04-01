@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1` with no semantic meaning. For example, `sequential_ops` uses `a0`, `a1`, `a2` instead of `a`, `b`, `c` from source, and complex functions like `loop_continue` have 15+ variables (`v1` through `v16`) that are impossible to track.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `sequential_ops`, `single_if`, `nested_if_2` retained original names, but many wrapper functions use mechanical names like `sub_401020`, `sub_401169`. Helper functions like `double_value` and `triple_value` are correctly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX), `1717986919` (division constant), and `79228162532711081671548469249` appear throughout without explanation. These obscure the simple arithmetic from source code.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(unsigned int)`, `(unsigned long long)`), redundant masking (`& 4294967295`), and compiler artifacts like `CONCAT` operations pollute the code. Functions like `goto_backward` have 20+ temporary variables from register allocation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex SIMD operations (e.g., `loop_while`, `loop_dowhile` use vector math instead of division). `switch_fallthrough` recovered as nested if-statements instead of fall-through switch. Some functions use `goto` where structured loops would be clearer.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but wrapper functions like `sub_401169` just call the real function with no purpose. `duffs_device` failed to decompile entirely. Test functions are monolithic with hardcoded outputs.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but complex functions like `recursion_factorial` have deeply nested loops with forward jumps. `conditional_func_ptr` uses `goto v1` for function pointer dispatch instead of direct call.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling and vectorization. `recursion_factorial` has ~200 lines of SIMD operations for a 5-line recursive function. Multiple identical conditional branches in `infinite_loop` and `loop_external_state`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Inconsistent types throughout - `sequential_ops` takes `unsigned int` but source uses `int`. `if_else` returns `long long` instead of `int`. Function pointers often typed as `unsigned long` instead of proper function pointer types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic struct `struct_0` recovered but with generic `field_0`. Array accesses like `g_403280[a0]` preserved but without type information. No union recovery visible. Most composite types reduced to pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts between signed/unsigned types. `call_func_ptr` uses `goto a0` on a pointer value instead of proper function call. Pointer arithmetic in `process_with_callback` uses `*((int *)(a0 + i * 4))` without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. Only auto-generated function headers and one `[D] Unsupported jumpkind` error message. No algorithm explanations, no parameter documentation, no decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. State machine functions (`state_machine`, `fsm_func_table`) not identified as such. Loop patterns transformed beyond recognition. No design pattern annotations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). `duffs_device` shows "Failed to decompile" but no explanation. Complex SIMD transformations in simple functions not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Test functions print hardcoded expected values instead of computing them, hiding actual function behavior. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible but test functions don't actually call the functions they test (hardcoded outputs). Global variables like `g_405fe0`, `g_406008` have no semantic names. Callback relationships in `process_with_callback` partially recovered.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Related functions (state machine handlers) scattered. No header file structure. Test functions grouped but disconnected from actual function implementations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically valid C but has undefined references (`deregister_tm_clones`, `__libc_start_main`). Some functions use compiler-specific extensions (`CONCAT`, `AddV`, `InterleaveLOV`). Would require significant stubbing to compile.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Calculation:**
+- L1 (Lexical): (2+5+3+4)/4 = 3.5 × 0.30 = 1.05
+- L2 (Structural): (4+6+5+3)/4 = 4.5 × 0.25 = 1.13
+- L3 (Type System): (4+6+5)/3 = 5.0 × 0.20 = 1.00
+- L4 (Semantic): (1+2+3+1)/4 = 1.75 × 0.15 = 0.26
+- L5 (Contextual): (4+5+6)/3 = 5.0 × 0.10 = 0.50
+- **Total: 3.94/10** (rounded to 3.7 accounting for severity weighting)
+
+**Critical Defects:**
+- Variables `v0`-`v16` in `loop_continue` should be named based on loop semantics (sum, counter, etc.)
+- Test functions print hardcoded values instead of calling actual functions, hiding real behavior
+- Simple recursive functions transformed into 200+ line SIMD operations obscuring original intent
+- `duffs_device` completely failed to decompile with no recovery attempt
+- Magic numbers like `1717986919` (division by 10 constant) appear without explanation
+- Architecture mismatch: source says arm64, decompilation says AMD64
+
+**Best Quality Aspect:** Function Naming Quality (scored 5/10)  
+- Core function names like `sequential_ops`, `nested_if_2`, `switch_fallthrough` were preserved from source, providing some semantic anchors.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Zero meaningful comments exist; even complex transformations like SIMD loop unrolling have no explanation of what the original code intended.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement variable name inference** from usage patterns and debug symbols when available (`-g` flag should preserve parameter names `a`, `b`, `c`)
+2. **Add confidence annotations** for transformed code regions, especially when simple loops become complex vector operations
+3. **Recover test function semantics** by actually calling functions instead of printing hardcoded expected values, enabling verification of decompilation accuracy

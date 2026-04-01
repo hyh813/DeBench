@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are reduced to generic names like `a1`, `a2`, and global strings are named `g1`, `g2`, providing zero semantic context about their content or purpose.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: While `main` and `test_calling_conventions` are preserved, the decompiler mangles names with optimization artifacts like `param_varargs_constprop_0`, and completely erases the specific calling convention functions (`cdecl_func`, `stdcall_func`) via inlining.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals containing Chinese characters are represented as hex escape sequences (e.g., `\xe6\xb5\x8b`), making them unreadable without decoding; magic numbers like `15` or `50` are present but not explained.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean of register spills or frame pointer manipulation, though the aggressive constant propagation acts as semantic noise by hiding the actual function calls intended to be tested.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: The control flow is perfectly linear, consisting of sequential function calls and returns without any confusing jumps or spaghetti logic.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler fails to preserve the original structure; the core logic (calling `cdecl_func`, `stdcall_func`, etc.) is inlined away, and the varargs loop logic is replaced by a hardcoded sum, destroying the modularity of the original source.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads strictly top-to-bottom with no forward jumps or computed branches interrupting the flow.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: There is no dead code or redundancy; however, this is achieved by over-optimizing the code (removing the functions entirely), which is detrimental to understanding the source structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types like `int32_t` and `char*` are used accurately for the visible variables, and the signature of `__printf_chk` is correctly identified.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No structure types (`LargeStruct`, `SmallStruct`) are recovered or defined in the decompiled output, despite being used in the original source; their usage is completely hidden by inlining.
+
+**11. Type Safety:** Score: 10/10
+Justification: No unsafe casts or pointer arithmetic errors are introduced in the decompiled output.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Only auto-generated metadata comments (address ranges, line numbers) are present; there are no comments explaining the logic or the purpose of the "test" functions.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler fails to recognize the "varargs" idiom, replacing the loop with a direct summation of arguments, and misses the "calling convention" testing pattern entirely.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: A critical anomaly exists in `test_return_values` where `__printf_chk` is called with a format string containing `%d` but missing the corresponding integer argument, yet this is not flagged or warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented; the intent of the code (testing specific behaviors) is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to `puts` and `__printf_chk` are clear, and the calls between the `test_...` functions are preserved, but the cross-references to the specific implementation functions are gone.
+
+**17. Module Organization:** Score: 7/10
+Justification: The file is organized into globals and functions, which is standard, but the logical grouping of related calling convention functions is destroyed.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes necessary headers and prototypes, but the use of the internal glibc function `__printf_chk` instead of standard `printf` and the missing arguments in `test_return_values` would cause compilation or runtime errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 4 + 5 + 8) / 4 = 5.0
+L2_avg = (10 + 2 + 10 + 10) / 4 = 8.0
+L3_avg = (8 + 1 + 10) / 3 = 6.33
+L4_avg = (2 + 2 + 1 + 2) / 4 = 1.75
+L5_avg = (7 + 7 + 6) / 3 = 6.67
+
+Overall = (5.0 × 0.30) + (8.0 × 0.25) + (6.33 × 0.20) + 
+          (1.75 × 0.15) + (6.67 × 0.10)
+        = 1.5 + 2.0 + 1.266 + 0.2625 + 0.667
+        = 5.6955
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects
+- **Aggressive Inlining**: The decompiler inlined `cdecl_func`, `stdcall_func`, and others, completely erasing the code's primary purpose (demonstrating calling conventions).
+- **Missing Function Arguments**: In `test_return_values`, calls to `__printf_chk` lack the required integer arguments for the `%d` format specifiers, resulting in semantically incorrect code.
+- **Lost Varargs Logic**: The `va_list` loop in `param_varargs` was replaced by a hardcoded sum (`a3 + a2 + a4 + a5`), obscuring the variable argument mechanism.
+- **Unreadable Strings**: UTF-8 strings are escaped as hex sequences, making the output messages unintelligible.
+- **No Struct Recovery**: Composite types used in the source are entirely absent from the decompiled output.
+
+### Best Quality Aspect
+- **Control Flow Naturalness (10/10)**: The remaining code is perfectly linear and easy to follow execution-wise, lacking any complex control flow obfuscation.
+
+### Most Needs Improvement
+- **Anomaly Indication (1/10)**: The decompiler presents code with missing printf arguments as valid, failing to flag a severe semantic error that would confuse any user.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Configurable Optimization Levels**: Add an option to disable aggressive constant propagation and inlining to preserve function boundaries, which is crucial for understanding code structure (especially for test suites).
+2.  **Argument Recovery for Variadic Functions**: Improve the analysis of stack frames for functions like `printf` to ensure all arguments corresponding to format specifiers are recovered, even in optimized builds.
+3.  **String Literal Decoding**: Automatically detect and decode UTF-8/ASCII sequences in global variables instead of displaying them as hex escape codes.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all local variables use generic names (`v1`, `v2`, `v3`, `v4`, `v5`) instead of semantic names. For example, in `heap_basic`, `mem` is recovered but loop counters are `v1`, `v2`, `v3`, `v4` instead of `i`, `index`, or `array_ptr`. Global variables like `g1`, `g2`, `g9` obscure their purpose as string literals and flags.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names recovered from debug symbols (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). However, helper functions use mechanical names (`function_1120`, `function_1130`) and some semantics are incorrect (`call_global_callback` returns `x` instead of calling the function pointer).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) instead of readable strings. Magic numbers like `0x140000000a` for `global_point` and `0x100000000` shifts obscure intent. Array initializers like `{1, 0, 5, 0, 9}` are recovered but lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readfsqword(40)` stack canary checks in nearly every function, `__stack_chk_fail()` calls, redundant type casts (`(int64_t)`, `(int32_t)`, `(char *)`), and frame pointer manipulation throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `linked_list_heap` uses goto labels (`lab_0x1db6`, `lab_0x1dd4`, `lab_0x1dfe`) instead of natural while loops. At `-O0`, expect near-perfect loop recovery but decompiler failed to reconstruct idiomatic patterns. Simple functions like `double_value` are clean.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. Library wrappers extracted appropriately (`function_1170` for `memset`, `function_11b0` for `malloc`). No severe monolithic functions, though some could be cleaner.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom but `linked_list_heap` has multiple forward jumps disrupting flow. `vla_stack` and `alloca_usage` have complex branching from VLA handling that could be linearized better.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (e.g., `(int64_t)(int32_t *)mem`). Some loop patterns duplicated across similar functions. No severe dead code but cleanup would improve readability.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`/`int64_t` consistently but with confusion. `global_point` is `int64_t` instead of `struct Point`. Function parameters sometimes wrong (`memop_bcopy` has `int32_t * src, char * dst` instead of `const void*, void*`). Pointer types often generic `int64_t*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct completely lost (stored as `int64_t global_point = 0x140000000a`). `Node` and `TreeNode` structs not recovered - accessed via pointer arithmetic (`*(int64_t *)((int64_t)mem + 8)`). This is severe semantic loss.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. `call_global_callback` has broken semantics (returns `x` instead of `global_func_ptr(x)`). Pointer arithmetic on raw addresses. `heap_nested` writes to absolute addresses (`*(int32_t *)16 = 10`) which is dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated debug info comments ("From module: /work/3.c", "Line range: 8-10"). No semantic comments explaining logic, algorithms, or non-obvious operations. No API contracts or parameter documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list traversal in `linked_list_heap` not recognized as such. Tree creation/traversal in `tree_heap_traversal` not identified. Common memory patterns (malloc/free pairs) not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for critical issues. `dangling_pointer` undefined behavior not flagged. `double_free` double-free vulnerability not indicated. `heap_overflow` buffer overflow not warned. Silent presentation of dangerous code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: buf != NULL"). No postcondition inference. Error conditions not documented. Functions with NULL checks don't indicate this as a contract.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but not documented. Global variable usage not indicated at call sites. Callback relationships partially recovered (`set_global_callback` → `call_global_callback`) but broken semantics.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with prototypes at top. Global variables grouped together. Static functions properly identified. However, no logical grouping by functionality (stack/heap/static tests mixed in output order).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdio.h`, `stdlib.h`, `string.h`). External functions declared. Should compile with minor modifications. Some platform-specific code (`__readfsqword`) may need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+2+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+**Overall Readability Score:** 4.52/10
+
+### Critical Defects:
+- **Struct `Point` completely lost** - stored as raw `int64_t global_point = 0x140000000a` instead of `{x: 10, y: 20}`
+- **`call_global_callback` has broken semantics** - returns `x` instead of calling `global_func_ptr(x)`
+- **`linked_list_heap` uses goto labels** instead of natural while loops despite `-O0` compilation
+- **Stack canary noise in every function** - `__readfsqword(40)` and `__stack_chk_fail()` obscure logic
+- **No anomaly warnings** for `dangling_pointer`, `double_free`, `heap_overflow` undefined behaviors
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Debug symbols preserved most original function names accurately
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, converting structured data to raw integers
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from debug info** - DWARF metadata contains complete type information that should reconstruct `Point`, `Node`, `TreeNode` structs with field names
+2. **Eliminate stack canary noise** - Recognize and optionally hide `__stack_chk_fail` patterns or move to separate security annotations
+3. **Flag undefined behavior patterns** - Detect and warn about dangling pointers, double-free, and buffer overflows with clear annotations

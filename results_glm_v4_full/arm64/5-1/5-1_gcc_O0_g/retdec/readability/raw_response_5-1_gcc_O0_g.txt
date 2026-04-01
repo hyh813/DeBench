@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`, completely losing semantic context (e.g., `obj` becomes `v1`, `ptr` becomes `v1`).
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: Function definitions use mangled C++ names (e.g., `_ZN11SimpleClassC2EiPKc`), though accurate demangled names are provided in comments, requiring constant mental translation.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved and readable, but magic numbers (e.g., vtable offsets like `16`, `32`, or sizes like `4`) are used without explanation or named constants.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output is cluttered with massive amounts of compiler-generated noise, including full expansions of STL internals (`std::_Tuple_impl`, `std::_Head_base`) and virtual thunk functions (`_ZThn16_...`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While `-O0` preserves structure, C++ control flow like `try-catch` blocks is flattened into explicit `__cxa_throw` calls and jumps, and loops are sometimes represented as `goto` chains.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler fails to hide implementation details; user code is buried amidst hundreds of lines of expanded template functions for `std::unique_ptr` and `std::tuple`, destroying cohesion.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code generally reads top-to-bottom, but exception handling logic and virtual table initialization introduce non-linear jumps that disrupt the flow of the original source logic.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some redundant loads/stores from `-O0` are present, but the decompiler does not abstract away the redundancy of C++ ABI mechanics (e.g., repeated vtable loads).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Class types are erased; `this` pointers are passed as generic `int64_t*` or `void*`, and specific types like `SimpleClass*` are lost in function signatures.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Vtables are recovered as structs, but user-defined classes like `SimpleClass` or `Point` are not reconstructed with their fields; instead, manual pointer arithmetic (e.g., `v1 + 4`) is used.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as casting `int64_t` to function pointers or `int32_t*` for object manipulation, obscuring the original type safety of C++.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: The inclusion of demangled function signatures and source line ranges in comments is the only saving grace, allowing the user to map the mess back to the original source.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII (smart pointers), polymorphism (virtual calls), and exceptions are completely obscured, presented instead as low-level memory management and indirect calls.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: There are no explicit warnings about the complexity of the STL expansion or the loss of high-level structure; the code is presented confidently despite being difficult to parse.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are recovered; for example, the non-null requirements for `std::unique_ptr` operations are implicit in the raw pointer checks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Vtables provide some visibility into inheritance relationships, but the sheer volume of internal functions makes it difficult to trace the call graph of the actual test functions.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat file containing a mix of user logic and standard library internals, with no logical separation or namespace grouping.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is a C representation of a C++ binary; it mixes C linkage with C++ mangled names and relies on undefined types, making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable `v1` in `test_cpp_member_func` should be named `obj` to reflect the `SimpleClass` instance.
+- Function `test_cpp_smart_ptr` is unreadable due to the full expansion of `std::unique_ptr` internals (tuples, head bases).
+- Control flow in `test_cpp_exception` loses the `try-catch` structure, replacing it with raw `__cxa` runtime calls.
+- Class fields are accessed via raw offsets (e.g., `*(int32_t *)(v1 + 8)`) instead of struct member access.
+- Incorrect argument recovery in `test_cpp_member_func` where `setValue` is passed `&g44` (a global) instead of the local object address `&v1`.
+
+**Best Quality Aspect:** Comment Quality & Presence (scored 7/10)
+- The demangled names in comments are essential for mapping the low-level C code back to the original C++ classes and methods.
+
+**Most Needs Improvement:** Function Decomposition (scored 2/10)
+- The decompiler fails to abstract away standard library template implementations, burying the user's logic under hundreds of lines of `std::tuple` and `std::unique_ptr` internals.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++-specific AST reconstruction to hide STL internals (e.g., recognize `std::unique_ptr` patterns and emit a simplified `unique_ptr` struct).
+2. Recover class field layouts to replace pointer arithmetic (e.g., `ptr + 8`) with struct member access (e.g., `obj->multiplier`).
+3. Aggregate C++ runtime calls (e.g., `__cxa_begin_catch`, `__cxa_end_catch`) back into high-level `try-catch` blocks.

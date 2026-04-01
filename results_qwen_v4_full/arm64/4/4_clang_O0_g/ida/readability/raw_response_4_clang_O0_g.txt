@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameters retain original names (`a`, `b`, `count`) but temporaries are generic (`v0`, `v1`, `suma`). In `varargs_func`, `gr_offs` and `stack` show some semantic understanding, but `v3`, `v6`, `v8` are opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved excellently (`cdecl_func`, `varargs_func`, `func_struct_byval`). Only runtime helpers like `sub_6D0` lack semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xA00000005LL` for struct initialization lack explanation. String references use opaque labels (`asc_1DC0`, `aCallL206`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame annotations (`[xsp+Ch] [xbp-4h]`) and architecture-specific types (`__int64`, `_DWORD`, `_QWORD`) clutter the output. Type casts like `(unsigned int)` appear frequently.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` constructs and conditionals as `if-else`. Switch statement in `ret_multi_branch` preserved correctly. Varargs handling shows internal mechanics awkwardly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved without inappropriate inlining or fragmentation. Function sizes remain reasonable and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. String constant references create minor disruption but flow remains traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments present (`sum`/`suma` in `mixed_conventions_test`). Multiple type casts repeat unnecessarily throughout functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of precise (`int`, `char*`) and degraded types (`void*`, `__int64`). ARM64-specific types (`_DWORD`, `_QWORD`) reduce portability and clarity.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs (`LargeStruct`, `SmallStruct`, `BigStruct`) preserved with field names. However, `func_struct_byval` takes `LargeStruct*` instead of by-value, altering semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(unsigned int)(int)((double)(x + v5))`). Pointer arithmetic visible in varargs handling. Void pointer conversions lack safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only function headers with metadata and one warning comment ("local variable allocation has failed"). No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C patterns (loops, conditionals) recognized. Varargs pattern partially recognized but exposes internal `va_list` structure. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Decompilation failures noted at end ("FAILED to decompile: memcpy, strlen"). Warning on `ret_large_struct` but no detailed explanation of why or how to fix.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks exist (`if (!p) return -1`) but not documented as contracts. No invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved with correct signatures. Callback relationships maintained (`param_func_ptr`). Global variable usage not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source structure. No explicit module boundaries or grouping annotations in decompiled output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed decompilation requiring stubs. Missing type definitions for some structs. Would need significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (6+8+5+5)/4 = 6.0  → 1.80
+Level 2 (25%): (7+8+7+6)/4 = 7.0  → 1.75
+Level 3 (20%): (6+7+5)/3 = 6.0    → 1.20
+Level 4 (15%): (3+5+5+3)/4 = 4.0  → 0.60
+Level 5 (10%): (6+6+5)/3 = 5.67   → 0.57
+─────────────────────────────────────────────
+Overall Score:                    5.92/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- Variable `v0`-`v10` should be named based on usage (e.g., `result_cdecl`, `result_stdcall` in `test_calling_conventions`)
+- Struct `func_struct_byval` takes pointer instead of by-value, changing calling convention semantics
+- Magic number `0xA00000005LL` for `SmallStruct` initialization lacks explanation
+- Varargs functions expose internal `va_list` structure (`__gr_offs`, `__stack`) instead of abstracting
+- No comments explaining the purpose of test functions or expected behavior
+- 8 external library functions failed decompilation without stubs provided
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved almost perfectly, making code immediately recognizable and traceable to source intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no documentation explaining logic, algorithms, or decompilation confidence, forcing readers to reverse-engineer intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Analyze how variables are used (e.g., `v0` stores function return values) to suggest names like `result_cdecl`, `sum_total`.
+2. **Abstract varargs internal structures** - Recognize `va_start`/`va_arg`/`va_end` patterns and present clean high-level iteration instead of exposing `__gr_offs` and `__stack` internals.
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments explaining what was inferred vs. known, especially for type conversions and struct passing conventions.

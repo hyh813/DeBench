@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `uVar2`, `local_10`, `puVar5`) with no semantic meaning. For example, `aiStack_38` should be `arr` and `acStack_810` should be `large_buf` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved for user code (`double_value`, `local_vars`, `heap_basic`) but library calls degraded to `FUN_000111b0` (malloc), `FUN_00011150` (free), `FUN_000111e0` (printf), obscuring critical functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent throughout: `0x2a` (42), `0x14` (20), `0xf` (15), `0x1e` (30) used without explanation. String literals preserved well but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks add noise (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`, `__stack_chk_fail_local()`). Compiler artifacts present but not overwhelming; could be filtered for cleaner output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs reasonably well, but VLA/alloca functions (`vla_stack`, `alloca_usage`) have overly complex pointer arithmetic. `stack_alias` incorrectly simplified to constant return, losing original logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but `test_heap_memory` is excessively complex (150+ lines) with tangled stack management. Helper functions like `FUN_00011xxx` should be identified as library calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Some forward jumps in complex functions disrupt reading but not severely. Early returns used appropriately in most cases.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in many functions. VLA code has redundant pointer arithmetic (`puVar5 + iVar1 + 0xf) & 0xfffffff0`). No dead code removal observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined*` instead of proper types. `local_array` returns `undefined4` instead of `int`. Pointer types often generic (`undefined4 *` instead of `int *` or `Node *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point`, `Node`, `TreeNode` structs completely lost. `heap_struct` uses raw memory (`iVar1 = FUN_000111b0(8)`) instead of `Point *`. Linked list operations use pointer arithmetic instead of struct field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(undefined4 *)`, `(int *)`). Pointer arithmetic without type safety throughout. `heap_nested` uses `undefined4 *` for `Node **`, losing type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Memory allocation patterns (malloc/free pairs) not identified. Linked list traversal, tree operations not labeled. Design patterns completely obscured.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite significant issues. `stack_alias` logic loss not warned. VLA complexity not explained. Stack canary checks present but not documented as compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. Error conditions not explained. `heap_basic` null check present but not documented as precondition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but library functions unnamed. Global variables (`global_counter`, `file_scope_static`) referenced but not clearly documented. Callback relationships (`global_func_ptr`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. However, no file organization hints or module boundaries indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile as-is. `FUN_00011xxx` functions need stubbing. Missing headers, undefined globals (`global_counter`, `extern_global_var`). Requires extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+5+6)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.07/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects:
+- **Composite types completely lost**: `Point`, `Node`, `TreeNode` structs not recovered; all struct operations reduced to pointer arithmetic
+- **Library functions unnamed**: `malloc`→`FUN_000111b0`, `free`→`FUN_00011150`, `printf`→`FUN_000111e0` obscures core functionality
+- **Zero documentation**: No comments explaining algorithm intent, decompilation confidence, or anomaly warnings
+- **Variable names meaningless**: `param_1`, `iVar1`, `uVar2` provide no semantic information about purpose
+- **Magic numbers unexplained**: `0x2a`, `0x14`, `0xf` used throughout without constant definitions
+
+### Best Quality Aspect:
+- **Noise Reduction (6/10)** - Stack canary checks are the primary noise source; otherwise code is relatively clean without excessive compiler artifacts
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding decompiled intent extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze memory access patterns to reconstruct struct layouts with field names (e.g., detect `offset 0 = data, offset 4 = next` as `Node` struct)
+2. **Identify and name library functions** - Match call patterns to standard library signatures (malloc/free/printf) and restore original names
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "// DECOMPILE UNCERTAINTY: VLA stack allocation pattern") and explain compiler artifacts like stack canaries

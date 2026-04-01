@@ -1,0 +1,8 @@
+=== Testing Obfuscated Optimizations ===
+
+Opaque predicate result: 10
+Instruction substitution: 35
+Call instruction substitution: 225
+String encryption: 49
+Tail call result: 500500
+Non-tail call result: 5050

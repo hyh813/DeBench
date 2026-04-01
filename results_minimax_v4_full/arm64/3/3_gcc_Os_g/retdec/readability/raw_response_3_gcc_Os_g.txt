@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, `mem`, `result` - completely generic. The original source had meaningful names like `arr`, `head`, `n`, `data`, `counter` but these are lost. Even stack variables like `large_buf` become meaningless addresses.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (e.g., `double_value`, `test_stack_memory`, `heap_basic`), but many have auto-generated names like `function_9d0`, `function_a00`, `function_a40` which are meaningless. The test functions are well-named, but helper functions lost their semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Simple literals like `42`, `100`, `10` are clear, but Chinese strings are displayed as hex escape sequences (`"\xe6\xb5\x8b\xe8\xaf\x95..."` instead of readable text). Address constants like `0x13020` appear without explanation. Some magic numbers remain unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts including `__asm_sbfiz`, `__asm_ubfx`, `__asm_sbfx` intrinsics, `__stack_chk_fail` calls, and redundant casts. However, these are manageable and don't completely obscure the logic. Some dead code from register spilling present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto statements for loop constructs (`goto lab_0x129c`, `goto lab_0x16a0`) instead of natural while/for loops. Some control flow is readable, but the excessive goto disrupts comprehension. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. Test functions are appropriately separated from logic functions. No extreme monoliths observed. Minor issues with some functions being slightly large but acceptable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but frequent goto statements create non-linear jumps. Early returns are used appropriately in some functions but goto-based loops interrupt flow. Forward jumps into loop bodies present.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling present in `local_array` and `heap_basic` but it's minimal. Common subexpression elimination artifacts are minor. Overall clean enough.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good use of `int32_t`, `uint32_t`, `int64_t` matching ARM64 conventions. Function pointers properly typed. Some generic `int` remains but mostly accurate. Signed/unsigned correct in most places.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is severely degraded. The `Point` struct is completely lost - `global_struct_access()` just returns constant 30. The `Node` and `TreeNode` structs are not recovered - uses raw pointer arithmetic with `malloc(16)`, `malloc(24)` without struct definition. All composite types reduced to void* operations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present. Pointer arithmetic like `*(int32_t *)(4 * v3 + v2)` is error-prone. The `heap_struct` function has a critical bug - it frees memory before using it (`free(mem); result = 3 * x;`). Type-confused operations in `memop_memcmp` with `str` used as both pointer and size.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments show address ranges (`// Address range: 0xb00 - 0xb24`) and line ranges (`// Line range: 881 - 887`) which are auto-generated metadata. No explanation of algorithm logic, no @param/@return documentation. The comments don't help understand what the code does.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Memory operations are just raw API calls without pattern names. Linked list creation, tree traversal, memory pool patterns not recognized or named. Completely flat representation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer()` function that accesses memory after `free()` is not flagged. The `double_free` bug is not indicated. No warnings about potential undefined behavior. Code presents everything as confident.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The safety checks (NULL checks, bounds checks) are present in code but not explained as contracts. Completely missing contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top show relationships. Some global variable usage is clear. But callback relationships (like `global_func_ptr`) not well documented. Virtual dispatch not recovered. Partial clarity at best.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically - test functions together, memory operations grouped. Static functions properly marked. However, the auto-generated helper functions (`function_9d0`, etc.) are interspersed with real code. Reasonable but not optimal.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes standard headers (`<stdio.h>`, `<stdlib.h>`, etc.). Function prototypes declared. Should compile with minimal patching. Some external dependencies (like `__printf_chk`) are compiler-specific but documented. Decent compilation readiness.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Variable naming**: All meaningful names lost (`arr`→`mem`, `head`→`v1`, `n`→`v1`), making code impossible to track
+- **Struct recovery failure**: `Point`, `Node`, `TreeNode` completely lost - all composite types reduced to raw pointer arithmetic
+- **Control flow goto**: Excessive goto instead of natural loops at -O0 level where this should be clean
+- **No anomaly flagging**: Dangerous code like dangling pointers and double-free not indicated
+- **String encoding**: Chinese text displayed as hex escapes making output unreadable
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+The decompiler correctly uses `int32_t`, `uint64_t` etc. matching ARM64 conventions, and function pointers are properly typed.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+Structures are completely lost - the original had clear `Point`, `Node`, `TreeNode` definitions but decompiled code uses only raw `malloc(size)` with pointer arithmetic, losing all semantic meaning of the data structures.
+
+**Top 3 Recommendations:**
+1. **Recover struct definitions** from allocation sizes and field access patterns - `malloc(8)` for Point, `malloc(16)` for Node should create struct templates
+2. **Convert goto-based loops** to natural while/for constructs - at -O0, control flow should closely match source
+3. **Flag anomalies** like dangling pointers, double-free, and memory leaks with warnings - these are security-critical patterns that analysts need to know about

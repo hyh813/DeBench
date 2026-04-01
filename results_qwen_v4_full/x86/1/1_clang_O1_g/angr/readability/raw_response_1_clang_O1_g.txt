@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original names like `temp1`, `sum`, `count`, `result` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions recovered original names (`sequential_ops`, `single_if`, `if_else`), but many wrapper functions use mechanical names (`sub_401030`, `sub_40122f`). Helper functions like `double_value`, `triple_value` preserved correctly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1), `1717986919` (division optimization), `0x80000000`. No constants defined. Some literals like `10`, `100` in switch cases are inferable but unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: redundant casts (`(unsigned int)`, `(char)`), frame pointer manipulation (`[bp-0x8]`), and optimization artifacts (bit-shift division replacements). Some functions like `sequential_ops` are clean, but loops are heavily polluted.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions (`sequential_ops`, `if_else`) recovered well, but loops catastrophically degraded—`loop_for_fixed` uses bit manipulation instead of iteration, `loop_while` replaced with complex arithmetic. Some `goto` labels present (`LABEL_401832`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Individual functions extracted with appropriate boundaries, but test functions bloated and poorly structured. Critical functions broken: `call_func_ptr_array` returns constant `-1` instead of calling through function pointer array.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom naturally. Test functions (`test_control_flow_l1`, `test_control_flow_l2`) have excessive forward jumps and labels disrupting flow. Loop constructs converted to do-while with confusing conditions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundancy: `loop_for_fixed` has complex formula instead of simple loop, `switch_small` uses GOT lookup instead of direct arithmetic. Test functions repeat printf patterns without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: original `int` becomes `unsigned int` throughout, losing signed semantics. Pointer types sometimes recovered but often generic. Function pointer signatures partially lost (`call_func_ptr` uses `unsigned int *a0` instead of proper function pointer type).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions present but with generic field names (`field_0`, `padding_0`, `field_4ed7`). Some struct layouts appear incorrect or inflated with padding. Array types lost (`arr[]` becomes pointer arithmetic).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout (`(char*)`, `(int*)`, `(unsigned int*)`). Function pointer calls with incorrect signatures. Pointer arithmetic on generic types. `call_func_ptr_array` completely broken with wrong signature.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments explaining each function's purpose and test cases.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized (converted to arithmetic formulas). Switch statements sometimes recovered, sometimes not (`switch_fallthrough` partially recovered). State machine patterns not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One unsupported operation noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). No warnings about potentially incorrect decompilation (e.g., broken `call_func_ptr_array`). No confidence levels indicated for uncertain recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No error condition documentation. Original source had test validation comments that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables referenced (`_GLOBAL_OFFSET_TABLE_`, `g_403050`) but not explained. No call graph information. Test functions don't properly call the functions they're testing.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output file with no logical grouping. No header file structure. Related functions not grouped (test functions scattered). No namespace or package structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies undefined (`_GLOBAL_OFFSET_TABLE_`, `__libc_start_main`, `__x86.get_pc_thunk.*`). Many functions reference undefined symbols. Would require extensive stubbing and patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Calculation:**
+```
+L1 (Lexical):     (3+6+4+5)/4 = 4.50  × 0.30 = 1.35
+L2 (Structural):  (4+5+5+5)/4 = 4.75  × 0.25 = 1.19
+L3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.67
+L4 (Semantic):    (1+3+4+2)/4 = 2.50  × 0.15 = 0.38
+L5 (Contextual):  (4+3+3)/3   = 3.33  × 0.10 = 0.33
+-----------------------------------------------
+Total:                                    = 3.92 ≈ 3.9/10
+```
+
+**Critical Defects:**
+- Loop constructs completely lost—`loop_for_fixed`, `loop_while`, `loop_dowhile` use complex arithmetic instead of recognizable iteration
+- Variable names all generic (`v0`, `v1`, `a0`) with zero semantic meaning
+- Zero comments despite original source having extensive documentation
+- `call_func_ptr_array` completely broken—returns constant `-1` instead of function pointer dispatch
+- Test functions don't actually call the functions they're testing (just print expected values)
+- Type precision lost—`int` becomes `unsigned int` throughout, breaking signed semantics
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core test function names were preserved from original source (`sequential_ops`, `single_if`, `nested_if_2`, etc.)
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Complete absence of any comments, documentation, or decompilation confidence indicators makes understanding intent nearly impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover loop constructs from optimization patterns**—detect division-by-constant bit shifts and arithmetic series formulas, reconstruct as readable for/while loops
+2. **Infer variable names from usage context**—analyze how variables are used (loop counters, accumulators, flags) and assign semantic names accordingly
+3. **Add decompilation confidence annotations**—mark uncertain recoveries (indirect calls, optimized code) with comments indicating manual review needed

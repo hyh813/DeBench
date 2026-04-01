@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `v4`, `temp`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3`, `v4` instead of meaningful names like `predicate1`, `gcd_result`, `bitwise_check`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Original function names are perfectly preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). This is exceptional recovery matching source intent exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals stored as hex-encoded globals (`g1`, `g2` with UTF-8 bytes) obscuring meaning. Magic numbers like `90` (XOR key) and `0x12345678` (canary) lack symbolic names or comments.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) present throughout. Helper function wrappers for standard library calls (`function_10f0` for `strncpy`) add unnecessary indirection.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Dead code from fake branches correctly eliminated (expected at -O0 with compiler analysis). Loop structures preserved but `param_opaque_predicate` has awkward condition `n >= 0 == (n != 0)` instead of simple `n > 0`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. Library call wrappers (`function_1100` for `puts`, `function_1110` for `strlen`) are over-fragmented but don't impede understanding.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some functions like `param_vectorized_loop` have complex index calculations (`4 * v3 + (0x100000000 * (int64_t)a >> 32)`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code from always-false conditions properly eliminated. Some redundant type casts remain (`(int64_t)(v2 >> 31) | (int64_t)v2`) but don't severely impact clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `int64_t`, `uint32_t` appropriately. However, `param_fake_branch` parameter changed from `int` to `int32_t`, and `param_division_by_zero` uses `uint32_t` instead of `int`, losing signed semantics.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` reconstructed with generic field names (`e0[8]`, `e1`, `e2`) instead of semantic names. No field meaning recoverable from decompilation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int64_t)buffer`, `(int32_t)len`). Pointer arithmetic explicit but verbose. `param_null_pointer_deref` has uninitialized `v2` variable causing potential undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only metadata comments (address ranges, line ranges). Critical obfuscation patterns (fake branches, opaque predicates) completely undocumented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Obfuscation techniques (fake branches, opaque predicates, instruction substitution) not identified or labeled. XOR decryption pattern not commented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about dead code elimination, type mismatches, or potential issues. `param_null_pointer_deref` has uninitialized variable without flagging.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions or error condition documentation. Signal handler contracts not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through direct invocation. Global variables named generically (`g1` through `g19`) losing string content meaning. Call graph implicit but traceable.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Original source section comments (7.1, 7.2, 7.3) completely lost. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes present (`setjmp.h`, `signal.h`, etc.). Should compile with proper linking. External dependencies (`__libc_start_main`, `__cxa_finalize`) declared but may need stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.88
+Level 3 (Type):        (7+5+6)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 5.86/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `v3`) obscuring semantic purpose in all complex functions
+- **Zero meaningful comments** - obfuscation patterns, dead code elimination, and cryptographic operations undocumented
+- **String literals hex-encoded** as globals (`g1`, `g2`) instead of readable strings
+- **Struct fields generic** (`e0`, `e1`, `e2`) losing `jmp_buf` semantic meaning
+- **Type mismatches** - `param_division_by_zero` uses `uint32_t` instead of `int`, changing signed division semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making navigation and identification trivial
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding obfuscation intent impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables in loop counters → `i`, `index`; XOR operations → `key`, `encrypted`)
+2. **Add obfuscation pattern detection** - Flag always-false conditions, opaque predicates, and instruction substitution with explanatory comments
+3. **Recover string literals inline** - Decode UTF-8 hex strings at declaration site instead of opaque global references (`g1`, `g2`)

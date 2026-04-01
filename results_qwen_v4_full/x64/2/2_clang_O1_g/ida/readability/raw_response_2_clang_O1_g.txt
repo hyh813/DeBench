@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (v0, v1, v2, result) while function parameters retain some meaning (c, arr, n, p). Test functions have excessive generic variables (v0-v34) obscuring purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (process_char, array_1d_stack, ptr_single, struct_simple). Helper functions like sub_1020 and init_proc are generic but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation (32 for char conversion, 65 for 'A', 0x1Au). Test functions show computed constants (15, 300, 11) instead of actual function calls, losing traceability.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (register comments like "// rax", "// rdx"). Type casts from decompilation (__int64, __int128) add visual noise. Stack variable declarations in test functions not in source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use do-while instead of for (acceptable optimization artifact). enum_switch uses array lookup (dword_2680[s]) instead of switch statement. Extra bounds checks (n <= 0) added by optimizer.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized matching source granularity. No excessive inlining or fragmentation. Test functions large but that reflects source design.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear loop structures. Some forward references in test functions (v27[v20]) disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casts from decompilation. Test functions show optimized constant folding (good). No obvious dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, short, long, float, double). Some degradation (__int64 instead of long long). Pointer types and const correctness mostly preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types preserved with field names (Point3D, Rect, Widget, Node). Union types recovered (UnionData). Bitfield struct accessed via raw bitwise operations ((*(_WORD *)f >> 3) & 7) instead of field names.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (void* to int*, char* conversions in ptr_void). Pointer arithmetic visible in ptr_diff. Generally type-safe for operations performed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no comments explaining logic. No algorithm explanations. Original source comments completely lost. Only auto-generated decompiler headers present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion) present but not identified. No design pattern naming. enum_switch pattern not recognized as state machine.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted at end (printf, puts, __libc_start_main). volatile_access optimized away volatile behavior without warning. No warnings about potential issues in recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., arr != NULL). No postconditions inferred. No invariant recognition for data structures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. No call graph documentation. Global variable usage not well documented. Callback relationships not explicitly noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Related functions grouped. No header file structure or module boundaries defined.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions failed to decompile (printf, puts, __libc_start_main). Would need stubs to compile. Some type definitions missing from output.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (7+7+7)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 6.22/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Variable `v0-v34`** should be named based on usage (e.g., `matrix`, `cube`, `sum`) in test functions
+- **Bitfield access** uses raw bitwise operations instead of named fields (f->flag1, f->flag2)
+- **volatile_access** lost volatile semantics (returns 2 * *p instead of two separate reads)
+- **Test functions** output pre-computed constants instead of actual function calls, losing traceability
+- **No comments** explaining algorithm purpose or non-obvious logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source with semantic meaning intact
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no documentation; original source comments completely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (loop counters, accumulators, pointers) to suggest meaningful names
+2. **Recover bitfield structures with named fields** - Detect bitfield access patterns and reconstruct struct definitions with proper field names
+3. **Add semantic comments for optimized code** - When optimization transforms code (volatile removal, constant folding), add comments explaining the transformation and original intent

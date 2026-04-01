@@ -1,0 +1,1 @@
+TRACE_ENT|0|call_macro_constants|0|Arg0=1,Arg1=-1094608860,Arg2=-1094608852,Arg3=5036677|r0=0x1,r1=0xbec19824,r2=0xbec1982c,r3=0x4cda85,r4=0xbec196e8,r5=0x0,r6=0x0,r7=0x0

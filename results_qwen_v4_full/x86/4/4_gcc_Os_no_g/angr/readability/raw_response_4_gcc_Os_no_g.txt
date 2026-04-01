@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—some original names preserved (`cdecl_func`, `varargs_func`, `main`, `func_a`) but many functions reduced to `sub_401XXX` pattern (e.g., `sub_401030`, `sub_401090`). Runtime functions have descriptive names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers (`4294967295` for -1, `10475`, `11831`, `11743`) with no explanation. Test constants (15, 50, 6) are present but their purpose as expected values is undocumented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers throughout. Repeated struct definitions and compiler runtime functions mixed with application code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` for indirect jumps (e.g., `goto v1->field_24;`) instead of proper function calls. At -O0 optimization, this restructuring is inappropriate and obscures original simple return statements.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original test functions preserved but many artificial helper functions created (`sub_401030` through `sub_4010e0` chain). Many functions are trivial wrappers that just call another function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions. Forward jumps exist but aren't excessive. Loop structures in `func_struct_byval` and `varargs_func` are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Struct definitions repeated multiple times with different offsets (`struct_0` defined 10+ times). Similar dispatcher patterns in `sub_401XXX` functions show no consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—everything becomes `unsigned int`. Original `char*`, `double`, `long long`, `void*` distinctions lost. `func_mixed_args` signature shows 5 `unsigned int` params instead of `(int, char*, double, long long)`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs use generic `field_X` and `padding_X[N]` names. `LargeStruct` with `data[16]` and `SmallStruct` with `x, y` fields not recovered. Layouts approximately correct but semantically meaningless.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointers typed as `unsigned int*`, pointer arithmetic on generic types, implicit casts throughout. `param_func_ptr` shows `a0(a1)` on `unsigned int*` which is type-unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments explaining calling conventions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern partially recognized (stack access via `(&v0)[4 * idx]`) but not named or explained. No design pattern identification. Original calling convention tests completely opaque.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Does mark unsupported operations with `[D]` markers but provides no explanation or recovery suggestions. Some anomalies silently handled without indication. Better than nothing but insufficient.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions inferred. Null checks present but their purpose as contracts not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g_402008`, `g_4021c7`) referenced without explanation. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`_init`, `_start`, `__do_global_ctors_aux`) mixed with application code. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Marked "Compilation Result: Yes" but `[D]` markers would prevent actual compilation. External dependencies not documented. Would require extensive manual patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75
+Level 2 (Structural):  (4+5+6+4)/4 = 4.75
+Level 3 (Type):        (3+4+3)/3   = 3.33
+Level 4 (Semantic):    (1+3+5+2)/4 = 2.75
+Level 5 (Contextual):  (4+4+3)/3   = 3.67
+
+Overall = (3.75×0.30) + (4.75×0.25) + (3.33×0.20) + (2.75×0.15) + (3.67×0.10)
+        = 1.125 + 1.1875 + 0.666 + 0.4125 + 0.367
+        = 3.76/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original is arm64, decompiled shows X86—fundamental platform error
+- **Type erasure**: All parameters become `unsigned int`, losing `char*`, `double`, `long long` distinctions
+- **Unsupported operation markers**: `[D]` markers throughout code that would prevent compilation
+- **No semantic comments**: Zero documentation despite complex calling convention test code
+- **Generic struct fields**: `field_0`, `padding_0[36]` instead of meaningful names like `data[16]`, `x`, `y`
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)**: Within individual functions, code generally reads top-to-bottom with recognizable loop structures in some functions like `func_struct_byval`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)**: Complete absence of any comments, documentation, or decompilation confidence indicators makes understanding intent impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols**: Since compiled with `-g`, leverage DWARF info to restore original types (`char*`, `double`, struct names) instead of defaulting to `unsigned int`
+2. **Eliminate or explain unsupported operation markers**: Either successfully decompile `[D]` marked regions or provide detailed explanations of what couldn't be recovered and why
+3. **Preserve original function and variable names**: Use symbol table information to maintain `cdecl_func`, `varargs_func`, `LargeStruct` names instead of `sub_401XXX` and `v0`/`v1` generics

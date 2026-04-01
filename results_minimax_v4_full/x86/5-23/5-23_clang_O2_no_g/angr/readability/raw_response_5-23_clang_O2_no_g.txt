@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code uses generic parameter names like `a0`, `a1`, `a2` and local variables like `v0`, `v1`, `v2` throughout. While some variables like `idx`, `result`, `ptr` are descriptive, the majority obscure their semantic purpose. The original source used meaningful names like `size`, `x`, `y`, `counter`, `increment`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The decompiler recovered some original function names (e.g., `param_macro_constants`, `call_macro_constants`, `my_func`, `param_asm_basic`), but most functions use generic address-based names like `sub_401240`, `sub_401270`. This inconsistency makes it difficult to understand the codebase at a glance.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some macro values are resolved (e.g., `64` for BUFFER_COUNT*4, `57122` for 0xDF22), but constants like `0x200` (512) and `1025` appear without explanation. The original source had named constants MAX_SIZE=1024, BUFFER_COUNT=16 that are partially lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. No excessive frame pointer manipulation, redundant casts, or debug instrumentation is present. Some minor noise exists in wrapper functions but doesn't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures and loop constructs recognized. For example, `param_asm_clobber` correctly shows a for-loop: `for (idx = 0; idx < a1; idx += 1)`. At -O0, the flow closely matches the original source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with reasonable granularity. Some small wrapper functions exist (e.g., `sub_401256` calling `call_macro_constants`), but the core logic functions like `param_macro_constants` (8 lines) and `param_asm_clobber` (12 lines) are appropriately sized.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately (e.g., in `param_dynamic_code`). The flow is easy to follow without spaghetti code patterns.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code is minimal. Loop unrolling from the source is properly recognized as loops in most cases. The code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most types are reasonable - `unsigned int` for parameters, `int` for return values. However, the decompiler uses generic types like `unsigned int` instead of more specific types like `size_t` or `uint32_t`. The SIMD operations use `uint128_t` which is a guess. Some parameter types like `char*` for `param_asm_multi_insn` are reasonable but not perfect.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler created some struct definitions (e.g., `struct_0`, `struct_1` in `register_tm_clones`) but these are generic and don't reflect the original source's intent. Most composite types are lost, with raw pointer arithmetic used instead (e.g., `*((int *)(ptr + idx * 4))`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: The code is relatively type-safe with few obvious unsafe casts. Pointer arithmetic is used correctly in most places (e.g., array indexing). Some minor issues exist but no severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments are present in the decompiled code explaining the logic, algorithm, or purpose. There are no uncertainty indicators for indirect calls or complex logic. The original source had extensive comments explaining each test case that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns, algorithms, or idioms are explicitly identified or named. While the code shows standard patterns (loops, conditionals), there's no recognition of the original patterns like macro expansion, inline assembly blocks, or atomic operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The decompiled code presents everything confidently without indicating suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. For example, the indirect function calls through vtables in `__do_global_dtors_aux` are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., "ptr != NULL" for mmap, "n > 0" for array functions) that are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through direct calls (e.g., `test_preprocessing_features()` calls various test functions). However, global variable usage (like `global_var` in `param_memory_clobber_demo`) is not well-documented, and callback relationships are not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions are in a single file without clear logical grouping. The original source had distinct sections (preprocessing features, asm features) that are not reflected in the decompiled output. Static function scoping is not indicated.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Some external declarations are present (e.g., `extern char g_4020cb;`, `extern unsigned int global_var;`), but many dependencies are unresolved. The code would require moderate patching to compile standalone. No build instructions or dependency documentation exists.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `a2`, `v0`, `v1`, `v2` instead of semantic names from source
+- Function names are inconsistent - some recovered (`param_macro_constants`) but most use address-based naming (`sub_401240`)
+- No comments explaining macro semantics, inline assembly behavior, or algorithm intent
+- No anomaly indication for indirect calls or suspicious patterns
+- Composite type recovery is poor - structs are generic (`struct_0`) with no meaningful field names
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, the decompiler correctly recovered natural if-else and loop structures matching the original source
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code opaque to understand the original intent
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `a0` to `size` when used in comparison with MAX_SIZE, or `counter` when used with atomic operations
+2. **Recover macro semantics**: Add comments explaining that `param_macro_constants` contains preprocessor-expanded code from MAX_SIZE and BUFFER_COUNT macros
+3. **Add confidence indicators**: Flag indirect calls (like in `__do_global_dtors_aux`) and indicate uncertainty for complex patterns like inline assembly or atomic operations

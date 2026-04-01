@@ -1,0 +1,141 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 6/10**
+Justification: Most function parameters use generic names like `a1`, `a2`, `a3` which obscure their semantic purpose. However, some globals like `global_counter`, `global_array`, `file_scope_static` are well-recovered. The decompiler correctly identifies loop counters as `i`, `j` but fails to name intermediate computation variables like `v3`, `v4`, `v5` which hold computed results.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names match the original source exactly (e.g., `double_value`, `local_vars`, `heap_basic`, `linked_list_heap`, `tls_access`). The decompiler preserved meaningful names for 40+ functions. Minor issues include internal functions like `sub_105B4` and some runtime functions with generic names.
+
+### 3. Literal Clarity
+**Score: 8/10**
+Justification: Most magic numbers are appropriate - size calculations like `4 * a1`, `8u` for struct allocation are clear. String literals are referenced via named variables (`asc_13890`, `aD`). Some atomic operation addresses like `0xFFFF0FC0` are compiler artifacts. The constant `0xA` for array bounds is correctly inferred.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts present. The `JUMPOUT(0)` and `MEMORY[...]` patterns for atomic operations are unavoidable. No redundant casts or debug instrumentation observed. The decompilation is relatively clean for ARM code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 9/10**
+Justification: At `-O0`, control flow closely matches source. Loops use proper `for`/`while` constructs (e.g., `for (i = 0; i <= 9; ++i)` in `local_array`). Conditionals are clear. No spurious goto statements. Early returns used appropriately in error handling paths.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Function granularity matches source exactly. Each function has single responsibility - `heap_basic` allocates/frees, `linked_list_heap` creates/traverses/frees. No over-fragmentation or monoliths. Parameter counts preserved correctly.
+
+### 7. Code Linearization
+**Score: 9/10**
+Justification: Code reads top-to-bottom with minimal disruption. Early returns for error conditions (`if (!ptr) return -1`) are appropriate. No forward jumps into loop bodies. Nesting depth is reasonable (typically 2-3 levels).
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No dead code observed. Some loop unrolling in `large_stack_frame` (2048 iterations) is expected at any optimization level. Minor redundant expressions in error handling paths but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Basic types mostly correct (`int`, `char`, `unsigned int`). However, uses non-standard `_DWORD`, `_BYTE`, `_WORD` instead of `int32_t`, `uint8_t`, `uint16_t`. Function pointer types sometimes use `void (*)` instead of proper signatures. Signed/unsigned mostly correct.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: **Critical failure.** The `Point` struct (with x, y fields) is completely lost. In `heap_struct`, code uses `*ptr` and `ptr[1]` instead of `p->x` and `p->y`. Similarly, `Node` struct (data, next) uses raw pointer arithmetic: `*v8`, `v8[1]`. The `TreeNode` struct is also not recovered - uses `ptr[1]`, `ptr[2]` instead of `->left`, `->right`. This is the most severe degradation.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Multiple unsafe casts present: `(void **)ptr`, `(int)`, `(_DWORD *)`, `(unsigned __int8 *)`. Pointer arithmetic is sometimes incorrect (e.g., `*(_DWORD *)&v3[4 * i - 4]` in `local_array`). Function pointer type confusion in `tls_access` where parameter is incorrectly typed as `void (*)(void *ptr)`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Comments are minimal and mostly auto-generated boilerplate (e.g., "BYREF" for reference parameters). No explanation of algorithms, preconditions, or non-obvious logic. The header comment about IDA Pro is useful but doesn't explain the code itself.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: No explicit pattern naming (e.g., "Implements linked list"). However, standard C idioms like malloc/free pairs, linked list traversal are recognizable. Memory leak pattern in `memory_leak` is identifiable but not flagged.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses memory after `free()` - a critical undefined behavior - but no warning is generated. The `double_free` bug is present but not annotated. The decompiler presents code as correct.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions or postconditions documented. Null checks are present in code but not explained as contracts. Error return values (-1, -2) are not documented as part of API contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls are clear (`local_vars(5)`, `heap_basic(10)`). Global variable usage is transparent (`global_counter`, `global_array`). However, callback relationships (e.g., `set_global_callback` → `call_global_callback`) are not documented. External dependencies not listed.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions grouped logically matching source: stack functions, heap functions, static/global functions, memory operations. Static functions properly scoped. Test functions grouped together. Matches original file structure well.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Code has compilation issues: `puts(::s)` is incorrect (should be string literal), undefined string references (`asc_13890`, `aD`, etc.). External functions like `malloc`, `free`, `printf` need declarations. Some type mismatches (e.g., `tls_access` parameter type).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 9 + 8 + 8) / 4 = 7.75
+L2_avg = (9 + 9 + 9 + 7) / 4 = 8.50
+L3_avg = (7 + 3 + 6) / 3 = 5.33
+L4_avg = (4 + 5 + 4 + 3) / 4 = 4.00
+L5_avg = (6 + 8 + 5) / 3 = 6.33
+
+Overall = (7.75 × 0.30) + (8.50 × 0.25) + (5.33 × 0.20) + 
+          (4.00 × 0.15) + (6.33 × 0.10)
+        = 2.325 + 2.125 + 1.066 + 0.600 + 0.633
+        = 6.75/10
+```
+
+### Overall Readability Score: 6.75/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Struct recovery completely failed**: `Point`, `Node`, `TreeNode` structs all lost; replaced with raw pointer arithmetic (`*ptr`, `ptr[1]`) losing field semantics
+- **Variable naming poor for parameters**: Generic `a1`, `a2`, `a3` obscure parameter purpose throughout code
+- **No anomaly detection**: Dangerous patterns like dangling pointer (`dangling_pointer` function), double-free, and memory leak not flagged
+- **Type safety issues**: Unsafe casts throughout; incorrect function pointer types (e.g., `tls_access` parameter)
+- **Build compatibility broken**: `puts(::s)` syntax error; undefined string references; needs declarations for standard functions
+
+---
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+The decompiler preserved nearly all function names exactly from the source, making it easy to locate specific functions and understand the high-level structure of the program.
+
+---
+
+### Most Needs Improvement: Composite Type Recovery (3/10)
+Struct recovery is completely failed. The original code uses meaningful field names (`p->x`, `p->y`, `node->data`, `node->next`, `tree->left`, `tree->right`) but the decompiled code reduces these to opaque pointer arithmetic, losing all semantic meaning about the data structures.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types from allocation sizes**: When seeing `malloc(8)` followed by two field accesses, infer a 2-field struct. Use field offset patterns to name fields (`offset 0 = x`, `offset 4 = y` for Point).
+
+2. **Infer parameter names from usage**: Analyze how parameters are used within the function body. If `a1` is used in multiplication, name it `multiplier` or `factor`. If `a1` is used as array index, name it `index` or `idx`.
+
+3. **Flag undefined behavior patterns**: Add warnings for post-free accesses (dangling pointer), double-free calls, and intentional memory leaks. These are security-critical patterns that analysts need to know about.

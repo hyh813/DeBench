@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `uVar1`, `iVar1`, `local_38` that completely obscure their semantic purpose. For example, in `param_macro_constants`, the parameter should be named `size` based on the original source, not `param_1`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_dynamic_code`, etc. The decompiler recovered the exact function names from the symbol table.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear (e.g., `0x40` for 64, `0xdf22` for 57122), but some magic numbers lack explanation like `0x1e` for sysconf(_SC_PAGESIZE) and `7` for PROT_READ|PROT_WRITE|PROT_EXEC. String literals are well-preserved.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Code is relatively clean with minimal compiler artifacts. Some Ghidra-specific constructs visible like `ZEXT816(0)` and `CONCAT22`, but these don't significantly impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with clear if-else structures and appropriate for loops. At -O0, the flow closely matches the source. No spurious goto statements or confusing conditionals observed.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are appropriately sized (10-50 lines), cohesive, and match the original decomposition. The test functions group related test cases logically.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in functions like `param_dynamic_code` and `param_memory_protection`. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling in `call_asm_clobber` is appropriate for -O0 and doesn't obscure the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct (int for parameters, long for size_t). However, Ghidra uses `undefined8`/`undefined4` for return types instead of proper int types. The `sysconf` return is typed as `long` instead of `size_t`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: The source code doesn't use structs or unions, so this is not applicable. Arrays are correctly handled (e.g., `local_18[4]` for int arrays).
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Pointer arithmetic in `param_asm_clobber` (`param_1 + uVar2 * 4`) is correct for int arrays. No unsafe casts observed that would cause undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comment present ("Decompiled by BinaryAI"). No useful comments explaining algorithm logic, macro expansions, or inline assembly behavior. Zero documentation of what functions do.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns could be recognized but aren't named (e.g., "macro expansion", "inline assembly", "atomic operation"). No explicit pattern identification like "This implements a macro expansion pattern" or "This is a token paste operation".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No anomaly indication. The dynamic code generation in `param_dynamic_code` writes machine code to memory and executes it - this potentially dangerous operation is presented without any warning or flag.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `param_dynamic_code` that can fail (returns -1 on mmap failure) don't document error conditions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit through code but not documented. No indication of which functions call which, or global variable usage (e.g., `global_var` in `param_memory_clobber_demo`).
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped - preprocessing test functions together, asm test functions together. Matches the single-file source organization. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile with minimal issues. External functions (puts, printf, mmap, sysconf) are declared. Uses standard C types mostly. Some Ghidra-specific types might need cleanup.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.0/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `uVar1`, `local_38`) that completely obscure semantic meaning
+- No comments explaining any function logic, macro behavior, or inline assembly
+- No preconditions/postconditions documented for functions that can fail (e.g., `param_dynamic_code` returns -1 on error)
+- Type precision issues: `undefined8`/`undefined4` return types instead of proper int types
+- No anomaly indication for potentially dangerous operations like self-modifying code in `param_dynamic_code`
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- All function names perfectly match the original source, demonstrating excellent symbol recovery
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 3/10)  
+- Zero useful comments; the decompiled code provides no guidance on what functions do, how macros were expanded, or what inline assembly accomplishes
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `param_1` in `param_macro_constants` should be `size` based on comparison with MAX_SIZE (1024)
+2. Add comments explaining preprocessing results - document what macros expanded to (e.g., "MAX_SIZE expanded to 1024")
+3. Document inline assembly behavior - explain what the asm blocks accomplish in plain English (e.g., "atomic increment using lock prefix")

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`a1`, `a2`, `v1`, `v2`, `ptr`) instead of semantic names like `x`, `arr`, `local`. Loop variable `i` is preserved, but `v3[11]` should be `arr[10]` based on source context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`local_vars`, `heap_basic`, `test_stack_memory`). One exception: `sub_1020` is generic, but core test functions retain original semantic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x10u`, `0x28u` for malloc sizes obscure intent (should be `5*sizeof(int)`, `10*sizeof(int)`). Array bounds like `10`, `2048` are clear from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some redundant casts (`(unsigned int)`) and type annotations (`__fastcall`, `BYREF`) add visual noise but don't impede understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals recovered well (`for (i = 0; i < 10; ++i)`). However, `stack_alias` has broken logic (`if (&v1)` instead of `if (p1 == p2 && p1 != NULL)`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly; each source function maps to one decompiled function. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some functions have awkward variable declaration ordering (e.g., `vla_stack` has 7 local variables declared before logic).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or duplicate expressions. Loop unrolling not present (appropriate for -O0 compilation).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `int` becomes `__int64`, `Point*` becomes `_DWORD*`, `Node**` becomes `void**`. Return types often cast to `(unsigned int)` unnecessarily.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure—`Point` struct not recovered (shown as `ptr[0]`, `ptr[1]` in `heap_struct`). `Node` linked list struct lost entirely (accessed via `_QWORD*` arithmetic in `linked_list_heap`). `TreeNode` not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `*(_DWORD *)*a1`, `*((_QWORD *)*a1 + 1)`. Pointer arithmetic on void pointers in `heap_nested`. `stack_alias` parameter type completely lost.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments recovered from original source. All explanatory comments (e.g., "// MEM-L1-01: 局部变量（基础类型）") lost. Only decompiler metadata header present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list pattern in `linked_list_heap` not identified. Tree traversal in `tree_heap_traversal` not recognized. VLA pattern in `vla_stack` obscured by pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Library functions marked "FAILED to decompile" (17 functions). However, critical anomalies like `stack_alias` parameter loss not flagged. No warnings about potential undefined behavior in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved, but global variable names degraded (`dword_60D4` instead of `global_point.x`). Callback relationship in `set_global_callback` not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source sections (stack → heap → static → memop). Test functions grouped appropriately.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 17 external functions marked "FAILED to decompile" requiring stubs. Would need significant patching to compile standalone. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+7)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.88
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                              5.76/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects
+- **`stack_alias` function completely loses parameters** - Original `int *p1, int *p2` becomes parameterless function, breaking alias detection logic
+- **Zero struct type recovery** - `Point`, `Node`, `TreeNode` all reduced to raw pointer arithmetic (`ptr[0]`, `ptr[1]`, `_QWORD*`)
+- **All source comments lost** - 100+ lines of explanatory comments documenting test cases completely absent
+- **Type degradation throughout** - `int` → `__int64`, proper pointer types → `void*`/`_DWORD*` with unsafe casts
+- **17 library functions failed** - `malloc`, `free`, `printf`, etc. marked as decompilation failures requiring external stubs
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names like `local_vars`, `heap_basic`, `test_stack_memory` preserved accurately, maintaining semantic connection to original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation; decompiler provides zero semantic guidance about function purpose or test case intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct type definitions from memory access patterns** - Detect consistent field offsets (e.g., `ptr[0]`, `ptr[1]` always accessed together) and propose struct recovery with field names.
+2. **Preserve parameter types through calling convention analysis** - `stack_alias` parameter loss is unacceptable; analyze stack frame to recover pointer parameters even when registers are reused.
+3. **Extract and preserve source comments from debug symbols** - With `-g` flag present, DWARF debug info should contain original comments; integrate this into decompilation output.

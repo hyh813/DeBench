@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `iVar2`, `local_1c`, and many are marked "Unresolved local var@[???]". Original semantic names like `result`, `str1`, `counter` are lost in most functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - all function names preserved from source (e.g., `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). This indicates debug symbols were available.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without constant recovery: `0x200` (should be `MAX_SIZE`), `0x40` (should be `BUFFER_COUNT*4`), `0xdef0`, `0x117`. Original `#define` constants completely lost due to preprocessing.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from "Unresolved local var" comments and "WARNING: Unknown calling convention" messages. Compiler thunk functions (`get_pc_thunk_bx`) present but marked as inlined.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures recovered well (if/else, for loops in `param_asm_clobber`). However, many functions are constant-folded losing original conditional logic (e.g., `param_conditional_compile` shows only one branch).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Each original function remains separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with natural flow. Loop structures in assembly-recovered functions (`param_asm_multi_insn`) use clean for-loop syntax instead of goto.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (e.g., `call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants(2048)`). Some test functions duplicate printf patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, void*, size_t, char*), but array types often degraded to pointers. `__regparm1` calling convention annotation present but inconsistent.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source, but arrays handled reasonably (`local_1c[6]`, `local_38[12]`). No struct recovery needed for this code sample.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(int *)0xffffffff`, `(void *)((int)dst + 1)`). Pointer arithmetic present in memory copy functions without bounds checking annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments only indicate unresolved variables and warnings. No semantic explanation of what code does (e.g., no comment explaining this tests preprocessing macros).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns recovered as C equivalents but not identified as such. No recognition of macro expansion patterns, atomic operations, or SIMD idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly marking with "Unresolved local var@[???]" and "WARNING" comments. Clearly indicates what couldn't be recovered (e.g., `LOCK()/UNLOCK()` pseudo-functions for atomics).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of expected return values, parameter constraints, or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly with proper signatures. Global variable usage visible (`global_var`) but no explicit call graph or dependency documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Related test functions grouped together, but no explicit module/section organization comments.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references external functions (`printf`, `mmap`, `sysconf`) without declarations. `LOCK()/UNLOCK()` pseudo-functions would not compile without stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.713
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.02/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects
+- **Variable names lost**: `iVar1`, `iVar2`, `local_1c` instead of semantic names like `result`, `sum`, `page_size`
+- **Magic numbers everywhere**: `0x200`, `0x40`, `0xdef0` without constant recovery from original `#define` statements
+- **Preprocessing information lost**: All macro semantics gone (expected at binary level, but could be annotated)
+- **No contract documentation**: No preconditions, postconditions, or expected return value documentation
+- **Pseudo-functions won't compile**: `LOCK()`, `UNLOCK()`, `builtin_strncpy()` require stubs for compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Debug symbols preserved all original function names perfectly, making navigation and identification trivial.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - Zero recovery of preconditions, postconditions, or expected behavior documentation that would help analysts understand function contracts.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Constant recovery from debug info**: When `-g` flags are present, recover `#define` constants and replace magic numbers with named constants (e.g., `0x400` → `MAX_SIZE`)
+2. **Variable name inference from usage patterns**: Analyze variable usage to suggest semantic names (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+3. **Contract annotation generation**: Add comments indicating observed preconditions (null checks), return value ranges, and side effects based on code analysis

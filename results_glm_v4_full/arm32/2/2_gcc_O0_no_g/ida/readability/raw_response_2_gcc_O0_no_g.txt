@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`a1`, `a2`) and local variables are auto-generated (`v3`, `v4`), losing semantic meaning like `sum`, `arr`, or `x`. Only loop counter `i` is preserved, which is insufficient for high readability.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`double_value`, `process_char`, `array_1d_stack`) are perfectly preserved from the source symbols, accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: ASCII character checks use hex values (`0x41`, `0x5A`) instead of readable characters (`'A'`, `'Z'`), and array strides appear as magic numbers (e.g., `40 * i`), obscuring the original logic.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean of compiler artifacts, though the presence of `__fastcall` and Windows-specific types like `_DWORD` in an ARM64 context adds minor noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Loops are correctly recovered as `for` loops, but the logic in `process_char` is inverted (`<= 0x40 || > 0x5A` vs `>= 'A' && <= 'Z'`), and `volatile_access` incorrectly merges two reads into one multiplication.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps, matching the expected structure of unoptimized (`-O0`) code.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While there is no dead code, the decompiler incorrectly eliminated the redundancy in `volatile_access` (merging two reads), which violates the semantic intent of the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type degradation occurs: `long` is demoted to `int`, `long double` becomes `double`, and `long long` is incorrectly split into two 32-bit arguments (`unsigned int a1, int a2`) despite the 64-bit architecture.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are completely flattened; `Point3D` and `Widget` are accessed via raw pointer arithmetic (e.g., `*(_DWORD *)(a1 + 8)`), losing all high-level type information and field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiler ignores `volatile` qualifiers, allowing unsafe optimizations. Additionally, treating struct pointers as generic `int*` or `_DWORD*` removes type safety boundaries present in the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining logic, algorithms, or data structures; the output is purely code with standard headers.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common data structure patterns like linked lists or trees are implemented as pointer arithmetic without recognizing the underlying idiom (e.g., `a1[1]` for `next` pointer), though the logic remains traceable.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler confidently presents the incorrect `volatile_access` optimization and the split `long long` arguments without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code structure.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to follow, maintaining the call graph structure clearly (e.g., `test_data_types_l1` calling specific process functions).
+
+**17. Module Organization:** Score: 8/10
+Justification: The order of functions matches the source file, preserving the logical grouping of data types, arrays, and composite tests.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard types (`_DWORD`, `__int64`) and calling conventions (`__fastcall`) that require porting to compile with standard GCC/Clang.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 5 + 8) / 4 = 6.75
+L2_avg = (7 + 9 + 9 + 6) / 4 = 7.75
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 3 + 1 + 1) / 4 = 1.50
+L5_avg = (8 + 8 + 4) / 3 = 6.67
+
+Overall = (6.75 × 0.30) + (7.75 × 0.25) + (3.67 × 0.20) + 
+          (1.50 × 0.15) + (6.67 × 0.10)
+Overall = 2.025 + 1.9375 + 0.734 + 0.225 + 0.667
+Overall = 5.59
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.6/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: Structs like `Point3D` and `Widget` are completely flattened to pointer arithmetic (e.g., `a1[1]` instead of `p->y`), destroying data structure context.
+- **Volatile Semantics Ignored**: `volatile_access` incorrectly optimizes two distinct memory reads into `2 * *a1`, violating the source's explicit requirement to read twice.
+- **Type Precision Errors**: `long long` is split into two 32-bit registers, and `long` is demoted to `int` on a 64-bit architecture.
+- **Literal Obfuscation**: Readable character constants (`'A'`) are replaced by magic hex numbers (`0x41`), reducing code clarity.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully preserved all original function symbols from the binary, making the high-level purpose of each block immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (1.5/10)**
+- **Why?** The output lacks comments, ignores semantic constraints like `volatile`, and fails to flag anomalies, leaving the user to manually verify correctness.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Aggregate Type Recovery**: Analyze memory access patterns to reconstruct structs and unions instead of defaulting to raw pointer arithmetic.
+2.  **Reserve `volatile` Qualifiers**: Disable micro-optimizations (like read merging) on variables marked as volatile to preserve semantic correctness.
+3.  **Enhance Literal Presentation**: Convert immediate values back to character literals (e.g., `0x41` -> `'A'`) when used in comparison contexts to improve readability.

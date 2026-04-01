@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 9,
+  "source_file": "decompiled/ida_out/arm32/4/4_clang_O1_g.c",
+  "fixed_file": "results_glm_v4_full/arm32/4/4_clang_O1_g/ida/syntactic/fix_4_clang_O1_g.c"
+}

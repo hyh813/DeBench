@@ -1,0 +1,16 @@
+Testing param_fake_branch: %d
+
+Testing call_fake_branch: 10
+Testing param_opaque_predicate: 20
+Testing call_opaque_predicate: 225
+Testing param_string_encryption: 0
+Testing call_string_encryption: 0
+Testing param_tail_call_optimized: 5050
+Testing call_vectorized_loop: 0
+Testing param_link_time_optimization: 20
+Testing call_division_by_zero: 1
+Testing call_null_pointer_deref: 41
+Testing call_buffer_overflow: 30
+Testing call_integer_overflow: 2000000000
+Testing call_undefined_behavior: 10
+Testing call_implementation_defined: 43

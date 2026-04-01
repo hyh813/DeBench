@@ -1,0 +1,13 @@
+=== Standard Library Function Tests ===
+
+LibL101d: strcpy returned 8
+LibL102d: strcmp returned 0
+LibL103d: strlen returned 12
+LibL104d: memcpy returned 90
+LibL105d: memcmp returned -1
+Value: 42, Name: Test
+LibL106d: printf returned 22
+LibL107d: scanf returned 579
+LibL108d: fopen/fclose returned 42
+LibL109d: fread/fwrite returned 42
+LibL110d: malloc/free returned 90

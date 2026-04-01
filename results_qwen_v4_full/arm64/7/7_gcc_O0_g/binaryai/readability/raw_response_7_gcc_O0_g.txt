@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `local_8`, `iVar1`, `uVar1` instead of semantic names like `result`, `encrypted`, `heap_buffer` from source. Makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). External stubs have generic names (`FUN_00100860`) but core logic retains original naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x41`, `0x42`, `0x21` appear without explanation. Original had comments explaining encryption keys and test values. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated in every function. External function stubs and runtime initialization code (`__cxa_finalize`, `deregister_tm_clones`) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures (if/else, while, for) are mostly natural. However, `param_opaque_predicate` has awkward condition combining that obscures the original predicate logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Each original function recovered separately. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally. Stack check code at function ends disrupts flow slightly but doesn't impede understanding.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeated identically across 10+ functions. No dead code removal for the fake branches that were optimized away at compile time.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `undefined4`, `undefined8`, `byte*` instead of precise types like `int32_t`, `size_t`, `char*`. Original `unsigned int ux` becomes `uint param_1` inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `param_implementation_defined` bitfield struct completely lost, returns constant `0x30`. No struct/union recovery visible anywhere in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined *)0x0`, `(undefined4 *)`, `(__sighandler_t)0x0`. Pointer arithmetic uses raw `long` casting without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining obfuscation techniques, test scenarios, and expected values. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not annotated. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about optimized-away code (`param_fake_branch` fake branches eliminated). Stack canary checks present but not explained as compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). Error return values (-1, -2) not explained. Original had clear "期望" (expected) comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through naming. Global variables (`encrypted_0`, `jmp_buffer`, `div_zero_caught`) referenced but not declared in output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. External library stubs mixed with application code. No logical grouping by section (obfuscation vs. optimization vs. edge cases).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata states "Compilation Result: Yes" but external dependencies (libc functions) not documented. Would need stub implementations for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (5+2+5)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (6+5+6)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  5.09/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **`param_fake_branch` logic completely lost** - Returns `param_1` directly instead of preserving the fake branch conditions (`x*x < 0`, `strlen(str) < 0`)
+- **`param_implementation_defined` returns constant `0x30`** - All bitfield struct logic, char signness tests, and implementation-defined behavior completely eliminated
+- **Zero comments** - Original had extensive documentation explaining obfuscation techniques; decompiled has none
+- **Generic variable naming** - `local_8`, `iVar1`, `param_1` obscure semantic meaning throughout
+- **Type degradation** - `undefined4`, `undefined8` types instead of precise C types; bitfield struct completely lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`), making navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation means readers cannot understand the purpose of obfuscation techniques, expected behaviors, or test scenarios without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve semantic logic in obfuscation tests** - Detect and preserve intentionally unreachable code paths (fake branches, opaque predicates) rather than optimizing them away during recovery.
+2. **Recover and annotate composite types** - Implement bitfield struct recovery and add comments when complex types cannot be reconstructed (e.g., "ORIGINAL: bitfield struct with 3+5+24 bit fields").
+3. **Generate semantic comments from pattern recognition** - Auto-detect common patterns (GCD, XOR decryption, stack canaries) and add explanatory comments matching original documentation intent.

@@ -1,0 +1,23 @@
+=== Testing Preprocessing Features ===
+
+APPL 201: 64
+APPL 202: 30
+APPL 203: 32
+APPL 204: 57122
+APPL 301: 116
+APPL 302: 19
+APPL 303: 60
+LOG: Values: 10, 20, 30
+APPL 304: 60
+APPL 305: 16
+APPL 306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:25
+APPL 307: 382
+=== Testing ASM Features ===
+
+ASM L401: 15
+ASM L402: 15
+ASM L403: -1
+ASM L404: 36
+ASM L405: 30
+ASM L406: 77

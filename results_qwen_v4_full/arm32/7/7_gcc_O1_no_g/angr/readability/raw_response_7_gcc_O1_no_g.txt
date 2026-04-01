@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `var_33`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `param_opaque_predicate`), but many helpers are generic (`sub_10514`, `sub_10614`). Better than typical decompilation but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: signal numbers as `8` and `11` instead of `SIGFPE`/`SIGSEGV`, encryption key `90` instead of `0x5A`, jump buffer addresses `0x22070` as raw literals.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: register save patterns (`v1 = v2; v0 = v3`), stack canary checks, `armg_calculate_condition` calls, and goto labels (`LABEL_1073a`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive goto usage replaces natural conditionals (e.g., `param_opaque_predicate` uses `goto LABEL_10739` chains). At `-O0` this is unacceptable—original had clean if-else structures.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but critical logic lost (`param_fake_branch` has no body logic, just `return v0`). Some functions like `param_buffer_overflow_stack` completely empty.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into middle of logic blocks disrupt reading flow. `param_opaque_predicate` has multiple label targets creating non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls in wrappers (`call_opaque_predicate` calls `param_opaque_predicate(5)` twice). Register spilling creates redundant assignments throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type errors: `param_fake_branch` loses its `int x` parameter entirely. `param_integer_overflow` gains spurious third parameter `a2`. All `int` converted to `unsigned int` losing signed semantics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct_0` in `param_vectorized_loop` has generic `field_4` instead of meaningful name. Original bitfield struct completely lost. Array types degraded to pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe patterns: `param_null_pointer_deref` takes `unsigned int *` instead of `int *`. Implicit signed/unsigned conversions throughout. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments. Original had extensive documentation explaining obfuscation techniques. Only auto-generated `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern unrecognized. Tail recursion pattern not flagged despite being a key test case.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Critical anomaly unflagged: `param_fake_branch` returns uninitialized `v0` instead of implementing the fake branch logic. `armg_calculate_condition` calls unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note division by zero handling). Return value semantics completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but globals named generically (`g_22008`, `g_22048`). Signal handler connections (`div_zero_handler` → `jmp_buffer`) not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order unrelated to source organization. No grouping of related test functions. Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`GLIBC_2.4::__stack_chk_guard`) but many undefined symbols. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (3+4+4)/3 = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+5)/3 = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.98 ≈ 4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken**: Returns uninitialized `v0` instead of implementing the fake branch logic with `x*x < 0` and `strlen(str) < 0` conditions
+- **Parameter loss**: `param_fake_branch(int x)` decompiled as `param_fake_branch()` with no parameters
+- **Type corruption**: All `int` types converted to `unsigned int`, breaking signed arithmetic semantics critical for overflow tests
+- **Control flow degradation**: Clean if-else structures replaced with goto chains and `armg_calculate_condition` calls
+- **Zero semantic documentation**: Original 464 LOC with extensive comments reduced to uncommented code losing all obfuscation technique explanations
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original names (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic comments means a reverse engineer cannot understand the obfuscation techniques being tested without referring to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function signatures**: Critical bug where `param_fake_branch` lost its `int x` parameter—implement better parameter recovery from calling conventions and stack analysis
+2. **Recover high-level control structures**: Replace `goto LABEL_*` patterns with natural if-else and loop constructs, especially at `-O0` where source structure should be preserved
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (e.g., `// DECOMPILER UNCERTAINTY: fake branch logic may be incomplete`) to alert analysts to potential logic loss

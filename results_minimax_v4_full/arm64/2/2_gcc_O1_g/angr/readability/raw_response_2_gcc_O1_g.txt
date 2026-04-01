@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost universally generic (v0, v1, v2, a0, a1, ptr, iter, index). While some like `ptr` and `index` hint at purpose, the vast majority provide no semantic meaning. Compare source's `sum`, `i`, `n` to decompiled's `v0`, `v1`, `v2`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions correctly recovered: `double_value`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`. However, some internal functions remain generic (sub_4006e4, sub_4007b0). Test functions properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (0xFFFFFFFF), `4294967294`, `0x10000`, `65535`, `25`, `65`, `32`. No named constants recovered. The string format literals like `"DT-L1-01 (process_char): %c\n"` are hardcoded rather than being recognized as test output.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from compiler runtime: `__addtf3` (2000+ lines of floating-point emulation), `__multf3`, `__sfp_handle_exceptions`. These are not user code but appear in output. Also includes `__ROL__`, `arm64g_calculate_condition` artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions use natural do-while loops and if-else. However, `array_complex_index` has convoluted conditionals with nested `arm64g_calculate_condition` calls. The `__addtf3` function has spaghetti control flow with many gotos. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well - each source function appears separately. Test functions are appropriately sized. Minor issue: some test functions like `test_composite_types` are 200+ lines but this matches source structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom with do-while loops. However, `array_complex_index` has complex nested conditionals disrupting flow. Some forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Generally clean code without obvious dead code. Minor redundancy: `frame_dummy` calls `register_tm_clones()` twice. Loop unrolling not excessive. Good elimination of debug artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type erosion. Original `int` → `unsigned int` everywhere. Original `char` → `unsigned int` in `process_char`. Original `short` → `unsigned int`. `long` and `long long` both become `unsigned long`. `float` and `double` functions completely broken (returning string literals). Const/volatile mostly preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery with generic names. `struct_0`, `struct_1` used with fields like `field_0`, `field_8`, `field_10`. Nested structs flattened to offset-based access (a0[3], a0[5]). Linked list nodes recognizable but generic. Bitfields partially reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsigned/signed mismatches. Bit manipulation with masks (e.g., `& 4294967295`) scattered throughout. `array_complex_index` has complex, potentially unsafe pointer arithmetic. Function pointer types mostly wrong (e.g., `ptr_func_simple` takes `unsigned long long*` instead of function pointer).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only "do not return" annotations on functions like `__libc_start_main`. No explanation of algorithms, no recovery of original comments from source. The source had extensive comments (830 lines with section headers) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (linked list traversal, tree recursion) but not explicitly named or documented. No "this is a linked list" or "binary tree traversal" indicators. The source's complex data structures (graph with adjacency list) partially recognizable but not identified as pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `array_oob` function (intentional out-of-bounds access) not flagged as potential issue. Indirect calls not marked as uncertain. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected input ranges (e.g., "requires: n > 0"). No error condition documentation. The source's error handling (like returning -1 for invalid coordinates) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. No indication of who calls whom. Global variables declared as `extern` but their purpose unclear. Callback relationships not explicitly marked.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All output in single file. No logical grouping beyond function order. Static functions not distinguished from public API. Source had clear sections (Data Types, Array Types, Pointer Types, Composite Types) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations for compiler runtime functions. Cannot compile standalone - depends on libc, libgcc. No header file recovery. The `__addtf3` and `__multf3` are compiler-provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Type precision failure**: `float` and `double` functions completely broken (returning string literals); all `int` types become `unsigned int`
+- **Variable naming**: Almost all variables are generic (v0, v1, a0, a1) providing no semantic meaning
+- **Noise pollution**: Compiler runtime functions (`__addtf3` 2000+ lines) included in output, overwhelming actual user code
+- **Comment loss**: Source's 830 lines of explanatory comments completely lost; only "do not return" present
+- **Function pointer mishandling**: `ptr_func_simple` and `ptr_func_complex` have wrong signatures (taking `unsigned long long*` instead of function pointers)
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Function boundaries well-preserved; each source function appears as separate entity. Test functions properly isolated. At -O0, this is expected but still correctly done.
+
+### Most Needs Improvement: Semantic Transparency (2.5/10)
+Comments, idiom recognition, anomaly indication, and contract recovery all scored 2-4. The decompiler provides no semantic context - just raw mechanical translation without explaining what the code does or flagging issues.
+
+### Top 3 Recommendations:
+1. **Recover variable names from usage patterns**: Analyze how variables are used (array index → `i`/`index`, accumulator → `sum`/`total`, pointer → `ptr`/`node`)
+2. **Filter compiler runtime functions**: Exclude `__addtf3`, `__multf3`, `__sfp_handle_exceptions` and similar compiler-provided functions from user output
+3. **Add semantic annotations**: Include comments explaining algorithms, flag potential issues (undefined behavior, indirect calls), and recover pre/post conditions where inferable

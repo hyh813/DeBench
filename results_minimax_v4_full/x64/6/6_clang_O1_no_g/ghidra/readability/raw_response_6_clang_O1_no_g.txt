@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_strcpy` and related library functions
+
+Looking at the original source and decompiled output, I need to evaluate the decompilation quality across all 18 dimensions. Let me analyze systematically.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_28`, `iVar1`, `uVar2`. For `param_strcpy`, `param_1` should be `dst` and `param_2` should be `src` based on usage pattern (passed to strcpy as destination and source). The decompiler makes no attempt to infer semantic meaning from call sites.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_strcpy`, `param_strcmp`, `param_memcpy`, `call_strcpy`). This is excellent recovery. However, some internal functions like `FUN_00102020` remain unnamed.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` are correctly preserved. However, magic numbers like `0x2a` (42), `0xffffffff` appear without explanation. The decompiler could recognize that `0x2a` represents a success constant matching the source's `42`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: `undefined8`, `undefined4`, `undefined1` types; redundant constructs like `&stack0x00000008`; auto-generated stack cleanup code; and numerous `WARNING` comments about unreachable blocks. The code mixes meaningful symbols with compiler artifacts extensively.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper if-else and loop structures. However, in `param_fread_fwrite`, there's complex bit manipulation for string comparison that obscures the simple `strcmp` call. At O0, control flow should be nearly 1:1 with source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and match source decomposition. `param_strcpy` is 4 lines vs source's 3 lines - minor overhead. The decompiler correctly separated the test harness functions from the core functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error handling paths. No excessive goto or backward jumps that would confuse execution flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in `param_fread_fwrite` where string comparison is manually expanded instead of calling `strcmp`. The decompiler could have recognized this pattern. Dead code elimination is mostly correct.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` in decompiled code but `int` in source (returns `strlen(dst)`). The return value is completely lost - `strlen(param_1)` is called but its result is discarded. Many functions use `undefined8` instead of proper return types. Parameter types like `const char *` become `char *` losing const-correctness.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic types like `FILE *`, `pthread_t`, `sockaddr` are correctly identified. However, the `ThreadData` struct in pthread functions is not reconstructed - instead raw offset calculations like `param_1[2]` are used. The decompiler doesn't recover the struct layout.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: casts between pointer types without comments; `void *` used extensively where more specific types exist; mixing signed/unsigned in comparisons (e.g., `param_1 != lVar2`). No `restrict` or `_Atomic` annotations recovered.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return". No semantic comments explaining what functions do, parameter meanings, or algorithm explanations. The decompiled code provides no guidance to the analyst.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls are recognized (strcpy, strlen, memcpy, etc.) but not named as patterns. The decompiler doesn't identify common patterns like "string copy with length return" or "producer-consumer with condition variable". These could have explanatory comments.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some indirect calls are flagged with "WARNING: Subroutine does not return" but this is mechanical. No indication of the critical bug where `param_strcpy` return value is lost. No confidence indicators for uncertain decompilation decisions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The critical contract of `param_strcpy` (returns string length) is completely missing. Error return values (-1, -2, etc.) are not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are correctly linked (e.g., `param_strcpy` calls `strcpy`). However, no documentation of who calls whom, or global variable usage. The relationship between `signal_handler` and global variables `signal_received`, `signal_number` is not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by category (standard library, system calls, threads) but the decompiled output is a single flat namespace. Static functions aren't marked as static. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with minimal fixes. Missing includes would need to be added. External functions like `strcpy`, `malloc` are correctly declared (via standard headers). The main issue is the return type mismatch in several functions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+1. **Return value lost**: `param_strcpy` returns `void` instead of `int` - the `strlen()` result is computed but not returned, completely losing the function's semantic purpose
+2. **Const-correctness lost**: All `const char *` parameters become `char *`, losing important type safety
+3. **Generic variable names**: `param_1`, `param_2`, `iVar1`, `uVar2` provide no semantic meaning - should be `dst`, `src`, `result`, etc.
+4. **No comments**: Zero semantic explanation of what functions do or what parameters mean
+5. **Type precision**: Extensive use of `undefined8`, `undefined4` instead of proper types
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- The decompiler correctly recovered function names matching the original source exactly (`param_strcpy`, `param_strcmp`, `call_strcpy`, etc.)
+
+**Most Needs Improvement:** Type Precision (2/10)  
+- The return type error in `param_strcpy` (void vs int) is a critical semantic loss. Combined with lost const-correctness and extensive use of undefined types, this makes the code dangerous to use without extensive manual correction.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Track return values**: When a function call result is computed but not used (like `strlen(param_1)` in `param_strcpy`), check if the original function should return that value. This is the most severe bug in this decompilation.
+2. **Infer parameter names from usage**: Analyze call sites to rename `param_1`, `param_2` to semantic names like `dst`, `src` based on how they're used inside the function.
+3. **Recover const-correctness**: When a pointer parameter is never modified, mark it as `const` to preserve type safety from the original source.

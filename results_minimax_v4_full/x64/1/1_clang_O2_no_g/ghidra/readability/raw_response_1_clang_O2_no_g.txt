@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names (`param_1`, `param_2`, `param_3`) instead of source names (`a`, `b`, `c`, `x`). Local variables are auto-generated (`iVar1`, `uVar2`, `bVar1`) with no semantic meaning. The original had meaningful names like `temp1`, `temp2`, `sum`, `count` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. The decompiler correctly retained all original function identifiers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions contain hardcoded results (e.g., `printf("...%d\n",0x15)` instead of computed values). Magic numbers like `0x33` (51) in `multi_return` and `0x12` (18) in loop conditions lack explanation. The decompiler replaced computations with literal results, losing algorithmic transparency.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple WARNING comments about unreachable blocks and jumptable recovery failures clutter output. Types like `undefined1`, `undefined4`, `undefined8` are noise artifacts. Auto-generated function `FUN_00101020` and `processEntry` (malformed) add noise. However, core logic is relatively clean.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of if-else - clever but unnatural. `loop_continue` shows massive loop unrolling with complex goto patterns that's nearly incomprehensible. `goto_backward` and `recursion_factorial` have heavy restructuring. Some simple functions like `sequential_ops` are natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original source's many small test functions are preserved. Function granularity is appropriate - no 500-line monoliths. Each test function remains separate and cohesive. Minor issue: some functions like `loop_continue` are 100+ lines due to unrolled loops.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Switch statements use forward jumps appropriately. Early returns present but not excessive. The `loop_continue` function is an exception with its spaghetti-like goto structure from loop unrolling.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions have hardcoded results eliminating computation redundancy but losing algorithmic clarity. Loop unrolling in `loop_continue` and `goto_backward` creates visible redundancy. Dead code warnings indicate some elimination attempted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic types (`int`, `uint`) instead of specific widths. `bool` used inconsistently (returns `bool` for `if_else` but `int` elsewhere). Parameter types are mostly correct but lack signedness annotations in some cases. `undefined4`, `undefined8` are imprecise.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Original source has no custom structs/unions, so nothing to recover. The decompiler correctly handles primitive types. (N/A case - scoring as perfect since no degradation possible)
+
+**11. Type Safety:** Score: 5/10  
+Justification: `duffs_device` uses `undefined4 *` for pointers instead of proper int*. Function pointer type `code *` is non-standard. Some implicit conversions present. The `call_func_ptr` uses generic `code *` instead of proper function signature.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Decompiler attribution header present. WARNING comments about unreachable blocks and jumptable failures are useful. However, no explanation of algorithms, no recovery of original comments, no documentation of intent. Sparse auto-generated content dominates.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern naming. Duff's device (`duffs_device`) appears as switch-do-while but not identified as such. State machines appear as switch statements without pattern recognition. No algorithm naming (factorial, etc.).
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good WARNING messages for unrecoverable jumptables ("Could not recover jumptable at 0x001020e5. Too many branches"). Unreachable block warnings present. However, some anomalies like the malformed `processEntry` function aren't clearly flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no explicit contracts either, but decompiler could infer: "requires: n >= 0" for factorial, "requires: param_1 != NULL" for pointer parameters. None recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are explicit in code. Static functions properly scoped. No documentation of call graph relationships or callback relationships. `call_func_ptr` and `process_with_callback` show callback patterns but aren't documented as such.
+
+**17. Module Organization:** Score: 9/10  
+Justification: All functions in single file matching original single-source structure. Static helper functions (`double_value`, `triple_value`, `op_add`, etc.) grouped logically. Test functions grouped by level. Matches source organization well.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone. Uses non-standard types (`undefined1`, `undefined4`, `undefined8`, `code *`). Malformed `processEntry` function has syntax error. Requires significant patching: replace undefined types, fix function signatures, add stdio.h. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- Variable naming uses generic `param_1/2/3` and `iVar1/uVar2` losing all semantic meaning from source (`temp1`, `sum`, `count`)
+- `loop_continue` shows extreme loop unrolling creating spaghetti code nearly impossible to follow
+- Test functions hardcode results (`0x15` for 21) losing algorithmic transparency
+- Type system uses non-standard `undefined4`, `undefined8`, `code *` preventing compilation
+- `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of readable if-else
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names perfectly preserved from source - `sequential_ops`, `loop_for_fixed`, `recursion_factorial` all match exactly. This is critical for readability.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+All parameter and local variable names are generic auto-generated identifiers. At -O0 with debug symbols, the decompiler should recover meaningful names from debug info.
+
+### Top 3 Recommendations:
+1. **Infer variable names from debug symbols**: At -O0 with -g, variable names like `temp1`, `sum`, `i`, `x` should be recovered from DWARF info
+2. **Comment loop unrolling**: When detecting unrolled loops (like in `loop_continue`), add comment "// Loop unrolled by compiler" to aid readability
+3. **Standardize type output**: Replace `undefined4`/`undefined8` with `int`/`long` or detect proper types; use standard function pointer syntax instead of `code *`

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All function parameters use generic names (`a1`, `a2`, `a3`, `a4`, `a5`) with no semantic inference. The original parameters like `count`, `a`, `b` are completely lost. This makes it nearly impossible to track variable purpose across function calls.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain good names (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`, `main`). However, original functions like `cdecl_func`, `varargs_func`, `func_no_args` are transformed into `varargs_func_constprop_0` and `param_varargs_constprop_0`, losing original semantics.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiler performed aggressive constant propagation, replacing function calls with hardcoded values (e.g., `15` instead of `cdecl_func(5, 10)`). Global strings use escaped hex encoding (`"\xe6\xb5\x8b\xe8\xaf\x95"`) making them unreadable. No explanation of what constants represent.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or register spilling visible. The output is clean except for address range comments which are standard decompiler metadata.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and readable - sequential printf calls, simple function composition. At `-O0` optimization, this is expected. No goto abuse or confusing conditionals present.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe decomposition failure. Original 665 LOC with ~30+ functions reduced to only 6 visible functions. Most functions are either inlined or completely missing from output. The original function granularity is destroyed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Excellent linear reading - code flows top-to-bottom with no forward jumps or complex branching. Each test function is a simple sequence of printf calls.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant propagation effectively eliminates redundant computations. No dead code visible. The optimization is appropriate for the test scenario.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` which is precise. However, the original had diverse types (pointers, char*, double, long long) that are lost. All parameters are `int32_t` regardless of original type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. Original had `LargeStruct`, `SmallStruct`, `BigStruct`, `TestIntPair`, `SmallPoint`, `LargeData` - none are reconstructed. All composite types are completely lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts or pointer arithmetic errors. Uses proper `__printf_chk` with format strings. Minor issues with varargs handling but generally safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (`// Address range: 0x1042c - 0x10444`). No explanation of function purpose, algorithm, or what was lost through optimization. No recovery of original comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs patterns partially recognized (`param_varargs_constprop_0` suggests some detection), but not explicitly documented. No recognition of calling convention patterns, struct passing idioms, or callback patterns from original source.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that most functions are missing. No warnings about aggressive constant propagation transforming function calls into literals. No flags for the ~80% of code that disappeared. Silent about all losses.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. Original had no explicit assertions but the decompiler could note things like "requires: count > 0" for varargs functions. None present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible within test functions, but original relationships (e.g., `call_cdecl()` calls `cdecl_func()`) are lost due to inlining. No documentation of call graphs or dependencies.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Test functions logically grouped together. However, original module structure with sections for calling conventions, parameter passing, return values is not reflected. Single flat file.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code compiles (metadata confirms "Compilation Result: Yes"). Has proper includes (`<stdint.h>`, `<stdio.h>`). External dependency on `__printf_chk` noted. Minimal patching needed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable parameters all renamed to generic `a1`-`a5`, losing all semantic meaning
+- Function decomposition severely failed - only 6 of ~30+ functions visible; most inlined or missing
+- No struct/union recovery - all composite types (`LargeStruct`, `SmallPoint`, etc.) completely lost
+- No anomaly indication - silent about 80% code loss and constant propagation transforming function calls to literals
+- Comment quality extremely poor - only address range metadata, no functional explanations
+
+**Best Quality Aspect:** Code Linearization (scored 9/10)  
+- The code reads naturally top-to-bottom with clear sequential logic, making the control flow easy to follow
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)  
+- The decompiler silently eliminated most functions and transformed code through aggressive constant propagation without any warnings, leaving users unaware of what was lost
+
+**Top 3 Recommendations:**
+1. Preserve function granularity - don't inline all but test wrapper functions; recover individual testee functions like `cdecl_func`, `varargs_func`, `func_no_args`
+2. Infer variable names from usage patterns - `a1` in varargs context should become `count`, `a2`-`a5` should become `arg1`-`arg4`
+3. Add anomaly warnings - flag when functions are inlined, when constant propagation transforms call semantics, and when composite types cannot be recovered

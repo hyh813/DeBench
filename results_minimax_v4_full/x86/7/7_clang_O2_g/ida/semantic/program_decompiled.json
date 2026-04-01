@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_O2_g/ida/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "=== Testing Obfuscation & Optimization ===\n\nObfuscated test 2 (opaque predicate): 10\nObfuscated test 3 (opaque predicate): 20\nObfuscated test 4 (instruction substitution): 225\nObfuscated test 5 (string encryption): 116\nOptimization test 1 (tail call): 500500\nOptimization test 2 (non-tail call): 5050\nOptimization test 3 (vectorized): 72\nOptimization test 4 (LTO): 20\nEdge case test 1 (div by zero): 1\nEdge case test 2 (null pointer): 41\nEdge case test 3 (buffer overflow): 30\nEdge case test 4 (integer overflow): 2000000000\nEdge case test 5 (undefined behavior): 10\nEdge case test 6 (implementation-defined): 43\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

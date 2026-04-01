@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `result`, `idx`) with no semantic meaning. Original source had clear names like `arr`, `local`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some original names preserved (`double_value`, `local_vars`, `heap_basic`) but many functions have mechanical names (`sub_401030`, `sub_401040`). Test functions correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (UINT_MAX as error) appears repeatedly without explanation. Some literals like `42`, `10` are clear from context but no named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `__stack_chk_fail_local()` calls, struct padding definitions (`padding_0[80]`), and many wrapper functions that just call other functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` statements inappropriately (e.g., `goto ptr[2]` in `sub_401030`, `goto v1->field_50`). Some loops recovered as do-while but many unnatural patterns remain.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many unnecessary wrapper functions (`sub_40140b` just calls `local_vars`). Original function boundaries partially preserved but fragmentation creates noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but forward jumps and goto statements disrupt flow. Stack canary checks create non-linear exit paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create redundancy. Some optimization artifacts visible but not severe. Duplicate error handling patterns throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of specific types (`int32_t`, `size_t`). Pointer types often generic. Original `Point` struct type information lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions present but with completely generic field names (`field_0`, `field_4`, `padding_0[80]`). Original `Node`, `TreeNode` structures not properly recovered with semantic field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(char *)&ptr[4947]`). Pointer arithmetic exposed throughout. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Memory allocation patterns (`malloc`/`free`) visible but not named. Linked list and tree structures not recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`) but most issues silently presented as correct code. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions or invariants. Error return values not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables have generic names (`g_403008`, `g_4030ea`). Some relationships clear through preserved function names.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Original test sections (stack/heap/static/memory-op) not organized. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains external declarations but would require significant work to compile standalone. Architecture mismatch (original arm64, decompiled x86) is critical issue.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Calculation:**
+```
+Level 1 (30%): 4.25 × 0.30 = 1.275
+Level 2 (25%): 4.75 × 0.25 = 1.188
+Level 3 (20%): 3.67 × 0.20 = 0.734
+Level 4 (15%): 2.75 × 0.15 = 0.413
+Level 5 (10%): 4.33 × 0.10 = 0.433
+Total: 4.04/10
+```
+
+**Critical Defects:**
+- **Architecture mismatch**: Original compiled for arm64, decompiled as x86 - fundamental correctness issue
+- Variable names completely generic (`v0`, `v1`, `ptr`) losing all semantic meaning from original source
+- Struct fields named `field_0`, `field_4`, `padding_0[80]` instead of `data`, `next`, `x`, `y`
+- No comments recovered despite original source having extensive documentation
+- Goto statements used instead of natural loop/conditional constructs
+- Compiler artifacts (`__x86.get_pc_thunk.*`, `__stack_chk_fail_local`) not eliminated
+- Magic number `4294967295` used repeatedly without explanation as error code
+
+**Best Quality Aspect:** Function Naming Quality (scored 5/10)  
+- Some original function names were correctly preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`)
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of comments despite original source having extensive documentation explaining each test case
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement variable name inference** from usage patterns and string references (e.g., `ptr` used in malloc context should be `arr` or `buffer`)
+2. **Recover struct field semantics** by analyzing access patterns and cross-referencing with known data structures (Node→data/next, Point→x/y)
+3. **Add decompilation confidence annotations** to flag uncertain reconstructions, unresolved indirect calls, and potential optimization artifacts

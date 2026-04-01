@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. Original source had meaningful names like `x`, `str`, `encrypted`, `decrypted`, `canary`, `heap_buffer` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined function names are preserved well (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), matching original source. However, helper functions use mechanical names (`function_1040`, `function_1050`) obscuring their purpose as printf/setjmp wrappers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x100000000`, `0x80000000`, and `90` (XOR key 0x5A) appear without explanation. String literals are referenced via offset calculations (`v1 + (int32_t)&g2 - 0x1e27`) rather than readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` functions, verbose `struct __jmp_buf_tag` definitions, and wrapper functions for standard library calls (`function_1050` for printf) that add noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: CRITICAL: `param_fake_branch` lost its fake branch logic entirely (reduced to `return result;`). `param_opaque_predicate` uses complex modulo arithmetic instead of clear algebraic conditions. Some functions are constant-folded (`call_fake_branch` returns 10 directly instead of calling the function).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but semantic decomposition failed—`param_fake_branch` is one line when it should contain two conditional branches. Helper functions for standard library calls are unnecessarily separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with while loops properly structured. However, `test_obf_opt_edge` has complex offset calculations that disrupt flow, and some functions have unusual parameter ordering.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_vectorized_loop` shows aggressive loop unrolling (processing 4 and 8 elements at a time) without comments explaining the optimization. Redundant int64_t casts appear throughout arithmetic operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t`, `int64_t` appropriately for integers. However, pointer types are often generic (`int32_t *` instead of specific types), and some signed/unsigned distinctions are lost (original `int x` becomes `uint32_t a1` in some functions).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` are recovered but with generic field names (`e0`, `e1`, `e2`). No bit-field recovery visible despite original source using bitfields in `param_implementation_defined`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(char *)result`, `(int32_t *)&str`, `(void (*)(int32_t))(v3 - 57)`. Pointer arithmetic without bounds checking is common. Function pointer casts lose type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. Address ranges (`// Address range: 0x1250 - 0x1255`) provide no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` is present but not identified. XOR decryption pattern in `decrypt_string` is not recognized. setjmp/longjmp exception handling pattern is not documented.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly warnings despite significant semantic loss. `param_fake_branch` losing its fake branches should be flagged as "OPTIMIZATION REMOVED DEAD CODE". Code is presented confidently even when incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (division by zero, null pointer) are not explained. Function return values have no contract documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but global variables (`g1`, `g2`, `g3`) have no semantic names. No call graph documentation. Callback relationships (signal handlers) are not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Static functions from original source are not properly scoped. No header file organization or namespace structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard includes present (`stdio.h`, `stdlib.h`, `string.h`, `setjmp.h`, `signal.h`). Function prototypes declared. Would require stubs for some internal functions and fixing offset-based string references to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (3+5+6+5)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (6+4+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+2+1+1)/4 = 1.25 × 0.15 = 0.19
+Level 5 (Contextual):  (4+4+6)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.13/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **`param_fake_branch` lost all fake branch logic** - reduced from 15 lines with 2 conditionals to `return result;`
+- **`call_fake_branch` constant-folded** - returns 10 directly instead of calling `param_fake_branch(10)`, losing call relationship
+- **Zero comments** - no documentation of algorithms, patterns, or decompilation uncertainty
+- **Generic variable names throughout** - `a1`, `v1`, `result` provide no semantic information
+- **No anomaly warnings** - significant semantic transformations presented confidently without flags
+
+### Best Quality Aspect: Function Naming Quality (scored 7/10)
+- User-defined function names were preserved from source symbols, maintaining semantic identity for main test functions.
+
+### Most Needs Improvement: Comment Quality & Presence (scored 1/10)
+- Complete absence of comments means readers must reverse-engineer algorithm intent from raw code alone.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag optimization-induced semantic loss** - When dead code elimination removes intentional obfuscation (like fake branches), add warnings like `// WARNING: Conditional removed by compiler optimization`
+2. **Recover variable names from debug symbols** - With `-g` flag compilation, variable names should be recoverable from DWARF debug info instead of generic `v1`, `a1`
+3. **Add pattern recognition comments** - Identify common algorithms (GCD, XOR decryption, setjmp/longjmp) and add explanatory comments like `// GCD computation for coprime check`

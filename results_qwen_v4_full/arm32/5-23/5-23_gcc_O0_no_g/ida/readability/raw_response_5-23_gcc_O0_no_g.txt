@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `size`, `x`, `y`. Local variables like `v0`, `v1`, `len`, `addr` are functional but lack domain meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Original function names preserved accurately (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`). Only startup functions have generic names (`sub_10480`, `init_proc`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `57072` (0xDEF0), `282`, `155` appear without explanation. Some constants like `1024`, `512`, `64` are inferable from context but not named.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean code with minimal compiler artifacts. 12 library functions failed to decompile (noted at end). Some atomic helper functions show verbose loop patterns.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Natural if/else and for loop constructs recovered. `param_conditional_compile` correctly simplified to `3 * a1 + 2` (release branch only, as DEBUG_MODE wasn't defined).
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent function boundaries preserved. Each function has single responsibility with appropriate granularity (5-30 lines typical).
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom naturally. No disruptive forward jumps or goto statements in user code.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: Compiler constant folding recovered cleanly (e.g., `BUFFER_COUNT * 4` → `64`). No dead code or duplicate expressions observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of `int32_t`. Pointer arithmetic visible (`*(_DWORD *)(a1 + 4 * i)`) instead of array notation. Some size_t usage preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`v1[5]`, `char v2[12]`). No complex structs in this code to evaluate. Stack arrays properly identified with BYREF annotation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(_DWORD *)`, `(int)v1`). Pointer arithmetic visible throughout array access. No buffer overflow warnings generated.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled code. Original source had extensive documentation; decompiler added only register info comments (`// r0`, `// [sp+0h]`).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Atomic operations recognized (`_sync_fetch_and_add_4`). No higher-level pattern identification (macro expansion, conditional compilation branches not explained).
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Failed decompilations listed at end. Stack warning present (`positive sp value has been detected`). Atomic CAS loops show `MEMORY[0xFFFF0FC0]` placeholder.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No null checks or parameter validation comments recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function call graph clear. Global variable `global_var` usage visible. Test functions call expected helper functions correctly.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically (preprocessing tests, ASM tests). Related functions adjacent. `main()` correctly calls test functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 library functions failed (`__imp_printf`, `__imp_mmap`, etc.). Would require stubs for all external calls. Atomic helpers need platform-specific implementation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+8)/4 = 7.00  × 0.30 = 2.10
+Level 2 (Structural):  (9+9+9+9)/4 = 9.00  × 0.25 = 2.25
+Level 3 (Type):        (6+7+6)/3   = 6.33  × 0.20 = 1.27
+Level 4 (Semantic):    (3+5+7+2)/4 = 4.25  × 0.15 = 0.64
+Level 5 (Contextual):  (8+8+5)/3   = 7.00  × 0.10 = 0.70
+─────────────────────────────────────────────────────
+Overall Score:                                  6.96/10
+```
+
+**Overall Readability Score:** 7.0/10
+
+### Critical Defects:
+- **Parameter names generic**: `a1`, `a2`, `a3` should be `size`, `x`, `y` based on usage patterns
+- **Zero semantic comments**: Original 200+ lines of documentation completely lost
+- **Magic numbers unexplained**: `57072`, `282`, `155` need constant name recovery
+- **Type precision lost**: Everything becomes `int` instead of `int32_t`, `size_t`
+- **12 external functions failed**: Library stubs required for compilation
+
+### Best Quality Aspect:
+- **Structural Intelligibility (9.0/10)** - Function names preserved, control flow natural, excellent decomposition
+
+### Most Needs Improvement:
+- **Semantic Transparency (4.25/10)** - No comments, no contract recovery, no idiom recognition beyond basic patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer parameter names from usage context** - Analyze how `a1` is used (comparison with 1024) to suggest `size`
+2. **Recover macro semantics from constant patterns** - Detect `1024`, `512`, `64` relationships and suggest `MAX_SIZE`, `BUFFER_COUNT`
+3. **Generate semantic comments for optimized code** - Add notes like "// DEBUG_MODE branch eliminated at compile time" for conditional compilation

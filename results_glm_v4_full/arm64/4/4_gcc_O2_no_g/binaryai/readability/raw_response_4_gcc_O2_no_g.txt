@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `param_1`, `local_8`, `uVar1`, and `plVar3`, completely losing the semantic intent of names like `count`, `sum`, `args`, or `seed` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are recovered perfectly from symbols (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), matching the source exactly and providing clear context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Meaningful decimal constants from the source (e.g., `15`, `50`, `42`) are replaced by magic hex numbers (`0xf`, `0x32`, `0x2a`) in the decompiled output, requiring mental conversion to understand the values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is largely free of dead code or spurious jumps, but the pervasive use of non-standard types like `undefined8` and `undefined4` acts as significant noise that impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is generally natural with loops correctly identified as `do-while` constructs; however, the implementation of `varargs_func` is obscure, using pointer arithmetic (`iVar2 = -0x38`) instead of clear `va_list` idioms.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries and granularity match the source code perfectly, with no monolithic functions or inappropriate fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: While the decompiler correctly represents the binary, the constant propagation visible in `test_calling_conventions` (e.g., passing `0xf` instead of calling `cdecl_func`) hides the original logic, making the test harness harder to map back to the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type information is lost or incorrect; `func_mixed_args` has swapped parameter types (`double` vs `int`), and return types like `undefined8` are used instead of standard `int` or `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types are completely lost; `LargeStruct` and `SmallStruct` are replaced by raw pointers (`long *`) or integer packing (`ulong`), destroying the semantic data model of the source.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The use of `undefined` types and the incorrect parameter ordering in `func_mixed_args` introduce potential type confusion, though pointer arithmetic generally remains within safe bounds relative to the binary's execution.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled code to explain logic, variable usage, or the ABI-specific transformations (like struct packing), leaving the user to infer everything.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard C idioms are missed; `varargs_func` is not recognized as a variadic function, and struct returns are represented as bitwise operations rather than data structure initialization.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler does not flag the loss of struct types or the obscure `varargs` implementation as potential anomalies or uncertainties, presenting the low-level implementation as definitive.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions are documented; for example, the null check in `func_struct_byptr` is present in code but not explicitly stated as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are easily traceable because the function names were recovered successfully, allowing the user to navigate the call graph effectively despite type issues.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The decompiled code maintains the logical grouping and ordering of functions found in the source file, preserving the original module structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile without significant modification due to the use of Ghidra-specific types (`undefined8`, `code *`) and the loss of struct definitions required for the interfaces.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Composite types (`LargeStruct`, `SmallStruct`) are completely lost, replaced by raw pointers or integer bit-packing.
+- Non-standard types (`undefined8`, `undefined4`) are used instead of standard C types (`int`, `void*`), breaking readability and compilability.
+- The `varargs_func` implementation is obscured as pointer arithmetic rather than the standard `va_list` idiom.
+- Parameter types in `func_mixed_args` are recovered in the wrong order compared to the source.
+- Magic hex literals (`0xf`, `0x32`) replace meaningful decimal constants from the source.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler successfully recovered symbol names, making the high-level flow and purpose of functions immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to recover `struct` types, turning them into pointers or integers, fundamentally breaks the understanding of the data structures being manipulated.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement robust struct recovery for ARM64 ABI, specifically identifying hidden pointer parameters for large structs and register-packing for small structs.
+2. Replace generic `undefined` types with inferred standard C types (e.g., `int`, `void*`) based on register usage and context to improve compilability.
+3. Recognize and pattern-match `va_list` usage (stack walking logic) to reconstruct variadic function signatures and idioms.

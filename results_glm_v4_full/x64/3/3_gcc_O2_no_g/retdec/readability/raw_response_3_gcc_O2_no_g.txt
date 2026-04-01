@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `mem`, or `result`. For example, in `local_array`, the loop counter and array pointer are `v4` and `v3`, completely obscuring the logic `arr[i] = i * n`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved accurately from the source (e.g., `double_value`, `heap_basic`, `test_stack_memory`), which significantly aids navigation and understanding of the high-level structure.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered but stored as hex-encoded UTF-8 in the global variables (e.g., `g1 = "=== \xe6\xb5\x8b..."`), making them unreadable without decoding. Magic numbers like `40` (stack canary offset) and `4` (sizeof int)) are used without explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is heavily polluted with stack canary checks (`if (v1 == __readfsqword(40))`) in almost every function, and library calls are replaced with fortified versions (`__printf_chk` instead of `printf`), adding significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple loops are recovered as `while` loops, complex logic like `linked_list_heap` relies on `goto` statements (e.g., `lab_0x19b8`) rather than structured loops, making the control flow harder to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler maintains the original function granularity well. Although `static_helper` appears to have been inlined into `call_static_func`, the overall decomposition matches the source's modular design.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but stack canary checks at the end of functions create artificial branches, and forward jumps (e.g., in `heap_basic`) disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little artificial redundancy added by the decompiler. However, the verbosity typical of `-O0` compilation (e.g., explicit pointer arithmetic for array access) is preserved rather than abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are imprecise, with `int64_t` used ubiquitously even for smaller integers or pointers. Architecture-specific mismatches occur, such as using x86 intrinsics (`__readfsqword`) in supposedly ARM64 code.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost. `Point` and `Node` structures are accessed via raw pointer arithmetic (e.g., `*(int32_t *)mem`, `*(int64_t *)(v1 + 8)`), completely obscuring the data structure layout.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on explicit casts (e.g., `(int64_t)mem`, `(int32_t)a1`) and manual pointer arithmetic, which reduces type safety and makes the code look like low-level assembly translation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Algorithms, non-obvious logic, or potential errors are left undocumented.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard library calls like `malloc` and `free` are recognized, but higher-level patterns like linked lists or tree traversals are not identified or annotated; they appear just as pointer manipulations.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler does not flag potential issues such as the "dangling pointer" usage in `dangling_pointer` or the "double free" in `double_free`, presenting them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., `n > 0` checks) or postconditions. The logic is presented flatly without semantic contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the correct names. Global variables are referenced, though their names (`g1`, `g2`) are generic, the relationships between functions are preserved.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file is well-organized with prototypes at the top and functions following in a logical order, matching the source file's structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses x86-specific intrinsics (`__readfsqword`, `__asm_hlt`) despite the target architecture being ARM64, making it impossible to compile without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic and offsets.
+- Architecture mismatch: The code uses x86 intrinsics (`__readfsqword`) for an ARM64 binary.
+- Variable naming is entirely generic (`v1`, `v2`), obscuring the logic of algorithms.
+- String literals are hex-encoded in the global data section, making them unreadable.
+- Stack canary checks are inserted into every function, adding significant noise.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully preserved the original function names, which is the strongest feature aiding navigation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions (like `Point` or `Node`) turns high-level data structure manipulations into obscure pointer math, severely impacting understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Composite Types**: Implement analysis to group contiguous memory accesses (e.g., offset 0 and offset 4) into struct definitions based on access patterns.
+2.  **Fix Architecture Mapping**: Ensure that stack canary checks and assembly intrinsics match the target architecture (ARM64) instead of defaulting to x86 idioms.
+3.  **Decode String Literals**: Automatically decode hex-encoded global strings (like `\xe6\xb5\x8b`) into readable UTF-8 text in the output.

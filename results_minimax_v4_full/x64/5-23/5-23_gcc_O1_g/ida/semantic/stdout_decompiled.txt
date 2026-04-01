@@ -1,0 +1,21 @@
+Testing preprocessing features:
+Preprocessing test 1: 64
+Preprocessing test 2: 30
+Preprocessing test 3: 32
+Preprocessing test 4: 57122
+Preprocessing test 5: 116
+Preprocessing test 6: 19
+Preprocessing test 7: 60
+LOG: Values: 10, 20, 30
+Preprocessing test 8: 60
+Preprocessing test 9: 16
+Preprocessing test 10: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:26
+Preprocessing test 11: 382
+Testing asm features:
+ASM test 1: 15
+ASM test 2: 1177461658
+ASM test 3: 42
+ASM test 4: 36
+ASM test 5: 30
+ASM test 6: 77

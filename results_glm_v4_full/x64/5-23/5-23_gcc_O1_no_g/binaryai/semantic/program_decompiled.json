@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_O1_no_g/binaryai/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\nMacro Constants (param): 40\nMacro Functions (param): 1e\nConditional Compile (param): 20\nMulti-branch Compile (param): df22\nMacro Recursion (param): 74\nStringize (param): 13\nToken Paste (param): 3c\nLOG: Values: 10, 20, 30\nVariadic Macro result: 3c\nMacro Override (param): 10\nInclude Guard (param): 1f4\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:28\nBuiltin Macros result: 17e\n=== ASM Features Test ===\nBasic ASM: f\nASM Clobber: 42f10369\n",
+  "stderr": "*** stack smashing detected ***: terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

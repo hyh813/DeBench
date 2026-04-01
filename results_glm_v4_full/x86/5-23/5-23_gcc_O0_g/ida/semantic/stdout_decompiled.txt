@@ -1,0 +1,18 @@
+Testing Preprocessing Features
+PPL20.1: 64
+PPL20.2: 30
+PPL20.3: 32
+PPL20.4: 57122
+PPL30.1: 116
+PPL30.2: 19
+PPL30.3: 60
+LOG: Values: 10, 20, 30
+PPL30.4: 60
+PPL30.5: 16
+PPL30.6: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:44
+PPL30.7: 382
+Testing ASM Features
+Asm L40.1: 15
+Asm L40.2: 15
+Asm L40.3: 42

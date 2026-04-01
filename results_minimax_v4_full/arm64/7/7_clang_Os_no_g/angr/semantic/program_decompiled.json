@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_clang_Os_no_g/angr/syntactic/bin/7_clang_Os_no_g_fixed",
+  "stdout": "Test Complete\n\nObfuscation tests:\nopaque_predicate result: 35\ninstruction_substitution result: 225\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

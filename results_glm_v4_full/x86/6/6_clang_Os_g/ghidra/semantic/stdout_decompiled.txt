@@ -1,0 +1,18 @@
+=== Standard Library Tests ===
+str Result: 8
+strcmp Result: 0
+strlen Result: 12
+memcpy Result: 90
+memcmp Result: 1
+Value: 42, Name: Test
+printf Result: 22
+scanf Result: 579
+fopen Result: 42
+fread Result: 42
+malloc Result: 90
+memset Result: 0
+strstr Result: 15
+=== System Call Tests ===
+syscall Result: -1
+stat Result: 42
+fork Result: 42

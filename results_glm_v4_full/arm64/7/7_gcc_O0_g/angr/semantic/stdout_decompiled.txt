@@ -1,0 +1,5 @@
+Testing obfuscation and optimization:
+
+  call_fake_branch: 10
+  call_opaque_predicate: 35
+  call_instruction_substitution: 225

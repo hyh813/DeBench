@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `v33`, `v34`) with no semantic meaning. Only occasional names like `idx`, `len`, `ptr`, `i` provide minimal context. In `varargs_func`, 37+ temporary variables (`v0-v37`) make tracking data flow nearly impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test function names are preserved from source (`cdecl_func`, `call_cdecl`, `varargs_func`, `func_struct_byptr`). However, runtime functions use mechanical names (`sub_401020`, `sub_40102c`, `sub_401095`) and some helper functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers: `4294967295` (UINT_MAX), `340282366920938463463374607431768211455` (2^128-1), `206158430216`. These obscure the actual logic and should be named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: runtime functions (`_init`, `_start`, `deregister_tm_clones`), excessive temporary variables, verbose vector operations (`AddV`, `SubV`, `CONCAT`, `uint128_t`) where simple arithmetic would suffice.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions have natural flow, but `varargs_func` uses confusing do-while loops with complex conditions. Some functions use `goto` patterns (`sub_401020` has `goto g_404010`) instead of structured control flow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: many test functions are constant-folded (`call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`). `func_struct_byval()` loses its parameter entirely, breaking semantic meaning.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but complex variable initialization blocks at function starts (e.g., `v5 = v19; v6 = v20; v7 = v21...`) disrupt flow. Some forward references to globals.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy: register save/restore patterns (`v5 = v19; v6 = v20; v7 = v21...`), duplicate vector operations, and unnecessary type conversions throughout variadic functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `int` becomes `unsigned long long`, `int*` becomes `unsigned int*`, return types often `unsigned long long` instead of `int`. Signed/unsigned correctness frequently wrong.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure: `LargeStruct` and `SmallStruct` definitions lost. `func_struct_byval()` has NO parameters in decompiled version. Generic `struct_0 { unsigned int field_0; }` replaces meaningful structures.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointers typed as `unsigned long long *` (`param_func_ptr`), pointer arithmetic without proper typing, implicit casts throughout. `ret_opaque_handle` returns string literal `"d"` instead of proper pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of complex vector operations, no documentation of variadic handling, no indication of decompilation uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition: variadic function pattern (`va_list`, `va_arg`) not identified, struct passing patterns lost, constant folding obscures actual computation patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198549`. Missing parameter in `func_struct_byval()` not flagged. Broken variadic handling not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not explained), no postconditions, no error condition documentation. Null checks present but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced (`g_403fe8`, `g_404008`) without context. Callback relationships in `param_func_ptr` not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Runtime functions mixed with test functions. No logical grouping by category (calling conventions vs. parameter passing vs. return values).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Requires extensive patching: undefined globals (`g_402120`, `g_4023ca`), external dependencies (`printf`, `puts`, `strlen`, `__libc_start_main`), broken struct types, missing headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+3+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+4+6+3)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+4+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.63/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects
+- **`func_struct_byval()` missing parameter entirely** - struct passed by value not recovered, function signature broken
+- **Test functions constant-folded** - `call_cdecl()` returns `15` directly instead of computing `cdecl_func(5, 10)`, losing semantic meaning
+- **Variadic functions broken** - `varargs_func` and `param_varargs` have complex, incorrect implementations with 37+ temporary variables
+- **All struct types lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` replaced with generic `struct_0` or raw pointer arithmetic
+- **Zero documentation** - No comments explaining complex vector operations, magic numbers, or decompilation uncertainty
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byptr`), making basic identification possible
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments means no explanation of complex logic, magic numbers, or decompilation confidence levels
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct type definitions from stack layouts** - Analyze memory access patterns to reconstruct `LargeStruct`, `SmallStruct` with proper field names instead of generic `struct_0`
+2. **Preserve computational semantics over constant folding** - Don't collapse `call_cdecl()` to return `15`; maintain the actual function call to preserve calling convention testing intent
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (variadic handling, struct parameters) with comments like `// DECOMPILER UNCERTAIN: variadic argument handling`

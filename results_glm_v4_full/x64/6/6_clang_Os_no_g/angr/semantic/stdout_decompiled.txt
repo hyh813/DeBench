@@ -1,0 +1,20 @@
+Testing Standard Library Functions:
+
+14
+0
+12
+90
+4294967295
+Value: 42, Name: Test
+22
+1819043600
+42
+4294967293
+0
+0
+15
+Testing System Calls:
+
+43
+4294967294
+4294967295

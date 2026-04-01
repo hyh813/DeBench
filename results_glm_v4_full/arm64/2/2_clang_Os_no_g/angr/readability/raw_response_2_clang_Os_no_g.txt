@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `a0`, `v0`, `v1`, and `cur`, providing no semantic context about their purpose (e.g., `a0` used for `x` in `process_int`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `process_int`, and `array_1d_stack` are preserved exactly from the source symbols, making the high-level intent clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Character checks use magic numbers (e.g., `65`, `26` in `process_char`) instead of `'A'` and `'Z'`, and bitmasks like `4294967294` obscure the intent of clearing the least significant bit.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with low-level architecture simulation artifacts like `arm64g_calculate_condition` and `__ROL__`, which significantly impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is unnatural; `for` loops are converted to `do-while` with decrementing counters, and indirect function calls are represented as `goto a0` rather than standard C call syntax.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped correctly to the source boundaries with appropriate granularity, maintaining the original structure of the test file.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While mostly linear, the use of `goto` for function calls and the `do-while` loop structures disrupt the top-to-bottom reading flow expected in high-level C.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no obvious dead code or loop unrolling, but the logic is often expressed verbosely (e.g., complex boolean expansions) rather than concisely.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; signed integers are often treated as `unsigned int`, pointers are cast to `unsigned long`, and floating-point types are lost (e.g., `process_float` returns an integer register).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; `struct_simple` accesses fields using array indices (`a0[1]`, `a0[2]`) instead of member names (`p->y`, `p->z`), losing all semantic structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The representation of indirect function calls as `goto a0` is unsafe and confusing, and pointer arithmetic is often exposed as raw integer math.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the logic or the artifacts.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like boolean checks are obscured by helper functions (e.g., `arm64g_calculate_condition`), making the logic unrecognizable as standard C.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the low-level artifacts confidently without flagging them as anomalies or potential lifting errors (e.g., the `goto` for function calls).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the `volatile` nature of `volatile_access` is not communicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10
+Justification: There is no documentation of function call graphs or global variable usage; relationships between functions must be inferred manually.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in a logical order that matches the source file structure, grouping related tests together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to undefined symbols like `arm64g_calculate_condition` and invalid syntax like `goto a0` for function calls.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Indirect function calls represented as `goto a0` instead of `return a0(a1)`.
+- Struct fields accessed via array indices (`a0[1]`) instead of semantic field names (`p->y`).
+- Boolean logic obscured by architecture simulation helpers (`arm64g_calculate_condition`).
+- Floating point operations completely lost in `process_float` and `process_double`.
+- Magic numbers used for ASCII checks (`65`, `26`) instead of character literals.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function symbols from the binary, making it easy to locate specific test functions.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover structs, treating them as raw arrays of integers, destroys the semantic meaning of the data structures used in the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Architecture Helpers:** Replace VEX/IR-level helpers like `arm64g_calculate_condition` with high-level C boolean operators (&&, ||, !).
+2. **Recover Struct Types:** Implement type recovery to map array offsets on struct pointers to named fields based on known layout or heuristics.
+3. **Fix Indirect Call Representation:** Translate indirect jumps/calls to standard C function pointer syntax (e.g., `(*func_ptr)(arg)`) instead of `goto`.

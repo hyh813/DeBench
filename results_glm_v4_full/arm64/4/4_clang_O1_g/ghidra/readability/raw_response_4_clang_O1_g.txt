@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables like `iVar1`, `lVar3`, and `piVar6` in `varargs_func` are generic and obscure semantic meaning, though parameters like `a` and `b` in `cdecl_func` are preserved correctly.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names, including `cdecl_func`, `test_calling_conventions`, and `param_by_value_int`, exactly match the original source, likely due to preserved debug symbols.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers like `0xf` (15), `0x32` (50), and `0x2a` (42) are used instead of the original decimal values, and offsets like `0x38` appear without context, making the code harder to read.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output is cluttered with repetitive warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */`, which significantly distract from the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple functions like `cdecl_func` are natural, `varargs_func` uses a complex `do-while` loop with pointer arithmetic (`register0x00000008`) instead of the original `va_list` abstraction, making it hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion (e.g., `cdecl_func` remains a separate, small unit).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps, though the initialization loops in `test_calling_conventions` are slightly verbose.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully represents the compiler's constant propagation (e.g., `return 0xf`), eliminating redundant function calls present in the source logic, though this obscures the original flow.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types like `int`, `char *`, and `longlong` are accurately recovered, and the decompiler correctly identifies the hidden pointer parameter in `func_struct_byval` (pass-by-value to pointer conversion).
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structures like `LargeStruct`, `SmallStruct`, and `SmallPoint` are perfectly reconstructed with correct field names (`data`, `x`, `y`) and layouts.
+
+**11. Type Safety:** Score: 7/10
+Justification: Necessary casts for low-level access (e.g., `*(int *)((long)p + 4)`) are present, and pointer arithmetic in `varargs_func` is handled without introducing unsafe operations beyond the original intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are primarily auto-generated warnings about calling conventions and unresolved variables rather than explanations of logic or algorithms.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The `varargs_func` implementation fails to recognize the `va_list`/`va_arg` idiom, presenting it as raw register and stack manipulation instead of a standard variable argument pattern.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler consistently flags areas of uncertainty with "WARNING" and "Unresolved local var" comments, accurately indicating where the analysis might be weak.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., `count` validity in `varargs_func`) or postconditions; the code is presented purely operationally.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between callers (e.g., `call_cdecl`) and callees (e.g., `cdecl_func`) is preserved, even if the calls were optimized away.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure, with related test functions kept together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types like `undefined8`, `code`, and references like `register0x00000008`, making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is generic (`iVar1`, `lVar3`) in complex functions like `varargs_func`, obscuring data flow.
+- The `varargs` idiom is not recognized, replaced by low-level pointer arithmetic and register access.
+- Excessive noise from repetitive "Unknown calling convention" warnings and "Unresolved local var" comments.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols were perfectly preserved, allowing exact mapping of function names like `cdecl_func` to the source.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to abstract standard C patterns like `va_list` into readable constructs significantly impacts the understanding of variable argument functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to detect and abstract `va_list` usage into standard `va_start`/`va_arg` pseudo-ops or comments.
+2. Filter or consolidate repetitive warnings (e.g., "Unknown calling convention") to reduce visual noise.
+3. Infer variable names from context or usage patterns (e.g., `sum` accumulator) instead of defaulting to `iVar1`.

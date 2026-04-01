@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `param_1`, `iVar1`, `local_8`, `uVar2` obscuring semantic meaning. Some globals retain original names (`signal_received`, `shared_counter`, `atomic_counter`) but local variables are almost entirely non-descriptive.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User functions like `param_strcpy`, `param_strcmp`, `thread_compute` preserve original names well. However, many helper functions are named `FUN_001013a0`, `FUN_00101c3c` with only addresses, and some return types are wrong (`param_strlen` returns void instead of int).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x38`/`0x39` (syscall numbers), `0x10`/`0xe` (signal numbers). String literals preserved well ("HelloPipe", "/etc/passwd") but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) appear in nearly every function adding 10-15 lines of boilerplate. Warnings like "WARNING: Subroutine does not return" and "WARNING: Globals starting with '_' overlap" clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs reasonably well. Some functions use goto labels (`LAB_001023d8`, `LAB_001033d8`) instead of structured control flow. Fork/exec branches preserved but with awkward return value handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with appropriate granularity. Some caller functions inlined/optimized (`call_strcpy` returns constant 8 directly). Thread functions properly separated from wrapper functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps to error handling labels disrupt flow. Deep nesting in `param_signal_handling` and `param_thread_local_storage` makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary check pattern duplicated in ~40 functions. Error handling code repeated verbatim (`if (local_8 - ___stack_chk_guard == 0)`). Some functions have duplicate implementations (`FUN_001025ec` vs `call_win32_api`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `size_t`, `ssize_t`, `pid_t`. Pointer types often degraded to `void*` or `undefined*`. Some correct types preserved (`FILE*`, `pthread_t`, `sockaddr`). Return type mismatches (`param_strlen` returns void).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct becomes `int aiStack_28[8]` with field access via array indexing. `sockaddr` struct fields accessed as `sa_data[0]`, `sa_data[1]` without field names. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Excessive unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(pthread_cond_t *)cond`, `(stat *)&stack0xffffffffffffff78`. Pointer arithmetic on typed pointers loses semantic meaning. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No algorithm explanations, no parameter documentation, no semantic comments recovered from source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `memcpy`) correctly identified. pthread patterns recognized (`pthread_create`, `pthread_join`). Higher-level patterns (producer-consumer, mutex protection) not explicitly identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Stack canary violations flagged with `__stack_chk_fail` warnings. Unreachable blocks noted. However, indirect calls and potential type confusion not explicitly warned about.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "param_1 must not be NULL"). No postconditions or return value semantics. Error codes (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Global variable usage clear (`signal_received`, `atomic_counter`). Callback relationships (thread entry functions) not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical groups (library, system, thread) matching source structure. No explicit section headers or namespace organization. Related functions not grouped together in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing external declarations (pthread functions, libc functions). Uses compiler-specific intrinsics (`__aarch64_ldadd4_acq_rel`). Will not compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (3+5+6+3)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.04/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable naming**: `param_1`, `iVar1`, `local_8` provide zero semantic information about purpose
+- **Type degradation**: `ThreadData` struct becomes `int aiStack_28[8]` losing all field semantics
+- **Stack canary noise**: Every function has 10+ lines of `___stack_chk_guard` boilerplate
+- **Return type errors**: `param_strlen` returns `void` instead of `int`, breaking type correctness
+- **Magic numbers**: `0x2a`, `0x38`, `0xe` used without symbolic constants or comments
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Function boundaries preserved well with appropriate granularity; thread functions properly separated from wrappers
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Zero semantic comments recovered; only auto-generated warnings present, making non-obvious logic impossible to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+2. **Recover and emit struct definitions** with field names based on access patterns rather than array indexing
+3. **Add semantic comment generation** for standard library calls and common patterns (mutex protection, producer-consumer, signal handling)

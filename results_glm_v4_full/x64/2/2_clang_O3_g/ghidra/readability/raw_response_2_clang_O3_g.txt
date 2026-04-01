@@ -1,0 +1,107 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Local variables are almost exclusively generic names like `iVar1`, `piVar1`, `uVar9`, and `cVar1`, completely losing semantic meaning like `sum`, `i`, or `len`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `struct_nested` are perfectly recovered, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants are replaced by raw hex values, such as `0x61` for 'a', `0x19` for bounds checking, and `0x400c000000000000` for floating-point values, obscuring intent.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While the code is free of debug instrumentation, it contains significant "noise" from aggressive compiler optimizations, such as massive loop unrolling (e.g., `array_3d` returning a sum of 125 explicit terms) and constant propagation in `test_data_types_l1`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted by optimization; simple loops are replaced by complex unrolled blocks or pointer arithmetic, and `process_char` uses an arithmetic bounds check (`0x19 < (byte)(c + 0xbfU)`) instead of clear comparisons.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate boundaries and granularity (e.g., `array_1d_stack` vs `array_string`), with no artificial outlining or inlining visible in the decompilation.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the massive unrolled loops (e.g., in `array_1d_stack`) create long, repetitive blocks that disrupt the natural flow of reading.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The code is filled with redundancy due to loop unrolling (e.g., `iVar8 = *piVar6 + *piVar4 + ...` repeated), which the decompiler did not abstract back into a loop structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (int, char, pointers) are accurate, and complex types like `longdouble` are handled correctly with hidden return pointers, though bitfields in `Flags` were collapsed into a raw `ushort`.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structures are recovered with high fidelity, including nested structs like `Rect` and `Widget`, and field names like `x`, `y`, `z`, `width`, and `height` are preserved perfectly.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer casts are explicit and generally correct (e.g., `(int *)p`), though the use of `undefined` types in stack variables and the raw bitfield access slightly reduce the perceived safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to compiler warnings (e.g., "WARNING: Removing unreachable block") and "Unresolved local var" markers, providing no insight into the algorithm's logic or purpose.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While `array_string` is recognized as a loop, idioms like the `process_char` bounds check or the summation loops in `array_1d_stack` are lost to optimization and not re-abstracted.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler clearly flags issues like "Unknown calling convention," "Unresolved local var," and "Could not recover jumptable," which helps identify areas where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement for `array_complex_index` that `x` and `y` be within bounds is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to understand (e.g., `main` calling `test_data_types_l1`).
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in a logical order that closely matches the source file structure, grouping related tests (data types, arrays, pointers) together.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses `undefined` types (e.g., `undefined1`, `undefined8`) for stack variables and `code *` for function pointers, which would require significant manual fixing to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Overall = (5.25 × 0.30) + (5.25 × 0.25) + (7.66 × 0.20) + 
+          (4.00 × 0.15) + (7.33 × 0.10)
+Overall = 1.575 + 1.3125 + 1.532 + 0.6 + 0.733
+Overall = 5.75 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.8/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Local variables use generic names (`iVar1`, `piVar1`) instead of semantic names (`sum`, `i`), severely hindering comprehension.
+- **Loop Unrolling**: Functions like `array_1d_stack` and `array_3d` are decompiled as massive unrolled blocks of arithmetic instead of loops, making them unreadable.
+- **Literal Obfuscation**: Character and float constants are represented as raw hex values (e.g., `0x61`, `0x400c000000000000`) rather than their source forms.
+- **Constant Propagation**: In `test_data_types_l1`, function logic is replaced by hardcoded results (e.g., `printf(..., 0x61)`), removing the evidence of the original logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10) & Composite Type Recovery (9/10)
+- **Why?** Ghidra successfully recovered the original function names from the symbol table and accurately reconstructed complex struct layouts with correct field names.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Redundancy Elimination (2/10)
+- **Why?** The decompiler failed to abstract the compiler's loop unrolling optimizations, resulting in hundreds of lines of repetitive code for simple loops.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Loop Re-rolling**: Implement pattern matching to detect and re-roll aggressively unrolled loops (like the 125-iteration sum in `array_3d`) back into `for` or `while` loops.
+2.  **Symbolic Constant Recovery**: Enhance analysis to convert raw hex constants back to their likely character or enum forms (e.g., `0x61` -> `'a'`) based on context.
+3.  **Variable Naming Heuristics**: Improve local variable renaming by analyzing usage patterns (e.g., variables accumulating sums should be named `sum` or `acc`).

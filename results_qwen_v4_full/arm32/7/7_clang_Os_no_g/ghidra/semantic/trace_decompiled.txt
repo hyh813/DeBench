@@ -1,0 +1,3 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=-1092556764,Arg2=-1092556756,Arg3=68416|r0=0x1,r1=0xbee0e824,r2=0xbee0e82c,r3=0x10b40,r4=0xbee0e6e8,r5=0x0,r6=0x0,r7=0x0
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|param_string_encryption|1|Arg0=0,Arg1=0,Arg2=-1246938368,Arg3=-1246938368|r0=0x0,r1=0x0,r2=0xb5ad3b00,r3=0xb5ad3b00,r4=0xbee0e6e8,r5=0x0,r6=0x0,r7=0x0

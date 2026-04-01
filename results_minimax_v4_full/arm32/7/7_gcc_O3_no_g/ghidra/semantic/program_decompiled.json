@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_gcc_O3_no_g/ghidra/syntactic/bin/7_gcc_O3_no_g_fixed",
+  "stdout": "Testing Obfuscation Techniques:\n\nopaque_predicate: 10\ncall_opaque_predicate: 35\ninstruction_substitution: 225\nstring_encryption: 0\ntail_call_optimized: 500500\nnon_tail_call: 5050\nvectorized_loop: 72\nlink_time_optimization: 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

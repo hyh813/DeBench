@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all local variables marked as "Unresolved local var" with no semantic names; parameters use generic names like `iVar1`, `puVar1`, `piVar2` instead of meaningful names like `obj`, `result`, or `derivedA`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved accurately (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use generic names (`FUN_00011030`) and some runtime functions have unclear purposes.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout (0x125c, 0x3e9, 0x2a, 0x47, 0x28a, 0x16, 0x27, 0x10, 0x55, 0x2bf) represent computed return values but lack any explanation or constant definitions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts present (`__x86.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`); repetitive "Unresolved local var" warnings clutter each function; infinite loop in `_start` is unnecessary noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions collapsed to single constant returns (e.g., `test_cpp_virtual_func` returns `0x2a`), completely losing original control flow; only `test_cpp_exception` and `test_cpp_rtti` retain conditional logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable, but test functions are oversimplified to return statements; class methods (`Container::push`, `Container::get`) properly separated but test logic not recovered.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Simplified code reads top-to-bottom naturally; no excessive jumps or goto statements; however, this is due to logic loss rather than good linearization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions; compiler optimization artifacts minimal in the recovered code portions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Basic types (int, double) preserved, but class types degraded to raw pointers/byte arrays; `undefined4`, `undefined1` types appear; many variables unresolved losing type information entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—classes (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) not reconstructed as structs; objects represented as byte arrays (`local_28[36]`, `local_30[32]`); vtable pointers visible (`_vptr_Base`) but no struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)`, `(int)&PTR`, `(code *)(undefined *)`); unresolved variables hide potential type errors; pointer arithmetic on class objects not properly typed.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "WARNING: Unknown calling convention"); no algorithmic explanations, no documentation of C++ semantics (RAII, virtual dispatch, lambda captures).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized—no indication of RAII patterns, virtual function dispatch, lambda closures, exception handling semantics, or smart pointer ownership transfer; template instantiation not clearly marked.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" warnings consistently flag unrecovered variables; "WARNING" tags for calling conventions and unreachable blocks; however, warnings are generic without specific guidance for manual recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; exception handling contracts not recovered; class method contracts (const-correctness, null checks) not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear; class inheritance not documented; template instantiation relationships not explicit; static member access (`LifecycleClass::instance_count`) preserved.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output; no logical grouping by class or feature; runtime initialization functions mixed with test code; no namespace or header structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically compilable; external dependencies (C++ runtime, operator_new/delete) referenced but not defined; would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+5+7+8)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type System): (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.23/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Class structures completely lost** - `SimpleClass`, `LifecycleClass`, `Base`, `Derived` represented as raw byte arrays (`local_28[36]`) instead of proper struct definitions
+- **Test function logic collapsed** - Most test functions return pre-computed constants (0x2a, 0x47, 0x28a) instead of actual computation logic
+- **Variable names unresolved** - All local variables marked "Unresolved local var" with no semantic naming
+- **Magic numbers unexplained** - Return values like 0x125c, 0x3e9, 0x2bf appear without indicating they're computed results
+- **C++ semantics not recovered** - Virtual dispatch, lambda captures, exception handling, smart pointer ownership all obscured
+
+### Best Quality Aspect:
+- **Redundancy Elimination (8/10)** - No dead code or duplicate expressions observed; the simplified output is at least clean of redundant operations.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to reconstruct C++ class structures; objects reduced to byte arrays losing all field semantics and making code practically unusable for understanding object-oriented behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class structure recovery** - Analyze vtable layouts and object memory patterns to reconstruct struct definitions with field names based on access patterns
+2. **Preserve control flow in test functions** - Instead of constant folding to return values, recover the actual computation logic to show how results are derived
+3. **Add semantic annotations for C++ features** - Mark virtual function calls, lambda captures, exception handlers, and smart pointer operations with explanatory comments indicating the high-level C++ construct

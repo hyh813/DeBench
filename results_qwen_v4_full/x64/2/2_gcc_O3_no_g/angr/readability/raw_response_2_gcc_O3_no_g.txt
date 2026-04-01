@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `a0`, `a1` with no semantic meaning. For example, `process_char` uses `a0` instead of `c` or `character`, and `array_1d_stack` uses `p` instead of `arr` or `array`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names recovered (`process_char`, `process_int`, `struct_simple`) but many critical functions renamed to `sub_401020`, `sub_4010cb`. Test functions like `test_data_types_l1` retained names but wrapper functions lost all semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX), `0x3fc00000` (float constant), and `65`/`97` (ASCII values) appear without explanation. String literals preserved in printf calls but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `[D] Unsupported jumpkind` markers, `AddV`, `MulV` vector operations, and redundant variable assignments. Functions like `process_ld` contain 15+ lines of unsupported IR operations instead of clean C code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `ptr_func_simple` uses `goto a0` instead of proper function pointer call. `binary_tree_sum` has 12+ levels of nested do-while loops from aggressive inlining. Some functions like `process_char` have reasonable if-else recovery.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Test functions optimized away to just print expected values (e.g., `test_data_types_l1` prints `97` instead of calling `process_char('A')`). `binary_tree_sum` exploded to 200+ lines from inlining. Many wrapper functions (`sub_4011b9`) serve no purpose.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom but `binary_tree_sum` has extreme nesting disrupting flow. Forward jumps present in several functions. Loop structures partially recovered but often as do-while instead of for.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling in `array_1d_stack`, `array_vla`, `ptr_increment` creates 40+ line functions for simple 5-line source. Duplicate vector accumulation code appears in multiple array functions without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `process_char` returns `long long` instead of `char`. `process_float` and `process_double` return `double` but use `unsigned long long` casts. Pointer types degraded to `unsigned long` in many cases. `volatile` qualifier completely lost in `volatile_access`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: All struct fields named generically (`field_0`, `field_8`, `padding_4`). `Point3D` became `unsigned int *` with array indexing. `TreeNode` exploded into 40+ separate struct definitions (`struct_0` through `struct_44`). Union type distinction lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts like `(unsigned long long)(AddV(...))`. Pointer arithmetic uses byte offsets instead of type-aware indexing. Function pointer calls use `goto` which bypasses type checking. Some void* conversions present but not catastrophic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no parameter documentation, no decompiler confidence indicators. Only auto-generated type definitions present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list traversal pattern in `linked_list` partially recognized but not named. Tree recursion in `binary_tree_sum` completely obscured by inlining. No design patterns identified despite clear data structure usage.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: `[D]` markers clearly indicate unsupported operations in `process_ld`, `test_data_types_l1`. However, no explanation of what operations failed or suggested manual analysis. Silent failures in type recovery without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `ptr != NULL` checks not commented). No postcondition inference. Null checks present in code but not documented as contracts. Error conditions undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships partially visible through calls but no call graph documentation. Global variables named `g_405fe8` with no semantic meaning. Callback relationships in `ptr_func_simple` obscured by goto.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order but no logical grouping. Related functions (`process_char` through `process_ld`) scattered with wrapper functions between them. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has external declarations (`extern char g_403008`) but many undefined symbols. `[D]` unsupported operations would prevent compilation. Struct definitions present but with conflicting redefinitions (`struct_0` defined multiple times differently).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+3+5+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+6+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 3.76/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable `a0`, `v0`, `v1`** should be named semantically (e.g., `character`, `sum`, `index`) based on usage context
+- **Test functions optimized away** - `test_data_types_l1` prints hardcoded values instead of actually calling functions, losing test verification capability
+- **Struct fields all generic** (`field_0`, `field_8`) losing all semantic meaning from original `x`, `y`, `z`, `data`, `next` names
+- **`process_ld` completely broken** - 15+ lines of `[D]` unsupported operations instead of recoverable C code
+- **Function pointer calls use `goto`** - `ptr_func_simple` and `struct_func_ptr` use `goto` instead of proper indirect call syntax
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- `[D]` markers clearly flag unsupported operations, alerting analysts to manual review needed
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero meaningful comments throughout 2400+ lines; no algorithm explanations, no parameter documentation, no decompiler confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables dereferenced → `ptr`, `buffer`)
+2. **Preserve test function semantics** - Don't optimize away function calls in test code; maintain actual execution paths for verification purposes
+3. **Add decompiler confidence annotations** - Include comments like `// DECOMPILER UNCERTAIN: indirect call target not resolved` instead of silent `[D]` markers

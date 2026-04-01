@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `local_10`, `local_14`, `iVar1`, `uVar2` instead of semantic names like `dst`, `src`, `thread_count`. Original `buffer[32]` becomes `local_30[32]` losing all meaning.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User functions preserved (`param_strcpy`, `thread_compute`) but library calls degraded to `FUN_000115d0` (strcpy), `FUN_00011650` (strlen). Thread functions well-named but system calls opaque.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x42` ('B'), `0x1000` (4096). String literals preserved (`"HelloLib"`, `"/etc/passwd"`) but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks repeated in nearly every function (`if (local_10 != *(int *)(in_GS_OFFSET + 0x14))`). Compiler artifacts like `__i686.get_pc_thunk.bx`, `unaff_EBX` clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as `for`/`while` constructs but some functions use `goto LAB_00011f54` patterns. Conditional logic generally clear but optimization artifacts present.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well - thread functions separated (`thread_compute`, `consumer_thread`, `producer_thread`). No monolithic functions, reasonable parameter lists.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some forward jumps (`goto LAB_00012df5`) disrupt flow but early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across 30+ functions. Error handling patterns repeated. No obvious dead code but compiler artifacts create redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `undefined4` used extensively instead of `size_t`, `FILE*`, `pthread_t`. Original `char *dst, const char *src` becomes `undefined4 param_1, undefined4 param_2`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct lost - accessed via `param_1[2]`, `param_1[1]` array indexing. `sockaddr_in` fields set individually without struct definition. No struct recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(int *)`, `(undefined4 *)`, `(char *)`. Pointer arithmetic on generic types. No const-correctness preserved from original `const char *`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls not identified (`FUN_000115d0` should be `strcpy`). Thread patterns partially recognized via function names but no explicit pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls or unresolved references. Code presented confidently even when library functions are generic `FUN_XXXXXX`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions inferred. Error return values (`0xfffffffd`, `0xfffffffe`) unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but targets often generic. Global variables named (`signal_received`, `shared_counter`, `atomic_counter`). No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Related functions grouped (test functions together, thread functions together). All in single output file. Original organization partially preserved.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies not documented. Would need stubs for `FUN_XXXXXX` library functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.734
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75  × 0.15 = 0.4125
+Level 5 (Contextual):  (5+6+6)/3   = 5.67  × 0.10 = 0.567
+
+Overall Score: 4.69/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- Variable `local_30` should be named `buffer` based on usage as 32-byte array in `param_fread_fwrite`
+- Library functions not recovered (`FUN_000115d0` = `strcpy`, `FUN_00011650` = `strlen`, `FUN_00011690` = `fopen`)
+- Type `undefined4` used instead of proper types (`size_t`, `FILE*`, `pthread_t`)
+- Zero comments explaining algorithm logic or decompilation uncertainty
+- Magic numbers (`0x2a`, `0xfffffffd`) not mapped to semantic constants (42, -3)
+- `ThreadData` struct lost - fields accessed via array indexing `param_1[2]`
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Thread functions properly separated with cohesive single-responsibility design preserved from source
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover standard library function names** - Map `FUN_000115d0` patterns to known libc signatures (strcpy, strlen, memcpy) based on parameter count and calling convention
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`length`, pointer parameters to string functions should be `str`/`buffer`
+3. **Add decompilation confidence annotations** - Flag unresolved indirect calls, generic function references, and type uncertainties with comments like `// DECOMPILER: library function not resolved`

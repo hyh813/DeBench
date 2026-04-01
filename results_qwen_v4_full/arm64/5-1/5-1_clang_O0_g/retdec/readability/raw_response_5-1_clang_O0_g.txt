@@ -1,0 +1,95 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `result`, `obj` without semantic meaning. For example, in `_Z20test_cpp_member_funcv`, variables `v1` and `v2` should be `r1` and `r2` matching source, and `obj` should indicate it's a `SimpleClass` instance.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) with demangled comments. While some have `// Demangled: test_cpp_member_func()` comments, the actual function names are unusable without demangling. Helper functions like `function_19c0` have no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` stored in `g1` with comment, but many unexplained literals remain (e.g., `31` in strncpy, `4 * a2` for array sizing). String literals are stored as global variables (`g31`, `g32`) with hex-encoded Chinese characters.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: explicit stack frame manipulation (`bp-52`, `bp-40`), redundant type casts throughout, and 275 detected functions when source has ~20. Many helper functions for STL internals (`_ZNSt15__uniq_ptr_impl...`) should be abstracted.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: At -O0, control flow should be natural, but decompiled code uses explicit stack manipulation and indirect returns. For example, `_Z20test_cpp_multiple_inheritancev` returns `(int64_t)&pb` instead of the computed result, indicating control flow recovery issues.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe over-fragmentation with 275 functions for ~20 source functions. STL internals are exposed as separate functions (e.g., 50+ unique_ptr helper functions). Test functions like `_Z20test_cpp_member_funcv` are reasonable but many helpers are implementation details.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has awkward patterns like `return (int64_t)&pb` and explicit stack variable assignments. Exception handling code (`function_1ddc`, `function_1f3c`) uses `_Unwind_Resume` disrupting natural flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justtermination: Significant redundancy from STL template instantiation - each template creates multiple helper functions. For example, `unique_ptr` has 20+ variants for different type combinations that should be consolidated or abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - everything becomes `int64_t`, `int32_t`, or `void*`. C++ class types are lost (e.g., `SimpleClass` becomes `int64_t * result`). Template types are mangled but not recovered (e.g., `Container<int>` becomes generic struct operations).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures recovered (`vtable_17858_type`, etc.) but class layouts mostly lost. `SimpleClass` with `int value` and `char name[32]` becomes opaque `int64_t` with offset arithmetic (`result + 4`, `result + 35`). No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(int64_t *)v1`, `(int32_t *)&g44`, `(float64_t)(int64_t)v2`. Pointer arithmetic on class objects (`(int64_t)result + 8`) loses type safety. Many functions return `int64_t` when they should return specific types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Demangled function names in comments (`// Demangled: test_cpp_member_func()`) are helpful, but no algorithm explanations. Line range comments (`// Line range: 41 - 49`) are auto-generated noise. No comments explain C++ semantics (vtable, inheritance, etc.).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns not recognized - virtual dispatch appears as raw function pointer calls, RAII patterns (unique_ptr) expanded to verbose destructor chains. No identification of design patterns (polymorphism, inheritance hierarchies).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies visible (e.g., `if (result == 0) { __cxa_bad_typeid(result2); }`) but not flagged as decompilation uncertainty. No warnings about unresolved indirect calls or potential recovery errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Null checks exist but aren't documented as contracts. Exception handling boundaries not indicated. No invariant documentation for class methods.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch through vtables (`g5`, `g6`) not explained. Inheritance relationships noted in comments (`// From class: Base`) but not structurally represented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with sections (Structures, Classes, Functions, Global Variables). Related functions grouped by mangled name prefix but not by semantic purpose. No header file separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). External C++ runtime functions declared (`__cxa_throw`, `_Znwm`, etc.). Would require C++ runtime linking but structurally compilable with stubs.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Weighted Calculation:**
+- Level 1 (Lexical): 3.75 × 0.30 = 1.13
+- Level 2 (Structural): 4.25 × 0.25 = 1.06
+- Level 3 (Type System): 3.33 × 0.20 = 0.67
+- Level 4 (Semantic): 3.60 × 0.15 = 0.54
+- Level 5 (Contextual): 5.00 × 0.10 = 0.50
+- **Total: 3.90/10**
+
+**Critical Defects:**
+- Variable `v1`, `v2`, `result` used universally instead of semantic names like `r1`, `r2`, `obj_value`
+- Function names are C++ mangled (`_Z20test_cpp_member_funcv`) requiring demangling to understand
+- Class types completely lost - `SimpleClass` becomes `int64_t *` with offset arithmetic
+- STL template instantiation exploded into 50+ helper functions instead of abstracted operations
+- Control flow in `_Z20test_cpp_multiple_inheritancev` returns wrong value (`&pb` instead of computed result)
+
+**Best Quality Aspect:** Build System Compatibility (scored 6/10)  
+- Standard headers included and external dependencies declared, making compilation feasible with runtime stubs
+
+**Most Needs Improvement:** Type System Fidelity (averaged 3.33/10)  
+- Complete loss of C++ class types, template information, and const-correctness makes semantic understanding extremely difficult
+
+**Top 3 Recommendations:**
+1. **Recover C++ class types from vtable structures** - Map vtable entries back to class definitions and restore member function signatures with proper `this` pointer typing
+2. **Abstract STL template instantiations** - Consolidate the 50+ unique_ptr/Container helper functions into generic templates with type parameters
+3. **Infer variable names from usage context** - Variables used in specific patterns (e.g., loop counters, return values) should receive semantic names based on their role in the function

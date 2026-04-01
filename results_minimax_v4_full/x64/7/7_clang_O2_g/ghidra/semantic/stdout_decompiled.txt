@@ -1,0 +1,18 @@
+Testing obfuscation and optimization edge cases
+
+opaque_predicate: 10
+instruction_substitution: 20
+string_encryption: 225
+tail_call_optimized: 139
+non_tail_call: 500500
+vectorized_loop: 5050
+link_time_optimization: 72
+
+Division by zero test...
+
+Null pointer dereference test...
+null_pointer_deref: 41
+buffer_overflow: 30
+integer_overflow: 2000000000
+undefined_behavior: 10
+implementation_defined: 47

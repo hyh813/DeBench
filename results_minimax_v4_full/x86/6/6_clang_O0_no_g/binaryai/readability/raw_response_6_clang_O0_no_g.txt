@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Primary Function Under Evaluation:** `param_strcpy`
+
+Original source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+Decompiled version:
+```c
+void param_strcpy(char *param_1, char *param_2)
+{
+  strcpy(param_1, param_2);
+  strlen(param_1);
+  return;
+}
+```
+
+**Critical Finding:** The decompiled function returns `void` instead of `int`, and the return value of `strlen(param_1)` is completely discarded. This is a **severe semantic loss** - the function's return value (string length) is completely missing.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_28`, `local_30`. The original parameters `dst` and `src` are lost. In `call_strcpy`, the buffer is named `local_28` instead of something like `buffer`. These names provide no semantic meaning about the variable's purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The target function `param_strcpy` correctly matches the source name. Other functions like `call_strcmp`, `param_memcpy`, `param_fopen_fclose` are well-named. However, some internal functions like `FUN_000113d0` use mechanical naming. The function names generally reflect their purpose well.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" are correctly preserved. Magic numbers like `0x2a` (42) appear but are used in conditional returns. Some numeric constants like `0x14` (20) for sizeof are not explained. The literal preservation is decent but inconsistent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The decompiled output contains extensive external function declarations (setsockopt, pthread_mutex_unlock, etc.) that clutter the output. These are PLT stubs that shouldn't be in the function body. There's also redundant code like `strlen(param_1)` without using the result. The output includes 1682 LOC vs 1174 source LOC, indicating significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if-else structures. In `param_strcmp`, the ternary logic is correctly recovered. At -O0 optimization, loops are straightforward. Some complex nested conditions in functions like `param_signal_handling` are harder to follow but structurally correct.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 3 lines, `param_strcmp` is 12 lines. The decomposition matches the source well. Each function has a single responsibility. The call wrapper functions (e.g., `call_strcpy`) properly separate concerns.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (e.g., `if (__stream == NULL) return -1;`) are used appropriately. No excessive goto statements or forward jumps into loops. The code flows naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: In `param_strcpy`, the call to `strlen(param_1)` is present but its return value is discarded - this is dead code from the decompiler's perspective but actually represents the original return value. Some redundant memset calls in initialization. The decompiler didn't properly connect the strlen call to the return statement.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Critical type error**: `param_strcpy` returns `void` instead of `int`. The return value `strlen(param_1)` is computed but not returned. Parameter types use `char*` instead of `const char*` for src. Many functions use `undefined4` instead of proper types. Integer types are generic `int` rather than specific types like `size_t`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct usage is reasonable - `FILE*` is properly recognized, `pthread_t` is used. In `param_pthread_join`, the ThreadData structure is partially recovered with fields accessed via array indexing (`local_3c[0]`, `local_3c[1]`). Some struct field names are lost but the structure is recognizable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present. In `thread_compute`, malloc return is cast to `int*` without proper type. Pointer arithmetic like `(int)param_1 + local_14` in `param_memset` is error-prone. The discarded strlen return value could lead to undefined behavior if caller expects the length. Some function pointers use generic types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments in the decompiled output explaining the logic. The critical issue that `strlen` result is not returned has no indication. No explanation of what the function does or the return value semantics. Auto-generated noise from external declarations dominates.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library function calls are correctly identified (strcpy, strlen, strcmp, etc.). The pattern of wrapper functions (param_* calling libc functions) is recognizable. Some patterns like the pthread create/join pattern are clear. However, no explicit naming of patterns like "wrapper function" or "RAII pattern".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **No indication** that the return value of `param_strcpy` is lost. The `strlen(param_1)` call without using its result should be flagged as suspicious. No warnings about type mismatches or potential issues. The decompiler presents the broken code as if it were correct.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "dst must have sufficient space"). No postconditions (e.g., "returns length of copied string"). The function contract from the source is completely lost. Error return values (-1, -2, etc.) are present but not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear - `param_strcpy` calls `strcpy` and `strlen`. The relationship between `call_strcpy` and `param_strcpy` is obvious from naming. However, global variables like `signal_received`, `signal_number` appear without explanation of their scope. Callback relationships in pthread code are implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - standard library wrappers, system calls, thread functions. The test functions are separated. However, the output includes all external declarations mixed with actual functions. The organization is reasonable but could be cleaner with proper sections.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is - `param_strcpy` returns void but should return int. External declarations for standard library functions are missing headers. The `undefined4` type is not valid C. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **CRITICAL**: `param_strcpy` returns `void` instead of `int` - the return value `strlen(dst)` is completely lost in decompilation
+- Variable naming uses generic names (`param_1`, `param_2`) losing semantic meaning of `dst` and `src`
+- No const-correctness: `param_2` should be `const char*` but is declared as `char*`
+- No comments explaining the function purpose or the missing return value
+- Type `undefined4` used throughout instead of proper int types
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly sized and separated. The wrapper pattern (param_* and call_*) is clearly preserved. Each function has appropriate granularity matching the source.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)  
+The return type error in `param_strcpy` is a critical semantic loss. The function should return `int` (string length) but returns `void`. This fundamentally breaks the function's contract. Additionally, `const` correctness is lost on pointer parameters throughout.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix return value tracking**: The decompiler must properly propagate return values through function calls. The `strlen(param_1)` result should be connected to the function's return statement.
+2. **Recover parameter semantics**: Use data flow analysis to infer parameter roles (e.g., "dst" is written to, "src" is read-only) and name accordingly.
+3. **Add const-correctness analysis**: Track which pointer parameters are read-only and apply `const` qualifier appropriately.
+4. **Flag semantic anomalies**: When a function call's return value is computed but not used, flag this as suspicious rather than silently dropping it.
+5. **Eliminate external stub clutter**: Don't include PLT external function declarations in the decompiled output - these should be imported, not defined.

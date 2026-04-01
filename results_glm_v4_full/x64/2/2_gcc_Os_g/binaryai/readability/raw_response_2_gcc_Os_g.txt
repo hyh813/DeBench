@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generic system names like `param_1`, `lVar1`, `iVar2`, and `uVar1`, completely losing the semantic meaning of original names like `x`, `sum`, `i`, or `arr`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names like `double_value`, `process_int`, and `array_1d_stack` are perfectly recovered, matching the source exactly due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: While logic literals like `0x20` (space) are clear, the test functions contain folded magic numbers (e.g., `0x61` for 'a', `300` for sum) instead of the original function calls, and loop limits like `0x6e` in `array_2d_stack` are obscure without context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is mostly clean, but contains Ghidra-specific artifacts like `undefined` types (e.g., `undefined auVar1 [16]`) and stack canary checks (`in_FS_OFFSET`) which add minor clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with `for` and `do-while` loops, but compiler optimizations like the range check in `process_char` (`(byte)((char)param_1 + 0xbfU) < 0x1a`) obscure the simple `if (c >= 'A' && c <= 'Z')` logic.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity perfectly.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: There is no obvious redundancy or dead code; the decompiler successfully removed standard compilation artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int` and `float` are correct, but `process_bool` returns `uint` instead of `_Bool`, `ptr_triple` uses `undefined8 *` instead of `int ***`, and `process_ld` is completely decompiled as `void` with an empty body, losing the `long double` type entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs and unions are not recovered; `struct_simple` takes `int *` and accesses indices `[0]`, `[1]`, `[2]` instead of fields `.x`, `.y`, `.z`, and `struct_bitfields` is reduced to raw bitwise operations (`bVar1 >> 1 & 3`) rather than named field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The loss of composite types results in extensive raw pointer arithmetic (e.g., `*(int *)(param_1 + lVar1 * 4)`) and manual bit manipulation, which mimics unsafe memory access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no comments explaining the logic, algorithms, or data structures; the output is purely code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard loops are recognized, but specific idioms like the compiler's optimized range check in `process_char` are not identified or explained, making the logic harder to decipher.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The function `process_ld` is decompiled as an empty `void` function despite having source logic, yet there is no warning or anomaly flag indicating this potential failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear and resolved (e.g., `test_data_types_l1` calling `puts`), making the relationships between functions easy to follow.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in a flat order based on memory address rather than the logical groupings (Data Types, Arrays, etc.) found in the source.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies on Ghidra-specific types like `undefined` and `code`, and macros like `in_FS_OFFSET`, preventing it from compiling without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Composite Type Loss**: Structs and unions are treated as raw byte/integer arrays (e.g., `struct_bitfields` becomes bitwise math on a `uint`).
+- **Type Precision Failure**: `process_ld` (long double) is decompiled as an empty void function, completely losing the implementation.
+- **Variable Naming**: All local variables and parameters are generic (`param_1`, `lVar1`), obscuring the logic's intent.
+- **Obscure Literals**: Loop limits like `0x6e` in `array_2d_stack` are used instead of symbolic constants or clear expressions.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- **Why?** The debug symbols (`-g`) allowed Ghidra to perfectly recover the original function names, making the high-level purpose of each block immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- **Why?** The failure to reconstruct `struct`, `union`, and bitfield definitions reduces complex data manipulation to confusing pointer arithmetic and bit masking, which is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Struct/Union Recovery**: Utilize stack frame layout analysis and access patterns (e.g., `param_1[2]`) to propose or reconstruct struct definitions, especially for bitfields.
+2.  **Leverage Debug Symbols for Variables**: If function names are available from DWARF symbols, attempt to also recover local variable names and types to replace `param_1` and `lVar1`.
+3.  **Improve Floating Point Support**: Investigate the handling of `long double` on ARM64 to prevent functions from being decompiled as empty `void` functions; add warnings if recovery fails.

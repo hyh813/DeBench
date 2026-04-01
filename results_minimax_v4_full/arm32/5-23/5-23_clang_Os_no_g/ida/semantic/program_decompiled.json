@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_clang_Os_no_g/ida/syntactic/bin/5-23_clang_Os_no_g_fixed",
+  "stdout": "Preprocessing Tests\nPreprocessing Test 201: 64\nPreprocessing Test 202: 30\nPreprocessing Test 203: 32\nPreprocessing Test 204: 57122\nPreprocessing Test 301: 116\nPreprocessing Test 302: 19\nPreprocessing Test 303: 60\nLOG: Values: 10, 20, 30\nPreprocessing Test 304: 60\nPreprocessing Test 305: 16\nPreprocessing Test 306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:24\nPreprocessing Test 307: 382\nASM Testing\nASM Test 401: 15\nASM Test 402: 15\nASM Test 403: 42\nASM Test 404: 36\nASM Test 405: 30\nASM Test 406: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

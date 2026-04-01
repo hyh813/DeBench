@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_10`, `uVar1`, and `lVar1`, which provide no semantic context about their usage (e.g., `iVar3` used as a loop counter and accumulator in `linked_list_heap`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols (e.g., `double_value`, `heap_basic`, `vla_stack`), matching the original source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent without context, such as `0x2a` (decimal 42) in `address_of_local` and `0x14` (20) in `test_stack_memory`, requiring mental conversion or external knowledge to understand.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`) are injected into almost every function with local variables, and VLA stack probing loops in `vla_stack` add significant noise that obscures the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Standard `for` loops are frequently represented as `do-while` loops (e.g., in `local_array` and `heap_basic`), which is a common decompiler pattern but slightly less natural to read than the original source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are decomposed exactly as in the source, with appropriate granularity; no monolithic functions or artificial outlining artifacts are present.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, though the stack probing logic in `alloca_usage` and `vla_stack` involves pointer arithmetic and loops that disrupt the linear flow of the allocation logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The compiler's stack probing for VLAs is expanded into verbose loops (e.g., in `vla_stack`), and `memset` is decompiled as an explicit loop rather than a recognized intrinsic call, adding redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often imprecise, using generic `undefined4` and `undefined8` instead of specific types like `int` or `size_t`, and `undefined1` arrays are used for character buffers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types like `Point` and `Node` are completely lost; for example, `heap_struct` uses raw `malloc(8)` and arithmetic, and `linked_list_heap` accesses struct fields via array indexing on an `int*` (e.g., `piVar1[2]` for the `next` pointer).
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code uses generic types, the pointer arithmetic and casts generally align with the underlying memory layout, avoiding obviously dangerous or incorrect type conversions in the decompiled view.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, consisting only of automated warnings like `/* WARNING: Subroutine does not return */` or `/* WARNING: Removing unreachable block */`, with no explanation of algorithm logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like linked list traversal are present but not explicitly recognized or named; the code simply shows pointer manipulations (e.g., `piVar2 = *(int **)(__ptr + 2)`) without indicating it is a list traversal.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler clearly flags potential issues such as stack check failures and indirect jumps (e.g., `/* WARNING: Could not recover jumptable */`), which helps identify areas requiring manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions like `if (arr == NULL) return -1` are present in the code flow but are not documented as explicit contracts or assertions in the comments.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to other defined functions (e.g., `malloc`, `free`, `printf`) are clearly visible and resolved, making the relationships between functions easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order that closely follows the source file structure, grouping related test functions together effectively.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile standalone due to the use of `undefined` types and missing struct definitions; significant manual type definition would be required to rebuild.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite types (`Point`, `Node`) are completely lost, replaced by raw pointer arithmetic and magic offsets (e.g., `piVar1[2]`).
+- Variable names are entirely generic (`param_1`, `local_10`), forcing the analyst to reverse engineer the purpose of every variable.
+- Stack canary checks (`in_FS_OFFSET`) clutter the majority of functions, significantly reducing readability.
+- VLA and `alloca` usage results in verbose stack probing loops that obscure the simple allocation intent.
+- Types are imprecise (`undefined4`, `undefined8`), preventing immediate understanding of data sizes and signedness.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The presence of debug symbols allowed for perfect recovery of original function names, making navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions turns high-level logic into low-level memory offset manipulation, which is the single biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive struct recovery heuristics to detect `malloc(sizeof(Type))` patterns and field accesses to reconstruct `Point` and `Node`.
+2. Automatically abstract or hide stack canary checks (`in_FS_OFFSET`) behind a macro or comment to reduce visual noise.
+3. Improve variable renaming by inferring names from usage context (e.g., a variable used in a loop counter could be named `i` or `counter`).

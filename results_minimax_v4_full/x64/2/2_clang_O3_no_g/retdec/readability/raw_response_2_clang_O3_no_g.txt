@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, `result`, `result2`. The original source had meaningful names like `x`, `c`, `p`, `str`, `arr`, `n`. This makes it nearly impossible to track variable purpose without analyzing every usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main functions correctly recovered: `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. match source exactly. Minor deduction for some helper functions with numeric names (`function_1030`, `function_1040`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3fc00000` (float 1.5), `0x3fe0000000000000` (double 0.5) used without explanation. Test functions print hardcoded expected values. Some array size constants (10, 5) used in offset calculations but not named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive `__asm_` blocks for SIMD operations (e.g., `__asm_paddd`, `__asm_movdqu`, `__asm_pshufd`) clutter array processing functions. These compiler-generated artifacts obscure the actual algorithm. Redundant casts and type conversions throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (loops, conditionals) preserved. However, loop unrolling in `array_1d_stack`, `array_3d`, `ptr_increment` creates complex control flow with multiple while loops. At -O0 this is unexpected; the original had simple for/while loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good function granularity maintained - each test function and data processing function is separate. Some functions like `array_3d` (150+ lines) are lengthy due to unrolled loops. Parameter lists are reasonable but expose implementation (e.g., 6 parameters for `ptr_increment`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but complex nested loops in array functions and SIMD code create non-linear flow. Forward jumps present in loop handling. Deep nesting in `graph_traverse` with goto labels.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling in array functions creates redundant code blocks. The same pattern repeated 4-8 times in `array_1d_stack`, `array_3d`, `array_vla`. No comments indicating this is compiler-generated. Some dead code from register spilling visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. All integers become `int64_t` regardless of original type (char, short, int, long). Original had `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool`. Pointers not properly typed - all `int64_t` instead of `int*`, `char*`, etc. No `const` or `volatile` preservation.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. All structures accessed via raw pointer arithmetic: `*(int32_t *)(a1 + 8)` instead of `p->y`. Original had `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `DNode`, `Graph`, `Edge` with named fields. Union types not recovered - `union_type` uses raw memory access.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe operations: `(int64_t)*(int32_t *)` casts throughout, pointer arithmetic like `4 * v35 + a1` without bounds, `(int64_t)(*(int32_t *)v8 + (int32_t)v6)` type-confused operations. Function pointers not properly typed - `ptr_func_simple` takes `int64_t result` instead of function pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments (e.g., `// Address range: 0x1150 - 0x115f`). No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable: linked list traversal (`while (v1 != 0)`), array summation, function pointer calls. But no explicit naming or comments identifying these as patterns. Original had clear idioms like `while (current != NULL)`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for indirect calls that couldn't be resolved, no warnings about potential undefined behavior (array_oob has intentional out-of-bounds), no uncertainty indicators. The `ptr_func_complex` just returns `result` without showing the actual callback invocation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear contracts like "requires: ptr != NULL" implicit in the code. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in test functions. But relationships not documented - no comments showing "called by" or "calls". Global variables like `g11`, `g12` etc. not connected to their usage. Callback relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped (data types, arrays, pointers, composites). All in single file. Static functions not properly marked. Original had clear section comments separating test categories.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile. Missing standard headers (should include `<setjmp.h>`). Custom types `int128_t`, `float80_t` undefined. `__asm_` functions not defined. Global variable `g11` initialized to invalid address `0x6400000000`. Many undefined references.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming completely generic (`a1`, `v1`, `result`) - cannot infer purpose without tracing all usage
+- No struct/union recovery - all accessed via `*(int32_t *)(ptr + offset)` losing field semantics
+- Type precision severely degraded - all `int64_t` instead of char/short/int/long/ll/float/double/bool
+- Extensive SIMD inline assembly (`__asm_paddd`, `__asm_movdqu`) cluttering algorithm logic
+- No comments explaining any logic, algorithms, or decompilation uncertainties
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names like `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple` accurately match the original source names.
+
+**Most Needs Improvement:** Type System Fidelity (2.7/10)  
+Types are completely degraded - no char, short, bool, float, double types recovered. No struct field names. All pointer types lost. This makes the code essentially unusable for semantic analysis.
+
+**Top 3 Recommendations:**
+1. **Recover struct types** - Analyze memory access patterns to reconstruct struct layouts with field names (e.g., `*(int32_t *)(a1 + 8)` → `p->y`)
+2. **Preserve original integer types** - Use data flow analysis to determine if variables should be char/short/int/long based on usage and ranges
+3. **Eliminate SIMD noise** - Recognize loop unrolling patterns and present as normal loops with comments explaining the optimization
+4. **Add semantic variable names** - Infer names from usage patterns (e.g., loop counter → `i`, array index → `idx`, size parameter → `n` or `size`)
+5. **Add explanatory comments** - Document algorithm intent, parameter purposes, and any decompilation uncertainties

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_Os_no_g/angr/syntactic/bin/5-23_gcc_Os_no_g_fixed",
+  "stdout": "test_macro_constants: PASS\ntest_macro_functions: PASS\ntest_conditional_compile: PASS\ntest_multi_branch_compile: PASS\ntest_macro_recursion: PASS\ntest_stringize: PASS\ntest_token_paste: PASS\ntest_variadic_macro: PASS\nLOG: Values: 10, 20, 30\ntest_macro_override: PASS\ntest_include_guard: PASS\ntest_builtin_macros: PASS\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:41\ntest_preprocessing_features complete\ntest_asm_basic: PASS\ntest_asm_clobber: PASS\ntest_asm_multi_insn: PASS\ntest_asm_simd: PASS\ntest_asm_atomic: PASS\ntest_asm_privileged: PASS\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

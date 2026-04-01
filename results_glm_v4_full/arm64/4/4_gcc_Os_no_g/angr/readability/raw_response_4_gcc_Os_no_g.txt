@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters in `cdecl_func` are generic (`a0`, `a1`), and local variables in other functions like `varargs_func` are meaningless (`v16`, `v17`, `ptr`), offering no semantic hint about their purpose (e.g., `count`, `sum`, `args`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `main`, and `test_calling_conventions` are perfectly recovered, likely due to the presence of debug symbols (`-g` flag), matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: While simple constants like `15` in `call_cdecl` are clear, complex functions like `param_by_value_int` contain magic numbers (`4294967294`) and bitwise operations that obscure the original intent (`x * 2`).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains stack setup artifacts like `v0 = &v15;` and `v1 = &v15;` in `varargs_func`, and stack canary checks (`__stack_chk_guard`) clutter the logic, though `cdecl_func` itself is clean.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: The control flow in `cdecl_func` is perfectly linear. Even in complex functions like `varargs_func`, the `for` loop structure is correctly identified, making the execution path easy to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler correctly separates functions like `cdecl_func` from its caller `call_cdecl`, maintaining the original source's granularity and cohesion without artificial outlining.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads naturally from top to bottom; `cdecl_func` consists of a single return statement, and there are no confusing forward jumps or computed gotos disrupting the flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: While `cdecl_func` is clean, `call_cdecl` is reduced to `return 15;` (constant propagation), which is semantically correct but structurally different from the source's function call.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: `cdecl_func` uses `unsigned int` instead of the source's `int`. More critically, `func_mixed_args` completely drops the `double` and `long long` parameters, showing significant type degradation.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The `LargeStruct` parameter in `func_struct_byval` is recovered as a generic `unsigned long ptr`, losing the structure definition entirely and treating it as a raw pointer/integer.
+
+**11. Type Safety:** Score: 4/10
+Justification: The decompiled code relies on unsafe casts and pointer arithmetic, such as `*((long long *)(ptr + idx * 8))` in `func_struct_byval`, instead of struct member access, which is error-prone.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the logic of `cdecl_func` must be inferred solely from the code `return a0 + a1;`.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The `va_list` idiom in `varargs_func` is not recognized; instead, it is decompiled to raw stack pointer manipulation and a loop, obscuring the standard variable argument pattern.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not flag the missing parameters in `func_mixed_args` or the type mismatches as anomalies; it presents the code confidently despite the information loss.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions; for example, the check `if (!a0)` in `func_struct_byptr` is present but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls like `cdecl_func(5, 10)` inside `test_calling_conventions` are clear, and the relationship between caller and callee is easily traceable.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order, and related test functions are grouped, though the lack of file separation or namespace markers makes it a flat list.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes necessary `extern` declarations for globals like `__stack_chk_guard`, but the loss of struct definitions would prevent standalone compilation of the original source logic.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.75
+L2_avg: 8.75
+L3_avg: 3.00
+L4_avg: 2.50
+L5_avg: 7.00
+
+Overall = (5.75 × 0.30) + (8.75 × 0.25) + (3.00 × 0.20) + 
+          (2.50 × 0.15) + (7.00 × 0.10)
+Overall = 1.725 + 2.1875 + 0.6 + 0.375 + 0.7
+Overall = 5.59
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.6/10
+
+### Critical Defects (Bullet List)
+- **Type Loss**: `func_mixed_args` is missing `double` and `long long` parameters entirely.
+- **Struct Erasure**: `LargeStruct` in `func_struct_byval` is reduced to `unsigned long ptr`, destroying the data structure view.
+- **Signedness Error**: `cdecl_func` parameters are `unsigned int` instead of `int`.
+- **Idiom Failure**: `varargs_func` uses raw pointer arithmetic instead of recovering the `va_list` abstraction.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Control Flow Naturalness (9/10)**
+- **Why?** The decompiler accurately reconstructs the execution flow, even recovering loops from `varargs_func` and maintaining linear readability in `cdecl_func`.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The decompiler completely fails to recover structure definitions, treating complex data types as generic integers or pointers, which severely hinders understanding of data manipulation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Floating Point Type Analysis**: Improve the recovery of floating-point parameters and return values, which are currently being dropped or misidentified in functions like `func_mixed_args`.
+2.  **Implement Structure Recovery**: Analyze stack access patterns (e.g., `ptr + idx * 8`) to reconstruct `struct` definitions and field accesses instead of defaulting to raw pointer arithmetic.
+3.  **Recognize Standard Library Idioms**: specifically detect `va_list` usage patterns (stack walking loops) to re-emit `va_start`, `va_arg`, and `va_end` constructs for better semantic transparency.

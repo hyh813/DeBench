@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/5-23/5-23_clang_O0_g/binaryai/syntactic/bin/5-23_clang_O0_g_fixed",
+  "stdout": "Testing preprocessing features\nLOG: Values: 10, 20, 30\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:43\nTesting ASM features\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

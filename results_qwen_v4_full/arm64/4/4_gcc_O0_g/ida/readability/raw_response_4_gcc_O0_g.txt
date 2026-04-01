@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names (v0, v1, v2, vars0, vars10) obscuring purpose; some semantic names preserved (sum, i, large, test_str) but varargs functions have excessive generic temporaries.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (cdecl_func, call_cdecl, varargs_func); startup functions have generic names (sub_750, init_proc) but test functions maintain clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals replaced with opaque references (asc_1FB0, aCallL206, aRetL101D); magic numbers like 0xFFFFFFFFFFFFFFF8LL in varargs lack explanation; numeric constants (5, 10, 15) remain clear.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive stack annotations ([xsp+1Ch] [xbp+1Ch]), register type comments (// x0, // w0), and varargs functions declare 20+ temporary variables (vars0-varsB8) that are compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow; varargs loops use manual pointer arithmetic instead of clean iteration; switch statements converted to if-else chains (ret_multi_branch) losing original structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well; no inappropriate inlining or fragmentation; function sizes are reasonable and maintain single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom; some forward references for string literals; no excessive goto usage; loop structures generally preserved.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Varargs functions have redundant variable declarations (vars88-varsB8 all assigned from v1-v7); some duplicate type annotations; no obvious dead code otherwise.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double); ARM64-specific types introduced (__int64, __int128, __fastcall); some type degradation for opaque handles (void*).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered with field names (LargeStruct.data, SmallStruct.x/y); some struct-by-value converted to pointer passing (func_struct_byval takes LargeStruct*); nested structures handled reasonably.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (param_complex_cast uses void* casting); pointer arithmetic visible in varargs handling; NULL checks preserved but not documented as contracts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output; only auto-generated function headers with register annotations; no algorithm explanations or uncertainty indicators inline.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C patterns recognized (loops, conditionals, varargs); varargs pattern recognized but implemented verbosely; no design pattern identification or higher-level idiom naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (strlen, printf, puts); no inline warnings about uncertain code; suspicious varargs complexity not flagged during function body.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; NULL checks preserved in code (if (!p) return -1) but not documented as contracts; no invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code; external function references shown but failed to decompile (8 functions); no call graph documentation or relationship information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output; no logical grouping beyond source order; startup/runtime functions mixed with test functions; no namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions not declared (printf, puts, strlen); would require significant stubbing to compile; platform-specific types (__int64, __fastcall) need headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+4)/4 = 5.50
+Level 2 (Structural):  (6+8+7+6)/4 = 6.75
+Level 3 (Type):        (7+7+6)/3   = 6.67
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75
+Level 5 (Contextual):  (6+5+4)/3   = 5.00
+
+Overall = (5.50 × 0.30) + (6.75 × 0.25) + (6.67 × 0.20) + (3.75 × 0.15) + (5.00 × 0.10)
+        = 1.65 + 1.69 + 1.33 + 0.56 + 0.50
+        = 5.73/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects:
+- **String literals replaced with opaque references** (asc_1FB0, aCallL206) making printf statements unreadable without symbol table
+- **Varargs functions have excessive noise** with 20+ temporary variables (vars0-varsB8) that obscure the simple summation logic
+- **No comments or documentation** despite complex patterns like calling conventions and struct passing
+- **Calling convention annotations incorrect** (all marked __cdecl on ARM64 where calling conventions differ)
+- **Struct-by-value converted to pointer passing** (func_struct_byval takes LargeStruct* instead of by-value) changing semantic meaning
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names largely preserved from source, maintaining semantic clarity for test functions and core logic.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Completely absent meaningful comments; decompiler provides no algorithm explanations, uncertainty indicators, or contract documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover string literals inline** instead of replacing with symbol references (asc_1FB0 → "=== 测试基础调用约定 ===")
+2. **Simplify varargs handling** by recognizing the standard va_start/va_arg/va_end pattern instead of generating 20+ temporary variables
+3. **Add uncertainty annotations** for calling conventions on non-x86 platforms where __cdecl attribution may be incorrect

@@ -1,0 +1,47 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "x64",
+  "src_name": "3",
+  "source_path": "src/3.c",
+  "target_src_names": [
+    "3",
+    "3-3_extern_defs"
+  ],
+  "build_cmd": "clang --target=x86_64-linux-gnu -O1 src/3.c src/3-3_extern_defs.c -o build/x64/3/3_clang_O1_no_g",
+  "original_bin": "build/x64/3/3_clang_O1_no_g",
+  "decompiled_bin": "results_glm_v4_full/x64/3/3_clang_O1_no_g/retdec/syntactic/bin/3_clang_O1_no_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "build/x64/3/3_clang_O1_no_g",
+      "src_name": "3",
+      "target_src_names": [
+        "3",
+        "3-3_extern_defs"
+      ],
+      "error": null,
+      "event_count": 66,
+      "entry_count": 6,
+      "exit_count": 6,
+      "print_count": 54
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_glm_v4_full/x64/3/3_clang_O1_no_g/retdec/syntactic/bin/3_clang_O1_no_g_fixed",
+      "src_name": "3",
+      "target_src_names": [
+        "3",
+        "3-3_extern_defs"
+      ],
+      "error": null,
+      "event_count": 8,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 7
+    }
+  }
+}

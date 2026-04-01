@@ -1,0 +1,5 @@
+TRACE_ENT|0|test_stack_memory|0|Arg0=1,Arg1=1341834760,Arg2=1341834776,Arg3=-329183920|rax=0x0,rbx=0x7ffe4ffac608,rcx=0x5eddec610d50,rdx=0x7ffe4ffac618,rsi=0x7ffe4ffac608,rdi=0x1,r8=0x0,r9=0x704afa942380
+TRACE_PRINT|0|%53%74%61%63%6B%20%4D%65%6D%6F%72%79%20%54%65%73%74%73
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|local_vars|1|Arg0=5,Arg1=-92256701,Arg2=1,Arg3=0|rax=0x13,rbx=0x7ffe4ffac608,rcx=0x0,rdx=0x1,rsi=0x704afa804643,rdi=0x5,r8=0x0,r9=0x704afa942380
+TRACE_EXT|1|local_vars|1|20

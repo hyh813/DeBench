@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (`iVar1`, `iVar2`, `uVar1`, `piVar2`). Many unresolved local vars marked as `int i@[???]`, `int j@[???]`. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are well-preserved: `sequential_ops`, `single_if`, `if_else`, `recursion_factorial`, `double_value`, `state_machine`. Minor issues: `FUN_00101020` is meaningless, and some internal labels like `LAB_00101b57` are cryptic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions use hardcoded results (`0x15` for 21, `0x14` for 20) instead of computed values. Magic numbers like `0x3e9` (1001), `0x65` (101) appear without explanation. Switch tables use raw indices without case labels.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts: 15+ "WARNING" comments about unresolved local variables, unreachable blocks, unrecovered jumptables. Stack canary checks (`__stack_chk_fail`) exposed. Multiple "UNKNOWN calling convention" annotations clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops (`while`, `do-while`), conditionals, and switch statements are properly structured. Some goto-based loops in `goto_backward` are correctly identified. Minor awkwardness in `loop_multi_exit` with computed jumps.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) is separate. No excessive inlining or outlining artifacts visible.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in `loop_for_fixed` and `loop_continue` with deep nesting (8+ levels of if-statements unrolled). `loop_multi_exit` has confusing goto labels disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `loop_for_fixed` (10 iterations unrolled) and `loop_continue` creates significant redundancy. No comments explaining the unrolling pattern. Some dead code elimination visible but not perfect.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` throughout instead of specific types. Function pointers use `_func_int_int` or `_func_int_int_int` which are descriptive but not precise. No `int32_t`, `uint64_t`, or `size_t` recovery. Signed/unsigned is sometimes unclear.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. Arrays like `int arr[]` are accessed via pointer arithmetic. The matrix in `loop_multi_exit` is completely flattened into conditional chains. All composite types lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe with correct pointer arithmetic. Some issues: `conditional_func_ptr` passes wrong arguments (`(*UNRECOVERED_JUMPTABLE)(x,x,UNRECOVERED_JUMPTABLE)` - 3 args when function takes 1). Stack canary checks exposed but not problematic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: File header comment present ("Decompiled by Ghidra 12.0"). Many WARNING comments but these are auto-generated. No meaningful algorithm explanations, no @param/@return documentation. Test functions have no explanation of what they verify.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, switches, conditionals). Duff's device partially recognized with switch labels. State machine patterns visible but not explicitly named. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good WARNING coverage: "Unresolved local var", "Could not recover jumptable", "Removing unreachable block", "Subroutine does not return". However, some anomalies silently produce wrong code (e.g., `computed_goto` returns constant 0x14).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. The original source had no explicit contracts either, but decompiler could infer some (e.g., "n > 0" for factorial).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call graph documentation. Callback relationships not clear. Static functions not marked as static in output. No indication of which functions call `process_with_callback` or use function pointers.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order, not logical grouping. Test functions grouped together which is good. No header file structure recovery. Static functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone. Missing `#include <stdio.h>`, `#include <setjmp.h>`. External functions like `puts`, `__printf_chk`, `__libc_start_main` not declared. Stack canary requires linking libgcc.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is unusable - all meaningful names replaced with `iVar1`, `uVar1`, `piVar2` etc.
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Test functions use hardcoded results (`0x15`) instead of expressions, losing computational transparency
+- `conditional_func_ptr` has incorrect function call signature with 3 arguments instead of 1
+- `computed_goto` returns constant instead of implementing computed jump logic
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names from source are well-preserved (`sequential_ops`, `recursion_factorial`, `state_machine`), making it easy to identify which decompiled function corresponds to source.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every meaningful variable name from the source (`temp1`, `temp2`, `sum`, `count`, `target`, `arr`) was replaced with generic indexed variables, making it nearly impossible to track data flow without extensive analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - `iVar1` used as loop counter should be named `i` or `index`; variables used as array length should be `n` or `length`
+2. **Recover composite types from pointer arithmetic** - when seeing `*(int*)(ptr + offset)`, attempt to reconstruct struct with named fields
+3. **Preserve expressions in test functions** - instead of hardcoding `0x15`, emit `sequential_ops(5, 7, 3)` to show actual computation being tested

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, a0, a1, a2) with no semantic meaning. For example, `sequential_ops` parameters should be `a, b, c` but are `a0, a1, a2`. Complex functions like `loop_multi_exit` use cryptic `vvar_32{r64|4b}` notation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions retained original names (sequential_ops, single_if, ternary_op), but many helper functions are generic (sub_4004dc, $a.14, $a.16, $a.22, $a.28). Runtime functions like `deregister_tm_clones` are preserved but test infrastructure is fragmented.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers without explanation: `1717986919` (division constant), `4294967295` (UINT_MAX for -1), `178`, `66`, `130`, `209` (condition codes). No constants recovered despite -O0 -g compilation with debug symbols.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe angr-specific artifacts throughout: `armg_calculate_condition()` calls, `vvar_XX{r64|4b}` notation, `cc_op`, `cc_dep1`, `cc_dep2` variables. These are analysis artifacts, not original code, polluting every complex function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple functions destroyed: `single_if` uses bit manipulation `a0 << ((char)(0 < a0 ? 1 : 0) & 31)` instead of `if (x > 0) x = x * 2`. Loops converted to complex arithmetic (`loop_for_fixed`), goto patterns everywhere instead of structured constructs.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Duff's device fragmented into 8 separate functions ($a.14 through sub_400cfc) instead of one cohesive function. Original 20 functions expanded to 60+ with artificial boundaries. Test functions merged incorrectly (test_control_flow_l2 contains loop_multi_exit logic inline).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Excessive LABEL_XXXX patterns and goto statements disrupt flow. `nested_if_deep` has 6 labels for 5-level nesting. `infinite_loop` uses goto for simple while condition. Forward jumps into middle of logic blocks common.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate expressions throughout: `if_elseif_chain` and `if_elseif_long` use identical pattern `a0 < N ? a0 * 100 + 100 : 4294967295`. `frame_dummy` calls `register_tm_clones()` twice unnecessarily. Dead code paths preserved.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: All parameters uniformly `unsigned int` regardless of original types. `sequential_ops` original `int` became `unsigned int`. `goto_forward` negative number handling broken due to unsigned type. No const-correctness, no size_t, no proper pointer types.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/union recovery whatsoever. `loop_multi_exit` matrix accessed via pointer arithmetic `*((int *)(v1 + v2 * 4))` instead of `matrix[i][j]`. Jump table in `switch_small` accessed as raw memory `&g_401e70`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout. `call_func_ptr` uses `goto a0` treating integer as code address. `computed_goto` empty body suggests type confusion. Signed/unsigned confusion in `goto_forward` breaks negative number handling.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Original source had extensive comments (难度依据，场景标签，测试验证) - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition evident. State machine (`state_machine`) decompiled to switch but not identified as such. Loop patterns not recognized (converted to arithmetic). Duff's device completely unrecognizable.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken functions. `computed_goto` has empty body with no indication. `duffs_device` reduced to trivial switch without flagging semantic loss. angr artifacts present but not marked as analysis artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). No postconditions. No error condition documentation. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships unclear. `call_func_ptr_array` references `double_value`, `triple_value`, `recursion_factorial` but array not visible. Global variables (g_40185c, g_401e70) unnamed and unexplained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization functions (_init, _start, _fini) mixed with test functions. No header file structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Metadata claims "Compilation Result: Yes" but code contains undefined references (armg_calculate_condition, __divsi3, .divsi3_skip_div0_test). angr-specific functions won't link with standard toolchain. Multiple syntax issues (vvar_XX notation).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+2+2)/4 = 2.75 × 0.30 = 0.825
+Level 2 (Structural):  (3+4+3+4)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (2+1+3)/3   = 2.00 × 0.20 = 0.400
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 2.69/10
+```
+
+**Overall Readability Score:** 2.7/10
+
+### Critical Defects:
+- **angr artifacts pollute output**: `armg_calculate_condition()`, `vvar_XX{r64|4b}` notation throughout - these are analysis internals, not recoverable code
+- **Control flow destruction**: Simple `if` statements converted to bit manipulation (`single_if`), loops converted to closed-form arithmetic (`loop_for_fixed`)
+- **Parameter loss**: `nested_if_deep` takes 4 parameters instead of original 5, breaking semantics
+- **Type erasure**: All parameters uniformly `unsigned int`, breaking signed number handling (`goto_forward` negative case)
+- **Duff's device fragmentation**: Single function split into 8 separate functions, losing fall-through semantics entirely
+
+### Best Quality Aspect: Function Naming Quality (5/10)
+- Core test function names were preserved from debug symbols (sequential_ops, single_if, ternary_op), providing some anchor points for understanding.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- Zero comments despite -g debug compilation; original source had extensive documentation (难度依据，场景标签，测试验证) that should have been recoverable from debug info.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate analysis artifacts**: Filter out angr-specific constructs (armg_calculate_condition, vvar_XX notation) and replace with standard C equivalents or mark as UNCERTAIN
+2. **Recover control flow patterns**: Implement pattern matching for common constructs (if-else, for/while loops, switch-case) instead of emitting raw conditional arithmetic
+3. **Leverage debug symbols**: At -O0 -g, variable names, function signatures, and type information should be fully recoverable from DWARF debug info - currently unused

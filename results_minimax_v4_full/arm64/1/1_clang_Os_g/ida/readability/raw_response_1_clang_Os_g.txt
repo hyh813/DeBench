@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8` throughout (e.g., in `loop_while`, `loop_continue`, `goto_backward`). These obscure semantic purpose. Only parameters like `a`, `b`, `c` and `result` retain meaningful names.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`. Minor generic names like `sub_880` exist for internal functions.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x100000001LL`, `0x400000004LL` in SIMD code are unexplained. Array references like `dword_1950[op]` lack context. However, constants like `1001` (loop limit) and `0x65` (101) are somewhat inferable.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Significant compiler artifacts present: SIMD types (`int8x16_t`, `int32x4_t`, `uint32x4_t`), unlabeled data references (`xmmword_1920`, `xmmword_1930`, `dword_1950`, `unk_1980`), `JUMPOUT(0)` macro, and "FAILED to decompile" messages pollute the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: Basic control flow preserved correctly (`if`, `switch`, `while`, `do-while`). However, `loop_for_fixed` uses mathematical formula instead of loop, `loop_continue` and `goto_backward` use SIMD vectorization instead of recognizable loops. At -O0 this is unexpected.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Function count (~57) matches source (~40+). Functions are reasonably sized. Test functions are large but cohesive. Some internal functions like `sub_880` are trivial stubs.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom. Forward jumps exist in `switch_fallthrough` (goto LABEL_5). `goto_forward` uses goto but structure is recoverable. Some disruption from computed jumps.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Test functions compute values at runtime rather than using constants (e.g., `21` printed instead of computed). Loop unrolling in `loop_continue` and `goto_backward` uses SIMD but is recognizable as optimization artifact.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Uses generic `int` throughout. Function pointers correctly typed as `int (*f)(int)`. `volatile` preserved. No `int32_t`, `uint64_t`, or `size_t` used. Signed/unsigned mostly correct.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: No struct recovery. Uses raw arrays like `dword_1950[op]`, `unk_1980`. Pointer arithmetic visible (`v3 += 4`). No field names recovered.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe. Minor issues: `*arr++` in `process_with_callback`, cast `(_OWORD *)src` in test. No major type confusion or dangerous pointer operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only header comment identifying decompiler and binary. No algorithm explanations, no `@param`/`@return` documentation, no decompilation confidence indicators. Test function output comments are auto-generated.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: `switch` statements correctly recovered. `if-else` chains visible. State machine patterns in `state_machine` and `fsm_func_table` recognizable. No explicit pattern naming or explanation.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+Justification: "FAILED to decompile" messages present for `_setjmp`, `__libc_start_main`, etc. However, no warnings for indirect calls or unusual constructs like Duff's device (`duffs_device` uses computed jump).
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. Function contracts completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls visible in code (e.g., `f(x)`, `cb(arr[i])`). No documentation of call graph relationships or callback connections. External dependencies not documented.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Single monolithic output file. Test functions grouped logically (`test_control_flow_l1/2/3`). Static functions properly scoped. No header/API separation.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Uses standard library functions (`printf`, `puts`). `JUMPOUT(0)` will not compile. Data references (`xmmword_1920`) need external definitions. Partial compilation possible with fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+3)/4 = 4.75
+L2_avg = (5+7+6+6)/4 = 6.00
+L3_avg = (6+4+7)/3 = 5.67
+L4_avg = (3+6+7+2)/4 = 4.50
+L5_avg = (5+6+5)/3 = 5.33
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (5.67 × 0.20) + 
+          (4.50 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.5 + 1.134 + 0.675 + 0.533
+        = 5.27/10
+```
+
+**Overall Readability Score: 5.27/10**
+
+### Critical Defects
+- Variable naming uses generic `v1`-`v8` throughout, obscuring semantic purpose (e.g., `loop_while` uses `v1`, `result`, `v3` with no indication of their roles)
+- SIMD vectorization in `loop_continue` and `goto_backward` replaces recognizable loop constructs at -O0 (unexpected optimization)
+- No struct/union recovery; all composite types lost (uses raw arrays like `dword_1950[op]`)
+- Magic numbers like `0x100000001LL`, `0x400000004LL` unexplained
+- No contract/precondition documentation for any function
+
+### Best Quality Aspect
+**Function Naming Quality (8/10)** - Most function names match original source exactly (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`), making function identification straightforward.
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic single-letter variable names (`v1`-`v8`) dominate, making it extremely difficult to track data flow and understand variable purposes without extensive cross-referencing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `packet_size`, `loop_counter`, or `checksum`
+2. **Recover loop constructs from SIMD patterns**: At -O0, vectorized loops should be presented as recognizable `for`/`while` loops with comments explaining the SIMD optimization
+3. **Detect and document magic numbers**: Identify repeated constant values and suggest named constants (e.g., `0x65` → `MAX_CONNECTIONS`)

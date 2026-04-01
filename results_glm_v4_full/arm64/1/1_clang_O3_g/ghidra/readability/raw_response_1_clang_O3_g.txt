@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar1`, `piVar1`), providing no semantic hint about their role. Complex vectorized operations use opaque types like `undefined1 auVar3 [16]`, obscuring the data being processed.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `sequential_ops`, `loop_continue`, `duffs_device`), likely due to preserved debug symbols. This makes identifying the purpose of each unit trivial.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Integer constants are often represented in hexadecimal (e.g., `0x15` instead of `21`, `0x12` instead of `18`), which adds unnecessary cognitive load for simple arithmetic checks. Magic numbers in vectorized code (e.g., `0x400000003`) are unexplained.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The decompiled code contains significant compiler artifacts, specifically `undefined1` arrays used to model NEON vector registers (e.g., `auVar3`, `auVar9`). These artifacts clutter the code and distract from the logic, especially in auto-vectorized loops.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While the decompiler accurately represents the optimized binary, the control flow is vastly different from the source. Simple loops are replaced by complex SIMD intrinsics (`NEON_ext`, `CONCAT13`) or mathematical formulas (e.g., `loop_for_fixed`), making the logic extremely difficult to follow compared to the original `for` loops.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. No functions were inlined or split in a way that obscures the original module boundaries, which is excellent for navigation.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads linearly within functions, avoiding excessive spaghetti jumps. However, the density of the vectorized blocks and the use of `goto` labels in `duffs_device` (which mirrors the source but is inherently complex) disrupt the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the compiler's optimized output without redundant dead code. The mathematical reduction of loops (e.g., calculating sums via multiplication) is concise, even if it differs structurally from the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Scalar types are generally correct (`int`, `uint`), but vectorized operations lose type precision, defaulting to `undefined1` arrays. Function pointers are correctly typed as `_func_int_int`, which is a positive point.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Arrays are handled correctly (e.g., `int arr[5]` is inferred or accessed via pointer arithmetic). There are no complex structs in this specific source to challenge the decompiler, but the array handling is solid.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on compiler-generated bit-hacks for optimization (e.g., `(b >> 0x1f ^ 0xffffffffU)` in `nested_if_2`). While correct for the binary, these operations appear unsafe and confusing compared to the standard conditional logic in the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to standard Ghidra warnings (e.g., "WARNING: Subroutine does not return", "Removing unreachable block"). There are no comments explaining the *intent* of the complex vectorized math or the optimization logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize standard algorithmic patterns because the compiler optimized them away. For example, a simple summation loop is reduced to a math formula, and a loop skipping evens is turned into SIMD intrinsics, losing the "idiomatic" C structure entirely.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra correctly flags issues like "WARNING: Could not recover jumptable" in `call_func_ptr` and "Treating indirect jump as call". These warnings are accurate and helpful for understanding where the decompilation might be imperfect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or invariants. For instance, the requirement that `n > 0` in `duffs_device` is present in the source logic but not explicitly stated as a contract in the decompiled view.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names are preserved, cross-references are very clear. Calls to `double_value`, `triple_value`, etc., are immediately recognizable, aiding significantly in understanding the call graph.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the original file's organization, with helper functions and test functions grouped logically. The separation of concerns (e.g., state machine handlers) is visible.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific intrinsics like `NEON_ext` and `CONCAT13`, which are not standard C. This would require significant patching or a custom header to compile, limiting its utility as a drop-in replacement for the source.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- **Optimization Mismatch:** The binary was compiled with `-O3` (evidenced by SIMD/NEON code), while the source metadata claims `-O0`. This massive gap makes the decompiled code structurally unrecognizable compared to the source (e.g., loops replaced by math formulas).
+- **Variable Naming:** Generic names like `iVar1`, `uVar1`, and `auVar3` provide no semantic context, forcing the analyst to reverse-engineer variable purposes from scratch.
+- **Type Loss in Vectorization:** The use of `undefined1` arrays for vector registers obscures the data being manipulated in optimized loops like `loop_continue`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Ghidra perfectly preserved all original function names (likely via DWARF debug info), making navigation and high-level understanding of the module structure trivial.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- **Why?** The decompiler presents the raw result of compiler optimizations (SIMD intrinsics, bit-hacks) rather than attempting to map them back to the original high-level patterns (loops, conditionals), which destroys the semantic link to the source code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Pattern Recognition for Optimized Loops:** Implement detection to annotate auto-vectorized loops (e.g., "Loop unrolled/vectorized by compiler") or attempt to reconstruct the original loop structure when the mathematical reduction is simple.
+2.  **Variable Type Inference for SIMD:** Instead of `undefined1` arrays, attempt to define vector structs or use standard vector types (e.g., `int32x4_t`) to make NEON operations readable.
+3.  **Hex to Decimal Conversion:** For small integers used in comparisons (e.g., `0x12`), display them as decimal (`18`) to improve readability, as these often represent array sizes or simple counts.

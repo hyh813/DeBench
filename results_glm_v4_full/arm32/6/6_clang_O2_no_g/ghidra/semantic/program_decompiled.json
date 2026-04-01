@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_clang_O2_no_g/ghidra/syntactic/bin/6_clang_O2_no_g_fixed",
+  "stdout": "Testing standard library functions:\n\n12\n0\n12\n90\n1\nValue: 42, Name: TestName\n26\n579\n42\n42\n90\n0\n15\nTesting system calls:\n\n42\n42\n42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-1/5-1_gcc_O2_no_g/ida/semantic/native_x86_bin/5-1_gcc_O2_no_g_native",
+  "stdout": "=== 测试C++面向对象特性 ===\nCPP-L3-01: 4704 (期望: 4704)\nCPP-L3-02: 21 (期望: 21)\nCPP-L3-03: 42 (期望: 42)\nCPP-L3-04: 71 (期望: 71)\nCPP-L3-05: 650 (期望: 650)\nCPP-L3-06: 22 (期望: 22)\nCPP-L3-07: 39 (期望: 39)\nCPP-L3-08: 16 (期望: 16)\nCPP-L3-09: 85 (期望: 85)\nCPP-L4-01: 226 (期望: 226)\nCPP-L4-02: 703 (期望: 703)\nCPP-L4-03: 344 (期望: 330+)\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

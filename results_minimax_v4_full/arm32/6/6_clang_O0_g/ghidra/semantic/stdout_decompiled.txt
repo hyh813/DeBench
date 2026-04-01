@@ -1,0 +1,18 @@
+Testing standard library functions:
+strcpy result: 8
+strcmp result: 0
+strlen result: 12
+memcpy result: -1225008230
+memcmp result: 2
+Value: 42, Name: Test
+printf result: 22
+scanf result: 579
+fopen/fclose result: 42
+fread/fwrite result: 42
+malloc/free result: 90
+memset result: 0
+strchr/strstr result: 15
+Testing system calls:
+linux syscall result: 42
+win32 api result: 42
+fork/exec result: -1

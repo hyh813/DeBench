@@ -1,0 +1,11 @@
+Test: Fake Branch
+Result: 10
+Obf: opaque predicate: 20
+Obf: instruction substitution: 225
+Obf: string encryption: 100
+Opt: tail call: 500500
+Opt: non-tail call: 5050
+Opt: vectorized: 72
+Opt: LTO: 20
+Edge: division by zero: 1
+Edge: null pointer: 41

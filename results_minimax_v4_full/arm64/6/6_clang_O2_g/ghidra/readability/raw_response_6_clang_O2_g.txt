@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use generic names like `local_30`, `local_24`, `iVar1`, `uVar2`, `sVar1` that obscure their semantic purpose. The source uses meaningful names like `dst`, `src`, `buffer`, `len`, `ret`, `input`, but the decompiled version renders these as uninformative stack positions and temporary variables. The "Unresolved local var" comments compound the problem.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+Justification: All function names exactly match the source: `param_strcpy`, `call_strcpy`, `param_strcmp`, `call_strcmp`, `param_memcpy`, `call_memset`, `param_pthread_create`, `thread_compute`, `signal_handler`, etc. This is because the binary was compiled with debug symbols (-g flag), which preserved the original function names.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: The code contains numerous unexplained magic numbers: `0x2a` (42 for success), `0x38`/`0x39` (syscall numbers for open/close), `10` and `14` (signal numbers SIGUSR1/SIGALRM), `0x12` (18 = string length), `0x1000` (4096 = shm size), `0x7f` (exit code). The source uses named constants like SIGUSR1, O_RDONLY, IPC_CREAT, but these are lost in decompilation.
+
+### 4. Noise Reduction
+**Score: 6/10**
+
+Justification: The code contains significant noise from Ghidra: "WARNING: Unknown calling convention" comments on every test function, "Unresolved local var" annotations for variables like `int len@[???]`, `char * test@[???]`, `int ret@[???]`. These auto-generated comments clutter the output but don't impede understanding significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Control flow is natural and matches the source closely. If/else structures, while loops, and do-while loops are properly recovered. At -O0, there's no optimization distortion. The signal handling wait loops use clear do-while constructs. Minor complexity in `param_malloc_free` loop unrolling but it's manageable.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Function granularity is excellent - each test function (`call_strcpy`, `call_strcmp`, etc.) and helper function (`param_strcpy`, `thread_compute`, `signal_handler`) is properly separated. No inlining artifacts since -O0 was used. The decomposition exactly matches the source organization.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom with minimal disruption. Early returns are used appropriately for error handling (e.g., `if (__stream == NULL) return -1`). Some forward jumps in complex functions like `param_signal_handling` but traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: Some loop unrolling present in `param_malloc_free` (unrolled by 8 for larger sizes) and `param_memset` (processes 8 bytes at a time). This is optimization artifact from compiler but not excessive. No dead code observed.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 8/10**
+
+Justification: Types are quite precise: `int` for return values, `char*` for strings, `void*` for generic pointers, `size_t` for sizes, `pthread_t` for thread handles, `FILE*` for file streams. The source uses `size_t` and it's preserved. Minor genericness in some local variables but overall accurate.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+
+Justification: The code doesn't have many complex structs to recover. Where structs exist (like `sockaddr`), they're accessed via raw fields (`sa_family`, `sa_data`) which is acceptable. Thread data structures are properly handled. The source doesn't define many custom structs anyway.
+
+### 11. Type Safety
+**Score: 8/10**
+
+Justification: No significant type safety violations. Necessary casts between `void*` and typed pointers are present but justified. Pointer arithmetic in string/buffer operations is correct. The atomic operations use proper atomic intrinsics (`__aarch64_ldadd4_acq_rel`, `__aarch64_cas4_acq_rel`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Justification: Comments are mostly auto-generated noise: "WARNING: Unknown calling convention", "Unresolved local var", Ghidra function headers. No meaningful comments explaining algorithm logic, purpose, or contracts. The source has detailed comments describing each function's purpose that are completely lost.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+
+Justification: Standard library patterns (strcpy, strlen, pthread_create) are recognized and named correctly. System call patterns identified. Threading idioms (mutex lock/unlock, condition variables) are clear. However, no explicit pattern naming or documentation of the design patterns being used.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Ghidra provides "WARNING" comments for unknown calling conventions, which is useful. However, there's no flagging of indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior. The "Unresolved local var" comments are helpful but inconsistent.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No implicit preconditions, postconditions, or invariants are documented. Error handling is present (returns -1, -2, etc.) but the reasons aren't explained. The source has clear error handling semantics that aren't captured in the decompiled output.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Justification: Function call relationships are clear from the code structure - you can see `call_strcpy` calling `param_strcpy`. However, there's no documentation of who calls whom, global variable usage, or callback relationships. The test driver `main` → `test_*` → `call_*` → `param_*` hierarchy is inferable but not explicit.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are logically grouped: standard library tests first, then system calls, then threading. This matches the source organization. Static functions are properly scoped. The ordering is logical and follows the original source structure.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+
+Justification: The code should compile with standard C library and pthreads. No obvious compilation errors expected. External dependencies are just standard libc functions. The code uses proper function declarations. Minor issues might include some architecture-specific code (atomic operations) but these are handled.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 4 + 6) / 4 = 5.75
+L2_avg = (8 + 9 + 8 + 7) / 4 = 8.00
+L3_avg = (8 + 8 + 8) / 3 = 8.00
+L4_avg = (4 + 7 + 5 + 3) / 4 = 4.75
+L5_avg = (6 + 8 + 8) / 3 = 7.33
+
+Overall = (5.75 × 0.30) + (8.0 × 0.25) + (8.0 × 0.20) + (4.75 × 0.15) + (7.33 × 0.10)
+        = 1.725 + 2.0 + 1.6 + 0.7125 + 0.733
+        = 6.77/10
+```
+
+### Overall Readability Score: **6.8/10**
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `local_30`, `iVar1`, `uVar2` completely obscure semantic purpose; should infer names from usage patterns (e.g., `buffer` from `strcpy` destination, `len` from `strlen` result)
+- **Magic numbers**: Un-explained constants like `0x38` (SYS_open), `10` (SIGUSR1), `0x2a` (42) lack symbolic names; decompiler should recognize common syscall and signal numbers
+- **Comment quality**: Only auto-generated warnings and "unresolved" annotations; no meaningful documentation of algorithm intent or contracts
+- **No contract recovery**: Preconditions, postconditions, and error semantics are not documented despite being clear in source
+- **Anomaly flagging**: Indirect calls and potential issues not flagged; inconsistent use of warning comments
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)** - All function names exactly match the original source due to debug symbols (-g) being present in the binary
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (3/10)** - Generic stack positions and temporary variable names completely obscure semantic meaning; this is the primary readability barrier
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used as a destination in `strcpy`, name it `dst` or `dest`; when used with `strlen`, name it `len` or `str`
+2. **Recognize and replace magic numbers**: Map known syscall numbers (0x38→SYS_open), signal numbers (10→SIGUSR1), and common constants to their symbolic names
+3. **Add semantic comments**: Include brief descriptions of function purpose, parameter meanings, and return value semantics based on control flow analysis

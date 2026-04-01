@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## Executive Summary
+
+**Critical Metadata Issue**: The decompiled code header states binary was compiled with `O3_no_g`, but source metadata claims `-O0 -g`. This is a fundamental mismatch that significantly impacts readability expectations. Additionally, decompiler metadata says "Ghidra" but code header says "IDA Pro 9.1 with Hex-Rays".
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `v3`). In `param_strcpy`, parameters `a1`/`a2` should be `dst`/`src`. In `thread_sum`, struct parameter `a1` should be `data` with fields `start`/`end`/`result`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_strcpy`, `thread_sum`, `signal_handler`), but many are generic (`sub_2020`, `sub_2030`). Compiler suffixes (`.part.0`, `.constprop.0`) indicate optimization artifacts rather than semantic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: signal `10`/`14` instead of `SIGUSR1`/`SIGALRM`, socket `2`/`1`/`0` instead of `AF_INET`/`SOCK_STREAM`. String literals preserved but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi32`) clutter code from O3 optimization. Stack canary checks (`__readfsqword(0x28u)`) appear in every function. 60 functions failed to decompile entirely.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: O3 optimization causes aggressive loop unrolling (see `thread_sum` with 10+ nested if-statements). Some functions remain readable (`param_strcpy`, `consumer_thread`) but SIMD vectorization obscures original loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler creates `.part.0` and `.constprop.0` variants. `call_*` functions are constant-folded (e.g., `call_strcpy()` just returns 8) losing actual logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. However, SIMD operations and unrolled loops create non-linear reading experience in functions like `thread_sum` and `param_memset`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling creates verbose code that appears redundant. SIMD operations are verbose for simple arithmetic. Some optimization artifacts remain that could be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`__int64`, `_DWORD`, `_QWORD`) instead of precise C types (`size_t`, `int32_t`). Pointer types often `void*` instead of specific types like `pthread_t*` or `char*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—accessed via array indexing (`a1[0]`, `a1[1]`, `a1[2]`). `sockaddr` partially recovered but fields unnamed. No struct definitions visible in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts common (`(_DWORD)v5 - (_DWORD)haystack` for pointer arithmetic). Pointer arithmetic on void pointers. Some type confusion in thread return value handling.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers present. No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library patterns not identified (`strcpy`, `strcmp` calls not annotated). Thread synchronization patterns (`pthread_mutex_lock`, `pthread_cond_wait`) not named as concurrency idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end but not flagged inline. No warnings about uncertain indirect calls or stack layout issues. "FAILED to decompile" list is useful but disconnected from code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions inferred. Error return values not explained (e.g., what does -1 vs 42 mean).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without context. Callback relationships implicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. No logical grouping by category (library/syscall/thread). Original source section organization completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 60 functions failed to decompile including critical libc functions (`malloc`, `free`, `printf`, `pthread_create`). Would require extensive stubs and external declarations to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.12/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+---
+
+### Critical Defects
+
+- **Variable `a1`/`a2` should be `dst`/`src`** in `param_strcpy` based on `stpcpy` usage pattern
+- **60 functions failed to decompile** including essential libc functions (`malloc`, `free`, `printf`, `pthread_create`)
+- **Magic numbers for signals** (`10`, `14`) should be `SIGUSR1`, `SIGALRM` based on `signal()` call context
+- **ThreadData struct not recovered**—fields accessed as `a1[0]`, `a1[1]`, `a1[2]` instead of `data->start`, `data->end`, `data->result`
+- **Metadata mismatch**: Source claims `-O0 -g` but binary is `O3_no_g`, causing unexpected optimization artifacts
+
+---
+
+### Best Quality Aspect
+
+**Structural Intelligibility (5.5/10)** - Function boundaries mostly preserved and control flow generally traceable despite O3 optimization artifacts. Core logic remains understandable in simpler functions like `param_strcpy` and `consumer_thread`.
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (2.75/10)** - Zero meaningful comments, no idiom recognition, no contract documentation. The decompiler produces code but provides no semantic guidance about what the code means or why it exists.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., `a1` passed to `stpcpy` first argument should be `dst`) and apply meaningful names automatically.
+
+2. **Recognize and annotate standard library patterns** - Identify `pthread_mutex_lock`/`unlock` pairs as critical sections, `signal()` calls as signal handlers, and add explanatory comments.
+
+3. **Recover struct definitions from access patterns** - When code accesses `a1[0]`, `a1[1]`, `a1[2]` consistently across functions, infer and emit a struct definition with semantic field names based on usage context.

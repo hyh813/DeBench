@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `v4`) throughout the codebase. For example, in `sequential_ops` the original variables `a`, `b`, `c`, `temp1`, `temp2`, `temp3` are replaced with a single undefined `v1`. This makes tracking variable purpose nearly impossible without cross-referencing the original source.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`, `recursion_factorial`, `duffs_device`, `state_machine`, etc. The decompiler achieved near-perfect function name recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xffffffff` (used as -1 mask) appear frequently without explanation. The value `0x140000000a` encodes the array `{10,20,30,40,50}` in `loop_break` but is unexplained. However, some patterns like `& 0xffffffff` for 32-bit masking are recognizable to experienced decompilers.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise artifacts include: excessive `& 0xffffffff` masks throughout, inline assembly (`__asm_ld1`, `__asm_st1`) in `fsm_func_table` and `computed_goto`, verbose struct initializations for setjmp/longjmp, `// UNREACHABLE` annotations, and stack canary checks (`__stack_chk_fail`). These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - `switch` statements are used correctly, `while` loops are properly identified, and `for` loops are recognizable. However, some goto statements remain (e.g., `goto lab_0xfec` in `switch_fallthrough`), and the complex loop conditions in `loop_complex_cond` use confusing boolean expressions like `while (v4 > 0 == v2 < 10 == v3 < v4)`.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is properly separated with clear boundaries. Functions maintain appropriate granularity - no 500-line monoliths. The decomposition matches the original source structure almost perfectly, which is expected at -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist (e.g., goto labels in `switch_fallthrough` and `loop_multi_exit`), but these are manageable. Deep nesting is minimal. The overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Loop unrolling is minimal at -O0. Common subexpression elimination artifacts are limited. The code is relatively clean of redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: The decompiler uses `int64_t` and `int32_t` appropriately, showing awareness of 64-bit vs 32-bit types. However, there's confusion between signed and unsigned - many operations use `& 0xffffffff` mask suggesting unsigned semantics but variables are declared signed. Function parameters often lack explicit types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The decompiler correctly recovers `struct __jmp_buf_tag` for setjmp/longjmp functionality. However, most other composite types are lost - arrays are encoded as magic numbers (e.g., `0x140000000a` for the array in `loop_break`), and the matrix in `loop_multi_exit` is not reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple type safety concerns: excessive bit-masking with `& 0xffffffff` and `& 0xfffffffe`, implicit casts between int32_t and int64_t, and confusing boolean expressions using bitwise operations. The expression `(v5 < 0 == ((v5 ^ v4) & (int32_t)(v3 ^ v2)) < 0 ? v2 : v3)` in `ternary_op` is particularly unsafe and confusing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm logic. Only auto-generated address ranges like `// Address range: 0xb14 - 0xb5c` and `// UNREACHABLE` annotations. No explanation of what functions do, parameter meanings, or return value semantics.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like `switch`, `while`, `for` loops are recognized. However, design patterns (state machine, callback pattern, Duff's device) are not explicitly identified or named. The complex `duffs_device` is partially recognized but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler marks some unreachable code with `// UNREACHABLE` comments. However, many anomalies are silently handled - the inline assembly in `computed_goto` and `fsm_func_table` has no warning, and the unusual boolean expressions are presented without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. The implicit contracts from the original source (e.g., "n must be > 0" for `duffs_device`) are completely lost. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. However, there's no documentation of which functions call which, global variable usage is unclear (just addresses like `g1`, `g2`), and callback relationships are not explained. The test functions call many others but this relationship isn't documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions are in a single file with no logical grouping. Functions appear in a roughly alphabetical but arbitrary order. No header file with API declarations. Static functions aren't distinguished from public ones.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`<stdio.h>`, `<setjmp.h>`, `<stdint.h>`, `<stdbool.h>`) and should compile with gcc. External dependencies are minimal. However, the inline assembly (`__asm_ld1`, `__asm_st1`) may cause compilation issues on non-ARM targets.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v1`, `v2`, `v3`, `v4`) making code comprehension extremely difficult
+- Excessive bit-masking (`& 0xffffffff`, `& 0xfffffffe`) obscures arithmetic operations
+- No comments explaining algorithm logic, parameter meanings, or return value semantics
+- Complex boolean expressions using bitwise operations instead of logical operators (e.g., `ternary_op`, `loop_complex_cond`)
+- Arrays encoded as magic numbers (e.g., `0x140000000a` for `{10,20,30,40,50}`) losing semantic meaning
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The decompiler achieved near-perfect function name recovery, preserving almost all original function names exactly. This is the standout success of this decompilation.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The universal use of generic names like `v1`, `v2`, `v3`, `v4` completely obscures variable purpose. At -O0, the compiler preserves all local variables, so the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., variables used in loop counters should be named `i`, `j`, `index`; variables used in arithmetic operations should reflect their role (`sum`, `result`, `temp`)
+2. Eliminate unnecessary bit-masking - at -O0, `& 0xffffffff` masks are often unnecessary and obscure the actual arithmetic; only apply when semantically required
+3. Add semantic comments explaining what functions do, parameter purposes, and return value meanings - even basic documentation greatly improves readability

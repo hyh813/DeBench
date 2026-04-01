@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses generic stack-position names (`local_4`, `local_8`, `local_c`, `local_10`) instead of semantic names. Comments like "Unresolved local var: int temp1@[???]" in `sequential_ops` and "Unresolved local var: int sum@[???]" in `loop_for_fixed` show complete loss of original variable names like `temp1`, `temp2`, `temp3`, `sum`, `i`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are well-preserved from binary symbols: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op` all match the original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `0xf` (15), `0x14` (20), `0x32` (50) in `switch_small`; `0x3e9` (1001) in `infinite_loop`; `0x65` (101) in `loop_external_state`. However, some values like loop bounds (4, 3, 10) are inferable from context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Significant auto-generated noise including "Unresolved local var" comments (appears 30+ times), "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", and "WARNING: Subroutine does not return" annotations. These clutter the output but don't completely obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are well-recovered - for loops (`loop_for_fixed`), while loops (`loop_while`), do-while (`loop_dowhile`), switch statements (`switch_small`, `switch_large`), and if-else chains are all natural. The `goto_forward` is correctly simplified to if-then without goto. Minor: `goto_backward` converted to for loop.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each test function is properly separated - no monoliths. Functions like `duffs_device`, `recursion_factorial`, `state_machine` are appropriately sized (20-50 lines). Parameter lists match original (e.g., `int loop_break(int target)`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in `loop_break`, `infinite_loop`. No excessive forward jumps. Nested loops in `loop_nested` and `loop_multi_exit` are readable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy. The `duffs_device` shows unrolled loop but this is compiler output, not decompiler artifact. Common subexpressions not duplicated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses Ghidra's imprecise types: `undefined4` instead of `int`, `undefined8` instead of `long`/pointers. Function pointer types like `_func_int_int` are partially typed but not precise. Parameter types like `int *flag` are correct but return types use `undefined4`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct/array recovery. In `loop_break`, array is initialized via individual assignments: `local_20[2] = 0x1e; local_20[3] = 0x28;` instead of `int arr[] = {10, 20, 30, 40, 50}`. In `loop_multi_exit`, uses `memcpy` from data section instead of `int matrix[3][4]`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Moderate type safety issues. The `undefined4` type allows questionable operations. Function pointer calls like `(*local_40[idx])(x)` are type-safe but could be better. No severe violations like buffer overflows, but casting between undefined types is common.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated comments: "Unresolved local var", "WARNING: Subroutine does not return", "WARNING: Could not recover jumptable". No semantic explanations of algorithms or intent. Missing: no documentation of why `switch_fallthrough` uses the pattern it does.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized: Duff's device shows switch with goto labels (`switchD_00101924_caseD_7`), state machines as switch statements, function pointer arrays. However, no explicit naming like "Duff's device" or "state machine pattern" in comments.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Some anomalies flagged: "WARNING: Subroutine does not return" for `longjmp`; "WARNING: Could not recover jumptable. Too many branches" for `computed_goto`; "WARNING: Unknown calling convention" on test functions. However, indirect calls in `call_func_ptr_array` not flagged as potentially unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Functions like `duffs_device` with requirement "n must be >0" not documented. No "requires:" or "ensures:" comments. Error handling in `multi_return` (returns -1, -2) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No explicit cross-reference comments. Test functions call many functions but relationships not documented. Callback relationships in `process_with_callback` not explained. Static functions like `double_value`, `triple_value` used by multiple callers not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions ordered logically matching binary layout. Static helper functions (`double_value`, `triple_value`, `op_add`, etc.) grouped near their usage. Test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) properly separated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is. Uses `undefined4`, `undefined8` types which don't exist. References external data like `&DAT_00102b5c`, `&PTR_op_add_00113d48`. Function pointer type `_func_int_int` undefined. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming completely lost - all variables use generic stack positions (`local_4`, `local_8`) with "Unresolved local var" annotations
+- Composite types not recovered - arrays initialized via individual element assignments instead of literal syntax
+- Type precision severely degraded - uses `undefined4`/`undefined8` instead of `int`/`long`
+- No semantic comments - only auto-generated warnings, no algorithm explanations
+- Won't compile - requires extensive patching for undefined types and external data references
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- The decompiler correctly recovers loop structures (for, while, do-while), switch statements, and if-else chains. At -O0, the control flow closely matches the original source structure.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- All local variables lost their semantic names. At -O0 with debug symbols (-g), the decompiler should be able to recover variable names from DWARF debugging information embedded in the binary.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from DWARF debug info**: The binary was compiled with `-g`, so variable names like `temp1`, `temp2`, `sum`, `i`, `count` should be recoverable from `.debug_info` section
+2. **Recover composite type initializations**: Instead of `local_20[0] = 10; local_20[1] = 20;`, generate `int arr[] = {10, 20, 30, 40, 50};`
+3. **Replace undefined types with concrete types**: Map `undefined4` → `int`, `undefined8` → `long` or `void*` based on usage context
+4. **Add semantic comments**: Document algorithm patterns (e.g., "Duff's device unrolled loop"), preconditions, and intent
+5. **Improve build compatibility**: Generate compilable code by defining types or using standard C types instead of Ghidra-specific undefined types

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `piVar2`, `uVar1`, `uVar2`. The original source uses meaningful names like `size`, `x`, `y`, `arr`, `n`, `counter` - all completely lost in decompilation. Even loop indices and temporaries lack semantic names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source: `param_macro_constants`, `call_macro_functions`, `param_conditional_compile`, `test_preprocessing_features`, `test_asm_features`. The decompiler correctly recovered all function names from symbols.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive magic numbers without explanation: `0x401` (should be MAX_SIZE+1), `0x200` (should be MAX_SIZE/2), `0x40` (should be BUFFER_COUNT*4), `0xdef0` (platform default), `0x1e` (_SC_PAGESIZE). The original source defines these as named constants but all semantic meaning is lost.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from compiler-generated atomic operation library functions: `__sync_fetch_and_add_4`, `__sync_fetch_and_sub_4`, `__sync_add_and_fetch_4`, etc. (40+ functions). Also includes suspicious `(*(code *)&SUB_ffff0fc0)` references and auto-generated stubs. These should be filtered or marked as compiler intrinsics.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - if-else statements, for/while loops, and function calls are properly structured. The `param_asm_clobber` uses a do-while loop which is appropriate. At -O0, control flow should closely match source, and it does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is excellent - each small function from source is preserved separately: `param_macro_constants`, `call_macro_constants`, `param_macro_functions`, etc. No inlining artifacts. Functions have clear single responsibilities matching the original.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `param_asm_clobber` (checking for n < 1). No excessive forward jumps or goto abuse. Flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The main logic functions show minimal redundancy. However, the massive duplication of atomic operation functions (40+ nearly identical functions for different sizes) creates severe redundancy. These compiler intrinsics should be abstracted or filtered.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic decompiler types: `undefined4` (should be `int`), `undefined8` (should be `long` or `void*`), `undefined2`, `undefined`. Parameters typed as `int` in some places but `undefined4` in others. No `size_t`, no `uint32_t`. The original uses precise types like `int`, `size_t` - all lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Source has minimal struct usage (only `func_t` typedef for dynamic code), which is correctly handled. Array parameters like `int *arr` are properly recognized. No complex struct recovery needed for this source.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. In `param_asm_clobber`, pointer arithmetic `param_1 + -4` is confusing. The atomic functions have type confusion issues. However, no severe buffer overflow patterns or completely unsafe casts that would make code dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only a header comment indicating decompilation by BinaryAI with SHA256. No comments explaining macro semantics, inline assembly behavior, conditional compilation logic, or any algorithm explanations. Zero useful inline comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of preprocessing idioms (macro expansion, conditional compilation), inline assembly patterns, or atomic operation semantics. The source tests specific preprocessor behaviors (STRINGIZE, token paste, variadic macros) but decompiled code shows no awareness of these patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `(*(code *)&SUB_ffff0fc0)` reference in atomic functions is anomalous but not flagged. No indication of indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_asm_clobber` requires `arr != NULL` and `n >= 0`, but this is not indicated. No error condition documentation (mmap failure, mprotect failure returns).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No explicit call graph documentation. Functions like `call_macro_constants` call `param_macro_constants`, but this relationship isn't documented. No global variable usage transparency (e.g., `global_var` in `param_memory_clobber_demo`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions dumped in single file with no logical grouping. Should have sections for: preprocessing functions, assembly functions, test functions. Static functions not distinguished from external. No header/API separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would NOT compile. Uses invalid types (`undefined4`, `undefined8`, `undefined2`, `undefined`). Contains suspicious function pointer `(*(code *)&SUB_ffff0fc0)`. References to non-existent `mprotect`, `mmap`, `sysconf` without proper includes. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 2) / 4 = 4.0
+L2_avg = (7 + 8 + 7 + 5) / 4 = 6.75
+L3_avg = (4 + 7 + 5) / 3 = 5.33
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (3 + 4 + 2) / 3 = 3.0
+
+Overall = (4.0 × 0.30) + (6.75 × 0.25) + (5.33 × 0.20) + 
+          (2.25 × 0.15) + (3.0 × 0.10)
+        = 1.20 + 1.69 + 1.07 + 0.34 + 0.30
+        = 4.60/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet List)
+- Variable names completely generic (`param_1`, `iVar1`, `uVar1`) - original semantic names (`size`, `x`, `y`, `arr`, `n`) completely lost
+- Magic numbers everywhere (`0x401`, `0x200`, `0x40`, `0xdef0`) - original constants (`MAX_SIZE`, `BUFFER_COUNT`) not recovered
+- Types use decompiler annotations (`undefined4`, `undefined8`) instead of C types (`int`, `size_t`)
+- 40+ compiler-generated atomic intrinsics cluttering output - should be filtered or abstracted
+- No comments explaining preprocessing semantics, inline assembly, or algorithm intent
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are perfectly preserved from the original source symbols. All function names like `param_macro_constants`, `call_macro_functions`, `test_asm_features` match exactly.
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+Zero useful comments, no idiom recognition for preprocessing/assembly patterns, no anomaly flagging, no contract documentation. The decompiled code provides no semantic context about what the functions do or how they relate to the original source's intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x401` suggests it's a size parameter; `param_1 * 10` suggests it's a multiplier) to generate semantic names like `size`, `count`, `multiplier`
+2. **Detect and explain magic numbers**: When a constant appears multiple times or in meaningful contexts (comparison, arithmetic), suggest named constants or add explanatory comments
+3. **Filter compiler intrinsics**: The 40+ `__sync_*` functions are compiler-generated and should either be filtered from output or replaced with comments indicating "atomic operation intrinsics" rather than decompiling each one individually

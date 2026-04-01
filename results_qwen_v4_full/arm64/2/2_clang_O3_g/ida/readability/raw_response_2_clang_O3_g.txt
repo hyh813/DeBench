@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names (`v2`, `v3`, `v5`, `result`) with register annotations (`// x10`, `// w8`) that obscure semantic meaning. Simple functions like `process_char` are readable, but complex SIMD-heavy functions like `array_1d_stack` have 14+ generic variables making tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). A few startup functions use generic names (`sub_620`, `init_proc`), but core test functions maintain semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`65`, `32`, `0x1Au` in `process_char`; `1.5`, `0.5` in `process_float`). Some are inferable (ASCII conversion), but constants like `0xFFFFFFF8` for loop unrolling lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: register variable annotations (`// x10`, `// w8`), SIMD intrinsics (`vaddq_s32`, `vld3q_f32`), and verbose long double functions (`__addtf3` has 200+ lines of bit manipulation). Test functions show constant folding that removes actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural control flow matching source. However, array functions show SIMD vectorization that obscures original loop structure (e.g., `array_1d_stack` uses `vaddq_s32` instead of simple `for` loop). At `-O3` this is expected but reduces readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—each test function is separate, no monolithic functions. `binary_tree` correctly identified as thunk to `binary_tree_sum`. No inappropriate inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. SIMD loops use `do-while` patterns that are slightly awkward but traceable. Test functions have inline data initialization that disrupts flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: SIMD vectorization creates apparent redundancy (multiple `vaddq_s32` calls). Test functions show constant-folded results instead of actual computation, losing the test logic entirely. Long double functions have extreme code duplication.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered well (`int`, `char`, `float`, `double`). `long double` becomes `__n128`/`long double` which is acceptable. Pointer types generally accurate, but some casts lose precision (`(_DWORD)handle`, `*(_QWORD *)&size`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs recovered with field names (`Point3D` with `x`, `y`, `z`; `Rect` with `position`, `size`; `Widget` nested correctly). Unions identified (`UnionData` with `i`, `f`, `bytes`). Bitfield struct `Flags` recovered though access uses manual masking.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `*(_QWORD *)&size = size` in `opaque_handle_create`, `(_DWORD)handle` in `opaque_handle_op`, `*(_DWORD *)p` in `ptr_cast`. These are necessary for decompilation but reduce safety guarantees.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original source comments explaining test purposes (e.g., "大写转小写", "16位运算") completely lost. Only auto-generated annotations like "// attributes: thunk" present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition—linked list traversal, tree recursion, and graph traversal presented as raw code without algorithm identification. SIMD patterns not identified as vectorization.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("local variable allocation has failed" in `opaque_handle_create`, "FAILED to decompile" for 6 external functions). However, no warnings about optimization artifacts or potential misinterpretations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Bounds checks exist in code (`if (x < 0 || x >= w)`) but not documented as contracts. NULL checks not annotated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Global references exist (`asc_303F`, `xmmword_2A80`) but not well documented. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) preserved but not annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. No header separation or logical grouping. Functions appear in roughly source order but test functions separated from implementations.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 6 external functions failed to decompile (`__libc_start_main`, `printf`, `puts`, etc.) requiring stubs. Some platform-specific intrinsics (`vaddq_s32`, `_ReadStatusReg`) need ARM NEON support. Would require moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.62/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v2`, `v3`, `result`) with register annotations obscuring purpose in complex functions
+- **Zero comment recovery**—all original source documentation lost including test case explanations
+- **Test functions constant-folded**—actual test logic replaced with pre-computed results, losing semantic meaning
+- **SIMD vectorization obscures loops**—original `for` loops transformed into `vaddq_s32` chains that are hard to recognize
+- **6 external functions failed to decompile** requiring manual stubs for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)**—Core function names preserved accurately from source (`process_char`, `array_1d_stack`, `struct_simple`), maintaining semantic clarity for the majority of functions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Complete loss of all source comments including test case descriptions, algorithm explanations, and purpose documentation makes understanding intent difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments**—Integrate debug symbols (`-g` flag) to recover original comments and documentation strings
+2. **Annotate optimization artifacts**—Mark SIMD vectorization, loop unrolling, and constant folding as compiler transformations rather than original code
+3. **Infer semantic variable names**—Use usage patterns to suggest names (e.g., loop counters → `i`, sum accumulators → `sum`, pointer iterators → `current`)

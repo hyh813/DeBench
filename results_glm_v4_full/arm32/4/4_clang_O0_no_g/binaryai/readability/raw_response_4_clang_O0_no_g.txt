@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `local_18`, `local_14`) and do not reflect the original semantic names (`a`, `sum`, `args`). This makes tracking data flow difficult without cross-referencing the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names (`cdecl_func`, `test_calling_conventions`) are perfectly recovered from the symbol table, matching the source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals and integers are clear, but floating-point values like `3.14` are represented as hex pairs (`0x51eb851f`, `0x40091eb8`), obscuring the original intent.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The user code is clean, but the output is cluttered with numerous compiler runtime stubs and intrinsics (e.g., `__aeabi_drsub`, `__adddf3`) which distract from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is highly linear and natural due to `-O0` compilation. Loops and conditionals are preserved, though `switch` statements are decompiled to `if-else` chains.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion. No artificial outlining or inlining obscured the structure.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps or forward references, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or loop unrolling artifacts; the logic is presented cleanly without redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: 64-bit types (`double`, `long long`) are incorrectly split into pairs of `undefined4` parameters (e.g., `func_mixed_args` has 6 params instead of 4), and return types are often `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are not recovered; `SmallStruct` is passed as `int*` and accessed via array indexing (`param_1[1]`), while `LargeStruct` is accessed as a raw stack array (`local_10`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The splitting of 64-bit values into 32-bit chunks and the casting of structs to integer arrays creates type-unsafe code that misrepresents the original memory layout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of the complex floating-point intrinsic calls.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like `va_list`/`va_arg` are decompiled into raw pointer arithmetic (`local_14 = local_14 + 1`), and floating-point math is expanded into compiler intrinsics (`__adddf3`).
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings or flags are present to indicate the suspicious splitting of parameters or the loss of type information in `func_mixed_args`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions, even where explicit checks exist in the source.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace (e.g., `cdecl_func(5,10)`), and the relationship between callers and callees is clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, roughly following the source order, though the inclusion of runtime support functions breaks the modularity slightly.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code requires significant modification to compile due to the missing struct definitions, incorrect function signatures (split parameters), and reliance on undefined compiler intrinsics.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- 64-bit types (`double`, `long long`) are split into two `undefined4` parameters, corrupting function signatures.
+- Composite types (structs) are completely lost, accessed as raw integer arrays or pointers.
+- Variable names are generic (`param_1`, `local_XX`), requiring constant reference to source to understand logic.
+- Varargs implementation is decompiled to raw stack pointer arithmetic instead of `va_list` idioms.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Symbols were preserved perfectly, making it easy to locate specific functions from the source.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3.3/10)
+- The failure to recover 64-bit types and structs significantly degrades the accuracy and safety of the decompiled code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve 64-bit type handling on ARM64 to prevent splitting `double`/`long long` into separate 32-bit parameters.
+2. Implement composite type recovery to identify and reconstruct structs passed by value or pointer, rather than defaulting to raw arrays.
+3. Recognize and abstract standard library idioms like `va_list`/`va_arg` to present cleaner, more semantic code.

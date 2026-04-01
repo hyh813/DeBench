@@ -1,0 +1,18 @@
+Testing standard library functions
+strlen result: 8
+strcmp result: 0
+call_strlen result: 12
+call_memcpy result: 90
+call_memcmp result: 0
+Value: 42, Name: TestName
+printf returned: 26
+scanf result: 579
+fopen result: 42
+fread_fwrite result: 42
+malloc_free result: 90
+memset result: 0
+strchr_strstr result: 15
+Testing system calls
+syscall result: 42
+stat result: 42
+fork_exec result: 42

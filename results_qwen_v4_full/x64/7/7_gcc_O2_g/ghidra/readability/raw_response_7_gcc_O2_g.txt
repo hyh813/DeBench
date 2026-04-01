@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use mechanical names like `iVar1`, `iVar2`, `pbVar2`, `bVar1` instead of semantic names like `result`, `encrypted`, `decrypted`. Original source had meaningful names (`result`, `str`, `p1`, `p2`, `p3`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Some helper functions use generic names (`FUN_00101020`) but core test functions match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex without explanation (`0x14`, `0x23`, `0xe1`, `0x7a314`, `0x5a`). Original source had comments explaining expected values (e.g., "期望: 20", "期望: 225").
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`), frame offset operations (`in_FS_OFFSET`), and calling convention warnings present. These compiler artifacts add visual noise but don't obscure core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Tail recursion converted to do-while loops (expected at -O2), but fake branch conditions completely eliminated. GCD loop preserved but uses `do-while` instead of original `while`. Some functions like `param_fake_branch` return immediately, losing original structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized; `test_obf_opt_edge` is large but cohesive. Helper functions like `decrypt_string` properly separated. Some functions optimized away entirely (buffer overflow checks removed).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Do-while loops could be while loops for better readability. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code from fake branches properly eliminated. `call_vectorized_loop` has verbose explicit array initialization. No significant duplicate expressions observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`), but some precision lost (generic `int` vs `int32_t`). Unsigned/signed distinctions sometimes unclear (`(uint)x >> 1`). Pointer types generally accurate.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled correctly (`int a[8]`, `char decrypted[32]`). No complex structs in this sample. Bitfield struct in `param_implementation_defined` optimized away to constant return.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(undefined *)0x0`, `(__sighandler_t)0x0`, `(long)x`. Stack canary provides some safety. Original signal handler types partially preserved but with casts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var"). No semantic comments explaining obfuscation techniques, expected values, or algorithm purpose that original source had.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm not identified, XOR decryption pattern unlabeled, tail call optimization not noted. Original source had clear labels (OBF-L4-02, OPT-L4-01, etc.) completely absent.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "Subroutine does not return"). "Unresolved local var" indicates decompilation uncertainty. Could be more explicit about optimization artifacts vs. decompilation failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Error return values not explained. Original had clear expected values in comments ("期望: 10", "期望: 500500") completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear, global variables referenced (`div_zero_caught`, `jmp_buffer`). No call graph documentation. Relationships between test functions and expected outputs not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without section organization. Original had clear section headers (7.1 混淆与保护, 7.2 编译器特有优化, 7.3 异常与边界情况) completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible (signal, setjmp, malloc). Platform-specific code (`in_FS_OFFSET`) may affect portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              = 5.56/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `pbVar2`) losing all semantic meaning from original (`result`, `encrypted`, `decrypted`)
+- **Fake branch conditions eliminated** - `param_fake_branch` returns `x` directly, losing the obfuscation test entirely
+- **No semantic comments** - Original had extensive documentation about obfuscation techniques, expected values, and test purposes
+- **Magic numbers as hex** - Values like `0x7a314`, `0xe1`, `0x14` without explanation of their meaning
+- **Section organization lost** - Original's clear categorization (OBF, OPT, EDGE) completely absent
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No documentation of expected values, preconditions, or error conditions that were clearly stated in original source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and string references (e.g., variables used with XOR operations should be named `key`, `encrypted`, `decrypted`)
+2. **Preserve or infer test metadata** - Detect test functions and recover expected values from comparison patterns or adjacent string literals
+3. **Add optimization awareness comments** - When code is eliminated by optimization (like fake branches), add comments indicating "Optimized away: original condition was always false"

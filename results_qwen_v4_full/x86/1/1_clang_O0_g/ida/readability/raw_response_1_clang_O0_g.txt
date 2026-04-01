@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Test functions use generic `v0`-`v26` temporaries obscuring purpose, while core functions have better names (`sum`, `count`, `result`). Original `temp1`, `temp2`, `temp3` were optimized away in `sequential_ops`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent name preservation—all 40+ functions retain original names (`sequential_ops`, `nested_if_deep`, `duffs_device`, `state_machine`). Even helper functions (`double_value`, `state_idle`) are correctly named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `1000`, `100`, `0x7FFFFFF8` in `duffs_device` lack explanation. Array sizes (3, 4, 5) appear without context that original comments provided.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Runtime initialization functions (`_do_global_dtors_aux`, `register_tm_clones`, `frame_dummy`) add noise. Core logic is clean but 7 external functions failed decompilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most structures recovered well (if/else, for, while, switch). Critical loss: `switch_fallthrough` converted to nested ifs losing fall-through semantics; `duffs_device` became complex goto chain.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved with appropriate granularity. No inappropriate inlining or splitting; each function maintains single responsibility matching source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `duffs_device` has disruptive goto labels (LABEL_6 through LABEL_13); test functions have many temporaries disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: `sequential_ops` optimized to single expression `2 * (b + a) - c` (improvement). Some redundancy in `duffs_device` but generally clean without dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Basic types preserved correctly (int, void*, function pointers). Function pointer signatures recovered accurately. Generic `int` used where specific widths might help.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays declared correctly (`int arr[5]`, `int matrix[3][4]`, `int (*funcs[3])(int)`). No complex structs in this codebase to evaluate; function pointer arrays well-recovered.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts in core logic. Function pointer calls properly typed. `memcpy` for array initialization is runtime artifact, not type safety issue.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **ZERO comments** in decompiled output! Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, switches). Critical failures: Duff's device not identified, switch fall-through converted to nested ifs, opaque predicate optimized away losing original intent.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations noted at end (printf, memcpy, longjmp). Inline assembly in `computed_goto` present. No warnings about semantic transformations like fall-through loss.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Original test validation comments (e.g., "输入5,7,3应返回21") completely absent. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls preserved correctly; relationships visible through call sites. No explicit call graph documentation but implicit relationships clear from code structure.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in flat output. Original had logical grouping with section comments (CF-L1, CF-L2, CF-L3). No file organization or namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 7 external functions failed decompilation (printf, memcpy, longjmp, etc.) requiring stubs. Metadata claims "Compilation Result: Yes" but significant patching needed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+9+6+7)/4 = 7.00
+Level 2 (Structural):  (7+9+7+8)/4 = 7.75
+Level 3 (Type):        (8+8+8)/3   = 8.00
+Level 4 (Semantic):    (2+5+6+3)/4 = 4.00
+Level 5 (Contextual):  (7+6+5)/3   = 6.00
+
+Overall = (7.00×0.30) + (7.75×0.25) + (8.00×0.20) + (4.00×0.15) + (6.00×0.10)
+        = 2.10 + 1.94 + 1.60 + 0.60 + 0.60
+        = 6.84/10
+```
+
+**Overall Readability Score:** 6.8/10
+
+### Critical Defects
+- **Zero comments recovered** - Original had extensive documentation explaining purpose, test cases, and difficulty; complete semantic loss
+- **`switch_fallthrough` semantics lost** - Converted to nested if statements, destroying the intentional fall-through pattern
+- **`duffs_device` severely degraded** - Elegant switch/do-while pattern became 20+ line goto chain with LABEL_6 through LABEL_13
+- **Test functions use `v0`-`v26` temporaries** - Generic names obscure the test validation logic
+- **Magic numbers without context** - Values like `0x7FFFFFF8`, `1000`, array bounds lack explanatory comments
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - All 40+ function names perfectly preserved from source, including helpers like `double_value`, `state_idle`, `op_add`
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original's extensive comments explaining purpose, test cases, and difficulty levels entirely lost
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - Integrate debug symbol comment sections or implement heuristic comment generation for non-trivial logic patterns
+2. **Recognize advanced control flow idioms** - Implement pattern matching for Duff's device, switch fall-through, and computed goto to preserve original semantic intent
+3. **Generate semantic annotations** - Auto-generate comments for magic numbers, array bounds, and function contracts based on usage analysis and constant propagation

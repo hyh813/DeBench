@@ -1,0 +1,22 @@
+Testing Preprocessing Features:
+
+Macro param_macro_constants: 64
+Macro call_macro_constants: 30
+Macro param_macro_functions: 32
+Macro call_macro_functions: 57122
+Macro param_conditional_compile: 116
+Macro call_conditional_compile: 19
+Macro param_variadic_macro: 60
+LOG: Values: 10, 20, 30
+Macro param_token_paste: 60
+Macro param_macro_override: 16
+Macro param_include_guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:56
+Macro call_builtin_macros: 382
+Testing ASM features:
+
+ASM basic call: 15
+ASM clobber sum: 5
+ASM multi insn: 0xffffffff
+ASM SIMD: 0x24
+ASM atomic: 0x1e

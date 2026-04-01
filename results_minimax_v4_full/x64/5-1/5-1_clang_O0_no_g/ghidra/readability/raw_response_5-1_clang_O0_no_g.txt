@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code uses predominantly generic variable names like `local_30`, `local_20`, `iVar1`, `iVar2`, `param_1`, `param_2`, `puVar1`, `ptVar5`. While some variables like `instance_count` and `local_c` are semantically meaningful, the vast majority obscure the actual purpose. For example, `local_30` should be named `obj` based on its usage as a SimpleClass instance.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions correctly preserve their original names (e.g., `test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_diamond_inheritance`). Class member functions like `SimpleClass::getValue`, `SimpleClass::setValue` are accurate. However, internal helper functions use generic patterns like `FUN_00102020`, and lambda closure classes use placeholder names like `test_cpp_lambda()::$_1`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0x1234` (class ID), `0x32` (50 decimal), `0x14` (20), `0x1e` (30), `0x2a` (42), `0x96` (150), `0xfa` (250). The value `10` appears as both array size and iteration count without clear distinction. Constants like `1000` (multiplier) lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including "WARNING: Unknown calling convention" comments on nearly every function, "WARNING: Removing unreachable block" annotations, and try-catch handler markers (`/* try { ... } */`). These add visual clutter but are sometimes useful for understanding exception flow.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow structures are generally well-preserved with proper loops and conditionals. The `test_cpp_constructor` function correctly shows the scope block with destructor call at block exit. However, exception handling appears as indirect throw patterns rather than try-catch blocks, and some virtual function calls use indirect dispatch notation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: The decompilation produces 214 functions from 540 original lines - a 6.5x expansion. This includes many inlined functions like constructors, destructors, and accessors. While this is expected at -O0, some template and STL internal functions are over-fragmented (e.g., separate functions for `std::tuple`, `std::_Tuple_impl`, `std::_Head_base`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. The `test_cpp_multiple_inheritance` function has some complexity with pointer adjustments, but the overall flow is traceable. Early returns are used appropriately in accessor functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Template instantiations are properly deduplicated (e.g., `Container<int>` and `Container<double>` are separate but correctly generated). Some common subexpression patterns exist in virtual dispatch but are manageable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `int`, `long`, `double` are used correctly for primitives, but wrapper types like `undefined4`, `undefined8` appear frequently. The decompiler correctly identifies `int` for most returns but uses `ulong` inconsistently (should be `size_t` or `uint64_t`). Const correctness is partially preserved in function signatures but not consistently.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class structures are reasonably recovered - `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Point`, `Container<T>` are all identifiable. However, field names within some structures are generic (e.g., `this + 4` for name array offset). Virtual inheritance layout shows complexity but is somewhat confusing with direct offset calculations like `*(long *)(local_38 + -0x18)`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety concerns exist. Extensive use of void pointer arithmetic (e.g., `*(void **)this`), unsafe casts between `int*` and `undefined4*`, and function pointer type confusion (e.g., `*(code *)**local_28`). The virtual function call in `call_virtual_func` uses `**(undefined8 **)param_1` which loses type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are predominantly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Subroutine does not return"). No explanatory comments about algorithm intent, class relationships, or non-obvious logic. The try-catch annotations are useful but not comprehensive.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly present but not explicitly named. Virtual table dispatch is visible but not labeled as "vtable call". Lambda closures are decompiled but use placeholder names (`$_0`, `$_1`). Smart pointer patterns are recognizable but buried in template implementation details.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some uncertainties with "WARNING" comments about calling conventions and unreachable blocks. However, indirect virtual calls are not clearly marked as "could not resolve - verify manually". Some complex pointer arithmetic in diamond inheritance lacks explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation recovered. The `test_cpp_exception` function simply throws without any indication of what exceptions might be expected. Bounds checking in `Container::get` and `LifecycleClass::getData` is present but not documented as implicit contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible within each test function (e.g., `SimpleClass::getValue(local_30)`). However, there's no documentation of which functions call which, virtual method overrides aren't explicitly linked, and static member access isn't clearly distinguished from regular calls.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably grouped by class (all `SimpleClass` methods together, all `Container` methods together). Test functions are separated from class implementations. However, the massive number of STL internal functions (214 total) creates a cluttered organization that doesn't match the original source's clean structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will NOT compile as-is. Multiple undefined types: `type`, `tuple`, `unique_ptr`, `default_delete`, `_Tuple_impl`, `_Head_base`, `__uniq_ptr_impl`, `EVP_PKEY_CTX`. Many functions have no implementation (just return). External dependencies on `std::` namespace functions are not resolved.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+4+5)/4 = 4.75
+L2_avg = (7+6+8+7)/4 = 7.0
+L3_avg = (6+7+5)/3 = 6.0
+L4_avg = (3+5+6+2)/4 = 4.0
+L5_avg = (5+7+3)/3 = 5.0
+
+Overall = (4.75 × 0.30) + (7.0 × 0.25) + (6.0 × 0.20) + (4.0 × 0.15) + (5.0 × 0.10)
+        = 1.425 + 1.75 + 1.2 + 0.6 + 0.5
+        = 5.475/10 ≈ 5.5/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects
+- **Variable naming**: Generic names like `local_30`, `iVar1`, `param_1` obscure semantic purpose throughout the code
+- **Type safety**: Extensive unsafe casts between `void*`, `int*`, and `undefined4*` create potential undefined behavior
+- **Build compatibility**: Code will not compile due to undefined types (`type`, `tuple`, `unique_ptr`, etc.)
+- **Comment poverty**: Nearly all comments are auto-generated warnings; no explanatory content about algorithms or intent
+- **Magic numbers**: Values like `0x1234`, `0x32`, `0xfa` appear without named constant equivalents
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+Control flow structures are well-preserved with proper loops, conditionals, and scope-based destruction. The decompiler correctly shows the block structure in `test_cpp_constructor` where the destructor is called at block exit.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+The overwhelming use of generic names like `local_X`, `iVarX`, `param_X` makes it extremely difficult to track data flow and understand variable purposes without extensive cross-referencing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `local_30` is passed to `SimpleClass::SimpleClass`, `SimpleClass::getValue`, and `SimpleClass::setValue`, infer it should be named `obj` or `instance`
+2. **Resolve STL template implementations**: Instead of decompiling 100+ lines of `std::tuple`, `std::_Tuple_impl`, `std::_Head_base` internals, provide a summary like "Template implementation details omitted - use standard library"
+3. **Add semantic comments for complex patterns**: Document virtual inheritance layout, vtable dispatch, and exception handling with explanatory notes rather than just auto-generated warnings

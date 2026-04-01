@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3` instead of meaningful names like `predicate1`, `gcd_result`, or `bitwise_check`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`), accurately reflecting their purpose. However, some `call_*` functions have incorrect signatures (taking unused parameters).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x4d3c2b1a` (g16), `90` (encryption key), `65`/`66` (ASCII 'A'/'B') appear without explanation. String literals are hex-encoded (g1-g15) making them unreadable without decoding.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Setjmp structures are excessively verbose with nested struct initialization. Some redundant type casts like `(int32_t)&v1` and `(char *)str` add noise without clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical logic loss in `param_fake_branch` - the original's two always-false conditions are completely eliminated, returning just `result`. `param_opaque_predicate` has convoluted conditional logic that obscures the original clear predicate structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved but signatures are wrong - `call_fake_branch`, `call_opaque_predicate` take parameters they don't use. `param_implementation_defined` takes no parameters in decompiled version but original had none either (correct).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with while loops properly structured. `param_vectorized_loop` has awkward variable tracking (`v5 = 0` inside loop) but remains traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_vectorized_loop` has redundant variable assignments (`v5 = 0` repeated in loop). Some functions have unnecessary intermediate variables that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`/`uint32_t` consistently but pointer types are often wrong - `decrypt_string` takes `int32_t *` for string parameters instead of `char *`. `param_null_pointer_deref` correctly uses `int32_t *` for pointer parameter.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely lost - function just returns constant `44`. Setjmp buffer structure is shown but as verbose anonymous struct rather than `jmp_buf`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)str`, `(int32_t)&v1`, `(char *)(i + (int32_t)&v1)`. Pointer arithmetic on stack variables (`&v1`) is particularly dangerous and obscures intent.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. No explanation of obfuscation techniques, no documentation of the fake branch elimination, no algorithm explanations for GCD or encryption.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not recognized. Instruction substitution patterns completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings that `param_fake_branch` logic was eliminated. No indication that `param_implementation_defined` was simplified to constant return. Silent failures on critical semantic loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). No postconditions. Error handling in signal handlers not documented. No contract information whatsoever.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code. Global variables (g1-g18) listed but purpose unclear. Call graph traceable but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Reasonable organization with prototypes at top, globals section, then functions. All code in single file which is appropriate for this test case.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes present, prototypes declared. Metadata indicates compilation succeeds. Some type mismatches may require minor fixes but generally compilable.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Calculation:**
+```
+L1: (3+8+5+6)/4 = 5.5  × 0.30 = 1.65
+L2: (4+6+7+6)/4 = 5.75 × 0.25 = 1.44
+L3: (5+3+4)/3 = 4.0    × 0.20 = 0.80
+L4: (2+2+2+2)/4 = 2.0  × 0.15 = 0.30
+L5: (6+7+7)/3 = 6.67   × 0.10 = 0.67
+Total: 4.86 ≈ 4.9/10
+```
+
+**Critical Defects:**
+- `param_fake_branch` completely loses the two always-false condition branches - returns input unchanged instead of showing the obfuscation pattern
+- Variable names are generic (`v1`, `v2`, `a1`) making it impossible to track semantic purpose
+- `param_implementation_defined` reduced to constant return `44`, losing all bitfield and implementation-defined behavior testing
+- No comments explaining obfuscation techniques or why certain patterns exist
+- Unsafe pointer casts on stack variables (`(char *)(i + (int32_t)&v1)`) obscure buffer overflow testing intent
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Original function names preserved accurately, making it easy to identify which test each function represents
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.0/10 average)  
+- Complete absence of comments, anomaly warnings, and contract documentation makes understanding the obfuscation intent nearly impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and flag eliminated code paths** - When optimizer removes dead branches (like always-false conditions), add comments indicating "OPTIMIZER_ELIMINATED: condition always false"
+2. **Infer variable names from usage context** - Variables used in encryption should be named `key`, `buffer`, `encrypted`; GCD variables should be `a`, `b`, `temp`
+3. **Recover and document obfuscation patterns** - Identify XOR decryption, instruction substitution, and opaque predicates, adding explanatory comments about the obfuscation technique being used

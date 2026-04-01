@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `result`, `v4` throughout (e.g., `binary_tree_sum` has `v1` through `v44`), obscuring semantic purpose. Original source used meaningful names like `sum`, `current`, `head`, `left`, `right`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`process_char`, `array_1d_stack`, `struct_simple`, `linked_list`). Only a few generic names like `sub_6D0` appear for internal functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (e.g., `c - 65` for 'A', `c += 32` for case conversion). Test functions show pre-computed constants (15, 300, 10000) instead of actual function calls, losing traceability.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: SIMD types (`int32x4_t`, `vaddq_s32`), register hints (`x0`, `w2`), platform-specific types (`__int64`, `_DWORD`), and verbose vector operations in simple functions like `array_1d_stack`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `binary_tree_sum` transforms recursion into deeply nested iterative loops (40+ levels). `array_3d` unrolls 125 iterations into explicit additions instead of loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly with appropriate granularity. However, test functions are constant-folded (`test_data_types_l1` prints pre-computed values instead of calling functions), losing the test structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `binary_tree_sum` has extreme nesting disrupting top-to-bottom reading. Most other functions read linearly, but SIMD loop patterns in `array_1d_stack` and `ptr_increment` create awkward do-while structures.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive redundancy (`array_3d` has 125+ explicit additions). SIMD vectorization code repeats similar patterns across multiple functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types mostly preserved but with platform-specific degradation (`__int16` vs `short`, `__int64` vs `long`). `ptr_single` uses `_DWORD*` instead of `int*`. `volatile_access` loses volatile semantics (shows `2 * *p` instead of two reads).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs well-recovered (`Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode` with field names). Unions preserved (`UnionData`). Bitfields degraded to raw operations (`(*(_DWORD *)f & 1)` instead of `f->flag1`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `opaque_handle_create` has warning "local variable allocation has failed", `ptr_void` uses `*(_DWORD *)p`, `ptr_cast` loses the int*/char* conversion chain. Function pointer types preserved correctly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments except one warning ("local variable allocation has failed, the output may be wrong!"). No algorithm explanations, no parameter documentation, no recovery of original source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not identified: linked list traversal, tree recursion, graph adjacency list iteration all appear as raw code without pattern naming. SIMD vectorization visible but unexplained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Seven functions marked "FAILED to decompile" (libc functions). One function has allocation failure warning. However, most optimization artifacts (SIMD, unrolling) are not flagged as decompiler transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions. No error condition documentation. Original source's boundary checks (`if (x < 0 || x >= w)`) preserved but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Callback relationships not explained (`ptr_func_simple`, `struct_func_ptr`). Global variable usage not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure. No file organization, no header declarations, no static function scoping information. All functions appear at same level.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Seven external functions failed to decompile (`__printf_chk`, `puts`, `__libc_start_main`). Platform-specific types require ARM headers. Won't compile without significant stubbing and type corrections.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+7+5+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.08/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- Variable names `v1`-`v44` in `binary_tree_sum` should reflect tree traversal semantics (`current_node`, `left_child`, `accumulated_sum`)
+- `volatile_access` loses volatile semantics (shows single read `2 * *p` instead of two distinct memory accesses)
+- Test functions constant-folded, losing ability to trace actual function execution
+- Bitfield struct access degraded to raw bitwise operations losing field semantics
+- SIMD vectorization code in simple functions obscures original loop intent
+- Seven external functions failed to decompile, breaking build compatibility
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, making high-level navigation straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error documentation recovered, making safe usage difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop accumulators → `sum`, pointer traversals → `current`/`next`)
+2. **Preserve volatile semantics** by detecting multiple memory accesses and annotating them appropriately
+3. **Add decompiler confidence annotations** for optimization artifacts (SIMD, unrolling) to distinguish source intent from compiler transformations

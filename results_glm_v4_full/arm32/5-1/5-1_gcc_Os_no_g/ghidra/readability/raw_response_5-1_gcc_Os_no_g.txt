@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `local_18`, `puVar1`, and `acStack_2c`, which obscure semantic meaning (e.g., `local_18` is actually a vtable pointer). No meaningful names from the original source (like `obj`, `multiplier`, or `result`) were recovered.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined test functions retain their original names (e.g., `test_cpp_virtual_func`), and complex C++ mechanisms like `virtual thunk to MultiDerived::funcB` are accurately identified. However, some class methods are reduced to just the name (e.g., `virtual_func`) without the class qualifier in the signature body.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers such as `0x125c` (4700), `0x3e9` (1000), and `0x2a` (42) without comments or named constants to explain their derivation or purpose.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present, including `undefined4`/`undefined8` types, compiler artifacts like `__stack_chk_fail`, and decompiler macros like `SUB84` which obscure the underlying double-precision arithmetic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: While the code is generally linear, the exception handling logic in `test_cpp_exception` is misrepresented as a direct `__cxa_throw` without the corresponding catch block, making it appear as if the function never returns. Other functions are flattened due to optimization but readable.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler excellently separates complex C++ constructs; template instantiations (e.g., `template_max<int>`) and thunks (e.g., `virtual thunk to DiamondDerived::func`) are correctly isolated into their own functions.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumping. The optimized functions are simple return statements, and the unoptimized parts follow a logical sequence without spaghetti jumps.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized code cleanly; for example, `test_cpp_constructor` is reduced to a constant calculation, which accurately reflects the binary's state without redundant dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `int*` are recovered, but many specific types are lost to generic `undefined4` or `undefined8`. Function signatures for thunks sometimes use `void*` or `undefined**` instead of specific class pointers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor; class layouts are accessed via raw pointer arithmetic (e.g., `*(int *)(this + 0x28)` in `Container<int>::push`) rather than through reconstructed struct fields with meaningful names.
+
+**11. Type Safety:** Score: 6/10
+Justification: Pointer arithmetic for virtual inheritance (e.g., `this + *(int *)(*(int *)this + -0xc)`) is explicit but unsafe-looking. While accurate to the binary, it lacks the safety and clarity of the original C++ source access patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and mostly limited to decompiler warnings (e.g., "WARNING: Unknown calling convention"). There are no comments explaining the C++ idioms used (like vtable lookups or RTTI checks).
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies and names difficult C++ idioms, including "virtual thunk", "non-virtual thunk", and specific template instantiations like `std::unique_ptr<int[], std::default_delete<int[]>>`.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: It correctly flags potential issues like "Could not recover jumptable" for virtual calls and "Removing unreachable block", which helps the analyst understand where the decompiler struggled.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the checks in `Container::get` are decompiled to raw `if` statements without semantic comments about bounds checking contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (e.g., `std::type_info::operator==`) and runtime (e.g., `__dynamic_cast`) are clearly named, preserving the context of what operations are being performed.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, with related class methods and thunks appearing near their test functions. The separation of template instantiations is also handled well.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on standard library and compiler runtime symbols that would need to be stubbed or linked against a C++ standard library to compile, as headers and definitions are not fully reconstructed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Composite types (structs/classes) are not recovered; code uses raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`) instead of field access.
+- Variable names are entirely generic (`local_18`, `puVar1`), requiring manual tracking of object layouts.
+- Exception handling control flow is broken; `test_cpp_exception` is shown as throwing without catching, misrepresenting the function's behavior.
+
+**Best Quality Aspect:** Idiom Recognition (scored 8/10)
+- The decompiler excels at identifying and naming complex C++ mechanisms like virtual thunks, template specializations, and RTTI operators, which are often missed by simpler tools.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct class structures (e.g., `Container`, `SimpleClass`) forces the reader to interpret raw offsets, significantly hindering the understanding of the data model.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance C++ class recovery to reconstruct struct layouts from vtable usage and member access patterns, replacing raw offsets with field names.
+2. Implement variable renaming heuristics based on usage context (e.g., inferring `vtable` for pointers assigned to `PTR_...` addresses).
+3. Improve exception handling analysis to reconstruct `try-catch` blocks rather than just showing the throw mechanism or personality routine calls.

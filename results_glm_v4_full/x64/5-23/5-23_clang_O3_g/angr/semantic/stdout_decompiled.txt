@@ -1,0 +1,21 @@
+Preprocessing Features:
+64
+30
+32
+57122
+116
+19
+60
+LOG: Values: 10, 20, 30
+60
+16
+500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:54
+382
+Assembly Features:
+Basic ASM: 15
+Clobber sum: 1670565024
+Multi-insn result: 4294967295
+SIMD result: 3552097402009420424
+Atomic result: 20
+Privileged result: 15

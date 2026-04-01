@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are predominantly generic names like `local_8`, `iVar1`, and `param_1`. Class member access uses raw pointer arithmetic (e.g., `*(int *)(this + 4)`) instead of semantic member names, significantly obscuring intent.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most user-defined functions retain their original names due to C++ demangling (e.g., `SimpleClass::getValue`, `test_cpp_virtual_func`). Lambda functions are named descriptively (e.g., `test_cpp_lambda()::{lambda(int)#1}::operator()`), though some runtime functions remain generic.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like `"Test"` and `"Derived"` are preserved, but magic numbers derived from `sizeof` or constants are not replaced with named constants (e.g., `0x1f` instead of `sizeof(name)-1`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Stack canary checks (`___stack_chk_guard`) and redundant type casts (e.g., `(undefined8 *)`) clutter the logic. Exception handling comments (`/* try { ... */`) add visual noise without clarifying the high-level flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is mostly natural with standard loops and conditionals, but virtual function calls are exposed as low-level vtable indirections (`(*(code *)**(void **)param_1)`), which is harder to read than the source syntax.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While user functions are distinct, the output is heavily bloated with verbose standard library template instantiations (e.g., `std::__uniq_ptr_impl`, `std::_Tuple_impl`) that were not in the original source file, obscuring the user's logic.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers, which is expected for unoptimized code.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: With `-O0`, there is no artificial redundancy from compiler optimizations; the code structure is straightforward without unrolling or inlining artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `char*` are accurate, but class member access relies on raw pointer offsets (e.g., `this + 4`) rather than accessing members by their specific types.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Although types like `SimpleClass` and `Point` are defined, their usage inside functions frequently devolves into raw pointer arithmetic and stack array indexing (`aSStack_30 [40]`) instead of field access.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains numerous unsafe casts (e.g., `(Base *)&local_30`, `(undefined8 *)`) to handle C++ inheritance and `this` pointer adjustments, making it look type-unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are mostly auto-generated warnings (e.g., "Subroutine does not return") and lack high-level explanations of the logic or algorithms used.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: C++ idioms like virtual dispatch and RTTI are recognizable through standard library calls (e.g., `__dynamic_cast`), but they are not abstracted into high-level design patterns.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Generic warnings about calling conventions and symbol overlap are present, but they do not specifically highlight semantic anomalies or suspicious logic in the user code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are recovered; exception handling is only indicated by comments, lacking any semantic contract information.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and demangled, making the relationships between user-defined functions easy to follow, despite the noise from standard library calls.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions ordered by memory address, mixing user code, standard library implementations, and runtime startup code without logical grouping.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types (`undefined8`) and calling convention annotations (`__thiscall`), making it non-compilable without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable `local_8` and `iVar1` should be named based on context (e.g., `canary`, `result`).
+- Class member access uses pointer offsets (`*(int *)(this + 4)`) instead of member names (`value`).
+- Excessive inclusion of standard library template internals (`std::__uniq_ptr_impl`) obscures user logic.
+- Type safety is compromised by frequent casts like `(undefined8 *)` and `(Base *)&local_30`.
+- Lack of semantic comments; only auto-generated warnings are present.
+
+**Best Quality Aspect:** Redundancy Elimination (Score: 9/10)
+- The unoptimized build ensures the code is free from loop unrolling or inlining artifacts, preserving the original structure.
+
+**Most Needs Improvement:** Variable Naming Quality (Score: 3/10)
+- Generic variable names and raw pointer arithmetic for member access make it extremely difficult to understand the data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve type propagation to use struct fields instead of pointer offsets (e.g., `this->value` instead of `*(int *)this`).
+2. Infer variable names from debug information (DWARF) or usage context to replace generic names like `local_8`.
+3. Provide an option to collapse or hide standard library template implementations to focus on user-defined logic.

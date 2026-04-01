@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `iVar1`, `iVar2`, `local_14`, `local_28`, `puVar1`. However, class member variables like `this->value`, `this->size`, `this->data`, `this->x`, `this->y` are correctly recovered. The mix of meaningful and generic names makes tracking purpose difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are excellent - `SimpleClass::getValue`, `LifecycleClass::getInstanceCount`, `call_virtual_func`, `template_max<int>`, `operator+`, `operator==` all match source. Lambda functions use generated names like `anon_class_16_2_b9b285fb::operator()` which is acceptable.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x1234` (return value), `0x1f` (31 for name buffer), `0x2a` (42 thrown exception) appear without explanation. String literals "Base", "Derived" are correctly preserved. Constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Contains many "WARNING" comments about unresolved local variables and unknown calling conventions. Try-catch block annotations add visual clutter. However, no redundant casts or debug instrumentation artifacts observed.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else and for loops. Exception handling shows as try-catch blocks which is appropriate. At -O0, loop structures are straightforward. No goto abuse observed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Member functions correctly extracted as separate functions. Template instantiations properly separated (`template_max<int>`, `template_max<double>`). Some functions like `test_cpp_smart_ptr` are 100+ lines but remain cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some complex functions like `test_cpp_rtti` have multiple branches but are traceable. No severe forward jump issues.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or duplicate expressions observed. Loop unrolling is minimal at -O0. Template function instantiations are properly deduplicated.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type precision - `int`, `size_t`, `bool`, `double`, `char*`, `uint` for printf. Minor issues: `ulong` used for format specifiers (should be `unsigned long`), some `undefined4`/`undefined8` types present.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class/struct types well recovered - `SimpleClass` with `value`/`name`, `LifecycleClass` with `data`/`size`, `Base`/`Derived` inheritance, `Point` with `x`/`y`, `Container<int>` template. Virtual table pointers (`_vptr_Base`) correctly identified. Some field overlap warnings but structure is clear.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts or type-confused operations. Pointer arithmetic appears correct. Function pointer types are properly typed for virtual calls. No buffer-overflow-prone patterns evident.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Contains DWARF original names in comments, function prototypes with original signatures. However, most comments are auto-generated warnings ("Unresolved local var", "Unknown calling convention"). No explanatory comments about algorithm logic.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms recognized: constructors/destructors, virtual function tables, operator overloading, templates, RAII via unique_ptr. However, patterns not explicitly named (e.g., no "RAII" or "virtual dispatch" labels).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for unresolved locals, unknown calling conventions, struct overlap. However, these are generic and not specific (e.g., "Unresolved local var" without explanation of what it should be).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling shows try-catch but no contract information about what exceptions may be thrown or caught.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. Class relationships visible via `super_*` notation. Virtual dispatch through vtable shown. However, global variable usage and callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic output file. No logical grouping or namespace structure visible. Related functions (class methods) grouped by class but no explicit organization markers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many unresolved externals: `operator_new`, `operator_delete`, `std::*` functions. Would require extensive stubs to compile. Function signatures are clear but dependencies undocumented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is mostly generic (`iVar1`, `local_14`, `puVar1`) making code flow difficult to trace
+- Magic numbers like `0x1234`, `0x1f`, `0x2a` lack symbolic constant names
+- No explanatory comments for algorithm logic or intent
+- Single monolithic output without module organization
+- Extensive unresolved external dependencies prevent standalone compilation
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names closely match source - constructors, destructors, virtual functions, operators, and templates all properly named. This makes the overall structure highly recognizable.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+Despite some class member names being recovered, most local variables use cryptic generic names that obscure their purpose and make following code flow difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from DWARF debug info or usage patterns (e.g., `local_14` used as `result` accumulator should be named accordingly)
+2. Detect magic numbers and suggest symbolic constants based on context (e.g., `0x1234` → `CLASS_ID`)
+3. Add explanatory comments for non-trivial logic rather than just auto-generated warnings

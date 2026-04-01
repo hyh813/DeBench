@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `uVar2`, `plVar1`, `puVar5`) with no semantic meaning. Only `__ptr` for malloc results shows minimal inference. Original names like `arr`, `large_buf`, `head` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`). This is the decompiler's strongest lexical feature, maintaining original intent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x2a`, `0x14`, `0x10`, `0x18`, `0x28`). Original constants like `42`, `10`, `2048` become hex values losing semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`), frame pointer manipulation (`in_FS_OFFSET`), and "Unresolved local var" comments clutter every function. These are compiler artifacts, not source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while patterns with manual index management. Test functions show constant folding (`__printf_chk(1,"MEM-L1-01...: %d\n",0x14)`) instead of actual function calls, obscuring program flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but internal structure transformed. `test_stack_memory` no longer calls `local_vars()` - it prints pre-computed constants, breaking the test harness structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack check epilogues create backward jumps. Warning blocks ("WARNING: Subroutine does not return") interrupt flow unnecessarily.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Optimization artifacts create redundant patterns (multiple pointer variables `puVar5`, `puVar6`, `puVar7` all pointing to `auStack_18`). VLA handling code is excessively verbose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, void*, char*) but precision lost. `size_t` becomes `ulong`, `int32_t` becomes generic `int`. Function pointer types partially recovered (`_func_int_int*`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct lost - `heap_struct` shows `malloc(8)` without struct type.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int *)((long)__ptr + uVar1 * 4)`). Pointer arithmetic on void* without proper casting. Some type confusion in `linked_list_heap` (Node* treated as int*).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var"). No algorithm explanations or semantic documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal) not identified. No recognition of test harness pattern or memory operation idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Could not recover jumptable", "Subroutine does not return"). However, critical issues like `dangling_pointer` undefined behavior not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. NULL checks present in code but not documented as contracts. Error return values (-1, -2, -3) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) referenced without context. Callback mechanism (`global_func_ptr`) unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Original source sections (Stack/Heap/Static/Memory Ops) not preserved. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but external dependencies unclear (`extern_global_var`, `extern_function`). Platform-specific code (`#ifdef _WIN32`) lost in decompilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+3+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (6+6+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 5.16/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_stack_memory` prints `0x14` instead of calling `local_vars(5)`, breaking test verification capability
+- **Variable names completely generic**: `iVar1`, `uVar2`, `plVar1` provide zero semantic information about purpose
+- **Magic numbers everywhere**: `0x2a`, `0x14`, `0x10` without explanation of original values (42, 20, 16)
+- **Stack canary noise**: Every function has `in_FS_OFFSET` and `__stack_chk_fail()` checks obscuring logic
+- **Struct type loss**: `Point` struct not recovered, shown as raw `malloc(8)` in `heap_struct`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, allowing immediate identification of purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No documentation of preconditions, error codes, or expected behaviors that were clear in source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function call relationships in test harnesses** - Don't constant-fold test code that verifies function behavior
+2. **Infer variable names from usage patterns** - `iVar2 = 0; do { arr[iVar2] = ...` should become `index` or `i`
+3. **Recover and display original comments as decompilation metadata** - Source had extensive test documentation that should be attached to functions

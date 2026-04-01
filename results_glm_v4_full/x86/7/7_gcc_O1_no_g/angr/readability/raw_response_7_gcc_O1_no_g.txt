@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generic (`a0`, `v0`, `v1`, `flag1`, `ptr`) and do not reflect the original semantic names like `x`, `result`, `str`, or `encrypted`. Despite `-g` compilation flags, local variable names were not recovered.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names (`param_fake_branch`, `call_fake_branch`, `main`, etc.) are perfectly recovered from the source symbols, providing excellent high-level context.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `90` (decryption key) and `0x77359400` are present but not replaced with named constants (e.g., `DECRYPTION_KEY`). The constant `0xDEADBEEF` was optimized away by the compiler.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Standard library calls are obfuscated as generic `sub_401xxx` functions (e.g., `sub_401160` for `printf`, `sub_401150` for `malloc`), and stack canary checks (`__stack_chk_fail_local`) clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is clean and idiomatic; loops are correctly identified as `do-while` constructs (e.g., in `param_opaque_predicate`), and conditionals are readable, despite the underlying optimization level.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions map 1:1 with the source code; no inlining or outlining artifacts are present, maintaining the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads linearly from top to bottom with minimal jumps; early returns and loop structures are placed logically, facilitating easy tracing.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The compiler successfully removed the "fake branch" dead code (e.g., `x*x < 0`), and the decompiler presents the optimized result cleanly without confusing artifacts of the removed paths.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types like `int`, `char*`, and `unsigned int` are mostly correct, though signedness is sometimes defaulted to unsigned (e.g., `param_fake_branch` takes `unsigned int` vs source `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely lost due to constant folding (function returns `43`). Stack arrays in `call_vectorized_loop` are flattened into individual variables rather than array types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Mostly safe, but contains odd artifacts like `(int)(int256_t)v0` in `param_string_encryption` and `char [2]` return types for functions that should return `char*`, indicating pointer confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: There are no comments explaining the logic, algorithms, or the purpose of the "obfuscation" techniques; the output is purely raw code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard C library idioms (string handling, memory allocation) are not recognized, appearing instead as obscure `sub_401xxx` calls. The GCD algorithm in `param_opaque_predicate` is not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings are provided for heavily optimized functions like `param_implementation_defined` (which is just a constant return) or the missing dead code in `param_fake_branch`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions or postconditions are documented; for example, the requirement for `malloc` to succeed is not explicit, nor is the signal handler setup logic explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10  
+Justification: Function calls are explicit and use the correct recovered names, making the call graph (`main` -> `test_obf_opt_edge` -> `param_...`) very easy to follow.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are ordered logically, generally matching the source flow, with related test functions grouped together in the listing.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile standalone due to undefined references to `sub_401xxx` wrappers and missing global variable definitions (e.g., `g_402008`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Standard library functions (`printf`, `malloc`, `strlen`, `signal`) are not resolved, appearing as generic `sub_401xxx` calls which obscures the program's intent.
+- Variable naming is generic (`a0`, `v0`), losing the semantic context provided in the source (`x`, `result`, `encrypted`).
+- The `param_implementation_defined` function is reduced to a constant return `43`, completely losing the bitfield struct logic due to compiler optimization without any decompiler indication.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler perfectly recovered the original function names, making high-level navigation and understanding of the program structure trivial.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- The lack of library recognition and comments makes understanding the *operations* (not just the structure) very difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Integrate signature matching for standard C libraries (glibc/uClibc) to resolve `sub_401xxx` calls into `printf`, `malloc`, `signal`, etc.
+2. Improve debug info parsing to recover local variable names from DWARF data, especially since the source was compiled with `-g`.
+3. Add annotations or warnings for functions that have been constant-folded or heavily optimized to indicate that source logic may be missing.

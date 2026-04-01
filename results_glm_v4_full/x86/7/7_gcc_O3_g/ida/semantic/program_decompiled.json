@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_gcc_O3_g/ida/syntactic/bin/7_gcc_O3_g_fixed",
+  "stdout": "Testing obfuscation and optimizations:\n\n  Opaque predicate: 10\n  Opaque predicate result: 20\n  Instruction substitution: 225\n  String encryption: 0\n  Tail call optimized: 500500\n  Non-tail call: 5050\n  Vectorized loop: 72\n  Link time optimization: 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

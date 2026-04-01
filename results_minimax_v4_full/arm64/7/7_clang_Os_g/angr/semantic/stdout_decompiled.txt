@@ -1,0 +1,5 @@
+==== TESTING OBFUSCATION: %d ====
+
+opaque predicate: 10
+instruction substitution: 35
+string encryption: 225

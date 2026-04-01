@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O1_g/ida/syntactic/bin/7_clang_O1_g_fixed",
+  "stdout": "\nObf: L403D: 20\nObf: L404D: 225\nObf: L405D: 4294967293\nOpt: L401: 500500\nOpt: L401_0: 5050\nOpt: L402: 396 88 0x5774232ff080 11 0 11 0\nOpt: L501 (LtoD): 20\nEdge: L301D: 1\nEdge: L302D: 41\nEdge: L303D: 30\nEdge: L304D: 2000000000\nEdge: L401D: 10\nEdge: L402D: 47\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

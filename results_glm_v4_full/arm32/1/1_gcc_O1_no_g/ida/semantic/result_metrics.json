@@ -1,0 +1,584 @@
+{
+  "execution_status": "success",
+  "quality_status": "fail",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/1.c",
+  "drivers": [
+    "test_control_flow_l1",
+    "test_control_flow_l2",
+    "test_control_flow_l3"
+  ],
+  "trace_health": {
+    "status": "available",
+    "usable_for_structural_evidence": true,
+    "original": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 151,
+      "entry_count": 44,
+      "exit_count": 44,
+      "print_count": 63,
+      "call_count": 44,
+      "parsed_entry_count": 44,
+      "parsed_exit_count": 44,
+      "parsed_print_count": 63,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 3,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 2,
+      "call_count": 1,
+      "parsed_entry_count": 1,
+      "parsed_exit_count": 0,
+      "parsed_print_count": 2,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "fail",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": false,
+    "stdout_exact_match": false,
+    "stdout_case_match_ratio": 0.0,
+    "stable_case_total": 57,
+    "stable_case_matched": 0,
+    "stable_case_ids": [
+      "CF-L1-01",
+      "CF-L1-02",
+      "CF-L1-03",
+      "CF-L1-04",
+      "CF-L1-05",
+      "CF-L1-06",
+      "CF-L1-07",
+      "CF-L1-08",
+      "CF-L1-09",
+      "CF-L1-10",
+      "CF-L1-11",
+      "CF-L1-12",
+      "CF-L1-13",
+      "CF-L1-14",
+      "CF-L1-15",
+      "CF-L1-16",
+      "CF-L1-17",
+      "CF-L1-18",
+      "CF-L1-19",
+      "CF-L1-20",
+      "CF-L2-01",
+      "CF-L2-02",
+      "CF-L2-03",
+      "CF-L2-04",
+      "CF-L2-05",
+      "CF-L2-06",
+      "CF-L2-07",
+      "CF-L2-08",
+      "CF-L2-09",
+      "CF-L2-10",
+      "CF-L2-11",
+      "CF-L2-12",
+      "CF-L2-13",
+      "CF-L2-15",
+      "CF-L3-01",
+      "CF-L3-02",
+      "CF-L3-03",
+      "CF-L3-04",
+      "CF-L3-05",
+      "CF-L3-06",
+      "CF-L3-07",
+      "CF-L3-08",
+      "CF-L3-09",
+      "CF-L3-10"
+    ],
+    "unstable_case_ids": [],
+    "original_exit_code": 0,
+    "decompiled_exit_code": null,
+    "original_signal": null,
+    "decompiled_signal": 11,
+    "comparisons_total": 57,
+    "comparisons": [
+      {
+        "test_id": "CF-L1-01",
+        "occurrence": 1,
+        "original": "CF-L1-01 (sequential_ops): 21",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-02",
+        "occurrence": 1,
+        "original": "CF-L1-02 (single_if): 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-02",
+        "occurrence": 2,
+        "original": "CF-L1-02 (single_if): -5",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-03",
+        "occurrence": 1,
+        "original": "CF-L1-03 (if_else): 1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-03",
+        "occurrence": 2,
+        "original": "CF-L1-03 (if_else): 0",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-04",
+        "occurrence": 1,
+        "original": "CF-L1-04 (nested_if_2): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-04",
+        "occurrence": 2,
+        "original": "CF-L1-04 (nested_if_2): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-04",
+        "occurrence": 3,
+        "original": "CF-L1-04 (nested_if_2): 0",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-05",
+        "occurrence": 1,
+        "original": "CF-L1-05 (nested_if_deep): 5",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-06",
+        "occurrence": 1,
+        "original": "CF-L1-06 (if_elseif_chain): 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-07",
+        "occurrence": 1,
+        "original": "CF-L1-07 (if_elseif_long): 400",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-08",
+        "occurrence": 1,
+        "original": "CF-L1-08 (switch_small): 50",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-09",
+        "occurrence": 1,
+        "original": "CF-L1-09 (switch_large): 70",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-10",
+        "occurrence": 1,
+        "original": "CF-L1-10 (switch_default): 0",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-11",
+        "occurrence": 1,
+        "original": "CF-L1-11 (switch_fallthrough): 21",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-12",
+        "occurrence": 1,
+        "original": "CF-L1-12 (loop_for_fixed): 45",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-13",
+        "occurrence": 1,
+        "original": "CF-L1-13 (loop_while): 5",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-14",
+        "occurrence": 1,
+        "original": "CF-L1-14 (loop_dowhile): 4",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-15",
+        "occurrence": 1,
+        "original": "CF-L1-15 (loop_nested): 12",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-16",
+        "occurrence": 1,
+        "original": "CF-L1-16 (loop_break): 2",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-16",
+        "occurrence": 2,
+        "original": "CF-L1-16 (loop_break): -1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-17",
+        "occurrence": 1,
+        "original": "CF-L1-17 (loop_continue): 25",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-18",
+        "occurrence": 1,
+        "original": "CF-L1-18 (goto_forward): 50",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-18",
+        "occurrence": 2,
+        "original": "CF-L1-18 (goto_forward): -6",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-19",
+        "occurrence": 1,
+        "original": "CF-L1-19 (goto_backward): 120",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-20",
+        "occurrence": 1,
+        "original": "CF-L1-20 (ternary_op): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L1-20",
+        "occurrence": 2,
+        "original": "CF-L1-20 (ternary_op): 8",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-01",
+        "occurrence": 1,
+        "original": "CF-L2-01 (loop_multi_exit): 12",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-02",
+        "occurrence": 1,
+        "original": "CF-L2-02 (infinite_loop): 1001",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-03",
+        "occurrence": 1,
+        "original": "CF-L2-03 (multi_return): -1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-03",
+        "occurrence": 2,
+        "original": "CF-L2-03 (multi_return): -2",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-03",
+        "occurrence": 3,
+        "original": "CF-L2-03 (multi_return): 4",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-04",
+        "occurrence": 1,
+        "original": "CF-L2-04 (conditional_return): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-04",
+        "occurrence": 2,
+        "original": "CF-L2-04 (conditional_return): 5",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-05",
+        "occurrence": 1,
+        "original": "CF-L2-05 (duffs_device): 8",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-06",
+        "occurrence": 1,
+        "original": "CF-L2-06 (loop_complex_cond): 18",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-07",
+        "occurrence": 1,
+        "original": "CF-L2-07 (loop_modify_var): 30",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-08",
+        "occurrence": 1,
+        "original": "CF-L2-08 (loop_external_state): 101",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-09",
+        "occurrence": 1,
+        "original": "CF-L2-09 (recursion_factorial): 120",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-10",
+        "occurrence": 1,
+        "original": "CF-L2-10 (tail_recursion): 120",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-11",
+        "occurrence": 1,
+        "original": "CF-L2-11 (indirect_recursion): 3",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-12",
+        "occurrence": 1,
+        "original": "CF-L2-12 (call_func_ptr): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-13",
+        "occurrence": 1,
+        "original": "CF-L2-13 (call_func_ptr_array): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-13",
+        "occurrence": 2,
+        "original": "CF-L2-13 (call_func_ptr_array): 120",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L2-15",
+        "occurrence": 1,
+        "original": "CF-L2-15 (process_with_callback): 30",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-01",
+        "occurrence": 1,
+        "original": "CF-L3-01 (non_local_jump): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-01",
+        "occurrence": 2,
+        "original": "CF-L3-01 (non_local_jump): -1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-02",
+        "occurrence": 1,
+        "original": "CF-L3-02 (cpp_exception): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-02",
+        "occurrence": 2,
+        "original": "CF-L3-02 (cpp_exception): -1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-03",
+        "occurrence": 1,
+        "original": "CF-L3-03 (large_jump_table): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-04",
+        "occurrence": 1,
+        "original": "CF-L3-04 (conditional_func_ptr): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-05",
+        "occurrence": 1,
+        "original": "CF-L3-05 (state_machine): 1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-06",
+        "occurrence": 1,
+        "original": "CF-L3-06 (fsm_func_table): 2",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-07",
+        "occurrence": 1,
+        "original": "CF-L3-07 (computed_goto): 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-08",
+        "occurrence": 1,
+        "original": "CF-L3-08 (obfuscated_cf): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-09",
+        "occurrence": 1,
+        "original": "CF-L3-09 (opaque_predicate): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CF-L3-10",
+        "occurrence": 1,
+        "original": "CF-L3-10 (overlapped_code): 16",
+        "decompiled": null,
+        "matched": false
+      }
+    ]
+  },
+  "function_level": {
+    "status": "fail",
+    "segment_count": 3,
+    "segment_callseq_match_ratio": 0.0,
+    "feature_function_match_ratio": 0.0,
+    "call_evidence_segment_count": 3,
+    "call_evidence_unavailable_count": 0,
+    "segment_print_match_ratio": 0.0,
+    "segment_print_evidence_count": 3,
+    "segment_print_unavailable_count": 0,
+    "normalized_io_match_ratio": 0.0,
+    "io_matched_pairs": 0,
+    "io_compared_pairs": 0,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": [
+      {
+        "segment": "test_control_flow_l1",
+        "status": "fail",
+        "call_evidence_available": true,
+        "original_call_count": 8,
+        "decompiled_call_count": 0,
+        "original_print_count": 28,
+        "decompiled_print_count": 1,
+        "sequence_match_ratio": 0.0,
+        "feature_match_ratio": 0.0,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      },
+      {
+        "segment": "test_control_flow_l2",
+        "status": "fail",
+        "call_evidence_available": true,
+        "original_call_count": 26,
+        "decompiled_call_count": 0,
+        "original_print_count": 19,
+        "decompiled_print_count": 0,
+        "sequence_match_ratio": 0.0,
+        "feature_match_ratio": 0.0,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      },
+      {
+        "segment": "test_control_flow_l3",
+        "status": "fail",
+        "call_evidence_available": true,
+        "original_call_count": 7,
+        "decompiled_call_count": 0,
+        "original_print_count": 13,
+        "decompiled_print_count": 0,
+        "sequence_match_ratio": 0.0,
+        "feature_match_ratio": 0.0,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      }
+    ]
+  },
+  "low_level": {
+    "status": "unavailable",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": null,
+    "token_count_original": 41,
+    "token_count_decompiled": 0
+  }
+}

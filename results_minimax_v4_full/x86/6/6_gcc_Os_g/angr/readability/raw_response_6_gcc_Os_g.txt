@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The original source contains the function `param_strcpy`:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows:
+```c
+void param_strcpy(unsigned int a0, unsigned int a1)
+{
+    unsigned int v0;
+    sub_401580(a0, a1, v0, v0);
+    sub_401600(a0);
+    return;
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`) instead of descriptive names like `dst` and `src` from the original. Local variables like `v0` provide no semantic meaning. This is a severe degradation from the original.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: The function is named `sub_401b43` (address-based) rather than the original `param_strcpy`. The decompiler failed to recover the meaningful function name. All 100+ functions use the `sub_XXXXXX` naming pattern.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: No literals are visible - all string constants like "HelloLib" are passed as parameters to unresolved functions. The magic number handling is completely opaque. The return value calculation (strlen) is not visible.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present including: unnecessary `unsigned int v0;` declarations, unresolved function calls (`sub_401580`, `sub_401600`), and platform mismatch artifacts (x86 decompiled from arm64 source). The code contains many spurious register-related operations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The basic control flow (two sequential calls + return) is preserved, but the critical semantic (calling strcpy then strlen) is completely lost. The decompiler could not resolve the library function calls, making the logic opaque.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The function is appropriately sized (not too large). However, the parameter list exposes implementation details - `unsigned int a0, unsigned int a1` should be `char *dst, const char *src`. The function granularity is acceptable but parameter types are wrong.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code reads linearly - two function calls in sequence with a return. No goto statements or complex jumps. This is one of the better aspects of the decompilation.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code or redundant expressions. The `v0` variable is declared but appears unused, which may be a decompilation artifact. Otherwise, the code is relatively clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. Parameters are `unsigned int` instead of `char *` and `const char *`. The return type is `void` instead of `int`. No const-correctness. This makes the function signature completely wrong.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/union recovery. The decompiled code uses raw `unsigned int` for pointers. The original `char *dst` buffer pointer is completely lost, becoming a generic integer.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple type safety violations: passing pointers as `unsigned int`, calling unresolved functions with incorrect parameter types, and returning `void` instead of `int`. The code would likely crash or produce undefined behavior if executed as decompiled.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. There is no explanation of what `sub_401580` (strcpy) or `sub_401600` (strlen) do. No indication that these are library function calls.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The classic strcpy+strlen pattern is not recognized at all. The decompiler did not identify this as a string copy operation returning length. No design patterns or algorithms are identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The decompiler does not indicate that `sub_401580` and `sub_401600` are unresolved external calls. No warnings about type mismatches or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions (e.g., "requires: dst != NULL, src != NULL"), postconditions (e.g., "ensures: return == strlen(dst)"), or invariants are documented. The semantic contract is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: The function calls to strcpy and strlen are not resolved - they appear as `sub_401580` and `sub_401600`. No indication that these are standard library functions. The relationship to `call_strcpy()` is not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are listed in address order (sub_401000, sub_401030, etc.) rather than logically grouped. The test functions (`test_standard_library_functions`, `test_system_calls`, etc.) are present but not clearly organized.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile. Issues include: unresolved external functions (`sub_401580`, `sub_401600`), incorrect types, missing return value, and platform mismatch (x86 decompiled from arm64 binary). Extensive patching would be required.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.6/10
+
+**Critical Defects:**
+- Function name `sub_401b43` should be `param_strcpy` - the original name is completely lost
+- Parameters `unsigned int a0, unsigned int a1` should be `char *dst, const char *src` - pointer types are lost
+- Return type is `void` instead of `int` - the function's return value (strlen result) is eliminated
+- Library calls `strcpy` and `strlen` are not resolved, appearing as `sub_401580` and `sub_401600`
+- No comments explaining the string copy semantics or indicating unresolved external calls
+
+**Best Quality Aspect:** Code Linearization (scored 7/10)  
+The code reads sequentially top-to-bottom with two function calls and a return, which is natural and easy to follow despite other issues.
+
+**Most Needs Improvement:** Type System Fidelity (scored 2.0/10)  
+Types are completely wrong - pointers are converted to integers, const is lost, return types are wrong. This makes the code fundamentally incorrect and dangerous to use.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function signatures**: Use symbol tables and library call signatures to correctly type parameters and return values (e.g., recognize `strcpy` and `strlen` patterns)
+2. **Preserve variable names**: When debug symbols are available (-g flag), use them to recover parameter names like `dst` and `src`
+3. **Resolve library calls**: Identify standard library functions by their call signatures and replace generic `sub_XXXX` names with actual function names (strcpy, strlen, etc.)

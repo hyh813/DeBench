@@ -1,0 +1,4 @@
+=== Testing Standard Library Functions ===
+  call_strcpy: 0x2a
+  call_strcmp: -2
+  call_strlen: 12

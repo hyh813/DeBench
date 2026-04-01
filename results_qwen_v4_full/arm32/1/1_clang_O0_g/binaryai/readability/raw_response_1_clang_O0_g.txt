@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_4`, `local_8`, `local_c`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`sequential_ops`, `nested_if_2`, `loop_for_fixed`, `duffs_device`). Names accurately reflect functionality and match original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear in hex format (`0xffffffff` for -1, `0x14` for 20, `0x32` for 50) obscuring intent. Original used clear decimal constants. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler helper functions exposed (`__divsi3`, `__aeabi_idivmod`, `__aeabi_ldiv0`). Redundant assignments present (`local_8 = param_1` then immediately used). Stack variable declarations add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic constructs (if/else, for, while, switch) recovered well. Duff's device uses goto labels (`switchD_00011658_caseD_7`) which is acceptable for this pattern. Some `while(true)` where `for` existed originally.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved appropriately. No excessive inlining or fragmentation. However, test functions have argument mismatches that break cohesion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but Duff's device has forward jump labels disrupting flow. Test function calls show argument ordering issues that break linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments present (`local_4 = param_1` before use). Duff's device has significant label redundancy. No dead code removal visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many functions return `undefined4` instead of `int`. `if_else` returns `bool` but should return `int` (returns 0/1). Pointer types sometimes use `int*` instead of proper typed pointers.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered as `local_2c[4]` style without semantic names. Function pointer arrays recovered but with generic `code*` types. No struct definitions lost (source was simple).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer calls use generic `code*` types. Some implicit casts visible. `SCARRY4` overflow checks present but not clearly documented. No major buffer overflow patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Duff's device structure preserved but not named/identified. State machine patterns not labeled. Recursion patterns preserved but not annotated as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings in output. `SCARRY4` overflow checks appear without explanation. Test function argument mismatches not flagged as potential errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite being present in logic.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions have missing arguments (`sequential_ops()` called with no args). Global `jump_buffer` referenced but not clearly defined in context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file organization. Static functions (`indirect_recursion_b`, helper ops) not properly scoped with visibility indicators.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but would need stubs. Type mismatches (`undefined4` vs `int`) would prevent clean compilation. Library dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+6+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Context):     (5+5+5)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.397 ≈ 5.4/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_4`) - should infer from usage (e.g., `local_8` in `loop_for_fixed` should be `sum`)
+- **Test function calls missing arguments** - `sequential_ops()` called with no parameters when it requires 3
+- **Type degradation** - `undefined4` used instead of `int`, `bool` returned where `int` expected
+- **Zero comments** - original had extensive documentation explaining purpose, test cases, difficulty levels
+- **Hex literals obscure meaning** - `0xffffffff` instead of `-1`, `0x14` instead of `20`
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making it easy to identify each test case's purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context that made the original source self-explanatory
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., accumulator variables in loops should be named `sum`, `count`, `total`)
+2. **Add decompilation confidence annotations** for uncertain patterns (indirect calls, overflow checks, type ambiguities)
+3. **Recover and preserve literal semantics** - convert hex to decimal where appropriate, suggest named constants for magic numbers

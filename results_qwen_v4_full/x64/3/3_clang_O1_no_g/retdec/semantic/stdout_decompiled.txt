@@ -1,0 +1,6 @@
+`@\u?X
+MEM-L1-01 (local_vars): 20
+MEM-L1-02 (local_array): 0
+MEM-L1-03 (local_struct): 15
+MEM-L1-04 (address_of_local): 42
+MEM-L1-05 (address_of_array): 2

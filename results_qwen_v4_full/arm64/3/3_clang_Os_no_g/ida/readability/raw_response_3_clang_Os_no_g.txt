@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named `v0`, `v1`, `v2`, `a1`, `a2` throughout, losing all semantic meaning from original names like `arr`, `local`, `p`, `head`. In `local_array`, seven variables (`v1`-`v8`) obscure the simple loop counter and array access pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions retain original descriptive names (`local_vars`, `heap_basic`, `global_var_access`). A few entry points like `sub_8E0` are generic, but core test functions are well-preserved.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mix of clear constants (42, 10, 20) and opaque hex values (`0x1010101010101010LL`, `xmmword_1D00`). SIMD vector constants obscure the original simple loop bounds like `i < 10`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: SIMD operations (`vaddq_s64`, `vdupq_n_s64`, `vmovn_s64`), excessive type casts (`(__int64)`, `(_DWORD *)`), and 18 failed standard library decompilations clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`local_vars`, `local_struct`) have natural flow, but complex functions use do-while loops with manual index management instead of for loops. Some functions like `stack_alias` are constant-folded to `return 20`, losing original logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well; helper functions like `create_tree_node` preserved. Test functions are monolithic but that matches original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward jumps in loop structures. `linked_list_heap` has deep nesting with cleanup logic that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling visible in SIMD code creates redundancy. Constant folding removes computation (good for brevity but loses semantic intent). Redundant type casts throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `__int64`, `_DWORD`, `_QWORD` instead of standard C types. `call_global_callback` loses parameter `int x` entirely. Pointer types often degraded to generic `void *`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `Point` struct not recovered—accessed as raw memory. `Node` struct partially recovered using `_QWORD *` instead of `Node *`. `TreeNode` completely lost; all struct field access becomes pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(__int64)a1`, `(_DWORD *)`), visible pointer arithmetic, no const-correctness preserved. `dangling_pointer` returns `*v1` after free with no warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments—only function headers with addresses. Original had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）"). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Memory allocation patterns not labeled. Loop idioms replaced with SIMD vectorization. No algorithm naming despite clear patterns (linked list traversal, tree creation).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 18 failed decompilations listed at end, but no inline warnings about uncertain code. `stack_alias` constant-folded without indication. No warning about undefined behavior in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: n > 0"). NULL checks present but not explained as contracts. Error conditions not documented.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage visible (`global_counter`) but no call graph. Callback relationships (`set_global_callback` → `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no file organization matching source categories (stack/heap/static/memory-op). Static functions not clearly marked as file-scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 standard library functions failed to decompile (`malloc`, `free`, `printf`, etc.). Would need stubs for all externals. Type mismatches would prevent standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+3)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  4.75/10
+```
+
+**Overall Readability Score:** 4.75/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a1`) losing all semantic meaning from original (`arr`, `local`, `head`, `p`)
+- **Struct types not recovered** (`Point`, `Node`, `TreeNode` all become raw pointer arithmetic with `_QWORD *`)
+- **SIMD vectorization obscures simple loops** - original `for (int i = 0; i < 10; i++)` becomes complex NEON intrinsics
+- **No comments preserved** - original had extensive documentation for each test case; decompiled has none
+- **18 standard library functions failed decompilation** - requires external stubs for `malloc`, `free`, `printf`, etc.
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source (`local_vars`, `heap_basic`, `global_var_access`), making high-level navigation possible.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source had extensive comments explaining each test scenario, purpose, and expected values.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (loop counters, array indices, pointers) to infer names like `i`, `arr`, `ptr` instead of `v0`, `v1`, `v2`.
+
+2. **Detect and simplify SIMD-optimized loops** - Recognize when NEON/AVX intrinsics represent simple scalar loops and present the cleaner scalar version with an optimization note.
+
+3. **Recover struct/union types from access patterns** - Analyze consistent field offsets across functions to reconstruct `Point {x, y}`, `Node {data, next}` instead of raw `_QWORD *` arithmetic.

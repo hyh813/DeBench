@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. For example, `local_array` uses `v0`, `v1`, `v3` instead of `arr`, `i`, `result`. Some better names like `result` and `index` appear occasionally but are inconsistent.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use cryptic names like `sub_400568`, `$a.30`. The `double_value` function is recovered as `$a.30` losing semantic meaning entirely.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers throughout: `4294967295` (should be `-1`), `4294967286` (should be `-10`), `0x800` (should be `2048`). No constants are recovered or explained, making arithmetic expressions nearly unreadable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompiler artifacts including `armg_calculate_condition()` calls (appears 50+ times), redundant variable assignments (`v1 = v3; v0 = v4`), and unnecessary goto labels (`LABEL_4006b0`, `LABEL_40076c`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Natural loops converted to do-while with goto patterns. `local_array` uses backward counting (`i -= 1`) with confusing termination (`i != 4294967286`). `vla_stack` has extremely convoluted loop conditions with bit manipulation obscuring simple logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `test_stack_memory` is bloated (100+ lines) with inlined test logic. `stack_alias` incorrectly simplified to single return statement, losing all aliasing logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Excessive forward jumps (`goto LABEL_4006b0`) disrupt top-to-bottom reading. `call_weak_fn` and `deregister_tm_clones` have multiple exit points via goto instead of structured returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate condition checks in `memop_memset` and `memop_memcpy` (identical `armg_calculate_condition` calls repeated). `test_static_global` has duplicate `printf` calls for same output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - everything becomes `unsigned int`. `char*` buffers, `void*` pointers, and `int` all indistinguishable. `create_tree_node` returns `unsigned int [3]` instead of `TreeNode*`. Signed/unsigned distinction lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`, `padding_0`). `Node` struct becomes `struct_0` with `field_0` (data) and `field_4` (next pointer). Multiple conflicting struct definitions for same type (`struct_0` defined 5+ times differently).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout: `*((unsigned int *)((char *)&v0 + 2 * idx))`. Cast chains like `(char *)&v2 + i` obscure type intent. `dangling_pointer` returns `*(ptr)` after free with no safety warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of `armg_calculate_condition` purpose, no documentation of magic numbers, no algorithm descriptions. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list pattern in `linked_list_heap` not identified. Tree traversal in `tree_heap_traversal` simplified to `return 60` losing all structure. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical issues unflagged: `dangling_pointer` use-after-free not warned, `double_free` double-free not indicated, `memory_leak` missing free not noted. `stack_alias` logic completely lost without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `vla_stack`). Null checks present but not explained as contracts. Return value semantics undocumented (when does function return -1 vs valid value).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `extern_function` called but definition separated. `global_func_ptr` callback mechanism obscured by `goto global_func_ptr` indirect call pattern.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (init functions mixed with test functions). No logical grouping by memory type (stack/heap/static). `__sync_*` atomic functions bloated at end without organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple undefined externals (`g_413008`, `g_402cfe`, `extern_global_var`). `armg_calculate_condition` requires Angr runtime. Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Magic number proliferation**: `4294967295` used 20+ times instead of `-1` or `UINT_MAX`
+- **`armg_calculate_condition` artifacts**: 50+ calls obscure simple boolean expressions
+- **Type erasure**: All types collapsed to `unsigned int`, losing pointer/array/struct distinctions
+- **`stack_alias` logic loss**: Complex aliasing test reduced to `return 20`, completely incorrect
+- **Zero documentation**: No comments explaining decompiler uncertainty or recovered patterns
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test functions retained original semantic names (`local_vars`, `heap_basic`, `test_stack_memory`) providing some anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any comments means no guidance on decompiler confidence, magic number meanings, or recovered algorithm intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace magic numbers with symbolic constants**: Detect common patterns like `4294967295` → `-1/ERROR`, `0x800` → `2048/BUFFER_SIZE`
+2. **Recover loop constructs from backward jumps**: Convert `do-while` with `goto` patterns back to `for/while` when iteration patterns are detectable
+3. **Add decompiler confidence annotations**: Mark uncertain recoveries (e.g., `// DECOMPILER UNCERTAIN: indirect call target`) and flag potential undefined behavior (use-after-free, double-free)

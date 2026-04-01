@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Local variables are almost exclusively generic names like `iVar1`, `local_2c`, and `puVar3`, completely losing semantic meaning (e.g., `capture_by_value` becomes `local_1c`). Despite `-g` being present, debug symbols for locals were not utilized or recovered.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined functions and methods are recovered accurately with demangled names (e.g., `SimpleClass::getValue`, `test_cpp_member_func`). However, standard library template instantiations result in verbose, mangled names (e.g., `std::unique_ptr<int,test_cpp_smart_ptr()::$_2>::unique_ptr...`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered well ("Test", "Derived"), but integer constants appear as magic numbers (e.g., `0x1234` for ClassID, `0x1f` for buffer size) without the named constants or context provided in the source.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with verbose expansions of standard library internals (e.g., `std::__uniq_ptr_impl`, `std::_Tuple_impl`) and excessive casts (`undefined4`, `code *`), which act as noise obscuring the high-level logic of `unique_ptr` usage.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Most control flow (loops, conditionals) is natural and matches the source. However, the exception handling logic in `test_cpp_exception` is completely missing (only the `throw` is decompiled), and virtual function calls are exposed as raw pointer dereferences rather than semantic dispatch.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions generally match source granularity, but template usage results in an explosion of low-level functions (e.g., multiple `_Head_base` and `_Tuple_impl` functions for one `unique_ptr`), making the call graph unnecessarily complex.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal confusing jumps, which is expected for `-O0` compilation. Early returns and standard loops are preserved well.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or loop unrolling artifacts. The code is clean of optimization redundancies, presenting a direct translation of the compiled logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While class types are recognized, primitive types are often generic (`undefined4` instead of `int`) or incorrect (`longdouble` instead of `double` in `Container<double>::get`). Function pointers are often typed as `code *`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Although the decompiler knows the types (e.g., `SimpleClass *this`), it accesses members using raw pointer arithmetic (`*(int *)this`, `*(int *)(this + 4)`) rather than member names (`this->value`, `this->name`), significantly degrading readability.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code is littered with explicit casts (e.g., `(int *)`, `(undefined4 *)`) that were not in the source, reducing the perceived type safety and making the code look like C rather than C++.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like virtual inheritance adjustments or RTTI checks is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: C++ idioms are technically present (constructors, vtables), but they are not explicitly labeled or summarized. For example, virtual calls are shown as indirect memory accesses rather than "Virtual Call".
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No anomalies are flagged. The missing catch block in `test_cpp_exception` is presented silently as a function that just throws, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no documentation of preconditions (e.g., non-null pointers) or invariants. The logic stands alone without semantic context.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and the relationship between classes (inheritance) is visible in the constructor calls (e.g., `Base::Base((Base *)this)`). However, the sheer volume of internal STL calls obscures the user-level call graph.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and class methods are generally adjacent. The separation between user code and runtime/STL code is clear based on naming.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types like `undefined4` and `code *` and relies on implicit definitions that would not compile without significant manual porting or fixing of type definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable names are generic (`iVar1`, `local_XX`) despite debug info being available, obscuring data flow.
+- Class member access uses raw pointer arithmetic (`*(int *)(this + 4)`) instead of member names (`this->name`).
+- Standard library templates (like `unique_ptr`) are fully expanded into verbose internal implementation details (`__uniq_ptr_impl`, `_Tuple_impl`), hiding the high-level intent.
+- Exception handling logic is missing in `test_cpp_exception`; only the `throw` is visible.
+- Types are imprecise, using `undefined4` and `longdouble` instead of `int` and `double`.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- The decompiler successfully demangles most user-defined C++ symbols, making the high-level structure of classes and test functions easy to identify.
+
+**Most Needs Improvement:** Variable Naming (Score: 3/10)
+- The reliance on generic names like `iVar1` and `local_2c` makes tracking data flow through the algorithms nearly impossible without cross-referencing the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize Debug Symbols for Locals**: Prioritize loading variable names from DWARF/debug information (present with `-g`) to replace `iVar1`/`local_XX` with source names.
+2. **Apply Struct Field Accessors**: When a type is known, replace pointer arithmetic offsets (`*(int *)(this + 4)`) with semantic field access (`this->member_name`).
+3. **Collapse STL Implementations**: Provide a "High-Level View" that summarizes complex template instantiations (like `std::unique_ptr` internals) into their standard API calls, rather than exposing every internal helper function.

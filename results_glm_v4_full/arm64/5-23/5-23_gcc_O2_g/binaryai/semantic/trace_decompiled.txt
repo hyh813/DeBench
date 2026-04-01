@@ -1,0 +1,4 @@
+TRACE_ENT|0|test_asm_features|0|Arg0=1,Arg1=-912358360,Arg2=-912358344,Arg3=-1286076224|x0=0x1,x1=0xffffc99e8428,x2=0xffffc99e8438,x3=0xaf99b35808c0,x4=0xabfdf802f93f47cc,x5=0xe8e21f4c1d90,x6=0xe8e21f4c1d90,x7=0xe8e21f4c0580
+TRACE_ENT|1|param_memory_protection|1|Arg0=0,Arg1=4096,Arg2=7,Arg3=34|x0=0x0,x1=0x1000,x2=0x7,x3=0x22,x4=0xffffffffffffffff,x5=0x0,x6=0xe8e21f4c1d90,x7=0xe8e21f4c0580
+TRACE_EXT|1|param_memory_protection|1|42
+TRACE_EXT|0|test_asm_features|0|525483160

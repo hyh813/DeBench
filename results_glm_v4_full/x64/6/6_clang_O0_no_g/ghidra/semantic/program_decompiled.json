@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/6/6_clang_O0_no_g/ghidra/syntactic/bin/6_clang_O0_no_g_fixed",
+  "stdout": "Testing strcpy... -330356936\nstrcmp result: 42\nstrlen result: 1\nmemcpy result: 12\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

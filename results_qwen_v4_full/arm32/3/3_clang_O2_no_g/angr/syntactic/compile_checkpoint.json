@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 47,
+  "source_file": "decompiled/angr_out/arm32/3/3_clang_O2_no_g.c",
+  "fixed_file": "results_qwen_v4_full/arm32/3/3_clang_O2_no_g/angr/syntactic/fix_3_clang_O2_no_g.c"
+}

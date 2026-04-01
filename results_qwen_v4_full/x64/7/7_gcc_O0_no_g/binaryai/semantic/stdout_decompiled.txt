@@ -1,0 +1,8 @@
+Starting tests...
+
+fake_branch: 0
+opaque_predicate: 0
+instruction_substitution: 0
+string_encryption: 0
+tail_call_optimized: 0
+non_tail_call: 0

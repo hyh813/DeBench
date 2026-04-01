@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `temp`) with no semantic meaning. For example, `varargs_func` uses `v0[4]`, `v1`, `v2`, `v3` instead of meaningful names like `args`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`cdecl_func`, `varargs_func`, `func_struct_byval`), but runtime functions are generic (`sub_4003f0`, `sub_400490`). Helper functions like `func_a`, `func_b` are preserved but lack context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1` or `UINT_MAX`), `0x100000`, `0x80000000`. String literals replaced with global references (`&g_401460`) losing readability.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from ARM condition calculations (`armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v`). The `__adddf3` function has 400+ lines of flag manipulation that should be a simple floating-point operation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage throughout (e.g., `LABEL_4004b4`, `LABEL_400f2a`). The `func_struct_byptr` function uses ARM condition calculations instead of simple `if (!p) return -1;`. Loops converted to do-while with goto patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Caller functions constant-folded (`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`). `func_struct_byval` exploded to 31 parameters instead of accepting a struct. Runtime helpers (`__adddf3`, `__floatsidf`) are monolithic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Heavy forward jumps disrupt reading flow. `__adddf3` has nested conditionals spanning hundreds of lines with labels like `LABEL_401119`, `LABEL_40111d`, `LABEL_40111e` creating spaghetti structure.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in `__adddf3` with repeated `armg_calculate_condition` calls. Same flag calculations duplicated across branches. No common subexpression elimination visible in output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int` or `char*`. Original `int`, `double`, `long long`, struct types all lost. `func_mixed_args` takes 6 `unsigned int` parameters instead of `(int, char*, double, long long)`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_0`) but with generic field names (`field_0`). `LargeStruct` with 16 `long long` elements became 31 separate `unsigned int` parameters in `func_struct_byval`. Pointer-to-struct relationships lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Unsafe casts everywhere: `*((int *)&v0)`, `*(ptr) = *(ptr) * 2` without null checks. `param_func_ptr` treats `unsigned int *a0` as callable function pointer. `ret_opaque_handle` returns string literal `"d"` as int pointer.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Varargs handling (`va_start`, `va_arg`, `va_end`) completely lost in `varargs_func`. Structure passing idioms not recognized. Floating-point operations not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings despite obvious issues. `func_struct_byptr` has broken ARM condition logic that should be flagged. Varargs implementation is fundamentally broken but not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Null pointer checks present in code but not documented as contracts. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible but string references replaced with globals (`&g_401460`). Callback relationships in `param_func_ptr` not documented. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but no logical organization matching source sections (4.1, 4.2, 4.3). Runtime helpers mixed with test functions. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically valid C but requires external symbols (`__libc_start_main`, `__gmon_start__`, `puts`, `printf`). ARM-specific helpers would need implementation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+2)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+5+4+3)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type):        (3+4+2)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 3.39/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on semantic usage (e.g., `sum`, `count`, `args_ptr`)
+- **`varargs_func` decompilation is fundamentally broken** - doesn't properly implement va_list iteration
+- **`func_struct_byval` has 31 parameters** instead of accepting a `LargeStruct` by value
+- **`__adddf3` function is 400+ lines** of ARM flag calculations instead of simple floating-point addition
+- **All string literals replaced with global references** (`&g_401460`) losing readability
+- **Caller functions constant-folded** (`call_cdecl()` returns 15) losing call relationship visibility
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names were preserved from debug symbols (`cdecl_func`, `varargs_func`, `func_struct_byval`), providing some semantic anchor points.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero meaningful comments despite complex logic; no decompilation confidence indicators or algorithm explanations anywhere in 1700 LOC.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement varargs pattern recognition** - Detect `va_start`/`va_arg`/`va_end` sequences and reconstruct proper variable argument handling instead of raw stack manipulation.
+
+2. **Add semantic variable naming from usage analysis** - Infer names like `sum`, `count`, `index` from loop patterns and arithmetic operations rather than generic `v0`, `v1`.
+
+3. **Recover struct parameter passing** - Detect when multiple consecutive parameters represent a struct passed by value and reconstruct the original composite type instead of exploding to individual parameters.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic meaning. For example, `param_macro_constants` uses `a0` instead of `size`, and `param_asm_clobber` uses `ptr` and `a1` instead of `arr` and `n`. Only occasional hints like `idx`, `cur`, `ptr` provide minimal type information.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Remarkably, most original function names are preserved (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc.). However, helper functions like `sub_401020`, `sub_4010c5` remain cryptic. The decompiler successfully recovered meaningful names for user-defined functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `1025` (should be `MAX_SIZE + 1`), `0x200` (512, should be `MAX_SIZE / 2`), `57072` (should be `0xDEF0`). String literals are preserved in some cases (`"LOG: Values: %d, %d, %d\n"`) but format strings in `test_preprocessing_features` are replaced with global references (`&g_40207f`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts remain: unnecessary stack variables (`v0 = v2` patterns), redundant casts (`(unsigned int)idx`), and initialization patterns that don't match source intent. However, no severe register spilling noise observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions recovered with natural C control flow (if/else, for loops). However, `sub_401020` uses `goto` unnecessarily, and `call_asm_multi_insn` has awkward conditional logic (`if ((v3 ^ 111) || ((char)flag1 ^ 72))`). Loop structures generally well-recovered.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly identified with appropriate granularity. Each source function maps to one decompiled function. No monolithic functions or over-fragmentation. Parameter lists are reasonable though types are generic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but some functions have awkward variable initialization at function start (`v0 = v2` patterns). `call_asm_simd` has particularly convoluted bit manipulation that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding applied aggressively (e.g., `call_macro_constants` returns `64` directly). Some redundancy in test functions where printf calls repeat similar patterns. No severe dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `int` becomes `unsigned long long` or `unsigned int` inconsistently. `param_macro_functions` returns `long long` when source returns `int`. Pointer types often generic (`void*`, `char*`). Signed/unsigned distinctions frequently lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only one struct recovered (`struct_0` with `field_0`), which is a runtime artifact not in source. No recovery of array types, function pointer types, or complex data structures. All composite access becomes pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(unsigned long long)v1`, `(char *)&v0`. Pointer arithmetic on void pointers (`ptr[4]`). However, no obvious buffer overflow patterns introduced by decompiler. Atomic operations recovered as function calls (`atomic_exchange_add`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No explanation of magic numbers, no algorithm descriptions, no decompilation confidence indicators. Only one anomaly marker: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. SIMD operations become `AddV()` calls without explanation. Atomic operations recognized but not annotated. Macro expansions folded to constants without indicating original macro semantics.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly explicitly flagged (`Unsupported jumpkind Ijk_SigTRAP`). No indication of optimization artifacts, constant folding, or where decompilation confidence is low. Inline assembly regions silently converted to C without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No null pointer checks annotated. Error conditions (like `mmap` failure) present but not explained as contract violations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global variables referenced as `g_40xxxx` without semantic names. No call graph documentation. String references replaced with global addresses (`&g_40207f`) obscuring content.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Related functions grouped (macro tests together, asm tests together). However, no file/module boundaries indicated, and helper functions interspersed without clear organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with proper headers. External dependencies declared (`extern char g_40207f`). However, some constructs like `AddV()` are not standard C and would require implementation. Atomic operations use non-standard function names.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 8 + 5 + 6) / 4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7 + 8 + 6 + 7) / 4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5 + 4 + 6) / 3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2 + 3 + 4 + 2) / 4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5 + 6 + 7) / 3   = 6.00 × 0.10 = 0.600
+
+Overall = 1.725 + 1.750 + 1.000 + 0.413 + 0.600 = 5.49/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable `a0` should be named `size`** in `param_macro_constants` based on comparison usage pattern
+- **Magic numbers `1025`, `0x200`, `57072`** should be recovered as `MAX_SIZE + 1`, `MAX_SIZE / 2`, `0xDEF0` respectively
+- **No comments explaining macro expansion** - decompiler folded `BUFFER_COUNT * 4` to `64` without indicating original expression
+- **String literals replaced with global references** (`&g_40207f`) obscuring printf format strings in test functions
+- **SIMD operations converted to `AddV()`** without indicating this represents vector addition intrinsic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - The decompiler successfully preserved most original function names, making it easy to identify the purpose of each function and correlate with source code structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation exists to explain non-obvious transformations, magic numbers, or decompilation confidence levels, severely limiting understandability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant-to-macro recovery** - Detect folded constants and suggest original macro names based on value patterns (e.g., 1024 → MAX_SIZE, 64 → BUFFER_COUNT * 4)
+2. **Add decompilation confidence annotations** - Mark regions where inline assembly was converted, where optimization transformed logic, or where type inference is uncertain
+3. **Preserve string literal content in-place** - Instead of replacing with global references, embed string content directly or provide clear cross-references to string table content

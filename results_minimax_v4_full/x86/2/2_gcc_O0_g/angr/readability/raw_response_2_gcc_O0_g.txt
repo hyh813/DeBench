@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Most variables use generic names like `a0`, `v0`, `v1`, `v2` that obscure their semantic purpose. For example, in `process_char`, parameter `a0` should be named `c`. Only loop indices like `idx`, `i`, `j`, `k` are somewhat descriptive. The decompiler made no effort to infer meaningful names from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names perfectly match the original source: `double_value`, `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The decompiler correctly recovered the original function names, which is excellent for readability.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `64` and `90` in character range checks (`a0 > 64 && a0 <= 90`) are unexplained. The value `32` for case conversion offset lacks comment. However, test values like `100`, `200`, `5` are inferable. The decompiler didn't recover character literal meanings ('A'=65, 'Z'=90).
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Severe pollution from compiler artifacts including pervasive `__x86.get_pc_thunk.ax()` calls, duplicated struct definitions, and extensive `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers for floating-point operations. These 50+ lines of noise severely impede reading the actual logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Loops are correctly recognized as `for` loops with proper structure (e.g., `for (idx = 0; idx < a1; idx += 1)`). Conditionals are clear. At `-O0`, control flow should be nearly identical to source, and the decompiler achieves this. Minor awkwardness in complex nested conditions.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: All 40+ functions are properly separated with appropriate granularity. The test functions (`test_data_types_l1`, `test_array_types`, etc.) correctly call their respective test targets. No over-fragmentation or monoliths observed. Parameter counts match original (e.g., `process_short` takes 2 params).
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns present in functions like `array_complex_index`. Some forward jumps in complex functions like `enum_switch` but manageable. No severe disruption to linear reading.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Some repeated calculations in loops (e.g., `ptr + idx * 4`) but this reflects the original code pattern. Acceptable for `-O0` level where optimization is minimal.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Significant type degradation observed: `int` often becomes `unsigned int` (e.g., `process_int` returns `unsigned int`), `short` becomes `unsigned short`, `long` becomes `unsigned int`. The `long long` function `process_ll` incorrectly shows two parameters instead of one 64-bit value. Floating-point types show `[D] unsupported` markers. Const correctness partially preserved.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Structs are recovered but with generic names: `struct_0`, `struct_1`, `struct_2`. Field names are generic: `field_0`, `field_1`, `field_4`. For example, `Point3D` becomes anonymous struct with `a0[0]`, `a0[1]`, `a0[2]` access. Union vs struct distinction is maintained. Nested structures partially recovered but lose semantic names like `position.x`.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe patterns: manual pointer arithmetic (`ptr + idx * 4`), cast-heavy code (`*((int *)(ptr + idx * 12))`), and type-confused operations. The `ptr_diff` function has operator precedence bug: `a0 - a1 >> 2` should be `(a0 - a1) >> 2`. Function pointers treated as `unsigned int` in `ptr_func_simple`.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No meaningful comments in the decompiled output. Only auto-generated function signatures present. No explanation of algorithm logic, no recovery of original comments from debug symbols, no indication of uncertainty. The source had extensive comments (e.g., "// DT-L1-01: 字符类型") that were completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Basic patterns recognized: loops, conditionals, function calls. However, no explicit naming of design patterns or algorithms. The linked list traversal in `linked_list` could be annotated as "traverses singly-linked list" but isn't. No recognition of specific idioms like "circular buffer" or "state machine."
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: The decompiler does show `[D] unsupported_<class 'pyvex.expr.GetI'>()` for floating-point operations, indicating decompilation failure. However, these are cryptic VEX intermediate representation details, not helpful anomaly descriptions. No flags for potential undefined behavior in `array_oob` (intentional out-of-bounds access).
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. The source had no explicit assertions, but the decompiler could infer: `array_complex_index` requires `x >= 0 && x < w && y >= 0 && y < h`. This is not documented. No error handling contracts recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are clear from code structure (e.g., `main` calls `test_data_types_l1()`). However, no explicit documentation of "called by" or "calls" relationships. Global variable usage (`extern unsigned int g_403010`) shows external references but no semantic meaning.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: All functions in single file, which is expected for decompilation. Related functions grouped together (data type functions, array functions, pointer functions, composite functions). Static vs extern not distinguished in output.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Has `extern` declarations for global variables. Functions have proper signatures. Would compile with standard library stubs. No header file recovery. Dependencies on `printf` (via `sub_4010a0`) not documented as requiring stdio.h.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 5 + 3) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (5 + 6 + 5) / 3 = 5.33
+L4_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L5_avg = (6 + 6 + 6) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (7.25 × 0.25) + (5.33 × 0.20) + (3.25 × 0.15) + (6.0 × 0.10)
+        = 1.575 + 1.8125 + 1.066 + 0.4875 + 0.6
+        = 5.54/10
+```
+
+### Overall Readability Score: 5.54/10
+
+### Critical Defects
+- **Variable naming**: Parameters like `a0`, `a1`, `a2` and locals like `v0`, `v1`, `v2` are completely generic - should infer names from usage (e.g., `c` for char parameter, `sum` for accumulator)
+- **Type precision loss**: `int` → `unsigned int`, `long` → `unsigned int`, `long long` split into two params - loses signedness and size semantics
+- **No comments**: Zero recovery of source code comments that explained each test case's purpose
+- **Noise artifacts**: 50+ lines of `__x86.get_pc_thunk.ax()` calls and `[D] unsupported` VEX markers
+- **Struct field names**: All fields named `field_0`, `field_1`, etc. losing semantic meaning (e.g., `position.x`, `size.width`)
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - The decompiler almost perfectly recovered the original function names from debug symbols, making it easy to locate specific functions from the source.
+
+### Most Needs Improvement
+**Comment Quality (2/10)** - The decompiled output contains zero meaningful comments. The original source had extensive documentation (e.g., "// DT-L1-01: 字符类型", "// 测试: 大小写转换") that was completely lost.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: When a parameter `a0` is used in `a0 > 64 && a0 <= 90`, infer it's a character (`c`). When `v0` accumulates values, name it `sum` or `result`.
+2. **Recover debug symbol information**: The source was compiled with `-g`, so debug symbols should contain variable names, types, and possibly comments. Extract and use this information.
+3. **Eliminate compiler artifacts**: Filter out `__x86.get_pc_thunk.*` calls and VEX intermediate representation markers from the output - these are decompilation internals, not meaningful code.

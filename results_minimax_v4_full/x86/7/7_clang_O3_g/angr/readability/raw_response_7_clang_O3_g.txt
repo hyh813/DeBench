@@ -1,0 +1,106 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Primary Function Evaluated:** `param_fake_branch`
+
+The original source implements fake/always-false branches for obfuscation testing. The decompiled version has completely eliminated these branches, returning only the input value. This is semantically correct but loses the obfuscation context.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0` (parameter), `v0`, `v1`, `v2` (temporaries), `ptr`, `flag1`. These convey no semantic meaning. Compare to source: `x`, `result`, `str` - all meaningful names lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - `param_fake_branch` correctly preserved, but most functions use address-based names like `sub_401030`, `sub_4010c0`. Call wrapper functions like `call_fake_branch` are correctly named but lack semantic clarity about their wrapper nature.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic number `0xDEADBEEF` completely eliminated. String literal `"test"` not present. The fake branch conditions (`x*x < 0`, `strlen(str) < 0`) are gone - these were intentional obfuscation constants now lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `goto ptr[2]`, computed goto statements, complex struct padding like `padding_0[11943]`, and `CONCAT` operations for 64-bit arithmetic. These obscure the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses goto-based control flow (e.g., `goto ptr[2]`), computed jumps, and complex conditional expressions. The simple if-else structure from source is lost. At -O0, this level of goto usage is unnecessary and indicates decompilation failure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are correctly separated, but parameter lists expose implementation (e.g., `param_fake_branch` takes `unsigned int a0` instead of `int x`). Wrapper functions like `call_fake_branch` exist but aren't identified as such.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps present (e.g., `goto ptr[2]`), computed goto targets, and complex nested expressions. The code does not read naturally top-to-bottom. Multiple computed jump targets disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code successfully eliminated - the fake branches that never execute are removed. This is actually correct behavior. Loop unrolling in `param_vectorized_loop` is present but could be better abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `unsigned int` where source had `int`. Parameter `a0` should be `int` to match source. No `const` correctness preserved (`const char *str` lost). Type precision significantly degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The decompiler creates artificial struct types with padding fields like `struct_0 { char padding_0[11943]; }` - these are decompilation artifacts, not actual structures. The source had no complex composite types, but the fake struct generation is noise.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: pointer arithmetic in `decrypt_string` (`ptr = p + 1`), cast operations like `(int)v1`. No bounds checking annotations. Mixed signed/unsigned operations in `param_integer_overflow` could cause issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments. The decompiled code has no explanation of the fake branch obfuscation technique, no indication that branches were eliminated because they're always false, and no documentation of the intentional obfuscation patterns.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of obfuscation patterns. The fake branch technique (OBF-L4-02) is completely lost. Opaque predicates, instruction substitution, and other obfuscation techniques are not identified or documented.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The decompiler silently eliminates the fake branches without indicating this was intentional obfuscation vs. dead code elimination. No warnings about potential undefined behavior or intentional patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions recovered. The function contracts (e.g., "returns input unchanged when fake branches never execute") are not documented. No indication of the function's testing purpose.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships partially visible but not documented. The relationship between `call_fake_branch()` and `param_fake_branch()` is clear from naming but not explained. No documentation of test harness relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are in address order, not logical grouping. The test functions (`call_*`) and implementations (`param_*`) are interleaved rather than grouped. No logical separation between obfuscation, optimization, and edge case categories.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code cannot compile. Missing declarations: `extern struct_0 *g_403ff4;`, `extern unsigned int div_zero_caught;`, `extern char g_402008;`. The decompiled code references many undefined globals that aren't provided.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`a0`, `v0`, `v1`, `ptr`, `flag1`) - no semantic meaning preserved
+- The fake branch obfuscation technique (OBF-L4-02) is completely eliminated without any indication it existed
+- Magic number `0xDEADBEEF` and the intentional always-false conditions are lost
+- No comments explaining decompilation decisions or obfuscation patterns
+- Artificial struct types with massive padding arrays (`padding_0[11943]`) are noise, not useful recovery
+- Build system compatibility failures - many undefined extern symbols
+
+**Best Quality Aspect:** Redundancy Elimination (8/10)  
+The decompiler correctly removes dead code (the fake branches that never execute). This is semantically accurate even if it loses obfuscation context.
+
+**Most Needs Improvement:** Lexical Clarity (2.75/10 avg)  
+Variable naming is completely generic across all functions. Combined with loss of literal clarity (the obfuscation constants), the code is nearly incomprehensible without the source.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0` used in arithmetic should suggest `x` or `input_value`
+2. Flag eliminated dead code branches with comments explaining they were always-false conditions
+3. Preserve magic numbers like `0xDEADBEEF` that indicate intentional obfuscation patterns rather than routine constants

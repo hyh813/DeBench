@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/6/6_gcc_Os_g/ida/syntactic/bin/6_gcc_Os_g_fixed",
+  "stdout": "Testing Standard Library Functions\nLib.L1=8\nLib.L2=0\nLib.L3=12\nLib.L4=90\nLib.L5=-1\nValue: 42, Name: Test\nLib.L6=22\nLib.L7=579\nLib.L8=42\nLib.L9=42\nLib.L10=90\nLib.L11=0\nLib.L12=15\nTesting System Calls\nSys.L1=42\nSys.L2=42\nSys.L3=42\nSys.L4=42\nSys.L5=42\nSys.L6=42\nSys.L7=42\nTesting Thread Concurrency\nThr.L1=49\nThr.L2=0\nThr.L3=42\nThr.L4=42\nThr.L5=42\nThr.L6=-3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

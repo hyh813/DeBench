@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are reduced to generic names like `param_1`, `iVar1`, `uVar1`, and `local_38`, completely losing semantic meaning from names like `x`, `result`, `str`, or `decrypted`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `param_fake_branch`, `param_opaque_predicate`), providing excellent high-level context.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0x5a` (XOR key) and `0xe1` (result) are preserved as hex literals rather than symbolic constants or decimal values, requiring mental conversion to match the source's clarity.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but contains compiler artifacts like `undefined8`, `undefined4`, and stack canary checks (`in_FS_OFFSET`) which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple functions are readable, complex ones like `param_vectorized_loop` use `goto` labels (`LAB_0010182f`) and confusing pointer arithmetic instead of the original array indexing.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The decompiler aggressively inlined functions; `decrypt_string` logic is pasted into `param_string_encryption`, and the recursive `param_tail_call_optimized` is transformed into a massive, unrolled iterative loop, destroying the original structure.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Code generally reads top-to-bottom, though forward jumps to labels in `param_vectorized_loop` and `param_tail_call_optimized` disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: Significant redundancy is present due to loop unrolling in `param_tail_call_optimized` and `param_vectorized_loop`, resulting in pages of repetitive arithmetic that obscure the simple source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are often generic (`undefined4`, `undefined8`) or imprecise (`long` used for pointers in `param_vectorized_loop` instead of `int*`), though signedness is mostly correct.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The bitfield struct in `param_implementation_defined` is completely lost, reduced to a constant return value `0x2f`, and no struct layouts are recovered.
+
+**11. Type Safety:** Score: 7/10
+Justification: Explicit casts like `(long)(int)uVar11` and `*(int *)(param_1 + lVar8 * 4)` ensure type safety but are verbose and indicative of low-level pointer arithmetic recovery.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms (like GCD), or the purpose of "obfuscation" techniques used in the source.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like the GCD algorithm in `param_opaque_predicate` are present but not recognized or labeled; they appear as generic `do-while` loops.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Anomalies are implicit (e.g., `undefined` types) but not explicitly flagged; the `invalidInstructionException` in `param_division_by_zero_constprop_0` appears without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic in `param_buffer_overflow_stack` (canary check) is silently removed.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are accurate and the call graph is preserved well; `main` correctly calls `test_obf_opt_edge`, which calls the specific test functions.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by memory address rather than logical grouping, mixing helper functions with test functions, though related functions are often adjacent.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types (`undefined8`), compiler intrinsics (`__printf_chk`), and missing headers, requiring significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`iVar1`, `param_1`), obscuring the logic's intent.
+- The recursive function `param_tail_call_optimized` is decompiled into a massive, unrolled iterative loop, making it unreadable.
+- The bitfield struct logic in `param_implementation_defined` is completely lost, replaced by a magic constant.
+- No comments or semantic annotations are provided to explain the recovered algorithms.
+- `param_buffer_overflow_stack` logic is incorrectly simplified to just `return param_1`, losing the canary check semantics.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names from the binary symbols, providing immediate high-level context.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)
+- The lack of comments, idiom recognition, and anomaly indication makes it difficult to understand the *purpose* of the code, not just the mechanics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement loop re-rolling detection to convert massive unrolled arithmetic back into simple `for` or recursive structures.
+2. Add heuristic-based variable renaming (e.g., detecting `x ^ 0x5a` patterns to suggest `decrypted_char`).
+3. Recover and annotate composite types (structs/arrays) instead of reducing them to pointer arithmetic or constant folding.

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `a2`, providing zero semantic context (e.g., `count` or `sum` in `varargs_func` became `result` and `v3`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The decompiler successfully recovered all original function names (e.g., `cdecl_func`, `test_calling_conventions`), perfectly matching the source intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved but often hex-encoded in the global variable section (e.g., `\xe6\xb5\x8b...`), and magic numbers like `40` (stack guard offset) appear without explanation.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is cluttered with compiler artifacts, specifically `__readfsqword(40)` for stack canaries and `__asm_` intrinsics (e.g., `__asm_movapd`) for standard arithmetic, severely obscuring the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is recognizable but awkward; for example, `varargs_func` uses a `goto` statement (`lab_0x13c0`) to break out of a loop instead of a standard `break`.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries and granularity match the source code perfectly; there is no inlining or outlining of functions, which is expected for `-O0` code.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, though the manual implementation of varargs logic creates some non-linear pointer arithmetic that disrupts the flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While there is no dead code, the varargs implementation duplicates loop structures to handle register vs. stack arguments, which is verbose compared to the source's `va_arg` macro.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are technically correct in width (e.g., `int64_t` for ARM64 registers) but semantically loose; `double` types are represented as `int128_t` with SIMD intrinsics rather than native C types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost; `func_struct_byval` takes no arguments in the signature and accesses the struct data via raw stack pointers (`v1`, `v2`) instead of named fields.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic to access struct fields (e.g., `*(int32_t *)(a1 + 4)`), losing the type safety of the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata like address ranges and line numbers; there are no explanatory comments for logic, algorithms, or complex pointer manipulations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms are missed; the `va_list` pattern in `varargs_func` is expanded into manual stack walking rather than being represented as `va_start`/`va_arg`.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Anomalies are only implicitly indicated by the presence of `__asm_` blocks and raw pointer access; there are no explicit warnings about uncertain logic or failed recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and use the correct recovered names, making the call graph easy to follow despite the poor variable naming.
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is organized into standard sections (prototypes, globals, functions), though the functions are ordered by address rather than logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes standard headers, but the heavy use of compiler-specific intrinsics (e.g., `__readfsqword`, `__asm_movapd`) likely requires specific compiler flags to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic and stack offsets.
+- Standard floating-point arithmetic is obscured by SIMD intrinsics (`__asm_addsd`, `__asm_cvtsi2sd`).
+- Variable names are entirely generic (`v1`, `a1`), requiring the user to reverse-engineer variable purposes from scratch.
+- The `va_list` idiom is not recognized, resulting in complex manual stack pointer manipulation code.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names, providing a high-level map of the binary that matches the source exactly.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions turns simple data access into unreadable pointer math, which is a major usability blocker.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to recover standard C idioms like `va_list`/`va_arg` instead of expanding them to raw stack access.
+2. Improve type recovery to identify and reconstruct struct definitions from stack usage and memory access patterns.
+3. Replace low-level SIMD/ASM intrinsics for standard arithmetic operations (like addition or casting) with equivalent high-level C operators to improve readability.

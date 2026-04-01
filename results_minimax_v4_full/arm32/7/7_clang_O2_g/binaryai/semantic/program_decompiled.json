@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_O2_g/binaryai/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "Running all obfuscation tests...\n\nTesting obfuscated optimizations:\nOpaque predicate result: 35\nInstruction substitution result: 0xe1\nString encryption result: 48\nTail call optimization result: 0x7a314\nNon-tail call result: 0x13ba\nVectorized loop result: 72\nLTO result: 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

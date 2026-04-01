@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout. The original source uses descriptive names like `arr`, `n`, `sum`, `c`, `p`, `head`, but these are almost entirely lost in decompilation. Only `result`, `i`, `j`, `n` are preserved.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are well-preserved: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. All match the original source function names exactly. Minor issue: some internal functions have generic names like `sub_1030`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions compute results at compile time (e.g., `printf("DT-L1-01 (process_char): %c\n", 97);` instead of showing the expression). Magic number 32 for case conversion is preserved as literal. Some literals like array indices are clear, but computed values lose the original expressions.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Code is relatively clean with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation. Some type casts present but necessary for correctness. Overall minimal noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recognized as for/while constructs. Some loop unrolling present in `array_1d_stack`, `array_3d`, `ptr_increment` - this is aggressive for -O0 but not severe. Control flow generally matches source intent.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are properly separated with appropriate granularity. Each function handles a single responsibility. No over-fragmentation or monolithic functions. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `array_2d_stack` but overall good linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling in several functions: `array_1d_stack` (unrolls by 8), `array_3d` (processes 25 elements per iteration), `ptr_increment`, `array_oob`. This obscures the simple loop logic from the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly accurate - `char`, `short`, `int`, `long`, `float`, `double`, `long double` (as `__int64`). Function pointers have proper signatures. Const is preserved in `const_param` and `ptr_const`. Minor generic types in some places.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `Device`, `State` all recovered with field names: `x`, `y`, `z`, `data`, `next`, `left`, `right`, `dest`, `numVertices`. Nested structures handled well.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present: `(int*)p`, `(char*)p`, `(void*)p` conversions. Pointer arithmetic generally correct. Minor type confusion in complex functions like `graph_traverse`. No severe safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code whatsoever. Original source has extensive comments explaining each test case. No decompilation confidence indicators or uncertainty flags. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal in `linked_list`, binary tree in `binary_tree_sum`, but not explicitly named or documented. The source shows these as clear data structure patterns but decompilation doesn't highlight them.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of anomalies in working code. The summary shows "FAILED to decompile" for 4 functions but these aren't flagged within the code itself. No warnings about uncertain indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. Original source has clear expectations (e.g., "期望: 15") but these aren't recovered. No contract information whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. No documentation of caller/callee relationships. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) not explicitly documented. Some relationships inferable from structure.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically - test functions together, data type functions together, array functions together, pointer functions, composite type functions. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code appears compilable. External functions (`printf`, `puts`, `__libc_start_main`) are standard. No obvious compiler-specific hacks. Would require linking with libc but otherwise standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`-`v6`) losing all semantic meaning from source
+- No comments whatsoever - original source's extensive explanations completely lost
+- Loop unrolling in simple functions (`array_1d_stack`, `array_3d`, `ptr_increment`) obscures source logic
+- Test functions compute results at compile time rather than showing original expressions
+- No contract or pre/postcondition recovery
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)  
+Struct and union types are excellently recovered with accurate field names matching the original source almost perfectly.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompilation has zero comments, losing all the original source's extensive documentation and explanations. Combined with poor variable naming, this makes the code much harder to understand than necessary.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v2` used as index in loops should be named `i` or `index`
+2. Add comments explaining decompilation confidence, especially for indirect calls and computed values
+3. Recognize and optionally annotate common patterns (linked lists, binary trees, state machines) with explanatory comments

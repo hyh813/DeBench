@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a0`, `v0`, `v1`, `ptr`, and `dst`. For example, in `param_macro_constants`, the parameter `size` is decompiled as `a0`, completely losing the semantic context of the variable's purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The decompiler successfully recovered all original function names from the symbol table (e.g., `param_macro_constants`, `test_preprocessing_features`). This provides excellent high-level context, matching the source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Macro constants are folded into magic numbers, obscuring the original source intent. For instance, `MAX_SIZE` (1024) appears as `0x400`, and `0xDEF0` appears as `57072` in `param_multi_branch_compile`. While string literals from `__FILE__` and `__DATE__` are recovered well, the numeric constants lack the semantic meaning provided by the original macros.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant noise from stack canary checks (`__stack_chk_guard`) and verbose helper calls like `arm64g_calculate_condition` in `call_asm_privileged`. While `__printf_chk` is a valid compiler substitution for `printf`, the explicit stack guard variables clutter the logic of simple functions like `call_asm_clobber`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Most control flow is natural, but `param_clobber_importance` decompiles to a complex bitwise expression `((a0 + a1) * 2 | a0 + a1 >> 31) & 4294967294` instead of the simple `(a + b) * 2` from the source. Additionally, `param_asm_clobber` uses a `while(true)` loop with a manual break, which is less idiomatic than the source's `for` loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler perfectly preserved the function boundaries and granularity found in the source. Functions like `param_token_paste` and `call_token_paste` remain distinct, matching the modular structure of the original C code without unwanted inlining or outlining.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with minimal forward jumps. The logic in `param_dynamic_code` and `param_memory_protection` flows linearly through the `mmap`/`mprotect` calls, making it easy to follow the sequence of operations.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts. The decompiler cleanly represented the logic, though the macro expansions (like `ADD_16` becoming `+ 16`) are technically simplifications rather than redundancies.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct for the AARCH64 architecture (e.g., `unsigned int` for 32-bit values, `unsigned long long` for pointers/64-bit values). However, in `param_asm_simd`, pointers are cast to `unsigned long` for arithmetic, which loses the distinction between a pointer and an integer compared to the source's `int*`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: The source code primarily uses primitives and arrays, which the decompiler handles correctly. There are no complex structs to recover, so it avoids the common pitfall of misrepresenting structure layouts, resulting in a neutral-to-good score.
+
+**11. Type Safety:** Score: 8/10
+Justification: The decompiled code does not contain dangerous or obviously incorrect casts. The use of `unsigned long long` for memory addresses in `mmap` calls is type-safe and appropriate for the target architecture.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. The rich documentation in the source explaining macro behaviors, preprocessor directives, and assembly logic is completely absent.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize high-level patterns. For example, `param_macro_recursion` is shown as `a0 + 16`, failing to indicate that this resulted from a recursive macro expansion pattern. The "token pasting" idiom in `param_token_paste` is also lost, leaving just the arithmetic result.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler does not flag the suspicious bitwise logic in `param_clobber_importance` as a potential lifting error or anomaly. It presents the complex expression confidently, which might mislead the user into thinking the source contained that specific logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, the contract that `param_dynamic_code` requires executable memory allocation is not explicitly stated, though the `mmap` call implies it.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `test_preprocessing_features` and the various `call_*` functions is immediately obvious, preserving the caller-callee graph structure.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are grouped logically in the output, generally maintaining the order they appeared in the source. The separation between preprocessing tests and assembly tests is preserved.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on compiler intrinsics like `__aarch64_ldadd4_acq_rel` and `__printf_chk`. While these are correct for the binary, they are not standard C, requiring specific headers or compiler built-ins to recompile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `v0`), obscuring the semantic meaning of parameters like `size` or `counter`.
+- Macro constants are folded into magic numbers (e.g., `0x400` instead of `MAX_SIZE`), making the code logic harder to map back to the source intent.
+- The expression in `param_clobber_importance` is decompiled incorrectly into complex bitwise operations `((a0 + a1) * 2 | ...)` instead of the simple `(a + b) * 2`.
+- Helper functions like `arm64g_calculate_condition` are injected into the code flow, adding noise and confusion.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function symbols from the binary, providing a high-level map that matches the source code structure exactly.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)
+- The decompiler fails to convey the *why* behind the code. The loss of macro definitions, comments, and pattern recognition means the code is syntactically correct but semantically "dry," making it difficult to understand the original developer's intent regarding preprocessing and assembly features.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Macro Constant Inference**: Attempt to identify magic numbers used in comparisons or arithmetic and suggest them as named constants (e.g., inferring `0x400` is likely a `MAX_SIZE` constant).
+2. **Expression Simplification**: Fix the lifting logic for arithmetic instructions to avoid generating unnecessarily complex bitwise expressions (as seen in `param_clobber_importance`) when a simple multiplication would suffice.
+3. **Noise Filtering**: Filter out or abstract away stack canary checks (`__stack_chk_guard`) and architecture-specific condition code helpers (`arm64g_calculate_condition`) to present cleaner, more high-level logic.

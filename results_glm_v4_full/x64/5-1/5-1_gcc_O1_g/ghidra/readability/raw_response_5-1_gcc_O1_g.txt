@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are predominantly generic type-prefixed names like `iVar1`, `lVar1`, and `pvVar2`, which obscure their semantic roles (e.g., result counters, object pointers). While `obj` is used correctly in `test_cpp_member_func`, other contexts like `test_cpp_rtti` use `plVar3` for `RTTIDerivedA*`, losing meaning.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully demangled C++ symbols, recovering original names like `test_cpp_member_func`, `Base::virtual_func`, and `Container<int>::push` with high accuracy. This provides excellent semantic context for the code's purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation, such as `0x125c` (4704) and `0x32` (50), instead of showing the original arithmetic expressions. While string literals like `"Test"` are recovered, the logic is obscured by hex constants.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Stack integrity checks (`__stack_chk_fail`) are present in almost every function, cluttering the control flow. Additionally, compiler builtins like `builtin_strncpy` and debug artifacts like `in_FS_OFFSET` are exposed, adding noise to the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level C++ constructs are reduced to low-level operations; for example, `test_cpp_exception` shows only `__cxa_throw` without the `try/catch` structure, and constructors in `test_cpp_constructor` are shown as raw memory writes (`*(undefined4 *)... = 10`) rather than function calls.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Template instantiations are correctly decomposed into separate functions (e.g., `template_max<int>` and `template_max<double>`), and virtual function thunks are clearly identified. However, main test functions are often flattened into constant returns.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the stack canary verification at the end of every function (`if (lVar1 == *(long *)(in_FS_OFFSET + 0x28))`) splits the return logic, disrupting the natural flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler output is concise, with no obvious dead code or redundant assignments. The "redundancy" here is actually aggressive constant folding (e.g., returning pre-calculated hex values), which while hiding logic, keeps the output short.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While class types (`SimpleClass`, `Base`) are recovered, many data members are accessed via generic types like `undefined4` or offsets (e.g., `obj._40_4_`), losing the specific type information (int, char*) present in the source.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Class structures are defined, but field names are often missing or replaced with offset-based names (e.g., `_40_4_` instead of `shared_data`). Complex inheritance like `DiamondDerived` triggers warnings about overlapping fields, indicating partial recovery.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts to access vtables and object internals, such as `*(long *)(lVar1 + -8)` and `(long)pvVar2`. While this reflects the binary reality, it results in type-unsafe C code that is hard to reason about.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings (e.g., "WARNING: Unknown calling convention") and DWARF prototype headers. There are no comments explaining the *logic* or *intent* of the code, such as what the magic numbers represent.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: C++ idioms are exposed as their low-level implementations rather than abstract concepts. For instance, virtual calls are shown as `(**obj->_vptr_Base)()` and RTTI checks as explicit `__dynamic_cast` calls, failing to reconstruct the high-level semantic patterns.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags technical anomalies like "Unknown calling convention" and "ignoring overlapping field". However, it does not flag semantic anomalies like the complete loss of logic due to constant folding in test functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions like array bounds checks in `Container::get` are present as raw `if` statements but are not documented as contracts. There is no indication of class invariants or function preconditions in the comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and virtual table references are clear. The use of global symbols for vtables (e.g., `PTR_virtual_func_001059a0`) helps establish relationships between classes and their virtual methods.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are logically grouped by class (e.g., all `Base` methods together, all `Container` methods together), preserving the source's modular structure effectively.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code is not standalone compilable due to the use of `undefined` types, compiler builtins (`builtin_strncpy`), and Ghidra-specific types. It would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- **Logic Obscured by Constants**: Functions like `test_cpp_member_func` return magic hex values (e.g., `0x125c`) instead of showing the arithmetic logic, making it impossible to verify the algorithm without reverse-engineering the constants.
+- **Loss of High-Level Abstractions**: Constructors are represented as raw memory writes, and exception handling is reduced to `__cxa_throw` calls, stripping away the C++ semantics.
+- **Generic Field Names**: Class member access often uses offset-based names (e.g., `obj._40_4_`) or `undefined` types, erasing the semantic meaning of fields like `shared_data` or `value`.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- Ghidra's demangling of C++ symbols is excellent, perfectly preserving the original function names and class hierarchies, which is crucial for navigating the code.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 3.75/10)
+- The decompiler fails to abstract low-level compiler implementations back into high-level C++ concepts (constructors, exceptions, RTTI), resulting in code that describes *how* the machine executes it rather than *what* the program does.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Logic Recovery for Optimized Code**: Implement heuristics to detect when a function returns a constant due to optimization and attempt to symbolize or annotate the calculation logic if debug info is insufficient.
+2.  **Exception Handling Reconstruction**: Enhance the analysis of `__cxa_*` frames and personality routines to reconstruct `try/catch` blocks and control flow, rather than just showing the throw mechanism.
+3.  **Field Name Inference**: Improve type recovery to use debug information (DWARF) more aggressively to map struct offsets to field names, avoiding generic names like `_40_4_`.

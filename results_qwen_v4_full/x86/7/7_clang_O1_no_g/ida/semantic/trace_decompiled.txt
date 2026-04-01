@@ -1,0 +1,12 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1209077760,Arg1=-1209077760,Arg2=0,Arg3=-1210908767|eax=0xb7ef0dd8,ebx=0x0,ecx=0xbaff7f4a,edx=0xbf80e694,esi=0xb7eef000,edi=0x0
+TRACE_PRINT|0|%54%65%73%74%20%4F%75%74%70%75%74
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%4F%62%66%20%4C%34%30%32%3A%20%31%30%0A
+TRACE_PRINT|0|%4F%62%66%20%4C%34%30%33%3A%20%32%30%0A
+TRACE_PRINT|0|%4F%62%66%20%4C%34%30%34%3A%20%32%32%35%0A
+TRACE_PRINT|0|%4F%62%66%20%4C%34%30%35%3A%20%33%35%0A
+TRACE_ENT|1|param_tail_call_optimized|1|Arg0=1000,Arg1=0,Arg2=32,Arg3=774455054|eax=0xd,ebx=0xbf80e64c,ecx=0x0,edx=0xbf80c044,esi=0xb7eef000,edi=0x0
+TRACE_EXT|1|param_tail_call_optimized|1|500500
+TRACE_PRINT|0|%4F%70%74%20%4C%34%30%31%3A%20%35%30%30%35%30%30%0A
+TRACE_ENT|2|param_non_tail_call|1|Arg0=100,Arg1=500500,Arg2=32,Arg3=774455054|eax=0x11,ebx=0xbf80e64c,ecx=0x0,edx=0xbf80c044,esi=0xb7eef000,edi=0x0
+TRACE_EXT|2|param_non_tail_call|1|5050

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Local variables are predominantly marked as "Unresolved local var" with cryptic names like `int sum@[???]`, `int i@[???]`, `int val@[???]`. Parameters like `a`, `b` are preserved but offer no semantic meaning. Stack references like `in_stack_00000004` are completely opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions retain their original names: `cdecl_func`, `stdcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. Some internal functions like `FUN_00011030` remain unnamed, but the majority of meaningful functions are properly identified.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the output: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21) appear in printf statements without explanation. The decompiler uses hex notation consistently but provides no named constants or explanatory comments for these values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Significant auto-generated annotations including "WARNING: Unknown calling convention", "Unresolved local var", and "Removing unreachable block" clutter the output. However, these don't completely obscure the underlying logic and are clearly marked as decompiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with if-else constructs and while loops. The varargs functions show loop unrolling (processing 4 integers at a time), which is an expected optimization artifact at -O0. Switch statements are correctly converted to conditional chains.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - test wrapper functions call sub-functions rather than inlining everything. The `test_calling_conventions` function properly delegates to individual test cases. No excessive fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `param_double_ptr`. Some forward jumps exist in complex varargs handling but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling in varargs functions (`varargs_func`, `param_varargs`) introduces some repetition but is a legitimate optimization. No dead code observed. The redundancy is manageable and doesn't obscure logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct: `int`, `char*`, `double`, `longlong`. Function pointers appear as `_func_int_int *` which is somewhat cryptic. The type `int *p` is correctly identified for pointer parameters. Some minor issues with `longlong` vs `long long` notation.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct` all have correct names. Field access is precise: `s.data[0]`, `p->x`, `p->y`. The `__return_storage_ptr__` pattern for struct return is correctly identified.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No major type safety violations. Pointer arithmetic is explicit and traceable. Casts are minimal. Function pointer types are reasonably accurate. Some void* to typed pointer conversions exist but are justified by the original code's type punning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are predominantly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No explanatory comments about algorithm logic, calling convention behavior, or test purpose. The "Unresolved local var" annotations are useful but don't explain the code's intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C idioms like varargs (`va_list`, stack-based argument access) are recognized. The `__return_storage_ptr__` pattern for struct return is identified. However, no explicit naming of patterns like "AAPCS calling convention" or "cdecl semantics" is provided.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler flags calling convention uncertainty with "WARNING: Unknown calling convention -- yet parameter storage is locked". Unresolved local variables are marked. However, some anomalies like the `call_thiscall` returning constant 15 without showing the class method are silently presented as correct.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. Functions like `func_struct_byptr` that have implicit contracts (null check returns -1) don't have this documented. No recovery of assert statements or validation logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within test functions (e.g., `test_calling_conventions` calls `call_cdecl`, `call_stdcall`). However, no explicit documentation of "called by" or "calls" relationships. Static functions like `callback_func` are not shown as callbacks.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: calling convention tests, parameter passing tests, return value tests. Related functions are near each other. The organization mirrors the original source's test structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C library functions (`puts`, `printf`). Struct types are defined. Should compile with minimal changes. External dependencies are clear (standard C library). No compiler-specific hacks that would prevent compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Local variables are almost universally marked as "Unresolved local var" with `@[???]` annotations, making it impossible to track data flow
+- Magic numbers like `0xf`, `0x32`, `0x2a` appear without explanation, requiring mental hex-to-decimal conversion
+- No explanatory comments about calling convention semantics or test purpose
+- The `call_thiscall` function returns constant 15 without revealing the underlying C++ class method call
+- Function pointer types are shown as cryptic `_func_int_int *` instead of meaningful callback signatures
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct types like `LargeStruct`, `SmallPoint` are correctly identified with proper field access patterns. The struct return mechanism using `__return_storage_ptr__` is accurately recovered.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Nearly all local variables are unresolved or have cryptic names like `sum@[???]`, `i@[???]`. This makes it extremely difficult to trace data flow and understand function logic, especially in functions like `varargs_func` and `test_calling_conventions`.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., `sum@[???]` used in accumulation should be named `sum`, `i@[???]` in loops should be `i`
+2. Convert magic numbers to decimal with explanatory comments where meaningful (e.g., `// Expected: 15 (CALL-L1-01)`)
+3. Add semantic comments for calling convention tests explaining what each test validates (e.g., "// Tests cdecl: right-to-left push, caller cleanup")

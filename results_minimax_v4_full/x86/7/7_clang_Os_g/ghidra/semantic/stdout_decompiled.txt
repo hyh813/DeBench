@@ -1,0 +1,16 @@
+Testing obfuscated optimizations...
+
+Value: 10
+Opaque: 20
+Instr sub: 225
+String enc: 37
+Tail call: 500500
+Non-tail: 5050
+Vector: 72
+LTO: 20
+Div zero: 1
+Null ptr: 41
+Buffer: 30
+Int overflow: 2000000000
+Undef behavior: 10
+Impl defined: 43

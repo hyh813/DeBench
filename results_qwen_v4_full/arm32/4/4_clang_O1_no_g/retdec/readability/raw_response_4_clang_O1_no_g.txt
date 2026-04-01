@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `result` throughout (e.g., `func_mixed_args(int32_t a1, int32_t str, int32_t a3...)`), completely losing semantic meaning from original names like `x`, `s`, `d`, `ll`, `count`, `sum`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`), but runtime helpers use mechanical names (`function_410`, `function_41c`, `_24_a`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g6 = "CALL-L2-06\xef\xbc\x9a..."`), magic numbers throughout (`0x12345678`, `0x51eb851f`), no named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler runtime artifacts present (`__do_global_dtors_aux`, `register_tm_clones`, `deregister_tm_clones`, 13 floating-point helper functions like `__adddf3`), bloating output from 665 to 1162 LOC.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs functions use manual pointer arithmetic loops instead of `for` constructs (e.g., `varargs_func` uses `while (v3 != 1)` with manual `v2 += 4`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries mostly preserved, but excessive fragmentation with runtime helpers. Individual functions are appropriately sized for their purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions have awkward jump patterns (e.g., `param_double_ptr` uses `.critedge` label pattern, `test_calling_conventions` has complex stack setup loops).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding applied correctly (e.g., `call_cdecl()` returns `15` directly), but some redundant patterns in struct initialization loops that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything becomes `int32_t`. Original `char*`, `double`, `long long`, `void*` all collapsed (e.g., `func_mixed_args` has `int32_t str` instead of `char*`, `int32_t a3, a4, a5, a6` for `double` and `long long`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`LargeStruct`, `SmallStruct`, `TestIntPair`, `BigStruct`, `SmallPoint` all lost. Code uses raw pointer arithmetic (`*(int32_t *)(v3 + 4)`) instead of struct field access (`p->x`, `s.data[i]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(float64_t)(int64_t)a3`, `(char *)str`), pointer arithmetic without bounds checking, varargs implemented with raw stack pointer manipulation risking undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of calling conventions, varargs handling, struct layout, or any non-trivial logic. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—varargs pattern not identified, struct passing conventions not documented, calling convention differences not explained despite being the core test purpose.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about problematic patterns (varargs stack walking, struct-by-value on ARM64, calling convention mismatches). Code presented confidently despite significant reconstruction uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL` requirement), no postconditions, null checks present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code, but no call graph documentation. Global variable usage opaque (`g6`, `g7` etc. without context of what strings they contain).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically but mixed with runtime helpers. No header file separation, all 94 functions in single output file.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers but references external runtime functions (`__libc_start_main`, `__cxa_finalize`, `__aeabi_*`) that may not be available. Floating-point helpers would need linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Complete type erosion**: All parameters become `int32_t`, losing `char*`, `double`, `long long` distinctions critical for understanding parameter passing
+- **Zero struct recovery**: `LargeStruct`, `SmallStruct` completely lost; code uses opaque pointer arithmetic instead of field access
+- **No comments**: Original source had extensive documentation; decompiled output has zero explanatory comments
+- **Generic variable names**: `a1`, `a2`, `v1`, `v2` throughout make tracking data flow extremely difficult
+- **Runtime bloat**: 13+ compiler helper functions (`__aeabi_*`, `__do_global_dtors_aux`) obscure actual program logic
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately, allowing identification of test purposes despite other degradations
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent impossible without cross-referencing original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols** (`-g` flag was present): Use DWARF info to restore `char*`, `double`, `long long`, and struct types instead of collapsing to `int32_t`
+2. **Add confidence annotations**: Flag uncertain reconstructions (varargs handling, struct layouts) with comments like `// DECOMPILER UNCERTAINTY: stack-based varargs`
+3. **Preserve string literal readability**: Decode and display string constants inline rather than as hex-encoded global variables (`g6`, `g7`, etc.)

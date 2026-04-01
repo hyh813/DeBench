@@ -1,0 +1,16 @@
+Starting tests...
+
+Opaque predicate result: 10
+Call opaque predicate: 20
+Instruction substitution: 225
+String encryption result: 151
+Tail call optimized: 500500
+Non tail call: 5050
+Vectorized loop: 72
+Link time optimization: 20
+Division by zero test: 0
+Null pointer deref test: 41
+Buffer overflow test: 30
+Integer overflow test: 2000000000
+Undefined behavior test: 10
+Implementation defined: 48

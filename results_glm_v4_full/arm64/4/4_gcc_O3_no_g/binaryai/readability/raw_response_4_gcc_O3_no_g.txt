@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, and `lVar1`, providing no semantic hint about their purpose (e.g., `sum`, `count`, or `seed` are lost).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `cdecl_func`, `test_calling_conventions`), likely due to the presence of debug symbols (`-g`), making the API perfectly clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Integer literals are presented in hexadecimal (e.g., `0xf` instead of `15`, `0x2a` instead of `42`) which requires mental conversion, and magic numbers like `-0x38` (stack offset in `varargs_func`) are exposed without explanation.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains `undefined8` and `undefined4` types, and uses Ghidra-specific macros like `CONCAT44` in `ret_large_struct`, which adds noise to the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Most control flow is natural, but `varargs_func` decompiles into a complex nested `do-while` loop with manual stack offset arithmetic (`iVar2 = -0x38`) instead of the simple `for` loop with `va_arg` found in the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no inlining or outlining, and the granularity is appropriate for the original design.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps; early returns are preserved correctly, making execution paths easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or obvious redundancy; the logic is concise, though the compiler's `-O0` stack handling in `varargs_func` makes the loop body look slightly redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Critical failure in `func_mixed_args`: the source signature `(int x, char *s, double d, long long ll)` is decompiled as `(double param_1, int param_2, char *param_3, long param_4)`, scrambling the parameter order and types due to ARM64 register separation.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Large structs passed by value (e.g., `LargeStruct` in `func_struct_byval`) are represented as pointers (`long *param_1`), and small structs returned by value (e.g., `SmallPoint`) are packed into scalar types (`ulong`), losing the struct semantics.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined` types and the incorrect parameter signature for `func_mixed_args` introduce type confusion, though pointer arithmetic in `func_struct_byval` is technically correct for the underlying assembly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the logic of `varargs_func` or the specific ABI handling in `ret_large_struct` is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The `va_list` pattern in `varargs_func` is not recognized as a varargs idiom; instead, it is presented as raw pointer arithmetic on the stack frame.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents the incorrect signature for `func_mixed_args` without any warning or anomaly flag, potentially misleading the user about the function's interface.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-NULL requirement for `param_1` in `func_struct_byptr` is not explicitly stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand (e.g., `main` calls `test_calling_conventions`).
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order that roughly follows the source file, but there is no explicit grouping or separation of concerns (like "Calling Conventions" vs "Return Values") in the output.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on `undefined` types and Ghidra macros (`CONCAT44`), and uses `__printf_chk` instead of standard `printf`, requiring significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Function `func_mixed_args` has an incorrect signature: parameters are reordered and types are mismatched (e.g., `double` appears first instead of `int`).
+- Variable naming is entirely generic (`param_1`, `iVar1`), obscuring the logic of calculations like sums or loop counters.
+- Composite types (structs) are lost; `func_struct_byval` takes a raw pointer instead of a struct value, and `ret_small_struct` returns a scalar `ulong`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The presence of debug symbols allowed perfect recovery of all function names, making the high-level structure of the program immediately obvious.
+
+**Most Needs Improvement:** Type System Fidelity (scored 5.0/10)  
+- The failure to recover mixed parameter types (int/float) correctly and the loss of struct semantics significantly impact the ability to understand the data interface.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve ARM64 ABI analysis to correctly separate floating-point and integer registers in mixed-type function signatures.
+2. Implement heuristic naming for variables based on context (e.g., `sum` for accumulators, `i` for loop counters) instead of generic `iVar1`.
+3. Recover struct-by-value semantics by analyzing hidden pointer parameters and memory layouts to reconstruct the original struct types in signatures.

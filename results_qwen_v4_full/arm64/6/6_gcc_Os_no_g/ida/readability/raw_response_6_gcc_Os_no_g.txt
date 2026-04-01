@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2` instead of semantic names (e.g., `dst`, `src` in `param_strcpy` became `a1`, `a2`). Thread function parameters like `int *a1` should be `int *iterations` based on usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `thread_compute`, `signal_handler`). Only a few anonymous functions like `sub_13A0` lack meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x3E8u` (usleep 1ms), `4294967293LL` (error code -3), signal numbers `10`/`14` instead of `SIGUSR1`/`SIGALRM`. Socket constants `2`, `1`, `0` instead of `AF_INET`, `SOCK_STREAM`, `0`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Architecture-specific intrinsics (`_aarch64_ldadd4_acq_rel`, `_aarch64_cas4_acq_rel`), stack annotations (`[xsp+18h] [xbp+18h] BYREF`), and excessive type casts (`__int64`, `_DWORD`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures generally preserved (for/while), but `param_strcmp` uses awkward flag variables (`v3`, `v4`) instead of direct comparison. Error handling follows C patterns with early returns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable sizes and cohesion. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Test functions correctly call param functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. `param_signal_handling` has deep nesting (5+ levels) but remains traceable. No spurious gotos in main logic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in decompiled portions. Some redundant type casts present but not excessive. Loop structures not aggressively unrolled.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original types degraded: `size_t` → `__int64`, `int` → `_DWORD`/`unsigned int`, `char*` → `unsigned __int8*`. `param_strcpy` return type changed from `int` to `size_t`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct not recovered (accessed as `a1[0]`, `a1[1]`, `a1[2]`). `sockaddr` fields unnamed. TLS variables accessed via raw offset (`StatusReg + 16`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(_DWORD)v5 - (_DWORD)a1` in `param_strchr_strstr`. Function pointer casts `(void *(*)(void *))` common. Pointer arithmetic without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. No algorithm descriptions, no decompilation confidence indicators. Only auto-generated function headers with register info.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns visible but not named. No design pattern identification (producer-consumer in `param_condition_variable` not labeled).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 62 failed decompilations listed at end but no inline warnings. Uncertain code presented confidently (e.g., TLS access via `TPIDR_EL0` without explanation).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). Error return values not explained (`4294967293LL` = -3). No postcondition inference for allocation functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`signal_received`, `atomic_counter`) used without explanation. No call graph provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order (library → syscall → thread tests). Related functions grouped but no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 62 external functions "FAILED to decompile" requiring stubs. Dependencies not documented. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.30/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- Variable `a1`, `a2` in `param_strcpy` should be `dst`, `src` based on `strcpy` semantics
+- Magic number `4294967293LL` used for error code -3 without explanation
+- `ThreadData` struct accessed as array (`a1[0]`, `a1[1]`, `a1[2]`) instead of named fields
+- Signal numbers `10`, `14` instead of `SIGUSR1`, `SIGALRM` constants
+- 62 library functions failed to decompile, breaking cross-reference clarity
+- No comments explaining non-trivial logic (e.g., atomic operations, TLS access)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify test purposes and thread functions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation; decompiler should add confidence indicators and explain non-obvious patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from function semantics** - When `strcpy(a1, a2)` is detected, rename parameters to `dst`, `src` based on standard library signature knowledge.
+
+2. **Recover named constants from magic numbers** - Detect common patterns (signal numbers, socket constants, error codes) and suggest symbolic names with comments.
+
+3. **Add decompilation confidence annotations** - Mark uncertain code regions (e.g., "// DECOMPILER UNCERTAIN: TLS access via TPIDR_EL0") and document failed external function resolutions inline.

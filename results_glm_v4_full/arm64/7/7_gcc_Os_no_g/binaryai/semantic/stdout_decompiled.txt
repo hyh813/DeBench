@@ -1,0 +1,7 @@
+Testing obfuscated code optimization...
+
+call_opaque_predicate() = 10
+Expected: 10
+call_instruction_substitution() = 225
+Decrypted string length: 31, printf return: 44
+call_non_tail_call() = 5050

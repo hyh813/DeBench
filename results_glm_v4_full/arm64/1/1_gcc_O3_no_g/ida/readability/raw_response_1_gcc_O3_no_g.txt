@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`a1`, `a2`), and local variables in optimized functions like `recursion_factorial` are meaningless (`v3`, `v4`, `v5`). While this is often unavoidable with `-O3` stripping debug info, names like `v2` in `switch_fallthrough` provide no semantic hint.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `recursion_factorial`, and `duffs_device` are perfectly preserved from the source, likely due to the presence of symbol tables. This makes identifying the high-level purpose trivial.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with "magic numbers" resulting from compiler optimizations, such as `0x100000001LL` (used for SIMD vector initialization) and `0x400000004LL`. These obscure the original mathematical intent (e.g., simple addition or multiplication).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While the code is syntactically clean, it contains significant "implementation noise" due to aggressive optimization, such as `LODWORD(result)` casts and SIMD intrinsics (`vaddq_s32`, `vmulq_s32`) which clutter the logic of simple arithmetic functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The control flow is heavily distorted by compiler optimizations. For example, `recursion_factorial` is transformed into an iterative SIMD loop with massive unrolled `if` chains, and `loop_break` is converted into a `switch` statement. While these are efficient, they deviate significantly from the original source structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are respected and match the source file's segmentation. The decompiler did not erroneously merge functions or split them into inlined stubs, maintaining a clean 1:1 mapping with the source definitions.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code suffers from non-linearity due to optimizations. `duffs_device` is represented with a mess of `goto` labels (`LABEL_7`, `LABEL_8`), and `recursion_factorial` contains deep nesting of conditional checks for loop unrolling, disrupting top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler faithfully reproduces the redundancy introduced by loop unrolling. In `recursion_factorial`, sequences like `if (a1 != 3) ... if (a1 != 4) ...` are repeated extensively. While accurate to the binary, this creates massive code bloat that hinders understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: The decompiler shows impressive precision by identifying ARM NEON SIMD types (`int8x16_t`, `int32x4_t`) and intrinsic functions (`vmulq_s32`, `vaddq_s32`) rather than falling back to raw byte arrays, which is crucial for understanding the optimized logic.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Simple arrays like `v3[3]` in `call_func_ptr_array` are recovered correctly. However, without complex structs in the provided snippet to test against, this score reflects standard competence in handling basic stack arrays and pointer tables.
+
+**11. Type Safety:** Score: 6/10
+Justification: There is frequent use of explicit casts like `(unsigned int)` and `LODWORD(result)`. While likely necessary to match the ARM64 register semantics (e.g., implicit truncation), they clutter the code and suggest potential type precision loss in the decompiler's intermediate representation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex transformations, such as the vectorization of the factorial loop or the Duff's device implementation, are presented without explanation, leaving the user to decipher the compiler's output manually.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler successfully identified `switch` statements (e.g., in `loop_break` and `if_elseif_chain`). However, it failed to recognize higher-level idioms like "sum of integers" or "factorial" because the compiler replaced them with SIMD instructions and unrolled loops.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There are no warnings or indicators that the code has been aggressively optimized or that the control flow has been significantly altered from standard C patterns (e.g., the computed goto in `computed_goto` is presented as raw assembly `__asm { BR X0 }` without context).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the constraints on `duffs_device` (n must be > 0) or the range checks in `switch_large` are implicit in the logic but not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is preserved, and the calls to `double_value`/`triple_value` via pointers are syntactically correct.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are presented in a logical order that roughly matches the source flow (test functions followed by implementations). The separation between Level 1, 2, and 3 features is implicitly maintained by the function ordering.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on specific ARM NEON intrinsics (`<arm_neon.h>`) and types (`int8x16_t`). Without the proper includes and compiler flags for ARM NEON, this code will not compile on a standard generic C environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 3 + 5) / 4 = 5.25
+L2_avg = (4 + 8 + 4 + 3) / 4 = 4.75
+L3_avg = (9 + 7 + 6) / 3 = 7.33
+L4_avg = (1 + 4 + 1 + 1) / 4 = 1.75
+L5_avg = (8 + 8 + 4) / 3 = 6.67
+
+Overall = (5.25 × 0.30) + (4.75 × 0.25) + (7.33 × 0.20) + 
+          (1.75 × 0.15) + (6.67 × 0.10)
+Overall = 1.575 + 1.1875 + 1.466 + 0.2625 + 0.667
+Overall = 5.158
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects
+- **Optimization Discrepancy:** The metadata claims `-O0`, but the binary is clearly compiled with `-O3` (SIMD vectorization, loop unrolling). The decompiler output reflects the optimized binary, making it look vastly different from the simple source logic.
+- **Loss of Algorithmic Intent:** Simple recursive or iterative algorithms (like `recursion_factorial` or `loop_for_fixed`) are transformed into complex SIMD vectorized code, completely obscuring the original mathematical intent.
+- **Magic Number Pollution:** Constants like `0x100000001LL` and `0x400000004LL` appear without explanation, representing vector initialization values that are not present in the source.
+- **Duff's Device Obfuscation:** The `duffs_device` function is decompiled into a spaghetti of `goto` labels (`LABEL_7`, `LABEL_8`), which is accurate to the assembly but very difficult to read.
+
+### Best Quality Aspect
+- **Type Precision (Score: 9/10)**
+- **Why?** The decompiler accurately identified ARM NEON SIMD types (`int8x16_t`, `int32x4_t`) and intrinsic function calls, which is a high-level technical achievement that prevents the code from degrading into raw byte manipulation.
+
+### Most Needs Improvement
+- **Semantic Transparency (Score: 1.75/10)**
+- **Why?** The complete lack of comments, combined with the failure to annotate the aggressive compiler optimizations (like loop unrolling or vectorization), leaves the user with no guidance on how the complex assembly maps back to the simple source logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Optimization Annotation:** Add comments or metadata indicating when a loop has been vectorized or unrolled (e.g., "Loop unrolled by compiler factor 4"), to help users map the complex output back to simple source logic.
+2.  **SIMD Abstraction:** Offer a "pseudo-code" mode that simplifies recognized SIMD patterns (like horizontal vector adds) back into scalar loop representations when the strict instruction accuracy isn't required.
+3.  **Constant Propagation for Magic Numbers:** Attempt to symbolize or explain vector initialization constants (e.g., `0x100000001LL` -> "Vector [1, 1, 1, 1]") to improve literal clarity.

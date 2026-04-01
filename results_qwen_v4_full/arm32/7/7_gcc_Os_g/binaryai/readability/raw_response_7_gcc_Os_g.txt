@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_c`, `pbVar1` that obscure semantic purpose. Original names like `x`, `result`, `str` are lost. Only globals like `div_zero_caught` and `jmp_buffer` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `call_tail_call_optimized`). Action-oriented naming maintained, making purpose inferable despite code degradation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex format (`0x5a`, `0xe1`, `0x7a314`, `0x2c`) without explanation. String literals replaced with address references (`&DAT_00010fd8`). Encryption key `0x5a` not documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from self-referential external stubs (`raise` calls `raise`, `free` calls `free`). Verbose ARM division routines (`__aeabi_idiv` has 35+ boolean variables). Stack canary checks (`__stack_chk_fail`) inserted throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Tail recursion successfully converted to iteration (`param_tail_call_optimized`), but `param_fake_branch` dead branches completely eliminated. `param_vectorized_loop` has awkward do-while structure. Complex division function has 35+ nested conditionals.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical functions like `param_fake_branch` and `param_buffer_overflow_stack` are empty (optimized away). `__aeabi_idiv` is hundreds of lines. External stubs are separate but nonsensical.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. `param_opaque_predicate` has clear if-else structure. Stack canary checks at function ends disrupt natural flow. Division function has extremely non-linear conditional chains.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__aeabi_idiv` and `_divsi3_skip_div0_test` are nearly identical (code duplication). External function stubs are completely redundant. Stack canary checks repeated in every function.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision with `undefined4`, generic `int`, and some `uint`. `param_instruction_substitution` correctly uses `uint`. Pointer types often generic (`void*` vs specific). `__jmp_buf_tag*` casting is explicit but verbose.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. Arrays shown as individual stack variables (`local_6c`, `uStack_68`, `uStack_64`...). No bit-field recovery. Pointer arithmetic used instead of struct field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)param_1`, `(__sighandler_t)0x0`, `(byte *)(param_2 + -1)`). `undefined4` return types are type-unsafe. Function pointer types not well preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only header shows "Decompiled by BinaryAI".
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Tail call optimization recognized and converted to loop. Division algorithm not identified. String decryption loop recognized but not named. Signal handler pattern not explicitly identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about optimized-away code (`param_fake_branch` is empty but not flagged). No indication that dead code was eliminated. Self-referential external stubs not marked as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions inferred. Signal handler contracts not explained. Error conditions undocumented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variable usage not clearly marked. Callback relationships (signal handlers) not explicit. String references shown as addresses only.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. External functions mixed with application code. Compiler runtime functions included. No header file separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. External stubs call themselves (infinite recursion). `undefined4` is decompiler-specific type. ARM-specific functions (`__aeabi_idiv`) require special handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+3)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (5+3+4)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (4+4+3)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────
+Overall Score:                                  4.33/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **External function stubs call themselves** (`raise`, `free`, `signal`, `malloc`) creating infinite recursion if executed
+- **`param_fake_branch` is completely empty** - dead code elimination not indicated, losing obfuscation semantics
+- **Zero comments** - no explanation of algorithms, optimization artifacts, or decompilation uncertainty
+- **Arrays decomposed to individual variables** (`local_6c`, `uStack_68`...) losing array semantics
+- **`undefined4` type** is decompiler-specific and won't compile in standard C
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved (`param_opaque_predicate`, `call_tail_call_optimized`), making purpose immediately inferable despite code degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation means readers cannot understand optimization artifacts, recovered patterns, or decompilation confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag optimized-away code explicitly** - Add comments like `// OPTIMIZED: Dead branch eliminated by compiler` when functions become empty
+2. **Fix external function stubs** - Declare external functions properly instead of creating self-referential definitions that would cause infinite recursion
+3. **Add semantic comments for recovered patterns** - Document recognized optimizations (TCO, instruction substitution) and mark uncertain decompilation with confidence indicators

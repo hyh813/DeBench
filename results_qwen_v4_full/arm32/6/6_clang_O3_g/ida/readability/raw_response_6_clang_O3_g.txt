@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `temp_1`) with no semantic meaning. For example, in `param_strcpy`, `v2` holds the `strcpy` result but should be named `copied_string`. Only a few variables like `thread_return` and `newthread` are descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserve original names (`param_strcpy`, `call_strlen`, `thread_compute`), which is good. However, helper functions like `sub_C48` and `frame_dummy` are mechanical. The `param_*` and `call_*` naming convention is maintained from source.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Critical magic numbers obscure meaning: `syscall(5, ...)` instead of `SYS_open`, `signal(10, ...)` instead of `SIGUSR1`, `socket(2, 1, 0)` instead of `AF_INET, SOCK_STREAM, 0`. String literals are preserved but numeric constants lose all semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts pollute code: register annotations (`// r0`, `// r4`), stack frame comments (`[sp+0h] [bp-28h] BYREF`), and 65 "FAILED to decompile" entries at the end. These don't aid understanding and clutter the output significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use recognizable `do-while` patterns, and conditionals are clear. However, `param_signal_handling` has deeply nested conditionals that could be flattened. At `-O0`, this level of restructuring is unexpected and reduces clarity.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable—`param_*` and `call_*` separation is preserved. Thread helpers (`thread_compute`, `thread_sum`) are appropriately extracted. However, `test_standard_library_functions` is monolithic at 80+ lines.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `param_thread_local_storage` uses `LABEL_16` goto patterns disrupting top-to-bottom reading. Most functions read linearly, but complex functions have forward jumps that break natural flow. Early returns are used appropriately in simpler functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some `call_*` functions return constants instead of calling `param_*` (e.g., `call_strlen` returns `12` directly). Comparison logic is duplicated in `param_strcmp` and `param_memcmp`. No dead code detected, but optimization artifacts create redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `FILE*`), but degradation exists: `_DWORD`, `__int64`, and generic `int` where `pid_t` or `ssize_t` would be precise. Pointer types are generally correct but lack const-correctness in many places.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct is lost—accessed via pointer arithmetic (`*((_DWORD *)arg + 2)`). `stat` struct partially recovered but fields accessed inconsistently. TLS variables accessed via offset (`&tls_thread_name[4]`) instead of proper struct fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(_DWORD *)arg`, `(unsigned __int8 *)buffer`, `(void **)v4`. Pointer arithmetic on typed pointers is common. No buffer overflow warnings despite `strcpy` usage. Atomic operations use generic `_atomic_*` functions instead of proper C11 atomics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated stack/register annotations only. No semantic comments explaining algorithm purpose or non-obvious logic. One useful warning exists: "positive sp value has been detected, the output may be wrong!" but this is rare.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `memcpy`, `pthread_create`). However, higher-level patterns like producer-consumer (`consumer_thread`/`producer_thread`) aren't identified. Signal handling pattern not documented despite complexity.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 65 failed decompilations listed at end, but no inline warnings about uncertain code within functions. Some functions have recovery warnings but most present incorrect information confidently (e.g., `param_shmget_shmat` missing parameters without warning).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). Error returns present but not explained. No postconditions or invariants recovered. Return value semantics (e.g., "returns 42 on success") not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear through direct invocation. Global variable usage (`shared_counter`, `atomic_counter`) visible but not documented. Callback relationships (thread entry functions) are visible but not explicitly noted as callbacks.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in source order, but all in single output file. Static functions not properly scoped. No header file separation or API declarations. Related functions (`param_*`/`call_*` pairs) are adjacent which helps.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 65 external functions failed to decompile requiring stubs. Would need significant patching to compile standalone. Dependencies on pthread, libc not documented. Some functions use architecture-specific intrinsics (`__aeabi_read_tp`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+5+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.025/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `syscall(5, ...)` should be `SYS_open`, `signal(10, ...)` should be `SIGUSR1`—these obscure system call semantics completely
+- **Variable names are generic**: `v0`, `v1`, `v2` throughout instead of semantic names like `fd`, `signal_num`, `bytes_read`
+- **Struct recovery failed**: `ThreadData` accessed via pointer arithmetic `*((_DWORD *)arg + 2)` instead of `data->result`
+- **65 functions failed to decompile**: External library calls listed as "FAILED" without stubs or documentation
+- **No semantic comments**: Zero explanation of algorithm purpose, error conditions, or API contracts
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names (`param_strcpy`, `call_strlen`, `thread_compute`) are preserved from source, maintaining semantic intent despite other degradation.
+
+### Most Needs Improvement: **Literal Clarity (3/10)**
+- System call numbers, signal constants, and socket parameters are all raw integers with no symbolic names, making the code nearly unreadable for system programming tasks.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants from debug info**: Since compiled with `-g`, syscall numbers (5→SYS_open), signal numbers (10→SIGUSR1), and socket constants should be recovered from DWARF debug symbols.
+
+2. **Infer variable names from usage patterns**: Variables used in size checks should be named `size`/`length`, file descriptors should be `fd`, pointers returned from malloc should indicate allocation purpose.
+
+3. **Document failed decompilations inline**: Instead of listing 65 failures at the end, mark uncertain call sites within functions with comments like `// EXTERNAL: strcpy - signature inferred`.

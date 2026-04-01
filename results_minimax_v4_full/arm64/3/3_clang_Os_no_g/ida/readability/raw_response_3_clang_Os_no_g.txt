@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`. Compare to source where variables have meaningful names like `arr`, `n`, `i`, `result`, `leak`, `p`. The decompiled code makes it nearly impossible to track variable purpose without analyzing usage patterns extensively.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named (`local_vars`, `heap_basic`, `double_value`, `malloc`, `free`, `memset`), but many use mechanical addresses like `sub_8E0`, `init_proc`, `frame_dummy`. The test functions are well-named but helper functions lost semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants partially meaningful (e.g., `0xAu` for 10, `0xBu` for 11), but many magic numbers unexplained: `0x14u` (20), `0x28u` (40), `0x10u` (16), `0x18u` (24). String references like `asc_22E9` are preserved but not decoded. The source's clear constant usage is lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe NEON/SIMD instruction pollution visible throughout: `int64x2_t`, `vdupq_n_s64`, `vmovn_s64`, `vcgtq_u64`, `vaddq_s64`, `vaddq_s8`. These compiler artifacts from arm64 vector operations clutter every loop. Multiple register references (`x0`, `x8`, `x9`, `w8`, `w9`, `w19`, `w20`, `d3`) create visual noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow preserved - loops and conditionals recognizable. However, NEON vector operations embedded in loops (e.g., `local_array`, `heap_basic`) make control flow difficult to trace. At -O0, this heavy SIMD usage is unexpected and obscures the simple `for` loops from source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent recovery - all test functions (`test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions`) and helper functions preserved. Function granularity matches source. The decompiler correctly separated `create_tree_node` from `tree_heap_traversal`.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in null-check functions (`heap_basic`, `memory_leak`). Some forward jumps in complex functions but manageable. The `test_*` functions linearize well with sequential printf calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present in `local_array`, `heap_basic`, `heap_array`, `vla_stack`, `alloca_usage` - these show repetitive SIMD patterns that could be recognized as unrolled loops. Dead code minimal. Some common subexpression elimination visible but not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - basic types `int`, `unsigned int` correct. But significant type erasure: `_BYTE`, `_DWORD`, `_QWORD`, `_OWORD` used instead of specific types. Pointer types unclear (`void *` vs `int *`). Some specific types like `size_t` and `unsigned __int64` preserved. Function parameters often generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. The `Point` struct in `heap_struct` is lost - decompiled as `3 * a1` without struct reference. `Node` and `TreeNode` reduced to raw pointer arithmetic (`*(_DWORD *)v0`, `v0[1]`). No field names recovered - just offset calculations. Compare to source's clear `p->x`, `p->y`, `new_node->data`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic throughout (`v4 + 4`, `v5 + 2`), unsafe casts between `int*` and `unsigned int*` in `heap_overflow`, no bounds checking visible. Function pointer type confusion in `call_global_callback` - calls `global_func_ptr()` without proper signature. Memory leak in `memory_leak` not flagged.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated noise like `// attributes: thunk`, `// BYREF`, `// [xsp+8h] [xbp-28h]`. No explanation of algorithms, no recovery of source comments like "// MEM-L1-01: 局部变量". No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible but not named. Linked list creation/traversal in `linked_list_heap` is recognizable but not labeled. Memory allocation patterns (`malloc` + `free`) present but not identified as "resource acquisition is initialization" or similar. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Critical failures - `dangling_pointer` function accesses memory after `free()` with no warning. `double_free` presented without flagging the double-free bug. `heap_overflow` writes beyond allocation with no overflow warning. The decompiler confidently presents undefined behavior as normal code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Source's safety checks like `if (n <= 0 || n > 1000) return -1` in `vla_stack` are present but not documented as "requires: n > 0 && n <= 1000". No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible - `double_value` used as callback in `test_static_global`. External function calls (`malloc`, `printf`, `free`) recognized. But no call graph documentation, no indication of which functions call which, no global variable usage tracking beyond direct references.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Reasonable organization - functions grouped by category: stack functions first, then heap, then static/global, then memory operations. Matches source file structure approximately. Static functions properly indicated. Some ordering issues but generally logical.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears to compile - proper function signatures, standard library calls. However, 18 library functions failed to decompile (marked "FAILED to decompile"). External declarations needed but minimal stubs required. The "Compilation Result: Yes" in metadata confirms it compiles.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`a1`, `v0`, `v1`) making semantic tracking nearly impossible
+- **Struct recovery failure**: `Point`, `Node`, `TreeNode` all lost - reduced to raw pointer arithmetic with no field names
+- **No anomaly detection**: Dangerous code like `dangling_pointer`, `double_free`, `heap_overflow` presented without any warnings
+- **NEON pollution**: Excessive SIMD instruction visibility (`int64x2_t`, `vdupq_n_s64`, etc.) obscures simple loop logic
+- **No comments**: Zero useful comments explaining algorithms, contracts, or intent
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- All test functions and helper functions correctly separated
+- Function granularity matches source
+- Module organization logical
+
+### Most Needs Improvement: Anomaly Indication (1/10)
+- Critical undefined behavior (dangling pointer, double-free, heap overflow) presented as normal code with no warnings
+- Zero decompilation confidence indicators
+- Security-sensitive patterns not flagged
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a1` used as array index → `index`; `v3` accumulating sum → `sum`; `v2` compared to array length → `length`
+2. **Recover struct layouts**: Detect consecutive field accesses at known offsets and reconstruct struct with field names
+3. **Flag undefined behavior**: Add warnings for post-free accesses, double-frees, buffer overflows, and other dangerous patterns with confidence indicators

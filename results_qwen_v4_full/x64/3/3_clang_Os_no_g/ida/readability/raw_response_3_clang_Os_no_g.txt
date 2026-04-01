@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a1`, `a2`, `temp_1`) with no semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most test functions retained original names (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use generic names (`sub_1020`, `deregister_tm_clones`). Inconsistent naming strategy.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0xFFFFFFFFLL`, `0x10u`, `0x28u`, `4294967294LL`). Original constants like buffer sizes are not recovered as named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts exposed: SIMD operations (`_mm_load_si128`, `__m128i`), explicit register variables (`// rax`, `// rbx`), redundant type casts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered but often as `do-while` instead of original `for` loops. `stack_alias` function completely wrong - returns constant 20 without any logic. Some functions use awkward condition patterns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. However, `tree_heap_traversal` collapsed to return constant 60 instead of showing tree creation logic - semantic loss.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions like `linked_list_heap` have confusing variable tracking (`v0`, `v3`, `v4` jumping between roles) that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts throughout (`(unsigned int)`, `(__int64)`). Loop unrolling in `large_stack_frame` uses SIMD but not abstracted. Some dead code patterns visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types degraded to generic (`__int64`, `_DWORD`, `_QWORD`, `unsigned __int8`). Original `int`, `size_t`, `char*` lost. `call_global_callback()` missing `int x` parameter entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs (`Point`, `Node`, `TreeNode`) completely lost. Access via raw offsets (`v0[1]`, `result + 8`) instead of field names (`node->next`, `p->x`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(__int64)a1`, `(_DWORD *)v5`). Pointer arithmetic exposed directly. `dangling_pointer` returns `*v1` after free without any warning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated register annotations (`// rax`). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (`malloc`/`free`) visible but not labeled as heap management. Linked list traversal in `linked_list_heap` not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Library functions marked "FAILED to decompile" but dangerous patterns like `dangling_pointer` (use-after-free) and `double_free` not flagged as security concerns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 > 0` checks exist but not labeled as requirements). NULL checks present but not explained as safety contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `global_func_ptr`) referenced without explaining their purpose or scope.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Original source had clear section comments (`// 3.1 栈内存操作`) completely lost. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 17 external functions "FAILED to decompile" (malloc, free, printf, etc.). Code cannot compile standalone without significant stubbing. Architecture mismatch (original ARM64, decompiled shows x86-64 registers).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.38/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` accessed via raw offsets (`v0[1]`) instead of field names
+- **Variable names entirely generic** - `v0`, `v1`, `a1` provide no semantic information vs. original `local`, `arr`, `head`
+- **`stack_alias` function semantically broken** - Returns constant 20 instead of implementing pointer aliasing logic
+- **Architecture mismatch** - Original compiled for ARM64 but decompiled code shows x86-64 registers (rax, rbx, xmm0)
+- **17 library functions failed to decompile** - Cannot compile standalone without extensive stubbing
+
+### Best Quality Aspect: Function Decomposition (scored 7/10)
+- Functions properly separated with reasonable granularity; test functions retained original names allowing identification
+
+### Most Needs Improvement: Composite Type Recovery (scored 2/10)
+- Complete failure to recover struct/union definitions; all composite types reduced to raw pointer arithmetic losing all field semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Analyze consistent offset usage (`v0[0]`, `v0[1]`) to reconstruct `Node { data, next }` structure
+2. **Infer variable names from usage context** - Variables used in malloc size calculations should be named `size`/`count`; loop indices should be `i`/`j`
+3. **Flag dangerous patterns explicitly** - Use-after-free (`dangling_pointer`), double-free, and buffer overflow patterns should have warning comments

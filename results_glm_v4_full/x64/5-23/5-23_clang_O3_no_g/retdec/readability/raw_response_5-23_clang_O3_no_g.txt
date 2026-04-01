@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `v3`. No semantic names like `size`, `x`, or `result` were recovered, forcing the reader to trace usage to understand purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_macro_constants` and `call_asm_simd` are perfectly preserved from the source, making the high-level intent immediately clear despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Macro constants like `MAX_SIZE` (1024) are lost; in `param_macro_constants`, the value 1024 is obscured by address arithmetic `(int32_t)&g24` (where `g24` is at address 0x401), making the logic `if (size > 1024)` unreadable.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with redundant casts like `& 0xffffffff` appearing after almost every arithmetic operation, which significantly degrades readability despite being technically correct for 32/64-bit conversion.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops and conditionals are present, the logic for `MAX(a, b)` macro expansion is represented as a complex ternary operator involving XOR and comparison checks (`v3 < 0 == ((v3 ^ v2) & ...) < 0`), which is far from idiomatic C.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler perfectly matched the source's function boundaries and granularity, keeping `call_*` and `param_*` functions separate and cohesive.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns; however, the complex ternary expressions in `param_macro_functions` disrupt the linear flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The expression `0x100000000 * a1 >> 32` in `param_macro_functions` appears to be a redundant artifact of sign-extension logic (likely `SXTW` on ARM64) that could have been simplified to a cast or direct assignment.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct (`int64_t` for parameters, `int32_t` for locals), matching the ARM64 ABI, but the explicit masking `& 0xffffffff` suggests the decompiler is struggling to trust the implicit truncation of the original `int` types.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays like `int arr[]` are correctly recovered as pointers (`int32_t *`), and stack-allocated buffers (like `int128_t v1`) are handled reasonably well given the lack of explicit struct definitions in the source.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is type-safe, though the heavy use of explicit masking and casts implies a lack of confidence in the compiler's implicit type handling, it does not introduce undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. The rich documentation explaining macros, preprocessor directives, and assembly logic present in the source is completely absent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The core challenge of this source—preprocessor macros—is completely missed. `SQUARE(x)` and `MAX(x, y)` are not recognized as patterns but expanded into raw arithmetic, losing the semantic high-level intent.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the obscure address arithmetic `&g24` as standard code without flagging it as a potential constant recovery failure or compiler artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., `size > 0`) or postconditions are documented or inferred from the code structure.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are accurate, and the relationship between `call_*` wrappers and `param_*` implementations is preserved clearly.
+
+**17. Module Organization:** Score: 9/10
+Justification: The file structure mirrors the source, with preprocessing tests and assembly tests grouped logically, and global variables (strings) are collected at the top.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on non-standard intrinsics like `__asm_movaps` and `__asm_paddd` which are specific to the decompiler's internal representation and will not compile with a standard C compiler without manual stubbing.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable names are generic (`v1`, `a1`), obscuring parameters like `size` or `x`.
+- Macro constants (`MAX_SIZE`) are replaced by obscure address arithmetic (`&g24`), making `if (size > 1024)` unreadable.
+- Macro functions (`SQUARE`, `MAX`) are inlined into complex math/ternary ops rather than being recognized as idioms.
+- Pervasive noise from `& 0xffffffff` masking operations.
+- SIMD/Assembly logic uses non-standard `__asm_...` intrinsics instead of standard C or inline assembly blocks.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered all original function names from the symbol table, providing a clear high-level map of the binary.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.3/10)
+- The failure to recognize or annotate preprocessor macros (the core feature of the source) and the lack of any comments makes understanding the *intent* of the code nearly impossible compared to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve constant recovery to identify global variables used as immediate values (e.g., recognizing `&g24` as `1024`).
+2. Detect and simplify sign-extension patterns (e.g., `0x100000000 * a1 >> 32`) to simple casts or assignments.
+3. Replace non-standard SIMD intrinsics (`__asm_movaps`) with standard inline assembly `__asm__` blocks or standard C equivalents where possible to ensure compilation compatibility.

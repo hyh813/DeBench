@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_d8`, `iVar1` instead of semantic names like `count`, `sum`, `args` from original source. This makes tracking data flow significantly harder.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, some helpers use generic names (`FUN_00101020`) and external wrappers are redundant.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values with explanations. Original source had comments like "// 期望: 15" that are completely lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`undefined8`, `extraout_RDX`, `in_RAX`, `in_stack_00000010`). Stack variable declarations like `local_b8[46]` are unclear and add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions maintain natural flow, but `varargs_func` uses goto labels (`LAB_00101396`, `LAB_00101340`) instead of clean loop constructs. At -O0, this restructuring is excessive.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but caller functions are constant-folded (`call_cdecl` returns `0xf` directly instead of calling `cdecl_func`). This loses the original call structure entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but varargs functions have complex nested loops with forward jumps that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding creates redundancy—test functions print pre-computed values instead of showing actual function calls. `varargs_func` and `param_varargs` have nearly identical complex code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined8`, `int`, `long`). `func_mixed_args` has parameter order changed (`double param_1, int param_2, char *param_3, long param_4` vs original `int x, char *s, double d, long long ll`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—struct types completely lost. `func_struct_byval` shows 16 individual `int` parameters instead of `LargeStruct s`. `func_struct_byptr` takes `int*` instead of `SmallStruct*`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)sVar2`, `(long)local_b8`, `(undefined4 *)*param_1`). `ret_large_struct` returns `int*` instead of `struct LargeData`. Pointer arithmetic lacks type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. Original source had extensive documentation explaining each test case, expected values, and calling convention details. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified despite complex handling code. Calling convention patterns not documented. No algorithm or design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite significant issues (type mismatches, struct loss, parameter reordering). `varargs_func` complexity not explained as decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Null checks exist (`if (param_1 != (int *)0x0)`) but not documented as preconditions. No postconditions or invariants recovered from original assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`DAT_0010238a`, `ret_opaque_handle_handle1`) appear without explanation of their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source, but no logical grouping comments. External dependencies not documented (printf, strlen, puts).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies present but undefined symbols exist (`ret_opaque_handle_handle1`, `ret_opaque_handle_handle2`). Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              4.43/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` not recovered; `func_struct_byval` shows 16 individual int parameters
+- **Zero comments** - All original documentation, expected values, and test explanations removed
+- **Aggressive constant folding** - Caller functions return pre-computed constants instead of showing actual function calls
+- **Generic variable naming** - `param_1`, `local_d8`, `iVar1` obscure semantic meaning
+- **Type precision degraded** - `undefined8` return types, incorrect pointer types (`int*` vs `SmallStruct*`)
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved correctly, making basic navigation possible
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding test purposes and expected behaviors impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite types from stack layouts** - Analyze parameter access patterns to reconstruct struct definitions instead of showing individual fields
+2. **Preserve call relationships over constant folding** - Show actual function calls even when compiler optimized them, with optional "constant-folded" annotations
+3. **Add semantic annotations for common patterns** - Detect varargs, calling conventions, and test patterns; add explanatory comments with confidence indicators

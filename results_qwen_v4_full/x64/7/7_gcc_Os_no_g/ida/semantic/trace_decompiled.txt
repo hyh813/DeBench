@@ -1,0 +1,9 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=484814648,Arg2=484814664,Arg3=-1033818760|rax=0x5a90c2610180,rbx=0x7ffe1ce5af38,rcx=0x5a90c2612d78,rdx=0x7ffe1ce5af48,rsi=0x7ffe1ce5af38,rdi=0x1,r8=0x0,r9=0x78380a96d380
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|param_opaque_predicate|1|Arg0=5,Arg1=484813904,Arg2=0,Arg3=0|rax=0x0,rbx=0x7ffe1ce5af38,rcx=0x0,rdx=0x0,rsi=0x7ffe1ce5ac50,rdi=0x5,r8=0x0,r9=0x78380a96d380
+TRACE_EXT|1|param_opaque_predicate|1|20
+TRACE_ENT|2|param_string_encryption|1|Arg0=1,Arg1=484813904,Arg2=0,Arg3=0|rax=0x0,rbx=0x7ffe1ce5af38,rcx=0x0,rdx=0x0,rsi=0x7ffe1ce5ac50,rdi=0x1,r8=0x1,r9=0x78380a96d380
+TRACE_ENT|3|decrypt_string|2|Arg0=-1033817984,Arg1=484814280,Arg2=32,Arg3=90|rax=0x0,rbx=0x7ffe1ce5adc8,rcx=0x5a,rdx=0x20,rsi=0x7ffe1ce5adc8,rdi=0x5a90c2613080,r8=0x1,r9=0x78380a96d380
+TRACE_EXT|3|decrypt_string|2|484814280
+TRACE_EXT|2|param_string_encryption|1|0
+TRACE_ENT|4|param_non_tail_call|1|Arg0=100,Arg1=-1033818040,Arg2=0,Arg3=0|rax=0x0,rbx=0x7ffe1ce5af38,rcx=0x0,rdx=0x0,rsi=0x5a90c2613048,rdi=0x64,r8=0x1,r9=0x78380a96d380

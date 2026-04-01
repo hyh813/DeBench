@@ -1,0 +1,10 @@
+Testing C++ Object Oriented Features
+Member function result: 4704
+Constructor result: 21
+Virtual function result: 42
+Multiple inheritance result: 71
+Diamond inheritance result: 650
+Operator overload result: 22
+Template function result: 39
+Template class result: 16
+Lambda result: 85

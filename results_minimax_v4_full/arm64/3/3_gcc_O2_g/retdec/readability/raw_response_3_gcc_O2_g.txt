@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, `v4`, `v5`, `mem`, `mem2`, `mem3` with no semantic meaning. In `double_value`, variable `v1` at address 0xc60 should be named `x`. In `local_vars`, `v1` should be `x`. The generic numbered variables make it nearly impossible to track data flow without extensive cross-referencing.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most test functions retain their original names: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `test_stack_memory`, etc. However, some internal libc wrapper functions have generic names like `function_9d0` (memcpy), `function_9e0` (memmove), `function_a40` (malloc). The main API functions are well-named.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `0xfffffffe` (mask for even numbers), `0xffffffff` (-1 error code), and `0x200000001` (encoded initialization values) appear without explanation. Chinese string literals are hex-encoded: `"\xe6\xb5\x8b\xe8\xaf\x95..."` instead of readable "测试...". Expected values like `20`, `10`, `15` are hardcoded in test output without explaining they're computed results.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Contains compiler intrinsics like `__asm_sbfiz`, `__asm_sbfx`, `__asm_ubfx`, `__asm_dmb` for bit manipulation and memory barriers. Stack canary checks add `__stack_chk_fail` calls. Redundant expressions like `*(int64_t *)g1 == *(int64_t *)g1` (always true) appear. However, these are manageable compared to some decompilers.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Loops are correctly recognized as `while` constructs. Conditionals use `if` statements naturally. At `-O0` optimization, control flow should closely match source, and it generally does. Some complex conditions like `v3 >= (int32_t)&g17 == (v3 != (int32_t)&g17)` in vla_stack are convoluted but this appears to be decompiler artifact rather than source divergence.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching the source. Test functions like `test_stack_memory` are appropriately large (calling multiple sub-tests). No obvious over-fragmentation or monoliths. Parameter lists are reasonable - functions like `alloca_usage(int32_t n)` correctly show the parameter.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error checking. Some forward jumps exist in complex functions like `linked_list_heap` with its `goto lab_0x12d8` pattern, but these are manageable. No severe non-linearity that makes reading impossible.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Some dead code patterns like `if (*(int64_t *)g1 == *(int64_t *)g1)` appear multiple times (always true). Loop unrolling is minimal. Some redundant type conversions exist. The expression `(int32_t)v2 - 1` followed by masking operations suggests missed optimization opportunities by the decompiler.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Uses `int32_t`, `int64_t`, `uint32_t`, `uint64_t` appropriately in most places. Function pointers like `int32_t (*global_func_ptr)(int32_t)` are properly typed. However, some places use generic `int` in casts, and the return type for `malloc` is `int64_t *` instead of `void *`. The `size_t` type is not recovered.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: The `Point` struct (with x, y fields) is completely lost - `local_struct` computes `3 * v1` directly instead of accessing struct members. The `Node` and `TreeNode` structures are not recovered - `heap_nested` uses raw `malloc(16)` with manual field offsets. No struct field names like `data`, `next`, `left`, `right` are recovered. All composite types are reduced to raw pointer arithmetic.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe casts present: `(int32_t *)v4`, `(char *)v2`, `(int64_t *)v3`. Pointer arithmetic is manual without bounds checking. Function pointer casting issues: `*(int64_t *)&global_func_ptr = 3168;` assigns raw value instead of function pointer. Some expressions like `(int64_t)*(int32_t *)(v11 + (2 * v2 & 0xfffffffc))` are error-prone.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Contains address ranges (`// Address range: 0xb00 - 0xb24`) and line ranges (`// Line range: 881 - 887`) which are mechanical. No algorithm explanations or intent documentation. The comment `// From module: /work/3.c` indicates source file but provides no semantic insight. No decompilation confidence indicators for uncertain code.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns identified. Memory management idioms (malloc/free pairs, linked list traversal, tree operations) are not recognized or named. The code presents raw algorithmic steps without identifying common patterns like "linked list creation" or "binary tree traversal."
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flags for suspicious code. The dangling pointer access in `dangling_pointer` (accessing `*p` after `free(p)`) is presented without any warning. The double-free in `double_free` has no indication. Memory leak in `memory_leak` (no free) is not flagged. Code confidently presents potentially dangerous patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions documented (e.g., "requires: n > 0"). No postconditions (e.g., "ensures: return is heap-allocated and must be freed"). No invariant recognition. Error conditions like NULL checks are present in code but not documented as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are explicit and traceable. Global variables like `global_counter`, `global_array`, `file_scope_static` are accessible. However, there's no documentation of which functions call which, or callback relationships. The connection between `set_global_callback` and `call_global_callback` is implicit.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically: memory test functions together, heap functions together, static/global functions together. Global variables are declared at the top. Function prototypes are properly declared. However, the organization is a single flat file rather than matching any source module structure.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Has proper includes: `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>`. Function prototypes are declared. Should compile with minimal changes. The hex-encoded Chinese strings might cause encoding issues on some systems.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 5) / 4 = 4.75
+L2_avg = (7 + 8 + 7 + 5) / 4 = 6.75
+L3_avg = (7 + 2 + 5) / 3 = 4.67
+L4_avg = (4 + 3 + 2 + 2) / 4 = 2.75
+L5_avg = (5 + 7 + 8) / 3 = 6.67
+
+Overall = (4.75 × 0.30) + (6.75 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (6.67 × 0.10)
+        = 1.425 + 1.6875 + 0.934 + 0.4125 + 0.667
+        = 5.126/10
+```
+
+### Overall Readability Score: 5.1/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `v3`, `mem`, `mem2`) making data flow tracking extremely difficult
+- **Struct recovery failure**: The `Point`, `Node`, and `TreeNode` structures are completely lost; all access is raw pointer arithmetic with no field names
+- **No anomaly indication**: Dangerous patterns like dangling pointers, double-frees, and memory leaks are presented without any warnings
+- **Magic numbers**: Hex values like `0xfffffffe`, `0x200000001` appear without explanation; expected values hardcoded in test output
+- **No contract documentation**: Preconditions, postconditions, and invariants are not recovered or documented
+
+### Best Quality Aspect: Function Naming (8/10)
+Most test functions retain their original descriptive names (e.g., `double_value`, `local_vars`, `heap_basic`), making it easy to identify the purpose of each function.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+The decompiled code provides no algorithm explanations, no identification of design patterns, no warnings about dangerous code patterns (dangling pointers, memory leaks), and no contract documentation. This dimension scored lowest by far.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct field names**: Analyze malloc sizes and field access patterns to reconstruct struct layouts with meaningful field names (e.g., `Node->data` instead of `*(int32_t *)mem`)
+2. **Add anomaly warnings**: Flag suspicious patterns like memory access after free, double-free calls, and missing frees with comments like `// WARNING: potential dangling pointer`
+3. **Infer variable names from usage**: Use data flow analysis to suggest semantic names - if `v1` is used as array index, name it `index`; if `v2` holds a size, name it `size` or `count`

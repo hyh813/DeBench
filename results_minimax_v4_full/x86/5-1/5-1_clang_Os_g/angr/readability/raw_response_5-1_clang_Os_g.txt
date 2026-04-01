@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic single-letter names (`v0`, `v1`, `v2`, `ptr`, `i`) throughout. For example, in `test_cpp_member_func()`, variable `v0` holds the value `10` (the result of `setValue`), but the name provides no semantic indication. This is pervasive across all 778 lines of decompiled code.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some C++ mangled names like `_Z20test_cpp_member_funcv` are accurate, the majority use generic `sub_XXXXX` patterns (e.g., `sub_401030`, `sub_401160`). The decompiler failed to recover meaningful names for critical functions like constructors, destructors, and member functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "Test" are preserved in `memcpy(&v1, "Test", 31)`, but magic numbers such as `20` (for sizeof int[5]), `40`, `80` (for Container<double> offset) appear without explanation. Some constants like `0x1234` are completely absent.
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: Severe VEX IR artifacts pollute the code, particularly in `Container<double>::push` and `Container<double>::get` with lines like `[D] PutI(72:F64x8)[t3,0] = t6()`. Additionally, `goto (int)v1[24];` in `sub_401160` is nonsensical decompilation output. Empty functions like `sub_4011db` add to the noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Control flow is severely broken. `goto (int)v1[24];` in `sub_401160` is invalid. Many functions like `test_cpp_virtual_func()` and `test_cpp_multiple_inheritance()` are completely empty with just `return;`. The decompiler failed to recover the actual logic from these functions.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are separated but many are empty stubs. The original source has 12 distinct test functions plus member functions, constructors, and destructors, but the decompiled version has many functions with no meaningful implementation. Parameter lists are sometimes recovered (e.g., `template_max<int>(int arg_0, int arg_1)`) but lack semantic naming.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: The code does generally read top-to-bottom, but forward jumps like `goto ptr[2];` in `sub_401030` and the computed goto pattern disrupt linear flow. Many empty return statements also break the logical reading order.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists but isn't overwhelming. The bigger issue is incomplete implementations rather than redundancy - many functions simply have `return;` with no body, which isn't true redundancy but missing code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type precision loss. Functions like `test_cpp_member_func()` return `void` when they should return `int`. The original returns `4704` but the decompiled version returns nothing. Template functions like `template_max<int>` correctly return `int`, but many others lose return types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery exists with generic names: `struct_0 { char padding_0[11715]; struct struct_1 *field_2dc3; }`. Field names are generic (`padding_0`, `field_4`). The original `SimpleClass` with `int value` and `char name[32]` is not recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns. In `Container<int>::push`: `*((int *)((char *)ptr + 4 * index)) = arg_0;` uses unsafe pointer arithmetic. In `call_virtual_func`: `(*((int *)*((int *)arg_0)))(arg_0, arg_1);` is a dangerous indirect call through void*. The decompiler couldn't resolve the vtable call properly.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are auto-generated like "// Function: sub_401030 at 0x401030". No explanation of what `test_cpp_member_func` does, no documentation of the expected return value (4704), no algorithm descriptions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are recognized. The virtual function mechanism in `call_virtual_func` is just shown as a raw indirect call without indicating it's a vtable dispatch. Template instantiation is not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The decompiler presents clearly broken code without warning. `goto (int)v1[24];` is shown as-is with no indication this is a decompilation failure. The VEX IR artifacts in `Container<double>` functions are not flagged as unsupported.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear contracts (e.g., `getData` requires `idx < size`), but these are completely absent from the decompiled code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some function relationships are visible through call graphs (e.g., `main` calls `test_cpp_oo_features`), but the relationships between classes and their methods are unclear. The virtual function relationships are not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address but lack logical organization. The original groups functions by feature (CPP-L3-01, CPP-L3-02, etc.), but the decompiled version just lists them by address with bootstrap code intermixed.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code does not compile. Many functions return `void` when they should return values. VEX IR artifacts like `[D] PutI(...)` are not valid C. External declarations are incomplete (e.g., `extern unsigned int _ZN14LifecycleClass14instance_countE;`).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **Function `test_cpp_member_func()` returns void instead of int** - The original returns 4704, but the decompiled version has `return;` with no value, completely losing the computation result
+- **Invalid control flow**: `goto (int)v1[24];` in `sub_401160` is nonsensical and indicates decompilation failure
+- **VEX IR artifacts**: Lines like `[D] PutI(72:F64x8)[t3,0] = t6()` in `Container<double>` functions are not valid C code
+- **Empty function bodies**: `test_cpp_virtual_func()`, `test_cpp_multiple_inheritance()`, `test_cpp_diamond_inheritance()`, and many others are completely empty
+- **Variable names are all generic**: `v0`, `v1`, `v2`, `ptr`, `i` provide no semantic meaning
+
+### Best Quality Aspect: Literal Clarity (5/10)
+- String literals like "Test" are preserved, and some numeric constants can be inferred from context. This is the highest-scoring dimension but still only at 5/10.
+
+### Most Needs Improvement: Noise Reduction (1/10) and Variable Naming (2/10)
+- The code is polluted with VEX IR artifacts and invalid goto statements that make it practically unusable
+- Generic variable names like `v0`, `v1`, `ptr` pervade the entire codebase, making it impossible to understand what each variable represents
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover return values for functions**: Many functions like `test_cpp_member_func()` should return values but return void. The decompiler must track return value computation through the function.
+2. **Eliminate VEX IR artifacts**: The `[D] PutI(...)` patterns are clearly internal decompiler artifacts that should never appear in output. Add better filtering for unsupported IR.
+3. **Infer variable names from usage patterns**: Variables used as array indices should be named `index` or `i`, variables holding sizes should be `size`, etc. Use data flow analysis to assign semantic names.

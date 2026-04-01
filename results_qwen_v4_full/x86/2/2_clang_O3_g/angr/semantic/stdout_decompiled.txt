@@ -1,0 +1,55 @@
+Data Types Level 1
+DT-L1-01 (process_char): a
+DT-L1-01 (process_char): b
+DT-L1-02 (process_short): 300
+DT-L1-03 (process_int): 11
+DT-L1-04 (process_long): 200
+DT-L1-05 (process_ll): -4615618026627127536
+DT-L1-06 (process_float): 0.00
+DT-L1-07 (process_double): 0.00
+DT-L1-08 (process_ld): 0.00
+DT-L1-09 (process_bool): 1
+DT-L1-09 (process_bool): 0
+DT-L1-09 (process_bool): 0
+DT-L1-10 (const_param): 15
+DT-L1-11 (volatile_access): 20
+Array Types
+ARR-L1-01 (array_1d_stack): 15
+ARR-L1-02 (array_string): 5
+ARR-L1-03 (array_2d_stack): 45
+ARR-L1-04 (array_3d): 5
+ARR-L2-01 (array_vla): 60
+ARR-L2-02 (array_pointer): 100
+ARR-L2-03 (pointer_array): 60
+ARR-L2-04 (array_complex_index): 17
+Pointer Types
+PTR-L2-01 (ptr_single): 15
+PTR-L2-02 (ptr_double): 15
+PTR-L2-03 (ptr_triple): 6
+PTR-L2-04 (ptr_increment): 15
+PTR-L2-05 (ptr_offset): 30
+PTR-L2-06 (ptr_diff): 4
+PTR-L2-07 (ptr_void): 42
+PTR-L2-07 (ptr_void): 65
+PTR-L2-08 (ptr_const): 20
+PTR-L2-09 (ptr_const_ptr): 15
+PTR-L2-10 (ptr_func_simple): 10
+PTR-L2-11 (ptr_func_complex): 1
+PTR-L2-12 (ptr_cast): 0x12345678
+PTR-L2-13 (opaque_handle_op): 20
+Composite Types
+CMP-L2-01 (struct_simple): 6
+CMP-L2-02 (struct_array): 9
+CMP-L2-03 (struct_nested): 105
+CMP-L2-04 (struct_deep): 258
+CMP-L2-05 (struct_with_ptr): 30
+CMP-L2-06 (struct_bitfields): 106
+CMP-L2-07 (union_type): 0x12345678
+CMP-L2-08 (union_array): 60
+CMP-L2-09 (enum_type): 10
+CMP-L2-10 (enum_switch): 50
+CMP-L2-11 (struct_func_ptr): 21
+CMP-L2-12 (linked_list): 60
+CMP-L2-13 (doubly_linked_list): 30
+CMP-L2-14 (binary_tree): 100
+CMP-L2-15 (graph_traverse): 1

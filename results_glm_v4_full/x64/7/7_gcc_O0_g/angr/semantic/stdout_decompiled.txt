@@ -1,0 +1,12 @@
+Test Obf Opt Edge
+
+Fake branch: 10
+Opaque predicate: 20
+Instruction substitution: 225
+String encryption: 1761285153
+Tail call optimized: 500500
+Non tail call: 5050
+Vectorized loop: 8
+Link time optimization: 20
+Division by zero: 1
+Null pointer deref: 41

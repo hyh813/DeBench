@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v2`, `v3`, `i`, `result`). The original source used meaningful names like `size`, `x`, `y`, `arr`, `n` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are remarkably well-preserved - `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_conditional_compile` all match the original source exactly. Only minor issues with some internal helper functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072` (0xDEF0), `1025` (MAX_SIZE+1), `512` (MAX_SIZE/2) appear without explanation. The decompiler correctly computed the values but lost the macro constant names (MAX_SIZE, BUFFER_COUNT).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Very clean decompilation with minimal compiler artifacts. No redundant casts, register spills, or debug instrumentation visible. The code is straightforward to read.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow uses natural constructs - if/else statements, for loops. The original conditional compilation (#ifdef) is correctly resolved to single branch. At -O0, this is as expected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility (e.g., `param_macro_constants`, `param_asm_basic`). No monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns used appropriately in functions like `param_dynamic_code`. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. The inline assembly in source is correctly replaced with equivalent C operations. Loop unrolling is minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` throughout instead of precise types like `int32_t`, `size_t`, or `uintptr_t`. The `volatile signed __int32` in atomic operations is more precise. Pointer types are generic (`_BYTE *`, `char *`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery needed for this particular source as it mostly uses primitives. The `__m128i` type for SIMD is correctly preserved. Array access uses pointer arithmetic: `*(_DWORD *)(a1 + 4 * i)`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: pointer arithmetic `*(_DWORD *)(a1 + 4 * i)`, raw memory casts `(int *)mmap(...)`, and implicit conversions. No bounds checking visible. The atomic operations use proper volatile qualifiers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in the decompiled code. Only the function signature comments exist. No explanation of what macros did, no documentation of the assembly logic that was replaced.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. The decompiler doesn't recognize or label patterns like "macro expansion", "atomic operation", or "SIMD vectorization" that were in the original source.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly reports "FAILED to decompile" for 8 functions (e.g., `__libc_start_main`, `mprotect`, `printf`). However, no explanation of why or what the original might have been.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no formal contracts either, but the decompiler could have inferred some (e.g., "requires: mmap success check").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. The caller functions (`call_*`) calling `param_*` functions are not annotated. No indication of which functions are static vs. exported.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order roughly matching source. The preprocessing test functions and assembly test functions are grouped separately. Minor ordering differences from original.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code should compile as standalone C. Uses standard library functions (printf, mmap, sysconf). No obvious compilation barriers - the metadata says "Compilation Result: Yes".
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `a3`, `v2`, `v3` instead of semantic names like `size`, `x`, `y`, `result`
+- Magic numbers like `57072` (0xDEF0) and `1025` (MAX_SIZE+1) lack constant names
+- No comments explaining macro expansions, inline assembly replacement, or algorithm logic
+- No cross-reference documentation showing caller/callee relationships
+- Type precision lost - uses generic `int` instead of `int32_t`/`size_t`
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (2/10)  
+The decompiler provides no documentation of function contracts, preconditions, or postconditions, making it harder to understand how functions should be used correctly.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` compared against 1024 should be named `size`; variables used as loop indices should be named `i`, `index`, or `counter`
+2. Detect magic numbers and suggest constant names - 1025 → "MAX_SIZE + 1", 57072 → "0xDEF0" or "DEFAULT_PLATFORM_VALUE"
+3. Add semantic comments explaining transformations - document when inline assembly was replaced with C, when conditional compilation branches were resolved, and what macros expanded to

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `flag1`, providing no semantic context (e.g., `v0` used for the return value in `param_fake_branch` instead of `result`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source symbols (e.g., `param_fake_branch`, `param_opaque_predicate`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers like `4294967295` (UINT32_MAX) and `9223372036854775807` (INT64_MAX) without named constants, though the XOR key `90` is relatively clear in context.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiler output contains significant "lifted" IR noise, specifically the use of `arm64g_calculate_condition` and `__ROL__` macros, which obscure the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While loops are present, control flow is frequently interrupted by opaque helper calls like `arm64g_calculate_condition` and `goto` statements (e.g., in `param_vectorized_loop`), making it hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map well to the original source structure; however, aggressive compiler inlining (e.g., in `test_obf_opt_edge`) and optimization (e.g., turning recursion into math) make some functions unrecognizable compared to source.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but forward jumps like `goto LABEL_400c50` in `param_vectorized_loop` disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The compiler successfully removed redundancy (e.g., dead code in `param_fake_branch`), but the decompiler presents the optimized mathematical formulas (e.g., in `param_tail_call_optimized`) which are compact but semantically obscure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are generally generic (`unsigned long`, `unsigned long long`), and pointer types are often degraded to `void*` (e.g., parameters in `param_vectorized_loop`), losing specific type information like `int*`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No composite types (structs/unions) were recovered; the bitfield struct in `param_implementation_defined` was completely optimized away into raw arithmetic.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on bitwise operations and casts (e.g., `(char)arm64g_calculate_condition(...)`), which, while accurate to the binary, are not type-safe in a high-level C sense.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex logic or compiler artifacts.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are obscured; the GCD algorithm in `param_opaque_predicate` is present but buried in generic variable names, and the tail recursion is transformed into an unintelligible closed-form math expression.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents non-standard constructs like `AddV` and `arm64g_calculate_condition` without any warning or explanation that these are lifting artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the non-null requirement for pointers is not stated).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and global variables like `g_411ff8` are explicitly referenced, making the call graph traceable despite the low-level representation.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order matching the source flow, and related functions (e.g., `call_*` wrappers) are grouped with their implementations.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is due to the use of intrinsic functions like `arm64g_calculate_condition`, `AddV`, and `__ROL__` which are not part of standard C libraries.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Heavy use of lifting artifacts like `arm64g_calculate_condition` obscures boolean logic.
+- Variable naming is entirely generic (`v0`, `v1`), losing all semantic information.
+- Non-standard C constructs (`AddV`, `__ROL__`) make the code non-compilable and confusing.
+- Optimized mathematical formulas (e.g., in `param_tail_call_optimized`) replace clear algorithmic loops.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original symbol names, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The lack of comments and the presence of opaque IR helpers make understanding the *intent* of the code extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pattern matcher to convert `arm64g_calculate_condition` calls back into standard C comparison operators (e.g., `==`, `<`).
+2. Add a preprocessing step to define or expand non-standard intrinsics like `__ROL__` and `AddV` into readable standard C equivalents or comments.
+3. Utilize data flow analysis to infer and propagate semantic variable names based on usage context (e.g., renaming `v0` to `result` if it is always returned).

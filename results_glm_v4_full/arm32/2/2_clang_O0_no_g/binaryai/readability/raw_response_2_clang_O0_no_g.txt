@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `param_1`, `local_c`, and `local_10`, completely losing semantic meaning (e.g., `arr`, `n`, `sum` in `array_1d_stack`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `process_char`, `linked_list`, `test_data_types_l1`), likely because debug symbols were included.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Character literals like `'A'` and `'Z'` are converted to magic hex numbers (`0x40`, `0x5b`), and `NULL` becomes `0x0`, significantly obscuring the logic intent.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains Ghidra-specific artifacts like `undefined4`, `CONCAT44`, and `DAT_` references, which act as noise that impedes understanding the actual data types.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Due to `-O0` compilation, control flow is excellent; `for` loops and `if/else` blocks are recovered naturally without confusing jumps or spaghetti code.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code; the logic is direct and concise, matching the unoptimized source structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: High-level types are lost; `float` operations are replaced by soft-float library calls (`__mulsf3`), and `long long` multiplication is split into confusing 32-bit operations (`CONCAT44`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely flattened; `Point3D*` is treated as `int*`, and struct field access is replaced by array indexing (e.g., `param_1[1]` instead of `p->y`).
+
+**11. Type Safety:** Score: 4/10
+Justification: Code relies heavily on explicit casts like `(int *)` and `(undefined4 *)`, and pointer arithmetic is exposed explicitly (e.g., `param_1 + local_10 * 4`), reducing safety and clarity.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining logic, algorithms, or variable usage; the only text is the decompiler header.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While loops are recognized, array indexing is often flattened to pointer arithmetic (e.g., `arr[i][i]` becomes `param_1 + local_c * 0x2c`), failing to recognize the 2D array idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies or potential issues are flagged; the decompiler presents the code confidently even when types are clearly wrong (e.g., `undefined4` for floats).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions; contracts like `volatile` ensuring memory reads are not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Because function names are preserved, cross-references are clear; calls like `process_char('A')` are immediately understandable.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure, though the lack of struct definitions separates the data layout from the code.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile due to Ghidra-specific types (`undefined4`, `CONCAT44`) and missing soft-float library declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `local_c`), losing all semantic context.
+- Composite types (structs) are flattened to raw pointers/arrays, destroying data layout understanding.
+- Floating-point logic is obscured by software library calls (`__mulsf3`) instead of operators.
+- Character literals are replaced by magic hex numbers (e.g., `0x40` instead of `'A'`).
+- Ghidra-specific types (`undefined4`, `CONCAT44`) prevent compilation and reduce readability.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 10/10)
+- **Why?** The debug symbols were preserved, allowing the decompiler to recover the exact original function names, which is the strongest link to the source code's intent.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- **Why?** The complete failure to recover `struct` definitions (e.g., `Point3D`, `Node`) turns structured data access into obscure pointer arithmetic and array indexing, which is the biggest barrier to understanding the program's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Struct Definitions**: Analyze stack allocation and access patterns to reconstruct `struct` types with named fields instead of flattening to `int*` arrays.
+2.  **Improve Variable Naming**: Utilize debug information (DWARF) more effectively or infer names from usage context to replace generic `param_1`/`local_X` names.
+3.  **Simplify Floating Point**: Detect and inline standard soft-float library calls (like `__mulsf3`) to present them as standard C arithmetic operators (`*`, `+`).

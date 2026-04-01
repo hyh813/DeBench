@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `ptr`, `flag1`, `flag2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count`, `multiplier` - all completely lost. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+Justification: Mixed results - some C++ mangled names are partially demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`), but many functions use mechanical address-based names like `sub_400854`, `sub_4009cc`. The original function names like `getValue`, `compute`, `call_virtual_func` are not recovered.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Some literals are clear (e.g., `42` thrown in exception, expected values like `4704`, `21`, `42` printed), but many magic numbers lack explanation. String literals are completely abstracted through global references like `&g_401358` instead of actual strings.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Relatively clean output with minimal compiler artifacts. Some register comments present (`// r0`, `// lr`, `// [bp-0x4]`) but not excessive. No obvious debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 3/10**
+Justification: Excessive use of `goto` for control flow that should be loops or conditionals. Example: `goto LABEL_4009f0;` instead of proper while/for loops. The exception handling code (`test_cpp_exception`) has severely convoluted flow with nested conditionals and `armg_calculate_condition` calls that obscure logic.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Functions are reasonably sized and separated. Template functions like `template_max<int>`, `template_swap<int>` are properly extracted. Some functions like `test_cpp_oo_features` are large but that's expected for a test harness. Minor granularity issues but generally acceptable.
+
+### 7. Code Linearization
+**Score: 4/10**
+Justification: Poor linearity with multiple forward jumps disrupting flow. The exception handling code is particularly non-linear with multiple `goto` statements. Code does not read naturally top-to-bottom in several functions.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: Generally clean code without obvious dead code or excessive duplication. Some register spill artifacts visible but minimal. Loop unrolling not present (expected at -O0).
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Mixed precision - uses `unsigned int` extensively, `void*` for generic pointers. Some class names recovered (e.g., `class Base`), but most types are generic. Original types like `size_t`, `int*`, `bool` not precisely recovered.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Partial struct recovery with generic names like `struct_0`, `struct_1`, `field_0`, `field_4`. Original class structures like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are not properly reconstructed - just raw memory operations visible.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several unsafe operations present - extensive pointer arithmetic (e.g., `*((int *)((char *)ptr + 4 * index))`), raw memory access without type safety. Some casts between incompatible types visible. Not dangerous but lacks safety guarantees.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Very sparse comments. Only register location comments (`// r0`, `// [bp-0x4]`) and occasional section headers. No explanation of algorithm logic, no recovery confidence indicators, no API contracts. Original source comments completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms identified. Virtual function calls not clearly marked as vtable dispatch. Exception handling patterns not recognized as try-catch blocks. Template instantiation patterns not identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flagging of uncertain or anomalous code. Indirect calls (like virtual function calls) are presented as confident `goto *((int *)*((int *)arg_0));` without warning. No indication of potential undefined behavior or unusual patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. No recovery of original assertions or validation checks. Error conditions not documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Some function calls documented via `extern` declarations. But relationships between functions (who calls whom) not explicit. Virtual dispatch relationships not clear. Global variable usage not documented.
+
+### 17. Module Organization
+**Score: 3/10**
+Justification: Functions grouped by address rather than functionality. No logical grouping matching original source (member functions, virtual functions, templates all mixed). No namespace or class structure recovery.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Has `extern` declarations for external dependencies. Should compile with stubs for standard library functions. Some dependencies documented (e.g., `__cxa_atexit`, `operator new`). Moderate patching needed but manageable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+4+7)/4 = 4.0
+L2_avg = (3+6+4+7)/4 = 5.0
+L3_avg = (5+4+5)/3 = 4.67
+L4_avg = (3+3+2+2)/4 = 2.5
+L5_avg = (4+3+6)/3 = 4.33
+
+Overall = (4.0 × 0.30) + (5.0 × 0.25) + (4.67 × 0.20) + (2.5 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.25 + 0.93 + 0.38 + 0.43
+        = 4.19/10
+```
+
+### Overall Readability Score: 4.2/10
+
+### Critical Defects
+- **Variable naming**: All meaningful variable names lost - `value`, `name`, `size`, `data` become `v0`, `v1`, `ptr`, `flag1`
+- **Control flow**: Excessive goto usage instead of natural loop/conditional constructs, especially in exception handling
+- **Class recovery**: Original class structures (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) not reconstructed - only raw memory operations visible
+- **No comments**: Complete loss of source code comments explaining algorithms and intent
+- **Anomaly silent**: Indirect virtual calls presented as confident code without flags for uncertain resolution
+
+### Best Quality Aspect: Noise Reduction (7/10)
+The decompiled code has minimal compiler artifacts and register spill clutter. At -O0, the code is relatively clean without excessive debug instrumentation.
+
+### Most Needs Improvement: Semantic Transparency (2.5/10)
+The decompiled code lacks comments, pattern recognition, anomaly indication, and contract recovery. This makes understanding the code's intent extremely difficult compared to the well-commented original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr[40]` for array size, `*ptr` for dereferencing) to suggest meaningful names like `array_size`, `data_ptr`
+2. **Recover control flow constructs**: Convert backward jumps to loops and indirect jumps to switch/case or virtual dispatch rather than goto
+3. **Add semantic annotations**: Flag uncertain indirect calls, document expected preconditions/postconditions, and identify design patterns (vtable dispatch, RAII, etc.)

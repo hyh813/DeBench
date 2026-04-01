@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables are `v1`, `v2`, `v3`, `result` - completely obscuring their semantic roles like `temp1`, `temp2`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions correctly named (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) and some utility functions recovered (`recursion_factorial`, `double_value`, `triple_value`). However, many functions use generic names like `sub_1030`, `sub_115C` instead of meaningful identifiers.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Most arithmetic literals are clear (e.g., `100 * (a1 + 1)` correctly computes 100/200/300/400/500). However, switch tables like `CSWTCH_56[a1]` are unexplained, and stack canary `__readgsdword(0x14u)` is a magic number without context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - no redundant casts or debug instrumentation. Stack canary checks present but expected at -O0 with stack protection. Overall clean output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recognized as `while`, `do-while`, `for` constructs. Switch statements handled well - small switch uses jump table `CSWTCH_56`, large switch uses formula `10 * a1`. Minor goto in `loop_multi_exit` but doesn't impede understanding.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function properly separated with appropriate granularity. Test functions call individual test cases correctly. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in `loop_multi_exit` with `goto LABEL_4` and `goto LABEL_7`, but these are manageable. No excessive deep nesting.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or significant redundancy. Loop unrolling not present (expected at -O0). Common subexpression elimination minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are `int` which is appropriate for 32-bit. Function pointers properly typed: `int (__cdecl *a1)(int)`. Some unsigned used correctly: `unsigned int a1` in if_elseif_long. Minor type erasure but acceptable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery visible. Arrays handled inline (`_DWORD v2[9]` for loop_break's local array). No field names recovered - all raw memory access.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Division by zero check in `op_div`: `if (a2) return a1 / a2; return v2;`. No obvious unsafe casts. Minor issues don't create undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comments from IDA Pro ("Decompiled by IDA Pro 9.1"). No semantic comments explaining algorithm intent, preconditions, or non-obvious logic. Test function has hardcoded expected values instead of computed results.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible (ternary operator recovered in `ternary_op`, switch tables recognized) but not explicitly named or documented. No recognition comments like "// State machine pattern" or "// Duff's device".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present: "bad sp value at call has been detected, the output may be wrong!" and "positive sp value has been detected". However, failed decompilations listed generically without specific impact analysis.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. Function like `duffs_device` has no comment explaining its unusual control flow.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear within test functions. Callback relationships visible in `call_func_ptr_array` and `process_with_callback`. But no documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions together, helper functions grouped. Static functions properly scoped. However, arbitrary ordering doesn't match source file structure (CF-L1, CF-L2, CF-L3 sections).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc. External functions (`puts`, `__printf_chk`, `_setjmp`) are standard. No compiler-specific hacks. Minor patching needed for stack canary references.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`/`v1`/`result` instead of semantic names like `a`/`b`/`temp1`/`sum`
+- No comments explaining algorithms, especially complex ones like Duff's device and state machines
+- Composite types (arrays, structs) not recovered - all raw pointer arithmetic
+- Test functions have hardcoded expected values instead of actual computed results
+- Switch tables like `CSWTCH_56` unexplained - should have comment identifying jump table
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- Loops and switches correctly recognized and structured. At -O0, the decompiler preserved the original control flow patterns well.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic single-letter variable names with numeric suffixes make it extremely difficult to track data flow and understand function logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `a1 + a2` is computed and used as `temp1`, name it accordingly. When `v2` accumulates sum, name it `sum`.
+2. **Recover switch jump tables with explanatory comments**: Instead of `CSWTCH_56[a1]`, emit `// Jump table for switch(op) cases 0-3` with case labels.
+3. **Add semantic comments for complex patterns**: Document Duff's device, state machines, and function pointer arrays with pattern names to aid analyst understanding.

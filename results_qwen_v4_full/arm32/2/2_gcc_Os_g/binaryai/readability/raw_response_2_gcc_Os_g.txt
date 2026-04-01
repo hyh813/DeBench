@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar1`, `local_51c`, `uStack_50c`). Original source had meaningful names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). However, helper functions like `FUN_000115a8` are cryptic, and some names don't reflect actual decompiled behavior.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x41`, `0x1a`, `0x20` in `process_char`; `0x10000`, `0x10` in `process_short`). Test functions show hardcoded expected values (300, 0x61) instead of actual computations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant runtime artifacts present (`__stack_chk_fail` checks in every test function, `__printf_chk` instead of `printf`). Floating-point helper functions (`__muldf3`, `__aeabi_dadd`, `__mulsf3`) are extremely verbose and obscure original intent.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered (`array_1d_stack` uses for-loop), but complex functions use unnatural patterns (`array_2d_stack` uses do-while with manual stride calculation). `enum_switch` converted to lookup table via `CSWTCH_73` instead of switch statement.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable sizes. However, test functions became monolithic blocks of setup code, and floating-point operations incorrectly split into separate runtime helpers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. `graph_traverse` has complex nested while loops with breaks that disrupt flow. Test functions have extensive variable initialization before actual logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point helper functions contain massive redundant bit manipulation. Test functions show repetitive printf patterns. No loop unrolling recognition or consolidation of common patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type degradation: `process_char` returns `uint` not `char`, `process_short` returns `int` not `short`, `process_float/double/ld` return `void` instead of proper float types. `process_ll` splits into two parameters instead of `long long`. Pointer types degraded to `int*` or `undefined4*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete structural loss - `Point3D`, `Rect`, `Widget`, `Node` all become `int*` with array indexing (`param_1[1]`, `param_1[2]`). Bitfields in `struct_bitfields` reduced to bit manipulation. Unions become `uint*`. No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(undefined4 *)param_1[1]`). Pointer arithmetic replaces struct access. Function pointers degraded to `code*`. `ptr_triple` shows problematic triple pointer handling with multiple dereferences on `undefined4*`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. Only file header comment exists ("// Decompiled by BinaryAI"). No documentation of non-obvious bit manipulation in float functions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized - linked list traversal, tree recursion, array summation all appear as raw loops. `enum_switch` becomes opaque lookup table. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One useful marker (`UNRECOVERED_JUMPTABLE` in `ptr_func_simple`), but critical issues unflagged: wrong return types for float functions, struct type loss, test functions not calling actual functions. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. NULL checks exist in code but unexplained. No invariant recognition for data structures.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables appear as `DAT_00011ed4` without explanation. Callback relationships unclear. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically but test and implementation functions mix. Runtime functions clutter output. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile as-is - missing type definitions, external function dependencies, undefined symbols (`DAT_00011ed4`, `CSWTCH_73`). Requires significant patching and stub implementation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type System): (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Type system collapse**: `process_float`, `process_double`, `process_ld` return `void` instead of proper floating-point types, making semantic understanding impossible
+- **Complete struct loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`) degraded to `int*` with manual offset arithmetic
+- **Test functions broken**: Test functions contain hardcoded expected values instead of actual function calls, losing verification logic
+- **Zero documentation**: No comments explaining bit manipulation in floating-point helpers or algorithm intent
+- **Magic numbers everywhere**: Constants like `0x41`, `0x1a`, `0x10000` unexplained, obscuring character conversion and type sizing logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`double_value`, `process_char`, `array_1d_stack`), providing semantic anchors despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes complex bit manipulation in floating-point functions and type conversions impossible to understand without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze struct access patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct `Point3D`, `Node`, `Widget` structures with field names
+2. **Fix floating-point type recovery** - Recognize `__mulsf3`, `__aeabi_dadd` patterns as float/double operations and restore proper return types instead of `void`
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (function pointers, indirect calls) and explain magic numbers based on usage context (e.g., `0x41` = `'A'` in character comparison)

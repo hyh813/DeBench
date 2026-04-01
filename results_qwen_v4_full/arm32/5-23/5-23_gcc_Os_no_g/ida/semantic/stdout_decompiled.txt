@@ -1,0 +1,12 @@
+Testing preprocessing features:
+param_macro_constants: 0
+call_macro_functions: 0
+call_conditional_compile: 0
+call_multi_branch_compile: 0
+call_macro_recursion: 0
+call_stringize: 0
+call_token_paste: 0
+LOG: Values: 0, -119856128, -119856128
+call_variadic_macro: 0
+call_macro_override: 0
+call_include_guard: 0

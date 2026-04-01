@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3` through `v15`, and parameters are `a1`, `a2`, `a3`. The original had meaningful names like `x`, `arr`, `n`, `result`, `local`, `out`. This is a severe degradation making it nearly impossible to track variable purposes without analyzing every usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (e.g., `local_vars`, `heap_basic`, `linked_list_heap`, `tls_access`). However, standard library wrapper functions got mechanical names like `function_1030` (free), `function_1040` (printf), `function_1050` (memset). The core functionality names are preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are encoded as hex escape sequences (e.g., `g1 = "=== \xe6\xb5\x8b..."`), making them unreadable. Magic numbers like `0x100000000` appear frequently in arithmetic operations without explanation. Some simple constants like `10`, `20`, `100` are clear but the complex calculations obscure meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts throughout (`(int32_t)`, `(int64_t)`, `(uint32_t)`, `(char)`). Redundant bit manipulation operations (e.g., `& 0xffffffff`, `& 0xfffffffe`). The code contains many unnecessary transformations that obscure the original logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops are properly recovered as while loops, but some use goto-like labels (e.g., `lab_0x1b57`, `lab_0x1bac` in `linked_list_heap`). The `stack_alias` function is completely wrong - it just returns 20 instead of implementing the alias logic. Some conditionals have awkward expressions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The test wrapper functions are larger but appropriate for their purpose. Some helper functions like `function_1030` through `function_10c0` are properly extracted as standard library wrappers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with some forward jumps. The linked list and tree traversal functions have goto labels that disrupt linear flow. Early returns are used appropriately in some places.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop patterns are repeated with slight variations (especially in VLA/alloca functions). Some common subexpression elimination artifacts visible (e.g., `0x100000000 * a1 >> 32` pattern repeated). Not severe but noticeable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` and `int32_t` which is better than generic `int`. However, pointer parameters are declared as `int64_t *` instead of proper pointer types (e.g., `int *` for `address_of_local`). The distinction between signed/unsigned is inconsistent. Function pointers not properly typed.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The `Point` struct is completely lost - accessed as `g13 + g12` (global variables). The `Node` struct for linked lists uses raw `malloc(16)` with pointer arithmetic instead of proper struct. The `TreeNode` struct similarly lost. All composite types reduced to raw memory operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts between pointer and integer types. Pointer arithmetic not bounds-checked. The `heap_nested` function has serious issues: `*(int32_t *)16 = 10;` writes to absolute address 16. Function pointers treated as integers. Significant risk of undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled code. Zero explanation of algorithm intent, parameter purposes, or return value semantics. The original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list creation, tree traversal) but not explicitly named or documented. The original source clearly labeled patterns like "MEM-L1-01" but this semantic information is completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The `stack_alias` function returning constant 20 is clearly wrong but not indicated. The `heap_nested` writing to absolute address 16 is dangerous but not flagged. No uncertainty indicators anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had safety checks (e.g., `if (n <= 0 || n > 1000) return -1`) but the decompiled code shows these as raw conditionals without explaining the contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `malloc`, `free`, `printf`). Global variable usage is visible but not well-documented (e.g., `g20`, `g21` for `global_counter`). Callback relationships (like `set_global_callback`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (stack functions, heap functions, static functions, memory operations). However, the file is a single monolithic output. Static vs extern functions not clearly distinguished in organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers. Has function prototypes. However, the hex-encoded strings and some type issues would cause compilation problems. The code states "Compilation Result: Yes" but this appears to be incorrect given the issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 4) / 4 = 4.25
+L2_avg = (5 + 7 + 6 + 5) / 4 = 5.75
+L3_avg = (5 + 3 + 4) / 3 = 4.00
+L4_avg = (1 + 5 + 1 + 1) / 4 = 2.00
+L5_avg = (5 + 6 + 6) / 3 = 5.67
+
+Overall = (4.25 × 0.30) + (5.75 × 0.25) + (4.0 × 0.20) + (2.0 × 0.15) + (5.67 × 0.10)
+        = 1.275 + 1.4375 + 0.8 + 0.3 + 0.567
+        = 4.38/10
+```
+
+**Overall Readability Score:** 4.38/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v1`-`v15`, `a1`-`a3`) completely obscuring semantic purpose
+- **Struct recovery failure**: `Point` and `Node` structs completely lost; accessed as raw memory with global variables
+- **Wrong logic**: `stack_alias` returns constant 20 instead of implementing alias logic; `heap_nested` writes to absolute address 16
+- **No comments**: Zero explanatory comments despite complex algorithms
+- **Hex-encoded strings**: Chinese labels like "测试栈内存操作" rendered as `\xe6\xb5\x8b...` making them unreadable
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (7/10)**  
+- Why? Core test functions retain their original names, making it possible to identify what each function tests.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**  
+- Why? Generic single-letter variable names make it nearly impossible to understand code flow without analyzing every usage pattern.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop counters, array indices, size values) to suggest meaningful names like `loop_idx`, `array_size`, `result`
+2. **Recover struct types from allocation sizes**: When seeing `malloc(16)` with subsequent field access patterns, reconstruct the struct definition with field names
+3. **Add semantic comments**: Include the original label/marker information (like "MEM-L1-01") when available in debug symbols to preserve test case context

@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context (e.g., `v2` in `test_cpp_exception` represents the exception object).
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: While the primary function signatures use mangled C++ names (e.g., `_Z18test_cpp_exceptionv`), the inclusion of demangled comments (e.g., `// Demangled: test_cpp_exception()`) salvages some readability, though helper functions like `function_1180` remain obscure.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and offsets (e.g., `0x4d06`, `0x1a73`) used for PC-relative addressing and typeinfo lookups without explanation, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts remain, including frequent `__x86_get_pc_thunk_ax` calls for position-independent code and stack canary checks (`__readgsdword(20)`), which clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: High-level control structures like `try/catch` are lost, replaced by low-level exception handling routines and `goto` jumps (e.g., `goto lab_0x1384` in `test_cpp_exception`), creating spaghetti code.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: The decompiler successfully splits code into functions, but the granularity is often too low-level (e.g., thunks like `_ZThn8_N12MultiDerived5funcBEv`), failing to reconstruct the cohesive class methods of the original source.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The flow is frequently interrupted by forward jumps and labels, particularly in exception handling and RTTI checks, making top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some functions are reduced to constant returns (e.g., `test_cpp_multiple_inheritance` returns `71`), which is clean, but this appears to be due to compiler optimization rather than decompiler analysis of redundant logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: High-level types like `SimpleClass` or `std::unique_ptr` are lost, replaced by generic `int32_t*` or `void*`, though primitive types like `int32_t` and `float64_t` are correctly identified.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: There is a complete failure to recover C++ class structures; objects are treated as raw memory blocks (e.g., `int32_t v3` in `test_cpp_virtual_func` instead of a `Base` object), and no struct definitions are generated.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts, treating object pointers as `int32_t*` and performing manual pointer arithmetic (e.g., `*(int32_t *)(v1 + 0x461b)`), which erases type safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: The only comments are demangled function names, which are helpful for identification, but there are no comments explaining the logic, algorithms, or the purpose of complex ABI routines.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms like RAII, smart pointers, and exception handling are not recognized; instead, the code exposes the underlying implementation details (e.g., manual calls to `_ZdlPvj` for deletion).
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler presents the low-level exception handling flow and indirect calls confidently without flagging them as potential anomalies or areas requiring manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirements for `dynamic_cast` or exception safety are completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are explicit, but virtual function calls are represented as indirect memory accesses (e.g., `*(int32_t *)*a1`), obscuring the relationship between base and derived classes.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions ordered by address, lacking the logical grouping or namespace structure present in the original source.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While prototypes are provided, the code relies on specific C++ runtime symbols (e.g., `__cxa_throw`) and lacks the necessary struct definitions to compile meaningfully.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 3 + 4) / 4 = 3.75
+L2_avg = (3 + 5 + 4 + 6) / 4 = 4.50
+L3_avg = (4 + 1 + 3) / 3 = 2.67
+L4_avg = (5 + 3 + 3 + 1) / 4 = 3.00
+L5_avg = (5 + 4 + 5) / 3 = 4.67
+
+Overall = (3.75 × 0.30) + (4.50 × 0.25) + (2.67 × 0.20) + 
+          (3.00 × 0.15) + (4.67 × 0.10)
+Overall = 1.125 + 1.125 + 0.534 + 0.45 + 0.467 = 3.70
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.7/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Recovery Failure**: C++ classes (`SimpleClass`, `Base`, `Derived`) are completely lost; objects are treated as raw `int32_t*` pointers.
+- **Exception Handling Obfuscation**: High-level `try/catch` blocks are replaced by low-level `__cxa` runtime calls and `goto` jumps, destroying logic flow.
+- **Variable Naming**: Variables are reduced to generic names (`v1`, `v2`, `a1`), stripping all semantic meaning from the data flow.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 6/10)**
+- **Why?** The inclusion of demangled C++ names in comments (e.g., `// Demangled: test_cpp_exception()`) is the only feature that reliably links the low-level code back to the original source intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (Score: 1/10)**
+- **Why?** The inability to reconstruct class structures is the most critical failure, as the entire source code is based on Object-Oriented principles; without structs, the code is just disjointed C functions.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **C++ Class Reconstruction**: Implement analysis to recover class layouts, inheritance hierarchies, and member variable offsets from vtables and RTTI data.
+2.  **High-Level Control Flow Recovery**: Pattern match exception handling landing pads and personality routines to reconstruct `try/catch/throw` blocks instead of showing raw `__cxa` calls.
+3.  **Semantic Variable Naming**: Utilize type information (RTTI) and usage context to infer meaningful names for variables (e.g., renaming `v1` to `this` or `exception_obj` based on usage).

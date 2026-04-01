@@ -1,0 +1,7 @@
+Testing fake_branch: -1095919660
+Result: 10
+Testing opaque_predicate: 35
+Testing instruction_substitution: 225
+Testing string_encryption: 0
+Testing tail_call_optimized: 500500
+Testing non_tail_call: 5050

@@ -1,0 +1,16 @@
+Starting obfuscation/optimization edge tests...
+
+-1076346604
+param_opaque_predicate(5) = -1076346604
+param_instruction_substitution(5) = -1076346604
+param_tail_call_optimized(100, 0) = 134525490
+param_non_tail_call(100) = 134525490
+param_vectorized_loop result = 134525490
+param_link_time_optimization(5) = 134525490
+param_division_by_zero(5) = 134525490
+param_null_pointer_deref(&val) = 0
+param_buffer_overflow_stack(10) = 0
+param_integer_overflow(INT_MAX, 1) = 0
+param_undefined_behavior(5) = 0
+param_implementation_defined() = 0
+All tests completed!

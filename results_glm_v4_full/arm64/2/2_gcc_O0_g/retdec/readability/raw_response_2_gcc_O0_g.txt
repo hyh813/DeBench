@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameter names (`arr`, `n`, `p`) are recovered accurately from debug symbols, but local variables are generic (`v1`, `v2`, `result`). In `struct_simple`, variable `v2` is used without initialization in the decompiled view, obscuring that it represents `p->x`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `double_value`, `process_char`, `array_1d_stack`), likely due to the presence of debug symbols (`-g`), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are hex-encoded (e.g., `\xe6\xb5\x8b...` instead of "测试"), making them unreadable. Magic numbers like `32` in `process_char` are raw, and floating-point constants in `process_float`/`process_double` are completely lost.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is polluted with ARM64 intrinsics like `__asm_ubfx`, `__asm_bfi`, and `__asm_movi` which obscure standard C operations. Additionally, stack canary checks (`__stack_chk_fail`) are inlined, adding noise to the logic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally preserved, boolean logic is often obfuscated; e.g., `process_char` uses `c >= 90 == (c != 90)` instead of the clear `c <= 'Z'`. Furthermore, `process_float` and `process_double` incorrectly decompile to simple returns, losing the arithmetic control flow entirely.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler maintains a 1:1 mapping with the source functions. There is no inlining or outlining, and the granularity matches the original source perfectly, which is expected for `-O0` builds.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps. However, the presence of large library functions like `__addtf3` and `__multf3` (software float implementation) interrupts the flow of the user-defined code.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code typical of optimized builds. The verbosity is high due to the lack of optimization, but the logic is not redundant in a way that hinders understanding (aside from the lost float operations).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are mapped to precise fixed-width types (`int32_t`, `float64_t`), which is good. However, `volatile` qualifiers are dropped, and floating-point operations are incorrectly reduced to identity functions, indicating a failure in type-specific lifting.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct and union definitions are completely lost. `struct_simple` is decompiled as pointer arithmetic (`*(int32_t *)(v1 + 4)`), and `struct_bitfields` uses raw intrinsics (`__asm_ubfx`) instead of recovering bit-field members. No struct definitions are generated.
+
+**11. Type Safety:** Score: 4/10
+Justification: Composite access relies on unsafe manual pointer arithmetic and hardcoded offsets (e.g., `v1 + 4`). The decompiled code for `struct_simple` uses an uninitialized variable `v2`, representing a severe type safety and analysis failure.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to metadata like "From module: /work/2.c" and address ranges. There are no comments explaining the logic, algorithms, or the purpose of the complex intrinsics used.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are not recognized. Linked list traversal in `linked_list` is shown as raw pointer manipulation rather than a recognized pattern. Bit-fields are not identified as such, exposed instead as bit-extraction intrinsics.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents incorrect code (e.g., `process_float` returning `f` unchanged) with no warning or anomaly flag. The use of uninitialized variables in `struct_simple` is also not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement for non-NULL pointers in `ptr_single` is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and readable, but there is no explicit documentation of caller-callee relationships or data flow graphs. The inclusion of massive library functions (`__addtf3`) clutters the context.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped in a way that roughly follows the source file order. Helper functions and test functions are distinct, maintaining a logical module structure.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard intrinsics (`__asm_...`) and undefined variables in some functions (`struct_simple`), making it unlikely to compile without significant manual modification or a specific compiler support library.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (6 + 10 + 4 + 4) / 4 = 6.0
+L2_avg: (6 + 10 + 8 + 8) / 4 = 8.0
+L3_avg: (6 + 1 + 4) / 3 = 3.67
+L4_avg: (3 + 2 + 2 + 2) / 4 = 2.25
+L5_avg: (6 + 8 + 4) / 3 = 6.0
+
+Overall = (6.0 × 0.30) + (8.0 × 0.25) + (3.67 × 0.20) + 
+          (2.25 × 0.15) + (6.0 × 0.10)
+Overall = 1.8 + 2.0 + 0.734 + 0.3375 + 0.6
+Overall = 5.47 / 10
+```
+
+### Overall Readability Score: **5.5/10**
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: Structs and unions are completely flattened to pointer arithmetic (e.g., `struct_simple` uses `v1 + 4` instead of `p->y`).
+- **Semantic Logic Failure**: Floating-point arithmetic in `process_float` and `process_double` is incorrectly decompiled as simple return statements, losing the core logic.
+- **Unreadable Literals**: String literals are output as hex-encoded bytes (e.g., `\xe6\xb5\x8b...`) instead of human-readable text.
+- **Unsafe Variable Usage**: Function `struct_simple` references a variable `v2` that appears uninitialized or undefined in the decompiled output.
+- **Intrinsic Pollution**: Bit-fields and boolean logic are obscured by ARM64 intrinsics (`__asm_ubfx`, `__asm_bfi`) instead of standard C operators.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?**: The decompiler perfectly preserved all original function names (e.g., `process_int`, `array_vla`), likely due to the presence of DWARF debug symbols, making the high-level structure easy to navigate.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**
+- **Why?**: The complete failure to recover struct definitions, reducing complex data structures to raw pointer offsets and intrinsics, makes understanding data layouts nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Composite Types**: Implement type recovery to reconstruct `struct` and `union` definitions from debug info or memory access patterns, replacing pointer arithmetic with member access (e.g., `p->y`).
+2.  **Lift Floating-Point Operations**: Fix the lifting logic for floating-point arithmetic to ensure operations like multiplication and addition are not optimized away or misinterpreted as identity functions.
+3.  **Decode String Literals**: Automatically decode hex-encoded string literals back into UTF-8/ASCII characters to restore the readability of text constants and log messages.

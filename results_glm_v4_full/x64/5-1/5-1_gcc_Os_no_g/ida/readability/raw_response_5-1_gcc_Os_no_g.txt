@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`), obscuring semantic meaning; for instance, in `test_cpp_rtti`, `v1` is a `RTTIDerivedA` object but is named generically.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Excellent demangling of C++ symbols preserves original names like `test_cpp_virtual_func`, `Base::virtual_func`, and even complex template names like `std::unique_ptr<int []>::~unique_ptr`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Aggressive optimization replaced logic with "magic numbers" (e.g., `return 71;`, `return 22;`, `4700`), making the origin of these values opaque without reverse-engineering the math.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack integrity checks (`__readfsqword(0x28u)`) appear in almost every function, adding repetitive noise, though this accurately reflects the compiled binary's security features.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: High-level optimization collapsed complex control flow (e.g., `test_cpp_multiple_inheritance`) into single `return` statements, completely removing the original logical structure and loops.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: C++ thunks (e.g., `virtual thunk to'MiddleA::func`) are correctly decomposed into separate functions, accurately reflecting the compiler's handling of multiple inheritance and virtual dispatch.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Where logic remains, the code reads linearly without confusing jumps or spaghetti control flow structures.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler accurately presents the compiler's optimized output, which has successfully eliminated redundant calculations and dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Types are recovered with high precision, correctly distinguishing between `Base*`, `Derived*`, and template instantiations like `Container<int>`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class methods are correctly bound to their types (e.g., `Container<int>::push`), and `this` pointer adjustments for inheritance are handled via explicit casts.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Pointer arithmetic for `this` adjustment in thunks is explicit and type-safe (e.g., `(char *)this + ...`), avoiding unsafe void* casts where possible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There is a complete absence of comments explaining complex C++ mechanisms like virtual thunks, RTTI checks, or the results of constant propagation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: RTTI patterns are visible via low-level calls (`__dynamic_cast`, string comparisons), but the high-level `typeid` and `dynamic_cast` idioms are not reconstructed.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings or flags are present to indicate potential issues or uncertain decompilation results.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls to standard library (`operator new`, `__cxa_throw`) and class methods are clearly resolved and readable.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by class (e.g., all `Base` methods followed by `Derived`), which aids navigation, though strictly follows address order.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code relies on compiler intrinsics (`__readfsqword`) and standard library headers, requiring a specific environment to compile, but dependencies are clear.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming is generic (`v0`, `v1`), losing the semantic context of objects (e.g., `RTTIDerivedA` instances).
+- Control flow is lost due to optimization; complex logic is reduced to magic number returns (e.g., `return 71`).
+- Complete lack of comments for complex C++ features like virtual inheritance thunks and RTTI.
+- Magic numbers (e.g., `4700`, `22`) obscure the original arithmetic logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler perfectly demangled C++ symbols, preserving the full semantic meaning of class names, method names, and template parameters.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- The absence of annotations makes it extremely difficult to understand complex compiler-generated code like virtual thunks and optimized control flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Heuristic Variable Renaming**: Infer variable names from recovered types (e.g., rename `v1` to `rtti_derived_a` if type is `RTTIDerivedA*`).
+2. **Optimization Annotation**: Insert comments when constant folding occurs to explain the source of magic numbers (e.g., `// 71 = 30 + 40 + 1`).
+3. **Thunk Explanation**: Add comments explaining the purpose of `virtual thunk` and `non-virtual thunk` functions to aid understanding of multiple inheritance layouts.

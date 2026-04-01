@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `a0`, `v0`, `v1`, and `v2`, providing no semantic context (e.g., `sum`, `count`, `target` are lost).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `duffs_device`, and `loop_for_fixed` are perfectly preserved from the source, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with unexplained magic numbers like `1717986919` (inverse of 10 for division), `5832`, and `0x80000000` without named constants or comments.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, including internal artifacts like `armg_calculate_condition`, `vvar_32{r64|4b}`, and invalid C syntax that obscures the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural; function pointer calls are represented as `goto a0`, and loops are often replaced by complex arithmetic formulas (e.g., `loop_for_fixed`) rather than iterative structures.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While main functions are present, complex ones like `duffs_device` are decompiled into incorrect stubs, and helper logic is fragmented into obscure sub-functions like `sub_400ccc`.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is non-linear with frequent jumps to labels like `LABEL_400720` and `LABEL_40072c`, disrupting the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Compiler optimizations (like loop unrolling into formulas) are preserved, which eliminates redundancy but introduces obscure mathematical expressions that are hard to read.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are generally degraded to `unsigned int` or `void*`; specific types like `int*`, `char*`, or `volatile int*` are lost or treated generically.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No composite types (structs/arrays) are recovered; array accesses are performed via raw pointer arithmetic (e.g., `*(int *)(4200520 + 4 * v0)`).
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe operations, such as `goto a0` to execute a function pointer and implicit casts between integers and pointers without checks.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the heavy compiler optimizations applied.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard idioms; Duff's device is rendered as a broken switch, loops are math formulas, and function pointers are gotos.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler confidently presents incorrect code (like the empty `duffs_device`) and invalid syntax (`goto a0`) without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants (e.g., the requirement for `n > 0` in `duffs_device` is lost).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: Cross-references are obscured; calls are represented as raw jumps or addresses, and the relationship between callers and callees is not explicit.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a somewhat logical order matching the source, but the fragmentation of logic into helper functions reduces the organizational score.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to invalid syntax (`goto a0`, `vvar_32{r64|4b}`) and undefined internal functions (`armg_calculate_condition`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- **Function Pointer Calls**: Represented as `goto a0` instead of indirect calls, breaking semantic understanding and C validity.
+- **Duff's Device Failure**: The function `duffs_device` is decompiled as a nearly empty switch statement, completely losing the complex loop logic.
+- **Loop Obfuscation**: Loops are replaced by opaque arithmetic formulas (e.g., `loop_for_fixed`) with no explanation of the optimization.
+- **Internal Artifacts**: Pervasive use of internal helper calls like `armg_calculate_condition` instead of native `if` statements.
+- **Type Loss**: All structure and array types are lost, replaced by raw pointer arithmetic and generic integers.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, which is the only reliable semantic anchor.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1/10)
+- The decompiler fails to communicate *what* the code is doing, offering no comments, idiom recognition, or warnings about severe control flow distortions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover High-Level Control Flow**: Implement pattern matching to reconstruct `for`/`while` loops and `switch` statements from optimized arithmetic and jump tables, rather than emitting raw formulas.
+2.  **Standardize Function Calls**: Replace direct register jumps (`goto a0`) with proper indirect function call syntax (`(*func_ptr)()`) to maintain C validity and semantic clarity.
+3.  **Eliminate Internal Artifacts**: Map internal symbolic execution helpers (like `armg_calculate_condition`) and VEX variables back to standard C operators and local variables.

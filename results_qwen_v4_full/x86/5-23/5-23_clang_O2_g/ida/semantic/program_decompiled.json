@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_O2_g/ida/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "test\nLOG: 64\nLOG: 30\nLOG: 32\nLOG: 57122\nLOG: 116\nLOG: 19\nLOG: 60\nLOG: Values: 10, 20, 30\nLOG: 60\nLOG: 16\nLOG: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:11\nLOG: 382\ntest\nLOG: 15\nLOG: 15\nLOG: 42\nLOG: 0\nLOG: 30\nLOG: -1\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

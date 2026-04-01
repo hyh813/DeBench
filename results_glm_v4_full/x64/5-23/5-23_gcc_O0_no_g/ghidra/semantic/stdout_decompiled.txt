@@ -1,0 +1,9 @@
+=== Preprocessing Features ===
+
+Macro constants: 0x40
+Macro functions: 30
+Conditional compile: 32
+Multi branch: 57122
+Macro recursion: 116
+Stringize: 19
+Token paste: 60

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `i`, `idx`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, but decompiler recovered none of these.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions retained names (`cdecl_func`, `test_calling_conventions`, `func_no_args`), but many helper functions are generic address-based names (`sub_401030`, `sub_4012ab`). Mixed recovery quality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many functions return hardcoded constants (15, 50, 6, 42) instead of actual computation. String literals preserved in printf calls, but magic numbers like `4294967295` (UINT_MAX) lack explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with `[D] Unsupported jumpkind`, `[D] unsupported_<class 'pyvex.expr.GetI'>` markers throughout. Compiler artifacts like `__x86.get_pc_thunk.*` and struct padding fields clutter output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple functions use `goto` instead of proper constructs (`sub_401030`, `sub_401090` have `goto ptr[2]`). Some functions collapsed to constant returns losing original logic flow entirely.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe fragmentation with wrapper functions (`sub_4012ab` just calls `cdecl_func`). Many functions are single-statement stubs. Original cohesive functions split unnecessarily.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by goto statements and stack canary checks (`__stack_chk_fail_local`). Do-while loops recovered but with awkward structure.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Constant folding created redundant hardcoded returns instead of actual computation. Wrapper function duplication throughout. No dead code elimination visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type degradation—everything is `unsigned int`. Original `int`, `char*`, `double`, `long long` all lost. Function `func_mixed_args` shows `v1` as "Other Possible Types: unsigned int, unsigned long" indicating type confusion.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_24`, `padding_0[36]`). `LargeStruct` and `SmallStruct` not properly identified. Array types completely lost to pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout with no type checking. Pointer arithmetic on generic `unsigned int*` types. Function pointer `param_func_ptr` shows `a0(a1)` with `a0` typed as `unsigned int*` instead of proper function pointer signature.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler error markers `[D]...` present. No algorithm explanations, no parameter documentation, no recovery of original source comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns identified. Varargs handling (`va_start`, `va_arg`, `va_end`) not recognized—implemented as raw pointer arithmetic instead.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Decompiler errors marked with `[D]` tags but not explained. Some anomalies detected (unsupported expressions) but no guidance on manual resolution or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not annotated). No postconditions inferred. Null pointer checks present but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced (`g_402008`, `g_40202c`) without context or purpose. Callback relationships in `param_func_ptr` not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains `[D]` decompiler errors that prevent compilation. External declarations present but dependencies undocumented. Would require extensive manual patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):     (4+3+5+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System):    (2+3+3)/3 = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):       (1+2+5+1)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):     (4+3+2)/3 = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                    3.30/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Type system collapse**: All types degraded to `unsigned int`, losing `double`, `char*`, struct distinctions entirely
+- **Decompiler errors in output**: `[D] Unsupported` markers throughout `func_mixed_args` make code unusable
+- **Constant folding over-optimization**: Functions return hardcoded values (15, 50, 42) instead of actual computation logic
+- **Variable naming loss**: Zero semantic variable names recovered (`v0`, `v1`, `ptr` only)
+- **Struct field anonymization**: All struct fields named `field_X` or `padding_X` losing original member names
+
+### Best Quality Aspect:
+- **Anomaly Indication (5/10)** - At least decompiler errors are marked with `[D]` tags, alerting analysts to problematic regions even if not explained
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, algorithm explanations, or recovery of original source comments makes reverse engineering extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns** - Detect `double` operations (floating-point instructions) and `char*` usage (string operations) to recover original types instead of defaulting to `unsigned int`
+2. **Suppress or explain decompiler errors** - Either fix the `[D] Unsupported` regions or provide detailed annotations explaining what couldn't be recovered and suggested manual analysis approaches
+3. **Recover semantic variable names from context** - Use data flow analysis to infer names (e.g., variables used in loop counters → `i`, `idx`; variables passed to `strlen` → `str`, `buffer`)

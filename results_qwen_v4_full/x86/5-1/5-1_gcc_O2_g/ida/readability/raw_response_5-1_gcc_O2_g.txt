@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v5`, `v7`) with no semantic meaning. In `test_cpp_rtti()`, variables like `v0`, `v1`, `v2`, `v3`, `v4` should be named `result`, `obj1_ptr`, `type_name`, `running_total`, `final_result` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed recovery - some functions retain mangled C++ names (`_Z20test_cpp_member_funcv`), others are generic (`sub_1030` through `sub_1150`), and some are correctly recovered (`test_cpp_exception`, `main`). Mangled names are technically recoverable but not human-readable without demangling.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4700`, `1001`, `42`, `71`, `650` appear as hardcoded returns instead of computed values. These are actually the expected test results from constant folding, but they obscure the actual computation logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readgsdword(0x14u)` stack canaries, `LODWORD`/`HIDWORD` macros, `__usercall` calling conventions, `__noreturn` attributes, and 18 placeholder `sub_XXXX` functions that just call `sub_1030()`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions are constant-folded to single return statements (e.g., `test_cpp_virtual_func()` returns 42 directly), losing the original control flow. At `-O0` this shouldn't happen, indicating either metadata mismatch or aggressive decompiler simplification.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Some functions are well-decomposed (`Container<int>::push`, `template_max<int>`), but 18 stub functions (`sub_1030` through `sub_1150`) are just jump thunks. Virtual thunk functions are properly separated but numerous.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary code (`v5 = __readgsdword(0x14u)`) disrupts flow in multiple functions. Forward references to undefined structures present.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple thunk functions for virtual dispatch (`_ZThn8_`, `_ZTv0_n12_`) create redundancy. Constant folding eliminates computation redundancy but loses semantic meaning of the original tests.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types - some precise (`int`, `double`, `size_t`), many generic (`_DWORD`, `void*`, `__int64`). Stack canary uses `__readgsdword`. Function pointers often degraded to generic signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures not recovered as proper structs. Access through pointer arithmetic (`this->dataA`, `this->_vptr_MiddleA`). Field names partially recovered but layout unclear. No struct definitions visible for `SimpleClass`, `LifecycleClass`, etc.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(int *)`, `(const char **)`, `(char *)`, `(RTTIBase *)`. Heavy pointer arithmetic (`(char *)&this->dataA + *((_DWORD *)this->_vptr_MiddleA - 3)`). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - mostly auto-generated type information. No algorithm explanations. Only anomaly comments are "FAILED to decompile" for 20 functions and "positive sp value has been detected" warning.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ idioms (vtable, RTTI, virtual thunks) are present in the output but not explained or named. No design pattern identification. Template instantiations recovered but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("FAILED to decompile" for 20 functions including `__printf_chk`, `__cxa_throw`), but no detailed explanations of why or how to resolve. Stack anomaly warning present but vague.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No null checks explained. Exception handling contracts not recovered (many exception-related functions failed to decompile).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch unclear (thunk functions). Global variable usage not well documented. Inheritance relationships visible through mangled names but not explicitly stated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed sequentially but not logically grouped by class or feature. No namespace structure recovered. Related methods (e.g., `Container<int>` methods) are scattered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 20 functions failed to decompile including critical runtime functions (`__printf_chk`, `__cxa_throw`, `strlen`, `operator new`). Would require significant stubbing and external library linking to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+5+5+4)/4 = 4.5/10  × 0.30 = 1.35
+Level 2 (Structural):   (4+6+6+5)/4 = 5.25/10 × 0.25 = 1.31
+Level 3 (Type System):  (5+4+4)/3   = 4.33/10 × 0.20 = 0.87
+Level 4 (Semantic):     (3+4+5+3)/4 = 3.75/10 × 0.15 = 0.56
+Level 5 (Contextual):   (5+5+4)/3   = 4.67/10 × 0.10 = 0.47
+
+Overall Score: 4.56/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **20 functions failed to decompile** including critical runtime functions (`__cxa_throw`, `__printf_chk`, `operator new`)
+- **Variable names are generic** (`v0`, `v1`, `v2`) obscuring semantic purpose in complex functions like `test_cpp_rtti()`
+- **Class structures not recovered** as proper structs - accessed through pointer arithmetic instead of field names
+- **Constant folding lost computation logic** - test functions return expected values directly instead of showing actual computation
+- **Metadata mismatch** - source claims `-O0` but decompiled code shows `-O2` optimization patterns (constant folding, inlining)
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Template instantiations (`template_max<int>`, `Container<int>::push`) and some class methods are properly recovered with correct logic and parameter handling.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no explanatory comments; decompiler provides no guidance on C++-specific constructs like vtables, RTTI, or exception handling mechanisms.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures as proper structs** with field names instead of pointer arithmetic access patterns
+2. **Add semantic comments for C++ idioms** (vtable dispatch, virtual thunks, RTTI checks, exception handling)
+3. **Demangle C++ symbol names automatically** and display human-readable function names alongside mangled versions

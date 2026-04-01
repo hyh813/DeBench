@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 6,
+  "source_file": "decompiled/ghidra_out/x86/7/7_gcc_O1_g.c",
+  "fixed_file": "results_qwen_v4_full/x86/7/7_gcc_O1_g/ghidra/syntactic/fix_7_gcc_O1_g.c"
+}

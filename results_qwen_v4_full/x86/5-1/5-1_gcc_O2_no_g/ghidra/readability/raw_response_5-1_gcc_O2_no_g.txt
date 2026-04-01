@@ -1,0 +1,123 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_30`, `iVar1`, `puVar1`, `uStack_8` with zero semantic meaning. No variable indicates purpose (e.g., `result`, `obj`, `capture_by_value` are all lost).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods show signatures (`Base::virtual_func`). However, helper functions use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x3e9`, `0x2a`, `0x47`) without explanation. String literals referenced as `&DAT_00012018` instead of showing actual content. Some values match expected results but aren't documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`), thunk functions (`__x86.get_pc_thunk.bx`), and initialization code clutter every function. 32 individual array zero-initializations instead of memset.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions read linearly, but complex ones like `test_cpp_rtti` have confusing pointer arithmetic. Decompiler warnings like "Could not recover jumptable" and "Treating indirect jump as call" indicate lost structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions remain separate and template instantiations are distinct. However, class methods fragment into multiple thunk variants (`virtual thunk`, `non-virtual thunk`) for the same function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but stack canary checks introduce exit jumps. Complex functions like `test_cpp_rtti` have multiple conditional branches that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `test_cpp_member_func` has 32 individual `local_30[X] = '\0'` statements instead of memset/loop. Multiple thunk variants for same methods create significant duplication.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types recovered (`int`, `double`, `size_t`), but C++ class types degraded to opaque pointers. Many variables use `undefined4`. Template functions show type parameters (`template_max<int>`) which is good.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct/class definitions recovered. All object access is pointer arithmetic: `*(int *)(this + 4)`, `*(int *)(this + 0x28)`. Container class fields at offsets 0x28/0x50 have no structural definition.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(char **)`, `(undefined *)0x0`. Pointer arithmetic on class objects without type safety. Warning "Treating indirect jump as call" indicates type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("WARNING: Unknown calling convention") not logic explanations. Some function signatures include class method info (`Base::virtual_func(int)`) but no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **No C++ idiom recognition** - RAII, virtual dispatch, template instantiation, exception handling all appear as raw runtime calls (`__cxa_throw`, `__cxa_allocate_exception`). No pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Decompiler does flag issues ("Could not recover jumptable", "Unknown calling convention", "Subroutine does not return") but warnings are generic without specific guidance for manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Stack canary checks exist but aren't explained as safety mechanisms. Exception handling contracts completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call names preserved, but virtual dispatch becomes opaque pointer dereferencing (`(*(code *)**(undefined4 **)param_1)()`). Global references like `&DAT_00012018` unclear. Inheritance relationships invisible.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Related class methods scattered throughout. No namespace or header structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile standalone** - requires C++ runtime (`__cxa_allocate_exception`, `operator_new`, `__dynamic_cast`). Missing class definitions. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type System): (4+2+3)/3 = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (4+2+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (4+5+3)/3 = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              4.00/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+---
+
+### Critical Defects
+
+- **No class/struct recovery** - All C++ objects accessed via raw pointer arithmetic (`this + 0x28`) with no type definitions
+- **Generic variable naming** - Every local variable uses `local_XX`, `iVarX`, `uVarX` pattern with zero semantic meaning
+- **Constant-folded logic** - Many test functions return hardcoded constants (`return 0x2a`) instead of actual computation logic
+- **Excessive compiler noise** - Stack canary checks, thunk functions, and 32 individual array zero-initializations obscure real logic
+- **No C++ idiom recognition** - Exception handling, virtual dispatch, templates appear as raw runtime calls without pattern identification
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`) and class method signatures include class names (`Base::virtual_func`), providing some semantic anchors.
+
+---
+
+### Most Needs Improvement
+
+- **Composite Type Recovery (2/10)** - Complete failure to recover any C++ class/struct definitions. All object field access is raw pointer arithmetic with hardcoded offsets, making object-oriented code essentially unreadable.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement C++ class structure recovery** - Analyze vtable layouts and constructor patterns to reconstruct class definitions with field names and offsets, not just pointer arithmetic.
+
+2. **Add semantic variable naming inference** - Use usage patterns, function context, and string references to infer meaningful names (e.g., `local_30` used with `strncpy` → `name_buffer`).
+
+3. **Recognize and annotate C++ runtime patterns** - Identify `__cxa_*` calls as exception handling, vtable dereferences as virtual dispatch, and add explanatory comments rather than raw runtime calls.

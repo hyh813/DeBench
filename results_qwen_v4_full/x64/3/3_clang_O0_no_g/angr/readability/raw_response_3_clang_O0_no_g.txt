@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `a0`) instead of semantic names like `local`, `arr`, `head` from source. Loop counter `i` is preserved but most data variables lose meaning.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`local_vars`, `heap_basic`, `double_value`), but many wrapper functions use mechanical names (`sub_401209`, `sub_401234`) that add no value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Error codes appear as magic numbers (`4294967295` = -1, `4294967294` = -2) throughout instead of named constants. Values like `4294967295 &` masks obscure return value semantics.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains decompilation artifacts (`[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] MBusEvent-Imbe_Fence()`). Unnecessary wrapper functions (`sub_401209` just calls `local_vars`) pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for` constructs correctly. However, `sub_401020` uses `goto g_406010` which is unnatural. At `-O0`, control flow should match source closely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with wrapper functions that serve no purpose (e.g., `sub_401234` → `local_array`). Original function boundaries preserved but artificially inflated with stubs.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Most functions have clear entry-to-exit flow without disruptive branching patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create significant redundancy. Error handling patterns duplicated across functions without abstraction. No dead code removal evident.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` often becomes `unsigned int`. Pointer types degraded to `void*`, `char*`. Signed/unsigned confusion evident (e.g., `unsigned int` for values that should be signed).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered with correct layouts but generic field names (`field_0`, `field_8` instead of `data`, `next`). `Node` and `TreeNode` structures recognizable but semantically opaque.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(char *)ptr`, `(unsigned int *)`). `heap_nested` has type confusion (`struct_1 **ptr` then `struct_2 *ptr`). Explicit pointer arithmetic exposed throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. No algorithm descriptions, no decompilation confidence indicators. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns visible but not named. No recognition of linked list, tree traversal, or VLA patterns. Design patterns completely unidentified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (`[D] Unsupported jumpkind`, `[D] MBusEvent-Imbe_Fence()`). Inconsistent reporting—some issues silent, others marked with `[D]` prefix.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). Error return values visible but not explained. No postcondition inference for allocation functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables declared `extern` without usage context. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Original test categories (stack, heap, static, memop) not preserved. No namespace or file organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external symbol resolution (`extern_global_var`, `extern_function`). Platform-specific code (`fork`, `waitpid`) needs stubs. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.68/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on usage (e.g., `result`, `sum`, `heap_ptr`)
+- **Magic numbers `4294967295`** throughout represent error codes (-1) but appear as unsigned literals
+- **Struct fields `field_0`, `field_8`** lose semantic meaning (should be `data`, `next`, `left`, `right`)
+- **Wrapper functions `sub_401XXX`** add noise without functionality (e.g., `sub_401209` just calls `local_vars`)
+- **Zero comments** despite complex memory operations that need explanation
+
+### Best Quality Aspect:
+- **Code Linearization (scored 7/10)** - Code generally reads top-to-bottom with minimal disruptive jumps, making basic execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Complete absence of explanatory comments makes understanding complex memory operations (VLA, alloca, TLS) extremely difficult without source reference.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables passed to `malloc` → `buffer`, `array`)
+2. **Recover named constants from magic numbers** - Detect repeated error codes (`4294967295`, `4294967294`) and suggest `#define ERROR_NULL -1` style constants
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments (e.g., `// DECOMPILE_UNCERTAIN: VLA size calculation`) and explain complex patterns like TLS access

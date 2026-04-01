@@ -1,0 +1,16 @@
+Testing obfuscation and optimization edge cases
+
+fake_branch result: 10
+opaque_predicate result: 20
+instruction_substitution result: 225
+string_encryption result: 32
+tail_call_optimized result: 500500
+non_tail_call result: 5050
+vectorized_loop result: 72
+link_time_optimization result: 20
+division_by_zero result: 2
+null_pointer_deref result: 41
+buffer_overflow result: 30
+integer_overflow result: 2000000000
+undefined_behavior result: 10
+implementation_defined result: 48

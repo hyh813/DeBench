@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=-1208972944,Arg1=-1077096320,Arg2=0,Arg3=-1211019359|eax=0xb7ed5dd8,ebx=0x0,ecx=0xbfccd080,edx=0xbfccd0a4,esi=0xb7ed4000,edi=0x0

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/6/6_clang_Os_no_g/ida/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "=== Standard Library Function Tests ===\n\nString length: 8\nStrcmp result: 0\nStrlen result: 12\nMemcpy result: 90\nMemcmp result: 0\nValue: 42, Name: Test\nPrintf result: 22\nSscanf result: 579\nFopen result: 42\nFread result: 42\nMalloc result: 90\nMemset result: 0\nStrchr/Strstr result: 15\n=== System Call Tests ===\n\nLinux syscall result: 42\nStat result: 42\nFork/Exec result: 42\nPipe result: 42\nSocket result: 42\nShmget result: 42\nSignal result: 42\n=== Thread Concurrency Tests ===\n\nPthread create result: 49\nPthread join result: 410\nMutex lock result: 42\nCondition variable result: 42\nAtomic ops result: 42\nThread local storage result: -3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

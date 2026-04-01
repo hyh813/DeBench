@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `cur`) with no semantic meaning. For example, in `process_char`, `v0` should be `result` or `converted_char`. In `array_1d_stack`, `v1` should be `sum` and `i` is correctly named but `ptr` should be `arr`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retained original names (`process_char`, `array_1d_stack`, `struct_simple`), which is excellent. However, helper functions use mechanical names (`sub_400694`, `sub_400770`) and runtime functions (`__addtf3`, `__multf3`) are incomprehensible.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (UINT_MAX), `4294967294`, `65`, `90`, `32` without explanation. The decompiler didn't recover character literals ('A', 'Z') in `process_char` - uses `65` and `90` instead. String literals preserved in test functions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present. `__addtf3` and `__multf3` functions are 500+ lines of unreadable floating-point emulation code. Redundant variable assignments (`v0 = &v1`), unnecessary casts, and frame pointer manipulation throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `enum_switch` uses `goto` with computed jump table instead of switch statement. `__addtf3` has hundreds of labels (`LABEL_402248`, `LABEL_402694`) making it spaghetti code. Loops generally recovered as for/while.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: User functions have appropriate granularity (10-30 lines). However, `__addtf3` and `__multf3` are monolithic 500+ line functions that should be library calls. Some functions like `frame_dummy` just wrap single calls unnecessarily.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but `enum_switch` and floating-point functions have excessive forward jumps. The `__addtf3` function has 50+ goto labels disrupting any linear reading. Test functions have reasonable flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant assignments common (`v0 = v2; v1 = v3` in `_init`). Frame setup code (`v25 = &v26`) repeated in every function. `process_int` has complex bit manipulation `((a0 * 2 | a0 >> 31) & 4294967294) + 1` instead of simple `a0 * 2 + 1`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation. `process_float` and `process_double` return `long long` instead of float/double and take no parameters! `process_long` uses `unsigned long long` instead of `long`. Pointer types often `unsigned long` instead of proper pointer types. Signed/unsigned frequently wrong.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with `field_0`, `field_8` instead of semantic names. `Point3D` becomes `unsigned int *` with array indexing `a0[0] + a0[1] + a0[2]`. Bitfields completely lost - `struct_bitfields` is unreadable bit manipulation. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. `ptr_func_simple` takes `unsigned long long *` as function pointer (should be `int (*)(int)`). `graph_traverse` uses `struct_0 **` for `Graph *`. Pointer arithmetic uses raw offsets (`ptr + i * 4`) instead of array indexing in many places.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no parameter documentation, no decompiler confidence indicators. Only auto-generated function headers with addresses. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal in `linked_list` not identified as such. Tree recursion in `binary_tree_sum` not annotated. Switch-on-enum pattern in `enum_switch` degraded to goto table. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings despite severe issues. `process_float` and `process_double` are completely broken (no parameters, wrong return type) but no warning. Floating-point emulation code has no indication it's compiler runtime. Indirect calls not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. `array_complex_index` bounds checking present but not documented as precondition. `ptr_void` type parameter behavior not explained. No null pointer contract documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. `double_value` called from `ptr_func_simple` but no call graph. Global variables named `g_414ff8`, `g_4038c4` with no semantic meaning. Test functions call user functions but relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file (expected for decompilation). Related functions grouped (data types, arrays, pointers, composites) but not explicitly organized. Static functions (`double_value`, `complex_callback`) properly identified. No header file separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has syntax errors and undefined references (`call_weak_fn`, `deregister_tm_clones`, `__gmon_start__`). Floating-point functions (`__addtf3`, `__multf3`) would need runtime library. Many external symbols unresolved. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 7 + 4 + 4) / 4 = 4.50
+Level 2 (Structural):  (5 + 6 + 5 + 5) / 4 = 5.25
+Level 3 (Type):        (4 + 3 + 4) / 3 = 3.67
+Level 4 (Semantic):    (1 + 2 + 2 + 1) / 4 = 1.50
+Level 5 (Contextual):  (5 + 6 + 5) / 3 = 5.33
+
+Overall = (4.50 × 0.30) + (5.25 × 0.25) + (3.67 × 0.20) + (1.50 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.31 + 0.73 + 0.23 + 0.53
+        = 4.15/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Float/double functions completely broken**: `process_float()` and `process_double()` have no parameters and wrong return types, making them unusable
+- **Zero semantic comments**: All original documentation lost; no decompiler-generated explanations for complex logic
+- **Struct field names lost**: `Point3D.x/y/z` became `a0[0]/a0[1]/a0[2]` with `struct_0` generic naming
+- **Magic numbers everywhere**: `4294967295`, `4294967294`, `65`, `90` without constant recovery
+- **Floating-point runtime explosion**: `__addtf3` is 500+ lines of unreadable emulation code instead of library call
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- User-defined function names were preserved from debug symbols (`process_char`, `array_1d_stack`, `struct_simple`), maintaining semantic clarity for the main API.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation; even obvious patterns like linked list traversal have no explanatory comments, making the code significantly harder to understand than necessary.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols**: Since compiled with `-g`, float/double types and struct field names should be recovered instead of generic `unsigned long` and `field_0`
+2. **Add semantic comments for recovered patterns**: Annotate linked list traversal, tree recursion, and switch-on-enum patterns with explanatory comments
+3. **Replace magic numbers with constants**: Detect common values (UINT_MAX, character literals) and suggest named constants or restore original literal forms ('A' instead of 65)

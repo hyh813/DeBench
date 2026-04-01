@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables are almost exclusively generic single letters (`a`, `b`, `x`, `y`) or v-prefixed patterns (`v0`, `v1`, `v3`, `v4`, `v5`, `v6`, `v7`). The original source used meaningful names like `count`, `sum`, `args`, `ptr`, `p` but these were lost in decompilation. For example, in `varargs_func`, the loop counter should be `i` or `count`, not `v6`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names directly match the original source (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`, `func_many_args`). The wrapper functions like `call_cdecl()` are correctly preserved. Minor deduction for some internal functions with generic names like `sub_710` in the startup code.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Test wrapper functions return computed constants (e.g., `return 15;` for `call_cdecl()`), which is acceptable since the computation was inlined. However, magic numbers like `-56` in varargs handling and `8` for pointer arithmetic are unexplained. The original source had clear constant usage that is lost.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant compiler/decompiler artifacts present: register annotations (`kr00_32`), stack frame markers (`[xsp+48h] [xbp+48h]`), BYREF indicators, and the explicit failure message "local variable allocation has failed, the output may be wrong!" for `ret_small_struct`. These impede readability significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Control flow generally matches source - loops use `while`, conditionals use `if/else`. The varargs functions have a goto-based structure with `LABEL_5` which is less natural but reflects the ARM64 stack handling. At -O0, more natural flow could be expected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function boundaries closely match the original source. Each test case and helper function is properly separated. The wrapper functions that just call another function with constants are appropriately inlined to return constants. Function sizes are reasonable.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom. The varargs functions have some backward jumps and goto labels that disrupt linear flow, but overall the code is traceable. Early returns are used appropriately in functions like `param_by_value_ptr`.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy observed. Simple wrapper functions like `call_cdecl()` were correctly inlined to return constants. The code is clean without obvious dead code or duplicate expressions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Basic types are correct (`int`, `char*`, `void*`). However, the original source used specific types like `long long` which became `__int64` or `_QWORD`. Calling convention annotations (`__fastcall`, `__cdecl`) are correctly preserved. The type precision is adequate but not optimal.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+Justification: Struct types are recovered with correct field names: `LargeStruct` with `data[16]`, `SmallStruct` with `x, y`, and `SmallPoint`. However, there's inconsistency - the source defines both `LargeStruct` and `BigStruct` with identical layouts, and the decompiler treats them as separate types. Field names are preserved.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several unsafe operations present. In `varargs_func`: `*(_DWORD *)v7` performs unsafe cast from `char*` to `int*`. In `param_func_ptr`: the cast `(__int64 (__fastcall *)(_QWORD))callback` is questionable. Pointer arithmetic like `v4 += 8` and `p + 1` is correct but could be safer. Multiple locations have potential type safety issues.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Minimal comments present - just the decompiler header and one critical failure notice: "local variable allocation has failed, the output may be wrong!" for `ret_small_struct`. No explanation of algorithms, no recovery confidence indicators, no API contracts. The original source had extensive comments that are completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: No design patterns or algorithms are explicitly identified. The varargs handling, calling convention tests, and struct passing patterns could be documented but aren't. The code is presented as literal translation without pattern recognition.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: One significant anomaly is properly flagged: the failure message for `ret_small_struct` decompilation. However, other potential issues are not indicated - the indirect function pointer call in `param_func_ptr`, the complex struct return mechanism, and the varargs stack handling anomalies are not flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear function contracts (e.g., "requires: ptr != NULL") that are completely lost. Error handling (like NULL checks in `func_struct_byptr`) is present but not explained.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are present in the code but relationships aren't documented. There's no indication of which functions call which, no callback relationships explained, no global variable usage documented. The test harness structure is visible but not explicitly described.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: All functions are in a single output file. Related functions are grouped together (calling convention tests, parameter passing tests, return value tests) but this organization isn't explicitly documented. Static function scoping is preserved.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: The code should compile with standard C library headers. External dependencies are standard library functions (`puts`, `printf`, `strlen`). No unusual compiler-specific hacks. The code is relatively portable ARM64.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 5 + 4) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.5
+L3_avg = (6 + 7 + 5) / 3 = 6.0
+L4_avg = (5 + 5 + 6 + 3) / 4 = 4.75
+L5_avg = (5 + 6 + 7) / 3 = 6.0
+
+Overall = (5.0 × 0.30) + (7.5 × 0.25) + (6.0 × 0.20) + (4.75 × 0.15) + (6.0 × 0.10)
+        = 1.5 + 1.875 + 1.2 + 0.7125 + 0.6
+        = 5.8875 ≈ 5.9/10
+```
+
+### Overall Readability Score: 5.9/10
+
+---
+
+### Critical Defects
+
+1. **Variable naming is universally generic** - Parameters are `a`, `b`, `a1`, `a2` instead of meaningful names like `count`, `sum`, `args`
+2. **Complete loss of source comments** - The original 665 lines had extensive documentation explaining each test case; decompiled output has none
+3. **Failed decompilation not properly handled** - `ret_small_struct` shows "local variable allocation has failed" but produces questionable code: `return (SmallPoint)((unsigned int)x | (*(_QWORD *)&y << 32));`
+4. **Type safety issues** - Multiple unsafe casts like `*(_DWORD *)v7` in varargs handling
+5. **No contract/precondition recovery** - NULL checks exist but aren't documented as preconditions
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Function boundaries closely match the original source. Each test case and helper function is properly separated, and simple wrapper functions are appropriately inlined.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (3/10)** - Almost all variables use generic single letters or v-prefixed patterns. The original source had meaningful names like `count`, `sum`, `args`, `ptr` that were completely lost. This is the most impactful degradation for readability.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v6++` in a loop context → name it `i` or `index`; `va_start(va, count)` → name the parameter `count`)
+
+2. **Recover comments from debug symbols**: Since this was compiled with `-g`, debug information contains source file and line number mappings that could be used to recover original comments
+
+3. **Improve struct return handling**: The `ret_small_struct` failure indicates difficulty with ABI-specific return mechanisms. Better handling of small struct returns in registers would improve output quality significantly

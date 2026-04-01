@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All variables use generic numbered names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`, `v18`, `v19`, `v20`) and parameters are `a1`, `a2`, `a3`, `a4`. No semantic meaning recovered - completely unusable for understanding the code's purpose.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use address-based naming (`function_10cd4`, `function_10cec`, `function_e59f0024`). Only main test functions (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`) and some param functions are properly named. The ARM instruction-encoded stub functions (e.g., `function_e59f0024`, `function_e3530000`) are noise, not meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some string literals preserved with expected values (e.g., "LIB-L1-01: %d (期望: 8)\n"), but magic numbers like `0x110b8`, `0x11170` used for global variable addresses without explanation. Loop bounds like `1000`, `2000` appear without context. Mixed clarity.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from ~80+ stub functions named after ARM instruction encodings (e.g., `function_e59f0024`, `function_e3530000`, `function_e3a00000`). These are dead-end functions that just return values and clutter the output, making it nearly impossible to find actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flow recovered (while loops, if-else), but uses goto statements with labeled jumps (`lab_0x11458`, `lab_0x1158c`, `lab_0x1168c`) instead of natural loop constructs. At -O0, this should be much cleaner. The goto patterns make execution flow difficult to trace.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Main test functions properly decomposed, but many tiny stub functions (1-2 lines) that shouldn't exist. Some functions like `param_thread_local_storage_constprop_0` are 80+ lines with complex goto patterns. Mixed granularity - some good decomposition, some over-fragmented noise.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearization due to extensive goto usage with multiple labels. Forward jumps disrupt top-to-bottom reading. Deep nesting in some areas (e.g., `param_thread_local_storage_constprop_0`). The code does not read naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns visible in the goto-heavy code. Loop constructs not clearly separated from surrounding logic. The stub functions create visual redundancy. Not terrible but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good type precision - uses `int32_t` consistently (appropriate for ARM64), some `uint32_t` where needed. Parameters properly typed as `int32_t`. Minor issues with some pointer types being generic, but overall accurate.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types recovered. All composite data structures lost - uses raw pointer arithmetic everywhere. For example, ThreadData struct in `param_pthread_join` is completely lost, replaced by manual pointer offset calculations.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(char *)((int32_t)&v4 + 4 + v3)`). Pointer arithmetic without proper type safety in several places. Not catastrophic but some operations are risky. Overall moderate type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address range comments (e.g., "// Address range: 0x10cd4 - 0x10ce0"). No meaningful comments explaining what functions do, what parameters mean, or what algorithms are implemented. Zero semantic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns, algorithms, or idioms identified or named. The code is raw decompilation without any pattern recognition. Threading patterns (pthread, mutex, condition variables) not explicitly identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code or uncertain areas. The many stub functions that are clearly decompilation artifacts (ARM instruction encodings) are not indicated as anomalies. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The function contracts are completely lost - you have to infer everything from the code itself.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code, but relationships with external code not documented. Global variables declared but their usage across functions not explained. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Some logical grouping - test functions together, param functions together. But stub functions interspersed throughout. No clear separation into modules or logical units. Arbitrary organization due to address-based naming.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has function prototypes declared. Uses standard types (`int32_t`, `uint32_t`). Should compile with minimal changes. Includes necessary headers. Some external dependencies (standard library functions) not declared but expected to be linked.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming completely generic (`v1`-`v20`, `a1`-`a4`) - no semantic meaning recovered
+- ~80+ noise functions named after ARM instruction encodings (e.g., `function_e59f0024`) that clutter output
+- No struct/type recovery - all composite types lost to raw pointer arithmetic
+- Zero meaningful comments - only address range annotations
+- Function naming uses address-based names instead of semantic names
+- Control flow uses goto instead of natural loop constructs
+- No pattern recognition (threading idioms, algorithms not identified)
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+The decompiler correctly uses `int32_t` for ARM64 integers and `uint32_t` where appropriate. Types are mostly accurate and consistent.
+
+**Most Needs Improvement:** Lexical Clarity (scored 2.5/10)  
+Variable and function naming is completely unusable. Combined with zero comments and massive noise from stub functions, the code is nearly impossible to understand semantically.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - e.g., variables used in size calculations should be named `size`, `length`, `count`; variables used as loop counters should be `i`, `j`, `index`
+2. **Eliminate or consolidate stub functions** - the ARM instruction-encoded functions are decompilation artifacts that provide no value; either remove them or consolidate into a single "unresolved function" placeholder
+3. **Recover control flow constructs** - convert goto-based patterns to natural while/for loops; at -O0, the control flow should be nearly source-equivalent

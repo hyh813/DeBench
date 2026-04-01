@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original function `param_fake_branch` demonstrates "fake branch" obfuscation with two always-false conditions:
+1. `x * x < 0` (mathematically impossible for real numbers)
+2. `strlen(str) < 0` (string length cannot be negative)
+
+The decompiled version is:
+```c
+undefined4 param_fake_branch(undefined4 param_1)
+{
+  return param_1;
+}
+```
+
+**Critical Finding**: The decompiler has completely eliminated the obfuscation logic, reducing the function to a trivial pass-through. This loses the semantic purpose of the original code entirely.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameter named `param_1` is generic. The original had `result` variable which is completely lost. No local variables exist in decompiled version.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` exactly matches the original source. This is a perfect recovery.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in either version. The original had `0xDEADBEEF` and `1000` inside dead branches - all eliminated.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: Clean code with no compiler artifacts, casts, or debug instrumentation in this function.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: Single return statement is perfectly natural. However, this masks the complete loss of the original control flow (two if statements).
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately small (1 line). However, this is due to aggressive optimization elimination, not good design.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear - just a return statement. No jumps or complexity.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. However, the "redundancy" was actually intentional obfuscation that should have been preserved.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4` instead of `int`. The original used `int` for both parameter and return type. This type imprecision obscures the actual semantics.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types in this function, so nothing to recover.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No type safety violations in the simplified code. The return type mismatch (`undefined4` vs `int`) is a minor issue.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present. The original had explanatory comments about the fake branch obfuscation technique. This loss is critical for understanding the code's purpose.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (always-false condition) idiom is completely lost. This was the entire point of the function. The decompiler should have recognized the pattern `if (x*x < 0)` as an opaque predicate.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that significant code was eliminated. The decompiler should flag: "WARNING: Dead code elimination removed 2 always-false conditional branches."
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. Original had implicit assumption that input `x` is any integer. Could document: "Always returns input unchanged (obfuscation demo)."
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function is called by `call_fake_branch()` which is correctly identified. However, the relationship to other obfuscation functions is lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Part of test_obf_opt_edge() grouping. The function is in the correct region with other obfuscation tests.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses `undefined4` type which is Ghidra-specific and won't compile with standard GCC. Would need to replace with `int` for portable code.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+10+10+10)/4 = 8.25
+L2_avg = (10+10+10+10)/4 = 10.0
+L3_avg = (4+10+10)/3 = 8.0
+L4_avg = (1+1+1+1)/4 = 1.0
+L5_avg = (5+5+4)/3 = 4.67
+
+Overall = (8.25 × 0.30) + (10.0 × 0.25) + (8.0 × 0.20) + 
+          (1.0 × 0.15) + (4.67 × 0.10)
+        = 2.475 + 2.5 + 1.6 + 0.15 + 0.467
+        = 7.19/10
+```
+
+**Overall Readability Score:** 7.2/10
+
+---
+
+### Critical Defects
+
+- **Fake branch logic completely eliminated**: The two always-false conditions (`x*x < 0` and `strlen(str) < 0`) are entirely removed, losing the semantic purpose of the obfuscation demonstration
+- **Type uses Ghidra-specific `undefined4`**: Won't compile with standard compilers; should be `int`
+- **No comments explaining the obfuscation technique**: Original had detailed comments about OBF-L4-02 fake branch pattern
+- **Idiom recognition failure**: The "fake branch" / "opaque predicate" pattern is a well-known obfuscation technique that should be flagged
+- **No anomaly indication**: Should warn that significant code was eliminated via dead code analysis
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (10/10)** - The function name `param_fake_branch` is perfectly recovered and matches the original source exactly.
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.0/10)** - This dimension scored lowest because:
+- No comments explaining the fake branch technique
+- The obfuscation idiom is completely lost
+- No anomaly warnings about eliminated code
+- No contracts or preconditions documented
+
+The decompiler treated the intentional obfuscation as "dead code" and eliminated it, fundamentally misunderstanding the code's purpose.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve always-false condition patterns**: Detect patterns like `x*x < 0` for real numbers and flag them as "intentionally false conditions (obfuscation)" rather than eliminating as dead code
+
+2. **Add anomaly warnings for eliminated code**: When dead code elimination removes significant portions, add comments like: "NOTE: 2 conditional branches eliminated - verify if intentional obfuscation"
+
+3. **Replace Ghidra-specific types with standard types**: Convert `undefined4` to `int`, `undefined8` to `long`, etc. for compilation compatibility

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`, `piVar5`) with zero semantic meaning. At `-O0` with debug symbols, the decompiler should have recovered names like `x`, `sum`, `arr` from the source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`process_char`, `array_1d_stack`, `struct_simple`), matching source. However, some are generic (`FUN_00101020`) and several have incorrect return type signatures.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x20` in `process_char` (should be `32` or `'a'-'A'`), hex offsets in struct access (`param_1[0xb]`, `param_1[0x14]`), and test functions have hardcoded expected values instead of actual function calls.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`), unnecessary type casts, and loop unrolling that shouldn't exist at `-O0`. No severe noise pollution but unnecessary artifacts present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loop unrolling in simple functions (`array_1d_stack`, `ptr_increment`) creates unnecessarily complex code. `binary_tree_sum` catastrophically converted from 5-line recursion to 200+ line 8-level nested loops. `enum_switch` uses indirect jump table instead of switch.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but `binary_tree_sum` bloated from 5 lines to 200+ lines. Several functions have wrong signatures (`void` return instead of `int`). Test functions don't actually call the functions they're testing.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but loop unrolling creates non-linear patterns. Deep nesting in `binary_tree_sum` (8+ levels). Some functions have awkward early returns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling redundancy in array functions. `binary_tree_sum` has massive code duplication from failed recursion recovery. Same unrolling pattern repeated across multiple functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `process_ld` returns `void` instead of `long double`, `process_bool` returns `uint` instead of `_Bool`, `ptr_triple` uses `undefined8*` instead of `int***`, struct types lost to `int*` with offset arithmetic, function pointers degraded to `code*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure on struct/union recovery. All structs accessed via pointer arithmetic (`param_1[0xb]`, `param_1[0x14]`) instead of field names. No struct definitions recovered. Union types not distinguished. Bitfield access reduced to bit manipulation on `ushort*`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout (`undefined4*`, `undefined8*`), pointer arithmetic on `int*` where struct access should be used, function pointers as `code*` without signatures, `union_type` returns `float` instead of `int` for some cases.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare despite complex transformations that need explanation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Linked list traversal not identified. Tree recursion completely failed to recover. Switch statements converted to jump tables without recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies visible (`UNRECOVERED_JUMPTABLE` in `ptr_func_simple`) but not consistently flagged. No warnings about type degradation or struct loss. `binary_tree_sum` wrongness not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. NULL checks present but not documented as contracts. No error condition documentation despite many functions that could fail.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Test functions call hardcoded values instead of actual functions. Callback relationships unclear (`ptr_func_simple` shows `UNRECOVERED_JUMPTABLE`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Startup/teardown functions present (`_init`, `_fini`). But no logical grouping comments or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__printf_chk`, `puts`) without proper declarations. Uses undefined types (`undefined4`, `undefined8`). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+5+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.96/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+### Critical Defects:
+- **Struct types completely lost** - All composite types accessed via `int*` with numeric offsets (`param_1[0xb]`, `param_1[0x14]`) instead of field names
+- **`binary_tree_sum` catastrophically wrong** - Simple 5-line recursive function transformed into 200+ line 8-level nested loop mess
+- **Test functions don't call actual functions** - `test_data_types_l1`, `test_array_types` print hardcoded expected values instead of calling the functions
+- **Critical type errors** - `process_ld` returns `void` instead of `long double`, `ptr_func_simple` returns `void` instead of `int`
+- **Zero comments** - No documentation for complex transformations, anomalies, or algorithm intent
+
+### Best Quality Aspect: Function Naming Quality (scored 7/10)
+- Most function names preserved correctly from source (`process_char`, `array_1d_stack`, `struct_simple`), making basic identification possible.
+
+### Most Needs Improvement: Comment Quality & Presence (scored 1/10)
+- Zero comments despite massive structural transformations that desperately need explanation (loop unrolling, failed recursion recovery, type degradation).
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions from debug symbols** - At `-O0 -g`, type information should be available; don't reduce all structs to `int*` with offset arithmetic
+2. **Recognize and preserve recursive patterns** - The `binary_tree_sum` failure is unacceptable; implement recursion pattern detection before applying loop transformations
+3. **Add confidence annotations and comments** - Flag uncertain recoveries (`UNRECOVERED_JUMPTABLE` is good start), explain transformations, document type degradation

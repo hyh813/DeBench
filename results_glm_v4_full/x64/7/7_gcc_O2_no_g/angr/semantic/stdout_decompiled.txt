@@ -1,0 +1,5 @@
+Test Output
+
+Opaque predicate: 10
+Opaque: 20
+Instruction sub: 225

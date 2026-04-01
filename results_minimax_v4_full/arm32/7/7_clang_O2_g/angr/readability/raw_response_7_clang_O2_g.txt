@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_fake_branch` demonstrates a fundamental decompilation failure - the decompiled version at address `0x4006a4` simply returns `v0` without any of the original logic (the fake branch conditions). This is a critical defect that makes the function unusable for analysis.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns (`v0`, `v1`, `v2`, ..., `v16`) with register hints (`// r0`, `// lr`, `// r4`). No semantic names like `result`, `x`, or `str` from the original source are recovered. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly preserve original names (e.g., `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`), but many others use mechanical address-based names like `sub_400498`, `sub_400574`, `sub_400fe8`. The mixed result prevents higher score.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `0xDEADBEEF` from the source is completely lost. String literals are referenced as cryptic addresses (`g_401080`, `g_40109c`, etc.) without any recovery of their content. The value `4294967295` appears but without explanation as the -1 return for error cases.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: register assignment comments on every variable (`// r0`, `// lr`, `// r4`), excessive goto statements from control flow recovery, spurious labels like `LABEL_400598`, and debug annotations like `vvar_60{r64|4b}`. The code is cluttered with compiler/decompiler artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiled code uses excessive goto statements and labels (e.g., `goto LABEL_400598`, `goto g_412008`) instead of natural loop/conditional constructs. The `param_fake_branch` function is completely broken - it has no control flow at all, just `return v0`. Loop constructs in other functions are obscured by goto chains.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are mostly kept separate, matching the original source structure. However, some functions like `param_fake_branch` are incorrectly simplified (logic removed), while others like `call_fake_branch` are correctly inlined to constants. The decomposition is adequate but not exemplary.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code has poor linearization with many forward jumps and goto statements disrupting top-to-bottom reading. Labels like `LABEL_4005c4`, `LABEL_4005d4`, `LABEL_400654` create non-linear flow. Deep nesting in functions like `param_opaque_predicate` further obscures readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some redundancy exists - for example, `param_division_by_zero` calls `__divsi3(10, a0)` twice redundantly. Dead code is minimal, but the decompiler didn't clean up all redundant expressions. Loop constructs show some unrolling artifacts but not excessively so.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most integers are typed as `unsigned int` when the original uses `int`. The original's `int` types are often lost. Pointer types are somewhat preserved (`unsigned int *a0`) but with generic names. No `int32_t` or `uint32_t` precision - just generic `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery is evident. The original source has no complex structs anyway, but the decompiler doesn't attempt to reconstruct compound types. Local arrays like `char buffer[8]` in `param_buffer_overflow_stack` are not properly recovered - the function is simplified to `return v0`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns exist - the string decryption functions have pointer arithmetic with `char` types that could overflow. The `param_string_encryption` function uses a 2-byte buffer `char dst[2]` to copy a 32-byte string, which is a buffer overflow risk. However, most basic operations are type-consistent.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are almost entirely auto-generated noise (register assignments like `// r0`, `// lr`). No algorithm explanations, no documentation of the fake branch logic, no indication of what `0xDEADBEEF` represents. The comment `/* do not return */` appears frequently but adds little value.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are hinted at but not named. The opaque predicate logic in `param_opaque_predicate` shows a GCD computation loop but it's buried in goto-heavy code. No recognition of "fake branch" or "opaque predicate" patterns. String decryption is not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The most critical anomaly - `param_fake_branch` returning without any logic - is not flagged. The decompiler presents broken code as if it were correct. No warnings about unresolved indirect calls or suspicious logic. The code confidently presents incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no explicit contracts, but the decompiler could infer things like "requires: x is valid integer" or "ensures: return equals input for non-fake-branch paths". None of this is present.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat visible (e.g., `call_fake_branch` calls `param_fake_branch`), but global variable usage is unclear. External references like `extern unsigned int g_412008` provide no semantic meaning. Callback relationships are not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in the output, roughly matching the original source organization (obfuscation functions, optimization functions, edge case functions). However, the organization is implicit rather than explicit - no headers or logical sections are declared.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has many `extern` declarations but incomplete prototypes. Functions like `__divsi3` are referenced but their full signatures aren't provided. The code would require significant patching to compile (missing standard library includes, incomplete function declarations).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- `param_fake_branch` at 0x4006a4 is completely broken - returns `v0` without any fake branch logic, losing the core functionality
+- All variables use generic names (`v0`-`v16`) with register hints instead of semantic names
+- No comments explaining the obfuscation techniques (fake branches, opaque predicates)
+- Excessive goto-based control flow instead of natural loops/conditionals
+- String literals replaced with cryptic addresses (`g_401080`) losing all content
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+Functions are mostly kept separate and maintain the original call structure, with some correct constant folding (e.g., `call_fake_branch` returns 10).
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The decompiler makes no attempt to infer semantic names from usage patterns. Variables should be named based on how they're used (e.g., `x` for the input parameter, `result` for the return value accumulator).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover parameter names from function signatures** - The first parameter `a0` in `param_fake_branch(int x)` should be named `x` based on usage analysis
+2. **Flag broken/degenerate functions** - `param_fake_branch` has no control flow; this should be flagged as "INCOMPLETE DECOMPILATION" rather than presented as valid code
+3. **Eliminate register assignment noise** - Remove comments like `// r0`, `// lr`, `// r4` that add no semantic value and clutter the output

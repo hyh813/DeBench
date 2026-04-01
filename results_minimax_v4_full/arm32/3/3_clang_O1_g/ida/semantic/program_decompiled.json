@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/3/3_clang_O1_g/ida/syntactic/bin/3_clang_O1_g_fixed",
+  "stdout": "=== Stack Memory Test ===\n\nMEM-L1-01 (local_vars): 20\nMEM-L1-02 (local_array): -1094351248\nMEM-L1-03 (local_struct): 15\nMEM-L1-04 (address_of_local): 42\nMEM-L1-05 (address_of_array): 2\nMEM-L2-01 (large_stack_frame): 0\nMEM-L2-02 (vla_stack): 0\nMEM-L2-03 (alloca_usage): 0\nMEM-L2-04 (stack_alias): 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

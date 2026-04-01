@@ -1,0 +1,6 @@
+test_obf_opt_edge
+
+call_opaque_predicate: 20
+call_string_encryption: 20
+call_tail_call_optimized: 20
+call_non_tail_call: 20

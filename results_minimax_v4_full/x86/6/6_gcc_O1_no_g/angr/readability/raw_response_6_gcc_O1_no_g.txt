@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All variables use generic names (a0, a1, v0, v1, v2, ptr, result). The function `param_strcpy` has parameters `unsigned int a0, unsigned int a1` when they should be `char *dst, const char *src`. No semantic meaning whatsoever.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: All functions use mechanical address-based names (sub_401b8b, sub_401630, sub_4015b0). The original function `param_strcpy` is decompiled as `sub_401b8b` with no semantic indication of its string copy purpose.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Some string literals like "Value: %d, Name: %s\n" are preserved in param_printf. However, many constants like 4294967295 (representing -1 as unsigned) appear without explanation. Magic numbers are unexplained throughout.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Excessive compiler artifacts present: __x86.get_pc_thunk.ax() calls everywhere, stack canary checks (__stack_chk_fail_local), frame pointer manipulations. The decompilation includes 4000+ lines of mostly boilerplate code from the binary's initialization.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Basic control flow is somewhat readable with if/else and while loops. However, some functions use computed goto patterns (e.g., sub_401030 uses `goto ptr[2]`). At -O0, this should be much more natural.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: The decompilation shows excessive fragmentation - many small wrapper functions (sub_401040, sub_40104e, etc.) that just call other functions. The actual logic is buried across multiple sub-functions, making it hard to follow.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Generally reads top-to-bottom but has forward jumps and computed goto statements that disrupt flow. The sub_401030 function uses a computed jump that breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some redundant patterns present. The __x86.get_pc_thunk functions are duplicated across multiple call sites. Some loop patterns could be more efficiently represented.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Critical type errors: `int param_strcpy(char *dst, const char *src)` becomes `void param_strcpy(unsigned int a0, unsigned int a1)`. Return type is wrong (void vs int), parameter types are wrong (unsigned int vs char*), const correctness lost.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct recovery. The original has `struct ThreadData` with fields start, end, result, but decompilation shows raw pointer arithmetic. The pthread structures are completely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Many unsafe casts from unsigned int to pointers throughout. Function pointers are treated as unsigned int. No bounds checking. Example: `sub_4015e0(a0 * 4)` - pointer arithmetic without type safety.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining any function's purpose. No decompilation confidence indicators. No documentation of what strcpy, strlen, or other library calls do. The code presents itself as confident when much is uncertain.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Some standard library functions are recognized (strcpy becomes sub_4015b0, strlen becomes sub_401630) but no pattern naming or explanation. The pthread patterns are not identified as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of indirect calls that couldn't be resolved. No warnings about potential issues. The code presents computed jumps and external calls as if they're fully understood.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/post conditions documented. No error handling patterns explained. The return value semantics (e.g., -1 for error) are not documented.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: Some extern declarations present (e.g., `extern unsigned int shared_counter`), but function call relationships are unclear. The connection between call_strcpy and param_strcpy is not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are roughly grouped by address but the logical organization (test_standard_library_functions, test_system_calls, test_thread_concurrency) is not reflected in the naming.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Many missing declarations. The code uses undefined types and functions. Won't compile as-is - needs extensive patching for declarations like struct types, extern references.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.1/10
+
+**Critical Defects:**
+- Function `param_strcpy` has completely wrong signature: `void param_strcpy(unsigned int a0, unsigned int a1)` instead of `int param_strcpy(char *dst, const char *src)` - return type and parameter types are all wrong
+- All variable names are generic (a0, a1, v0, v1) with no semantic meaning
+- All function names are address-based (sub_401b8b) with no semantic meaning
+- No struct recovery - ThreadData and other composite types completely lost
+- No comments explaining any functionality
+- Excessive compiler noise (__x86.get_pc_thunk, __stack_chk_fail_local)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 4/10)  
+- Basic if/else and while structures are somewhat readable, though this is the highest score and it's still poor
+
+**Most Needs Improvement:** Type Precision (scored 1/10)  
+- The function signature for param_strcpy is completely wrong - return type should be int, parameters should be char*, const char*. This fundamental type loss makes the code essentially unusable for analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer function signatures from calling conventions and standard library patterns - param_strcpy clearly calls strcpy and strlen, so return type should be int and parameters should be char*
+2. Recover variable names from usage patterns - a0 used as dst in strcpy call should be named dst or destination
+3. Add comments explaining decompilation confidence and identifying standard library functions with their semantic purpose

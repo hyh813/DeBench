@@ -1,0 +1,39 @@
+test_calling_conventions
+CALL-L1-01: 15
+CALL-L1-02: 50
+CALL-L1-03: 6
+CALL-L1-04: 15
+CALL-L1-05: 15
+CALL-L1-06: 100
+CALL-L1-07: 21
+CALL-L1-08: 15
+CALL-L1-09: 10
+CALL-L1-10: 33
+varargs_func: 0
+func_no_args: 42
+func_many_args: 36
+func_mixed_args: 117
+func_struct_byval: 136
+func_struct_byptr: 50
+PARAM-L1
+PARAM-L1-01: 15
+PARAM-L1-02: 11
+PARAM-L2-01: 8
+PARAM-L2-02: 173
+PARAM-L2-03: 300
+PARAM-L2-04: 0
+PARAM-L3-01: 20
+PARAM-L3-02: 21
+PARAM-L3-03: 305419896
+PARAM-L3-04: 15
+PARAM-L3-05: 3
+test_parameter_passing
+ret_basic_type: 42
+ret_pointer: 20
+ret_small_struct: 7
+ret_large_struct: 215
+ret_func_ptr: 10
+ret_opaque_handle: 0
+ret_complex_expr: 40
+ret_multi_branch: 60
+ret_void: 21

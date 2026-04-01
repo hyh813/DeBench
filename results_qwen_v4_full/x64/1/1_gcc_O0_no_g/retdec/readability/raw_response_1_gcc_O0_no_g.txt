@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v1, v2, v3, result) with no semantic meaning. Original names like `temp1`, `sum`, `count`, `i`, `j` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (sequential_ops, single_if, if_else, nested_if_2, loop_for_fixed, etc.) matching original source exactly. This is the decompiler's strongest aspect.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x100000000`, `0xffffffff`, `0x66666667` appear throughout without explanation. String literals stored in globals (g2, g5, g6) as hex-encoded values instead of readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword`, `__stack_chk_fail`) inserted in many functions. Excessive `& 0xffffffff` masking operations throughout. Helper functions for standard library (function_1080-10d0) add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple conditionals transformed into bit manipulation (e.g., `single_if` uses shifts instead of `if (x > 0)`). Goto labels present (`lab_0x14b1`, `lab_0x164a`) where structured control flow should exist. Loop conditions obscured by arithmetic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching original source. Helper functions for library calls are reasonable. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt reading flow in multiple functions (switch_fallthrough, loop_break, loop_multi_exit). Some functions read top-to-bottom but many have label-based branching.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated `& 0xffffffff` masking on nearly every return statement. Stack canary checks duplicated across many functions. Bit-shift patterns for sign extension appear redundantly.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All `int` parameters promoted to `int64_t` unnecessarily. Original `int` semantics lost. Some functions have wrong types (`loop_while` takes `int64_t*` instead of `int`). Constant casting between int32_t and int64_t throughout.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` struct recovered but with generic field names (e0, e1, e2). No complex structs in this codebase to fully evaluate. Basic struct layout preserved but semantic field names lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts between int32_t and int64_t without explicit indication. Pointer arithmetic with generic types. No buffer overflow protections visible beyond stack canaries.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments recovered from original source. All Chinese documentation explaining function purpose, test cases, and difficulty levels completely lost. Only auto-generated file header present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Control flow patterns not identified (no "factorial calculation" or "digit counting" comments). State machine pattern in `state_machine` function not recognized. Algorithm intent completely opaque.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present after longjmp calls. No indication of decompilation uncertainty for complex bit manipulation. Silent failures on type conversions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "n must be > 0" for factorial). No postconditions inferred. Error conditions not explained. Original test case documentation lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear through preserved names. Global variable usage not documented (g1-g10 with no semantic meaning). Callback relationships in `process_with_callback` not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file ordered by address, not logical grouping. No separation between test functions and implementation. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (setjmp.h, stdio.h, stdlib.h). Some compiler-specific extensions may need adjustment for portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+7+5+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.87/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Zero comment recovery**: All original documentation (Chinese comments explaining purpose, test cases, difficulty levels) completely lost
+- **Generic variable naming**: All variables named v1, v2, v3, result instead of semantic names (sum, count, i, j, temp1)
+- **Type precision loss**: All int parameters unnecessarily promoted to int64_t with constant casting
+- **Control flow obfuscation**: Simple conditionals transformed into bit manipulation (single_if uses shifts instead of if)
+- **Magic number proliferation**: 0x100000000, 0xffffffff, 0x66666667 appear throughout without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making it easy to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation including function purpose, test cases, and usage examples
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement comment extraction and preservation** - Parse and retain source comments during analysis, especially for documented test suites
+2. **Improve variable name inference** - Use usage patterns to suggest semantic names (e.g., variables in loop counters should be i/j, accumulators should be sum/count)
+3. **Recover high-level control flow patterns** - Recognize bit manipulation patterns that represent simple conditionals and restore idiomatic if/else structures

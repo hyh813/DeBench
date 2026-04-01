@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `param_2`, `local_1c`, `local_18`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, helper functions use generic names (`FUN_000110b0` for printf, `FUN_000110d0` for puts).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (`0x14`, `0x10`, `0x2a`, `0x12345678`) without explanation. String literals replaced with `DAT_00013008` references, losing all readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) appear in nearly every function. Compiler artifacts like `CONCAT44`, `ROUND`, and `undefined4` clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, for loops) is recovered correctly. However, `test_calling_conventions` has complex stack management that obscures the simple printf sequence from source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but signatures are wrong (`call_cdecl` returns `void` instead of `int`). `func_struct_byval` shows no parameters instead of `LargeStruct`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Stack frame setup/teardown code interrupts logical flow in many functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated identically in 20+ functions. Redundant local variable assignments for return values (`uStack_d8`, `local_c4`, etc.).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `double` becomes `undefined4` with `CONCAT44`, pointers often become `int*` or `undefined4*`. `func_mixed_args` has 6 parameters instead of 4 with wrong types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct` and `SmallStruct` not recovered at all. `func_struct_byval` shows `void` parameters, `func_struct_byptr` uses `int*` instead of `SmallStruct*`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(undefined4*)`, `(int*)`), pointer arithmetic on generic types. `func_mixed_args` concatenates undefined4 values to represent doubles incorrectly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern partially recognized but implemented incorrectly (manual stack pointer arithmetic). Struct passing patterns completely missed. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about incorrect signatures, missing struct types, or unresolved calls. `FUN_000110b0` used for printf without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Null checks present (`if (param_1 == (int *)0x0)`) but not documented as preconditions. No postconditions or invariants recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but printf replaced with `FUN_000110b0`. Global references shown as `DAT_00013008`. Callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. No file organization, no header declarations, static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined functions (`FUN_000110b0`, `FUN_000110d0`, `handle1_1`). Would not compile standalone without extensive stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.16/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` not recovered; `func_struct_byval` shows no parameters instead of struct
+- **Function return types incorrect**: `call_cdecl`, `call_stdcall` return `void` instead of `int`, breaking semantic understanding
+- **Type degradation for floats**: `double` parameters become `undefined4` with `CONCAT44` operations, obscuring floating-point logic
+- **No comments or documentation**: Zero explanatory content for complex patterns like varargs or calling conventions
+- **External dependencies unresolved**: `FUN_000110b0` (printf), `DAT_00013008` (strings) prevent standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` are preserved accurately, maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments, explanations, or decompilation confidence indicators makes understanding complex patterns extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Analyze consistent offset patterns (e.g., `param_1[0]`, `param_1[1]`) to infer struct definitions with field names
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries (e.g., `// UNCERTAIN: float type inferred from FPU operations`) to guide manual review
+3. **Preserve function return type semantics** - Cross-reference call sites to verify return types; `call_cdecl()` result is used but declared `void`

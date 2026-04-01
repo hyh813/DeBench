@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `i`, `j`, `k`, `a`, `b`, `c` throughout. While some like `arr`, `n`, `p`, `x`, `result` are meaningful, the majority obscure semantic purpose. For example, in `array_2d_stack`, variables `v1` and `v2` don't indicate they're used for sum calculation and array indexing.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions retain their original names: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `struct_simple`. Some internal functions have generic names like `sub_1030`, but the core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `32`, `0x19` in `process_char` lack explanation. The condition `(unsigned __int8)(c - 65) > 0x19u` is unclear without knowing it checks 'A'-'Z' range. However, test output strings like "DT-L1-01" provide context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; calling conventions (`__cdecl`, `__usercall`) are present but don't impede readability. Some stack pointer warnings appear but are appropriately flagged.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control flow is natural - loops use `while` constructs appropriately. The `array_2d_stack` uses pointer arithmetic (`v2 += 11`) which is a bit unusual but correct for -O0. Overall flow is easy to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`test_data_types_l1`, `test_array_types`, etc.) calls individual test cases. The decomposition matches the original source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some complex loops in `array_3d` with nested do-while constructs are harder to follow, but overall linearization is acceptable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. The code is clean without duplicate computations that would obscure logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int`, `char`, `float`, `double`, `long double`. Some erosion exists - `short` becomes `__int16`, `long long` becomes `__int64`. Function pointer types are properly preserved. Const correctness is maintained in `const_param`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union/enum recovery. All major types reconstructed: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `UnionData`, `Flags`, `State`. Field names are preserved: `position.x`, `size.width`, `next->data`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present: `*(_DWORD *)p` in `ptr_void`, `(unsigned __int16)*(_DWORD *)f` in `struct_bitfields`. The bitfield handling shows type punning that could be unsafe. However, most pointer operations are straightforward.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal useful comments. The decompiler adds "bad sp value at call has been detected, the output may be wrong!" warnings which are helpful. However, no explanation of algorithm logic, no recovery confidence indicators, and no API contracts. Auto-generated function headers like "/* Function: double_value @ 0x1271 */" provide only location info.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized - linked list traversal in `linked_list`, binary tree recursion in `binary_tree_sum`. However, no explicit naming or documentation of these patterns. The graph traversal in `graph_traverse` is clear but not identified as a graph algorithm.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "bad sp value at call has been detected" appears multiple times. Five functions failed to decompile (`__libc_start_main`, `__stack_chk_fail`, etc.) but these are library functions. No flags for suspicious code patterns or undefined behavior (like the intentional OOB in `array_oob`).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. The `array_complex_index` function has bounds checking but no documentation of expected valid ranges. No recovery of error handling contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within test functions. Callback relationships like `ptr_func_simple(double_value, 5)` are preserved. However, no documentation of which functions call which, or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: data type functions, array functions, pointer functions, composite type functions. Matches source organization reasonably well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library. External dependencies (`puts`, `__printf_chk`) are standard. No unusual compiler-specific hacks. Would require linking with libc.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v1`, `v2`, `v3`, `i`, `j`, `k`) throughout, obscuring semantic purpose
+- Magic numbers like `65`, `32`, `0x19` in character processing lack explanation
+- No comments explaining algorithms or recovery confidence
+- Type safety issues with unsafe casts (`*(_DWORD *)p`, `(unsigned __int16)*(_DWORD *)f`)
+- Intentional OOB access in `array_oob` not flagged as potential undefined behavior
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Structures, unions, and enums are nearly perfectly reconstructed with accurate field names matching the original source.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names like `v1`, `v2`, `v3`, `i`, `j`, `k`, `a`, `b`, `c` dominate the codebase, making it difficult to track variable purposes without significant effort.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., variables used as array indices should be named `index` or `i`, accumulators should be `sum` or `total`
+2. Detect magic numbers and suggest named constants - especially character codes ('A'=65, 'Z'=90, 'a'-'A'=32)
+3. Add algorithm explanation comments for non-trivial patterns like bitfield manipulation, pointer arithmetic, and recursive data structure traversals

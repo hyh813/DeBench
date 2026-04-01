@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/6/6_clang_O3_g/ghidra/syntactic/bin/6_clang_O3_g_fixed",
+  "stdout": "Testing Standard Library Functions\n\nString length: 14\nstrcmp result: 0\nstrlen result: 12\nmemcpy result: 90\nmemcmp result: 4294967295\nValue: 42, Name: HelloLib\nprintf chars: 26\nscanf result: 579\nfopen result: 42\nfread/fwrite result: -3\nmalloc result: 90\nmemset result: 0\nstrchr/strstr result: 15\nTesting System Calls\n\nsyscall result: 42\nstat result: 42\nfork/exec result: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

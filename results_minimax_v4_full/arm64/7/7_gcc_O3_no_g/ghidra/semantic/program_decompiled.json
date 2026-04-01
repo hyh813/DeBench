@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O3_no_g/ghidra/syntactic/bin/7_gcc_O3_no_g_fixed",
+  "stdout": "=== Anti-Gravity Compiler Test Suite ===\n\nTest 1: Opaque Predicate (expected 10): 10\nOpaque result: 20\nInstruction substitution (expected 225): 225\nString encryption length: 0\nTail call optimization (expected 500500): 500500\nNon-tail call (expected 5050): 5050\nVectorized loop (expected 72): 72\nLTO (expected 20): 20\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

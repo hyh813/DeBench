@@ -1,0 +1,5 @@
+Testing obfuscation optimization edge cases:
+
+10
+35
+225

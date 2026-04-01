@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic compiler-generated names like `acStack_2c`, `local_c`, `local_d`, `iVar1`, `puVar1`, `param_1`. The original source uses meaningful names like `value`, `name`, `size`, `data` which are completely lost. The char array "Test" is stored in `acStack_2c` instead of `name`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions correctly match source names (e.g., `test_cpp_member_func`, `test_cpp_virtual_func`). However, internal functions use mechanical names like `FUN_000109bc`, `template_max_int_`, `Container_int_`. Member functions like `Base::virtual_func` are correctly identified.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout without explanation: `0x2a` (42), `0x125c` (4704), `0x3e9` (1000), `0x47` (71), `0x16` (22), `0x55` (85), `0x2bf` (703). The original source has clear constants like `sizeof(name)-1` and meaningful values that are lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive external function declarations clutter output (operator_new, __cxa_begin_catch, etc.). Many functions are just wrappers calling themselves recursively. The decompilation includes 50+ functions but only ~20 are actual user code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else, loops, returns. However, some patterns are awkward like `call_virtual_func` using triple-indirect vtable call `(***(code ***)param_1)()`. At -O0, more natural C++ patterns expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and separated. Template instantiations correctly separated (`template_max_int_`, `template_max_double_`). Member functions extracted appropriately. Some over-fragmentation in destructors (multiple versions).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns present. Some forward jumps in complex functions like `test_cpp_diamond_inheritance` but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling minimal at -O0. Code is relatively clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined*`, `undefined1*` types. Original `int`, `size_t`, `char`, `double` lost. Function return types often `void` or `undefined4` instead of proper types. Parameter types generic.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Template classes recovered as `Container_int_`, `Container_double_` with internal offset calculations (0x28 for size). However, field names lost - uses `*(int *)(this + 0x28)` instead of `this->size`. Struct layouts partially reconstructed but not named.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic `*(int *)(this + 0x28)`, void pointer casts `*(void **)this`, indirect function calls `(**(code **)(iVar6 + 4))(piVar1)`. No bounds checking visible. Memory management through raw operator_delete.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Original source has extensive comments explaining each feature (SCENE-DESK, test scenarios). No documentation of vtable mechanisms, inheritance relationships, or algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms recognized: vtable indirect calls (`***(code ***)param_1`), virtual inheritance offset calculations (`*(int *)(*(int *)this + -0xc)`). But no explicit naming of patterns like "virtual dispatch", "diamond inheritance", "RAII".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. Indirect calls presented as normal code. Virtual function calls not marked as potentially unresolved. No warnings about complex pointer arithmetic in virtual inheritance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. No bounds check comments. No invariant recovery. Original source assertions and contracts completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible (`test_cpp_member_func()` calls `test_cpp_oo_features()`). Virtual dispatch relationships partially visible through vtable access. But no documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by class (Base, Derived, MultiDerived, etc.). Test functions together. External/library functions separated. But all in single flat output - no namespaces or file structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile. Uses `undefined4` return types, undefined symbols like `PTR_virtual_func_00011af0`, undeclared types like `unique_ptr_int_std__default_delete_int__`. Extensive stubs needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+3+4)/4 = 4.0
+L2_avg = (6+7+7+8)/4 = 7.0
+L3_avg = (3+5+4)/3 = 4.0
+L4_avg = (2+5+2+2)/4 = 2.75
+L5_avg = (5+6+2)/3 = 4.33
+
+Overall = (4.0 × 0.30) + (7.0 × 0.25) + (4.0 × 0.20) + 
+          (2.75 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.75 + 0.80 + 0.41 + 0.43
+        = 4.59/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet List)
+- Variable names completely generic (`local_c`, `iVar1`, `param_1`) - original semantic names like `value`, `size`, `data` lost
+- Type precision severely degraded - uses `undefined4`/`undefined8` instead of `int`/`double`/`size_t`
+- No comments explaining C++ mechanisms (vtable, virtual inheritance offsets, RAII)
+- Magic numbers everywhere without explanation (0x2a, 0x125c, 0x3e9)
+- Code won't compile - uses undefined types and undeclared symbols
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2)** scored highest at 7/10
+- **Why?** Functions are reasonably sized, template instantiations properly separated, member functions extracted appropriately. The basic code structure is sound.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (L4)** scored lowest at 2.75/10
+- **Why?** Complete absence of comments, no idiom recognition labels, no anomaly warnings, no contract recovery. The decompiled code provides no semantic context about what the C++ features are doing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: `acStack_2c` used with strncpy("Test") should be named `name`. Variables used as array sizes should be named `size` or `count`.
+2. **Replace magic numbers with symbolic constants**: Detect computed values (0x2a=42, 0x125c=4704) and add comments like `// 42 = thrown int value` or `// 4704 = expected test result`.
+3. **Add semantic comments for C++ mechanisms**: Label vtable calls as `// virtual dispatch via vtable`, virtual inheritance as `// virtual base offset calculation`, RAII as `// destructor cleanup`.

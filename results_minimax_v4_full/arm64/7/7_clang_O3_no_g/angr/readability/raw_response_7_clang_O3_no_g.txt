@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `flag1`, `flag2`. While `flag*` naming provides some semantic hints, the numbered variables obscure their actual purposes (e.g., `a0` should indicate it's the function's first parameter `x`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names match the original source exactly: `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_string_encryption`, `param_tail_call_optimized`, `param_division_by_zero`, etc. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF), `90` (0x5A XOR key), `8` (SIGFPE), and `11` (SIGSEGV) appear without explanation. While some are inferable from context (signal numbers), the string decryption key `90` should be documented as `0x5A`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some redundant assignments exist (e.g., `v0 = __TMC_END__; return v0;` could directly return), but overall the code is relatively clean without excessive register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is readable with proper if-else and loop structures. However, some goto patterns exist (e.g., `goto LABEL_400c50`), and the vectorized loop code has complex branching that makes execution tracing difficult. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches the original source perfectly. Each function has a single responsibility, and the decomposition is identical to the source. Parameter lists are appropriate and don't expose unnecessary implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The main test function `test_obf_opt_edge` has good linear flow. Some early returns exist but are used appropriately.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant expressions exist (e.g., repeated calls to `arm64g_calculate_condition` with same arguments), but these are manageable. No severe dead code that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are imprecise - mixing `unsigned long`, `unsigned int`, `long long`, and `unsigned long long` inconsistently. For example, `param_fake_branch` returns `long long` but should return `int`. The original `int` parameters become `unsigned long` in many places, losing signedness.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types are recovered. The code uses raw pointer arithmetic throughout (e.g., `cur += 1`, `ptr + 4`). The original source had no complex structs either, so this is partially expected, but buffer handling could be clearer.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: frequent casting between `unsigned int` and `unsigned long`, pointer arithmetic without bounds checking, and mixing signed/unsigned in comparisons (e.g., `(unsigned int)a0 >= 1`). The string decryption loop uses questionable pointer manipulation (`&v0 | 1`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), test scenarios, and expected results. None of this semantic information is preserved.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly present but not named. The GCD algorithm in `param_opaque_predicate` is recognizable as a Euclidean algorithm but not labeled. The string decryption loop is recognizable but not identified as XOR decryption.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication present. The decompiled code presents everything as definitive, even where the decompiler had difficulty (e.g., the complex vectorized loop with SIMD operations).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., "x must be non-zero for division", "pointer must be valid") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within each function, but relationships to external code are not documented. The `extern` declarations show dependencies but not the purpose of each external function (e.g., `signal`, `longjmp`, `strncpy`).
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically, matching the original source's section organization (obfuscation, optimization, edge cases). Static functions are properly scoped. The overall structure is coherent.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has `extern` declarations for external functions but lacks proper includes. Many functions reference undefined extern symbols (e.g., `g_411ff8`, `$d.1`, `$d.2`). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **No comments** - All semantic information from the original source (obfuscation explanations, test scenarios, expected results) is completely lost
+- **Generic variable names** - `v0`, `v1`, `a0`, `a1` obscure the semantic purpose of each variable
+- **Type imprecision** - Mixing `unsigned long`, `unsigned int`, `long long` inconsistently; losing signedness information
+- **No anomaly indication** - Complex or uncertain code is presented as definitive without warnings
+- **No contract recovery** - Preconditions and postconditions from the original are not documented
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+All function names match the original source exactly, including the obfuscation test functions (`param_fake_branch`, `param_opaque_predicate`, etc.). This is exceptional recovery.
+
+### Most Needs Improvement: Semantic Transparency (2.0/10 avg)
+The decompiled code lacks comments, idiom recognition, anomaly indication, and contract recovery. This dimension scored lowest because none of the original source's semantic richness (obfuscation explanations, test scenarios, algorithm descriptions) was preserved.
+
+### Top 3 Recommendations:
+1. **Add semantic comments**: Document the obfuscation techniques (fake branches, opaque predicates), expected test outcomes, and algorithm purposes
+2. **Improve variable naming**: Use usage-based inference to name variables (e.g., `a0` used in multiplication → `input_value`; `flag1` controlling branch → `predicate_result`)
+3. **Add uncertainty markers**: Flag complex control flow (vectorized loops), indirect calls, and potential undefined behavior with comments like "// DECOMPILER: uncertain condition"

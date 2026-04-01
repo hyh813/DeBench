@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_gcc_O0_g/ghidra/syntactic/bin/6_gcc_O0_g_fixed",
+  "stdout": "Testing Standard Library Functions:\n  call_strcpy: 8\n  call_strcmp: 0\n  call_strlen: 12\n  call_memcpy: 90\n  call_memcmp: -1\nValue: 42, Name: Test\n  call_printf: 22\n  call_scanf: 579\n  call_fopen_fclose: 42\n  call_fread_fwrite: 42\n  call_malloc_free: 90\n  call_memset: 0\n  call_strchr_strstr: 15\nTesting System Calls:\n  call_linux_syscall: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

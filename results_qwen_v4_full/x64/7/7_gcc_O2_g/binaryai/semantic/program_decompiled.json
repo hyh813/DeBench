@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/7/7_gcc_O2_g/binaryai/syntactic/bin/7_gcc_O2_g_fixed",
+  "stdout": "Hello World\nValue: 10\nResult: 20\nInstruction sub: 225\nString enc: 84\nTail call: 500500\nNon tail: 5050\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

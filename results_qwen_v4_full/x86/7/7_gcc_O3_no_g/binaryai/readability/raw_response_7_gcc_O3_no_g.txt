@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_30`, `pbVar2` instead of semantic names like `result`, `x`, `str`, `decrypted`. The pattern `iVar1`, `iVar2` provides no insight into variable purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_fake_branch`, `call_opaque_predicate`), but compiler-generated variants appear (`param_division_by_zero.constprop.0`) and helper functions use address-based names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x5a` (encryption key), `0x1f`, `0xe1` appear without explanation. Original comments explaining `0xDEADBEEF` and encryption keys are completely lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `in_GS_OFFSET`, `__stack_chk_fail_local`, `FUN_00011xxx` library thunks, and register thunk functions (`__x86_get_pc_thunk_bx`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Dead branches correctly eliminated but obfuscation intent lost. Loops converted to do-while patterns which is acceptable, but `param_fake_branch` reduced to single return losing the conditional structure entirely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated, but some constant-folded to trivial returns (`call_fake_branch` returns 10 directly). Compiler-generated variants (`constprop.0`, `constprop.1`) fragment logical functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks at function ends (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`) disrupt natural flow and add unnecessary complexity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code properly eliminated (correct optimization), but security check redundancy (`__stack_chk_fail_local`) appears in multiple functions without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4` for return types instead of `int`. Loses `size_t`, `char*`, specific integer types. `param_instruction_substitution` takes `uint` but original used `int`, changing signed semantics.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost—function just returns constant `0x2b`. No struct definitions visible; arrays shown as raw pointers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit casts via `undefined4`. Pointer arithmetic without clear types (`param_2 + iVar2 * 4`). No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original had extensive comments explaining obfuscation techniques (永假条件，不透明谓词，指令替换). Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: XOR decryption pattern not identified. Dead code elimination not flagged as optimization. No recognition that `param_fake_branch` contained intentional obfuscation patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that code was optimized/transformed. No warnings about eliminated dead branches. User cannot tell if simplification was intentional obfuscation or compiler optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. Error handling contracts (`return -1` on exception) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage (`jmp_buffer`, `segv_caught`) not clearly documented. Callback relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one output file. Original had clear section headers (7.1 混淆与保护，7.2 编译器特有优化). No logical grouping by purpose.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears compilable but external dependencies (`FUN_00011xxx`) need resolution. No documentation of required libraries or platform specifics.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Avg Score | Weight | Contribution |
+|-------|-----------|-----------|--------|--------------|
+| L1: Lexical Clarity | 4 | 4.25 | 30% | 1.275 |
+| L2: Structural | 4 | 6.25 | 25% | 1.563 |
+| L3: Type System | 3 | 3.67 | 20% | 0.734 |
+| L4: Semantic | 4 | 1.75 | 15% | 0.263 |
+| L5: Contextual | 3 | 4.67 | 10% | 0.467 |
+
+**Overall Readability Score: 4.30/10**
+
+### Critical Defects:
+- **Variable `param_1` should be named `x`** based on original source and usage pattern
+- **Zero comments** despite original having extensive obfuscation technique documentation
+- **`param_fake_branch` reduced to single return** losing the intentional dead-code obfuscation pattern
+- **Bitfield struct completely lost** in `param_implementation_defined` (returns constant instead)
+- **Compiler artifacts** (`in_GS_OFFSET`, `__stack_chk_fail_local`) clutter readable code
+
+### Best Quality Aspect:
+- **Redundancy Elimination (scored 7/10)** - Dead code properly eliminated without introducing spurious complexity; constant folding produces clean simple functions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 1/10)** - Complete absence of comments loses all semantic context about obfuscation techniques, encryption keys, and intentional patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug symbols (`-g` flag) when available, especially for obfuscation test code
+2. **Flag optimization transformations** with annotations (e.g., `// OPTIMIZED: dead branch eliminated`) so analysts understand what was removed
+3. **Infer semantic variable names** from usage patterns (e.g., variables used in XOR loops should be named `key`, `encrypted`, `decrypted`)

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `idx`) with no semantic meaning. For example, `process_char` uses `a0` instead of `character`, and `array_1d_stack` uses `ptr` and `i` instead of `array` and `count`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`process_char`, `process_int`, `array_1d_stack`), but many remain as address-based labels (`sub_401030`, `sub_401070`, `sub_4010ab`). Test functions retained names but lost semantic test structure.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation (`4294967295` for -1, `44`, `440`, `100` for array strides). String literals referenced through globals (`&g_4025bf`) instead of inline, obscuring meaning.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `[D]` markers throughout floating-point functions (`[D] unsupported_<class 'pyvex.expr.GetI'>()`). Compiler artifacts like `__x86.get_pc_thunk.dx()` and `deregister_tm_clones()` clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use do-while instead of for constructs (e.g., `array_1d_stack`). Some functions use goto (`sub_401030`, `sub_401070`). At -O0, natural control flow should be fully recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but test functions lost actual function call logic—`test_data_types_l1` just prints expected values without calling `process_char()`, `process_int()`, etc.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward jumps disrupting flow. Nested loops in `array_3d` and `test_array_types` create deep nesting that could be flattened.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from optimization (e.g., `ptr_const` returns `*(a0) * 2` but original was `*p + *p`). Test functions duplicate expected values instead of computing them.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation—`short` became `unsigned short`, `long` became `unsigned int`, `long long` split into two `unsigned int` parameters (`process_ll`), all floating-point types collapsed to `int`/`unsigned int`. `volatile` qualifier completely lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`, `field_8`). `Point3D` fields `x`, `y`, `z` became array indices. Bitfields in `struct_bitfields` reduced to manual bit manipulation. Unions poorly handled with `[D]` markers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns—`ptr_double` uses `struct_0 **` instead of `int **`, `ptr_void` returns `unsigned int` instead of proper type. Pointer arithmetic uses raw offsets (`ptr + idx * 4`) without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments recovered. All original documentation (test scenarios, expected values, algorithm explanations) completely lost. No decompilation confidence indicators beyond `[D]` markers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—linked list traversal, binary tree recursion, and graph traversal not identified. Switch statements converted to array lookups (`enum_switch`) without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate failures but lack specificity. Floating-point functions show `[D] unsupported_<class 'pyvex.expr.GetI'>()` without explaining what operation failed or recovery suggestions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Bounds checks in `array_complex_index` present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Test functions don't actually call the functions they test—`test_data_types_l1` prints expected values directly instead of calling `process_char('A')`. Function call graph broken.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order but no logical grouping. Helper functions (`__x86.get_pc_thunk.*`, `deregister_tm_clones`) interspersed with application code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile—contains `[D]` markers, unsupported operations, and references to undefined globals (`g_404ff0`, `_GLOBAL_OFFSET_TABLE_`). Requires extensive manual patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+2)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (2+4+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+4+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (3+5+2)/3   = 3.33 × 0.10 = 0.33
+
+Overall Score: 3.57/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Floating-point functions completely broken** with `[D] unsupported` markers—`process_float`, `process_double`, `process_ld` are unusable
+- **Type system severely degraded**—`long long` split into two `int` parameters, all floats became `int`
+- **Test functions don't call actual functions**—just print hardcoded expected values, breaking verification
+- **Zero semantic comments recovered**—all original documentation and test explanations lost
+- **Struct fields use generic names** (`field_0`, `field_4`) losing all semantic meaning from original `x`, `y`, `z`, `width`, `height`, etc.
+
+### Best Quality Aspect: **Function Decomposition (6/10)**
+- Function boundaries mostly preserved with reasonable granularity; individual functions like `process_int` and `array_1d_stack` maintain coherent single-responsibility structure.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete loss of all original documentation, test scenarios, and algorithm explanations makes the decompiled code practically unusable for understanding intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover floating-point operations properly**—the current `[D] unsupported` markers indicate fundamental IR translation failures that must be resolved for any numeric code
+2. **Infer semantic variable names from usage patterns**—`a0` in `process_char` should become `character`, loop counters should be `i`, `j`, `k` or `index`, `count`
+3. **Preserve test function call structure**—test functions should actually invoke the functions they test rather than printing hardcoded expected values, enabling verification

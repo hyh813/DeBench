@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/4/4_gcc_O0_g/angr/syntactic/bin/4_gcc_O0_g_fixed",
+  "stdout": "",
+  "stderr": "*** stack smashing detected ***: terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false
+}

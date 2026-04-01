@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `a1`, `result`) with no semantic meaning. For example, `binary_tree_sum` uses `v1` through `v58` instead of meaningful names like `node`, `sum`, `left`, `right`. Original source had clear names like `sum`, `len`, `current`, `head`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User functions preserved original names (`process_char`, `array_1d_stack`, `ptr_single`), but test functions lost their structure (constant-folded to print expected values). Internal helpers use cryptic names (`sub_103A0`, `sub_11718`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `0x19`, `32` in `process_char` should be `'A'`, `'Z'`, and ASCII offset. Test functions show pre-computed constants (`97`, `300`, `10000LL`) instead of actual computation, obscuring the test logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: register annotations (`r0`, `r3`, `lr`), stack frame comments (`[sp-4h] [bp-4h]`), type casts (`__fastcall`, `BYREF`), and runtime library functions (`__muldf3`, `__subdf3`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `binary_tree_sum` transformed a simple 10-line recursive function into 200+ lines with 58 variables and nested loops. `enum_switch` uses array indexing instead of switch statement. Test functions lost all original control flow through constant folding.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User functions have appropriate granularity, but `binary_tree_sum` is excessively complex (200+ lines). Test functions became monolithic constant-printing blocks. Runtime library functions incorrectly inlined.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but `binary_tree_sum` has extreme non-linearity with deeply nested structures. Multiple forward jumps disrupt flow in array processing functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `binary_tree_sum` has massive redundancy with 58 variables for simple recursion. Test functions show redundant printf calls with pre-computed values. Loop patterns repeat across array functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `float`, `double`), but struct types degraded to `_DWORD*` and `int*`. `volatile` qualifier lost in `volatile_access`. `long double` became `double`. Function pointer types partially recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Complete failure—structs use array indexing (`a1[0]`, `a1[1]`, `a1[2]`) instead of field names (`p->x`, `p->y`, `p->z`). `struct_bitfields` uses manual bit manipulation. Unions and enums not recovered at all.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts throughout (`(_DWORD *)`, `(int *)`, `(char *)`). Raw pointer arithmetic without bounds checking. Critical `volatile` qualifier loss in `volatile_access` changes semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers with addresses. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive comments explaining each test case—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Common C idioms (linked list traversal, tree recursion) not recognized. `enum_switch` pattern not recovered as switch statement.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile", "positive sp value has been detected"), but suspicious code not clearly explained. No indication of potential undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Original source's test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage unclear. Callback relationships not explicit. Call graph not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order without logical grouping. No header files or namespace structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 6 functions failed to decompile (`__imp_puts`, `__imp___printf_chk`, etc.). External dependencies not declared. Code requires significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (6+3+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.26/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `v1-v58` in `binary_tree_sum`** should be named `node`, `sum`, `left_child`, `right_child` based on tree traversal pattern
+- **Struct types completely lost**—`struct_simple` uses `a1[0] + a1[1] + a1[2]` instead of `p->x + p->y + p->z`
+- **Test functions constant-folded**—original computation logic replaced with pre-computed expected values
+- **`volatile` qualifier lost** in `volatile_access` changes memory access semantics
+- **6 functions failed to decompile** including critical I/O functions (`puts`, `_printf_chk`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - User-defined function names were preserved from source (`process_char`, `array_1d_stack`, `ptr_single`), providing some semantic anchor points for understanding.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of meaningful comments; original source's extensive documentation explaining each test case was entirely lost, making intent inference extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union type definitions** from access patterns—detect `a1[0]`, `a1[1]`, `a1[2]` sequences and suggest named struct fields based on usage context
+2. **Preserve test function computation logic** instead of constant-folding—show actual function calls rather than pre-computed expected values
+3. **Infer variable names from usage patterns**—detect loop accumulators (`sum`), counters (`i`, `n`), and pointers (`current`, `head`) from access patterns and suggest meaningful names

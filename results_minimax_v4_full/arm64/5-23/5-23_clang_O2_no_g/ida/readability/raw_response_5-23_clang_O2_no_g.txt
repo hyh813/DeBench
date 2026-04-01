@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v2`, `v3`, `v5`, `v8`, `v9`, `v10`). For example, in `param_asm_clobber`, variables like `v2`, `v3`, `v5` obscure their roles as loop counters and array pointers. This is a severe degradation from the original source where variables had clear semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_macro_constants`, `param_asm_basic`, `param_asm_atomic`). The naming is action-oriented and semantically accurate. Minor issues with some internal functions like `sub_7A0` being generic, but the main API functions are well-named.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are meaningful and can be understood from context. For example, `1024`, `512`, `64` in macro constants are clear. However, `57072` (which is 0xDEF0) could be better represented as a hex constant. The decompiler correctly recovered the computed values from macros.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation output with minimal compiler artifacts. Some "thunk" attributes present and 12 functions failed to decompile (external library functions), but the core code is free from register spills, redundant casts, or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: At -O0, control flow closely matches the original source. Simple if-else structures, proper loops in `param_asm_clobber`, and no goto abuse. The `param_asm_clobber` function shows proper loop structure with clear iteration logic.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are properly separated with clear single responsibilities. Each function (e.g., `param_macro_constants`, `param_asm_basic`) has a focused purpose matching the original source. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns are used appropriately (e.g., in `param_asm_clobber` when `a2 < 1`). No excessive nesting or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The loop unrolling in `param_asm_clobber` for handling 8-element chunks is a legitimate optimization that doesn't obscure logic. Clean code overall.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int` for integers, `size_t` for sizes, `int32x4_t` for ARM SIMD vectors. However, uses generic `_DWORD` in some places instead of more specific `int32_t`. The atomic operations correctly use `atomic_uint` type. Minor type erasure but acceptable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited struct/union recovery visible. The code primarily uses flat types with pointer arithmetic (e.g., `a1 + v2` for array access). No complex struct reconstruction, though the original source didn't heavily rely on complex composite types either.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with minor issues. Some pointer arithmetic (e.g., `(int *)a1 + v2`) is present but necessary for array access. No obviously dangerous casts. The atomic operations use proper atomic types.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments - mostly auto-generated like "// attributes: thunk". No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. The "FAILED to decompile" messages are present but not explained.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic code structure is clear but no explicit pattern recognition. The inline assembly is correctly replaced with equivalent C (e.g., `param_asm_basic` becomes `a1 + 10`). However, no mention that this was originally inline assembly or SIMD operations.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some indication of decompilation problems - "FAILED to decompile" appears for 12 functions (memcpy, printf, mmap, etc.). However, no flags for suspicious code patterns, unusual stack layouts, or potential undefined behavior. The failed decompilations are for external library calls which is expected.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition comments, no contract information. For example, `param_asm_atomic` has no indication that it requires a valid pointer or what the atomic guarantee is. No documentation of error conditions or invariants.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. The call graph can be inferred from the code (e.g., `main` calls `test_preprocessing_features` and `test_asm_features`). However, no explicit documentation of caller/callee relationships or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. The organization matches the original source file structure. Static functions are properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C types and should compile with minimal changes. Requires standard libraries (libc). Some external function declarations may be needed. The code is relatively portable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: all parameters use `a1`, `a2`, `a3` and locals use `v2`, `v3`, etc., making it difficult to track semantic purpose
+- Comment quality is severely lacking: no algorithm explanations, no decompilation confidence indicators, no documentation of inline assembly origins
+- No contract or assertion recovery: preconditions, postconditions, and invariants are not documented
+- Type precision issues: uses generic `_DWORD` in some places instead of more specific types
+- Anomaly indication is incomplete: only marks failed decompilations but doesn't flag suspicious patterns
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+- At -O0, the decompiler correctly recovered natural if-else structures and loops without goto abuse, making execution flow easy to follow
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- The generic `a1`, `a2`, `a3` parameter names and `v2`, `v3`, `v5` local variable names completely obscure semantic meaning and make the code very difficult to analyze
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 > 1024` suggests `a1` is a size parameter; `v2` used as loop counter suggests `i` or `index`)
+2. **Add semantic context comments**: Document when code originated from inline assembly, macros, or other preprocessing constructs that are lost during compilation
+3. **Recover pre/postconditions**: Analyze function behavior to infer and document contracts (e.g., "requires: counter != NULL" for atomic operations)

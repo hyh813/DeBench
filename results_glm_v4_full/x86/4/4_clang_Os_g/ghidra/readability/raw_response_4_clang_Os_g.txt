@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Function parameters are well-named (e.g., `a`, `b`, `count`), but local variables are generic (`iVar1`, `piVar1`, `aiStack_94`). Stack variables like `in_stack_00000004` in `fastcall_func` use offset-based naming instead of semantic names like `c`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names match the source exactly (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), indicating excellent symbol recovery or precise signature matching.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The decompiled code contains many magic numbers (e.g., `0xf`, `0x32`, `0x2a`) replacing arithmetic expressions (e.g., `5+10`, `5*10`) due to compiler constant propagation. While accurate to the binary, this obscures the original source logic significantly.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output is cluttered with repetitive warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */`, which impede readability despite the code being functionally correct.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow inside functions is natural (e.g., `do-while` loops for varargs). However, the high-level program flow is flattened; callers like `call_cdecl` are reduced to `return 0xf;` instead of showing the function call, which is a side-effect of optimization.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and boundaries match the source. The decompiler did not artificially merge functions, though inlining (a compiler optimization) makes some functions appear unused in the decompiled view.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumping. Loops are reconstructed as `do-while` blocks, which is a standard and readable representation of the underlying assembly.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly without redundant decompiler artifacts. The compiler's removal of dead code is reflected accurately in the output.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including `longlong`, `double`, and specific struct pointers. The signature `int __regparm3 fastcall_func` correctly identifies the non-standard calling convention attribute.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Structures are recovered perfectly with correct names (`LargeStruct`, `SmallPoint`, `TestIntPair`) and field names (`data`, `x`, `y`). The layout and usage (e.g., `s.data[iVar2]`) are indistinguishable from the source.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic in `varargs_func` (`(int *)&stack0x00000008`) is technically unsafe C but accurately represents the low-level implementation of `va_list` on the stack. No incorrect casts were introduced by the decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to automated warnings (e.g., "Unknown calling convention") and do not explain the logic, algorithms, or the reason for constant propagation (e.g., why `call_cdecl` returns `0xf`).
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The `varargs_func` signature (`...`) and the struct return pointer (`__return_storage_ptr__`) are recognized. However, the "test harness" pattern in `test_calling_conventions` is obscured by the inlining of results.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The "Unknown calling convention" warning is generic and appears on almost every function, failing to distinguish between actual anomalies and standard x86 variability. It does not explain the optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions (e.g., `p != NULL` checks are present in code but not documented as contracts) or postconditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function names are preserved, making the call graph easy to understand where calls still exist. However, constant propagation hides the relationships between test functions and their targets.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source structure. Related functions (e.g., calling convention tests) are grouped together in the output.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on hard-coded addresses like `DAT_00012352` and stack offsets like `stack0x00000008`, preventing standalone compilation without significant manual modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- **Optimization Artifacts:** The binary was compiled with optimizations (likely `-Os`), causing constant propagation (e.g., `return 0xf;` instead of `cdecl_func(5, 10)`). This makes the decompiled code semantically distant from the source logic.
+- **Generic Local Variables:** Local variables are named `iVar1`, `piVar1`, or `aiStack_94`, losing the semantic meaning present in the source (e.g., `sum`, `i`, `large`).
+- **Excessive Warnings:** Repetitive "Unknown calling convention" warnings clutter the output without adding value for the specific architecture analyzed.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 10/10)
+- **Why?** Structs, unions, and their field names were recovered perfectly, matching the source definitions exactly (e.g., `LargeStruct`, `SmallPoint`).
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- **Why?** The prevalence of magic numbers (`0xf`, `0x32`) resulting from compiler optimizations obscures the original arithmetic logic and makes the code hard to relate to the source without manual calculation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Optimization Annotation:** Add comments indicating when constant propagation has occurred (e.g., "Optimized: result of cdecl_func(5, 10)").
+2. **Variable Name Inference:** Infer local variable names from usage context (e.g., `iVar1` used in an accumulator should be named `sum`).
+3. **Warning Suppression:** Reduce the verbosity of generic "Unknown calling convention" warnings when the parameter storage is successfully locked and analyzed.

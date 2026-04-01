@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names (`a0`, `a1`, `a2`) while local variables use cryptic names (`v0`, `v1`, `v2`). Only loop counters like `i` in `loop_while` are meaningful. The original's `temp1`, `temp2`, `temp3` became completely unrecognizable.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly recovered (`sequential_ops`, `single_if`, `if_else`, `recursion_factorial`, `double_value`). However, some internal functions remain as `sub_10454`, and parameter type information is lost (e.g., original had 5 parameters, decompiled shows 4 in `nested_if_deep`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF, representing -1) appears frequently without explanation. Some constants like `100`, `10` are clear but lack semantic context. The string literal `0x119c0` is shown as raw address instead of the actual string.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including `GLIBC_2.4::__stack_chk_guard` references, register annotations (`// r0`, `// r3`), and goto-based control flow that obscures simple logic. The `armg_calculate_condition` function appears frequently as a wrapper.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as `while` constructs, but excessive goto labels (`LABEL_10600`, `LABEL_10848`) disrupt readability. The `switch_fallthrough` uses confusing goto patterns instead of switch-case. Some conditions use `armg_calculate_condition` making logic harder to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: At -O0, function boundaries are well preserved. Each small function remains separate with appropriate parameter counts. No obvious inlining or outlining artifacts. The granularity matches the original source well.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps using goto labels interrupt flow. The `goto_forward` and `goto_backward` functions retain goto patterns that could be better expressed as structured control flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At -O0, minimal optimization artifacts. No obvious dead code or duplicate expressions. Loop unrolling is not present, which is appropriate for debug build.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters typed as `unsigned int` losing original `int` sign information. The original `sequential_ops(int a, int b, int c)` becomes `sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`. Function pointers treated as `unsigned int` instead of proper function pointer types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. The `matrix[3][4]` in `loop_multi_exit` is decomposed into individual variables (`v1=2, v2=3...`). Arrays accessed via pointer arithmetic without array semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointers used as integers (`goto a0;` in `call_func_ptr`). Pointer arithmetic present without bounds. Some potential signed/unsigned confusion with comparisons. The `op_div` function has incomplete implementation with `__aeabi_idiv()` calls.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only register location comments present (`// r0`, `// [bp-0x4]`). No algorithm explanations, no recovery confidence indicators, no API contracts. The decompiled code is essentially裸的 (bare) without semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals are recognizable, but no explicit naming of patterns. The state machine in `state_machine` is reduced to trivial logic. Duff's device in `duffs_device` is completely lost (returns -1 for all cases).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `duffs_device` function returns -1 for all inputs (broken) with no indication of the problem. Indirect calls are not flagged as uncertain. The decompiler presents everything with false confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No detection of error paths or error handling contracts. The `non_local_jump` function's setjmp/longjmp semantics are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: External functions declared as `extern` but relationships not documented. No call graph information. The callback relationships in `process_with_callback` and `call_func_ptr_array` are not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions organized by address rather than logically. Test functions (`test_control_flow_l1/2/3`) separated but internal helper functions scattered. No logical grouping matching original source sections.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Missing standard library includes, undefined functions like `__printf_chk`, `puts`, `memset`. Incomplete function implementations (e.g., `__aeabi_idivmod` empty). The `duffs_device` implementation is broken.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Type precision completely lost**: All `int` parameters become `unsigned int`, losing sign semantics critical for understanding the original logic
+- **Variable naming is cryptic**: Parameters `a0-a4` and locals `v0-v7` make tracking data flow extremely difficult
+- **Duff's device completely broken**: `duffs_device` returns -1 for all cases, losing the entire fall-through semantics
+- **No struct/array recovery**: Complex data structures like `matrix[3][4]` decomposed into individual variables
+- **No anomaly indication**: Broken functions presented without any warning flags
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Function boundaries are well preserved at -O0, with each small function remaining separate and having appropriate parameter counts. This matches the original source structure closely.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+The decompiled code lacks any meaningful comments beyond register location hints. No algorithm explanations, no recovery confidence indicators, no API contracts. This makes understanding the decompiled code much harder than necessary.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Use data flow analysis to suggest meaningful names (e.g., `temp1` used in addition → suggest `sum` or `partial_result`)
+2. **Recover switch-case from jump tables**: The `switch_fallthrough` and `switch_small` functions should be decompiled as switch statements with fall-through semantics, not goto chains
+3. **Add semantic annotations**: Flag uncertain recoveries (indirect calls, broken functions like `duffs_device`) with confidence indicators and explain what the original pattern likely was

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `result`), losing the semantic meaning present in the source (e.g., `temp1`, `sum`, `count`). While `result` is acceptable, the lack of descriptive names for loop indices and accumulators hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `nested_if_deep`, `duffs_device`), providing immediate context for the code's purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Switch statements are decompiled into pointer arithmetic using magic hex offsets (e.g., `0x5b65`, `0x2b6d`) instead of readable case values, completely obscuring the original logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The output is polluted with significant compiler and runtime artifacts, including `__x86_get_pc_thunk_bx` (incorrect for the ARM64 target), `frame_dummy`, and `_init` routines, which severely distracts from the actual code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompiler aggressively replaces standard control structures with low-level implementations; `switch` statements become jump table pointer arithmetic, and simple `for` loops (e.g., `loop_for_fixed`) are converted into mathematical formulas, destroying the original code structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most functions read top-to-bottom, the reconstruction of `switch` statements as complex pointer dereferences creates non-linear, hard-to-follow execution paths within expressions.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler eliminates loops by replacing them with closed-form formulas (e.g., summing integers). While mathematically efficient, this "optimization" obscures the iterative logic present in the source binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Standard types like `int32_t` are used correctly, but the decompiler introduces confusing artifacts like `int33_t` (typedef'd to `int64_t`) and incorrectly sizes stack arrays (e.g., `matrix[1][1]` for a 3x4 matrix).
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: While `struct __jmp_buf_tag` is recovered, multi-dimensional arrays on the stack are consistently declared with size `[1][1]` regardless of actual dimensions, forcing the reader to rely on pointer arithmetic offsets rather than type safety.
+
+**11. Type Safety:** Score: 7/10
+Justification: Code generally uses safe casts, though there are frequent noisy casts like `(int32_t)(bool)(x > 0)` which are technically safe but reduce readability.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining logic; only address ranges and line numbers are provided, leaving complex transformations (like loop-to-formula) unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler fails to recognize standard C idioms, representing `switch` cases as jump table lookups and `for` loops as arithmetic expressions, effectively hiding the high-level intent.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no indication of potential issues, such as the architecture mismatch (x86 thunks in ARM64 code) or the reconstruction of `duffs_device` into a nonsensical pointer calculation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and standard, making the call graph easy to follow despite the noise in the function bodies.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically according to the source file's structure (test functions grouped together), and static functions are correctly scoped.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code includes architecture-specific intrinsics (`__x86_get_pc_thunk_bx`) that conflict with the target architecture (ARM64) and references global variables (`g1`, `g2`) in ways that would likely fail to compile or link without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Switch statements are decompiled into pointer arithmetic with magic hex offsets (e.g., `switch_small`), making them unreadable.
+- Simple `for` loops are replaced by mathematical formulas (e.g., `loop_for_fixed`), destroying the source structure.
+- Stack-allocated arrays are incorrectly typed as `[1][1]` (e.g., `matrix`), losing dimension information.
+- Significant noise pollution from incorrect architecture artifacts (`__x86_get_pc_thunk_bx` on ARM64).
+- Complex control flow like Duff's Device is completely mangled into a nonsensical return statement.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly preserved the original function names, which is the only reliable anchor for understanding the code's intent.
+
+**Most Needs Improvement:** Idiom Recognition (scored 2/10)
+- The failure to recognize basic C constructs like `switch` and `for` loops, replacing them with low-level arithmetic, is the single biggest barrier to readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Reconstruct High-Level Control Flow:** Prioritize recovering `switch` and `for` structures over jump table arithmetic or loop optimization, especially for `-O0` binaries.
+2. **Fix Array Type Recovery:** Improve stack array analysis to recover correct dimensions (e.g., `int matrix[3][4]`) instead of defaulting to `[1][1]`.
+3. **Filter Architecture Artifacts:** Implement stricter filters to remove or correctly identify runtime boilerplate (like PIC thunks) specific to the detected architecture.

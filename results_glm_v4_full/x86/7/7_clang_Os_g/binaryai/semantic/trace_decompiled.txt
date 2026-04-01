@@ -1,0 +1,5 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1209090048,Arg1=-1209090048,Arg2=0,Arg3=-1210921055|eax=0xb7eeddd8,ebx=0x0,ecx=0x89187bf6,edx=0xbfcce5b4,esi=0xb7eec000,edi=0x0
+TRACE_ENT|1|param_string_encryption|1|Arg0=134521012,Arg1=225,Arg2=0,Arg3=-1210824741|eax=0x3,ebx=0x0,ecx=0x0,edx=0xbfccbf44,esi=0xb7eec000,edi=0x0
+TRACE_ENT|2|call_string_encryption|2|Arg0=134521012,Arg1=225,Arg2=0,Arg3=-1210824741|eax=0x3,ebx=0x0,ecx=0x0,edx=0xbfccbf44,esi=0xb7eec000,edi=0x0
+TRACE_EXT|1|param_string_encryption|1|126
+TRACE_EXT|2|call_string_encryption|2|126

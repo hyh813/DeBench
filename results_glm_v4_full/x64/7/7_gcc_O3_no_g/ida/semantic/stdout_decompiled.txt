@@ -1,0 +1,16 @@
+Obfuscation & Optimization Edge Cases Test:
+
+Opaque Predicate: 10
+Fake Branch: 20
+Instruction Substitution: 225
+String Encryption: 62
+Tail Call Optimized: 500500
+Non-Tail Call: 5050
+Vectorized Loop: 72
+Link Time Optimization: 20
+Division By Zero: 1
+Null Pointer Dereference: 41
+Buffer Overflow: 30
+Integer Overflow: 2000000000
+Undefined Behavior: 10
+Implementation Defined: 47

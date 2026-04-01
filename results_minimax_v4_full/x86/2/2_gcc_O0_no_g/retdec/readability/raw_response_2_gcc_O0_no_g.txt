@@ -1,0 +1,93 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, `result`. These provide zero semantic information - e.g., `process_char(int32_t a1)` should indicate it's a character parameter. The original source has meaningful names throughout.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `process_char`, `array_1d_stack`, `ptr_single` match the original source exactly. However, compiler/runtime functions have meaningless names like `function_1080`, `function_1090`, `__x86_get_pc_thunk_ax` that pollute the namespace.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is riddled with magic numbers: `0x1000000 * a1 >> 24` for char processing (should be `'A'`, `'Z'`, `32`), `a2 % 0x10000` for short, `44 * i` for 2D array stride (should be `10*sizeof(int)`), `40 * v2` for array pointer (should be `10*sizeof(int[10])`). Original source has clear literals.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution: `__x86_get_pc_thunk_ax` called in every function, `__readgsdword(20)` for stack canaries, `__stack_chk_fail_local` references, `__asm_rep_stosd_memset` for memset. These 50+ lines of noise obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use while/for constructs, conditionals are readable. At -O0, the flow closely matches source. Minor issues like the complex ternary in `pointer_array` (`v3 < 0 == (9 - a2 & a2) < 0`) are optimization artifacts.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - each test function (`test_data_types_l1`, `test_array_types`, etc.) is separate, and helper functions like `double_value` are properly extracted. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `array_1d_stack` and bounds checks in `array_complex_index` are appropriate. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present in `array_3d` with manual index calculations. The original source's clean `for` loops are transformed into while loops with manual increment. Not severe but noticeable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - uses `int32_t`/`uint32_t` appropriately for most integers, `float80_t` for long double. However, `process_char` takes `int32_t` instead of `char`, `process_short` takes `uint32_t` instead of `short`, and `process_bool` takes `uint32_t` instead of `_Bool`. Original types are not preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Severe degradation - all structs lost. `Point3D` becomes raw pointer arithmetic (`*(int32_t *)(v1 + 4) + *a1 + *(int32_t *)(v1 + 8)`), `Node` (linked list) becomes manual offset calculations (`v2 += 4`), `Rect` and `Widget` completely lost. Original source has clear struct definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t)*(char *)a1` in `ptr_void`, `(int32_t)a1 - (int32_t)a2 >> 2` in `ptr_diff` (operator precedence issue), function pointer `ptr_func_simple(int32_t result, int32_t a2)` should be `int (*f)(int)`. Significant risk of undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address range comments present (e.g., `// Address range: 0x1241 - 0x1259`). No explanation of algorithm logic, no decompilation confidence indicators, no API contracts. Original source has extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The linked list traversal, binary tree recursion, and graph traversal are not named or explained. Original source explicitly tests these patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The `ptr_diff` operator precedence issue, the complex bounds check in `array_complex_index`, and the OOB access in `array_oob` are not flagged. Original source notes "负面测试" (negative test) for OOB.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariant documentation. Original source has clear expectations in test calls.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear (`ptr_double(&v5)`), but relationships aren't documented. No indication that `complex_callback` is used by `ptr_func_complex`, or that `binary_tree_sum` is helper for `binary_tree`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file with all functions. Functions are roughly grouped by type (data types, arrays, pointers, composites) but no logical section headers like original source. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses `printf`, `puts` without proper includes shown. Many undefined runtime functions. The `__asm_hlt()` at end of `_start` is problematic. Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `a1`, `a2`, `a3` - zero semantic meaning
+- **Composite type loss**: All structs (`Point3D`, `Node`, `Rect`, `Widget`) reduced to raw pointer arithmetic with magic offsets
+- **Magic numbers**: Array strides like `44 * i`, `40 * v2` instead of `10*sizeof(int)` or `10*sizeof(int[10])`
+- **Noise artifacts**: 50+ lines of `__x86_get_pc_thunk_*`, stack canary checks, and runtime stubs
+- **Type precision**: `process_char` takes `int32_t` instead of `char`, losing original type information
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions match source granularity exactly
+- Test functions properly separated
+- Helper functions like `double_value` correctly extracted
+
+### Most Needs Improvement: Lexical Clarity (3.75/10)
+- Variable names are completely generic (`v1`, `v2`, `a1`, `a2`)
+- Magic numbers everywhere without explanation
+- Severe compiler artifact pollution
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `a1` in `process_char` used in range check `c >= 'A' && c <= 'Z'` should be named `c` or `character`
+2. **Recover struct layouts**: Detect field access patterns and reconstruct `Point3D`, `Node`, etc. with meaningful field names
+3. **Eliminate compiler noise**: Filter out `__x86_get_pc_thunk_*`, stack canary checks, and other runtime artifacts from decompiled output

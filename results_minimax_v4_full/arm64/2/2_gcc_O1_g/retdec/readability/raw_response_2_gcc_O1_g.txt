@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, etc.) with no semantic meaning. For example, in `process_int`: `int64_t v1; // 0x89c` should be named based on its role as the input parameter `x`. The naming provides no indication of variable purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions like `double_value`, `process_int`, `process_char` are correctly named. However, many helper functions use mechanical names like `function_6f0`, `function_1020`, `function_1064` that provide no semantic value. Library functions like `__addtf3`, `__multf3` are correctly identified as floating-point operations.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers: `0xfffffffe` (used in masking operations), `0x100000000` (for 64-bit shifts), `256` (modulo operations), `44` (array stride calculations). No named constants replace these values. For example, in `process_short`: `(int64_t)(2 * (0x10000 * (int32_t)v1 >> 16))` is incomprehensible without context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from library functions (__addtf3, __multf3 take ~2000 lines combined). Many redundant casts and complex expressions that obscure logic. The decompiler includes 78 functions but many are compiler/runtime artifacts, not user code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/while) is preserved, but expressions are overly complex. For example, `array_2d_stack` uses `while (v2 != v1 + 396)` with hardcoded magic number 396 instead of cleaner loop structure. At -O0, this should be more readable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Original functions are preserved but the decompiler added spurious functions (function_6f0, function_1020, function_1064, function_13fc) that don't exist in source. The massive library functions (__addtf3, __multf3) dominate the output, making it hard to find user code.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but some forward jumps exist. Complex nested conditions like `(v1 == 0 || v1 < 0 != (9 - n & n) < 0 ? (int64_t)n : 10) > v2` in pointer_array make linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some loop unrolling present in array functions but not clearly marked. The array_3d function has significant duplication in its nested loops. The test functions contain hardcoded expected values rather than computed results.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses int32_t and int64_t appropriately, but some types are wrong: `process_char` returns int64_t instead of char, `process_bool` returns int64_t instead of _Bool. Some parameters lost their const/volatile qualifiers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is severely degraded. Instead of `p->x + p->y + p->z`, we get `*(int32_t *)(v1 + 4) + (int32_t)v2 + *(int32_t *)(v1 + 8)`. No struct field names recovered. Union types not properly distinguished from structs. Linked list traversal uses raw pointer arithmetic: `v1 += 8` instead of `node = node->next`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t)v1` in many places, `(int64_t)*(int32_t *)` conversions. Pointer arithmetic like `4 * v1 + (int64_t)arr` is error-prone. No bounds checking annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some source line information preserved ("From module: /work/2.c", "Line range: 443 - 446"), but comments are minimal and don't explain algorithm intent. No documentation of what functions do or how to use them.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Linked list traversal, tree recursion, graph traversal are all presented as raw pointer manipulation without pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The array_oob function (intentionally out-of-bounds) is not marked as potential bug. Indirect calls and unusual patterns not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected input ranges or error conditions. The volatile_access function doesn't indicate it requires two memory reads.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are visible in test functions but not explicitly documented. No indication of which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file. Functions somewhat grouped by type (data types, arrays, pointers, composites) but mixed with many spurious functions. No header file with API declarations.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile standalone. Many undefined functions: __printf_chk, __libc_start_main, __cxa_finalize, __gmon_start__, __stack_chk_fail. No stubs or documentation of dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- All variables use generic names (v1, v2, v3...) providing no semantic meaning
+- Composite types (structs, unions) completely lost - all accessed via raw pointer arithmetic
+- Massive library/runtime functions (__addtf3, __multf3) dominate 60% of output
+- No struct field names recovered - `*(int32_t *)(v1 + 4)` instead of `p->y`
+- Many magic numbers without explanation (396, 44, 0xfffffffe)
+- Type information degraded - process_char returns int64_t instead of char
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.0/10)  
+Even this scored poorly, but basic integer types (int32_t, int64_t) are somewhat consistent.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+Struct and union recovery is completely failed. All composite types are accessed via raw pointer arithmetic with offsets, losing all semantic meaning of field names and types.
+
+**Top 3 Recommendations:**
+1. Recover struct/union layouts with field names from memory access patterns and type information
+2. Replace generic variable names (v1, v2) with semantic names inferred from usage (e.g., "sum", "index", "ptr")
+3. Separate user code from library/runtime functions - filter out __addtf3, __multf3, __sfp_handle_exceptions from main output

@@ -1,0 +1,116 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Extensive "Unresolved local var" annotations like `SimpleClass obj@[???]`, `int r1@[???]`, `int result@[???]` provide zero semantic information. Every local variable in test functions is unresolved, making it impossible to track purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`), but many utility functions are mechanical (`FUN_00011030`). Template instantiations properly named (`template_max<int>`). Mixed results between semantic accuracy and address-based naming.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x1f` (31 for string), `0x14` (20 for object size), `0x32` (50 for loop), `0x2a` (42 expected result). No constants or enum values recovered; all are raw hex/integers.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution: "Unknown calling convention", "Unresolved local var", "Removing unreachable block", "Function: __x86.get_pc_thunk.bx replaced with injection". These WARNING comments clutter every function and obscure actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops, conditionals), but several test functions are reduced to single return statements with computed constants (e.g., `test_cpp_virtual_func` returns `0x2a` directly). The `call_virtual_func` properly shows vtable indirect call pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated - test functions, class methods, template instantiations all distinct. Template functions properly extracted as separate instances. Minor issues with some utility functions being address-based.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto or backward jumps disrupting flow. Some forward jumps in exception handling but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code removal noted in warnings ("Removing unreachable block"). Some loop unrolling visible in `test_cpp_constructor` but not excessive. Minor redundancy from repeated type casts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Function signatures mostly accurate (`int call_virtual_func(Base *obj, int x)`), but local variables entirely unresolved. Integer types generic (int vs int32_t). No size_t or uint32_t differentiation. Const correctness missing on method signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class method signatures recovered (`Container<int>::push`, `RTTIDerivedA::~RTTIDerivedA`), but struct/class fields not visible in local variables. Vtable pointers shown (`obj->_vptr_Base`) but field names lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe - proper pointer dereferencing in vtable calls, no obvious unsafe casts. Some raw pointer arithmetic in `Container` methods but acceptable. No severe type confusion observed.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF original prototypes preserved (e.g., "DWARF original prototype: void Container(Container<int> * this)"), but these are auto-generated. WARNING comments explain decompilation issues but don't document algorithm intent. No semantic explanation of what functions compute.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ idioms partially recognized - virtual function calls via vtable (`**obj->_vptr_Base`), template instantiation names, exception throw patterns. But no explicit naming of patterns (vtable, RAII, etc.).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments flag issues: "Unknown calling convention", "Unresolved local var", "Function replaced with injection". However, these are generic and don't explain potential semantic implications for the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of assert statements or validation logic. The code silently returns computed values without explaining expected input constraints.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible (`test_cpp_oo_features` calls other test functions), virtual dispatch shown via vtable. But no documentation of call graph, who calls what, or relationship to other compilation units.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by type (test functions, template functions, class methods) but no clear logical grouping matching original source sections. All 44 functions in single output without section headers.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile - unresolved local variables, undefined types (EVP_PKEY_CTX in _init), missing standard library declarations. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+3+4)/4 = 3.75
+L2_avg = (6+7+7+6)/4 = 6.50
+L3_avg = (5+5+7)/3 = 5.67
+L4_avg = (5+6+6+3)/4 = 5.00
+L5_avg = (5+5+3)/3 = 4.33
+
+Overall = (3.75 × 0.30) + (6.50 × 0.25) + (5.67 × 0.20) + 
+          (5.00 × 0.15) + (4.33 × 0.10)
+        = 1.125 + 1.625 + 1.134 + 0.75 + 0.433
+        = 5.067/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet List)
+- Every local variable in test functions marked as "Unresolved local var@[???]" - zero semantic information for tracking computation
+- Magic numbers everywhere (0x2a, 0x47, 0x28a) without explanation of what they represent or why
+- Test functions reduced to single return statements with pre-computed constants, losing all algorithmic visibility
+- Extensive WARNING noise on every function ("Unknown calling convention", "Unresolved local var") obscuring actual logic
+- No variable name recovery whatsoever - cannot determine what `r1`, `r2`, `result` should be
+
+### Best Quality Aspect: Function Decomposition (7/10)
+- Template functions properly instantiated as separate functions with correct type parameters
+- Class methods extracted with proper thiscall signatures
+- Test functions remain separate and identifiable
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every local variable across all test functions is completely unresolved
+- Cannot track any computation flow (what is r1? what is obj? what is result?)
+- This is the most fundamental readability failure - the core data flow is opaque
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `packet_size`, `index`, `result`
+2. **Recover computed constants**: When a function returns a constant, add comment showing the expected computation (e.g., `// Expected: 10 + 34 + 4660 = 4704`)
+3. **Eliminate WARNING noise**: Move decompilation confidence notes to separate metadata rather than cluttering every function with "Unknown calling convention" warnings

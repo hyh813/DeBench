@@ -1,0 +1,10 @@
+Testing Stack Memory
+MEM-L1-01 (local_vars): 20
+MEM-L1-02 (local_array): 10
+MEM-L1-03 (local_struct): 15
+MEM-L1-04 (address_of_local): 42
+MEM-L1-05 (address_of_array): 2
+MEM-L2-01 (large_stack_frame): 0
+MEM-L2-02 (vla_stack): 10
+MEM-L2-03 (alloca_usage): 15
+MEM-L2-04 (stack_alias): 20

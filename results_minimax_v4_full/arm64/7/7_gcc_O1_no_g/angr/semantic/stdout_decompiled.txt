@@ -1,0 +1,5 @@
+Testing Obfuscation and Optimizations:
+
+Obfuscation Tests:
+Fake branch: 20
+Instruction substitution: 225

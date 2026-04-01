@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`, `p_large`, `p_s`) that obscure semantic meaning. Register annotations (`// r0`, `// r1`) add noise without clarity. Only a few variables like `p_large` hint at purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are well-preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Action-oriented test functions clearly indicate purpose. Some helper functions remain generic (`sub_103E8`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Test output values are clear (15, 50, 6 match expected results). However, floating-point functions contain unexplained magic numbers (`0x80000000`, `0xFFFFF`, `0x100000`) without constant definitions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: register comments (`// r0`), stack annotations (`[sp+0h] [bp+0h] BYREF`), type casting noise (`_DWORD`, `_QWORD`, `__PAIR64__`), and warnings ("local variable allocation has failed").
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural if/else and loop structures. Complex floating-point functions show optimization artifacts with excessive conditionals. No spurious gotos in main logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but aggressive constant folding loses computation structure (e.g., `call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some complex functions (`_aeabi_dadd`) have deep nesting but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `ret_large_struct` has excessive temporary variables (`v3`-`v14`) for array copying. Constant folding removes computation redundancy but also semantic meaning.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - basic types preserved (`int`, `char*`, `double`) but many generic types (`__int64`, `_DWORD`, `_QWORD`). Pointer types generally correct but lack const-correctness.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structs recovered (`LargeStruct`, `SmallStruct`, `BigStruct`) but field access sometimes uses pointer arithmetic. Struct definitions not shown in output, limiting type clarity.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(_QWORD *)`, `(_DWORD *)`), pointer arithmetic without bounds checking, and `void*` usage in `param_complex_cast` without documentation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - mostly auto-generated warnings. No algorithm explanations, API contracts, or semantic documentation. Only decompiler confidence warnings present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms (varargs, struct passing) present but not explicitly recognized. No design pattern identification. Calling convention attributes partially preserved (`__fastcall`, `__cdecl`).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly detection ("local variable allocation has failed", "positive sp value has been detected", "FAILED to decompile" for 8 functions). Could be more specific about root causes.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks present in some functions (`func_struct_byptr`, `param_double_ptr`) but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. Global variable usage somewhat clear (`handle1_1`, `handle2_0`). No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Original source's clear section organization (4.1, 4.2, 4.3) is completely lost. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed to decompile (`puts`, `printf_chk`, `strlen`, `memcpy`, etc.). Requires stubs for compilation. Not standalone compilable without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 | 5.75 | 30% | 1.725 |
+| L2: Structural Intelligibility | 4 | 6.50 | 25% | 1.625 |
+| L3: Type System Fidelity | 3 | 5.33 | 20% | 1.067 |
+| L4: Semantic Transparency | 4 | 4.25 | 15% | 0.638 |
+| L5: Contextual Coherence | 3 | 5.00 | 10% | 0.500 |
+
+**Overall Readability Score: 5.56/10**
+
+---
+
+### Critical Defects
+
+- **Constant folding obscures logic**: Functions like `call_cdecl()`, `call_stdcall()` return hardcoded values (15, 50) instead of showing actual computation, losing semantic transparency
+- **Generic variable naming**: Variables `v0`-`v14` in functions like `ret_large_struct` obscure their roles as array indices and temporary values
+- **Missing struct definitions**: `LargeStruct`, `SmallStruct` used but definitions not shown, requiring external reference
+- **8 failed external functions**: Critical library functions (`puts`, `printf_chk`, `strlen`, `memcpy`) not decompiled, breaking build compatibility
+- **No semantic comments**: Zero documentation explaining algorithm purpose, parameter meanings, or return value contracts
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Original function names are well-preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to source code purpose.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (3/10)** - Virtually no human-readable documentation; relies entirely on auto-generated decompiler warnings without algorithm explanations or API contracts.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover computation structure over constant values**: Instead of folding `call_cdecl()` to return 15, show `return cdecl_func(5, 10)` to preserve semantic intent and call relationships.
+
+2. **Infer variable names from usage patterns**: Variables used in loop counters should be named `i`, `count`; pointer variables should indicate target type (`p_struct`, `arr_ptr`).
+
+3. **Generate struct definitions inline**: When structs are referenced (`LargeStruct s`), include the struct definition in output or provide cross-reference to recovered type information.

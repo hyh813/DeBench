@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O1_g/ghidra/syntactic/bin/7_clang_O1_g_fixed",
+  "stdout": "Testing obfuscated optimizations\n\nOpaque predicate result: 10\nTail call result: 20\nInstruction sub result: e1\nNon-tail call result: Vectorized sum: 500500\nNon-tail sum: 5050\nVectorized computed: 88\nDivision test complete\nNull pointer test complete\nNull pointer result: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation defined: 2f\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

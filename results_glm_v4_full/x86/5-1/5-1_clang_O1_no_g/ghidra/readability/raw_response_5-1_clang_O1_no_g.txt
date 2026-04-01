@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `piVar1`, `local_28`, and `uVar5`, completely obscuring the original semantic intent (e.g., `obj`, `value`, `multiplier`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: High-level test functions like `test_cpp_virtual_func` and `test_cpp_rtti` retain their original names, providing excellent anchors, though internal helpers like `FUN_00011030` remain generic.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals like `"Test"` are preserved, but the code is littered with unexplained magic numbers (e.g., `0x125c`, `0x14`, `0x32`) representing constant-folded calculation results or sizes.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output contains significant compiler noise, including injected `__x86.get_pc_thunk` functions and numerous "WARNING" comments about calling conventions and unreachable blocks.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Where logic exists (e.g., in `test_cpp_constructor`), loops and conditions are natural, but virtual function calls are represented as raw pointer dereferences `(*(code *)*ptr)`, which is low-level and hard to read.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are generally well-separated into logical units corresponding to the source, though some constructors/destructors are inlined or split awkwardly.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with standard loop structures, though exception handling logic is completely absent, replaced by a single `__cxa_throw` call.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the code cleanly without obvious dead code, though this is largely because the compiler aggressively constant-folded entire functions into single return statements.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; C++ class instances are represented as raw byte arrays (e.g., `char local_28[36]`) or undefined pointers (`undefined **`), losing all type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: There is a complete failure to recover C++ class structures; no definitions for `SimpleClass`, `Base`, or `Derived` are generated, forcing the reader to interpret raw memory offsets.
+
+**11. Type Safety:** Score: 4/10
+Justification: Code contains numerous unsafe casts, such as casting vtable pointers to `int` or treating object memory as generic `void*`, which misrepresents the strict typing of the original C++ source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to compiler warnings (e.g., "Unknown calling convention") and offer no insight into the algorithm's purpose or the high-level logic of the C++ constructs.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms like virtual dispatch, RTTI, and smart pointers are not recognized; they appear as standard memory accesses and library calls (e.g., `__dynamic_cast`, `operator_new`) without semantic labeling.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags potential issues like unknown calling conventions and injected functions, but it fails to flag the semantic loss caused by aggressive constant folding.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; the logic is presented as a flat sequence of operations without context.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Vtable pointers are named (e.g., `PTR_virtual_func_00015ce4`), which helps trace virtual calls, but the lack of struct definitions makes understanding the data relationships difficult.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order, and while test functions are grouped, the lack of namespace or class reconstruction makes the module organization feel flat and arbitrary.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile standalone due to missing type definitions, `undefined` types, and the reliance on compiler-specific intrinsics.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- **Composite Type Recovery Failure**: C++ classes (`SimpleClass`, `Base`, `Derived`) are not reconstructed; objects are represented as raw byte arrays (e.g., `char local_28[36]`), destroying the object-oriented context.
+- **Variable Naming**: Variables are generic (`iVar1`, `local_14`), providing no semantic information about the data they hold (e.g., `value`, `multiplier`).
+- **Optimization Artifacts**: Many functions are reduced to constant returns (e.g., `return 0x16;` in `test_cpp_operator_overload`), completely hiding the source logic without any indication that optimization occurred.
+- **Virtual Call Representation**: Virtual function calls are shown as low-level pointer dereferences `(*(code *)*ptr)(ptr)` rather than semantic method calls.
+- **Type Precision**: Extensive use of `undefined` and `undefined4` types instead of concrete types (`int`, `bool`), making the code look like untyped assembly.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- **Why?** The symbols for the high-level test functions (`test_cpp_virtual_func`, `test_cpp_rtti`) were preserved, making it easy to map the decompiled code back to the source sections.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- **Why?** The inability to reconstruct C++ classes from the binary is the single biggest barrier to understanding this code, as the entire source is based on Object-Oriented features.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery**: Analyze constructor prologues and vtable usage to reconstruct class definitions, member variables, and inheritance hierarchies.
+2.  **Variable Name Inference**: Use data flow analysis and type information to assign meaningful names to stack variables based on their usage (e.g., naming a variable used in a `strlen` call as `string_length`).
+3.  **Optimization Annotation**: Detect functions that have been optimized to constants and explicitly annotate them (e.g., "Function body optimized out by compiler") to avoid confusion with missing source logic.

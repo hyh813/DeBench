@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Good semantic names preserved (`dst`, `src`, `buffer`, `read_buffer`) but many generic auto-generated names (`iVar1`, `iVar2`, `local_10`, `in_GS_OFFSET`) obscure purpose, especially in thread functions using `piVar2`, `pvVar2`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent preservation of source names (`param_strcpy`, `thread_compute`, `consumer_thread`); only one generic placeholder (`FUN_00011030`) among 77 functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x14` (20), signal numbers as `10`/`0xe`, socket constants as `2`/`1`; string literals preserved well but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant decompiler noise: repeated `__stack_chk_fail_local()` checks, `in_GS_OFFSET + 0x14` patterns, and "WARNING: Unknown calling convention" messages throughout every function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most if-else structures natural, but `param_pthread_join` uses awkward `do-while` with `goto LAB_00012df5` pattern; at `-O0` this should match source loops exactly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good granularity with cohesive functions (most under 100 lines); thread functions properly separated; `param_fread_fwrite` complex but maintains single responsibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jump labels (`LAB_00011f54`, `LAB_000133b7`) disrupt flow; stack canary checks at function ends add non-linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary pattern repeated in ~40 functions (necessary but verbose); no dead code observed; no inappropriate loop unrolling for `-O0` compilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`size_t`, `FILE*`, `pthread_t`) but `atomic_counter` loses atomic type information; `ThreadData` field access degrades to pointer arithmetic in `thread_sum`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData`, `sockaddr_in`, `stat` structs recovered with field names; however TLS variables accessed through `in_GS_OFFSET[-9]` instead of proper `__thread` semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(int)buffer`, `(char *)0x0`); TLS access via raw offset `in_GS_OFFSET[-9]` is dangerous; atomic operations shown as `LOCK()/UNLOCK()` macros without proper semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler warnings present ("WARNING: Subroutine does not return"); zero semantic comments explaining algorithm intent; original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `pthread_create`); producer-consumer pattern in `param_condition_variable` not identified; atomic operations shown as generic `LOCK/UNLOCK`.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Unknown calling convention", "Removing unreachable block") but TLS raw offset access and atomic type loss not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"); error return values (-1, -2, -3) unexplained; no loop invariants or postconditions recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Internal function calls clear; global variables referenced but not documented; test functions use `&DAT_000140b0` instead of string literals; callback relationships implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped (library tests, syscall tests, thread tests); all in single output file; static variables properly scoped; no header separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates successful compilation; external dependencies (pthread, libc) not documented; architecture mismatch (original ARM64, decompiled x86); `LOCK/UNLOCK` macros need definition.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+5+5)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50  × 0.25 = 1.63
+Level 3 (Type):        (6+6+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):  (5+6+6)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  5.73/10
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects:
+- **TLS access degraded**: `in_GS_OFFSET[-9]` instead of proper `__thread` variable semantics in `thread_tls_test`
+- **Magic numbers unexplained**: `0x2a`, `0x14`, signal numbers `10`/`0xe` used throughout without constant definitions
+- **Zero semantic comments**: Original source had extensive documentation; decompiled code has only decompiler warnings
+- **Atomic type information lost**: `atomic_counter` accessed via `LOCK/UNLOCK` macros instead of proper atomic operations
+- **Stack canary noise**: Every function ends with redundant `__stack_chk_fail_local()` check pattern
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Ghidra successfully preserved 76/77 original function names with semantic meaning intact
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Complete loss of original source documentation with zero semantic comment recovery
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments**: Integrate debug info (`-g` flag) to restore original documentation and add confidence indicators for inferred logic
+2. **Replace magic numbers with named constants**: Detect repeated literals (0x2a=42, signal numbers) and suggest/create symbolic constants
+3. **Improve TLS and atomic type recovery**: Recognize `__thread` variables and C11 atomic operations from architecture-specific patterns rather than raw memory access

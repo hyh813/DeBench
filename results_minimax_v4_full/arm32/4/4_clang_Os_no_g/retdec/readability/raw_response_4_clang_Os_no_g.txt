@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a1`, `a2`, `a3` throughout (e.g., `cdecl_func(int32_t a1, int32_t a2)`), and local variables are `v1`, `v2`, `v3`, `result`. Only occasional descriptive names like `str` in `func_mixed_args` break the pattern. The purpose of each variable is obscured by generic naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions`. However, some internal functions have auto-generated names like `function_410`, `function_41c` (CRT startup functions), and some test wrapper functions use generic patterns.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x51eb851f` (3.14 as float) and `0x40091eb8` (3.14 as double) in `func_mixed_args` are unexplained. Chinese text in format strings shows as escape sequences (`\xef\xbc\x9a`). Some constants like `100` are used directly without named constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack position comments like `// bp-12, 0x6a4` and address range comments `// Address range: 0x3e4 - 0x3f0` are present but manageable. Minimal compiler artifacts otherwise - no redundant casts from register spilling or debug instrumentation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are properly recognized as while constructs (e.g., `while (v3 != 1)` in `varargs_func`). Conditionals are clear. At -O0, control flow should closely match source, and the decompiler achieves this reasonably well.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity closely matches source - each small test function (`call_cdecl`, `call_stdcall`, etc.) is preserved as separate function. The decomposition is appropriate with no monolithic functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with good linearity. Early returns used appropriately (e.g., `if (a1 < 1) return 0;` in varargs). No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in varargs functions but it's the natural decompilation of the loop structure, not excessive. Code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently for integers and `char*` for strings. However, function pointers are not properly typed - `param_func_ptr(int32_t a1, int32_t a2)` should have a function pointer parameter type. The callback parameter is just `int32_t` losing type information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is poor. `func_struct_byval` uses raw pointer arithmetic `*(int32_t *)(v2 + (int32_t)&v1)` instead of struct field access. `ret_small_struct` uses `*(int32_t *)result = a2` instead of proper struct assignment. The 128-byte LargeStruct is accessed via pointer arithmetic rather than recovered as a struct type.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `*(int32_t *)a1 = 2 * a1` in `param_by_value_ptr`, pointer arithmetic without bounds checking throughout. Function pointers stored as `int32_t` (e.g., `ret_func_ptr` returns `int32_t` instead of function pointer). Several potential undefined behavior patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present: address ranges (`// Address range: 0x800 - 0x9a8`) and stack positions (`// bp-12, 0x6a4`). No explanatory comments about algorithm logic, no decompilation confidence indicators, no API contracts. The comments provide no semantic value.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some standard patterns like varargs are decompiled correctly but not explicitly named or documented as such. No design patterns (state machine, strategy, etc.) identified. The code shows what it does but doesn't explain the pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly indicators present. Uncertain code like indirect function calls or unusual stack layouts are presented with full confidence. The decompiler doesn't flag where analysis was incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant recovery. Functions like `param_double_ptr` that have implicit contracts (e.g., "pp must not be NULL") have no documentation of these requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from the code structure. However, no explicit documentation of call graph (which functions call which). Global variable usage (g1-g30) is present but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Single large file with 94 functions. Related test functions are grouped together (calling conventions, parameter passing, return values). Static functions properly scoped. Could be better organized but functional.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code requires linking with C runtime (undefined references to `__libc_start_main`, `__cxa_finalize`, etc.). Some function signatures are incorrect (e.g., varargs functions). Would require moderate patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` throughout, obscuring semantic purpose
+- Composite types (structs) not recovered - uses raw pointer arithmetic instead of struct field access
+- Function pointers typed as `int32_t` instead of proper function pointer types
+- No useful comments - only auto-generated address/stack position comments
+- No anomaly indication for uncertain decompilation decisions
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- Function granularity closely matches original source with appropriate separation of concerns
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 4/10)  
+- Only auto-generated address comments present; no explanatory comments about algorithm logic, decompilation confidence, or API contracts
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `a1` used as count → `count`, `v1` used as length → `length`)
+2. Recover struct types from memory access patterns instead of raw pointer arithmetic
+3. Add explanatory comments for non-trivial logic and flag uncertain decompilation decisions with confidence indicators

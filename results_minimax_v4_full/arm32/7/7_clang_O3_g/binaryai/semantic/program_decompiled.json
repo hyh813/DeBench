@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_O3_g/binaryai/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "test_obf_opt_edge\n10\n35\n0xe1\n129\n500500\n5050\n72\n20\n-1\n41\n30\n2000000000\n10\n0x2c\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

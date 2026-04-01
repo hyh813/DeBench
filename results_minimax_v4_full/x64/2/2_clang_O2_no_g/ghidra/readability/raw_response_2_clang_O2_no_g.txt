@@ -1,0 +1,124 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `piVar1`, `lVar3`, `local_198`. The original source used meaningful names like `x`, `c`, `arr`, `n`, `str`, `sum`, `i`. This complete loss of semantic naming makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names correctly match the source: `process_char`, `process_short`, `process_int`, `process_double`, etc. However, `process_ld` is completely empty (should compute `d * d + 1.0L`), representing a critical decompilation bug. The naming itself is good but the implementation is broken.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers appear without explanation: `0x61` (should be 'a'), `0x62` (should be 'b'), `0xb` (should be 11), `0xf` (should be 15). The test functions print computed values directly rather than calling the functions, losing the connection to the actual logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains decompiler warnings about "unreachable block" and "Could not recover jumptable" for function pointers. Some auto-generated comments present but don't severely impede reading. The noise level is moderate and manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (if/else, loops), but many loops are heavily unrolled (e.g., `array_1d_stack` has 8-element loop unrolling with 8 parallel accumulators). At -O0 this is unexpected - the compiler should not have unrolled loops this aggressively. Some logic is obscured by the unrolling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function from the original source is preserved as a separate function. The decomposition matches the source granularity well - small, focused functions like `double_value`, `process_char`, `ptr_single` remain separate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Some complex loop unrolling in `array_1d_stack` and `array_vla` disrupts linear reading but the overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling creates massive redundancy. For example, `array_1d_stack` has 8 parallel accumulators (`iVar8`, `iVar14`, `iVar15`, etc.) that could be a simple loop. This pattern repeats in `array_vla`, `array_oob`, `ptr_increment`, and `union_array`. At -O0, this unrolling is inappropriate.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation. Original types like `short`, `char`, `float`, `double`, `_Bool`, `long double` are lost. The decompiler uses generic types: `int`, `uint`, `long`, `undefined4`, `undefined8`. The `process_ld` function returns `void` instead of `long double`. Const/volatile qualifiers are partially lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct fields are accessed via array indices: `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Nested structs become pointer arithmetic: `param_1[3]` for `r->size.width`. Union types are partially recovered but lose the union vs. struct distinction. Bitfields are handled with bit manipulation but without field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. Function pointers use `code *` type instead of proper function signatures. The `ptr_func_simple` and `ptr_func_complex` have "UNRECOVERED_JUMPTABLE" warnings. Pointer arithmetic is generally correct but could be safer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". No meaningful comments explaining algorithm logic, preconditions, or what the functions do. The test functions print hardcoded values instead of calling the actual functions, losing semantic connection.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified. The linked list traversal in `linked_list` is recognizable as a while-loop pattern but not named. The binary tree recursion is present but not identified as such. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: "Could not recover jumptable at 0x00101f95. Too many branches" for `ptr_func_simple`. "Treating indirect jump as call" warnings. However, the critical bug with `process_ld` being empty is not flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant information recovered. The original source had no explicit assertions, but the decompiler could infer some (e.g., "requires: n > 0" for array functions). No such inference is present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present in the code (e.g., `main` calls `test_data_types_l1`, etc.). However, the relationships aren't documented - no comments indicating which functions call which, or the callback relationships (e.g., `complex_callback` used by `ptr_func_complex`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output, roughly matching the source structure (data types, array types, pointer types, composite types sections). Static functions like `double_value` and `complex_callback` are properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code has compilation issues: `process_ld` returns `void` instead of `long double` - this is a critical bug. Some type mismatches exist. The test functions print hardcoded values rather than calling functions, so they wouldn't actually test the functions if compiled.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 6) / 4 = 4.75
+L2_avg = (5 + 8 + 7 + 4) / 4 = 6.0
+L3_avg = (4 + 4 + 6) / 3 = 4.67
+L4_avg = (3 + 4 + 6 + 2) / 4 = 3.75
+L5_avg = (5 + 7 + 4) / 3 = 5.33
+
+Overall = (4.75 × 0.30) + (6.0 × 0.25) + (4.67 × 0.20) + 
+          (3.75 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.5 + 0.934 + 0.5625 + 0.533
+        = 4.96/10
+```
+
+**Overall Readability Score:** 4.96/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **`process_ld` is completely empty** - Should compute `d * d + 1.0L` but returns void. This is a critical decompilation failure.
+- **All variable names are generic** - `param_1`, `iVar1`, `local_198` provide no semantic meaning; original names like `x`, `sum`, `arr` are lost.
+- **Loop unrolling at -O0** - Functions like `array_1d_stack`, `array_vla`, `ptr_increment` have aggressive 8-way unrolling that shouldn't occur at debug optimization level.
+- **Type precision severely degraded** - Original types `short`, `char`, `float`, `double`, `_Bool`, `long double` are all reduced to generic `int`/`uint`/`undefined4`.
+- **Struct field names lost** - All struct fields accessed as array indices (`param_1[0]`, `param_1[1]`) instead of named fields (`p->x`, `p->y`).
+
+---
+
+### Best Quality Aspect: Function Decomposition (8/10)
+The decompiler preserved the function granularity from the source - each small function remains separate, maintaining the logical organization of test cases.
+
+---
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The complete loss of semantic variable names is the most severe issue. Every variable uses generic names like `param_1`, `iVar1`, `local_198` that make understanding the code's purpose extremely difficult.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as an array index, name it `index` or `i`. When used to accumulate sum, name it `sum` or `total`. Use the function's semantic purpose to guide naming.
+
+2. **Recover struct/union field names**: Analyze memory layout and field access patterns to reconstruct meaningful struct field names. A 3-field struct with int fields should be `struct { int x; int y; int z; }`, not `int param_1[3]`.
+
+3. **Flag incomplete functions as anomalies**: The empty `process_ld` function should be flagged as a critical anomaly with a warning like "Function appears empty - decompilation may have failed". Don't silently produce broken code.

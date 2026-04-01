@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mix of descriptive names (`count`, `str`, `p`, `callback`) and generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `result`, `i`). In test functions like `test_calling_conventions`, all variables use generic `v*` naming, making it difficult to track purpose. However, function parameters generally have meaningful names matching source.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly perfect recovery - all 84 function names match original source exactly (`cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_many_args`, `param_by_value_ptr`, `ret_pointer`, `ret_small_struct`, etc.). The decompiler correctly identified all test wrapper functions and their semantic purposes.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are computed results (15, 50, 6, 42, 100, etc.) which is expected at -O0. String format specifiers like `"CALL-L1-01: %d\n"` provide good context. Some noise from auto-generated string references (`asc_2352`, `aCallL206`) but these don't impede understanding of actual logic.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean code overall with minimal compiler artifacts. Appropriate calling convention annotations (`__cdecl`, `__stdcall`, `__fastcall`, `__userpurge`). Some type noise (`_DWORD`, `_BYTE`) and register annotations (`@<eax>`, `@<ebx>`) present but manageable. No spurious `__asm__` blocks or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Natural if-else structures, proper loops (for/while), and appropriate switch statements. Example: `ret_multi_branch` correctly uses `if (op >= 3) return -1; else return 10 * op + 10;`. At -O0, no goto abuse or spaghetti code. The `varargs_func` loop is correctly recognized as a do-while pattern.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity - each function has single responsibility. Wrapper functions (`call_*`) correctly separated from implementation functions (`*_func`). No monolithic functions; even complex test functions like `test_calling_conventions` are appropriately sized (~40 lines) and cohesive.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately (e.g., `if (count <= 0) return 0;` in varargs functions). No forward jumps into loop bodies. Good nesting depth (typically 1-2 levels).
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. No obvious common subexpression elimination artifacts. Loop unrolling is minimal (appropriate for -O0). Code is clean without duplicate logic blocks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types accurate: `int`, `int*`, `char*`, `double`, `__int64`, `va_list`. Function pointer types properly recovered (`int (*callback)(int)`, `func_ptr_t`). Some `_DWORD` and `_BYTE` usage instead of `int`/`char`, but this is minor. Const correctness preserved in `param_string(const char *str)`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Perfect struct recovery - `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all recovered with correct field names (`data[]`, `x`, `y`). Struct return mechanisms properly handled with `__return_ptr` annotation.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. Appropriate casts in `param_complex_cast` (`*(_DWORD *)p`). Pointer arithmetic in `ret_pointer(p + 1)` is correct. Minor issue: `*((_DWORD *)v2 - 1)` in varargs is technically unsafe but matches compiled code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Sparse but functional. Useful annotations like `// BYREF` for reference parameters, `// positive sp value has been detected` for potential issues. Failed decompilations marked with `/* FAILED to decompile: */`. No algorithm explanations or API contracts. Auto-generated noise minimal.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Calling convention patterns (`__cdecl`, `__stdcall`, `__fastcall`) correctly identified. Varargs handling (`va_start`, `va_arg`, `va_copy`, `va_end`) recognized. Return value optimization patterns (hidden pointer for large structs) properly decompiled. No explicit pattern naming but logic is clear.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Failed decompilations clearly marked (`/* FAILED to decompile: __libc_start_main @ 0x4044 */`). Stack anomaly noted (`// positive sp value has been detected, the output may be wrong!`). However, no warnings about indirect calls or unusual stack layouts in individual functions.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No explicit preconditions/postconditions documented. However, null checks are preserved (e.g., `if (p)` in `func_struct_byptr`, `if (pp)` in `param_double_ptr`). Error return paths clear. Could benefit from explicit contract documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function call relationships clear through direct invocation (`test_calling_conventions()` calls `call_cdecl()`, etc.). Static functions properly scoped. Callback relationships evident (`param_func_ptr(callback, x)`). Global variable usage (`ret_opaque_handle_handle1`) visible.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Logical grouping - test functions grouped by category (calling conventions, parameter passing, return values). Static helper functions (`func_a`, `func_b`) near their usage. Related wrapper/caller pairs adjacent. Overall organization matches source structure.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code appears compilable with minimal stubs. Standard library functions (`printf`, `puts`, `strlen`, `__libc_start_main`) referenced but not defined - expected for standalone decompilation. No compiler-specific hacks. Dependencies are standard C/POSIX.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.8/10
+
+**Critical Defects:**
+- Variable naming in test functions uses generic `v0`, `v1`, `v2` making it hard to track loop indices and accumulators
+- Sparse comments - no explanation of calling convention semantics or algorithm purposes
+- Type noise (`_DWORD`, `_BYTE`) instead of native `int`, `char` in some contexts
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+Nearly perfect function name recovery - all 84 functions named exactly as in source, including test wrappers and implementation functions.
+
+**Most Needs Improvement:** Variable Naming Quality (5/10)  
+While function parameters are well-named, local variables in test and utility functions use generic `v*` naming that obscures their semantic purpose (loop counters, accumulators, temporaries).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v5` in `test_calling_conventions` is clearly the `large` struct array based on initialization loop
+2. Add algorithm comments explaining calling convention tests and expected behaviors
+3. Replace `_DWORD`/`_BYTE` with native C types (`int`/`char`) for cleaner output

@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables are almost entirely generic (`iVar1`, `lVar2`, `puVar3`, `__ptr`, `piVar2`). The decompiler uses stack location names like `aiStack_28` instead of semantic names like `arr`. The comment "Unresolved local var" appears repeatedly but provides no usable identifier.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names match the original source almost perfectly - `local_vars`, `local_array`, `heap_basic`, `linked_list_heap`, `global_var_access`, `memop_memset` all accurately reflect the source function names. This is excellent recovery.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Multiple magic numbers without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x400` (1024), `0x41` ('A'). The hex literals obscure the actual values and make the code harder to understand compared to the source which uses decimal.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise pollution from 50+ "Unresolved local var" comments, "WARNING: Unknown calling convention" appearing 15+ times, and "WARNING: Variable defined which should be unmapped" messages. These auto-generated artifacts severely clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most functions use natural do-while and for-loop constructs. However, `linked_list_heap` uses a complex goto pattern with labels (`LAB_0010176b`, `joined_r0x00101743`) that disrupts readability. At -O0, this goto usage is an artifact of decompilation, not optimization.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized (20-80 lines each) with clear single responsibilities. The decomposition matches the source - each test function (`test_stack_memory`, `test_heap_memory`, etc.) is properly separated. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Most functions read top-to-bottom without forward jumps. The exception is `linked_list_heap` with its goto-based control flow. Standard functions like `local_vars` and `heap_basic` have excellent linearization.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Some loop unrolling artifacts present (e.g., `lVar1 = lVar1 + 2` instead of `lVar1++` in `heap_basic`). At -O0 this is unexpected - the compiler should not have unrolled loops. Dead code is minimal.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic `int` instead of specific types like `int32_t` or `size_t`. Function pointers are typed as `_func_int_int *` which is somewhat descriptive but imprecise. Pointers are correctly distinguished from arrays in function parameters.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Struct names are recovered (`Point`, `Node`, `TreeNode`) and field access uses proper arrow notation (`pNVar1->data`). However, field names are generic - the decompiler doesn't recover `x`, `y` for Point or `data`, `next` for Node. Uses array indexing on struct pointers (e.g., `piVar2[2]`) which loses field semantics.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple unsafe patterns: `(long)__ptr + lVar1 * 4` pointer arithmetic throughout; `(size_t)n << 2` could overflow; `(int)lVar1` casts in loops. The code accesses freed memory in `dangling_pointer()` which is preserved from source but not flagged as dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Comments are almost entirely auto-generated noise ("Unresolved local var", "WARNING: Unknown calling convention"). No useful algorithm explanations, no recovered preconditions/postconditions. The comments hinder rather than help understanding.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Standard library functions (`malloc`, `free`, `memset`, `memcpy`, `memmove`, `memcmp`, `calloc`, `realloc`) are correctly identified. However, data structure patterns (linked list, binary tree) are not explicitly named or documented despite being clearly implementable.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Warnings are present ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") but they are generic and don't explain the actual anomaly. No indication of why certain variables couldn't be resolved or what the confidence level is.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover the safety checks from the source (e.g., `if (arr == NULL) return -1;` becomes just the check without documenting the contract).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are implicit through the code structure (e.g., `main` calls `test_stack_memory`). However, there's no explicit documentation of who calls whom or global variable usage. The callback pattern in `set_global_callback`/`call_global_callback` is visible but not documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically matching the source file structure (stack functions, heap functions, static functions, memory ops). All in single file which is expected from decompilation. Static functions properly marked.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Several compilation issues: `extern_global_var` and `extern_function` are used but not defined in the decompiled output; printf format string issues in `test_static_global` (missing arguments); `EVP_PKEY_CTX` in `_init` is undefined. Requires fixes to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+9+4+4)/4 = 5.00
+L2_avg = (6+8+6+6)/4 = 6.50
+L3_avg = (5+6+4)/3 = 5.00
+L4_avg = (4+5+5+2)/4 = 4.00
+L5_avg = (6+7+5)/3 = 6.00
+
+Overall = (5.00 × 0.30) + (6.50 × 0.25) + (5.00 × 0.20) + (4.00 × 0.15) + (6.00 × 0.10)
+        = 1.50 + 1.625 + 1.00 + 0.60 + 0.60
+        = 5.325/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+---
+
+### Critical Defects (Bullet List)
+- Variable naming is entirely generic (`iVar1`, `lVar2`, `puVar3`, `__ptr`) - should infer names from usage like `arr`, `i`, `result`
+- Magic numbers everywhere (`0x2a`, `0x14`, `0x800`) instead of decimal values matching source
+- 50+ "Unresolved local var" comments cluttering output without providing usable identifiers
+- No struct field name recovery - uses array indexing on struct pointers (`piVar2[2]`) instead of named fields
+- Missing extern definitions for `extern_global_var` and `extern_function` causing compilation failure
+
+### Best Quality Aspect (Single Dimension)
+**Function Naming Quality (Score: 9/10)**
+The decompiler recovered function names almost perfectly from the original source - `local_vars`, `heap_basic`, `linked_list_heap`, `memop_memset` all match exactly. This is the clearest success area.
+
+### Most Needs Improvement (Single Dimension)
+**Variable Naming Quality (Score: 3/10)**
+Variables are universally generic with no semantic inference. The decompiler has all the information needed (DWARF debug info was used based on comments) but produces names like `iVar1`, `lVar2`, `aiStack_28` instead of meaningful names like `arr`, `i`, `result`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from DWARF metadata**: The comments show DW_OP_reg5(RDI) information - use the source variable names from debug info instead of generating generic names
+2. **Convert hex literals to decimal**: Replace `0x2a` with `42`, `0x14` with `20` to match source readability
+3. **Recover struct field names**: Instead of `piVar2[2]` for Node.next, generate proper field access like `node->next` using struct type information

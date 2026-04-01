@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `v0`, `v1`, `ptr`, `index`, `idx` throughout. At -O0, we should see meaningful names like `x`, `arr`, `result`, but instead all semantic meaning is lost. For example, `local_vars` function uses `a0` instead of the original parameter name `x`.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: All functions use address-based naming (e.g., `sub_4012c0`, `sub_4012d0`, `sub_401310`) instead of original names like `local_vars`, `local_array`, `large_stack_frame`. This makes it impossible to understand function purpose without cross-referencing.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., error return `4294967295` for -1 as unsigned). However, many magic numbers remain unexplained, and string format strings are referenced via extern addresses rather than inline. Mixed result - some clarity but significant gaps.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary variable declarations and minor type noise, but nothing severe. The code is readable without excessive garbage.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is generally natural with proper if/else and loop structures. However, `vla_stack` and `alloca_usage` use computed jumps via `goto ptr[x]` which is awkward. Most functions read naturally.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single responsibility. No excessive inlining or fragmentation - decomposition is faithful to source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `vla_stack`, but they're manageable. Acceptable for -O0 level.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code. Loop unrolling is present in `heap_basic`, `vla_stack`, `alloca_usage` but it's the expected compiler behavior at -O0. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic `unsigned int` or `void*`. Original types like `int`, `char*`, `size_t` are not recovered. No const correctness. For example, `double_value` takes `unsigned int a0` instead of `int x`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs reconstructed but with generic names: `struct_0`, `struct_1` with `field_0`, `field_1`. The `Node` structure in `linked_list_heap` is partially recovered. However, the original `Point` struct is lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic is sometimes incorrect (e.g., `*((int *)&ptr[2 * idx])`). Function pointers treated as data pointers. Not terrible but could be better.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. No explanation of algorithms, no decompilation confidence indicators, no @param/@return documentation. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal are recognizable through the code structure. However, no explicit naming or documentation of patterns (e.g., "Implements linked list with 5 nodes"). Could be significantly better.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function has obvious undefined behavior (accessing freed memory) but no warning. No indication of potential issues anywhere in the output.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. Error conditions are not documented. For example, `vla_stack` has bounds checking (`if (a0 - 1001 < 4294966296)`) but no comment explaining the logic.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are somewhat clear. Global variables like `global_counter`, `file_scope_static` are properly identified as extern. However, callback relationships and call graphs are not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but not logically organized by functionality. The original source had clear sections (stack, heap, static, memory ops) that are not reflected in the decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Some extern declarations present but incomplete. Many string literals referenced via extern addresses. Would require significant patching to compile. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Function names**: All use address-based naming (`sub_4012c0`) instead of original names (`local_vars`, `heap_basic`)
+- **Variable names**: Generic names (`a0`, `v0`, `ptr`) lose all semantic meaning
+- **No comments**: Complete absence of documentation that existed in original source
+- **Type precision**: Generic `unsigned int` everywhere instead of specific types like `int`, `size_t`
+- **Anomaly indication**: No warnings for dangerous patterns like dangling pointer access in `dangling_pointer()`
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- At -O0, control structures (if/else, loops) are properly recovered and match source logic
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Generic single-letter variable names make it impossible to understand code purpose without constant cross-referencing
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: At -O0, parameters and locals should retain meaningful names. Use data flow analysis to recover `x` from `local_vars(x)`, `arr` from array operations, etc.
+2. **Recover function names from debug symbols**: The binary was compiled with `-g`, so debug symbols should be used to recover original function names like `local_vars`, `heap_basic`
+3. **Add semantic comments**: Document what functions do, flag suspicious patterns (dangling pointer), and explain computed jumps in VLA/alloca functions

@@ -1,0 +1,89 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Extensive use of unresolved local variables marked with `@[???]` annotations throughout (e.g., "Unresolved local var: int ret@[???]", "Unresolved local var: char * name@[???]"). Generic names like `pcVar1`, `iVar1`, `piVar2` obscure semantic purpose. While some context can be inferred, the prevalence of unresolved variables significantly degrades readability.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names closely match original source - `param_strcpy`, `call_strcpy`, `param_strcmp`, `thread_compute`, `thread_sum` all accurately reflect their purpose. Minor issues include some internal functions with generic names but overall good semantic alignment with source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "Value: %d, Name: %s\n" and "/etc/passwd" are preserved accurately. However, magic numbers like `0x2a` (42), `0xc` (12), `0x1f` (31) appear without explanation. The value 42 is used as a success indicator throughout but never named as a constant.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from decompiler warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". The "Unresolved local var" annotations appear repeatedly, creating visual clutter. Many functions have `local_c` stack canary variables that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/else and loop structures. The `param_strcpy` uses `stpcpy` (an optimization variant of strcpy) which is semantically correct but different from source. Some complex threading functions have nested loops that are readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 4 lines, `call_strcpy` is 2 lines. Threading functions like `param_pthread_join` are longer (~60 lines) but logically cohesive. Good separation between param_* and call_* function pairs.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `param_fopen_fclose`). Some functions like `param_signal_handling` have complex nested loops but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy visible - `call_strcpy` returns hardcoded 8 instead of showing the actual computation. The `test_standard_library_functions` inlines some logic rather than calling helper functions. Loop unrolling present in `param_malloc_free` but commented appropriately.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, void*, size_t). However, `const` correctness is lost - `param_strcmp` takes `char *s1, char *s2` instead of `const char *`. Some type erosion visible with generic pointers. The `stpcpy` usage instead of `strcpy` is technically correct but different from source.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct partially recovered with fields `start`, `end`, `result` correctly identified. However, many struct usages rely on raw pointer arithmetic (e.g., `*(int *)((int)arg + 4)`). The `param_strchr_strstr` function loses the `const` semantics on pointer returns.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(int)pcVar1 - (int)dst` in param_strcpy, `(int *)arg` throughout. Some pointer arithmetic could lead to issues. Stack canary variables (`local_c`) add noise but provide safety checking. No alignment annotations or _Atomic types recovered.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly decompiler-generated warnings rather than helpful comments. "WARNING: Unknown calling convention" and "WARNING: Removing unreachable block" provide limited value. No explanation of why `stpcpy` was used instead of `strcpy`. No documentation of the 42 return value semantics.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions (strcpy, strcmp, strlen, memcpy, memcmp, fopen, fread, fwrite, malloc, free, memset) all correctly identified. Threading patterns (pthread_create, pthread_join, mutex_lock) recognized. The `stpcpy` idiom is correctly identified even though it differs from source.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Decompiler appropriately flags "Unknown calling convention" and "Unresolved local var". However, the switch from `strcpy` to `stpcpy` is not flagged as an anomaly or optimization. No indication that the output differs from source-level expectation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected input constraints (e.g., "requires: dst buffer size >= src length + 1"). No error condition documentation beyond return value checks.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `main` calls `test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`. Global variables like `signal_received`, `signal_number`, `shared_counter` are properly identified. Thread callback relationships clear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - standard library tests, system call tests, thread tests. Static functions like `signal_handler`, `thread_compute` properly scoped. However, all functions in single output without clear section markers.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc/pthread headers. External functions properly declared. No obvious syntax errors. Minor issues include missing `const` qualifiers that might cause warnings.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Extensive "Unresolved local var: @[???]" annotations throughout, making variable purposes unclear
+- Magic number `0x2a` (42) used as success indicator without explanation or constant naming
+- Type precision lost - `const char *` parameters become `char *`, losing source-level const correctness
+- `strcpy` replaced with `stpcpy` without annotation that this is a compiler optimization
+- Heavy decompiler warning noise ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") obscures actual code
+
+**Best Quality Aspect:** Idiom Recognition (8/10)  
+Standard library functions (strcpy, strcmp, fopen, pthread_create, etc.) are correctly identified and named. Threading patterns and system calls are properly recognized, making the overall functionality clear despite naming issues.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+The pervasive use of unresolved local variables with `@[???]` annotations and generic names like `pcVar1`, `iVar1`, `piVar2` severely impedes understanding. Each function has multiple unresolved variables, making it difficult to track data flow and purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `pcVar1` used as return value from string function should be named `end_ptr` or similar
+2. Detect and annotate compiler optimizations like `strcpy` → `stpcpy` transformation with comments explaining the equivalence
+3. Replace magic numbers with named constants when patterns are detected (e.g., `0x2a` → `SUCCESS_RETURN` or `42`)
+4. Consolidate or reduce "WARNING" comments that add noise without actionable information
+5. Recover `const` qualifiers from analysis of read-only string literals in the binary

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_clang_O0_no_g/angr/syntactic/bin/5-23_clang_O0_no_g_fixed",
+  "stdout": "Testing macro constants: 832638600\n  Result: 64\nTesting macro functions: 30\nTesting conditional compile: 32\nTesting multi-branch compile: 57122\nTesting macro recursion: 116\nTesting stringize: 19\nTesting token paste: 60\nLOG: Values: 10, 20, 30\nTesting variadic macro: 60\nTesting macro override: 16\nTesting include guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:44\nTesting builtin macros: 382\nTesting ASM basic: 832637840\nTesting ASM clobber: 15\nTesting ASM multi insn: 279259211\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

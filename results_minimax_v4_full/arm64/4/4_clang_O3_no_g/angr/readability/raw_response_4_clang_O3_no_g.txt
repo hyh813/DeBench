@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2` through `v49` in functions like `varargs_func`. Parameters use `a0`, `a1`, `a2` without semantic meaning. The original source uses meaningful names like `count`, `args`, `sum`, but these are completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered like `cdecl_func`, `stdcall_func`, `test_calling_conventions`, but many use mechanical addresses like `sub_400654`, `sub_400730`, `$x`. The test wrapper functions (`call_cdecl`, `call_stdcall`) are properly named, but internal helpers lack semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently without explanation. The value `18446743528248704968` is unexplained. However, printf format strings in test functions correctly show expected values (15, 50, 6, etc.), providing some clarity.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: `varargs_func` has 49 local variables with massive redundancy - many assigned but unused. Frame pointer manipulation creates spurious variables like `v0 = &v1` in `_init`. Redundant assignments like `v0 = v2; v1 = v3;` in `$x()` create noise. Dead code from register spilling pollutes the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `cdecl_func`, `func_no_args` have natural flow. However, `varargs_func` uses goto-based loops with labels like `LABEL_400988` instead of structured loops. The control flow is correct but not idiomatic for high-level C.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain reasonably sized (20-80 lines). No excessive inlining or outlining observed. The decompiler maintains appropriate function boundaries. Minor issue: some functions like `varargs_func` could be split but decomposition is acceptable for -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns used appropriately in functions like `func_no_args`. Some goto statements in `varargs_func` but overall linear flow is preserved.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling in `varargs_func` is present but uncommented - the original `for` loop is transformed into manual iteration. Some redundant expressions but not severe. Dead code elimination appears to have been applied.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameters correctly use `unsigned int` and `unsigned long long` for arm64. However, return types are sometimes wrong - `call_cdecl` returns `unsigned long long` instead of `int`. Function `param_by_value_int` has obfuscated arithmetic: `(a0 * 2 | a0 >> 31) & 4294967294` instead of simple `a0 * 2`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. The original `SmallStruct {int x, y}` becomes `unsigned int *a0` in `func_struct_byptr`. The decompiler creates fake structs like `struct_0 { char field_0; }` that don't match original. `LargeStruct` with 16 `long long` members is completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer call `a0(a1)` in `param_func_ptr` loses type safety. Unsafe pointer arithmetic present: `*((int *)&v18[v32 & 4294967295])`. Some casts are questionable but not dangerous. The code is mostly safe but has type confusion issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm or logic. Only auto-generated function headers like `// Function: cdecl_func at 0x400814`. No documentation of what the function does, parameters, or return values. The original source had extensive comments (CALL-L1-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The varargs handling pattern is not recognized as stdarg usage. No mention of calling convention semantics. The decompiler doesn't identify common C patterns like va_list processing.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged like `[D] unsupported_Iop_ZeroHI64ofV128()` in `ret_large_struct`. However, many issues are silent - the incorrect return type for `call_cdecl` isn't flagged. Incomplete struct recovery isn't indicated as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had explicit null checks (e.g., `if (!p) return -1` in `func_struct_byptr`) but these aren't highlighted as contracts. No documentation of expected input constraints.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., `test_calling_conventions` calls `printf`). However, no documentation of call relationships, global variable usage, or callback connections. The original test structure (which function calls which) isn't explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with arbitrary address-based ordering. No logical grouping by functionality (calling conventions, parameter passing, return values). Static functions not distinguished from public API. No namespace or header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations for globals (e.g., `extern char g_4014a8`). Function signatures have issues - `main` has 8 parameters instead of standard argc/argv. Would require significant patching to compile. Missing standard library declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All local variables use generic `v*` names (v0-v49), completely losing semantic meaning like `count`, `sum`, `args`
+- **Struct recovery failure**: Original `LargeStruct` (128 bytes) and `SmallStruct` are reduced to `unsigned int *` pointers, losing all field information
+- **No comments**: Zero useful comments explaining algorithms, calling conventions, or parameter purposes
+- **Excessive noise**: `varargs_func` has 49 local variables with massive register spilling artifacts making it nearly unreadable
+- **Type precision loss**: Return types incorrect (e.g., `unsigned long long` instead of `int` for `call_cdecl`)
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions maintain reasonable size and boundaries. The decompiler didn't over-fragment or over-inline. Simple functions like `cdecl_func` are clean and readable.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The complete loss of semantic variable names is the most severe readability issue. Every meaningful identifier from the original source (count, args, sum, ptr, val) is replaced with `v*` or `a*`, making it impossible to understand variable purposes without cross-referencing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `sum += va_arg(args, int)` → name it `sum` or `total`)
+2. **Recover struct layouts from stack access patterns**: Use field offsets to reconstruct struct definitions with meaningful field names
+3. **Add semantic comments for complex patterns**: Document calling conventions, varargs handling, and any non-obvious transformations with source-referenced comments

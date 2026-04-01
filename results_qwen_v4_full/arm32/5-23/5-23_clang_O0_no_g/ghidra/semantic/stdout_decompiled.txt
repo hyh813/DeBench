@@ -1,0 +1,21 @@
+Testing preprocessing features
+call_macro_constants result: 0
+call_macro_functions result: 0
+call_conditional_compile result: 0
+call_multi_branch_compile result: 0
+call_macro_recursion result: 0
+call_stringize result: 0
+call_token_paste result: 0
+LOG: Values: 10, 20, 30
+call_variadic_macro result: 0
+call_macro_override result: 0
+call_include_guard result: 0
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:14
+call_builtin_macros result: 0
+Testing ASM features
+call_asm_basic result: 0
+call_asm_clobber result: 0
+call_asm_multi_insn result: -1
+call_asm_simd result: 885595435
+call_asm_atomic result: 30
+call_asm_privileged result: 77

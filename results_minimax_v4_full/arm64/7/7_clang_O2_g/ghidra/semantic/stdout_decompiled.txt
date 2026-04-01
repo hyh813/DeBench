@@ -1,0 +1,16 @@
+Testing obfuscation optimizations:
+
+Opaque predicate: 10
+GCD(6,5) = 20
+Instruction substitution: e1
+String decryption: 28
+Tail call sum: 7a314
+Non-tail call sum: 13ba
+Vectorized loop: 48
+LTO result: 14
+Division by zero: 2
+Null pointer: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation-defined: 30

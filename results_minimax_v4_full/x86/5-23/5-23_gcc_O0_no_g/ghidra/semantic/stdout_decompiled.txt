@@ -1,0 +1,9 @@
+Testing Preprocessing Features:
+
+Macro constants: 64
+Macro functions: 0
+Conditional compile: 0
+Multi-branch compile: 0
+Macro recursion: 0
+Stringize: 19
+Token paste: 0

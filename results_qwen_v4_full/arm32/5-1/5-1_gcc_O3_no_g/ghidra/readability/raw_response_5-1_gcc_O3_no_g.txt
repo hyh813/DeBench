@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_c`, `iVar1`, `puVar1`, `acStack_2c` with no semantic meaning. For example, `acStack_2c` should be `name` based on the strncpy usage, and `local_c` should track object state.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retained original names (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use cryptic names like `FUN_0001092c`. Class methods recovered with class prefixes but lack parameter semantics.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers throughout: `0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a` with no explanation. These represent computed return values but appear as opaque constants obscuring the actual computation logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: `__stack_chk_fail()` guards, "WARNING: Unknown calling convention" on 20+ functions, "WARNING: Removing unreachable block" warnings, and `undefined` type casts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions reduced to single `return` statements with constants, losing all original control flow. `test_cpp_exception` shows only throw logic without the nested try-catch structure from source.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical semantic loss - `test_cpp_constructor` returns `LifecycleClass::instance_count * 0x3e9 + 0x15` instead of actual object lifecycle testing. Template functions separated but test logic collapsed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Functions that do have logic read linearly (e.g., `template_swap<int>`), but many functions have stack check guards that create artificial early-exit paths disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code within functions, but the constant-folding optimization means entire computation sequences are eliminated, making verification impossible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion: `undefined4`, `undefined8`, `undefined1` used extensively. `double` parameters become `extraout_d0`, `extraout_d1`. Pointer types lose class specificity (e.g., `Base *` instead of proper vtable structure).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class methods recovered with `__thiscall` convention, but no struct definitions visible. Object layouts accessed via raw offsets (`this + 4`, `this + 0x28`, `this + 0x50`) instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined4 *)__cxa_allocate_exception(4)`, `(undefined4 **)param_1`. Pointer arithmetic on `this` without bounds checking. Exception handling uses raw memory operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler-generated warnings present ("WARNING: Could not recover jumptable"). No semantic comments explaining algorithm intent, no recovery of original source comments about expected values.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost: RAII patterns, virtual dispatch, template instantiation all reduced to raw operations. No recognition of exception handling patterns or smart pointer semantics.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues ("Unknown calling convention", "Could not recover jumptable", "Subroutine does not return"), but these are generic warnings without specific guidance on manual recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Stack canary checks present but not explained as security features. Exception contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships obscured. Virtual dispatch shown as `(*(code *)**(undefined4 **)param_1)()` without vtable structure. Template instantiations separated but connection unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (init functions mixed with test functions). No logical grouping by C++ feature category. Class methods scattered throughout file.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`__cxa_allocate_exception`, `__aeabi_d2iz`, `operator_new`). Requires C++ runtime stubs. Cannot compile standalone without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+4+5+6)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type System): (3+4+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Semantic Collapse**: Test functions return hardcoded constants (e.g., `test_cpp_virtual_func` returns `0x2a` instead of computing 42) making verification impossible
+- **Type Erasure**: Extensive use of `undefined4`, `undefined8` instead of recovered C++ types loses all type safety information
+- **Variable Opacity**: All local variables use generic names (`local_c`, `iVar1`, `acStack_2c`) with no semantic inference
+- **Magic Numbers**: Computed values appear as hex constants (`0x125c`, `0x3e9`, `0x28a`) without explanation of their derivation
+- **Missing Structure**: Class layouts accessed via raw offsets (`this + 4`, `this + 0x28`) instead of reconstructed struct definitions
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- Ghidra consistently flags uncertain operations with WARNING comments, alerting analysts to areas requiring manual investigation
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- C++ semantic patterns (RAII, virtual dispatch, templates, exceptions) completely reduced to raw operations with no pattern identification
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Semantic Value Recovery**: Instead of constant-folding test functions, preserve computation logic even when result is known at compile time
+2. **C++ Type Reconstruction**: Implement class layout analysis to recover struct definitions from vtable patterns and member access offsets
+3. **Variable Name Inference**: Use usage context (e.g., `strncpy` destination → `name`, loop counter → `i`) to generate meaningful variable names instead of `local_*`

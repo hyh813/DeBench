@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `a1`, `a2`, `a3`, `a4` for parameters and `v1`, `v2`, `v3`, `v4` for locals. The original source had meaningful names like `count`, `args`, `sum`, `val`, `ptr`. This is a severe degradation - the decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Most function names are correctly recovered: `varargs_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`, `call_by_value_ptr`, `param_double_ptr`, etc. The only minor issue is some functions like `func_b` are correct but lack context about what they do.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `15`, `50`, `6`, `100`, `21` (expected outputs) appear without explanation. The value `128` (size of LargeStruct) and `16` (array size) are used without named constants. The string literals are encoded in UTF-8 hex but not properly decoded. Only basic arithmetic like `4 * a2` is somewhat clear.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts including `__printf_chk` and `__stack_chk_fail` calls. There's redundant code like `return &g20` after `__stack_chk_fail()`. Unnecessary casts like `(int32_t)` appear throughout. Dead code exists like the unused `a1` parameter in `call_varargs_param`. However, no debug instrumentation or register spilling artifacts are prominent.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved but uses awkward patterns. The `varargs_func` uses manual counter manipulation (`v3++`, `v2 += 4`) instead of cleaner loops. The complex while loop in `test_calling_conventions` with condition `(v1 || v4 - 16) != 0` is nearly incomprehensible. At -O0, such awkwardness is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is mostly preserved - many small functions exist. However, `test_calling_conventions` (377 lines total, this function is ~180 lines) is too large and contains inline code that should be separate functions (e.g., the LargeStruct initialization loop). Parameter lists are reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with few forward jumps. The main disruption is the complex while loop in `test_calling_conventions` that requires careful tracing. Early returns exist in `varargs_func` but are appropriate. Some nesting exists but is manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code like unused parameters (`a1` in `call_varargs_param`). The `call_ret_pointer` function returns constant `20` instead of calling the actual function. Loop unrolling is minimal. Overall, some redundancy but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate for ARM64. However, loses distinction between signed/unsigned (original uses `int`, `char*`, `size_t`). Pointers are generic `int32_t*` rather than specific types like `char**` for string arrays. Function pointers treated as `int32_t` instead of proper function pointer types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. Original had `LargeStruct` (128 bytes with `long long data[16]`), `SmallStruct` (with `x, y`), `TestIntPair` (with `a, b`), `BigStruct` (with `int data[16]`), `SmallPoint` (with `x, y`), `LargeData` (with `int data[16]`). The decompiled code uses raw pointer arithmetic and void pointers with no struct recovery whatsoever.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t)a1` casts for function pointers, pointer arithmetic without bounds (`v2 += 4`), casting between pointer and integer types (`int32_t v2 = &v1`). The `param_ptr_array` has confusing pointer arithmetic: `int32_t v1 = (int32_t)a1 - 4`. No `const` correctness. Significant risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the standard RetDec file header comment exists. No comments explain algorithm logic, parameter purposes, return value meanings, or any semantic information. The original source had extensive comments (e.g., "// CALL-L1-01: cdecl调用约定 ⭐⭐"). Zero useful comments in the decompiled output.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified or named. The original had clear idioms: varargs using va_list, struct by value, function pointers, double pointers. The decompiled code presents these as raw pointer manipulations without recognizing the patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or potential issues. The `call_ret_pointer` returning constant `20` instead of calling the function should be flagged. The complex pointer arithmetic in `param_ptr_array` should have warnings. The decompiler presents everything as confident output with no uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Original had implicit contracts like "ptr != NULL" for `func_struct_byptr`, "count > 0" for varargs. None of this is recovered. The decompiled code provides no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. However, no documentation of call relationships (who calls whom, callbacks). The `param_func_ptr` calls through a hardcoded address `0x10554` instead of showing it's calling `callback_func`. Global variable usage (`g19`) is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single file organization with function prototypes grouped at top. Static functions not properly marked (original had `static int callback_func`). No header file recovery. The logical grouping by test function (calling conventions, parameter passing, return values) is somewhat preserved in function names but not in organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Would compile with minor issues - the `__printf_chk` and `__stack_chk_fail` are glibc internal functions that may need stubs. External dependencies not documented. Some portability issues with hardcoded addresses.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) with no semantic inference
+- Zero struct/union recovery - all composite types lost to raw pointer arithmetic
+- No comments or documentation explaining any logic
+- Type safety issues: function pointers cast to integers, unsafe pointer arithmetic
+- No pattern recognition for varargs, callbacks, or struct passing idioms
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler correctly recovered most function names from the symbol table, preserving the semantic meaning of the API surface.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The decompiler made no attempt to infer meaningful variable names from usage patterns. At -O0, variables should have clear roles that could be detected (e.g., loop counters, accumulators, pointers).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, dereferencing) to suggest names like `count`, `sum`, `index`, `ptr`, `buffer`
+2. **Recover composite types**: Detect stack layout patterns and struct field access to reconstruct struct definitions with meaningful field names
+3. **Add semantic comments**: Generate comments explaining idioms (varargs, callbacks), flagging anomalies (indirect calls, unusual stack layouts), and documenting expected behavior

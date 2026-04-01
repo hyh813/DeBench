@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_28`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`). External library functions are correctly identified with `<EXTERNAL>::` prefix.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0x5a` (90), `0xffffffff` (-1), `0x7f` (127). String literals often appear as `&DAT_001040d9` instead of readable text. No constant recovery attempted.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive external function stubs (50+), redundant casts like `(undefined8 *)`, compiler artifacts like `in_RAX` and `in_FS_OFFSET` clutter the code without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions maintain reasonable structure, but complex ones like `param_fread_fwrite` use excessive bitwise operations instead of clear comparisons. Loop unrolling appears despite `-O0` compilation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved with appropriate sizes for simple functions. However, `param_memset` explodes to 200+ lines when original was ~15 lines, indicating failed optimization reversal.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. `param_fread_fwrite` has excessive nested conditionals disrupting flow, but no problematic goto usage observed.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `param_memset` with 16+ nearly identical byte-extraction blocks. `param_malloc_free` has unrolled loops that should be recovered as loop constructs.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `undefined8`, `ulong`, `undefined4`, `undefined`. Original `size_t`, `ssize_t`, `FILE*` degraded. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` and `sockaddr` structs partially recovered but with generic field access (`local_90.st_size`). `ThreadData` struct not reconstructed—fields accessed via array indexing instead.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(pthread_mutex_t *)`, `(volatile int*)`. Pointer arithmetic lacks proper typing. No buffer overflow warnings despite obvious risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library patterns (`strcpy`, `strcmp`, `memcpy`) identified correctly. Thread synchronization patterns (mutex, condition variables) not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. Indirect calls not marked as uncertain. No warnings about potential undefined behavior or decompilation limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions or invariants. Error return values not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) used without declaration context. No call graph provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. No logical grouping by category (library/syscall/thread). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but many with incorrect signatures. Would require significant patching to compile. No dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.59/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- Variable `param_1`, `param_2` should be named `dst`, `src` based on `strcpy` usage pattern
+- Magic number `0x2a` should be recovered as constant `42` (success return value)
+- `param_memset` has 200+ lines of redundant byte-extraction code that should be a simple loop
+- Zero comments explaining algorithm logic or decompilation confidence
+- `ThreadData` struct not recovered—fields accessed via array indexing losing semantic meaning
+- External function stubs (50+) add noise without analytical value
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify test functions and their purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments makes understanding complex logic extremely difficult, especially for optimized/restructured code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and function semantics (e.g., first parameter of `strcpy` → `dst`)
+2. **Recover loop constructs** from unrolled code patterns, especially at `-O0` where unrolling shouldn't occur
+3. **Add decompilation confidence annotations** indicating uncertain type recovery, unresolved calls, and potential optimization artifacts

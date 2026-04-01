@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_Os_no_g/ghidra/syntactic/bin/7_gcc_Os_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization edge cases:\n\n10\n20\n225\n0\n500500\n0\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

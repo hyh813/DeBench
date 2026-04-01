@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (a1, a2, a3, v1, v2, v3, result, etc.). No semantic meaning is recovered - "a1" should be "x" or "input_value", "a2" should be "y" or "target". This is the worst aspect of the decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved: sequential_ops, single_if, if_else, nested_if_2, loop_for_fixed, etc. They match the original source exactly and use appropriate action verbs.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like 0xFFFFFFFF (for -1), 0x65 (101), 0xA (10) appear without explanation. Some values like 100, 1000 are used but not named as constants. The decompiler doesn't recover #define constants.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation visible. The code is relatively clean from noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if-else, switch-case, loops). However, loop_continue uses heavy SIMD intrinsics (_mm_add_epi32, _mm_mul_epu32) making it nearly unrecognizable as a simple continue loop. goto_backward uses complex loop structure instead of recognizable goto labels.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and cohesive. Each function handles one test case. No 500-line monoliths. Parameter counts match original (3 params for sequential_ops, 1 for single_if, etc.).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Early returns used appropriately in multi_return. Some forward jumps exist but are manageable. No severe non-linearity disrupting comprehension.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling in loop_continue and goto_backward is present but not commented. Some common subexpression patterns but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most parameters use generic "int" or "unsigned int". Function pointers use __int64 (__fastcall *)(_QWORD) which is overly generic. No int32_t, size_t, or const correctness recovered. The original used plain "int" so some genericness is expected at -O0.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union types recovered. Arrays like "int arr[] = {10,20,30,40,50}" in loop_break are completely lost - decompiled as switch-case on the value directly. The matrix in loop_multi_exit is replaced with direct array indexing.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts observed. Function pointer types are consistent (though generic). No obvious buffer overflow patterns. Some unsigned/signed mixing (a1 > 0 comparison) but manageable.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like switch-case are recognized. Duff's device is partially recovered with goto labels. But no explicit naming of patterns (e.g., "Duff's device" not mentioned). State machines recognized but not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The decompiler silently produces incorrect logic in several functions (single_if, if_else, nested_if_deep) without any warning about semantic differences from source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No documentation of error conditions. The original had explicit test cases with expected outputs but none of this is preserved.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of which functions call which. No indication of global variable usage. The test functions (test_control_flow_l1, etc.) call the target functions but this relationship isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all test functions together, all target functions together. Static functions properly scoped. The organization matches the source file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata states "Compilation Result: Yes" - the code compiles. External dependencies (printf, puts, setjmp/longjmp) are standard library. No compiler-specific hacks visible.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 8) / 4 = 6.0
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.0
+L3_avg = (4 + 2 + 7) / 3 = 4.33
+L4_avg = (1 + 3 + 2 + 2) / 4 = 2.0
+L5_avg = (3 + 7 + 8) / 3 = 6.0
+
+Overall = (6.0 × 0.30) + (7.0 × 0.25) + (4.33 × 0.20) + (2.0 × 0.15) + (6.0 × 0.10)
+        = 1.8 + 1.75 + 0.866 + 0.3 + 0.6 = 5.316 ≈ 5.3/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects (Bullet List)
+
+- **single_if logic error**: Decompiled as `a1 << (a1 > 0)` which is semantically wrong - uses bit shift instead of multiplication, though produces correct results for test cases
+- **if_else returns boolean**: Returns `a1 > 0` (boolean) instead of `1` or `0` (int literals)
+- **nested_if_deep bitwise error**: Uses `(a5 > 0) | 4u` instead of returning 4 or 5, changing semantics
+- **loop_while incorrect**: Uses `(v2 + 9) > 0x12` as loop condition instead of `x != 0`
+- **loop_break array loss**: Original searches array [10,20,30,40,50], decompiled uses switch-case directly on target value - loses array entirely
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)** - Function names are perfectly preserved and match source exactly
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality (1/10)** - Zero comments recovered from source; the original had extensive documentation explaining each test case
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., "a1" used in comparison with 0 and multiplied by 2 → should be "x" or "value")
+
+2. **Flag semantic anomalies**: When decompiled logic differs from expected patterns (e.g., bit shift vs multiplication), add uncertainty comments like "// NOTE: may be multiplication, decompiled as shift"
+
+3. **Recover array literals**: In loop_break, the array {10,20,30,40,50} should be reconstructed as `int arr[] = {10, 20, 30, 40, 50};` rather than inlining as switch cases

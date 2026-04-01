@@ -1,0 +1,9 @@
+Test
+Opaque predicate: 10
+Opaque predicate: 20
+Instruction substitution: 225
+String encryption: 0
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop: 72
+Link time optimization: 20

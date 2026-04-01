@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `param_1`, `local_8`, `pbVar2`). Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names preserved (`param_fake_branch`, `param_opaque_predicate`), but several are generic (`FUN_00100860`, `FUN_00100a3c`). Critical issue: `param_fake_branch` shows void return instead of int.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout (`0x14`, `0xe1`, `0x30`, `0x5a`, `0xDEADBEEF` lost). Some recoverable (0xe1=225) but no named constants generated.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) add noise. External function wrappers are redundant. Some compiler artifacts visible but not overwhelming.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_fake_branch` completely wrong (returns void, no logic preserved). `param_opaque_predicate` uses do-while instead of for. Original永假 conditions not visible.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: `param_fake_branch` and `param_buffer_overflow_stack` return void instead of int. `param_implementation_defined` returns constant `0x30` instead of computing. Function boundaries preserved but semantics broken.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some do-while loops instead of for loops disrupt flow slightly. No severe goto patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks add redundancy in multiple functions. External function wrappers (`strlen`, `signal`) are redundant. No dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many types degraded to `int`, `void*`, `undefined8`. `param_fake_branch` should return `int` but shows `void`. `param_instruction_substitution` takes `uint` instead of `int`. Signal handlers lose proper signature.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost—returns constant `0x30` instead of computing. No struct definitions visible in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(undefined *)0x0`, `(__sighandler_t)0x0`, `(char *)param_2`. Pointer arithmetic with generic types throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Opaque predicates not identified. GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. `param_fake_branch` completely wrong but no indication. Signal handler patterns not flagged as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Signal handler contracts not explained. Expected return values (noted in original comments) not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jmp_buffer`, `encrypted_0`) not clearly explained. Callback relationships implicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (obfuscation/optimization/edge cases). Original section organization lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has external dependencies (signal, malloc, strlen, etc.). Would need stubs and proper headers to compile. Some type mismatches would cause compilation errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+5+6)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+4+6+6)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Context):     (5+5+5)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.17/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects
+- **`param_fake_branch` completely broken**: Returns `void` with no logic, should return `int` with永假 condition checks
+- **Zero comments**: Original had extensive documentation explaining obfuscation techniques and expected values
+- **Generic variable names**: All variables are `iVar1`, `param_1`, `local_8` instead of semantic names
+- **Composite types lost**: Bitfield struct in `param_implementation_defined` replaced with constant return
+- **Type signature errors**: Multiple functions have wrong return types (`undefined8`, `void` instead of `int`)
+
+### Best Quality Aspect
+- **Code Linearization (6/10)**: Code generally reads top-to-bottom without severe goto patterns or spaghetti control flow
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: Complete absence of any documentation, making it impossible to understand the obfuscation intent or expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function semantics from control flow patterns**: Detect永假 conditions and opaque predicates, preserve them in output with explanatory comments
+2. **Infer variable names from usage context**: Analyze how variables are used (e.g., `local_28` used as buffer → name it `decrypted_buffer`)
+3. **Generate confidence annotations**: Flag functions where decompilation is uncertain (e.g., `param_fake_branch` showing void return should have warning)

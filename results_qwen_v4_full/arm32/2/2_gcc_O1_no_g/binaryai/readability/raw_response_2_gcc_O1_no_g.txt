@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `piVar2` with no semantic meaning. For example, `process_char(uint param_1)` should have `c` or `character`, and `array_1d_stack` uses `piVar3` instead of `array_ptr` or `current`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`process_char`, `array_1d_stack`, `struct_simple`, `binary_tree_sum`). Names accurately reflect functionality and match source code exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers obscure intent: `process_char` uses `0x41`, `0x1a`, `0x20` instead of `'A'`, `26`, `32`. Test functions show pre-computed constants (e.g., `__printf_chk(1,"DT-L1-01...": %c\n",0x61)`) instead of actual function calls.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__stack_chk_fail()` checks, `__gmon_start__()`, and extensive floating-point helper functions (`__muldf3`, `__aeabi_dadd`, `__addsf3`) that obscure simple operations like `d / 2.0 + 0.1`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use do-while with pointer comparison instead of for-loops (e.g., `array_1d_stack`). At -O0 optimization, this restructuring is unexpected and reduces readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Each original function maps to one decompiled function without inappropriate inlining or fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some test functions have unusual stack variable initialization patterns that disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. However, floating-point operations expand into verbose helper function calls that could be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`uint`, `short`→`int` with masking, `long long`→split `uint/int` parameters, `float/double/long double`→`undefined4/undefined8`. Function pointers become `code *` losing signature information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs/unions. `struct_simple(Point3D *p)` becomes `struct_simple(int *param_1)` with field access as `param_1[1]`, `param_1[2]`. Bitfields, unions, and nested structures all lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(int *)(param_1 + -4)`, `(undefined4 *)`, `(byte *)`. Pointer arithmetic lacks type safety, and function pointer calls use generic `code *` type.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of non-trivial logic, algorithm intent, or decompiler confidence levels.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and state machine (`enum_switch`) appear as raw code without pattern documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about problematic areas. Test functions output constants instead of calling functions (e.g., `test_data_types_l1` prints `0x61` instead of calling `process_char('A')`), but this anomaly is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist in code but aren't documented as contracts (e.g., `linked_list` checks `param_1 != NULL` without comment).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph information, callback relationships unclear (e.g., `ptr_func_simple` calls through `code *` without signature).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. However, helper functions (`__muldf3`, `__addsf3`) interspersed with application code without clear separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone. Missing external function declarations (`puts`, `__printf_chk`), undefined types (`undefined4`, `undefined8`, `code *`), and architecture-specific helpers (`__aeabi_*`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (6+8+7+7)/4 = 7.00  × 0.25 = 1.750
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.534
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75  × 0.15 = 0.263
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.62/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Complete struct/union type loss**: All composite types reduced to `int *` with array indexing (`param_1[1]`, `param_1[2]`) instead of field names
+- **Test functions constant-folded**: `test_data_types_l1` prints pre-computed values instead of calling actual functions, hiding runtime behavior
+- **Floating-point operations opaque**: Simple `d / 2.0 + 0.1` expands to 100+ lines of `__muldf3`, `__aeabi_dadd` helper code
+- **No type differentiation**: `char`, `short`, `int`, `long` all become `int` or `uint`, losing semantic distinctions
+- **Zero documentation**: No comments explaining algorithm intent, type assumptions, or decompiler confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making it easy to correlate decompiled code with source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze field access patterns to reconstruct struct definitions with meaningful field names (e.g., detect `param_1[0]`, `param_1[1]`, `param_1[2]` as `x`, `y`, `z` in Point3D)
+
+2. **Add semantic comments for optimized patterns** - Document when floating-point operations expand to helper calls, and flag when test functions appear constant-folded vs. actual computation
+
+3. **Preserve type distinctions from debug symbols** - Since compiled with `-O0 -g`, leverage DWARF debug info to recover original types (`char`, `short`, `long long`, function pointer signatures) instead of generic `int`/`undefined4`

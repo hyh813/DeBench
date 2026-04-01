@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `temp`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `main`) but many degraded to `sub_104f0`, `sub_105f4`, or compiler-generated names like `param_division_by_zero.constprop.0`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x22070` (jmp_buffer address), `4294967295` (unsigned -1), signal numbers `8` and `11` without SIGFPE/SIGSEGV names, XOR key `90` unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts: register save patterns (`v1 = v2; v0 = v3;`), ARM helper calls (`armg_calculate_condition`, `__aeabi_idivmod`), stack canary checks, and internal labels (`LABEL_107aa`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of structured loops/conditionals. Original clean `if/else` and `while` constructs converted to label-based jumps disrupting readability.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function splitting creates duplicates (`param_division_by_zero.constprop.0/1`). Some functions oversimplified (`param_fake_branch` just returns `v0`), losing original logic entirely.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies and scattered labels prevent top-to-bottom reading. Multiple `goto LABEL_xxx` patterns break natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding applied inconsistently (`call_fake_branch` returns `10` directly). Duplicate decryption logic in both `param_string_encryption` and `call_string_encryption`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to generic `unsigned int`. Original `int`, `char*`, `size_t` distinctions lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct from `param_implementation_defined` completely lost (function returns hardcoded `44`). Array declarations malformed (`char v1[1][15][2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(unsigned int)v0`, `(char)result`). Pointer arithmetic lacks proper typing. Potential type confusion in signal handler returns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated annotations like `/* do not return */`. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Signal handling pattern with `setjmp/longjmp` not identified. Opaque predicate logic not recognized. String decryption pattern unmarked.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Critical issues unflagged: `param_fake_branch` returning just `v0` (should have logic), `param_buffer_overflow_stack` completely missing overflow code. No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a0 != 0` for division). Error conditions and return value semantics unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`jmp_buffer`, `encrypted.0`) appear without purpose explanation. Signal handler callbacks not linked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in flat structure without logical grouping. No separation between test harness and implementation. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `__aeabi_idivmod`) undeclared. Would require significant stubbing and platform-specific headers to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     4.50 × 0.30 = 1.350
+Level 2 (Structural):  4.50 × 0.25 = 1.125
+Level 3 (Type):        3.67 × 0.20 = 0.734
+Level 4 (Semantic):    2.75 × 0.15 = 0.413
+Level 5 (Contextual):  4.33 × 0.10 = 0.433
+─────────────────────────────────────────
+Overall Score:                    4.05/10
+```
+
+### Overall Readability Score: **4.1/10**
+
+### Critical Defects
+- **`param_fake_branch` completely broken**: Returns uninitialized `v0` instead of implementing the fake branch logic with `x*x < 0` conditions
+- **Variable names all generic**: `v0`, `v1`, `flag1`, `flag2` provide zero semantic information about purpose
+- **Bitfield struct lost**: `param_implementation_defined` returns hardcoded `44` instead of reconstructing the bitfield operations
+- **Excessive goto usage**: Natural loops converted to `do-while` with `goto LABEL_xxx` patterns
+- **No comments or documentation**: Zero explanation of algorithm intent, anomaly warnings, or decompilation confidence
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)** - Some original function names preserved (`param_fake_branch`, `param_opaque_predicate`, `main`) providing minimal semantic anchors
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding decompiler decisions and code intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used in length checks should be named `len` or `size`)
+2. **Recover high-level control structures**: Convert `goto` + label patterns back to `if/else`, `while`, and `for` constructs based on jump target analysis
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target unresolved` to guide manual review

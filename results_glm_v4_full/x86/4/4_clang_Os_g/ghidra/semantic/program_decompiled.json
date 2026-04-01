@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/x86/4/4_clang_Os_g/ghidra/syntactic/bin/4_clang_Os_g_fixed",
+  "stdout": "TEST: Calling Conventions\n\nCALL-L1-01: 15\nCALL-L1-02: 50\nCALL-L1-03: 6\nCALL-L1-04: 15\nCALL-L1-05: 15\nCALL-L1-06: 100\nCALL-L1-07: 21\nCALL-L1-08: 15\nCALL-L1-09: 10\nCALL-L1-10: 33\nVARARGS-01: 0\nVARARGS-02: 42\nVARARGS-02: 36\nCALL-L1-11: 117\nCALL-L2-11: 136\nCALL-L3-01: 50\nTEST: Parameter Passing\n\nPARAM-L1-01: 15\nPARAM-L1-02: 11\nPARAM-L2-01: 4\nPARAM-L2-02: 173\nPARAM-L2-03: 300\nPARAM-L2-04: 0\nPARAM-L3-01: 20\nPARAM-L3-02: 21\nPARAM-L3-03: 305419896\nPARAM-L3-04: 15\nPARAM-L3-05: 3\nTEST: Return Values\n\nRETURN-L1-01\nRETURN-L1-02\nRETURN-L2-01\nRETURN-L2-02\nRETURN-L2-03\nRETURN-L2-04\nRETURN-L3-00\nRETURN-L3-01\nRETURN-L4-08\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

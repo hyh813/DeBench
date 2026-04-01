@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `ptr`, `a0`, `a1` instead of semantic names. Some better names exist (`fp`, `pid`, `count`, `idx`, `result`) but are inconsistent. Parameters should be `dst`, `src` not `a0`, `a1`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered with original names (`param_strcpy`, `call_strcpy`, `param_strcmp`), but many unnecessary wrapper functions with generic names (`sub_401551`, `sub_4015a3`) clutter the output.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (unsigned -1), `42` (success code), `12263` (GOT offset). No named constants recovered. Error codes like `4294967294`, `4294967293` are unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive GOT loading (`v0 = &_GLOBAL_OFFSET_TABLE_`) in nearly every function. Many unnecessary wrapper functions (`sub_401551` just calls `param_strcpy`). Stack frame variables like `v0; // [bp-0xc]` add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/else and for loops. However, some functions use goto (`sub_401030`, `sub_4013d0`). At `-O0`, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions recovered but each has an unnecessary wrapper (`sub_4015a3` calls `call_strcpy`). This artificial fragmentation doubles the function count without adding value.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with standard control structures. Loop constructs mostly preserved. Some initialization code has forward jumps but doesn't severely impact readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: GOT loading repeated in every function. Wrapper functions create structural redundancy. Some duplicate variable assignments (`v1 = v8; v0 = v9`) serve no purpose.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `size_t` becomes `unsigned int`, `FILE*` becomes `void*` or `unsigned int`, `pthread_t` becomes `char` or `unsigned int`. Lost `const` correctness entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_0`, `FILE`, `sockaddr`) but with generic field names (`field_0`, `padding_0`, `field_5b97`). Thread data structures not properly reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts between pointer and integer types. Pointer arithmetic on generic `char*` types. Some unsafe patterns but code remains functionally interpretable.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only auto-generated type hints ("Other Possible Types: unsigned int"). No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). pthread patterns partially identified. No design pattern identification or naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Most potential issues (indirect calls, type mismatches) not indicated. No confidence markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions. Error return values not explained. No invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`signal_received`, `signal_number`) without context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file structure or API separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has external declarations but would need significant stubs to compile. Type mismatches (`pthread_t` as `char`) would cause errors. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+4+5)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- Variable `a0`, `a1` should be `dst`, `src` in `param_strcpy` based on usage pattern
+- Magic number `4294967295` used throughout instead of `-1` or `UINT_MAX`
+- Unnecessary wrapper functions (`sub_401551`, `sub_4015a3`) double the code without value
+- Type degradation: `pthread_t` represented as `char` or `unsigned int` loses semantic meaning
+- No comments explaining error codes (42, 4294967294, 4294967293, etc.)
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Loop constructs and control flow mostly preserved in natural top-to-bottom reading order despite being decompiled from binary.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Completely lacks explanatory comments, making it difficult to understand the purpose of error codes, magic numbers, and complex logic without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, pointers to buffers should be named `buffer`/`dst`/`src`
+2. **Eliminate unnecessary wrapper functions** - Functions that only call another function should be inlined or removed to reduce noise
+3. **Recover named constants from repeated magic values** - Detect patterns like `4294967295` (always -1) and `42` (success code) and suggest named constants

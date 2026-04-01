@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: The decompiler uses predominantly generic variable names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` and parameters `a1`, `a2`, `a3` throughout. While some names like `str`, `len`, `result`, `str2` are semantically meaningful, the majority obscure the actual purpose. For example, in `_Z13test_cpp_rttiv`, the variable `v3` is used for type information retrieval but has no meaningful name.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: The decompiler successfully demangles C++ mangled names, revealing functions like `_ZN4Base12virtual_funcEi` → `Base::virtual_func(int)` and `_Z17call_virtual_funcP4Basei` → `call_virtual_func(Base*, int)`. However, many helper functions remain as `function_1010`, `function_f00`, etc., lacking semantic meaning.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `42`, `31`, `8`, `16`, `32`, `48` appear without explanation. The value `0x1234` from the original `getClassID()` is present in global `g10` but not used correctly. Some string literals are encoded in hex (e.g., Chinese characters in format strings), making them unreadable.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Moderate compiler artifacts present including stack protection checks (`__stack_chk_fail`), redundant type casts, and some unreachable code paths. The exception handling code has confusing control flow with multiple goto statements. However, no debug instrumentation or register spilling artifacts significantly pollute the code.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: The `test_cpp_exception` function uses goto statements (`goto lab_0x10e4`, `goto lab_0x10e0`) creating spaghetti-like control flow. Complex nested conditionals with unclear logic make execution paths difficult to trace. At -O0, this represents decompilation difficulty rather than optimization artifacts.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Functions are appropriately extracted with reasonable granularity. However, some functions like `_ZN9ContainerIiE4pushEi` have parameter lists exposing implementation details (e.g., passing `this` as first parameter). The decompiler correctly identifies thunk functions for multiple inheritance.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `_Z20test_cpp_member_funcv`. The exception handling function is the primary exception with complex goto-based flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: At -O0, minimal optimization artifacts are present. Some redundant expressions exist in template functions but nothing severe. No significant dead code or unexplained duplicate logic observed.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: The decompiler uses precise types like `int64_t`, `int32_t`, `uint32_t` appropriately. Function pointer signatures are properly typed (e.g., `int64_t (*e0)()`). However, some places use generic `int` instead of `int32_t`, and return types are sometimes incorrect (e.g., functions returning pointers cast to integers).
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Partial struct recovery is present with vtable structures (`struct vtable_12c28_type`) correctly identified. However, class member recovery is poor - most data members are accessed via raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 40)` for `Container::size`). The decompiler doesn't reconstruct the original class member names.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several type safety issues exist: unsafe casts like `(int64_t)(2 * *(int32_t *)v9 + *(int32_t *)v7)`, pointer arithmetic without bounds checking, and type-confused operations. For example, in `_ZN7Derived12virtual_funcEi`, the code uses `v1` uninitialized and performs arithmetic that doesn't match the original semantics.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Comments are sparse and mostly auto-generated (e.g., "Address range:", "Demangled:"). No algorithm explanations, preconditions, or postconditions are documented. The decompiler provides address ranges which are useful for binary analysis but don't aid understanding of the code logic.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some C++ idioms are recognized: vtable structures are identified, virtual function thunks are labeled (`_ZTv0_n24_`, `_ZThn16_`), and RTTI structures are partially recovered. However, these patterns are not explicitly named or documented with explanations of what they represent.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No flags or warnings for suspicious code, uninitialized variables, or uncertain decompilation. Many functions contain uninitialized variable usage (e.g., `int64_t v1;` used without assignment) but no indication is given to the reader that this may be a decompilation artifact.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No implicit preconditions, postconditions, or invariants are documented. The decompiler makes no attempt to recover contracts from the binary, leaving the reader to infer requirements like null checks, size constraints, or error conditions.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are clear through direct calls. Virtual dispatch is partially indicated through vtable usage. However, global variable usage is not explicitly documented, and callback relationships are not indicated.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically, with related class methods together. The decompiler maintains separation between runtime support functions and test functions. However, all code is in a single file with no namespace or module structure recovery.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: The code includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). External function declarations are present. Some stubs would be needed for full compilation (e.g., `__asm_fcmpe`), but the code structure is compilable with minimal patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+5+6)/4 = 5.25
+L2_avg = (5+6+7+7)/4 = 6.25
+L3_avg = (7+5+5)/3 = 5.67
+L4_avg = (4+5+3+2)/4 = 3.50
+L5_avg = (6+7+7)/3 = 6.67
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (5.67 × 0.20) + (3.50 × 0.15) + (6.67 × 0.10)
+        = 1.575 + 1.5625 + 1.134 + 0.525 + 0.667
+        = 5.46/10
+```
+
+### Overall Readability Score: 5.46/10
+
+### Critical Defects
+- **Variable naming**: Generic names like `v1`, `v2`, `a1`, `a2` dominate, making code semantics nearly impossible to track without extensive reverse engineering
+- **Control flow**: Exception handling uses goto-based spaghetti code that obscures try-catch semantics
+- **Type recovery**: Class data members are accessed via raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 40)`) without recovering field names
+- **Uninitialized variables**: Many functions use uninitialized `v1` variables without any warning about potential decompilation artifacts
+- **No semantic context**: No comments explaining what the code does, preconditions, or expected behavior
+
+### Best Quality Aspect
+**Function Naming (7/10)** - The demangler successfully recovers most C++ function names, making it clear which test function corresponds to which feature (virtual functions, templates, exceptions, etc.)
+
+### Most Needs Improvement
+**Semantic Transparency (3.5/10)** - The decompiler provides minimal semantic information: no algorithm explanations, no contract recovery, no anomaly warnings, and no pattern recognition documentation. This leaves the analyst to infer everything from raw decompiled code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Variable name inference**: Analyze usage patterns to infer semantic names (e.g., `v1` used in size check → `size`, `v1` used in index calculation → `index`)
+2. **Control flow restructuring**: Convert goto-based exception handling back to try-catch blocks using exception handling metadata
+3. **Class member recovery**: Use type information and vtable offsets to reconstruct class member names rather than raw pointer arithmetic

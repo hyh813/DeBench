@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `flag1`, `result`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `param_opaque_predicate`, `main`) but many functions have mechanical names (`sub_400874`, `sub_400998`). Wrapper functions created that don't exist in source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`4294967295`, `90` instead of `0x5A`, `4294967294`). Complex expressions like `(__ROL__(a0, 1) & 4294967294)` obscure simple operations like `x * 2`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack frame setup (`v0 = &v1`), stack canary checks (`__stack_chk_guard`), runtime functions (`__do_global_dtors_aux`, `register_tm_clones`), and redundant wrapper functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while but obscured by ARM condition calculations (`arm64g_calculate_condition`). Original simple `if (x * x < 0)` becomes complex conditional chains.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions mostly preserved but padded with unnecessary wrapper functions (`sub_400b2c`, `sub_400b8c`). Some functions like `param_fake_branch` are broken (returns uninitialized variable).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but do-while loops instead of for loops disrupt natural flow. Some forward jumps present but not severe.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Wrapper functions call same function twice: `v0 = param_opaque_predicate(); return param_opaque_predicate();`. Repeated expressions throughout without consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types degraded to `unsigned long long`. Pointer types become `unsigned long`. Signed/unsigned distinctions lost (e.g., `param_fake_branch` returns `long long` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (returns constant `48`). Array types often become pointers. No struct field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous implicit casts between signed/unsigned. Pointer arithmetic with generic types. Stack canary checks add safety but create noise. No explicit unsafe cast warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic. Original source had extensive documentation (e.g., "永假条件：x*x < 0 对于实数 x 恒不成立"). Only auto-generated function signatures present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. String XOR decryption pattern not identified. Tail call optimization transformed to loop without annotation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `param_fake_branch` returns uninitialized `v0` without warning. Complex `arm64g_calculate_condition` calls not explained. No decompilation uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note `a0 != 0` case). No postconditions inferred. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables have generic names (`g_411f50`, `g_411fe0`). No call graph documentation or callback relationships identified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. Original source had clear section organization (7.1 混淆，7.2 优化，7.3 边界). No logical grouping preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies not clearly documented. Would require significant stubs to compile. Some functions reference external symbols without proper declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.06/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **`param_fake_branch` is broken**: Returns uninitialized variable `v0` instead of implementing the fake branch logic from source
+- **Variable names are entirely generic**: `v0`, `v1`, `v2` provide zero semantic information about purpose
+- **Zero comments**: Original source had extensive documentation explaining obfuscation techniques; none recovered
+- **Type degradation**: `int` becomes `unsigned long long`, losing signed/unsigned semantics critical for overflow detection
+- **Magic numbers unexplained**: `4294967295`, `90`, `4294967294` appear without connection to original constants like `0x5A`
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Despite other issues, the code generally reads top-to-bottom without excessive goto statements or spaghetti control flow
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding the obfuscation techniques nearly impossible without referring to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns**: Analyze how variables are used (e.g., `v0` in division context should be `divisor`, `result` in encryption should be `decrypted_char`)
+2. **Add decompilation confidence annotations**: Flag uncertain reconstructions like `param_fake_branch` with comments indicating potential issues
+3. **Recognize and document common patterns**: Identify GCD algorithms, XOR decryption, tail-call optimization, and add explanatory comments matching original source intent

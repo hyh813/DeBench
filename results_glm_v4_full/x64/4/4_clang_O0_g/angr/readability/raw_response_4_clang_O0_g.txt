@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `ptr`. Even with `-g` debug symbols present in the metadata, parameter names like `a` and `b` in `cdecl_func` are lost to `a0` and `a1`, requiring manual tracking of semantics.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `cdecl_func`, `test_calling_conventions`, `main`), which is the strongest aspect of this output. However, numerous wrapper thunks (e.g., `sub_401159`) obscure the call graph slightly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are completely replaced with global address pointers (e.g., `printf(&g_403020)` instead of `printf("=== 测试基础调用约定 ===\n")`), making the output's intent opaque. Additionally, non-standard intrinsics like `AddV` appear in `func_mixed_args`.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output contains significant noise, including numerous "thunk" functions (e.g., `sub_401159`) that simply call the target function, and verbose stack pointer arithmetic in complex functions like `varargs_func`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple functions like `cdecl_func` are readable, complex control flows like `varargs_func` devolve into spaghetti code with pointer arithmetic and unexplained register moves (`v9 = v25`), failing to represent the `va_list` logic naturally.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decomposition matches the source granularity well, separating distinct test functions. However, the presence of many intermediate `sub_` wrapper functions fragments the view unnecessarily.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with appropriate early returns. Aside from the confusing varargs implementation, the flow is linear and easy to follow for standard logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: As expected with `-O0`, there is significant redundancy (e.g., `v0 = a0; v0 *= 2; return v0;` instead of `return a0 * 2;`). While this reflects the binary accurately, it hinders readability compared to the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic (`unsigned long`, `unsigned long long`) rather than specific (`int`, `size_t`). Signedness is frequently lost (e.g., `int` becomes `unsigned int`), and `char*` is sometimes demoted to generic integers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered at all. In `func_struct_byval`, the `LargeStruct` parameter is treated as a raw stack pointer (`ptr = &v3`), and fields are accessed via manual offset calculation (`ptr[8 * i]`) rather than field names.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code is littered with unsafe casts, such as `*(unsigned long **)&v21` and `*((unsigned int *[2])&v2[0])`, which obscure the actual data types and create potential for misunderstanding.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic, algorithms, or data structures. The only comments are header artifacts or specific error indicators like `Unsupported jumpkind`.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic calling conventions are recognizable by function names, but higher-level idioms like `va_list` usage in `varargs_func` are completely missed and represented as raw memory manipulation.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: One anomaly is explicitly flagged (`Unsupported jumpkind Ijk_SigTRAP`), but the disastrous decompilation of `varargs_func` and the use of the `AddV` intrinsic are not flagged as potential failures or uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For example, the null check in `param_double_ptr` is present but not semantically highlighted as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls use the recovered names, which helps significantly. However, global data references are opaque addresses (`g_403020`), making it hard to see what data is being accessed without cross-referencing the binary map.
+
+**17. Module Organization:** Score: 5/10
+Justification: The code is presented as a flat list of functions. While grouped by address, there is no logical separation (e.g., headers or sections) between the calling convention tests, parameter tests, and return value tests.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on undefined global variables (`g_403020`), uses non-standard intrinsics (`AddV`), and contains syntax errors or types that do not match standard C headers (e.g., `strlen` call without include or prototype context).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- String literals are replaced with opaque global pointers (e.g., `&g_403020`), destroying semantic meaning.
+- Composite types (structs) are completely unrecovered, replaced by raw pointer arithmetic and offsets.
+- Variable naming is entirely generic (`v0`, `a0`), failing to utilize debug symbol information.
+- Varargs functions (`varargs_func`) decompile into unreadable register/stack manipulation rather than `va_list` idioms.
+- Non-standard C intrinsics (`AddV`) appear in the output, preventing compilation and confusing logic.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- The decompiler successfully preserved the original function names (e.g., `cdecl_func`, `main`), which is the primary saving grace that allows the code to be mapped back to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct`, instead representing them as raw memory blobs accessed via byte offsets, makes understanding data structures nearly impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **String Literal Recovery**: Implement logic to map global data references back to their string literal values for immediate readability.
+2. **Struct Recovery**: Analyze stack access patterns (especially constant offsets like `ptr[8 * i]`) to reconstruct composite types and field accesses.
+3. **Debug Symbol Utilization**: Leverage the available debug information (metadata indicates `-g`) to restore original parameter and variable names instead of defaulting to `a0`, `v0`.

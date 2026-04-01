@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `p`. Despite `-O0` compilation with debug symbols, semantic names like `obj`, `capture_by_value`, or `result` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`), accurately reflecting the original source names. However, some runtime/internal functions remain as `sub_400d74`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, but magic numbers appear in `printf` calls (e.g., `4700`, `42`, `71`) without context, obscuring the expected test results logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts are present, such as redundant stack pointer assignments (`v0 = &v1`) and padding variables (`flag1`), which clutter the code without adding semantic value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Virtual function calls are represented as indirect jumps (`goto *((long long *)*((long long *)&arg_0))`), which is accurate assembly but unreadable C++. The logic of `test_cpp_member_func` is reduced to a flat sequence of assignments, losing the structured flow.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While functions are separated, several test functions like `test_cpp_constructor` and `test_cpp_virtual_func` are decompiled as empty `void` functions with just `return`, failing to recover the logic that was likely inlined or optimized away.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code reads linearly within functions, but the logic is often disjointed. For example, `test_cpp_oo_features` contains a long list of `printf` statements with hardcoded results rather than the sequential logic found in the source.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is no obvious loop unrolling, but the decompiler fails to eliminate redundant stack operations (e.g., `v0 = &v1` at the start of almost every function), which adds noise.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `unsigned int` are used, but object-oriented types are often degraded. The `this` pointer is frequently represented as `void*` (e.g., `void* this` in `Container::get`), losing type safety.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: While `class Base` is declared, complex classes like `SimpleClass` are not reconstructed; instead, their members are flattened into local stack variables (`v0`, `v1`). `struct struct_0` is used generically for RTTI objects.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on casts and raw pointer arithmetic. For instance, `*((char **)ptr) = &g_411d58` manually sets the vtable pointer, which is unsafe and low-level compared to the original C++ construction.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the purpose of the hardcoded constants, or the complex pointer arithmetic used for vtable setup.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and exception handling are reduced to low-level library calls (`__cxa_throw`, `operatornew`). The "Strategy" pattern of virtual functions is invisible behind the `goto` syntax.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently despite significant failures (e.g., empty function bodies for non-empty source functions). There are no warnings about potential decompilation errors or missing logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic of the test cases (asserting specific return values) is replaced by printing hardcoded numbers, losing the contract of the test.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Calls to standard library functions (`printf`, `strlen`) and C++ runtime functions (`__cxa_allocate_exception`) are clear. However, the relationship between the test functions and the classes they test is broken by the flattened stack variables.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a somewhat logical order, but the separation between class implementations and test functions is blurred by the generic naming and lack of struct definitions.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile as-is. It uses undefined symbols like `g_411ff8`, relies on specific memory layouts, and uses syntax like `goto *((long long *)...)` which is not valid standard C for function calls.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`), failing to use debug info from `-O0` build.
+- Logic of test functions (e.g., `test_cpp_member_func`) is lost or flattened into incoherent stack operations.
+- Virtual function calls are represented as unsafe indirect `goto` statements rather than method invocations.
+- `test_cpp_oo_features` contains hardcoded magic numbers in `printf` calls instead of the actual logic or function calls.
+- No comments or semantic annotations to explain the low-level C++ runtime mechanics.
+
+**Best Quality Aspect:** Function Naming (scored 8/10)
+- The decompiler successfully demangled C++ mangled names, making it easy to identify which source function corresponds to which decompiled function.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The decompiler fails to convey *what* the code is doing, translating high-level C++ concepts (objects, exceptions, RTTI) into raw assembly logic without any explanatory comments or high-level abstractions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Leverage Debug Symbols**: Prioritize using variable names from DWARF/debug info in `-O0` builds instead of generating generic `v0`, `v1`.
+2.  **Recover C++ Abstractions**: Implement specific lifting for C++ constructs, converting `vtable` loads and indirect jumps into virtual function calls (e.g., `obj->virtual_func()`).
+3.  **Annotate Runtime Mechanisms**: Automatically insert comments explaining C++ runtime operations (e.g., `// vtable setup`, `// exception throwing`) to make low-level code understandable.

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v1`, `v2`, `temp` are generic and obscure purpose (e.g., `v1` in `param_asm_clobber` should be `index`). Some parameters like `counter`, `increment`, `arr` are well-named, creating inconsistency.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (e.g., `param_macro_constants`, `call_asm_basic`) matching original source exactly. Action-oriented naming clearly indicates purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (1024, 512, 64, 0xdef0, 0x1234). Original macros like `MAX_SIZE`, `BUFFER_COUNT` were expanded to raw values losing semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Redundant casts present (e.g., `(int32_t)"\x17\x01"`). Invalid array initialization syntax (`arr = {1, 0, 0, 0, 0};`) is compiler artifact that should be cleaned.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/while/for), but `call_asm_privileged` has broken chained comparison (`v1 == 15 == v2 == 42 == ...`) which is syntactically incorrect C.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. Each test function is appropriately sized with clear single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. `param_asm_clobber` has awkward loop structure with duplicate initialization (`result = 0` appears twice).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Macro expansions are correctly simplified (ADD_16 → x + 16). Some redundancy in `param_builtin_macros` where line number appears as both string cast and integer.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `uint32_t` consistently. However, `param_asm_multi_insn` has wrong parameter type (`int32_t * src` should be `const void * src`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are recovered correctly. Original code had few structs, so limited opportunity for struct recovery. Stack arrays (`char dst[32]`) are properly typed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe cast `(int32_t)"\x17\x01"` treats string address as integer. `param_asm_multi_insn` has type mismatch between `char * dst` and `int32_t *` in memcpy call.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive Chinese documentation explaining macro behavior, test expectations, and assembly semantics—all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions recognized (SQUARE → x*x, ADD_16 → x+16). Assembly patterns converted to C but no explicit pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite issues. `__sync_fetch_and_add_4` calls `unknown_ffff0fc0` without warning. Broken comparison in `call_asm_privileged` not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). Error return values (-1, -2, -3) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph is clear through naming. Global variables (g1-g19) are opaque but their usage in printf is traceable.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Function prototypes grouped at top, implementations follow. Matches source organization reasonably. Test functions grouped logically.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile as-is. Invalid array initialization syntax (`arr = {1, 0, 0, 0, 0};`), missing headers for some functions, `unknown_ffff0fc0` undefined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5 + 9 + 4 + 6) / 4 = 6.00
+Level 2 (Structural):  (6 + 8 + 7 + 7) / 4 = 7.00
+Level 3 (Type):        (7 + 7 + 5) / 3   = 6.33
+Level 4 (Semantic):    (2 + 5 + 3 + 3) / 4 = 3.25
+Level 5 (Contextual):  (7 + 7 + 4) / 3   = 6.00
+
+Overall = (6.00 × 0.30) + (7.00 × 0.25) + (6.33 × 0.20) + (3.25 × 0.15) + (6.00 × 0.10)
+        = 1.80 + 1.75 + 1.27 + 0.49 + 0.60
+        = 5.91/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Zero comments** - All original documentation (Chinese explanations, test expectations, macro semantics) completely lost
+- **Magic numbers everywhere** - `MAX_SIZE` (1024), `BUFFER_COUNT` (16), `0xdef0` appear as raw literals without explanation
+- **Invalid C syntax** - Array initialization `arr = {1, 0, 0, 0, 0};` is not valid C and won't compile
+- **Broken comparison chain** - `v1 == 15 == v2 == 42 == ...` in `call_asm_privileged` is syntactically incorrect
+- **Unsafe type casts** - `(int32_t)"\x17\x01"` treats string address as integer without justification
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names are perfectly preserved from source, making code navigation and understanding significantly easier
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding macro semantics, test expectations, and assembly behavior extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant patterns and suggest named constants (e.g., detect `1024` used in size check → suggest `MAX_SIZE`)
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILE_UNCERTAIN: indirect call resolution`)
+3. **Fix syntax errors before output** - Validate generated C syntax (array initialization, comparison chains) to ensure compilability

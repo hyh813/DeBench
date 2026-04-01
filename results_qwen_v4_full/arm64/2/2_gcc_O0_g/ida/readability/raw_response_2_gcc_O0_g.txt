@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Simple functions preserve parameter names (`x`, `c`, `arr`, `n`), but test functions use generic `v0`, `v1`, `v2`... temporaries that obscure semantic meaning (e.g., `v0 = process_char(65)` should be `result_char`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `ptr_single`), though some runtime helpers use generic names (`sub_6D0`, `__addtf3`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40u`, `0x5Au` replace readable `'A'`, `'Z'` character literals; array initialization uses hex (`0x200000001LL`) instead of clear values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Test functions contain excessive temporary variables (`v0` through `v14`) from register spilling; runtime functions (`__addtf3` with 500+ lines) are extremely verbose.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions use natural if/else and for loops; `enum_switch` degraded from switch to if-else chain; loops generally recognizable despite `-O0` compilation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity (10-50 lines typical); each has single responsibility; no monolithic functions except compiler runtime helpers.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally; test functions are very linear; no excessive forward jumps or goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions have redundant temporary variable assignments (`v0 = process_char(65); printf(..., v0)`); runtime functions contain significant computational redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved but with degradation (`__int16` vs `short`, `__int64` vs `long`); pointer types mostly accurate; `long double` handling shows platform-specific types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs well-recovered (Point3D, Rect, Widget, Node with field names); bitfield struct (`Flags`) converted to manual bit operations losing semantic meaning; unions preserved.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Unsafe casts preserved from source (`(int)(long)handle`); void pointer usage matches original; no new type safety violations introduced by decompiler.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled output; original source had extensive test documentation; only decompiler header present with binary path information.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion, array summation) not identified or labeled; no design pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One warning present ("local variable allocation has failed" in `opaque_handle_create`); failed decompilations noted at end; minimal anomaly flagging otherwise.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented; bounds checks present but not explained; no contract inference for pointer validity or array sizes.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and direct; no call graph documentation; global variable usage not documented; callback relationships visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable source order; no file separation; static functions marked appropriately; test functions grouped logically.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 7 external functions marked "FAILED to decompile" (printf, puts, abort); requires library stubs; runtime functions (`__addtf3`, `__multf3`) need linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 6.25 | 30% | 1.875 |
+| L2: Structural Intelligibility | 7.25 | 25% | 1.813 |
+| L3: Type System Fidelity | 7.00 | 20% | 1.400 |
+| L4: Semantic Transparency | 3.75 | 15% | 0.563 |
+| L5: Contextual Coherence | 5.67 | 10% | 0.567 |
+
+**Overall Readability Score: 6.2/10**
+
+---
+
+### Critical Defects
+
+- **Variable `v0`-`v14` in test functions** should be named by purpose (e.g., `result_char`, `result_short`, `sum_value`) based on usage context
+- **Character literals converted to hex** (`0x40u`, `0x5Au` instead of `'A'`, `'Z'`) reducing immediate readability
+- **Bitfield struct lost semantic meaning** - `struct_bitfields` uses manual bit operations instead of named field access
+- **No comments recovered** from original source's extensive test documentation
+- **Switch statements degraded** to if-else chains (`enum_switch`) losing pattern clarity
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Functions maintain appropriate granularity with single responsibility; each test function is cohesive and properly separated without monolithic structures.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (3/10)** - Almost complete absence of documentation; original source had extensive comments explaining each test case's purpose and expected behavior.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover semantic variable names from usage patterns** - Analyze how `v0`, `v1` are used (e.g., passed to printf with format specifier) to infer meaningful names like `char_result`, `int_sum`
+
+2. **Preserve literal representations** - Keep character literals as `'A'` instead of `0x40u`; detect and restore named constants from debug symbols when available
+
+3. **Recover source comments from debug information** - With `-g` flag compilation, comment strings should be extractable and reattached to corresponding functions

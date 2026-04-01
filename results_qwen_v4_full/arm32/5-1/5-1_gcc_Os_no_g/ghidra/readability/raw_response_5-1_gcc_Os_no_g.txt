@@ -1,0 +1,114 @@
+## EVALUATION OF DECOMPILED C++ CODE
+
+### === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_c`, `iVar1`, `puVar1`, `local_10` with zero semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), but helper functions use address-based names (`FUN_000109bc`) and class methods lack clear ownership indication.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x3e9`, `0x15`, `0x47`, `0x55`, `0x2bf` are computed results that should be expressed as operations. String literals reduced to `&DAT_00011866`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks appear in every function (`if (local_c != 0) { __stack_chk_fail(); }`). Multiple "WARNING: Removing unreachable block" annotations clutter the output without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling completely lost (try-catch blocks flattened to direct `__cxa_throw` calls). Virtual function calls treated as indirect jumps with warnings ("Could not recover jumptable").
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many test functions reduced to constant returns (`test_cpp_multiple_inheritance` returns `0x47` directly). Class methods scattered without logical grouping by class.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Stack check branches disrupt reading flow in every function. Forward references to data (`&DAT_00011866`) require scrolling to understand.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple thunk versions of same destructor (`~DiamondDerived` appears 8+ times with variations). While technically correct for C++ vtables, this creates significant visual noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined**` instead of precise types. Some template types preserved (`Container<int>`, `unique_ptr<int[]>`) but most C++ types degraded to generic pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/class definitions recovered. Member access via pointer arithmetic (`*(int *)(this + 4)`, `*(int *)(this + 0x28)`) instead of field names. Vtable layouts completely opaque.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(undefined4 *)`, `(undefined **)`, `(Base *)&local_18`. Calling convention mismatches flagged but not resolved ("Unknown calling convention -- yet parameter storage is locked").
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings only ("WARNING: Subroutine does not return"). No semantic explanations of algorithm intent or C++ feature recovery (RAII, virtual dispatch, etc.).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms completely unrecognized: RAII patterns appear as manual destructor calls, virtual dispatch shown as raw vtable dereferences, exception handling reduced to `__cxa_*` calls without try-catch structure.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Could not recover jumptable", "Unknown calling convention") but warnings are generic and don't guide manual analysis. No confidence levels provided.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition/postcondition documentation. Exception guarantees not captured. No indication of null checks, bounds validation, or ownership semantics despite smart pointer usage.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but inheritance relationships unclear. Virtual dispatch through `**(undefined4 **)param_1` obscures which methods can be called. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 86 functions in single output with no logical grouping. Class methods not grouped by class. Initialization functions (`_GLOBAL__sub_I_*`) scattered among test functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile without extensive stubs. Missing type definitions for all classes. External runtime calls (`__cxa_allocate_exception`, `operator_new`) undeclared. Architecture mismatch (ARM32 vs arm64 source).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+3+4)/4 = 3.50
+Level 2 Average: (4+5+5+5)/4 = 4.75
+Level 3 Average: (4+3+3)/3 = 3.33
+Level 4 Average: (4+3+5+2)/4 = 3.50
+Level 5 Average: (4+4+3)/3 = 3.67
+
+Overall = (3.50 × 0.30) + (4.75 × 0.25) + (3.33 × 0.20) + 
+          (3.50 × 0.15) + (3.67 × 0.10)
+        = 1.05 + 1.19 + 0.67 + 0.53 + 0.37
+        = 3.81/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Variable `local_c`, `iVar1`, `puVar1`** should be named based on semantic usage (e.g., `stack_canary`, `result`, `exception_ptr`)
+- **Magic numbers `0x125c`, `0x3e9`, `0x47`** are computed results that should show actual arithmetic operations
+- **Exception handling structure lost** - try-catch blocks flattened to direct `__cxa_throw` calls
+- **No class/struct definitions recovered** - all member access via pointer arithmetic obscures object layout
+- **Virtual dispatch opaque** - vtable calls shown as `(**(code **)param_1)()` without method identification
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Test function names were preserved from debug symbols, providing some anchor points for understanding the code's purpose.
+
+### Most Needs Improvement:
+- **Variable Naming Quality (2/10)** - Complete failure to infer semantic meaning from usage patterns; every variable is generic, making data flow tracking extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming** - Analyze how variables are used (e.g., `local_c` always compared to 0 for stack checks) to infer meaningful names like `stack_canary`.
+2. **Recover C++ semantic structures** - Recognize `__cxa_*` patterns as exception handling and reconstruct try-catch blocks; identify vtable patterns and label virtual method calls.
+3. **Constant folding reversal** - When functions return constants like `0x47`, trace back through the binary to show the original computation (`30 + 40 + 1`) rather than pre-computed results.
+
+---
+
+### Additional Observations:
+
+**Optimization Level Mismatch:** Source claims `-O0 -g` (debug), but decompiled code shows significant optimization (constant folding, function simplification). This suggests either the binary metadata is incorrect or Ghidra is applying aggressive simplification.
+
+**Architecture Discrepancy:** Source metadata says `arm64` but decompiled binary shows `ARM` (32-bit). This affects pointer sizes and calling conventions, contributing to type recovery issues.
+
+**C++ Feature Recovery Gap:** Advanced C++ features (templates, lambdas, virtual inheritance, RTTI) are particularly poorly recovered. The decompiler handles simple functions better but struggles with C++ ABI complexity.

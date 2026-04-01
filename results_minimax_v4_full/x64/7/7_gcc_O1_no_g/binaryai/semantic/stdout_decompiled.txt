@@ -1,0 +1,5 @@
+test_obf_opt_edge
+
+Value: 10
+Opaque predicate: 20
+Instruction substitution: e1

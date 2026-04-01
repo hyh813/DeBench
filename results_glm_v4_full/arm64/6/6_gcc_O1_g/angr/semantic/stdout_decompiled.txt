@@ -1,0 +1,6 @@
+
+=== Standard Library Functions Test ===
+
+  strcpy: 8
+  strcmp: 2
+  strlen: 12

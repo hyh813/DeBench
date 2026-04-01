@@ -1,0 +1,12 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=-1209409536,Arg1=0,Arg2=0,Arg3=-1211240543|eax=0xb7e9fdd8,ebx=0x0,ecx=0x52a4ad75,edx=0xbff25b74,esi=0xb7e9e000,edi=0x0
+TRACE_ENT|1|call_strcpy|1|Arg0=134533401,Arg1=-1208964048,Arg2=0,Arg3=-1208967168|eax=0x12,ebx=0x0,ecx=0x0,edx=0xbff234d4,esi=0xb7e9e000,edi=0x0
+TRACE_ENT|2|param_strcpy|2|Arg0=-1074636124,Arg1=134526080,Arg2=-1211043797,Arg3=0|eax=0x804b480,ebx=0x0,ecx=0xbff25aa4,edx=0xbff234d4,esi=0xb7e9e000,edi=0x0
+TRACE_EXT|2|param_strcpy|2|-1074636124
+TRACE_EXT|1|call_strcpy|1|-1074636124
+TRACE_ENT|3|call_strcmp|1|Arg0=134533420,Arg1=-1074636124,Arg2=0,Arg3=-1208967168|eax=0x1b,ebx=0x0,ecx=0x0,edx=0xbff234d4,esi=0xb7e9e000,edi=0x0
+TRACE_ENT|4|param_strcmp|2|Arg0=134533372,Arg1=134533378,Arg2=-1074645804,Arg3=0|eax=0x804d0fc,ebx=0x0,ecx=0x804d102,edx=0xbff234d4,esi=0xb7e9e000,edi=0x0
+TRACE_EXT|4|param_strcmp|2|-1
+TRACE_ENT|5|param_strcmp|2|Arg0=134533384,Arg1=134533384,Arg2=-1074645804,Arg3=0|eax=0xffffffff,ebx=0x0,ecx=0x804d108,edx=0x804d0fc,esi=0xb7e9e000,edi=0x0
+TRACE_EXT|5|param_strcmp|2|0
+TRACE_ENT|6|param_strcmp|2|Arg0=134533389,Arg1=134533395,Arg2=-1074645804,Arg3=0|eax=0x0,ebx=0x0,ecx=0x804d10d,edx=0x804d113,esi=0xb7e9e000,edi=0x0
+TRACE_EXT|6|param_strcmp|2|-1

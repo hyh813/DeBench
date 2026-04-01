@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/7/7_clang_O2_g/ida/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "test\n10L403: 20\nL404: 225\nL405: 89\nL401: 500500\nL401_0: 5050\nL402: 72\nL501: 20\nL301: 1\nL302: 41\nL303: 30\nL304: 2000000000\nL401: 10\nL402: 47\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

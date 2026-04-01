@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original source demonstrates "fake branch" obfuscation (OBF-L4-02) with always-false conditions that should be preserved in decompilation. The decompiled version critically fails to recover this obfuscation pattern.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`. Local variables use cryptic names like `v0`, `v1`, `v6`, `v7`, `flag1`, `flag2`, `flag3`, `flag4`. The decompiled code provides no semantic hints about variable purpose (e.g., `result`, `str`, `p1`, `p2` from source).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` are correctly named. However, many helper functions use mechanical names like `sub_400874`, `deregister_tm_clones`. The target function name is recovered correctly.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Critical literals are completely lost. The magic constant `0xDEADBEEF` from the fake branch is eliminated entirely. The string "test" used in `strlen(str) < 0` check is gone. Other constants like `90` (for XOR key) appear without explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Most frame setup artifacts like `char *v0; char v1; v0 = &v1;` are minimal and don't significantly impede reading. Some spurious variables present but manageable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **CRITICAL DEFECT** - The fake branches are completely eliminated! Original has two always-false conditions (`x*x < 0` and `strlen(str) < 0`), but decompiled `param_fake_branch` simply returns `a0`. This destroys the semantic purpose of the obfuscation technique. The control flow structure is fundamentally incorrect.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately separated with clear single responsibilities. The target function and its caller are properly decomposed. Good granularity across all functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. The simple `param_fake_branch` has no jumps. Other functions like `param_opaque_predicate` have manageable flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. The decompiled code is relatively clean in this regard.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters use `unsigned int` when original uses `signed int`. For `param_fake_branch`, this changes semantics slightly. The `unsigned int *ptr` in `param_null_pointer_deref` loses the original intent. Mixed precision throughout.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: For this specific function, there are no complex composite types. The bitfield in `param_implementation_defined` is partially recovered but with unclear field names. Generally acceptable for this target.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The extensive use of `& 4294967295` (masking to 32-bit) throughout suggests type confusion. Pointer arithmetic in `param_buffer_overflow_stack` uses cryptic indexing: `*((char *)&v6 + i)`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. The original source has extensive comments explaining obfuscation techniques (e.g., "OBF-L4-02: 虚假分支（永假）"). None of this semantic information is recovered.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: **CRITICAL** - The fake branch idiom is completely unrecognized. The always-false conditions (`x*x < 0`, `strlen(str) < 0`) that are central to the obfuscation technique are entirely eliminated. The opaque predicate pattern in `param_opaque_predicate` is present but not identified as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that branches were eliminated or that semantic information was lost. The decompiler silently produces incorrect code without flagging the anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. The implicit contract that `param_fake_branch` should preserve the fake branch logic is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear (e.g., `call_fake_branch` calls `param_fake_branch`). External references like `signal`, `longjmp`, `malloc` are properly declared as extern. Some globals like `$d` are cryptic.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. The test harness functions are separated from the core logic. However, all in single file with arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has many `extern` declarations for runtime functions. The `__stack_chk_guard` references require linking with libc. May require moderate patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Fake branches eliminated**: `param_fake_branch` returns `a0` directly, completely losing the obfuscation technique (`x*x < 0` and `strlen(str) < 0` conditions gone, along with `0xDEADBEEF` constant)
+- **No idiom recognition**: The "永假" (always-false) branch pattern is not identified or preserved
+- **No comments**: All semantic documentation from source lost (OBF-L4-02, SCENE-CRYPTO, etc.)
+- **Type precision issues**: Parameters use `unsigned int` instead of `signed int`, changing semantics
+- **No anomaly indication**: Decompiler silently discards significant semantic information without warning
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Functions are well-separated with appropriate granularity. The target function and its caller are properly decomposed.
+
+**Most Needs Improvement:** Control Flow Naturalness & Idiom Recognition (both 1-2/10)  
+- The fake branch obfuscation pattern is completely eliminated, destroying the semantic purpose of the code. This is the most severe readability failure as it renders the decompiled code useless for analyzing the obfuscation technique.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve dead code branches**: Detect always-false conditions (like `x*x < 0` for signed integers) and preserve them as obfuscation indicators rather than eliminating them
+2. **Add idiom recognition comments**: When detecting patterns like fake branches, opaque predicates, or instruction substitution, add comments identifying the technique
+3. **Flag semantic loss**: When decompilation eliminates code paths (even "unreachable" ones), add an annotation like `// NOTE: 2 unreachable branches eliminated` to preserve analyst awareness

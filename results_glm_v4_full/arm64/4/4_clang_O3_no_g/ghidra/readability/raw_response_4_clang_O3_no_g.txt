@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `local_8`, `uVar1`). In `varargs_func`, usage of `register0x00000008` and `stack0xffffffffffffffe0` obscures the `va_list` semantics entirely.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `stdcall_func`, and `main` are perfectly recovered, likely due to the presence of symbol information in the binary, matching the source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `0xf`, `0x32`, `0x2a`) and array offsets (e.g., `param_1[0x1e]`), making it difficult to connect values to their original semantic meaning without manual calculation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including Ghidra-specific macros like `CONCAT44` in `ret_large_struct`, artificial references like `register0x00000008` in `varargs_func`, and `DAT_` references for string literals.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The `varargs_func` decompilation is highly unnatural, using nested `do-while` loops and manual pointer arithmetic (`local_8` manipulation) instead of a standard `for` loop with `va_arg`, making the logic hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source (excluding inlined calls in `test_...` functions), maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While simple functions are linear, complex functions like `param_ptr_array` and `varargs_func` contain convoluted loop structures and pointer arithmetic that disrupt top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler's optimization (likely -O3 based on the binary path) successfully inlined and constant-folded logic in `test_calling_conventions`, resulting in clean (though semantically empty) sequences of `printf` calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost; `func_struct_byval` takes an `int *` instead of a `LargeStruct`, and `ret_small_struct` returns a `ulong` instead of a struct, obscuring the original data structures.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed significantly. `LargeStruct` and `SmallStruct` are completely flattened into raw pointers (`int *param_1`), with members accessed via byte offsets (e.g., `param_1[0x1e]`) rather than field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiled code relies on unsafe casts and pointer arithmetic to access struct members (e.g., treating a struct pointer as an int array), which is technically accurate for the binary but type-unsafe compared to the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to generic warnings like "Removing unreachable block" and provide no insight into the algorithm's purpose or the logic behind complex pointer manipulations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed; the `varargs_func` implementation is not recognized as a variadic function pattern, and struct passing by value is not identified, appearing instead as pointer manipulation.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra correctly flags "Removing unreachable block" warnings and identifies `register0x00000008` usage, alerting the user to low-level register access that might be anomalous in high-level C.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement that `param_1` in `func_struct_byptr` is non-null is checked but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clearly resolved to their targets, and the relationship between callers (e.g., `test_calling_conventions`) and callees is preserved and easy to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is a standard flat listing of functions, which is acceptable, though it lacks the logical grouping or comments indicating sections (e.g., "4.1 Calling Conventions") present in the source.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific macros (`CONCAT44`) and undefined data references (`DAT_00101752`), requiring significant manual patching to compile or run standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost and replaced by raw pointer arithmetic and magic number offsets (e.g., `param_1[0x1e]`).
+- The variadic function pattern (`varargs_func`) is decompiled into low-level register/stack manipulation (`register0x00000008`), losing the `va_list` idiom.
+- Constant propagation in test functions (e.g., `test_calling_conventions`) has replaced logic with hardcoded magic numbers (`0xf`, `0x32`), obscuring the original test intent.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the original function names from symbols, making the high-level purpose of each unit immediately identifiable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `LargeStruct` and `SmallStruct` definitions, instead representing them as generic `int*` with offset access, is the single biggest barrier to understanding the data manipulation logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve hidden pointer analysis to recover struct definitions passed by value, especially for large structs where the pointer is explicit in the ABI.
+2. Enhance pattern recognition for variadic functions (`va_start`, `va_arg`) to abstract away low-level stack/register walking.
+3. Implement logic to annotate constant-folded values with their original expressions (e.g., comment `/* 5 + 10 */` next to `0xf`) to preserve semantic intent in optimized code.

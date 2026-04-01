@@ -1,0 +1,7 @@
+Testing obfuscation and optimization techniques:
+Fake branch result: 10
+Opaque predicate result: 20
+Instruction substitution result: 225
+String encryption result: 131
+Tail call optimized result: 500500
+Non-tail call result: 5050

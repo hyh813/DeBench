@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original names like `result`, `encrypted`, `decrypted`, `heap_buffer`, `canary` are completely lost. Only occasional names like `cur`, `idx`, `flag1` provide minimal hints.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `param_fake_branch`, `param_opaque_predicate`, `main` are preserved, but dozens of helper functions use address-based names (`sub_401030`, `sub_40103c`). Critical bug: `call_string_encryption` shows `return;` without value, breaking semantics.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `90` (should be `0x5A` XOR key), `4294967295` (UINT_MAX/-1), `43` in `param_implementation_defined`. Original `0xDEADBEEF` dead code is completely eliminated, losing obfuscation intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: 20+ struct definitions with `padding_0` fields, multiple `__x86.get_pc_thunk.*` variants, `[D] Unsupported jumpkind Ijk_SigTRAP` error message embedded in code. Runtime init functions (`deregister_tm_clones`, `register_tm_clones`) clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` collapses to single `return a0;` losing both fake branches entirely. `param_opaque_predicate` retains while loop but with awkward `CONCAT` operations. Some functions use `goto v1->field_3c;` instead of proper calls.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original ~20 functions mostly preserved, but fragmented with chains like `sub_40103c`→`sub_401040`→`sub_401050`. `call_string_encryption` missing return value. Tail recursion correctly converted to iteration in `param_tail_call_optimized`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Loop structures recognizable in `param_vectorized_loop`. Stack canary checks add complexity but follow patterns. Goto usage minimal except in runtime helpers.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Struct definitions repeat with different padding layouts throughout file. Multiple near-identical thunk functions. `param_instruction_substitution` correctly simplified bit ops to arithmetic (`a0 * 6 + (a0 >> 1) + ...`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters degraded to `unsigned int` or `int`. Original `int x` becomes `unsigned int a0` in `param_fake_branch` (signedness lost). Pointer vs array distinction blurred. No `size_t`, `uint32_t` precision recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered but with generic fields (`field_0`, `padding_0[60]`). Original bitfield struct in `param_implementation_defined` completely lost. Padding dominates struct definitions with no semantic field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit casts throughout (`(char *)`, `(int *)`). Pointer arithmetic on generic `void*`. Function pointer calls use generic signatures. Stack canary checks introduce type confusion with `_ccall` helper.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment `// Angr Decompilation of 7_gcc_Os_g`. Zero comments explaining algorithm purpose, non-obvious logic, or decompilation confidence. Original extensive comments (obfuscation explanations, expected values) completely absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Tail call optimization correctly recognized and converted to loop. Instruction substitution patterns simplified. Opaque predicate logic partially preserved but not identified as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198907()`. No warnings about `param_fake_branch` branch elimination, missing return values, or potential undefined behavior in signal handlers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 != 0` for division). No postconditions. Error conditions in signal handlers undocumented. Original expected return values (comments like `// 期望：10`) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but globals use opaque names (`g_402060`, `g_40208d`). Signal handler callbacks (`div_zero_handler`, `segv_handler`) not linked to registration sites. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address, not logical grouping. Related functions (`param_*` and `call_*` pairs) scattered. No file organization, no static scoping indication, no namespace structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile: undefined `_ccall` function, struct redefinition conflicts, architecture mismatch (original ARM64, decompiled X86), missing external declarations. Requires extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+```
+Level 1 (Lexical):     (3+5+5+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (4+4+2)/3   = 3.33 × 0.10 = 0.333
+---------------------------------------------------------
+Total:                                          = 4.143
+```
+
+**Critical Defects:**
+- `param_fake_branch` completely loses both fake branch conditions (returns `a0` directly)
+- `call_string_encryption` missing return value (`return;` instead of `return result;`)
+- All variable names generic (`v0`, `v1`, `a0`) losing semantic meaning from original
+- Architecture mismatch: original ARM64 compiled, decompiled as X86
+- Zero comments explaining obfuscation intent or expected behavior
+- Struct fields all generic (`field_0`, `padding_0`) with no semantic recovery
+
+**Best Quality Aspect:** Structural Intelligibility (scored 5.25/10)  
+- Core function structure mostly preserved with recognizable control flow patterns despite optimization artifacts
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.25/10)  
+- Complete absence of comments, no contract documentation, and minimal anomaly indication makes understanding intent nearly impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve semantic branch conditions**: Detect and retain dead code branches that serve obfuscation purposes, even if compiler would eliminate them
+2. **Recover variable names from debug symbols**: With `-g` flag present, original variable names (`result`, `str`, `encrypted`) should be recovered from DWARF info
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (e.g., `// DECOMPILE_UNCERTAIN: indirect call`) and document eliminated optimizations

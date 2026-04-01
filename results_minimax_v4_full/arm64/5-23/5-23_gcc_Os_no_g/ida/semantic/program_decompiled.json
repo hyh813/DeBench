@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/5-23/5-23_gcc_Os_no_g/ida/syntactic/bin/5-23_gcc_Os_no_g_fixed",
+  "stdout": "Testing preprocessing features:\nMACRO_CONSTANT_1 = 64\nMACRO_CONSTANT_2 = 30\nMACRO_CONSTANT_3 = 32\nMACRO_CONSTANT_4 = 57122\nMACRO_CONSTANT_5 = 116\nMACRO_CONSTANT_6 = 19\nMACRO_CONSTANT_7 = 60\nLOG: Values: 10, 20, 30\nMACRO_CONSTANT_8 = 60\nMACRO_CONSTANT_9 = 16\nMACRO_CONSTANT_10 = 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:35\nMACRO_CONSTANT_11 = 382\nTesting asm features:\nASM_BASIC = 15\nASM_CLOBBER = 1589739286\nASM_MULTI_INSN = 42\nASM_SIMD = 42\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

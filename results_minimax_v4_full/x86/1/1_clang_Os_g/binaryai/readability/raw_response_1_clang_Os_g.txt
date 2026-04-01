@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `puVar2`. At -O0 with debug symbols, these should be recoverable. Data references like `DAT_00012038` and `PTR_double_value_00014ec8` are absolute addresses, completely obscuring semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most target functions correctly named: `sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`. However, some helper functions use generic names like `FUN_00011030`, `FUN_000112bc`. External functions properly marked with `<EXTERNAL>::` prefix.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions use hardcoded hex values (`0x15` for 21, `0x14` for 20) instead of computed results. Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` (18) appear without explanation. The formula `param_1 * 10 + 10` in `if_elseif_chain` obscures the original switch-case pattern.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. No obvious register spills or debug instrumentation. Some type casts present but not excessive. The code is relatively clean from a noise perspective.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Severe control flow obfuscation at -O0. `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of if-else. `nested_if_2` uses arithmetic `param_2 + param_1` instead of branches. `loop_for_fixed` uses complex formula `((param_1-1)*(param_1-2)>>1) + param_1 - 1` instead of loop. `loop_while` uses unusual condition `0x12 < uVar2` (18 < x+9). These transformations are inappropriate for debug build.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with good separation. No 500-line monoliths. Test functions properly grouped. Parameter lists reasonable, though some expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some forward jumps in complex functions like `duffs_device` with labeled switch cases. Deep nesting in `nested_if_deep` (5 levels) but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling present in `duffs_device` but structurally preserved with labeled cases. Some duplicate expressions in test functions but minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic `int` throughout. Some `uint`, `longlong`, `undefined4`, `byte`, `bool` present. Function pointers use generic `code *` type. No `int32_t`, `size_t`, or const correctness. At -O0, debug info should enable precise types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery visible. Arrays accessed via raw pointer arithmetic: `*(undefined4 *)(param_1 + iVar2 * 4)`. Data structures like `matrix[3][4]` in `loop_multi_exit` reduced to `&DAT_0001204c` with manual index calculations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Pointer arithmetic throughout: `puVar2 + 1`, `param_1 + iVar2 * 4`. Function pointer type confusion: `code *` vs actual function signatures. Some unsafe casts present but no buffer-overflow-prone patterns obvious.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only auto-generated header comment at top. No useful comments explaining algorithm logic, no decompilation confidence indicators, no @param/@return documentation. Zero helpful comments for complex functions like `duffs_device` or `nested_if_deep`.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns structurally present but not named. `duffs_device` has labeled switch cases but no comment identifying it. State machine patterns in `fsm_func_table` use function pointer array but not explicitly identified. No algorithm naming (Duff's device, Collatz conjecture, etc.).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of suspicious code. Indirect calls in `call_func_ptr_array` use `(*(code *)(&PTR_double_value_00014ec8)[param_1])` without warning. No flags for unusual stack layouts or potential undefined behavior. Code confidently presents everything as correct.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling paths. No invariant recognition. Functions like `op_div` with division-by-zero check lack "requires: param_2 != 0" documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions marked with `<EXTERNAL>::printf`. Function pointers have some naming: `PTR_double_value_00014ec8`, `PTR_op_add_00014ed4`. But no documentation of call graph relationships, no indication of who calls whom, no global variable usage transparency.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: control flow L1, L2, L3 functions together, test functions grouped, operators grouped. Static functions properly scoped. But all in single file with no header/API separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs for external functions. Dependencies documented via `<EXTERNAL>` markers. No obvious compiler-specific hacks. However, `undefined4`, `bool`, `code` types may need typedefs for standard compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `param_N` and locals use `iVarN`/`uVarN` - at -O0 with debug symbols, original names should be recovered
+- **Control flow naturalness**: Arithmetic transformations replace branches (`param_1 << (0 < param_1)` for if, complex formulas for loops) - inappropriate for debug builds
+- **No comments**: Zero useful comments explaining algorithms, contracts, or anomalies
+- **Type precision**: Generic `int` and `undefined4` instead of debug-informed precise types
+- **Composite type loss**: All structs/unions lost, accessed via raw pointer arithmetic
+
+### Best Quality Aspect: Function Naming (8/10)
+Most target functions correctly named matching source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), making it easy to locate the right functions.
+
+### Most Needs Improvement: Comment Quality & Anomaly Indication (both 1/10)
+Zero helpful comments and no flags for suspicious code. At -O0, decompilers should have high confidence and should document uncertainties.
+
+### Top 3 Recommendations:
+1. **Recover debug symbols**: At -O0, variable names from DWARF debug info should be extracted and used instead of generic `param_N`/`iVarN`
+2. **Preserve control flow structures**: Don't transform if-statements into arithmetic at debug optimization level - use natural branch constructs
+3. **Add semantic comments**: Document identified patterns (Duff's device, state machines), flag indirect calls, and add @param/@return contracts

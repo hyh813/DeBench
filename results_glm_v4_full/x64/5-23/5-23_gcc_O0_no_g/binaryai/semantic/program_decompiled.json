@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_O0_no_g/binaryai/syntactic/bin/5-23_gcc_O0_no_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\nmacro_constants: 64\nmacro_functions: 30\nconditional_compile: 32\nmulti_branch_compile: 57122\nmacro_recursion: 116\nstringize: 19\ntoken_paste: 60\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

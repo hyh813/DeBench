@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, `process_char` uses `a0` instead of `c` or `character`, and test functions use `v0` for expected output values that should be named descriptively.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`) which is good, but wrapper functions use meaningless `sub_401XXX` names (e.g., `sub_401216` wraps `process_short`), and runtime functions like `_init`, `_start` are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `0xfffffff8`, `0xffffff00`. String literals are externalized as `g_4035bf`, `g_4035e0` losing readability. Character literals like `97`, `98` in test functions aren't shown as `'a'`, `'b'`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with `[D] Unsupported jumpkind` and `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers throughout. Bizarre struct padding like `padding_0[20211]` and `padding_0[15315]` are decompiler artifacts, not real code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use `goto` instead of proper loops (`sub_401030`, `sub_401070`). Loop unrolling is present but recognizable. Floating point functions have completely broken control flow with unsupported operation branches that don't represent actual logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Individual functions are appropriately sized, but test functions are monolithic (e.g., `test_data_types_l1` is 80+ lines). Critically, test functions don't actually call the functions they test—they just print hardcoded expected values, breaking semantic coherence.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Do-while loops are used appropriately for iteration. However, forward jumps in some functions (`sub_401030` jumps to `ptr[2]`) disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling creates repetitive addition patterns (8-element unrolled loops). Struct definitions are duplicated multiple times with slight variations. The same padding patterns appear across unrelated structs indicating decompiler confusion.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion: all integers become `unsigned int` regardless of original type (`short`, `long`, `long long` all lost). Floating point functions (`process_float`, `process_double`, `process_ld`) are completely broken with no float types recovered. Pointer types degraded to `unsigned int *` or `void*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered but with generic field names (`field_0`, `field_4`) losing semantic meaning. `Point3D` fields `x`, `y`, `z` become `a0[0]`, `a0[1]`, `a0[2]`. Bitfields in `struct_bitfields` are converted to manual bit operations losing the bitfield semantics. Padding arrays are nonsensical (`padding_0[20211]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic (`ptr + index * 4`), function pointers called as `a0(a1)` without proper signatures, void pointer casts without type information. `ptr_const_ptr` incorrectly returns `*(ptr) + 5` instead of just `*(ptr)` after modification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no parameter documentation. `[D]` tags indicate errors but don't explain what went wrong or how to fix it. Original source comments are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not recognized: linked list traversal in `linked_list` and `doubly_linked_list` appears as raw struct field access without pattern identification. Array summation loops aren't identified as reduction patterns. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` tags do mark unsupported operations (floating point SIMD, indirect jumps), which is valuable. However, the markers don't explain the nature of the problem or suggest manual analysis approaches. Some anomalies silently fail without indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds requirements). No postconditions or return value guarantees. Error conditions like `array_oob`'s undefined behavior aren't flagged.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls exist but test functions don't actually invoke tested functions—they print hardcoded expected values instead. Global variables referenced as `g_4035bf` without context. Callback relationships in `ptr_func_complex` are unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly source order but all in one file. No header file separation. Static functions not properly scoped. Related functions (data types, arrays, pointers, composites) are grouped but not explicitly organized.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile as-is: `[D]` unsupported operations are syntax errors, external dependencies (`_GLOBAL_OFFSET_TABLE_`, `g_4035bf`) need stubs, struct definitions conflict. Requires extensive manual patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type System): (3+4+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (4+5+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.09/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Floating point functions completely broken**: `process_float`, `process_double`, `process_ld` contain `[D] unsupported` markers and don't represent actual computation
+- **Test functions don't call tested functions**: `test_data_types_l1` prints hardcoded values instead of calling `process_char()`, `process_int()`, etc.
+- **Type information severely degraded**: All numeric types collapsed to `unsigned int`; `short`, `long`, `long long`, `float`, `double` distinctions lost
+- **Nonsensical struct padding**: `padding_0[20211]`, `padding_0[15315]` are decompiler errors, not real code
+- **No semantic variable names**: Everything is `v0`, `v1`, `a0`, `a1` making data flow tracking difficult
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core computational functions retained their original descriptive names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; original source had extensive documentation explaining each test case's purpose, all lost in decompilation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover floating point operations properly** - Current output with `[D] unsupported` markers is unusable; implement proper x87/SSE instruction translation
+2. **Preserve test function semantics** - Detect printf patterns with format strings and recover the actual function calls being tested, not just hardcoded expected values
+3. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, loop indices should be `i`/`j`/`index`, pointer parameters should indicate pointee type

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` and local variables use opaque names like `v1`, `v2`, `v3`, `result`. For example, in `sequential_ops`, parameters should be `a`, `b`, `c` based on the source, but are decompiled as `a1`, `a2`, `a3`. The variable `result` is reused across different functions with different semantics.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names correctly match the original source (e.g., `sequential_ops`, `single_if`, `if_else`, `recursion_factorial`). However, some optimization artifacts appear (e.g., `non_local_jump.constprop.0`) and some helper functions have generic names. The core function names are accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `1001` in loop bounds, `8` in switch fallthrough calculations, `100 * (a1 + 1)` computed inline. The switch jump table `CSWTCH_56` is referenced but not defined in the output. String literals like `s` and `asc_11DE0` are referenced but their contents not shown.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The `__fastcall` annotations are appropriate for the architecture. Some stack frame manipulation visible but not excessive. The code is relatively clean without redundant casts or debug instrumentation cluttering the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recognized as for/while constructs. Switch statements are used appropriately. The `duffs_device` function correctly uses goto labels for fallthrough. At O3 optimization, some loop unrolling is expected and present (e.g., `loop_for_fixed` uses do-while). Overall, control flow is natural and readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. No 500-line monoliths observed. Helper functions like `double_value`, `triple_value` are properly extracted as static functions. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `multi_return`. Some forward jumps in complex functions like `duffs_device` and `loop_complex_cond` but these are necessary for the logic. No excessive nesting disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling is present but minimal (e.g., `loop_for_fixed`). No significant dead code observed. Common subexpressions are not heavily duplicated. The code is reasonably clean without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most parameters use `int` which is appropriate for ARM32. Function pointers have proper signatures (e.g., `int (__fastcall *a1)(int)`). Some `_DWORD` usage indicates 32-bit types. Minor type erasure but nothing severe - the types are adequate for understanding.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. Arrays are accessed via pointer arithmetic (e.g., `*(_DWORD *)(v7 + 4)`). The switch jump table `CSWTCH_56` is referenced but not properly reconstructed as a constant array. Some function pointer arrays like `v4[11]` in `large_jump_table` are created locally but with generic types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic in array access (`*(_DWORD *)(v7 + 4)`), function pointer type confusion in `call_func_ptr_array` where `v4` is used incorrectly. However, these are manageable and the code can be reasoned about. No severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very sparse comments in the decompiled output. No explanation of algorithm logic, preconditions, or postconditions. The only comments are the header indicating "Decompiled by IDA Pro 9.1 with Hex-Rays" and some failed decompilation notices. No documentation of what the functions do or how they relate to the source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow patterns are recognized (loops, switches, conditionals). The `duffs_device` pattern is correctly identified with goto labels. However, no explicit naming of design patterns (state machine, strategy, etc.) even when they are present. Some pattern hints but not explicitly called out.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilation messages present for import functions (`__imp_puts`, `__imp_memset`, etc.). However, no explicit flags within the decompiled functions themselves for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The anomalies are noted at the file level but not within function bodies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No implicit preconditions, postconditions, or invariants documented. No error condition documentation. The function `non_local_jump` uses `setjmp`/`longjmp` but no contract about jump buffer state is documented. No recovery of any contracts from the original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. The test functions call the target functions correctly. However, no documentation of caller/callee relationships, no indication of which functions are public API vs. internal helpers, and no global variable usage transparency.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, helper functions (double_value, triple_value) near their usage, state machine functions grouped. Static functions are properly scoped. The organization follows a reasonable pattern even if it doesn't match the original source file structure exactly.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code appears structurally ready to compile. External dependencies (libc functions) are referenced but not declared. The `__fastcall` and other annotations may need adjustment for different compilers. No clear documentation of what headers or libraries are needed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses opaque generic names (`a1`, `a2`, `v1`, `v2`, `result`) that obscure semantic purpose
+- No comments explaining algorithm logic, preconditions, or postconditions
+- Composite types (structs) not recovered; all accessed via pointer arithmetic
+- Magic numbers like `1001`, `8` in switch calculations unexplained
+- No contract or assertion recovery from original source
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with clear single responsibilities. Helper functions are properly extracted and parameter lists are reasonable.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic parameter names (`a1`, `a2`, `a3`) and local variables (`v1`, `v2`, `v3`, `result`) make code extremely difficult to follow. The decompiler should infer semantic names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 + a2` suggests addition operands, loop bounds suggest `count` or `limit`) to generate semantically meaningful names instead of generic `a1`, `v1`
+2. **Recover struct types from pointer arithmetic**: When seeing repeated accesses like `*(int*)(ptr + offset)`, attempt to reconstruct struct definitions with named fields
+3. **Add algorithm documentation**: Include comments explaining what functions do, their preconditions/postconditions, and note any optimization artifacts like loop unrolling or tail call optimization

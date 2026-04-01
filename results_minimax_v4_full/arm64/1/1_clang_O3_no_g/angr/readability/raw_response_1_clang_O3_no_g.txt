@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`. Parameters are named `a0`, `a1`, `a2`. The original source used meaningful names like `temp1`, `temp2`, `sum`, `i`, `j`, `count`, `result` - all completely lost. Even register annotations like `// x0` or `// w8` don't indicate semantic purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered their source names (e.g., `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`), but many use address-based naming like `sub_400a48`, `sub_400970`, `sub_400d60`. Standard library functions like `_init`, `_start`, `main` are correctly identified.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Extensive use of magic numbers without explanation. The constant `4294967295` (0xFFFFFFFF) appears repeatedly for masking, `1717986919` is an unexplained magic number (used for division by 10), and `100` appears without context. The `__ROL__` operation is used but not explained as "rotate left." No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise present. The `arm64g_calculate_condition` function appears repeatedly as a wrapper for condition evaluation. Unsupported operations like `[D] unsupported_Iop_ZeroHI64ofV128()` and `[D] unsupported_Iop_ZeroHI96ofV128()` indicate decompilation limitations. Excessive bit manipulation for what should be simple arithmetic operations adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control structures are recognizable - if-else, switch-case, loops are present. However, some functions use unusual patterns: `loop_for_fixed` computes result with `__ROL__` instead of a loop, `loop_while` and `loop_dowhile` have convoluted loop conditions with magic number `1717986919` (division by 10 optimization). At -O0, these transformations are unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately decomposed - each source function corresponds to one decompiled function. No obvious inlining or outlining issues. However, parameter lists expose implementation details (e.g., `unsigned int *ptr` instead of `volatile int *flag`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some functions have goto statements (e.g., `call_func_ptr` uses `goto a0` for function pointer invocation). Switch statements create some non-linearity but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is present in functions like `loop_continue` and `goto_backward` (unrolled for small iteration counts) but not explicitly commented. Some redundant masking operations like `& 4294967295` appear frequently.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are mostly generic - parameters use `unsigned int`, `unsigned long`, or `unsigned long long`. The original source used `int` for most parameters, but decompiler chose `unsigned` variants. No `const` correctness preserved. Function pointer types are imprecise (e.g., `unsigned long long *a2` for callback function pointer).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types recovered. The original source uses arrays like `int arr[] = {10, 20, 30, 40, 50}` and `int matrix[3][4]` which are completely lost. The decompiled `loop_break` uses hardcoded switch cases instead of array access. No composite type reconstruction whatsoever.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant type safety issues. Extensive use of bit masking (`& 4294967295`) to simulate 32-bit operations. Unsafe unsigned/signed mixing. Function pointer calls use `goto` instead of proper function pointer invocation. The `duffs_device` function has completely corrupted pointer handling with variables named `v1[2]`, `v4[2]`, `ptr[2]` as comments rather than actual types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only register location annotations like `// x0`, `// w8`, `// [bp-0x10]` appear. No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The source had extensive comments explaining each function's purpose - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified or named. The original source explicitly tests patterns like "Duff's device" (CF-L2-05), "state machine" (CF-L3-05), "computed goto" (CF-L3-07), but these are not recognized or labeled in the decompiled output.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does flag unsupported operations like `[D] unsupported_Iop_ZeroHI64ofV128()` and `[D] unsupported_Iop_ZeroHI96ofV128()`, indicating decompilation limitations. However, these warnings are generic and don't explain what the original code might have been or provide recovery suggestions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had explicit test cases with expected values (e.g., "测试验证: 输入5,7,3应返回21") which are not reflected. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships are not documented. The `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3` functions call other functions but there's no comment explaining the call graph. External dependencies are declared with `extern` but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in a single file with arbitrary ordering. The original source had clear section comments (e.g., "// ============================================================================") separating test groups - not preserved. Static functions like `double_value`, `triple_value` are properly scoped but not grouped logically.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes `extern` declarations for external functions (`puts`, `printf`, `__libc_start_main`, etc.). The `main` function is correctly identified. However, compilation was not tested, and there are likely linking issues with undefined symbols like `g_412ff8`, `g_412fd0`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+1. Variable naming is completely generic (`v0`, `v1`, `a0`, `a1`) - original semantic names like `temp1`, `sum`, `i`, `count` are completely lost
+2. No composite type recovery - arrays like `int arr[]` and `int matrix[3][4]` are not reconstructed; `loop_break` uses switch on values instead of array access
+3. Type precision is poor - original `int` parameters become `unsigned int`/`unsigned long`, no `const` correctness, function pointers use generic types
+4. Comments are almost entirely absent - source had extensive documentation explaining each function's purpose and test cases, completely lost
+5. Excessive bit manipulation noise - magic numbers like `4294967295`, `1717986919`, `__ROL__` operations obscure simple arithmetic
+
+**Best Quality Aspect:** Function Naming Quality (5/10)  
+- Some functions correctly recovered their source names (sequential_ops, single_if, if_else, loop_for_fixed, recursion_factorial), showing the decompiler can match function identities when symbols are preserved.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Composite Type Recovery (2/10)  
+- Variable naming is completely generic, making code flow extremely difficult to trace. Composite type recovery is absent - all arrays and structures lost, severely impacting semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as accumulator should be named `sum`; loop variables `i`, `j` should be recognized from iteration patterns
+2. Recover array/struct types from pointer arithmetic and indexed access patterns - `loop_break` clearly operates on an array, not a switch statement
+3. Add semantic comments explaining decompilation decisions - what does `__ROL__` mean, what is the purpose of magic number masking, what algorithm pattern is being used

@@ -1,0 +1,5 @@
+Test 1: Opaque Predicate
+
+Test 0: Fake Branch
+Test 2: Instruction Substitution: 35
+Test 3: String Encryption: 225

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `count`, `total` that clearly indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`). Some startup functions use generic names (`sub_880`, `init_proc`) but core test functions retain original names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x100000001LL`, `0x400000004LL`, `0xFFFFFFFC` appear without explanation. Original source had no magic numbers; these are SIMD optimization artifacts.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy SIMD noise (`int8x16_t`, `int32x4_t`, `vaddq_s32`, `vmulq_s32`) obscures simple logic. Functions like `loop_continue` and `goto_backward` are buried under vector intrinsics that weren't in source.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into mathematical formulas (`loop_for_fixed`) or SIMD operations. Original `for`/`while` structures replaced with complex vector operations that hide iteration semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly; each source function maps to one decompiled function. However, internal structure heavily transformed by optimization.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Some functions read linearly (`sequential_ops`, `if_else`), but optimized functions have complex branching from SIMD lane selection (`vbslq_s8`, `vcgtq_u32` patterns).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling and strength reduction create redundant-looking vector operations. Original simple arithmetic expanded into multi-lane SIMD with masking operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types degraded to mixed `__int64`, `unsigned int`, and SIMD vector types. Signed/unsigned distinctions sometimes lost (e.g., `loop_while` uses `unsigned int v3` for signed comparison).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays like `dword_1950[op]` recovered but without struct definitions. Original local arrays (`int arr[] = {10, 20, 30, 40, 50}`) shown as global references (`dword_196C`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`__int64` to `int`, pointer arithmetic). SIMD operations introduce type confusion between scalar and vector types without clear conversion semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Only "FAILED to decompile" notices present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Switch statements recognized but transformed to if-else chains or jump tables. Loop idioms completely lost to formula substitution and SIMD vectorization.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Library functions marked "FAILED to decompile" but no warnings about optimization transformations. SIMD conversions not flagged as potentially obscuring original logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or parameter validation documented. Original source had explicit test cases showing expected inputs/outputs that are completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Test functions (`test_control_flow_l1`) show hardcoded expected values instead of actual function calls, breaking call graph visibility.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by source file but no logical module structure. Helper functions (`double_value`, `triple_value`) present but not clearly linked to their callers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 library functions failed to decompile (`_setjmp`, `printf`, `longjmp`, etc.). SIMD intrinsics require ARM NEON headers. Test functions hardcoded with expected values won't actually execute tests.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+7+5+6)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **SIMD obfuscation**: Simple loops (`loop_continue`, `loop_while`, `goto_backward`) transformed into complex NEON vector operations that completely hide original iteration semantics
+- **Test function broken**: `test_control_flow_l1/2/3` functions hardcoded with expected values instead of calling actual functions, breaking verification capability
+- **No semantic comments**: Zero documentation recovered despite original source having extensive comments explaining purpose, test cases, and difficulty levels
+- **Variable naming lost**: All local variables renamed to `v1`, `v2`, `v3` with no semantic meaning, making data flow tracking difficult
+- **Optimization mismatch**: Binary compiled with `-Os` but metadata claimed `-O0`, causing unexpected aggressive transformations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, allowing immediate identification of test cases
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent impossible without comparing to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimization transformations** - When loops are converted to formulas or SIMD, add comments like `// OPTIMIZED: loop replaced with closed-form formula`
+2. **Preserve test function call structure** - Don't constant-fold test assertions; maintain actual function calls so decompiled code remains executable and verifiable
+3. **Infer variable names from usage patterns** - Variables used in loop counters should be named `i`, `count`, `index`; accumulators should be named `sum`, `total`, `result`

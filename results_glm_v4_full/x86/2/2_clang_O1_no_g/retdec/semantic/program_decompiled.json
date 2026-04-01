@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/x86/2/2_clang_O1_no_g/retdec/syntactic/bin/2_clang_O1_no_g_fixed",
+  "stdout": "",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false
+}

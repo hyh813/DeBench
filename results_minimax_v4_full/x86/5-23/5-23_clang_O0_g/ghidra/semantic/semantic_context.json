@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "x86",
+  "src_name": "5-23",
+  "source_path": "src/5-23.c",
+  "target_src_names": [
+    "5-23"
+  ],
+  "build_cmd": "clang --target=i686-linux-gnu -O0 -g -std=c99 -lm -msse2 -mfpmath=sse src/5-23.c -o build/x86/5-23/5-23_clang_O0_g",
+  "original_bin": "results_minimax_v4_full/x86/5-23/5-23_clang_O0_g/ghidra/semantic/native_x86_bin/5-23_clang_O0_g_native",
+  "decompiled_bin": "results_minimax_v4_full/x86/5-23/5-23_clang_O0_g/ghidra/syntactic/bin/5-23_clang_O0_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "results_minimax_v4_full/x86/5-23/5-23_clang_O0_g/ghidra/semantic/native_x86_bin/5-23_clang_O0_g_native",
+      "src_name": "5-23",
+      "target_src_names": [
+        "5-23"
+      ],
+      "error": null,
+      "event_count": 23,
+      "entry_count": 10,
+      "exit_count": 8,
+      "print_count": 5
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_minimax_v4_full/x86/5-23/5-23_clang_O0_g/ghidra/syntactic/bin/5-23_clang_O0_g_fixed",
+      "src_name": "5-23",
+      "target_src_names": [
+        "5-23"
+      ],
+      "error": null,
+      "event_count": 48,
+      "entry_count": 20,
+      "exit_count": 18,
+      "print_count": 10
+    }
+  }
+}

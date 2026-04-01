@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`, `x`). Local variables are `v2`, `v3`, `i`, `j` - completely non-descriptive. Compare source `int temp1 = a + b;` vs decompiled which computes `(a2 + a1)` without naming the intermediate result.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`. Excellent recovery of function-level semantics.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `switch_small` returns `15` for case 0 (should be `a + b = 15`), `loop_break` uses cryptic hex `0x140000000ALL` for array data. No constants or enum recovery. The literal `1000` in `infinite_loop` is unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: At -O0, minimal compiler artifacts expected. Some unusual syntax in `loop_break` with malformed hex literals (`0x140000000ALL`), but overall clean without excessive casts or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures well-preserved: `for` loops, `while`, `do-while`, `switch` statements all correctly identified. `goto_forward` reasonably converted to if-else, `goto_backward` to for loop. Some switch statements use if-else chains but this is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function decompiled as separate function with appropriate granularity. No over-fragmentation or monoliths. Parameter counts match source (e.g., `sequential_ops(int a1, int a2, int a3)` has 3 params).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive forward jumps. `duffs_device` has complex control flow but that's inherent to the pattern.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. No significant duplicate expressions. At -O0, loop unrolling shouldn't appear anyway. Clean code in this regard.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Major type issues: All functions return `__int64` instead of `int` (e.g., `sequential_ops` returns `__int64` but source returns `int`). `ternary_op` uses `unsigned int` parameters but source uses `int`. Function pointer types are imprecise (e.g., `__int64 (__fastcall *)(_QWORD)` instead of proper signatures).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Source uses minimal composite types (mostly arrays like `int arr[]`). The `loop_break` array is partially recovered as `_QWORD v3[2]` with hex data. No struct recovery needed as source has none.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations: function pointer casting in `call_func_ptr_array` uses complex indirect calls with multiple casts. The `duffs_device` has pointer arithmetic that could be safer. No buffer overflow protection. Minor issues overall.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. The only comments are the IDA Pro header. Compare source's detailed comments to decompiled's silence.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: `duffs_device` partially recognized as switch-do-while pattern but not named or explained. `fsm_func_table` shows state machine pattern but not labeled. Some patterns recognizable but not explicitly identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The malformed hex literals in `loop_break` (`0x140000000ALL`) should be flagged as suspicious data. No indication of indirect call resolution issues or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No error condition documentation. Functions like `duffs_device` with `if (n <= 0) return -1;` don't have "requires: n > 0" style documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present (e.g., `recursion_factorial` calls itself). But no documentation of who calls whom, no callback relationships documented. `call_func_ptr_array` uses function pointers but relationships not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, helper functions near users). But all in single file with no namespace/header structure. Static functions not explicitly marked as such in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple compilation issues: wrong return types (__int64 vs int), malformed hex literals will cause errors, function pointer signatures incorrect. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Calculation:**
+- L1 avg: (2+9+4+7)/4 = 5.5
+- L2 avg: (8+8+8+8)/4 = 8.0
+- L3 avg: (4+7+6)/3 = 5.67
+- L4 avg: (2+5+3+2)/4 = 3.0
+- L5 avg: (5+6+4)/3 = 5.0
+
+Overall = (5.5 × 0.30) + (8.0 × 0.25) + (5.67 × 0.20) + (3.0 × 0.15) + (5.0 × 0.10) = 1.65 + 2.0 + 1.13 + 0.45 + 0.5 = 5.73
+
+Wait, let me recalculate with proper weighting:
+- L1: 5.5 × 0.30 = 1.65
+- L2: 8.0 × 0.25 = 2.0
+- L3: 5.67 × 0.20 = 1.13
+- L4: 3.0 × 0.15 = 0.45
+- L5: 5.0 × 0.10 = 0.5
+- Total: 5.73/10
+
+**Critical Defects:**
+- All function return types are `__int64` instead of `int` - semantic mismatch with source
+- Variable names are completely generic (`a1`, `a2`, `v2`, `v3`) - no semantic recovery
+- No comments or documentation explaining algorithms or intent
+- Malformed hex literals in `loop_break` (`0x140000000ALL`) cause compilation errors
+- Function pointer types are imprecise (`__int64 (__fastcall *)(_QWORD)` vs proper signatures)
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+The decompiler excellently recovered all control flow structures (loops, conditionals, switches, recursion) matching the source almost perfectly. At -O0, this is expected but still well-executed.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled code has almost zero comments. Source had extensive documentation explaining each function's purpose, test cases, and complexity ratings. This information is completely lost in decompilation.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `a1 + a2` being named `temp1` in source should be inferred. Parameters `a,b,c` should be preserved or inferred as `first, second, third`.
+2. **Recover correct return types**: At -O0, return types should match source. Detect `__int64` is actually `int` for these functions.
+3. **Add semantic comments**: Include function purpose, test values, and complexity hints based on control flow patterns detected (e.g., "Implements nested if with 5 levels" for `nested_if_deep`).

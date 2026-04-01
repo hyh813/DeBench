@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_gcc_O1_g/ida/syntactic/bin/5-23_gcc_O1_g_fixed",
+  "stdout": "Testing preprocessing features:\nPreprocessing test 1: 64\nPreprocessing test 2: 30\nPreprocessing test 3: 32\nPreprocessing test 4: 57122\nPreprocessing test 5: 116\nPreprocessing test 6: 19\nPreprocessing test 7: 60\nLOG: Values: 10, 20, 30\nPreprocessing test 8: 60\nPreprocessing test 9: 16\nPreprocessing test 10: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:26\nPreprocessing test 11: 382\nTesting asm features:\nASM test 1: 15\nASM test 2: 1177461658\nASM test 3: 42\nASM test 4: 36\nASM test 5: 30\nASM test 6: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

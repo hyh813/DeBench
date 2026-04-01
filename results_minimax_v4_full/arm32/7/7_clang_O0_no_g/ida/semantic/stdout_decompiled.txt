@@ -1,0 +1,15 @@
+Test Obfuscation & Optimization:
+Obfuscation Level 1: fake_branch: 10
+Obfuscation Level 2: opaque_predicate: 20
+Obfuscation Level 3: instruction_substitution: 225
+Obfuscation Level 4: string_encryption: 143
+Optimization Level 1: tail_call: 500500
+Optimization Level 2: non_tail_call: 5050
+Optimization Level 3: vectorized_loop: 72
+Optimization LTO: 20
+Edge Case division_by_zero: 1
+Edge Case null_pointer_deref: 41
+Edge Case buffer_overflow: 30
+Edge Case integer_overflow: 2000000000
+Edge Case undefined_behavior: 10
+Edge Case implementation_defined: 44

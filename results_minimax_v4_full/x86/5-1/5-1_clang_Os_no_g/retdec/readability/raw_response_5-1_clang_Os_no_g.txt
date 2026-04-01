@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `result` throughout. Even when source had meaningful names like `capture_by_value`, the decompiler uses `v1`, `v2`. The only exception is `str` used for string buffers, but this is insufficient.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions retain mangled C++ names like `_Z20test_cpp_member_funcv`, `_Z12template_maxIiET_S0_S0_`. While demangled names appear in comments (e.g., "// Demangled: test_cpp_member_func()"), the actual function names are unreadable. This defeats the purpose of decompilation for human analysis.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x18804`, `0x29b8`, `0x2bba` appear without explanation. String literals are accessed via pointer arithmetic (e.g., `v1 + 3086`) with no named constants. The value `42` in exception handling is somewhat clear from context, but most numeric literals are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Many compiler helper functions present (`__x86_get_pc_thunk_bx`, `__cxa_allocate_exception`, etc.) but these are expected for C++ binaries. However, functions like `function_1040`, `function_1050` that are simple wrappers around `new`/`delete` add noise without value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is relatively natural. Loops use `for` constructs, conditionals are clear. The exception handling in `test_cpp_exception` has some awkward branching but is understandable. Minor issues include computed pointer offsets for string loading.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines each). Template instantiations are properly separated (`_ZN9ContainerIiE4pushEi` vs `_ZN9ContainerIdE4pushEd`). Member functions are correctly extracted. Some small wrapper functions could be inlined but this is minor.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. The exception handling function has multiple jumps and rethrow logic that disrupts linear flow. Some forward references exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal at -O0. Some redundant computations in template_max but these are compiler-expected patterns. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good. However, all pointers are `int32_t*` losing const-correctness and distinction between object pointers and function pointers. Template type parameters (`T`) are not distinguished between int and double versions in some places.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery is evident. The `Container` class is accessed via raw pointer arithmetic (`*(int32_t *)(result2 + 40)` for size field). Class inheritance relationships are not reconstructed - virtual function calls use raw pointer manipulation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)v1`, `(int32_t *)result`. Pointer arithmetic like `4 * v2 + result2` for array indexing is error-prone. No bounds checking comments. The template_swap function has a bug: `*a1 = *a2; *a2 = *a1;` loses the original value (should use temp).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only comments are demangled function names and address ranges. No explanation of algorithm logic, no recovery of original comments from debug info. The "// Demangled:" comments are auto-generated and don't add semantic value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns are recognizable (virtual function calls, exception handling, new/delete). However, the virtual table mechanism is completely obscured - should show vtable pointer dereference. Template instantiation patterns not explicitly labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly marking. The `call_virtual_func` function just returns the pointer instead of calling the virtual function - this is a critical bug that should be flagged. No indication of indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The bounds checking in Container::get (checking idx < size) is present but not documented as a contract. No indication of what requires non-null.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code. However, no comments indicate who calls whom. Virtual dispatch relationships are not documented. Global variable usage (`g1`, `g2`, `g3`, `g4`) is opaque.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions together, template functions together, container methods together). However, it's a single flat file with no namespace reconstruction. The original C++ classes are not reconstructed as logical units.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code declares many external functions (`_Znwj`, `_Znaj`, `_ZdlPv`) but these are standard C++ operators. The code should compile with appropriate libc++ linkage. However, no build instructions or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Function names remain mangled** (`_Z20test_cpp_member_funcv`) instead of being properly demangled to `test_cpp_member_func`
+- **Variable names are generic** (`v1`, `v2`, `a1`, `a2`) losing all semantic meaning from source
+- **No struct/class recovery** - all composite types accessed via raw pointer arithmetic (`*(int32_t *)(result2 + 40)`)
+- **Critical semantic bug**: `call_virtual_func` returns the pointer instead of calling the virtual function - this is functionally incorrect
+- **No comments** explaining algorithm logic or recovered semantics
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+At -O0 optimization, the decompiler correctly recovered loop constructs and conditional logic. The code structure matches source reasonably well.
+
+### Most Needs Improvement: Lexical Clarity (3/10)
+Variable and function naming is nearly unusable. The decompiler should leverage debug info (-g flag was used) to recover meaningful names. The mangled C++ names should be fully demangled in the code itself, not just in comments.
+
+### Top 3 Recommendations:
+1. **Enable debug symbol parsing**: The source was compiled with `-g`, so variable names like `capture_by_value`, `capture_by_ref` should be recoverable
+2. **Properly demangle function names**: Replace `_Z20test_cpp_member_funcv` with `test_cpp_member_func` in the actual code
+3. **Recover class structures**: Instead of `*(int32_t *)(result2 + 40)`, generate `struct Container { T data[10]; int size; }` and use `result->size`

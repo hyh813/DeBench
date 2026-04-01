@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic meaning. Original names like `sum`, `len`, `current` are completely lost. Even simple functions like `process_char` use `v0` instead of `result` or `converted_char`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved for user code (`process_char`, `array_1d_stack`, `struct_simple`), but runtime helpers are cryptic (`sub_4003e0`, `$a.10`, `sub_402a94`). Function names don't indicate parameter types or purpose for library functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Character literals shown as magic numbers (65 for 'A', 90 for 'Z', 32 for lowercase conversion). Float constants appear as hex (`0x3fc00000` for 1.5f, `0x3f000000` for 0.5f). No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive ARM condition code artifacts (`armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v`). Redundant variable assignments and unnecessary intermediate variables throughout. Runtime library functions expanded into hundreds of lines of condition code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some functions use natural constructs (`process_char` has proper if-else), but complex functions use goto labels (`LABEL_40236a`, `LABEL_402515`). Floating point operations devolve into nested condition chains instead of simple arithmetic expressions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but runtime helpers (`__mulsf3`, `__adddf3`, `__muldf3`) expanded into 200-500 line monoliths. Many stub functions (`sub_4020f1`, `sub_402153`) with no body add noise.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Complex functions have 20+ labels. Some test functions call printf twice with same arguments (e.g., `test_data_types_l1` calls `volatile_access` twice unnecessarily).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls visible (printf called twice in `test_array_types`, `test_pointer_types`, `test_composite_types`). Condition code calculations repeated multiple times within same expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - `char` becomes `int`, `short` becomes `unsigned short`, `long long` split into two `unsigned int` parameters (`process_ll(unsigned int a0, unsigned int a1)`). Float/double represented as `unsigned int` with helper calls instead of proper floating point types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered with generic field names (`field_0`, `field_4`). Nested structures partially recovered (`struct_nested` shows `a0[3]` instead of `r->size.width`). Unions not distinguished from structs. Bitfield operations reduced to manual masking.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(char*)`, `(int*)`, `(void*)`). Pointer arithmetic on generic `unsigned int` instead of typed pointers. Function pointer signatures degraded (`ptr_func_simple(unsigned int *a0, unsigned int a1)` instead of proper callback signature).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated function headers with addresses. No algorithm explanations, no parameter documentation, no recovery of original source comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized - string length calculation (`array_string`), array summation (`array_1d_stack`), linked list traversal (`linked_list`) all appear as raw loops without pattern identification. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Complex ARM condition code not flagged as potentially problematic. Indirect calls (`ptr_func_simple`, `struct_func_ptr`) not marked as unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for pointer functions). No postconditions inferred. Error conditions not noted (e.g., `array_complex_index` returns -1 on bounds error but this isn't documented).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_40306c`, `g_414008`) without explanation. Callback relationships (`complex_callback`, `$a.10`) not clearly linked to call sites.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by test category (data types, arrays, pointers, composites). Static functions not properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies not documented (ARM runtime, libc functions). Would require significant stubbing to compile standalone. Architecture-specific code (`armg_calculate_condition`) not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.52/10
+```
+
+**Overall Readability Score: 3.5/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `a0` instead of `sum`, `len`, `converted_char`
+- **Type information severely degraded** - `long long` split into two `unsigned int`, floats as integers
+- **ARM condition code pollution** - `armg_calculate_condition` calls obscure simple logic
+- **Magic numbers everywhere** - Character literals as 65/90/32, float constants as hex
+- **No semantic comments** - Zero documentation of algorithm intent or uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Original user function names preserved (`process_char`, `array_1d_stack`, `struct_simple`) providing some semantic anchors despite other deficiencies.
+
+### Most Needs Improvement: **Semantic Transparency (2/10 average)**
+- Complete absence of comments, idiom recognition, anomaly indication, and contract recovery makes understanding intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable names** - At `-O0 -g`, debug info contains original variable names that should be recovered instead of `v0`, `v1`
+2. **Recognize and simplify ARM condition code patterns** - Replace `armg_calculate_condition` chains with natural C conditionals where semantics are clear
+3. **Recover high-level type information from debug metadata** - Restore `float`, `double`, `long long` types instead of representing everything as `unsigned int` with helper calls

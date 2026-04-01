@@ -1,0 +1,9 @@
+Preprocessing Test
+
+Macro Constants: 64
+Macro Functions: 30
+Conditional Compile: 32
+Multi Branch: 57122
+Macro Recursion: 116
+Stringize: 19
+Token Paste: 60

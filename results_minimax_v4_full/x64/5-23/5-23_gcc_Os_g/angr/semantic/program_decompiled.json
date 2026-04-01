@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_gcc_Os_g/angr/syntactic/bin/5-23_gcc_Os_g_fixed",
+  "stdout": "Testing macro constants: -1470015016\nCall macro constant: 64\nTesting macro functions: 30\nCall macro function: 32\nTesting multi-branch compile: 57122\nTesting macro recursion: 116\nCall macro recursion: 19\nCall token paste: 60\nLOG: Values: 10, 20, 30\nTesting variadic macro: 60\nTesting macro override: 16\nTesting include guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:39\nCall builtin macros: 382\nTesting asm basic: 0\nCall asm clobber: -1977165182\nCall asm multi insn: -1\nCall asm simd: 6\nCall asm atomic: 35\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

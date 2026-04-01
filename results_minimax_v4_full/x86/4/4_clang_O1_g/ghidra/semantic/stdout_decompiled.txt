@@ -1,0 +1,42 @@
+Calling Convention Tests
+
+CALL-L1-01: 15
+CALL-L1-02: 50
+CALL-L1-03: 6
+CALL-L1-04: 15
+CALL-L1-05: 15
+CALL-L1-06: 100
+CALL-L1-07: 21
+CALL-L1-08: 15
+CALL-L1-09: 10
+CALL-L1-10: 33
+Sum of varargs: 15
+No args: 42
+Many args: 36
+Mixed: 117
+Sum: 136
+Struct val: 50
+Parameter Passing Tests
+
+PARAM-L1-01: 15
+PARAM-L1-02: 11
+PARAM-L2-01: 4
+PARAM-L2-02: 173
+PARAM-L2-03: 300
+PARAM-L2-04: 100
+PARAM-L3-01: 20
+PARAM-L3-02: 21
+PARAM-L3-03: 305419896
+PARAM-L3-04: 15
+PARAM-L3-05: 3
+Return Value Tests
+
+Basic type: 14
+Pointer: 14
+Small struct: 14
+Large struct: 14
+Function ptr: 14
+Opaque handle: 14
+Complex expr: 14
+Multi-branch: 14
+Void return: 14

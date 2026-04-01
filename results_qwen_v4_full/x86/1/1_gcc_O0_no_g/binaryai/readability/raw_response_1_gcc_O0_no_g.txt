@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_8`, `uVar1`, `iVar1` instead of semantic names like `temp1`, `sum`, `count`, `result` from the original source, making purpose tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`), though helper functions like `FUN_00011030` remain generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex values (`0xffffffff` for -1, `0x65` for 100, `0x3e9` for 1001) without explanation, though simple constants (0, 1, 2) remain clear.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local()`) add noise to many functions; otherwise clean without excessive compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as for/while constructs correctly; `switch_fallthrough` uses goto labels (`LAB_0001158c`) and `switch_small` degraded to nested if-else instead of switch.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source; no excessive inlining or fragmentation, though stack canary code adds bloat.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `switch_fallthrough` and `loop_break` use goto statements that disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code; stack canary checks add repetitive patterns but loop structures are clean without excessive duplication.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation with `undefined4` return types (`nested_if_deep`, `if_elseif_chain`), `code *` for function pointers, and inconsistent `uint` vs `int` usage.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic arrays recovered (`local_24[4]`, `local_1c[3]`) but 2D matrix in `loop_multi_exit` degraded to separate variables instead of `matrix[3][4]`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(int)local_8`, `(undefined4 *)`) and generic `code *` function pointers, but stack canary checks add runtime safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical failure** - zero comments in decompiled code despite extensive documentation in original source explaining each function's purpose and test cases.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop/switch patterns recognized but no higher-level identification (e.g., "factorial calculation", "digit counting", "state machine pattern").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `setjmp/longjmp` in `non_local_jump` and computed goto in `computed_goto` not flagged as unusual constructs requiring manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: n > 0" for factorial), no postcondition inference, error conditions undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation; callback relationships through `code *` parameters not explicitly explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order with test functions grouped, but helper functions scattered without clear module boundaries.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation; external dependencies not documented but code uses standard C constructs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+7+6+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────
+Overall Score:                                  5.60/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Zero comments** despite original source having extensive documentation explaining each function's purpose and test cases
+- **Generic variable names** (`param_1`, `local_8`, `uVar1`) obscure semantic meaning compared to original (`temp1`, `sum`, `count`, `result`)
+- **Type degradation** with `undefined4` return types and `code *` function pointers instead of precise types
+- **Missing anomaly flags** for `setjmp/longjmp` and computed goto constructs that require manual review
+- **Magic numbers as hex** (`0xffffffff`, `0x65`, `0x3e9`) without semantic explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Main function names preserved accurately from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`), enabling easy cross-reference with original documentation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe readability loss; original source had comprehensive documentation that would guide understanding of each function's purpose and expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `sum` for accumulators, `count` for counters, `result` for return values
+2. **Recover and preserve source comments** - Extract debug symbol comments or generate algorithm-explaining comments for non-trivial logic
+3. **Flag unusual constructs explicitly** - Add warnings for `setjmp/longjmp`, computed gotos, and function pointer arrays that require manual verification

@@ -1,0 +1,5 @@
+=== Preprocessing Features Test ===
+param_macro_constants(0x800) = 64call_macro_constants() = 30call_conditional_compile() = 32call_multi_branch_compile() = 57122call_macro_recursion() = 116call_stringize() = 19call_token_paste() = 60LOG: Values: 10, 20, 30
+call_macro_override() = 60call_include_guard() = 16call_include_guard() = 500file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:22
+call_builtin_macros() = 382=== ASM Features Test ===
+call_asm_basic() = 15call_asm_clobber() = 15call_asm_multi_insn() = 42call_asm_simd() = 36call_asm_atomic() = 30call_asm_privileged() = 77

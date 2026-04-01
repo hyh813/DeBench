@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_clang_O2_g/binaryai/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "Test completed\nFake branch: 10\nOpaque predicate: 20\nInstruction substitution: 225\nString encryption: 31\nTail call optimized: 500500\nNon tail call: 5050\nVectorized loop: 72\nLink time optimization: 20\nDivision by zero test: 1\nNull pointer deref test: 41\nBuffer overflow test: 30\nInteger overflow test: 2000000000\nUndefined behavior test: 10\nImplementation defined: 43\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

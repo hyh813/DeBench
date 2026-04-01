@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `result` with no semantic meaning. For example, in `vla_stack`, variables `v4` through `v15` obscure their roles as array pointers, loop counters, and temporary values.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions like `sub_8E0` and `frame_dummy` are generic. Function names accurately reflect purpose where preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1010101010101010LL`, `0x800000008LL`, `0x7FFFFFFF0LL` appear without explanation. Some constants like `42` and `2048` are recognizable, but SIMD initialization values are completely opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including SIMD vector types (`int8x16_t`, `int32x4_t`), vector operations (`vaddq_s8`, `vshlq_n_s32`), and frame pointer manipulation (`v15[0] = v1; v15[1] = v2`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple source loops transformed into complex SIMD vectorized loops with manual unrolling. The `large_stack_frame` function uses a do-while with vector operations instead of a simple for-loop, obscuring the original intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but aggressive constant folding eliminated logic (e.g., `tree_heap_traversal` just returns `60` instead of showing tree creation). Some functions like `stack_alias` collapsed to single return statements.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto labels (`LABEL_8`, `LABEL_9`, `LABEL_10`, `LABEL_11`, `LABEL_12`) disrupt linear reading. The `heap_calloc` function has 5 different label targets making control flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling created significant redundancy - the `vla_stack` function has both scalar and SIMD paths doing the same operation. Vector initialization code repeats across multiple functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types like `__int64`, `_DWORD`, `_QWORD`, `_OWORD` replace proper C types. Pointer types degraded (e.g., `global_heap_ptr = (__int64)p` instead of `int*`). Some original type information lost in optimization.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` struct partially recovered but field access often uses array indexing (`v2[1] = 0` instead of `node->next = NULL`). `TreeNode` struct recognized but `tree_heap_traversal` logic completely constant-folded away.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(__int64)p`, `(_DWORD *)v2`, `(_QWORD *)v1`. Pointer arithmetic used instead of array access (`(char *)v15 - ((4LL * (unsigned int)n + 15) & 0x7FFFFFFF0LL)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments - only auto-generated type annotations like `// x0`, `// w0`, `// BYREF`. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Memory allocation patterns (malloc/free pairs) visible but not labeled. Linked list traversal in `linked_list_heap` not recognized as such.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (18 functions), but suspicious code within functions not flagged. The `dangling_pointer` function's undefined behavior not warned about. No indication of optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` requirements). No postconditions inferred. Error conditions like NULL returns not explained. The `stack_alias` function's pointer aliasing semantics completely lost.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `static_local_counter`) used without declaration context. Callback mechanism in `set_global_callback`/`call_global_callback` not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure (stack tests, heap tests, static tests, memory ops). However, no file/module boundaries indicated and helper functions scattered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 library functions failed to decompile (`malloc`, `free`, `printf`, `memcpy`, etc.). Cannot compile standalone without significant stubbing. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 dims | 4.25/10 | 30% | 1.28 |
+| L2: Structural Intelligibility | 4 dims | 4.75/10 | 25% | 1.19 |
+| L3: Type System Fidelity | 3 dims | 4.67/10 | 20% | 0.93 |
+| L4: Semantic Transparency | 3 dims | 2.33/10 | 15% | 0.35 |
+| L5: Contextual Coherence | 4 dims | 4.50/10 | 10% | 0.45 |
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `v0` through `v15` provide zero semantic information about their purpose
+- **Aggressive constant folding** - Functions like `tree_heap_traversal` return `60` directly, losing all original logic
+- **SIMD optimization artifacts** - Vector operations (`vaddq_s32`, `vshlq_n_s32`) obscure simple scalar operations from source
+- **18 library functions failed** - Critical functions like `malloc`, `free`, `printf` not decompiled
+- **No comments or documentation** - Zero explanation of algorithm intent, optimization artifacts, or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, allowing identification of test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of meaningful comments makes understanding optimization artifacts and recovered logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in loop bounds should be named `i`, `count`, `size`)
+2. **Detect and annotate optimization artifacts** - Flag SIMD vectorization, loop unrolling, and constant folding with comments explaining the transformation
+3. **Recover high-level control structures** - Convert goto-based loops back to for/while constructs and document when recovery is uncertain

@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`) with no semantic meaning. For example, `varargs_func` uses `a1` for count and `a2` for varargs start instead of `count` and `args`, making parameter purposes unclear.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are well-preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, helper functions use generic names (`sub_1030`, `sub_1040`) and there's a metadata inconsistency (claims Ghidra but header says IDA Pro).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many magic numbers appear without explanation (e.g., `__readgsdword(0x14u)` for stack canary). String literals are referenced as `asc_2008`, `unk_202C` instead of showing actual content, obscuring printf messages.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary code (`v7 = __readgsdword(0x14u)`, `return v7 - __readgsdword(0x14u)`) repeats in many functions. Calling convention annotations (`__usercall`, `__userpurge`) add visual noise without improving clarity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are recovered as do-while constructs appropriately. However, `ret_multi_branch` uses nested if-else instead of switch statement, making the branching logic harder to follow than the original.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: caller functions are constant-folded (`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`). This destroys the call relationship and semantic meaning of the test functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions have forward references that slightly disrupt flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks are redundantly present in most functions. No obvious dead code, but the security instrumentation adds repetitive boilerplate throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` instead of specific types. Critical error: `varargs_func(int a1, char a2)` has wrong signature (should be variadic). `func_mixed_args` correctly shows `double a3` and `__int64 a4`, showing mixed precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Severe failure: `func_struct_byval` shows 32 individual int parameters (`a1` through `a32`) instead of `LargeStruct s`. `SmallStruct` is represented as `_DWORD *` losing all field semantics. Struct types completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int **)`, `(_DWORD *)`, `(unsigned int *)`). Pointer arithmetic without type safety. The varargs signature error could cause undefined behavior if used.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments beyond auto-generated register annotations. No algorithm explanations, no decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Standard C idioms not recognized (varargs pattern incorrectly recovered). No indication that constant folding occurred in test functions.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some functions marked "FAILED to decompile" (6 library functions). Stack warning present ("positive sp value has been detected"). However, constant folding issues not flagged despite being semantically significant.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL`). No postconditions or error condition documentation. Null checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but constant folding obscures relationships. Global variables use generic names (`handle1_1`, `handle2_0`). Callback relationships partially visible in `param_func_ptr`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 6 library functions failed to decompile requiring stubs. Type errors (varargs signature, struct parameters) would prevent clean compilation. Would need moderate patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+5+7+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.96/10 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct types completely lost**: `func_struct_byval` shows 32 individual parameters instead of `LargeStruct`, making the function signature incomprehensible
+- **Constant folding destroyed semantics**: Test functions like `call_cdecl()` return hardcoded values (15) instead of showing actual function calls, losing the calling convention demonstration
+- **Varargs signature incorrect**: `varargs_func(int a1, char a2)` should be variadic (`int a1, ...`), fundamentally misrepresenting the function
+- **Variable names entirely generic**: All parameters are `a1`, `a2`, `a3` with no semantic meaning, requiring manual analysis to understand purpose
+- **Metadata inconsistency**: Claims Ghidra decompiler but code header says "Decompiled by IDA Pro 9.1 with Hex-Rays"
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names were well-preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic identity despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct types; `LargeStruct` became 32 separate int parameters, making the code fundamentally misrepresent the original design.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze parameter access patterns to recover composite types (e.g., sequential field accesses at fixed offsets indicate struct members)
+2. **Preserve call relationships over constant folding** - When original function calls are detectable, maintain them even if values could be constant-folded, as the call itself carries semantic meaning
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (varargs, struct parameters) with comments indicating manual review is needed

@@ -1,0 +1,17 @@
+param_macro_constants: -1092941924
+call_macro_constants: 64
+param_macro_functions: 30
+call_macro_functions: 32
+param_conditional_compile: 57122
+call_conditional_compile: 116
+param_multi_branch_compile: 19
+call_multi_branch_compile: 60
+LOG: Values: 10, 20, 30
+param_macro_recursion: 0
+call_macro_recursion: 16
+param_stringize: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:11
+call_stringize: 0
+param_token_paste: -1059949568
+call_token_paste: 15
+param_variadic_macro: 0

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names (v0, v1, v4, v5, ptr, p). The decompiler failed to infer semantic meaning from usage patterns. For example, in `test_cpp_member_func()`, `v0 = 10` clearly represents the value being set, but was not named accordingly.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some C++ mangled names were partially decoded (e.g., `_Z20test_cpp_member_funcv`), many functions use mechanical addresses (sub_400d74, sub_400f30). The critical failure is that `test_cpp_oo_features()` doesn't call the actual test functions—it uses hardcoded expected values instead.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The main function `test_cpp_oo_features()` contains magic numbers (4700, 21, 42, 71, 650, etc.) that match expected test results but are not connected to the actual test functions. These should be the return values from calling the test functions, not standalone constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Some artifacts like `uint128_t flag1` and `strlen(&v0 | 4)` appear to be decompilation errors rather than intentional code. However, there's minimal compiler instrumentation noise since many functions are empty stubs.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many test functions are completely empty (just `return;`), making control flow analysis impossible. The `call_virtual_func()` uses a computed goto (`goto *((long long *)*((long long *)&arg_0));`) which is technically correct for vtable dispatch but obscures the intent.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: The most critical failure is that `test_cpp_oo_features()` does not call the individual test functions at all—it hardcodes all expected values. This means 11 out of 12 test functions are effectively "lost" from the decomposition perspective.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code that exists is relatively linear, but the overall structure is broken because the test orchestration is incorrect. The function should call sub-functions but instead computes everything inline with constants.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Template functions show some redundancy (e.g., Container<int> and Container<double> have similar push implementations). However, the bigger issue is the absence of code rather than redundant code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many types are imprecise—`int` used where `unsigned int` or `size_t` would be appropriate. The `call_virtual_func()` parameter is typed as `class Base *arg_0` but the function signature is incomplete. Template type parameters are partially recovered (int, double) but not consistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler created synthetic struct types (`struct_0`, `struct_1`) for RTTI but with meaningless field names. The original classes (SimpleClass, LifecycleClass, Base, Derived) are not properly reconstructed—most exist only as forward declarations or empty shells.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns exist, like `*((char **)ptr)` casts in RTTI code. The expression `strlen(&v0 | 4)` in test_cpp_member_func appears to be a decompilation error rather than actual unsafe code. Overall, moderate type safety issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining what each test function does or what the expected results represent. The comment "Angr Decompilation of 5-1_clang_O2_no_g" is incorrect (source was compiled with gcc -O0, not clang -O2).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms are largely unrecognized. The virtual function mechanism is represented as a raw computed goto. Exception handling uses raw `_Unwind_` functions without the try-catch structure. RAII patterns (smart pointers, destructors) are not recognized.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that most test functions are empty stubs when they should contain substantial logic. No warnings about the hardcoded values in test_cpp_oo_features(). The decompiler presents broken code as if it were correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The fact that test functions should return specific values is not captured.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: The relationship between test_cpp_oo_features() and the individual test functions is completely broken. Instead of calling test_cpp_member_func(), test_cpp_constructor(), etc., it uses hardcoded values, breaking the call graph.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but the logical organization (test functions, template instantiations, class methods) is not clearly represented. Template functions are properly separated but class methods are mixed in.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many extern declarations are present but incomplete. The code would not compile as-is due to missing definitions for standard library functions (puts, printf, operator new, etc.) and undefined symbols.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **test_cpp_oo_features()** does not call any test functions—it uses hardcoded expected values (4700, 21, 42, 71, 650, 22, 39, 16, 85, 703) instead of actual function calls
+- **9 out of 12 test functions** are empty stubs (test_cpp_constructor, test_cpp_virtual_func, test_cpp_multiple_inheritance, test_cpp_diamond_inheritance, test_cpp_operator_overload, test_cpp_template_func, test_cpp_template_class, test_cpp_lambda, test_cpp_smart_ptr)
+- **Variable naming** is universally generic (v0, v1, ptr, p) with no semantic inference
+- **test_cpp_member_func()** sets values but doesn't compute or return the expected result (4704)
+- **C++ idioms completely lost**: virtual function calls become raw goto, exceptions become _Unwind_ primitives, RAII patterns disappear
+
+### Best Quality Aspect: Template Function Recovery (Level 3, scored 4/10)  
+- Template functions like `template_max<int>`, `template_swap<int>`, and Container instantiations were partially recovered with correct parameter types
+
+### Most Needs Improvement: Semantic Transparency (Level 4, scored 1.5/10)  
+- The decompiler failed to recognize C++ high-level constructs (exceptions, virtual functions, RAII, templates) and presented low-level primitives instead. Most critically, it produced hardcoded results instead of actual function calls, making the entire test infrastructure unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function call relationships**: The test_cpp_oo_features() function should call each test function and use their return values, not hardcode expected results
+2. **Infer variable names from usage patterns**: Variables assigned constant values (v0 = 10) or used in specific operations should be named accordingly (value, size, etc.)
+3. **Reconstruct C++ high-level idioms**: Virtual function calls should display as `obj->virtual_func(x)`, not computed gotos. Exception handling should show try-catch blocks, not _Unwind_ primitives

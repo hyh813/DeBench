@@ -1,0 +1,17 @@
+Preprocessing Tests:
+Value: 64
+Value: 30
+Value: 32
+Multi Branch: 57122
+Value: 116
+Stringize: 19
+Value: 60
+LOG: Values: 10, 20, 30
+Value: 60
+Value: 16
+Value: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:26
+Builtin Macros: 382
+ASM Features Tests:
+ASM Basic: 15
+ASM Clobber: -575051784

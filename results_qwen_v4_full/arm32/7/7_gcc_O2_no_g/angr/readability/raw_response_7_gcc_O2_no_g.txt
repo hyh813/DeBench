@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelmingly generic names like `v0`, `v1`, `v2`, `temp_1` dominate; only occasional names like `result`, `ptr`, `index` provide minimal semantic hint. Original source had meaningful names like `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `call_opaque_predicate`), but many are generic (`sub_10514`, `sub_110bc`). Critical issue: `param_fake_branch()` lost its `int x` parameter entirely, making the name misleading.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x22070`, `0x22200` (jmp_buffer addresses), `90` (XOR key), signal numbers `8` and `11` undocumented. Original source had comments explaining these values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: register save patterns (`v1 = v2; v0 = v3`), `armg_calculate_condition()` calls obscuring simple comparisons, redundant variable assignments throughout functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto LABEL_XXXX` patterns replace natural loops and conditionals. `param_opaque_predicate` uses complex goto chains instead of simple if-else. Do-while constructs appear where while loops would be clearer.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but signatures corrupted. `param_fake_branch()` missing parameter, `param_buffer_overflow_stack()` lost `int x` parameter. Some functions like `call_vectorized_loop` bloated at 60+ local variables.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into middle of logic blocks disrupt reading flow. `param_opaque_predicate` has labels `LABEL_10775` and `LABEL_10776` that break natural top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `call_string_encryption()` calls `param_string_encryption()` twice unnecessarily. Register spilling creates duplicate assignments. `param_tail_call_optimized` has unreachable code after `return a1`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int` or `void*`. Original `int`, `char*`, `size_t` distinctions lost. `param_null_pointer_deref(unsigned int *a0)` called with `NULL` without type warning. Signed/unsigned semantics erased.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `bitfield` struct from `param_implementation_defined` completely lost—function now returns constant `44`. Stack arrays become raw byte buffers (`char v0[31]`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout: `(char)result`, `(unsigned int)v0`. `param_division_by_zero` returns `4294967295` (-1 as unsigned) without indicating error semantics. Pointer arithmetic on `char*` without bounds checking visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated annotations like `/* do not return */`. No explanation of obfuscation patterns, algorithm intent, or decompilation uncertainty. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. String XOR decryption pattern in `decrypt_string` not identified. Tail recursion optimization pattern not flagged despite being a key test case.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical anomalies silent: `param_fake_branch` parameter loss not flagged, `setjmp`/`longjmp` exception handling degraded without warning, signal handler registration logic obscured.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires `x != 0`). No postconditions. Original source's expected return values (comments like `// 期望：10`) completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables appear as opaque `g_22008`, `g_22048`, `GLIBC_2.4::__stack_chk_guard` without purpose explanation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed in arbitrary order. No grouping by test category (OBF/OPT/EDGE). Static vs. external linkage not clearly indicated in output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies unresolved: `__aeabi_idivmod()`, `armg_calculate_condition()`, `__libc_start_main`. Code will not compile without significant stub implementation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):  (4+4+3)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────
+Overall Score:                                  3.39/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects
+- **`param_fake_branch()` lost its `int x` parameter entirely** - function signature fundamentally broken
+- **Zero semantic comments** - no explanation of obfuscation patterns, algorithm intent, or decompilation confidence
+- **Excessive goto usage** - natural loops and conditionals replaced with label-based jumps throughout
+- **Type system collapse** - all integers become `unsigned int`, struct/bitfield types completely lost
+- **Magic numbers undocumented** - addresses (`0x22070`), keys (`90`), signal numbers (`8`, `11`) unexplained
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)** - Some original function names preserved (`param_opaque_predicate`, `call_tail_call_optimized`), providing minimal semantic anchors in otherwise degraded code.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes understanding obfuscation intent impossible; decompiler provides no confidence indicators or algorithm documentation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function parameters from calling conventions** - `param_fake_branch` must show `int x` parameter based on ARM calling convention (r0 usage)
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "// DECOMPILER UNCERTAIN: indirect call target")
+3. **Recognize common obfuscation patterns** - Detect XOR string decryption, GCD algorithms, and dead code branches to add explanatory comments

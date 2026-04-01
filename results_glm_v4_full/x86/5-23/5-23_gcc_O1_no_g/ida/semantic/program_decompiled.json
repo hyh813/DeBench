@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/5-23/5-23_gcc_O1_no_g/ida/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "=== Preprocessing Features ===\nMacro Constants: 64\nMacro Functions: 30\nConditional Compile: 32\nMulti-branch Compile: 57122\nMacro Recursion: 116\nStringize: 19\nToken Paste: 60\nLOG: Values: 10, 20, 30\nVariadic Macro: 60\nMacro Override: 16\nInclude Guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:50\nBuiltin Macros: 382\n=== ASM Features ===\nBasic ASM: 15\nClobber ASM: -1203391334\nMulti-instruction ASM: -1\nSIMD ASM: 20932274736332836\nAtomic ASM: 20932274736332830\nPrivileged ASM: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

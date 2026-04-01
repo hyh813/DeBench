@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`) with zero semantic meaning. No variable indicates purpose (e.g., `sum`, `index`, `current_node`).
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test function names preserved (`test_data_types_l1`, `test_array_types`), but ALL processing functions (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc.) are completely missing from decompilation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`97`, `98`, `300`, `0x2710`, `0x12345678`) representing pre-computed results rather than original literals. Chinese strings stored as raw UTF-8 bytes in globals (`g1`, `g2`, `g3`, `g4`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts; `__stack_chk_fail()` calls present but not excessive. Code is relatively clean but this is because most logic was eliminated entirely.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Test functions are linear printf sequences (acceptable), but array/struct operations use raw pointer arithmetic loops (`v2++`, `*(char *)v2`) instead of proper array indexing or struct field access.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: CATASTROPHIC FAILURE - All 40+ processing functions constant-folded away. Only test harness functions remain. The actual computational logic is entirely lost.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads top-to-bottom in test functions, but linked list traversal appears twice with duplicated logic using different variable names (`v1-v4` vs `v5-v8`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Linked list traversal code duplicated verbatim in `test_composite_types` (lines for CMP-L2-12 and CMP-L2-13). No attempt to extract common traversal pattern.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All types degraded to `int32_t`, `char*`, `void*`. Lost: `short`, `long`, `long long`, `float`, `double`, `long double`, `_Bool`, `const`, `volatile` distinctions.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: CATASTROPHIC - Zero struct/union/enum definitions recovered. No `Point3D`, `Rect`, `Widget`, `Node`, `Flags`, `UnionData`, `State`, `Device`, `TreeNode`, `Graph`, `Edge`, `DNode`. All accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts and pointer arithmetic: `*(int32_t *)(v3 + 4)`, `(int32_t)&str`, `v4 = *(int32_t *)(v7 + 4)`. No type safety whatsoever.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments (address ranges, line numbers). Zero semantic comments explaining what code does or why.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list traversal pattern completely obscured as raw pointer chasing. No recognition of common patterns (string length, array sum, tree traversal, graph traversal).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged despite catastrophic loss of 40+ functions. Decompiler presents constant-folded results as if they were original code without any warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks in original code (`if (arr[i] != NULL)`) lost entirely.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships completely lost. No indication that test functions originally called processing functions. Global variables (`g1-g4`) have no semantic names.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Test functions grouped together, but organization doesn't match source structure. All processing functions missing makes module structure meaningless.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses non-standard `__printf_chk` and `__stack_chk_fail` without declarations in standard headers. May require stubs to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (30%): (2+4+3+6)/4 = 3.75  → 3.75 × 0.30 = 1.125
+L2 (25%): (4+2+5+5)/4 = 4.00  → 4.00 × 0.25 = 1.000
+L3 (20%): (3+1+2)/3 = 2.00    → 2.00 × 0.20 = 0.400
+L4 (15%): (2+2+1+2)/4 = 1.75  → 1.75 × 0.15 = 0.263
+L5 (10%): (3+4+5)/3 = 4.00    → 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────
+Overall Score: 3.19/10
+```
+
+### Overall Readability Score: **3.2/10**
+
+### Critical Defects:
+- **All 40+ processing functions constant-folded away** - `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. completely missing
+- **Zero composite type recovery** - No struct, union, or enum definitions; all accessed via raw pointer arithmetic (`*(int32_t *)(v3 + 4)`)
+- **All type information lost** - `short`, `long`, `float`, `double`, `_Bool`, `const`, `volatile` distinctions erased
+- **No anomaly warnings** - Decompiler presents constant-folded results without flagging that actual logic is missing
+- **Generic variable names** - `v1` through `v8` provide zero semantic information about purpose
+
+### Best Quality Aspect: **Noise Reduction (6/10)**
+- Code is relatively clean without excessive compiler artifacts, though this is because most logic was eliminated entirely rather than properly recovered.
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct, union, or enum definitions; all composite type access reduced to raw pointer arithmetic making code nearly incomprehensible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and warn about constant folding** - When function bodies are optimized away, flag this as a decompilation limitation rather than presenting pre-computed results as source code.
+2. **Recover composite type definitions from memory access patterns** - Analyze struct field offsets (`+4`, `+8`, etc.) to reconstruct struct layouts with named fields.
+3. **Preserve function call relationships** - Even if function bodies are unavailable, maintain call graph information showing which functions called which, with parameter types inferred from usage.

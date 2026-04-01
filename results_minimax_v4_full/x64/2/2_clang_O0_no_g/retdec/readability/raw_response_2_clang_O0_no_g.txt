@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All function parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v1`, `v2`, `v3`). The original source had meaningful names like `process_char`, `array_1d_stack`, but these are completely lost. Loop counters (`i`, `j`, `k`) are the only decent names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match the original source (`double_value`, `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`). However, some compiler/runtime functions have auto-generated names like `function_1030` (should be printf), `function_1040` (memset), `function_1050` (memcpy).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x1000000`, `0x100000000000000`, `0xfffffffe`, `0xffffffff`, `0x40000000`. Chinese UTF-8 strings like `"\xe6\xb5\x8b\xe8\xaf\x95"` are not decoded. Some constants like `g8 = 10` are named but most literals are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive inline assembly for floating-point operations (`__asm_mulss`, `__asm_movss_1`, `__asm_divsd`). Redundant casts like `0x1000000000000 * process_short(...) >> 48`. However, at -O0, there's minimal dead code from register spilling.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loop structures (for/while) are preserved and recognizable. Some awkward patterns exist like `while (v2 != 5)` with manual increment. At -O0, control flow should be more natural - some conditionals are more complex than needed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. Test functions (`test_data_types_l1`, `test_array_types`) are preserved. Some large functions like `test_array_types` (200+ lines) could be split, but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `array_3d` and `graph_traverse`. Nested loops up to 3 levels deep in `array_3d` and `graph_traverse` slightly disrupt linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in `array_3d` with manual while loops inside for loops. Duplicate expressions like `result += *(int32_t *)(4 * v1 + (int64_t)a1)` repeated in loop bodies. Not severe but noticeable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Severe type erosion - most integers become `int64_t` regardless of original type (char, short, int, long all lost). Float/double use custom `int128_t` with assembly. Pointers are correctly typed as pointers but parameter types don't match original (`int64_t a1` instead of `int x`). Function pointers lack proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: All struct/union definitions are lost. Instead of `p->x + p->y + p->z`, we see `*(int32_t *)(v1 + 4) + *(int32_t *)(v1 + 8) + *(int32_t *)(v1)`. Union types completely lost - `union_type` uses raw memory access. Enum definitions missing, converted to raw integers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t)a1`, `(int64_t)a1`, `(int32_t *)`. Pointer arithmetic with raw offsets like `*(int32_t *)(v1 + 4)` is error-prone. Function pointer type confusion - `ptr_func_simple(int64_t result, int64_t a2)` doesn't indicate it's a function pointer. No `const` correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）⭐"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are partially recognizable (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`), but not explicitly named or documented. The original source's test case names like "ARR-L2-03: 指针数组" are completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The original source had intentional bugs like `array_oob` with out-of-bounds access, but the decompiled version presents it without warning. No indication of undefined behavior or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear contracts like "requires: ptr != NULL" implicit in the code, but none recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present in the code but relationships aren't documented. The call graph (main calls test functions, test functions call processing functions) is inferable but not explicit. No indication of which functions call `double_value` as a callback.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file output with reasonable grouping. Functions are roughly organized by category (data types, arrays, pointers, composite types) matching original source sections. However, no header file or API separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes proper headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Function prototypes declared. Some issues: `function_1030` should return `int` not `int32_t` for printf compatibility. Overall mostly compilable with minor fixes needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` - completely loses semantic meaning
+- **Composite type loss**: All structs/unions converted to raw pointer arithmetic with offsets, losing field semantics
+- **Type precision**: All integer types become `int64_t`, losing char/short/int/long distinction
+- **No comments**: Zero documentation recovered from original source
+- **Magic numbers**: Multiple unexplained constants like `0x1000000`, `0xfffffffe` without context
+
+### Best Quality Aspect: Function Naming (7/10)
+- Most function names match original source (`process_char`, `array_1d_stack`, `linked_list`)
+- Preserves the semantic intent of function purposes
+
+### Most Needs Improvement: Semantic Transparency (2/10)
+- No comments, no pattern recognition, no anomaly indication, no contract recovery
+- The decompiled code provides zero context about what it's doing
+
+### Top 3 Recommendations:
+1. **Recover struct/union definitions**: Use field offset analysis to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Add variable naming inference**: Analyze usage patterns (e.g., `a1` used in size check → `array_size`) to generate meaningful names
+3. **Recover type precision**: Distinguish between char/short/int/long at -O0 where types are preserved in ABI

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `a1`, `v1`, `v2`, `v3`), obscuring the semantic meaning of parameters like `x` or intermediate calculations like `gcd_result`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_fake_branch` and `call_fake_branch` are perfectly preserved from the source debug symbols, accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `90` (XOR key) and `0xffffffff` (truncation mask) appear without explanation, while constants like `0xDEADBEEF` from the source are completely optimized away.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise such as `__readfsqword(40)` (stack canary checks) and `__asm_hlt`, which clutter the logic of simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While `param_tail_call_optimized` is nicely transformed into a loop, `param_fake_branch` is stripped of its control flow entirely, and `param_opaque_predicate` contains convoluted arithmetic expressions that obscure the source's clear logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, though `param_opaque_predicate` has complex nested conditionals that require significant effort to trace.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler aggressively eliminated the *intentional* redundancy (fake branches, instruction substitutions) that constitutes the core logic of the obfuscation examples, rendering the "obfuscation" invisible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are mostly correct for the ARM64 ABI (using `int64_t` for registers), though the original `int` types are widened, and explicit `uint32_t` casts are inserted frequently for truncation.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Complex structures like `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` are accurately reconstructed with proper layout and nesting.
+
+**11. Type Safety:** Score: 7/10
+Justification: While there are many casts (e.g., `(int32_t)v1`), they are largely necessary artifacts of 64-bit to 32-bit conversion rather than unsafe type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata like "Address range" and "Line range," providing zero insight into the algorithm or the purpose of the obfuscation techniques.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler failed to recognize the obfuscation idioms (e.g., it constant-folded `(x << 3) - (x << 1)` into `6*x`), hiding the specific instruction substitution patterns used in the source.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no indication that code was removed or that branches were unreachable; the decompiler silently presents the optimized result, misleading the analyst about the binary's actual contents.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented, leaving the reader to infer the logic entirely from the implementation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between `call_*` and `param_*` functions is preserved and easy to navigate.
+
+**17. Module Organization:** Score: 8/10
+Justification: The code is organized logically, with helper functions and main test functions grouped, matching the source structure well.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes necessary headers and type definitions, though the reliance on compiler intrinsics (`__asm_pxor`) might require specific flags or headers to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Function `param_fake_branch` is completely stripped of its fake branches, hiding the obfuscation logic present in the binary.
+- Instruction substitutions in `param_instruction_substitution` were constant-folded (e.g., shifts to multipliers), removing the specific patterns the source code was designed to demonstrate.
+- Variable naming is generic (`v1`, `a1`), failing to convey the semantic meaning of variables like `gcd_result` or `encrypted_char`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly preserved the original function names from the debug symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2/10)
+- The decompiler's aggressive optimization (constant folding, dead code elimination) hides the very obfuscation techniques that are the subject of the source code, making it useless for analyzing protection mechanisms.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Add an option to disable aggressive constant folding and dead code elimination to preserve manual obfuscation patterns for analysis.
+2. Implement heuristic naming for variables involved in common algorithmic patterns (e.g., detecting GCD loops to name variables `a`, `b`, `temp`).
+3. Insert comments or warnings when code blocks are statically determined to be unreachable (dead code) rather than silently deleting them, so analysts can see the obfuscation attempts.

@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`iVar1`, `param_1`, `bVar1`, `local_40`) instead of semantic names like `result`, `encrypted`, `decrypted` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `decrypt_string`), but some use generic names (`FUN_00100730`, `FUN_001008bc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation; signal numbers (8, 0xb) used instead of `SIGFPE`/`SIGSEGV` constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`undefined8`, `undefined4`, `CONCAT44`); some functions optimized to empty returns (`param_fake_branch`, `param_buffer_overflow_stack`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: GCD loop in `param_opaque_predicate` recognizable as do-while, but `call_vectorized_loop` has complex CONCAT44 operations obscuring the simple array addition logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved with reasonable sizes, though some functions (`param_fake_branch`) collapsed to single return statements due to optimization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; do-while loops present but flow is generally traceable without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive optimization eliminated original logic in several functions (returning constants); `call_vectorized_loop` has redundant CONCAT44 operations that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation with `undefined8`, `undefined4`, `undefined` types; `param_fake_branch` lost its `int` return type entirely; pointer types often generic (`undefined4 *`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Original bitfield struct in `param_implementation_defined` lost; function now returns constant `0x30` with no struct recovery visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(__sighandler_t)0x0`, `(__jmp_buf_tag *)`, `(ulong)` conversions; raw pointer arithmetic in `call_vectorized_loop`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra headers ("Function: param_fake_branch @ 00100914"); no semantic comments explaining logic; original source comments about expected values completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified; XOR string decryption pattern unlabeled; setjmp/longjmp signal handling not explained as exception recovery pattern.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"), but optimized-away functions show no warning that original logic was eliminated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; original source comments about expected values (e.g., "期望：10") completely absent.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation; global variables (`div_zero_caught`, `jmp_buffer`) used without clear declaration as globals.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output; compiler runtime functions (`_init`, `_start`, `_fini`) mixed with application code without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Type issues (`undefined8`, `undefined4`) require fixing; external dependencies (signal.h, setjmp.h, string.h) not declared; would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.23/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- Variable `iVar1`, `iVar2`, `param_1` should be named semantically (e.g., `gcd_result`, `input_value`)
+- Functions `param_fake_branch`, `param_buffer_overflow_stack` optimized to empty returns—original obfuscation logic completely lost
+- Magic numbers `0x5a`, `0x14`, `0xe1` lack explanation or constant definitions
+- No comments recovered from original source documentation about expected behavior
+- Type system degraded with `undefined8`, `undefined4` instead of proper C types
+- Signal constants (8, 0xb) not recovered as `SIGFPE`, `SIGSEGV`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names preserved from source code, maintaining semantic identity across decompilation.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or expected value documentation recovered from original source comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Variable name inference from usage patterns** - Analyze how variables are used (e.g., `param_1` in division context should be `divisor`, loop counters should be `i`)
+2. **Constant recovery and symbolic naming** - Detect magic numbers and suggest named constants; recover signal constants from system headers
+3. **Source comment preservation** - When debug symbols (`-g`) are present, extract and preserve original source comments in decompiled output

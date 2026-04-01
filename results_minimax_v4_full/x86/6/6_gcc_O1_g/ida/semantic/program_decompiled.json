@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/6/6_gcc_O1_g/ida/syntactic/bin/6_gcc_O1_g_fixed",
+  "stdout": "=== Standard Library Function Tests ===\n\nStrcpy: 8\nStrcmp: 0\nStrlen: 12\nMemcpy: 90\nMemcmp: -1\nValue: 42, Name: Test\nPrintf: 22\nScanf: 579\nFopen/Fclose: 42\nFread/Fwrite: 42\nMalloc/Free: 90\nMemset: 0\nStrchr/Strstr: 15\n=== System Call Tests ===\n\nLinux syscall: 42\nWin32 API: 42\nFork/Exec: 42\nPipe: 42\nSocket: 42\nSHM: 42\nSignal: 42\n=== Thread Concurrency Tests ===\n\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

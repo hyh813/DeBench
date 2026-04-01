@@ -1,0 +1,21 @@
+Result: -1095936084
+param_macro_constants(64) = 516557312
+Result: 30
+Result: 32
+Result: 57122
+Result: 116
+Result: 19
+Result: 60
+LOG: Values: 10, 20, 30
+LOG: Values: 60, 516557312, 30
+Result: 16
+Result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:07
+Result: 382
+test_asm_features(516557312, 0, -1095936408)
+asm_basic: 15
+asm_clobber: 15
+asm_multi_insn: 42
+asm_simd: 36
+asm_atomic: 30
+Memory protection test passed

@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_24`, `puVar1`, `iVar1`, `lVar2`) with no semantic meaning. Most local variables are marked as "Unresolved local var" with no names at all (e.g., `SimpleClass obj@[???]`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names are preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use generic names (`FUN_00101020`). Template functions correctly show instantiation (`template_max<int>`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate (`0x125c`, `0x2a`, `0x47`, `0x28a`) without explanation. These are actually computed return values from source, but decompiler hardcodes them instead of showing the computation logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive byte-by-byte array initialization (20+ lines of `local_24[0x10] = '\0';` etc.). Compiler artifacts from stack initialization obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions return constant values instead of executing actual logic. `test_cpp_exception` terminates with `__cxa_throw` without showing catch blocks. Loop in `test_cpp_constructor` is recovered but other control flow is lost.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template functions and Container methods are properly decomposed with correct signatures. However, test functions are essentially stubs (single return statements) losing all internal structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom where logic exists. However, many functions have no meaningful flow due to constant returns. The `test_cpp_constructor` loop is reasonably linearized.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in array initialization (each byte set individually). No dead code elimination visible. Template instantiations are properly separated without duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: C++ class types are lost (`SimpleClass obj` becomes `char local_24[36]`). Some types preserved (`int`, `double`, `size_t`), but object semantics erased. Pointer types often generic (`undefined4*`, `undefined8`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - no class/struct recovery. `SimpleClass`, `LifecycleClass`, `Point`, `Container` all lost. Objects represented as raw byte arrays. Only RTTI vtable pointers partially visible (`&PTR__RTTIBase_00103d78`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(undefined *)0x0`, `(undefined4 *)__cxa_allocate_exception`). Pointer arithmetic on class objects loses type safety. Template functions maintain reasonable type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra adds warnings ("Unresolved local var", "Unknown calling convention") but these indicate failures rather than explain logic. No algorithm or semantic comments. DWARF prototype comments helpful for recovered methods.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no recognition of RAII, virtual dispatch, inheritance patterns, operator overloading, or lambda captures. Template instantiation is the only pattern partially recovered.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra properly flags issues ("WARNING: Could not recover jumptable", "Unresolved local var"). However, these warnings don't help recover the actual semantics - they just acknowledge failure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception handling contracts lost. Object lifecycle (constructor/destructor calls) not visible in most test functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but class relationships lost. Virtual function calls reduced to vtable pointer dereferences (`(**obj->_vptr_Base)()`). Inheritance hierarchy not recoverable from decompiled code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, template instantiations together). However, class methods scattered without clear association to parent classes.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references undefined symbols (`operator_new__`, `__cxa_throw`, `std::__ioinit`). C++ runtime dependencies not documented. Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (3+5+6+5)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type System): (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (5+2+7+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (4+6+3)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.30/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **C++ class structures completely lost** - `SimpleClass`, `LifecycleClass`, `Point` objects represented as raw byte arrays (`char local_24[36]`)
+- **Test functions return hardcoded constants** instead of computing values (e.g., `test_cpp_virtual_func` returns `0x2a` instead of executing virtual dispatch logic)
+- **Variable names entirely generic** - `local_24`, `puVar1`, `iVar1` provide no semantic information about purpose
+- **Exception handling broken** - `test_cpp_exception` terminates at `__cxa_throw` without showing catch block execution
+- **Inheritance hierarchy unrecoverable** - virtual inheritance, multiple inheritance, and diamond inheritance semantics lost
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved from source with debug symbols, maintaining semantic connection to original purpose.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover C++ class structures, making object-oriented code essentially unreadable as OOP.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class structure recovery** - Use DWARF debug info to reconstruct class layouts, member functions, and inheritance relationships rather than treating objects as byte arrays.
+
+2. **Recover control flow from optimized code** - Instead of returning constant values, trace through actual computation logic even when compiler optimizations simplify the result.
+
+3. **Add semantic annotations for C++ features** - Flag virtual function calls, constructor/destructor invocations, and RAII patterns with explanatory comments to indicate C++ semantics that binary doesn't explicitly encode.

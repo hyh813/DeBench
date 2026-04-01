@@ -1,0 +1,7 @@
+Starting tests...
+Fake branch: 10
+Opaque predicate: 20
+Instruction substitution: 225
+String encryption: 82
+Tail call optimized: 500500
+Non tail call: 5050

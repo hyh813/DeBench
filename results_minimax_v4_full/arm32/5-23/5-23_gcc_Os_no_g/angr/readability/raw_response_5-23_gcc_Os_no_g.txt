@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic register-based names (`a0`, `a1`, `v0`, `v1`) that obscure semantic meaning. While some like `idx`, `ptr`, `result` are descriptive, the majority are cryptic - e.g., `v0 = v1; goto g_23008;` provides no indication of purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` correctly match source names. However, utility functions use generic names like `sub_1045c`, `sub_10540`, and the decompiler introduces artifacts like `armg_calculate_condition`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants correctly recovered (`0x400`=1024=MAX_SIZE, `0x200`=512, `64`=16*4), but magic numbers like `57072` (0xDEF0) remain unexplained. Hardcoded line numbers (279) replace `__LINE__` macros without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains significant noise including stack protection functions (`__stack_chk_guard`, `__stack_chk_fail`), decompiler artifacts like `armg_calculate_condition`, and redundant function calls (e.g., `call_variadic_macro()` called twice in `test_preprocessing_features`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto` for loop constructs instead of while/for (e.g., `param_asm_clobber` uses labeled goto loops). At -O0 this is unexpected; the decompiler fails to recognize loop patterns from backward jumps.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and test functions are properly separated. However, some functions like `call_asm_clobber` are bloated with stack canary handling (40+ local variables) that obscures the actual logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains goto-based loops and forward jumps that disrupt flow. The `call_asm_privileged` function has complex conditional goto chains that are difficult to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Notable redundancy in `test_preprocessing_features` where `call_variadic_macro()` and `call_builtin_macros()` are called twice. Some dead code patterns from compiler optimizations remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic `unsigned int` throughout instead of specific types like `int32_t`, `uint64_t`, `size_t`. Pointers are treated as `unsigned int` losing pointer semantics. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery visible. All structures accessed via raw pointer arithmetic (e.g., `*((int *)(ptr + idx * 4))`). The original `arr` parameter becomes an opaque `unsigned int ptr`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Standard decompiler output with raw pointer arithmetic (`ptr + idx * 4`). No bounds checking. Function pointers treated as integers. Typical of decompilation but unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated variable location comments (e.g., `// r0`, `// [bp-0x4]`). No explanation of algorithm, preconditions, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some compiler intrinsics recognized (e.g., `__sync_fetch_and_add_4` for atomic operations, `__printf_chk` for printf). However, no explicit pattern naming or documentation of the original macro expansions or inline assembly patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain areas or indirect calls that couldn't be resolved. The inline assembly in `param_asm_basic` is silently replaced with `a0 + 10` without noting the assembly origin. No flags for potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No documentation of error conditions or return value expectations. The original macro semantics (e.g., "returns MAX_SIZE/2 if size <= MAX_SIZE") are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and external functions marked with `extern`. However, no documentation of call relationships (who calls whom, callback patterns). The original test harness structure is not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address in memory, not logically grouped. The preprocessing tests and assembly tests should be separated sections but are interleaved. No header/interface separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses `__printf_chk` instead of standard `printf`. Contains undefined references like `armg_calculate_condition`. Would require stubs to compile. Some functions like `__sync_fetch_and_add_4` have incomplete implementations.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming uses generic register-based names (`a0`, `v0`, `v1`) that completely obscure semantic purpose
+- Control flow uses goto-based loops instead of while/for constructs, making execution flow difficult to follow
+- No struct/union type recovery - all composite types lost to raw pointer arithmetic
+- No comments explaining original macro semantics, inline assembly, or algorithm intent
+- Magic numbers like `57072` (0xDEF0) remain unexplained, losing connection to original `#define` constants
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The decompiler correctly recovered most test function names from the original source (e.g., `param_macro_constants`, `call_asm_basic`), making it easy to identify the purpose of key functions.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The pervasive use of generic register-based names (`a0-a3` for parameters, `v0-vN` for locals) makes it extremely difficult to understand variable purpose without tracing through entire functions. At -O0, the decompiler should infer semantic names from usage patterns.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `if (a0 > 0x400)` suggests `a0` is a size/limit parameter) to generate semantic names like `size` or `max_size`
+2. **Recover loop constructs from backward jump patterns**: The goto-based loops in functions like `param_asm_clobber` should be reconstructed as while/for loops for readability
+3. **Detect and explain macro expansions**: When constants like `57072` appear, check if they match known macro values (0xDEF0) and add comments explaining the original macro definition

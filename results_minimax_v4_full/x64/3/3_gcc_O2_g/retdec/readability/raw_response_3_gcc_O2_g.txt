@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic `v1`, `v2`, `v3` format throughout (e.g., `int64_t v1 = __readfsqword(40)`), making it nearly impossible to track purpose. While some globals like `global_counter` and `file_scope_static` are descriptive, most locals are opaque. The decompiler failed to infer semantic names from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions like `test_stack_memory`, `test_heap_memory`, and core logic functions like `local_vars`, `heap_basic` are well-named and match source. However, library wrappers use cryptic addresses (`function_1120`, `function_1130` for `free` and `puts`) and helper functions lack semantic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x100000000` used in size calculations without explanation. String literals are encoded as hex (`"\xe6\xb5\x8b\xe8\xaf\x95..."`) making them unreadable. Some constants like array sizes (10) appear without named equivalents. The decompiler didn't recover meaningful constant names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive type casting clutter (e.g., `(int32_t)a1`, `(int64_t)*(int32_t *)`). Redundant stack frame checks (`__readfsqword(40)`) pollute code. The return statement in main is bizarre: `return (int32_t)&g16 ^ (int32_t)&g16;` - a compiler artifact that adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use natural while constructs. However, `linked_list_heap` uses goto (`goto lab_0x19b8`) which is less readable. At -O0, control flow should be nearly 1:1 with source, but some awkward patterns remain.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity. Test functions like `test_heap_memory` are long (300+ lines) but cohesive. Library wrappers are appropriately small. No severe fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex functions like `vla_stack` and `alloca_usage` due to stack allocation logic. Early returns used appropriately in error checking.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal. Some repeated calculations in memory functions but acceptable for -O0 level.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` and `int32_t` appropriately. However, function signatures are wrong - `heap_basic(int64_t a1, int64_t a2, int64_t a3)` should take single `int n` parameter. Function pointers use `int64_t` instead of proper signatures. Some `void*` usage where more specific types possible.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The `Point` struct used in `local_struct` and `heap_struct` is completely lost - code uses raw pointer arithmetic instead. The `Node` and `TreeNode` structures in linked list/tree functions are not recovered, with code using `malloc(16)` and manual field offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Extensive unsafe casts throughout (e.g., `(int32_t *)mem`, `(int64_t *)v1`). Pointer arithmetic like `v3 + 4 * v11` is error-prone. Function pointer type confusion (`global_func_ptr` stored as raw int). Some buffer-overflow-prone patterns in `heap_overflow`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some line range comments present (`// Line range: 66 - 73`). No algorithm explanations. No decompilation confidence indicators. Auto-generated comments like `// UNREACHABLE` add minimal value. No documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Standard patterns like linked list traversal, memory allocation patterns not named or highlighted. The decompiler didn't recognize common idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `dangling_pointer` function accesses freed memory but no anomaly flagged. `double_free` has undefined behavior but no indication. Code confidently presents potentially incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. Error conditions not documented. The decompiler didn't recover any contracts or assertions from the source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear through direct calls. Global variable usage is transparent (`global_counter`, `global_array`). Callback relationships partially visible (`global_func_ptr`). Some indirect calls not resolved.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically by category (stack, heap, static, memory ops). Static functions properly scoped. Related test functions grouped together. Minor misplacements but overall good organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). External dependencies documented through function prototypes. Should compile with minimal patching. Some retargetable decompiler artifacts present.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`-`vN` format throughout, making code nearly impossible to follow semantically
+- No struct/union recovery - `Point`, `Node`, `TreeNode` completely lost, replaced with raw pointer arithmetic
+- Function signatures incorrect - `heap_basic(int64_t a1, int64_t a2, int64_t a3)` instead of `heap_basic(int n)`
+- String literals encoded as hex, making test output messages unreadable
+- No anomaly indication for dangerous patterns like dangling pointers and double-free
+
+**Best Quality Aspect:** Contextual Coherence (scored 7.0/10)  
+- Functions are logically grouped, global variable relationships are clear, and code is mostly compilation-ready
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)  
+- No comments explaining algorithms, no pattern recognition, no anomaly warnings, and no contract recovery - the decompiler provides raw output without helping analysts understand suspicious or complex code
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v1` used as loop counter should be named `i` or `index`; `mem` used for allocation should propagate to related variables
+2. Recover composite types - detect struct allocation patterns (malloc of fixed sizes, field assignments at offsets) and reconstruct struct definitions with field names
+3. Add semantic annotations - flag dangerous patterns (dangling pointers, double-free), explain non-obvious logic, and add decompilation confidence indicators for indirect calls

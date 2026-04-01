@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_O1_no_g/ida/syntactic/bin/7_clang_O1_no_g_fixed",
+  "stdout": "Testing Obfuscation and Optimization Features\n\nObfuscation: Fake Branch: 10\nObfuscation: Opaque Predicate: 20\nInstruction Substitution: 225\nObfuscation: String Encryption: 0\nOptimization: Tail Call: 500500\nOptimization: Non-Tail Call: 5050\nOptimization: Vectorization: 0\nOptimization: LTO: 20\nEdge Case: Division by Zero: 1\nEdge Case: Null Pointer: 41\nBuffer Overflow: 30\nInteger Overflow: 2000000000\nCall Opaque Predicate: 10\nImplementation-Defined: 43\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

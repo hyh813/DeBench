@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## Overall Readability Score: 4.4/10
+
+---
+
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning; occasional better names like `index`, `ptr`, `result` appear only in loop contexts but don't reflect original intent (e.g., `size`, `counter`, `increment`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_macro_constants`), but helper functions use generic `sub_XXXXX` naming; function names accurately reflect purpose where preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0x400`, `0x200`, `57072`, `57122`); some constants simplified to readable values (64, 30) but original macro semantics (`MAX_SIZE`, `BUFFER_COUNT`) completely lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `armg_calculate_condition()` calls, stack canary checks (`GLIBC_2.4::__stack_chk_guard`), uninitialized variable assignments (`v0 = v1`), and redundant goto labels pollute the code.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto` statements instead of structured loops in multiple functions; some functions completely constant-folded to single return values (e.g., `call_macro_constants` returns 64 directly), losing original conditional logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable size but constant folding obscures actual computation logic; some functions like `param_stringize` reduced to single return statement losing all intermediate string operations.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto labels (`LABEL_10948`, `LABEL_10550`) disrupt reading flow; empty `do { } while(4294905792())` loops in atomic functions create confusing non-linear patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Sync functions show massive repetitive patterns (20+ nearly identical `__sync_*` functions); redundant variable assignments and duplicate printf calls in test functions.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `unsigned int` replaces specific types throughout; pointer types imprecise (`void*`, `unsigned int*`); no distinction between `int32_t`, `size_t`, or `atomic_int` from original source.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct or union definitions recovered despite their presence in original source (e.g., no recovery of any composite types); all data structures reduced to primitive types and pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe pointer operations without bounds checking; implicit casts between pointer and integer types; no const-correctness preserved from original source.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining decompiled logic; no documentation of algorithm intent, preconditions, or non-obvious operations; completely bare code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns, atomic operations, and macro expansions not recognized or named; `armg_calculate_condition` suggests pattern detection failure for conditional expressions.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Anomalous constructs like `armg_calculate_condition()` and infinite loops (`while(4294905792())`) present without explanation or confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or error handling documentation; original assertions and validation logic completely absent from decompiled output.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Global variables use opaque naming (`g_11ec0`, `g_11ee8`); function call relationships unclear; no documentation of callback or external API relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order without logical grouping; no separation between test functions, implementation functions, and helper routines.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`GLIBC_2.4::__stack_chk_guard`, `__printf_chk`) not properly declared; some functions won't compile without significant stubbing; architecture mismatch (ARMEL vs x86_64).
+
+---
+
+## Critical Defects
+
+- **Variable `a0`, `a1` should be named `size`, `x`** based on usage patterns in `param_macro_constants` and other functions
+- **Control flow uses goto instead of loop constructs** in `param_asm_clobber`, `test_asm_features`, and multiple other functions
+- **Magic numbers `0x400`, `57072`, `57122`** should be named constants reflecting original `MAX_SIZE` and platform-specific values
+- **`armg_calculate_condition()` calls** indicate decompiler failed to recover conditional expressions, requiring manual analysis
+- **All struct/union types lost** - original code's data structures completely absent from decompiled output
+
+---
+
+## Best Quality Aspect
+
+**Function Naming Quality (7/10)** - Most original function names preserved accurately (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`), maintaining semantic connection to source code purpose.
+
+---
+
+## Most Needs Improvement
+
+**Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding decompiled logic extremely difficult; no indication of decompiler confidence or uncertain regions.
+
+---
+
+## Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (comparisons, arithmetic, function arguments) to suggest semantic names like `size`, `counter`, `buffer_ptr` instead of `a0`, `v1`.
+
+2. **Recover control flow structures from jump patterns** - Convert `goto` + label patterns back to `if/else`, `while`, `for` constructs; detect loop induction variables and restore natural loop syntax.
+
+3. **Add confidence annotations and uncertainty markers** - Flag regions where decompilation is uncertain (e.g., `// DECOMPILER_UNCERTAIN: indirect call target`), especially for `armg_calculate_condition` and atomic operation recovery.

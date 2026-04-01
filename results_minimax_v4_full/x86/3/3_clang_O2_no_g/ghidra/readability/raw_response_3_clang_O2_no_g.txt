@@ -1,0 +1,162 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `cVar1` that obscure their semantic purpose. For example, in `local_vars`, `param_1` should be named `x`, and in `heap_basic`, the pointer `__ptr` should be `arr`. Only size-based names like `local_800` (for 2048 bytes) provide minimal context.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: About half the functions retain their original names (e.g., `local_vars`, `heap_basic`, `double_value`, `memop_memset`), but many are renamed to cryptic addresses like `FUN_00011030`, `FUN_00011f75`. The `static_helper` function was inlined into `call_static_func` losing its identity entirely.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers appear throughout without explanation: `0x14` (20), `0x2a` (42), `0x800` (2048), `0x3c` (60). The decompiler hardcodes expected output values in printf statements (e.g., `printf("MEM-L1-01 (local_vars): %d\n",0x14)`) rather than showing the computation, obscuring the actual logic.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts; no register spilling debris or redundant casts. Some auto-generated warnings about removed unreachable blocks and inlined functions appear, but these don't significantly impede reading. The main noise is the auto-generated variable naming itself.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: At -O0, control flow is well-preserved. Loops use proper `do-while` constructs, conditionals are clear, and early returns are used appropriately. The `large_stack_frame` function correctly shows the loop filling the buffer. No spurious goto statements.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are reasonably sized (mostly under 100 lines). The `linked_list_heap` function is the longest at ~80 lines but remains cohesive. Some inlining occurred: `static_helper` was inlined into `call_static_func`, which is appropriate for -O0 but loses the static function identity.
+
+### 7. Code Linearization
+**Score: 9/10**
+
+Justification: Code reads top-to-bottom with minimal disruption. No forward jumps into loop bodies. The `test_*` functions are highly linear, calling test cases sequentially. Only minor early-exit patterns interrupt flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: Loop unrolling is present in functions like `large_stack_frame` and `heap_basic` but follows a recognizable pattern (unrolling by 8). No dead code observed. The redundancy from unrolling is acceptable for -O0 and could be easily recognized by analysts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Basic types are correct (`int`, `char`, `void*`), but the decompiler uses `undefined4` extensively instead of `int`, and `byte` instead of `char`. Function pointers are typed as `code *` rather than proper function signatures. The `uint` usage is inconsistent (sometimes `uint`, sometimes `undefined4`).
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: The `Point` struct is completely lost - `local_struct` returns `param_1 * 3` directly without any struct reconstruction. The `Node` struct for linked lists is partially recovered but uses raw pointer arithmetic (`malloc(8)` for a 2-pointer struct) rather than proper struct types. The `TreeNode` struct is not recovered at all.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Justification: Generally safe code with appropriate pointer handling. The `heap_nested` function correctly checks malloc return values. Minor issues: some pointer arithmetic like `*(int *)((int)__ptr + iVar3 * 2 + -8)` is hard to verify for safety. No obviously dangerous casts.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Almost no useful comments. The only comments are auto-generated warnings about function replacements and unreachable blocks. No explanation of algorithm logic, no recovery of original comments from source. The decompiled test functions hardcode expected values rather than showing the computation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Standard memory operations (malloc/free, memset, memcpy) are recognized and called correctly. However, no design patterns or algorithms are explicitly identified or named. The linked list creation pattern could be annotated but isn't.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: No flagging of suspicious code. The `dangling_pointer` function contains undefined behavior (accessing freed memory) but is presented without any warning. The `double_free` function is completely wrong - it returns early when `param_1 != NULL` instead of demonstrating the double-free bug.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The NULL checks in malloc calls could be documented as "requires: n > 0" but aren't. Error return values (-1, -2) are not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are clear (e.g., `free(__ptr)`, `memset()`). However, the relationships to external functions like `extern_function` and `extern_global_var` are not documented. No call graph or usage context is provided.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are logically grouped: stack memory functions together, heap functions together, static/global functions together. The test functions are properly separated. However, the file is a single monolithic output rather than matching the original source organization.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: The code should compile with minimal modifications. Standard library functions (malloc, free, printf, memset) are correctly called. External declarations for `extern_function` and `extern_global_var` are needed but the code structure is sound.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+5+4+7)/4 = 4.75
+L2_avg = (8+7+9+7)/4 = 7.75
+L3_avg = (6+4+7)/3 = 5.67
+L4_avg = (3+5+4+3)/4 = 3.75
+L5_avg = (5+7+7)/3 = 6.33
+
+Overall = (4.75 × 0.30) + (7.75 × 0.25) + (5.67 × 0.20) + 
+          (3.75 × 0.15) + (6.33 × 0.10)
+        = 1.425 + 1.9375 + 1.134 + 0.5625 + 0.633
+        = 5.69/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming is unusable**: `param_1`, `iVar1`, `uVar2` provide no semantic meaning - must infer purpose from usage
+2. **Composite types completely lost**: `Point` struct not recovered; `Node` and `TreeNode` use raw pointer arithmetic instead of proper structs
+3. **Test functions hardcode results**: `printf("MEM-L1-01 (local_vars): %d\n",0x14)` shows expected output instead of calling the function, hiding the actual logic
+4. **`double_free` function is wrong**: Returns early when passed a valid pointer, completely missing the double-free demonstration
+5. **No comments or contracts**: Zero algorithm explanation, no pre/postconditions, no anomaly warnings for undefined behavior
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (8/10)**  
+At -O0, the decompiler correctly recovers loop constructs, conditionals, and early returns. The code structure closely matches the original source's execution flow.
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (3/10)**  
+The decompiled code has almost no useful comments. Original source had extensive documentation (MEM-L1-01, MEM-L2-04, etc.) that is completely lost. Test functions show hardcoded values instead of actual computations.
+
+### Top 3 Recommendations
+
+1. **Recover struct types from allocation patterns**: `malloc(8)` followed by setting two fields should reconstruct `struct Node { int data; struct Node *next; }` rather than raw pointer arithmetic
+
+2. **Generate semantic variable names from usage**: Track how `param_1` is used (e.g., multiplied by 2, used as array index) and infer names like `x`, `count`, or `size`
+
+3. **Annotate test functions with actual function calls**: Instead of `printf("MEM-L1-01: %d\n", 0x14)`, generate `printf("MEM-L1-01: %d\n", local_vars(5))` to show the actual computation
+
+4. **Add anomaly warnings**: Flag undefined behavior like the dangling pointer access and document uncertain indirect calls
+
+5. **Recover original comments**: The source had rich documentation (scene types, test scenarios) that could be partially recovered from debug symbols or inferred from function behavior

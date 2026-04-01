@@ -1,0 +1,3 @@
+Test opaque predicates: %d
+
+10

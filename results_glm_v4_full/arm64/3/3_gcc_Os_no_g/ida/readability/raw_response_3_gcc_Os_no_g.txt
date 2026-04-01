@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `v3`, `v4`), obscuring semantic meaning like `arr`, `i`, or `result`. In `heap_basic`, the array pointer is named `v2` and the loop iterator is `i`, showing inconsistency.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly preserved from the original source (e.g., `double_value`, `local_vars`, `heap_basic`), making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers are prevalent; struct sizes like `0x10u` (16 bytes) and `0x14u` (20 bytes) are used instead of `sizeof(Node)` or `sizeof(Point)`, and loop limits like `0x3E7` (999) are not explained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: While standard code is clean, Variable Length Array (VLA) handling in `vla_stack` and `alloca_usage` introduces significant stack pointer arithmetic noise (e.g., `v1 & 0xFFFFFFFFFFFF0000LL`) that obscures the simple allocation logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops and conditionals are natural, but the VLA functions contain an empty `while` loop (`while ( v6 != v3 ) ;`) representing stack alignment checks, which disrupts the logical flow.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads mostly top-to-bottom with minimal forward jumps; early returns are handled cleanly.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No loop unrolling or dead code is present; the logic is concise and matches the source structure well.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are often widened (e.g., `int` becomes `__int64` or `unsigned int`) and `size_t` is inconsistently represented, though pointer types are generally correct.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical Failure**. Structs like `Point` and `Node` are not recovered; `heap_nested` accesses struct fields via raw pointer arithmetic (`*v2 = 10`, `v3[1] = v4`) instead of `->data` and `->next`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The lack of struct recovery leads to unsafe casts and manual pointer arithmetic (e.g., `(_DWORD *)v2`), increasing the cognitive load and risk of misunderstanding memory layout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no meaningful comments explaining logic, algorithms, or data structures; only auto-generated headers are present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`malloc`, `free`) are recognized, but higher-level patterns like linked list traversal or tree operations are not explicitly identified or annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The complex stack manipulation in VLA functions and the flattened struct accesses are presented as standard code without any warning or anomaly flags.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Preconditions (e.g., `if (!v2) return -1`) are visible but not documented as explicit contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and easy to trace.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are listed in a logical order matching the source flow, though the lack of struct definitions in the output hampers understanding of the data model.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses non-standard types like `__int64` and compiler intrinsics like `LODWORD`, requiring significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Composite types (structs `Point`, `Node`, `TreeNode`) are completely lost, replaced by raw pointer arithmetic and offsets.
+- Variable naming is almost entirely generic (`v1`, `v2`...), requiring manual tracking of data flow.
+- Variable Length Array (VLA) logic is obfuscated by low-level stack pointer alignment checks.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- All function names are preserved exactly from the source, providing excellent high-level navigation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to recover structs turns readable data structure manipulations into obscure pointer math, which is the single biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement or improve struct type recovery algorithms to recognize field access patterns (e.g., `*(ptr+offset)`) and reconstruct `struct` definitions.
+2. Enhance variable renaming heuristics to infer names from usage context (e.g., variables used in `malloc` size arguments should be named `size` or `count`).
+3. Abstract stack probe/alignment code often found with VLAs or `alloca` into cleaner pseudo-operations or comments to preserve logical flow.

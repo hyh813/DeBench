@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_gcc_O2_no_g/ghidra/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization edge cases:\n\n  param_opaque_predicate(10) = 4304907\n  call_opaque_predicate() = 20\n  call_instruction_substitution() = 225\n  param_string_encryption() = 62\n  param_tail_call_optimized() = 500500\n  call_non_tail_call() = 5050\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

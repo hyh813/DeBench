@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `a1`, `v1`, `v2`...`v82` in `param_vectorized_loop`), making it nearly impossible to track data flow compared to the original's descriptive names like `result`, `str`, `acc`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_fake_branch` and `call_fake_branch` are perfectly recovered from the debug symbols, accurately reflecting the original source's intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `90` (XOR key) and `0x100000000` (type promotion artifact) are used without explanation, while original constants like `0xDEADBEEF` and `0x5A` are removed or obscured.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: While the decompiler removes the "fake" branches (cleaning the logic), it introduces significant noise like `& 0xffffffff` (truncation masks) and complex 64-bit arithmetic emulating 32-bit operations (`0x100000000 * ... >> 32`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiler aggressively removes control flow (e.g., `if` statements in `param_fake_branch` are deleted) and transforms recursion into math formulas (`param_tail_call_optimized`), while leaving complex `goto` ladders in `param_vectorized_loop`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are generally kept separate and cohesive, matching the original source's modular structure, though some internal logic is heavily transformed.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Functions like `param_vectorized_loop` are littered with `goto` labels (`lab_0x1403`, `lab_0x159d`), disrupting top-to-bottom readability significantly.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: The decompiler is highly effective at eliminating dead code (e.g., the fake branches), though this is detrimental to understanding the obfuscation techniques present in the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Original `int` types are inflated to `int64_t` or `uint64_t`, requiring explicit masking (`& 0xffffffff`) to maintain correctness, which obscures the original 32-bit logic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Standard library structures like `struct __jmp_buf_tag` are recovered with reasonable accuracy, though field names (`e0`, `e1`) are generic.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The code is generally type-safe, with casts handled implicitly within the arithmetic operations, though the reliance on 64-bit types for 32-bit data is slightly unsafe conceptually.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, the removed branches, or the complex mathematical transformations, leaving the analyst to guess at the intent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The decompiler fails to preserve specific idioms: bit-shifts are simplified to multiplication (`param_instruction_substitution`), recursion is converted to closed-form math, and fake branches are erased.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: There is no indication that code was removed or optimized out; the decompiler presents the simplified version as absolute fact, misleading the analyst about the binary's actual contents.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the expectation that `param_fake_branch` contains unreachable code).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls and global variable usage are clear, and the recovered function names make the call graph easy to understand.
+
+**17. Module Organization:** Score: 9/10  
+Justification: The file structure mirrors the original, with functions grouped logically and helper functions properly identified.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code relies on non-standard intrinsics like `__asm_movdqu` and `__asm_paddd` for SIMD operations, which prevents compilation with standard C compilers without specific headers or inline assembly support.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Control Flow Erasure**: `param_fake_branch` completely lost its `if` statements, hiding the obfuscation technique.
+- **Variable Naming**: Extensive use of `v1`, `v2`... makes tracking data flow impossible (e.g., in `param_opaque_predicate`).
+- **Idiom Destruction**: Bit shifts in `param_instruction_substitution` were simplified to multiplication, and recursion in `param_tail_call_optimized` was turned into a math formula, destroying the original implementation details.
+- **Type Inflation**: Use of `int64_t` for 32-bit `int` variables introduces masking artifacts (`& 0xffffffff`) that clutter the code.
+- **Spaghetti Control Flow**: `param_vectorized_loop` is represented with `goto` labels instead of loops, making it hard to read.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler successfully recovered the original function names from the debug symbols, making the high-level purpose of each function immediately clear.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)  
+- The decompiler aggressively optimizes away the very logic (fake branches, recursion, bit-twiddling) that the source code was written to demonstrate, resulting in code that is mathematically correct but structurally unfaithful to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Disable Aggressive Constant Propagation**: Add a mode to preserve dead code and impossible branches so analysts can see obfuscation attempts.
+2. **Preserve Instruction Patterns**: Detect and preserve bit-shifts and recursion patterns instead of simplifying them to arithmetic formulas.
+3. **Improve Variable Naming**: Use data flow analysis to infer variable names (e.g., `result`, `index`) instead of generic `v#` sequences.

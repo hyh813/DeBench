@@ -1,0 +1,16 @@
+=== Testing Obfuscation & Optimization ===
+
+Obfuscated test 2 (opaque predicate): 10
+Obfuscated test 3 (opaque predicate): 20
+Obfuscated test 4 (instruction substitution): 225
+Obfuscated test 5 (string encryption): 116
+Optimization test 1 (tail call): 500500
+Optimization test 2 (non-tail call): 5050
+Optimization test 3 (vectorized): 72
+Optimization test 4 (LTO): 20
+Edge case test 1 (div by zero): 1
+Edge case test 2 (null pointer): 41
+Edge case test 3 (buffer overflow): 30
+Edge case test 4 (integer overflow): 2000000000
+Edge case test 5 (undefined behavior): 10
+Edge case test 6 (implementation-defined): 43

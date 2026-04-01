@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `uVar2`, `puVar2`. The original variables `a`, `b`, `c`, `temp1`, `temp2` are completely lost. No semantic meaning can be inferred from these names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names like `sequential_ops`, `single_if`, `if_else`, `nested_if_2` match the original source exactly. However, some functions like `call_func_ptr` show "UNRECOVERED_JUMPTABLE" indicating incomplete resolution.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x3e9` (1001), `0x12` (18), `0x65` (101), `0x1f` (31). Data table references like `&DAT_00011848` are completely opaque. The value `0x14` appears instead of explaining it's `20` or the operation code mapping.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes repeated warnings: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call". The decompilation shows 18 such warnings, making it difficult to distinguish actual code from artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is readable - `sequential_ops` correctly collapsed to single expression, `if_else` simplified to boolean return. However, `loop_while` and `loop_dowhile` use bizarre condition `0x12 < uVar2` instead of `x != 0`. The `goto_forward` was incorrectly transformed to formula instead of preserving goto semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well - each original function remains separate. Functions are reasonably sized (20-50 lines). Minor issue: parameter lists expose too many implementation details through generic `param_N` naming.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom without excessive jumps. The `loop_break` uses do-while with embedded return which is acceptable. Forward jumps are minimal. Generally good linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling in `loop_for_fixed` is present but formulaic and manageable. No significant duplicate code blocks observed. Clean output overall.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate - `int` instead of `int32_t`, `uint` instead of `size_t`. Function pointers use imprecise `code *` type. Some correct usage: `bool` for boolean returns, `longlong` for 64-bit. Signed/unsigned handling is inconsistent (e.g., `param_1` sometimes int, sometimes uint).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union reconstruction. Arrays accessed via raw pointer arithmetic: `(&DAT_00011848)[iVar1]` instead of `arr[i]`. The matrix in `loop_multi_exit` is completely lost to pointer manipulation.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety issues: `op_div` has void return type but should return value; function pointer casting uses generic `code *`; pointer arithmetic without bounds checking. The `call_func_ptr` has unresolved indirect call. Several unsafe patterns present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present: "WARNING: Subroutine does not return", "WARNING: Removing unreachable block". No algorithmic comments explaining what functions do. No recovery confidence indicators. Comments are noise, not useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns partially recognized - `duffs_device` shows switch with goto labels, `switch_fallthrough` shows case labels. However, no explicit naming or explanation of these patterns. The decompiler doesn't identify "Duff's device" or fall-through semantics.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warnings for unresolved issues: "WARNING: Could not recover jumptable at 0x00010e90. Too many branches" appears for `call_func_ptr` and `conditional_func_ptr`. "WARNING: Subroutine does not return" correctly flags longjmp. However, some anomalies like the incorrect `op_div` return type aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The decompiler doesn't infer any contracts - no "requires: ptr != NULL" or "ensures: return value is positive". Zero contract recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No information about "called by" or "calls" for each function. Global variables like `jump_buffer` appear without explanation of their role. Data tables like `DAT_00011848` have no context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Output is single monolithic file. Related functions grouped together (state machine functions: `state_idle`, `state_processing`, `state_done`, `state_error`). However, no logical separation or module structure - everything in one 1900+ line file.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple compilation errors: `op_div` has incorrect void return type, `processEntry` malformed in `_start`, `call_func_ptr` has return type issues. External functions (`puts`, `printf`, `__gmon_start__`) not declared. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming completely generic (`param_1`, `iVar1`) - original names `a`, `b`, `temp1` completely lost
+- No struct/union recovery - matrix and array data accessed via raw pointer arithmetic
+- Type precision severely degraded - all specific types lost to generic `int`/`uint`
+- Loop conditions incorrectly transformed (`0x12 < uVar2` instead of `x != 0`)
+- Multiple compilation-breaking issues (wrong return types, undeclared functions)
+- No comments explaining algorithm intent - only warning messages present
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function names match original source exactly (`sequential_ops`, `single_if`, `if_else`, etc.)
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every variable uses generic auto-generated names making code essentially unreadable without cross-referencing source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 + param_2` suggests addition operand, loop counter pattern suggests `i` or `index`)
+2. **Recover loop conditions correctly**: The `0x12 < uVar2` pattern for `x != 0` should be recognized and simplified to meaningful comparisons
+3. **Add meaningful comments**: Instead of just warnings, add algorithmic explanations (e.g., "Implements Duff's device for unrolled memory copy")

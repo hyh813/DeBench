@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Most local variables like `arr`, `i`, `n`, and `head` are recovered accurately. However, critical variables are lost: `tls_var` is replaced by raw register access, and parameters `p1`/`p2` in `stack_alias` are optimized away, reducing semantic clarity.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `double_value`, `heap_basic`, and `linked_list_heap` are preserved perfectly from the source, making the high-level intent immediately obvious.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The code is littered with magic numbers (e.g., `0x28u` for size, `4LL` for `sizeof(int)`) and string literals are replaced with opaque pointers (e.g., `&byte_3300`), requiring manual lookup to understand the output.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in almost every function, cluttering the logic. Additionally, the complex stack probing loops for `alloca` and VLA handling introduce significant noise that obscures the simple allocation intent.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Standard loops and conditionals are recovered well. However, Variable Length Arrays (VLA) and `alloca` usage result in unnatural `while` loops and pointer arithmetic for stack alignment, disrupting the natural flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining of code blocks, maintaining the original structural boundaries perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom. The `linked_list_heap` function merges the creation and traversal loops slightly, but the logic remains linear and traceable without excessive jumping.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Simple expressions like `local_vars` are optimized to `2 * x + 10`, which improves readability. There is no obvious dead code or redundant variables retained from the compilation process.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types like `int`, `int*`, and `size_t` (as `unsigned __int64`) are accurate. Struct pointers (`Point*`, `Node*`) are correctly identified, though `pid_t` is simplified to `int`.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs `Point`, `Node`, and `TreeNode` are perfectly reconstructed with correct field names (`x`, `y`, `data`, `next`) and are used naturally in the decompiled code (e.g., `p->x`, `head->next`).
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer casts from `malloc` are preserved correctly. There are no dangerous or confusing type puns introduced by the decompiler, maintaining the safety of the original logic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of complex stack manipulations, leaving the user to infer everything from the code.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common system call idioms are missed; the `waitpid` status checks using `WIFSIGNALED` and `WEXITSTATUS` are expanded into raw bitwise operations (`status & 0x7F`), obscuring the standard logic.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the nonsensical `if ( !&local )` check in `stack_alias` or the complex stack probe loops as potential anomalies or compiler artifacts, presenting them confidently as code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement `n > 0` in `alloca_usage` is visible in the `if` but not explicitly stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear. However, string references are opaque pointers, breaking the clarity of data flow in `printf` calls.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source flow. Helper functions like `create_tree_node` are placed near their usage in `tree_heap_traversal`.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on standard library types but uses opaque global pointers for strings (e.g., `&byte_3300`), which would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (7 + 9 + 5 + 6) / 4 = 6.75
+L2_avg = (7 + 9 + 8 + 8) / 4 = 8.00
+L3_avg = (8 + 9 + 8) / 3 = 8.33
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.00
+L5_avg = (7 + 8 + 5) / 3 = 6.67
+
+Overall = (6.75 * 0.30) + (8.00 * 0.25) + (8.33 * 0.20) + 
+          (2.00 * 0.15) + (6.67 * 0.10)
+Overall = 2.025 + 2.00 + 1.666 + 0.30 + 0.667
+Overall = 6.658
+```
+
+**Overall Readability Score:** 6.7/10
+
+### Critical Defects
+- **String Literal Obfuscation:** String constants in `printf` calls are replaced with pointers to global data (e.g., `&byte_3300`), making the output unreadable.
+- **Macro Expansion:** System call macros (`WIFEXITED`, `WTERMSIG`) are expanded into bitwise operations, obscuring the standard error-checking logic.
+- **TLS Variable Loss:** The thread-local variable `tls_var` is replaced by raw `__readfsdword` register access, losing the variable name and semantic intent.
+- **Stack Alias Logic Failure:** In `stack_alias`, pointer parameters are lost, and the logic is reduced to a nonsensical `if ( !&local )` check.
+- **VLA/Alloca Noise:** Variable Length Arrays are represented with verbose stack pointer arithmetic and alignment loops rather than clean array syntax.
+
+### Best Quality Aspect
+- **Composite Type Recovery (Score: 9/10)**
+- Structs like `Point`, `Node`, and `TreeNode` are perfectly reconstructed with accurate field names and types, preserving the data structure semantics excellently.
+
+### Most Needs Improvement
+- **Semantic Transparency (Score: 2/10)**
+- The lack of comments, failure to recognize standard system idioms (like `waitpid` macros), and opaque handling of TLS and strings make understanding the *meaning* of the code difficult despite the syntax being mostly correct.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover String Literals:** Automatically map global data pointers used as arguments to `printf` or string functions back to their string literal values to improve readability.
+2.  **Recognize System Macros:** Implement pattern matching to reassemble bitwise operations on `waitpid` signal status into standard macros like `WIFSIGNALED` or `WEXITSTATUS`.
+3.  **Abstract Stack Probes:** Detect and abstract the complex stack probing loops generated for `alloca` and VLA into cleaner pseudo-code or comments indicating "Stack allocation with probe".

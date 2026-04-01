@@ -1,0 +1,10 @@
+TRACE_ENT|0|test_calling_conventions|0|Arg0=-1208862352,Arg1=-1078075536,Arg2=0,Arg3=-1210908767|eax=0xb7ef0dd8,ebx=0x0,ecx=0xbfbddf70,edx=0xbfbddf94,esi=0xb7eef000,edi=0x0
+TRACE_ENT|1|varargs_func|1|Arg0=5,Arg1=1,Arg2=2,Arg3=3|eax=0x1,ebx=0x422fcc,ecx=0xf,edx=0x4204d0,esi=0xb7eef000,edi=0x0
+TRACE_EXT|1|varargs_func|1|15
+TRACE_EXT|0|test_calling_conventions|0|0
+TRACE_ENT|2|test_parameter_passing|0|Arg0=-1208862352,Arg1=-1078075536,Arg2=0,Arg3=-1210908767|eax=0x0,ebx=0x0,ecx=0x2c,edx=0xb7ef0890,esi=0xb7eef000,edi=0x0
+TRACE_ENT|3|param_varargs|1|Arg0=4,Arg1=10,Arg2=20,Arg3=30|eax=0x11,ebx=0x422fcc,ecx=0x11,edx=0xb7ef0890,esi=0xb7eef000,edi=0x0
+TRACE_EXT|3|param_varargs|1|100
+TRACE_EXT|2|test_parameter_passing|0|0
+TRACE_ENT|4|test_return_values|0|Arg0=-1208862352,Arg1=-1078075536,Arg2=0,Arg3=-1210908767|eax=0x0,ebx=0x0,ecx=0xf,edx=0xb7ef0890,esi=0xb7eef000,edi=0x0
+TRACE_EXT|4|test_return_values|0|0

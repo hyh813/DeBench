@@ -1,0 +1,171 @@
+# Decompilation Readability Assessment
+
+## Evaluation Target Analysis
+
+The metadata indicates function `getValue` from a C++ file compiled at `-O0` for ARM64. However, the decompiled output shows a different binary (appears to be x86/x64 based on the code patterns) with multiple test functions. The `getValue` member function (part of `SimpleClass`) was likely inlined even at `-O0`. I'll evaluate the overall decompilation quality across all recovered functions.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are almost exclusively generic single-letter names with numbers (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v10`, `v11`, `v13`). The variable `ptr` appears frequently but without semantic meaning. Compare to source where variables like `value`, `name`, `size`, `data` are descriptive - the decompilation completely loses this semantic information.
+
+#### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: Mix of mangled C++ names (`_Z18test_cpp_exceptionv`) and generic address-based names (`sub_1092c`, `sub_10b90`). While some C++ name demangling is attempted, many functions use cryptic `sub_` prefix with hex addresses. The source function `test_cpp_member_func` is correctly demangled, but helper functions lack meaningful names.
+
+#### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Magic numbers appear throughout without explanation: `0x21e98`, `0x1164c` (typeinfo pointers), `71212`, `71232` (also typeinfo). The value `42` appears but its significance as an exception value isn't documented. String literals like `"==="` are partially recovered but lack context. No attempt to name these constants.
+
+#### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant compiler artifacts present: `__stack_chk_guard` comparisons, `GLIBC_2.4::__stack_chk_guard`, multiple `__cxa_*` exception runtime functions. The exception handling code (`test_cpp_exception`) is particularly noisy with many uninterpreted runtime calls. However, some functions like `test_cpp_constructor` are cleanly empty (correctly reflecting optimized-out code).
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness
+**Score: 3/10**
+
+Justification: The exception handling in `test_cpp_exception` uses goto-based control flow that obscures the try-catch structure. The `call_virtual_func` uses `goto *((int *)*((int *)arg_0))` which is a computed goto for vtable dispatch - correct but unreadable. Loop constructs in template functions are reasonably natural, but exception flow is spaghetti-like.
+
+#### 6. Function Decomposition
+**Score: 5/10**
+
+Justification: Functions are appropriately separated - each test function is its own unit. However, many functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func` return immediately) because the actual computation was optimized away or inlined. The template functions are reasonably decomposed. Some thunk functions for multiple inheritance add complexity but are necessary.
+
+#### 7. Code Linearization
+**Score: 4/10**
+
+Justification: The exception function has multiple forward jumps and confusing goto patterns that disrupt linear reading. Template functions read relatively linearly. The overall score is dragged down by the exception handling code which is nearly impossible to read top-to-bottom.
+
+#### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some redundant patterns exist - `register_tm_clones` and `deregister_tm_clones` have similar conditional structures. The template functions show minimal redundancy. The main issue is the exception handling code which has some duplicate patterns, but overall it's manageable.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision
+**Score: 4/10**
+
+Justification: Types are often generic - `unsigned int` used for most values, `void*` for pointers. Some class names are recovered (`class Base`, `class Derived`) but many parameters use `int` or `unsigned int` where more specific types exist. The source uses `size_t` for sizes; decompilation uses `unsigned int`. Const correctness is not preserved.
+
+#### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some struct recovery is attempted - `struct_0` and `struct_1` in RTTI code with fields `field_0`, `field_4`. However, these are generic and lose semantic meaning. The source has well-defined classes (`RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB`) but decompilation uses incomplete typedefs. Vtable structures are not reconstructed.
+
+#### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe patterns: `(int)(*(ptr))[4]` casts, pointer arithmetic without bounds (`*((int *)((char *)ptr + 4 * index))`), void pointer dereferencing. The virtual function call `goto *((int *)*((int *)arg_0))` is type-unsafe. Many casts between integer and pointer types without validation.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. Function signatures have minimal documentation. No explanation of complex logic like virtual dispatch, exception handling, or template instantiation. The comment `// ANOMALY: Indirect call could not be resolved` does not appear - anomalies are not flagged. Code presents as confident when it should indicate uncertainty.
+
+#### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some C++ patterns are recognized - virtual function calls through vtables, thunk functions for multiple inheritance, exception handling runtime. However, these are not explicitly named or documented. The source uses clear idioms (RAII, smart pointers, lambda expressions) but decompilation doesn't identify them.
+
+#### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly indication whatsoever. The code presents computed gotos for vtable calls as confident implementations. Exception handling is shown as straightforward code when it's actually complex runtime interaction. No flags for indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior.
+
+#### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contracts recovered. Preconditions like "ptr != NULL" are not documented. Postconditions are not inferred. The source has clear semantics (e.g., `getData` returns -1 for invalid index) but this isn't captured. No error condition documentation.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Some relationships are clear - `test_cpp_oo_features` calls all test functions. Virtual function relationships are partially visible through vtable usage. But global variable usage is not well documented. Callback relationships are not explicit. The call graph is partially recoverable but not clearly documented.
+
+#### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are grouped somewhat logically - initialization functions, test functions, class methods. But the organization is arbitrary in a single flat namespace. No clear separation between runtime support, test code, and class implementations. The source had clear class definitions which are not reflected in the decompiled organization.
+
+#### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Many `extern` declarations needed for runtime functions (`__cxa_allocate_exception`, `__cxa_throw`, `operator new`, etc.). The code would require significant patching to compile. Dependencies on libstdc++ are not documented. Some functions have correct signatures but others would need stub implementations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+3+4)/4 = 3.0
+L2_avg = (3+5+4+6)/4 = 4.5
+L3_avg = (4+4+4)/3 = 4.0
+L4_avg = (2+4+1+1)/4 = 2.0
+L5_avg = (4+5+3)/3 = 4.0
+
+Overall = (3.0 × 0.30) + (4.5 × 0.25) + (4.0 × 0.20) + (2.0 × 0.15) + (4.0 × 0.10)
+        = 0.90 + 1.125 + 0.80 + 0.30 + 0.40
+        = 3.545/10
+```
+
+**Overall Readability Score: 3.5/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is unusable**: All variables use generic names (`v0`, `v1`, `ptr`, `result`) losing all semantic meaning from source (`value`, `name`, `size`, `data`)
+
+2. **Exception handling is incomprehensible**: The `test_cpp_exception` function uses goto-based spaghetti code that makes the try-catch-throw logic nearly impossible to follow
+
+3. **No anomaly indication**: Complex patterns like virtual dispatch (`goto *vtable`) are presented as confident code without flagging the indirect call resolution issue
+
+4. **Type information severely degraded**: Classes are reduced to generic structs with numbered fields (`struct_0`, `field_4`), losing all semantic type information
+
+5. **No comments or documentation**: Zero explanation of complex C++ idioms (RAII, virtual functions, exceptions, templates) - code presents as if it were straightforward C
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Decomposition (5/10)** - Functions are appropriately separated into logical units. Each test function is isolated, and class methods are separate from their callers. While many are empty stubs, the decomposition structure itself is reasonable.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Semantic Transparency (2/10)** - The decompilation fails completely on multiple sub-dimensions: no useful comments, no pattern recognition, no anomaly indication, and no contract recovery. The code reads as opaque machine output rather than human-understandable source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names. For example, variables used with `strlen` should be suggested as "string" or "buffer" candidates.
+
+2. **Recover try-catch structure from exception runtime**: The `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch` pattern should be reconstructed into try-catch blocks rather than goto spaghetti.
+
+3. **Add confidence indicators for indirect calls**: Flag vtable dispatches and function pointers with comments like "// VIRTUAL CALL: could not resolve exact function" to help analysts understand the uncertainty.

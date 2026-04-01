@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_28`, `uStack_24`, `iVar1`, `puVar1` with zero semantic meaning. At `-O0` optimization, debug symbols should enable meaningful names like `value`, `name`, `result`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_constructor`), but external function stubs show broken recursive self-calls (`operator_new` calls `operator_new`). Template instantiations reasonably named (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a` with no explanation. String literals referenced as `DAT_00011358` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Verbose stack initialization (`local_28 = 0x74736554; uStack_24 = 0;...`), broken external stubs calling themselves, and `undefined4` type clutter throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions constant-folded to single returns (`return 0x2a`), losing all original logic. Exception handling shows raw `__cxa_*` calls instead of try-catch blocks.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions appropriately sized but many are just constant returns. Template instantiations properly separated, but class methods lack proper cohesion with class definitions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom without excessive gotos, but constant-folding makes it impossible to trace original execution paths through the logic.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Redundant stack zeroing (8+ variables set to 0), broken external function stubs that serve no purpose, and repeated pointer arithmetic patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy `undefined4`, `undefined`, `void*` usage instead of proper C++ types. No `int32_t`, `size_t`, or const-correctness. Class pointers just `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: NO class/struct definitions recovered. Object fields accessed via pointer arithmetic (`this + 0x28`, `this + 0x50`). We see `Container<int>::push` but no Container struct definition.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(int *)`, `(void*)`. Pointer arithmetic on class objects without bounds checking. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only SHA256 header comment. Zero comments explaining logic, algorithms, decompilation uncertainty, or API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: RAII, virtual dispatch, templates, lambdas, exceptions all appear as raw low-level operations without pattern identification.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of decompilation problems. Broken recursive self-calls in external stubs not flagged. No uncertainty markers for indirect calls or vtable dispatch.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero preconditions, postconditions, or invariants documented. No error condition documentation. Exception contracts completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Virtual dispatch appears as raw vtable calls (`(***(code ***)param_1)()`) without indicating polymorphism.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file (expected). Some logical grouping (test functions together, class methods together), but no namespace or header structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile: recursive function calls, `undefined4` types, missing class definitions, unresolved external dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+6+3+3)/4 = 3.50
+Level 2 Average: (4+5+6+4)/4 = 4.75
+Level 3 Average: (3+2+3)/3 = 2.67
+Level 4 Average: (2+2+1+1)/4 = 1.50
+Level 5 Average: (4+5+2)/3 = 3.67
+
+Overall = (3.50 × 0.30) + (4.75 × 0.25) + (2.67 × 0.20) + (1.50 × 0.15) + (3.67 × 0.10)
+        = 1.05 + 1.19 + 0.53 + 0.23 + 0.37
+        = 3.37/10
+```
+
+**Overall Readability Score: 3.4/10**
+
+### Critical Defects:
+- **Variable names all generic** (`local_28`, `iVar1`) despite `-O0 -g` debug symbols being available
+- **No class/struct definitions recovered** - C++ objects accessed via raw pointer arithmetic (`this + 0x28`)
+- **External function stubs broken** - recursive self-calls (`operator_new` calls `operator_new`)
+- **Constant-folding lost all logic** - test functions return constants instead of showing computation
+- **Zero semantic documentation** - no comments explaining C++ features (vtables, exceptions, templates)
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), showing the decompiler can recover some symbol information.
+
+### Most Needs Improvement:
+- **Anomaly Indication (1/10)** - No warnings about broken external stubs, unresolved calls, or decompilation uncertainty. User has no way to know which parts are unreliable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols at -O0** - Variable names, type information, and function signatures should be recovered from DWARF debug info when `-g` flag is present.
+2. **Recover C++ class structures** - Analyze vtable layouts and object field access patterns to reconstruct class definitions with proper field names and types.
+3. **Flag decompilation uncertainty** - Add comments like `// ANOMALY: External stub unresolved` for broken function calls and `// CONFIDENCE: LOW` for constant-folded regions.

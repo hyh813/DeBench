@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`, `v3`, `v4`) obscuring their semantic purpose. Some preservation exists (`large_buf`, `move_buf`, `tree_node`, `head`), but the majority lack meaningful names that reflect their role in the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names are well-preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). However, helper functions use mechanical names (`sub_1020`, `sub_1030`) and the metadata inconsistency (claims Ghidra but header says IDA Pro) indicates tool confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x28u` (stack canary offset), `0x10u`/`0x14u`/`0x28u` (malloc sizes), `0x3E7` (bounds check). Some are inferable from context but none are documented as named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present despite `-O0`: stack canary checks (`__readfsqword(0x28u)`) in nearly every function, register variables (`v0`, `v1`), and type casts (`_DWORD *`, `_QWORD *`). These obscure the original clean source code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for`/`while` constructs in most cases. Some functions use `do-while` patterns differing from source (e.g., `vla_stack`, `alloca_usage`). Conditionals are generally clear with proper `if-else` structures.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—no excessive inlining or fragmentation. Each function maintains single responsibility. Parameter lists are reasonable without exposing implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate early returns. No excessive `goto` usage. Some functions have forward references that slightly disrupt flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary setup repeated in many functions creates redundancy. No significant dead code, but compiler artifacts (register spills, type promotions) add unnecessary verbosity throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `_DWORD`, `_QWORD`, `__int64` instead of proper C types (`int*`, `void*`, `size_t`). Pointer types sometimes correct but often generic. Lost `const` correctness in several places.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs referenced with field access (`v1->data`, `v1->next`, `result->left`), indicating partial recovery. However, struct definitions aren't shown in decompiled output, and `Point` struct is completely lost (replaced with arithmetic).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(_DWORD *)`, `(_QWORD *)`, `(char *)`. Pointer arithmetic present but generally correct. No buffer overflow warnings despite dangerous patterns in source (e.g., `heap_overflow`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers. No algorithm explanations, no documentation of non-obvious logic. Critical patterns (VLA, alloca, memory barriers) completely undocumented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Memory allocation patterns visible but not labeled. Linked list and tree traversal patterns not recognized or named despite being classic data structure operations.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "FAILED to decompile" for 16 external functions, "positive sp value has been detected, the output may be wrong!" warning. However, suspicious code (dangling pointer, double free) not explicitly flagged as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but aren't documented as contracts. Error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear, global variable usage visible (`global_counter`, `file_scope_static`). Callback relationships not explicitly documented. Test functions show constant-folded values instead of actual calls, breaking traceability.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure (stack→heap→static→memop). All in one file without header separation. Static functions properly scoped but no namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 16 external functions failed to decompile (`malloc`, `free`, `printf`, `fork`, etc.), requiring stubs. Code won't compile standalone without significant work. No dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+7+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):   (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type System):  (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):     (2+3+5+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):   (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.41/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Test functions show constant folding** at `-O0` compilation level (e.g., `local_vars(5)` displays `20` instead of calling the function)—indicates either wrong compilation flags or decompiler optimization artifacts
+- **Variable names predominantly generic** (`v0`, `v1`, `v2`) obscuring semantic purpose despite debug compilation
+- **16 external functions failed to decompile** including critical libc functions (`malloc`, `free`, `printf`, `fork`)
+- **Stack canary artifacts** (`__readfsqword(0x28u)`) present despite `-O0` debug compilation
+- **No comments or documentation** for complex patterns (VLA, alloca, memory barriers, TLS)
+
+### Best Quality Aspect: **Function Decomposition (8/10)**
+- Function granularity matches source well with appropriate single-responsibility functions and no excessive inlining or fragmentation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Almost complete absence of comments means readers must infer all logic without any guidance on algorithm intent or non-obvious patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns**—analyze how variables are used (e.g., `v4[n/2]` accessing middle element should suggest `middle_index` or similar)
+2. **Add confidence indicators and anomaly flags** for suspicious patterns (dangling pointers, double frees, memory leaks) with explicit warnings
+3. **Preserve function call relationships in test functions** instead of constant-folding—show actual calls like `local_vars(5)` rather than hardcoded `20` to maintain traceability

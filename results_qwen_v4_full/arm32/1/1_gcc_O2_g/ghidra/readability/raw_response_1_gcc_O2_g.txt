@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `uVar1`, `piVar2`) obscuring semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` which are lost. Many show "Unresolved local var" comments indicating recovery failure.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - all function names preserved from original source (`sequential_ops`, `nested_if_deep`, `duffs_device`, etc.). Action-oriented names clearly reflect purpose and match source exactly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Inconsistent literal representation - some decimal (10, 5), others hex (0x14, 0x1e, 0x3e9). Magic numbers like `0x3e9` (1001) and `0x65` (101) not explained. Test function outputs show pre-computed values instead of actual function calls.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "Unresolved local var" comments clutter code. Compiler runtime functions (`__aeabi_idiv`, `__gmon_start__`) included without abstraction. Test functions show duplicated array initialization code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered (if-else, loops) but optimization artifacts present. `recursion_factorial` converted to iterative loop (expected at -O0 is suspicious). `duffs_device` shows complex goto patterns instead of clean switch fall-through. `switch_fallthrough` logic restructured awkwardly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No excessive inlining or fragmentation. Helper functions (`double_value`, `op_add`, etc.) remain separate as in source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Test functions (`test_control_flow_l1/2/3`) have forward jumps (`goto LAB_00010b8c`) disrupting flow. Loop constructs generally use do-while instead of for, reducing readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions show significant redundancy - array initialization duplicated multiple times. `loop_modify_var` logic appears twice in test function. Some optimization-induced redundancy in division functions (`__aeabi_idiv` has 35+ boolean variables).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved but no precision hints (int32_t, uint32_t). Function pointer types partially recovered (`_func_int_int *`). Some unsigned conversions implicit (`(uint)x < 5`). Pointer arithmetic visible in array access.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`int arr[5]`, `int matrix[3][4]`). No complex structs in this codebase to evaluate. Local array initialization visible in decompiled code. Pointer-to-array distinctions maintained.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple "WARNING: Could not recover jumptable" and "Treating indirect jump as call" warnings indicate type uncertainty. Function pointer calls lack full signature verification. Some implicit casts (`(uint)(event == 1)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings only ("WARNING:", "Unresolved local var"). No semantic explanations of algorithm purpose. Original source had extensive documentation (难度依据，场景标签，测试验证) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, switch) but not explicitly named. `duffs_device` pattern not identified as such. State machine pattern in `state_machine` not documented. No algorithm naming.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for unresolved elements ("Could not recover jumptable", "Removing unreachable block"). Indirect calls flagged appropriately. However, warnings don't suggest manual analysis steps.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Original test validation comments (测试验证，期望值) completely lost. No error condition documentation beyond basic return values.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Callback relationships (`process_with_callback`) not explicitly documented. Function pointer arrays show targets but no usage context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order but no logical grouping. Test functions separated from implementation. No header file structure or API declarations visible.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code marked as compilable ("Compilation Result: Yes"). External dependencies visible (`__libc_start_main`, `puts`, `__printf_chk`). Some platform-specific functions (`__aeabi_idiv`) may need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+8+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (6+6+7)/3   = 6.33 × 0.10 = 0.63
+
+Overall Score: 6.10/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `iVar2`) losing all semantic meaning from original (`temp1`, `sum`, `count`, `result`)
+- **Test functions show pre-computed values** instead of actual function calls, making verification impossible
+- **Original documentation completely lost** - no 难度依据，场景标签，or 测试验证 comments recovered
+- **`duffs_device` control flow severely degraded** - complex goto patterns instead of clean switch fall-through
+- **`recursion_factorial` converted to iteration** - loses original recursive semantics despite -O0 compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All original function names preserved exactly, enabling immediate identification of purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation, test validation comments completely lost, making correctness verification difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from DWARF debug info** - The -g flag was present but variable names weren't recovered (show "Unresolved local var" instead of `temp1`, `sum`, etc.)
+2. **Preserve original source comments in decompilation output** - Debug symbols should include comment recovery, especially for test validation expectations
+3. **Improve switch fall-through pattern recognition** - `duffs_device` and `switch_fallthrough` should be identified as intentional fall-through patterns with appropriate comments rather than complex goto restructuring

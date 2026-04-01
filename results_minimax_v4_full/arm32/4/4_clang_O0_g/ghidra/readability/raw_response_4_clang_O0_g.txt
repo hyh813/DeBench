@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `iVar1`, `uVar2`, `local_1c`, `local_18`, `local_c [3]` throughout. Many remain "Unresolved local var" with DWARF offsets like `int sum@[DW_OP_breg13(sp): +4]`. Only parameter names like `a`, `b` in simple functions are preserved.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved: `cdecl_func`, `stdcall_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `ret_pointer`, etc. All match original source function names exactly. Minor deduction for some internal helper function confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear like `0x2a` (42) in `func_no_args`, `0x14` (20), `0x1e` (30). However, many magic numbers remain unexplained (e.g., `0x70`, `0x10` for loop bounds). Mixed hex/decimal usage is inconsistent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution includes: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" comments throughout. Compiler helper functions like `__adddf3`, `__floatsidf`, `__fixdfsi` are included unnecessarily. Debug info artifacts clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for` constructs, conditionals are clear. However, `func_struct_byval` has confusing pointer arithmetic that obscures the loop: `s.data[0]._0_4_ = local_10 + local_1c * 2`. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain proper granularity - each test function (`call_cdecl`, `call_stdcall`) is separate from implementation. No excessive inlining at -O0. Function sizes are reasonable (typically 5-20 lines). Minor issue: some complex functions like `test_calling_conventions` are large (60+ lines).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in some functions. Some forward jumps in complex functions like `func_struct_byval` but not severe. Overall good linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some redundancy in struct handling where `func_struct_byval` has repeated field access patterns. Loop unrolling not present at -O0. Generally clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used throughout instead of specific widths (`int32_t`). Function pointer types are somewhat generic (`_func_int_int *callback`). Parameters generally typed correctly (`int *p`, `char *s`). Const correctness not preserved. Mixed: `int` vs specific types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structs recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`. However, field names are generic (`data[0]`, `data[1]`). The `func_struct_byval` shows confusing struct handling with `_0_4_`, `_4_4_` field accessors. Some struct recovery is good, some is confusing.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some unsafe patterns in `func_mixed_args` with raw `undefined8`, `undefined4` types. Pointer arithmetic appears correct. No major buffer overflow risks in simple functions. Minor issues with void pointer casts in `param_complex_cast`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Mostly auto-generated warnings: "WARNING: Unknown calling convention", "Unresolved local var". No useful algorithm documentation. No explanation of non-obvious logic. The comment "Unresolved local var: va_list args@[DW_OP_breg13(sp): +8]" is debug info, not helpful documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. The varargs handling is not recognized as such (just shows as manual pointer arithmetic). No naming of patterns like "AAPCS calling convention" or "cdecl semantics".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "WARNING: Unknown calling convention" appears frequently. "Unresolved local var" indicates problems. However, no explanation of what the anomaly means or its impact. Silent on potential undefined behavior in `call_order_dep`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `func_struct_byptr` requires `p != NULL` (though the code checks it). No contract information recovered whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`cdecl_func(5,10)`). But no documentation of who calls whom, no call graph information. Static functions not explicitly marked as such. Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Related functions grouped (calling convention tests together, parameter tests together). But no logical section headers, no namespace/grouping. Arbitrary ordering based on address.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references undefined functions: `printf`, `strlen`, `memset`, `__gmon_start__`, `__cxa_finalize`, `__libc_start_main`. Would require significant stubs to compile. No dependency documentation. Many internal compiler helpers would need to be provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: generic names like `iVar1`, `local_1c`, `local_c [3]` instead of semantic names
+- Excessive noise: "WARNING" comments and "Unresolved local var" debug artifacts clutter every function
+- No semantic documentation: no comments explaining calling conventions, parameter semantics, or algorithm intent
+- Type precision lost: all `int` instead of specific widths; const correctness not preserved
+- Struct field names generic: `data[0]`, `data[1]` instead of meaningful field names
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from source: `cdecl_func`, `stdcall_func`, `varargs_func`, `ret_pointer`, etc. This is the strongest area of the decompilation.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Variables are almost entirely generic (`iVar1`, `uVar2`, `local_4`, `local_c`) with no semantic meaning. Combined with the noise pollution (4/10), the lexical clarity is severely compromised.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*local_14` being dereferenced in loop → `sum`; `local_1c < count` → `i` or `index`)
+2. **Clean up debug artifacts**: Suppress "Unresolved local var" comments and consolidate "WARNING" messages into a summary section rather than cluttering each function
+3. **Recover struct field names from DWARF**: Use debug info to get actual field names like `x`, `y` instead of generating `data[0]`, `data[1]` or `_0_4_` accessors

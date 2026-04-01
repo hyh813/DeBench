@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3` throughout (e.g., `param_vectorized_loop` has 7 generic temporaries). Original semantic names like `result`, `sum`, `canary` are lost in most functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved well (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Only library wrappers use generic names (`function_880`, `function_890`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x12345678` (canary), `90` (encryption key), and `65`/`66` (ASCII 'A'/'B') appear without explanation. String literals stored as UTF-8 encoded globals (`g5`-`g19`) are unreadable.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`if (*(int64_t *)g1 != *(int64_t *)g1)`) add noise. Verbose `setjmp`/`longjmp` struct initialization with explicit field values clutters signal handler code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` dead code correctly eliminated but not noted. `param_buffer_overflow_stack` has invalid C semantics (`buffer = v1;` for array assignment). `param_vectorized_loop` splits one loop into two phases awkwardly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. Library wrappers appropriately separated. `param_fake_branch` oversimplified to single return statement losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Loop counters tracked with multiple variables (`v5`, `v6`, `v7` in `param_vectorized_loop`) disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from always-false conditions correctly removed. However, redundant type casts present throughout (`(int64_t)v2`, `(int32_t)len`). Stack canary checks duplicated in multiple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses precise types (`int32_t`, `int64_t`, `uint32_t`). However, `param_instruction_substitution` changed from `int` to `uint32_t`. Some implicit casts between signed/unsigned without explanation.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic field names (`e0`, `e1`, `e2`). Bitfield struct in `param_implementation_defined` replaced with assembly intrinsics (`__asm_bfi`, `__asm_ubfx`) losing structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts between pointer types and integers. `param_null_pointer_deref` has uninitialized variable `v2` used in return. Intentional buffer overflow code preserved without safety warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No explanatory comments in decompiled code. Only metadata comments with address/line ranges. No indication of what obfuscation techniques were present or eliminated.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Opaque predicates not identified as such. String encryption pattern not recognized. Tail call optimization not noted despite recursive structure preserved.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies flagged despite significant transformations. `param_fake_branch` simplification not noted. Setjmp/longjmp verbose initialization not explained as decompilation artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). Signal handler contracts not explained. Error return values (-1, -2) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through direct calls. Global variables (`g1`-`g21`) poorly documented with only addresses. Library wrapper relationships identifiable.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with prototypes at top. No logical grouping comments between obfuscation/optimization/edge case sections. Original section structure lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Standard headers included. Assembly intrinsics (`__asm_bfi`, `__asm_ubfx`) may not compile on all platforms. Generally should compile with minor modifications for ARM-specific intrinsics.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (7+5+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (3+3+4+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+6+7)/3   = 6.33 × 0.10 = 0.63
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.36/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable `v1`-`v7`** should be named based on usage (e.g., `loop_index`, `sum_accumulator`, `array_offset`)
+- **`param_fake_branch`** dead code elimination not documented - loses obfuscation intent
+- **String literals** stored as UTF-8 hex bytes in globals (`g5`-`g19`) instead of readable strings
+- **`param_buffer_overflow_stack`** has invalid C semantics (array assignment `buffer = v1`)
+- **No comments** explaining obfuscation techniques, opaque predicates, or security implications
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved accurately, making it easy to identify test purposes and correlate with source documentation.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or error handling contracts documented, making it difficult to understand function requirements and guarantees.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Track how variables are used (loop counters, accumulators, pointers) and assign semantic names accordingly
+2. **Add decompilation confidence annotations** - Flag transformations like dead code elimination, optimization recovery, and uncertain reconstructions with comments
+3. **Recover string literals as readable text** - Decode UTF-8 encoded global strings and present them as normal C string literals with comments for non-ASCII content

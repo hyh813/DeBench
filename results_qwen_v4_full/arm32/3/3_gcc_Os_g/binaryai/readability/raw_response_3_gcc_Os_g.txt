@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `piVar1` throughout; no semantic meaning (e.g., `__ptr` should be `heap_array`, `local_c` should be `canary_check`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`); action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x1e` (30); hex notation obscures intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`) appear in most functions; compiler runtime functions (`deregister_tm_clones`, `register_tm_clones`) included unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use do-while pattern instead of for; conditional logic readable but stack check epilogues disrupt natural flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source; however, several functions have incorrect signatures (e.g., `local_array` returns void instead of int).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom; forward jumps to stack check handlers disrupt linear reading in many functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding occurred (`local_vars` simplified to `param_1 * 2 + 10`); stack canary checks redundant in functions without buffers.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `void*`); function pointers degraded to `code *`; signed/unsigned distinctions lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—`Point`, `Node`, `TreeNode` structs not recovered; accessed via pointer arithmetic (`piVar2[1]` for next pointer).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere (`(undefined4 *)`, `(int *)`); pointer arithmetic on void pointers; type-confused function calls.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code; no algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation/traversal pattern not identified; tree structure not recognized; malloc/free patterns unnamed.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Stack canary checks present but unexplained; no warnings about potential undefined behavior (dangling pointer, double free).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`); no postconditions; error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables (`global_counter`, `file_scope_static`) used without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source; external functions declared at top; no header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Compilation issues present (wrong return types, missing struct definitions); external dependencies not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (4+2+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic (`piVar2[1]`) instead of field names
+- **Incorrect return types**: `local_array`, `large_stack_frame`, `static_local` return `void` instead of `int`
+- **Zero documentation**: No comments explaining logic, magic numbers, or decompilation confidence
+- **Generic variable naming**: `param_1`, `iVar1`, `uVar2` provide no semantic information
+- **Magic numbers unexplained**: `0x2a`, `0x14`, `0xf`, `0x1e` used throughout without constant definitions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it possible to identify purpose despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze memory access patterns to reconstruct struct layouts with meaningful field names (e.g., `Node.data`, `Node.next`)
+2. **Add semantic comments** - Generate explanatory comments for non-trivial logic, magic numbers, and decompilation confidence levels
+3. **Infer variable names from usage** - Use data flow analysis to name variables based on their role (e.g., `heap_ptr` for malloc results, `canary` for stack checks)

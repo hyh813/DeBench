@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+After analyzing the original source and decompiled output, I observe that the decompilation has **severely failed** for this specific function - it has lost the parameter entirely, the fake branch logic is completely eliminated, and returns an uninitialized variable. Let me provide detailed scoring across all dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: For `param_fake_branch`, variable `v0` is used but never initialized - it's an uninitialized local returning garbage. The original had `result` and `str` with clear semantics. This is catastrophic failure.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The function name `param_fake_branch` correctly matches the source, but many other functions use cryptic addresses (e.g., `sub_4004b8`, `sub_400f78`). Mixed results - some accurate, others mechanical.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0xDEADBEEF` from source are completely lost. The decompiled code has unexplained constants like `4294967295` (0xFFFFFFFF) appearing without context. String "test" and strlen usage are entirely eliminated.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution: register comments (`// r0`, `// lr`, `// [bp-0x4]`), strange constructs like `vvar_60{r64|4b}`, and internal decompiler notation clutter every function. The code is unreadable due to these artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The fake branch logic (`if (x * x < 0)`) is completely eliminated - not even a dead code path remains. Control flow is trivialized to just `return v0;`. The original had two unreachable if-blocks that are entirely lost.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: `param_fake_branch` is reduced to a single return statement - oversimplified to the point of being incorrect. The function no longer demonstrates the obfuscation technique it was designed to show.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: For this specific function, linear reading is trivial (just a return). However, other functions like `param_opaque_predicate` have complex goto patterns disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code elimination is expected at -O0, but the complete removal of both fake branches is excessive - the semantic intent of the obfuscation is lost entirely.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Parameter `int x` is completely lost - function has no parameters. Return type shows `int` but returns uninitialized `unsigned int v0`. Signed/unsigned confusion throughout.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No composite types needed for this simple function, but the loss of the string literal `"test"` (used with strlen) demonstrates type information loss.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Returning uninitialized local variable `v0` is a severe type safety violation - undefined behavior. The decompiled code would crash or return garbage.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only mechanical comments like `// r0` appear. No explanation of the fake branch obfuscation technique, no indication that the branches are intentionally unreachable.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (always-false condition) obfuscation idiom is completely unrecognized. The decompiler eliminated it entirely rather than identifying it as dead code from an obfuscation pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warning that `param_fake_branch` returns an uninitialized variable. No flagging that the function lost its parameter. Silent failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. The original had implicit assumptions (x is int, result initialized to x) that are lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: The call site `call_fake_branch()` calls with argument 10, but `param_fake_branch` has no parameters - this mismatch is not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address rather than by logical purpose. The obfuscation functions should be grouped together.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: `param_fake_branch` would not compile - it returns an uninitialized variable. This is a compilation error, not just a warning.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.3/10
+
+**Critical Defects:**
+- `param_fake_branch` has **no parameters** (should be `int x`) - completely lost
+- Returns **uninitialized variable** `v0` - undefined behavior, would crash
+- Both fake branch conditions (`x*x < 0`, `strlen(str) < 0`) are **entirely eliminated** - the obfuscation technique is lost
+- String literal `"test"` and `strlen()` call are completely gone
+- Severe noise pollution with register annotations (`// r0`, `// lr`) on every line
+
+**Best Quality Aspect:** Function Naming Quality (scored 5/10)  
+- The function name `param_fake_branch` correctly matches the source, though many other functions use cryptic address-based names
+
+**Most Needs Improvement:** Type System Fidelity (scored 1.7/10)  
+- Losing the function parameter entirely and returning an uninitialized variable represents catastrophic type information loss
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve function parameters** - The parameter `int x` should never be lost; this is basic decompilation requirement
+2. **Detect and preserve dead code paths** - The fake branches may be unreachable but represent intentional obfuscation; flag as "dead code from obfuscation" rather than eliminating
+3. **Eliminate register annotation noise** - Comments like `// r0`, `// lr` add no value; remove these compiler artifacts to improve readability

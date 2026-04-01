@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The original source code contains multiple test functions, with `param_strcpy` being one of the standard library wrapper functions. The decompiled output shows significant differences from the ARM64 source - it's actually x86 binary decompiled. Let me evaluate all dimensions systematically.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `a0`, `a1` instead of descriptive `dst`, `src`. Local variable `v0` is assigned `_GLOBAL_OFFSET_TABLE_` but never used - this is dead storage. The source uses meaningful names while decompiled code uses auto-generated positional names that obscure purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function correctly named `param_strcpy` matching source exactly. The wrapper functions like `call_strcpy`, `sub_4015a3` also preserve naming where possible. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (unsigned -1) appears in error returns without explanation. The `_GLOBAL_OFFSET_TABLE_` is a compiler artifact that adds noise. String literals like "HelloLib" are correctly preserved. Many numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present - `v0 = &_GLOBAL_OFFSET_TABLE_;` in `param_strcpy` is dead code. Many functions have unused variable assignments. The decompiled code includes numerous struct definitions with `padding_0` arrays that are compiler artifacts. Frame pointer manipulation and register saving code pollutes the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - simple sequential execution for `param_strcpy`. At `-O0` level, we expect minimal optimization distortion. The if-else chains in error handling are readable. Some computed jumps in signal handling are complex but expected for that functionality.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines typical). The decomposition matches source - each wrapper function (`call_strcpy`, `param_strcpy`) is separate. Some thunk functions like `sub_4015a3` that just call `call_strcpy` are unnecessary artifacts.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: `param_strcpy` reads top-to-bottom cleanly. Early returns in error handling are used appropriately. No excessive goto or forward jumps in the target function. Some complex nesting in pthread functions but that's semantic complexity, not decompilation failure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The unused `v0 = &_GLOBAL_OFFSET_TABLE_;` assignment is redundant. Some loop index calculations could be cleaner. Common subexpression elimination artifacts visible in string handling functions. Overall manageable but not optimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters declared as `char *a0, char *a1` but source uses `char *dst, const char *src`. Missing `const` qualifier on source parameter is a type precision loss. Return type `int` matches source. Some functions use `unsigned int` where `int` would be more accurate. Mixed precision throughout.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler creates synthetic struct types like `struct_0` with `padding_0` arrays - these are reconstruction artifacts. The FILE struct is empty `typedef struct FILE {} FILE;`. pthread types like `ThreadData` are not recovered as named structs. Some field names lost entirely.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Basic pointer usage is safe in `param_strcpy`. However, many unsafe casts present - `*((unsigned int *)&v2[4 * idx]) = 255;` in `call_memset` treats char array as int*. Some pointer arithmetic could lead to undefined behavior. No `restrict` or alignment annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in any decompiled function. The source has extensive comments explaining each test case. Zero recovery of documentation, algorithm explanations, or intent comments. This is a major readability gap.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library calls (`strcpy`, `strlen`, `strcmp`) are correctly identified. The strcpy+strlen pattern in `param_strcpy` is recognized. pthread patterns are partially recovered. Some patterns like the TLS access in `thread_tls_test` use cryptic `_ccall` which obscures the idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainties. The indirect function calls in pthread_create are resolved to function pointers without noting confidence level. No warnings about potential undefined behavior or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions (e.g., "ensures: dst is null-terminated"). The source has implicit contracts (strcpy requires adequate buffer) that are not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls to libc (strcpy, strlen) are clear. The relationship between `call_strcpy` → `param_strcpy` → `strcpy` is visible but not explicitly documented. Global variables like `signal_received` are referenced but their purpose isn't explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by category (string functions, system calls, pthread functions) which roughly matches source organization. However, the synthetic struct definitions and thunk functions create organizational clutter. Static vs extern not clearly distinguished.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses `extern` declarations appropriately. Many functions would compile with minimal stubs. The `_GLOBAL_OFFSET_TABLE_` references are platform-specific. Some type mismatches would cause warnings but likely compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Calculation:**
+- L1 (30%): (2+9+4+3)/4 = 4.5 × 0.30 = 1.35
+- L2 (25%): (7+7+8+6)/4 = 7.0 × 0.25 = 1.75
+- L3 (20%): (5+4+6)/3 = 5.0 × 0.20 = 1.00
+- L4 (15%): (1+7+2+1)/4 = 2.75 × 0.15 = 0.41
+- L5 (10%): (5+6+7)/3 = 6.0 × 0.10 = 0.60
+- **Total: 5.11/10** (recalculated with proper weighting)
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0` instead of semantic `dst`, `src`, `result`
+- No comments recovered - source had extensive documentation explaining test scenarios
+- Unused assignments (e.g., `v0 = &_GLOBAL_OFFSET_TABLE_`) create noise
+- Missing `const` qualifier on source parameter in `param_strcpy`
+- Composite types not recovered - pthread structures use generic struct_0 with padding arrays
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names like `param_strcpy`, `call_strcpy`, `param_strlen` accurately match source naming
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments recovered despite source having extensive documentation for each test function explaining purpose, expected behavior, and test scenarios
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - `a0` used as destination in strcpy should be named `dst`; `a1` used as source should be `src`
+2. **Recover comments from debug symbols** - Source compiled with `-g` should enable comment recovery explaining function intent
+3. **Eliminate dead storage assignments** - The `v0 = &_GLOBAL_OFFSET_TABLE_` pattern that assigns but never uses values should be recognized as noise

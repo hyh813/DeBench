@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4` throughout. The original source had meaningful names like `args`, `sum`, `i`, `large`, `s`, `val`, `ptr`. The decompiled code completely loses the semantic meaning of variables - `v2` in `varargs_func` should be named `args` based on its usage as a `va_list`, and `large` in `test_calling_conventions` should be `LargeStruct`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names match the original source exactly: `varargs_func`, `test_calling_conventions`, `param_varargs`, `test_parameter_passing`, `call_ret_large_struct`, `test_return_values`, `main`. The verb-based naming is appropriate and semantically accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Numeric literals like `15`, `50`, `6`, `100` are correctly inlined. However, string literals are severely degraded - Chinese text like "测试基础调用约定" is encoded as raw UTF-8 bytes (`\xe6\xb5\x8b\xe8\xaf\x95`) making them unreadable. Magic numbers like `128` (struct size) and `4` (pointer increment) lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The `__printf_chk` and `__stack_chk_fail` calls are legitimate glibc functions. Unused global `g19` is present but doesn't significantly impede readability. Overall clean code without redundant casts or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow uses appropriate `while` and `if` constructs. However, the loop in `test_calling_conventions` is awkward - it uses complex conditions like `(v2 || v3 - 16) != 0` which obscures the simple "initialize array 1-16" logic. At `-O0` this should be more natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (20-60 lines). The original had many small functions (`cdecl_func`, `call_cdecl`, etc.) that are inlined into test functions - this is acceptable decomposition for a test harness. Functions maintain single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The while loops use backward jumps which is natural. One minor issue: the loop condition in `test_calling_conventions` uses a complex expression that requires mental parsing to understand the flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is not present (as expected at -O0). The code is clean with no duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently which is appropriate for ARM64. The original used `int` which is correct but platform-dependent. Good precision with no `void*`滥用. Minor issue: function parameters could benefit from `unsigned` where appropriate.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types are completely lost. The original had `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`, `TestIntPair`. The decompiled code shows raw `int32_t large` with `memcpy(&v4, &large, 128)` - the struct is flattened to a byte array. Field access like `s.data[i]` becomes pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues exist: raw pointer arithmetic (`v2 += 4` treating `int32_t` as pointer), unsafe memory operations (`memcpy` without type context), no `const` correctness. The `call_ret_large_struct` has suspicious code with unreachable `return &g19` after `__stack_chk_fail`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present: "From module: /work/src/4.c", "Address range: 0x10658 - 0x106d8", "Line range: 140 - 151". No algorithm explanation, no documentation of what functions do, no recovery of original comments. The metadata is not useful for understanding the code logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified. The varargs handling, struct initialization loops, and test patterns are not recognized or named. The decompiler doesn't indicate this is a test harness with calling convention examples.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The suspicious code path in `call_ret_large_struct` (unreachable return statement) is not indicated. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had implicit contracts (e.g., `func_struct_byptr` requires non-null pointer) that are not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible through actual call statements (`test_calling_conventions()`, `varargs_func(5)`). However, there's no documentation of which functions are being tested or the relationship between test functions and the functions they test.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file organization with functions grouped logically. The original source had clear section comments (// ============================================================================) separating test categories which are lost. Static function scoping is not indicated.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<string.h>`). Should compile with minor adjustments. The `__printf_chk` is a glibc internal that may need a stub. No external dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `v3`, `v4`) losing semantic meaning - `v2` in varargs functions should be `args`, `large` should be `LargeStruct`
+- **Struct recovery failure**: All composite types (`LargeStruct`, `SmallStruct`, `BigStruct`, etc.) are completely lost, replaced with raw `int32_t` arrays and `memcpy` operations
+- **String literal corruption**: Chinese text in format strings is displayed as raw UTF-8 bytes (`\xe6\xb5\x8b\xe8\xaf\x95`) making them unreadable
+- **No algorithm documentation**: Comments only contain decompiler metadata, no explanation of what functions do or how they work
+- **Type safety issues**: Raw pointer arithmetic (`v2 += 4`) without proper type context, unsafe memory operations
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- All function names match the original source exactly and use appropriate verb-based naming
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+- All struct types are completely lost, reducing complex data structures to raw byte arrays. This is the most severe readability issue as it fundamentally obscures the data model.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types**: Analyze stack layout and memory operations to reconstruct composite types with field names. The `memcpy(&v4, &large, 128)` pattern clearly indicates a 128-byte struct.
+2. **Infer variable names from usage**: Use data flow analysis to name variables - `v2` used with `va_arg` pattern should be named `args`, loop counter `v3` should be `i`.
+3. **Decode string literals**: Convert UTF-8 encoded strings to readable form, especially for format strings that are user-facing.

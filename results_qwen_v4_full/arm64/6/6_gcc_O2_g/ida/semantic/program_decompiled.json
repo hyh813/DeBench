@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/6/6_gcc_O2_g/ida/syntactic/bin/6_gcc_O2_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\nstrcmp result: 8strcmp result: 0strlen result: 12memcpy result: 90memcmp result: -1Value: 42, Name: Test\nprintf result: 22scanf result: 579fopen result: 42fread/fwrite result: 42malloc result: 90memset result: 0strchr/strstr result: 15=== Testing System Calls ===\nsyscall result: 42stat result: 42fork/exec result: 42pipe result: 42socket result: 42shm result: 42signal result: 42=== Testing Thread Concurrency ===\npthread_create result: 49pthread_join result: 3mutex result: 42condition variable result: 42atomic ops result: 42TLS result: 4294967293",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

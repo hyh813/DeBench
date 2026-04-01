@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_clang_O3_no_g/ida/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing preprocessing features:\nFeature 1: 64\nFeature 2: 30\nFeature 3: 32\nFeature 4: 57122\nFeature 5: 116\nFeature 6: 19\nFeature 7: 60\nLOG: Values: 10, 20, 30\nFeature 8: 60\nFeature 9: 16\nFeature 10: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:22\nFeature 11: 382\nTesting ASM features:\nASM Test 1: 15\nASM Test 2: 15\nASM Test 3: 42\nASM Test 4: 36\nASM Test 5: 30\nASM Test 6: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

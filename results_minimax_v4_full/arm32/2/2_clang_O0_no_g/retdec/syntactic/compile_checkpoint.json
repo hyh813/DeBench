@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 8,
+  "source_file": "decompiled/retdec_out/arm32/2/2_clang_O0_no_g.c",
+  "fixed_file": "results_minimax_v4_full/arm32/2/2_clang_O0_no_g/retdec/syntactic/fix_2_clang_O0_no_g.c"
+}

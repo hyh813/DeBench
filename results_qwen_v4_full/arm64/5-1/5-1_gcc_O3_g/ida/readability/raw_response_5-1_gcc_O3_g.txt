@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `exception`, `obj`) with no semantic meaning recovered. For example, `v0` in `test_cpp_member_func()` should be `name_ptr` based on `strncpy` usage, and `r1`, `r2`, `r3` from source are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ mangled names are preserved (e.g., `_Z20test_cpp_member_funcv`) and some are demangled in comments (`Base::virtual_func`). Test function names match source, but helper functions use generic names like `sub_EB0`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`4700`, `0x1Fu`, `8u`, `0x30u`). Some match expected values from source comments (42, 71, 650) but lack documentation explaining their semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: register annotations (`// x0`, `// w19`), stack frame comments (`[xsp+10h] [xbp+10h] BYREF`), and 23 failed decompilations listed at end pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Many test functions optimized to constant returns (e.g., `test_cpp_virtual_func()` returns 42 directly), losing original control flow. Complex functions like `test_cpp_rtti()` retain structure but with awkward pointer arithmetic patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but many test functions collapsed to single return statements due to optimization. Class methods are properly separated, though thunk functions (`_ZThn16_...`) create fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but complex virtual inheritance functions have nested pointer arithmetic that disrupts flow (e.g., `DiamondDerived::func()` with multiple offset calculations).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in decompiled output, but constant-folding optimization means original computation logic is lost entirely in many test functions, which is optimization artifact rather than redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (int, double, char*), but many use generic types (`__int64`, `_DWORD`). Pointer arithmetic obscures true types (e.g., `*(int *)((char *)&this->dataA + *((_QWORD *)this->_vptr.MiddleA - 3))`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered (SimpleClass, Base, Derived visible), but fields often accessed via pointer arithmetic rather than named fields. `SimpleClass` shows `obj.name` but inheritance layouts use raw offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(__int64 *)`, `(void *)`, `(_QWORD *)`). Extensive pointer arithmetic throughout virtual inheritance code creates potential undefined behavior patterns without safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments, mostly auto-generated function signatures. No semantic documentation of logic, algorithms, or purpose. Source comments explaining expected values (e.g., "期望: 10 + 34 + 4660 = 4704") completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (vtables via `*_vptr`, virtual thunks) but not explicitly identified. No recognition of RAII patterns, smart pointer semantics, or template instantiation patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end but not flagged inline. No uncertainty indicators for ambiguous constructs like the complex RTTI code in `test_cpp_rtti()`. Critical: `test_cpp_exception()` marked `__noreturn` incorrectly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost (exception function marked `__noreturn` when it should return). No null checks or bounds validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, but inheritance relationships not clearly documented. Virtual dispatch visible through `_vptr` but vtable structure not explained. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but organization appears arbitrary. Related class methods scattered. No clear separation between test functions and class implementations. Metadata inconsistency (Ghidra vs IDA Pro header).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 23 failed decompilations include critical runtime functions (`__cxa_throw`, `operator new`, `strlen`). Code will not compile standalone. External dependencies not documented or stubbed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+7)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (3+4+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.74/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from source (`r1`, `r2`, `r3`, `capture_by_value`)
+- **Test functions optimized to constants** - original computation logic lost (e.g., `test_cpp_virtual_func()` returns 42 directly instead of showing virtual dispatch)
+- **23 failed decompilations** including critical C++ runtime functions (`__cxa_throw`, `operator new`, `strlen`)
+- **Incorrect function signatures** - `test_cpp_exception()` marked `__noreturn` when source shows it returns int
+- **No semantic comments** - source documentation explaining expected values and test purposes completely absent
+- **Metadata inconsistency** - header claims "IDA Pro 9.1" but task metadata says "Ghidra (12.0_PUBLIC)"
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - C++ mangled names preserved and some demangled correctly, test function names match source
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or exception handling contracts documented; critical signature errors present
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `v0` passed to `strlen` should be `name_ptr`) and cross-reference with debug symbols when available
+2. **Preserve optimization transparency** - When constant folding occurs, add comments showing original computation (e.g., "// Optimized: 10 + 34 + 4660 = 4704")
+3. **Fix function signature detection** - Correctly identify return types for exception handling functions; `__noreturn` should not apply to functions that return after catch blocks

@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 42,
+  "source_file": "decompiled/ghidra_out/x86/3/3_clang_O3_g.c",
+  "fixed_file": "results_glm_v4_full/x86/3/3_clang_O3_g/ghidra/syntactic/fix_3_clang_O3_g.c"
+}

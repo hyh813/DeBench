@@ -1,0 +1,137 @@
+# Decompilation Readability Assessment
+
+## Executive Summary
+
+This assessment evaluates Ghidra's decompilation of a comprehensive C memory operations test suite. The original was compiled with `-O0 -g` (debug mode), which should preserve maximum readability. However, the decompiled output shows significant degradation across all dimensions.
+
+**Critical Issue**: Architecture mismatch detected (Original: ARM64, Decompiled: X86) - this fundamentally undermines the decompilation validity.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `result`, `idx`) with no semantic meaning. For example, `local_vars` uses `a0` instead of `x`, and `heap_basic` uses `v0`, `ptr`, `idx` instead of `n`, `arr`, `i`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed recovery - some original names preserved (`double_value`, `local_vars`, `heap_basic`) but many functions use mechanical `sub_401XXX` names. Wrapper functions like `sub_40140b` that just call `alloca_usage.constprop.0()` add no value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (error code), `0xfffff000` (alignment mask), `4095`. String literals preserved but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` stub functions, padding structures with arbitrary sizes (`padding_0[19751]`), stack canary checks (`__stack_chk_fail_local`), and unsupported jumpkind warnings.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage where loops should exist. Example: `sub_401140` uses `goto v1->field_50` for what should be a function pointer call. Do-while loops used where for-loops would be clearer.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Constant propagation created duplicate functions (`alloca_usage.constprop.0` returns constant 15). Many wrapper functions (`sub_40140b`, `sub_401416`) just call the real function with no added value.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow. `linked_list_heap` has `goto LABEL_401a3a` mid-function. Stack check failures create non-linear exit paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant-folded functions create redundancy (`static_complex_init` returns 15 directly while original computed it). Multiple struct definitions with different padding for same conceptual type.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int` or `int`. Original `size_t` parameters become `unsigned int`. Pointer types often just `unsigned int` (e.g., `heap_basic` returns `unsigned int` instead of `int*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic field names (`field_0`, `field_4`) with arbitrary padding (`padding_0[80]`, `padding_0[19751]`). `Node` struct recovered but fields named `field_0`, `field_4` instead of `data`, `next`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout: `*((unsigned int *)(ptr + idx * 2))`. Function pointers treated as integers. `dangling_pointer` returns `*(result)` after free without type warning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments in decompiled output. No explanation of algorithms, no API contracts, no decompilation confidence indicators. Only one `[D] Unsupported jumpkind` warning.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation/traversal in `linked_list_heap` not identified as such. Memory allocation patterns (`malloc`/`free` pairs) not recognized. No pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Dangerous patterns like `dangling_pointer` use-after-free not warned. Double-free in `double_free` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `vla_stack` requires `0 < n <= 1000`). No postconditions. Error return values (`4294967295`) not explained as `-1`.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_403008`, `global_counter`) without context. Callback mechanism in `set_global_callback`/`call_global_callback` not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address, not logical grouping. Stack, heap, static tests intermixed. No header file structure. Related functions (`heap_basic`, `heap_calloc`, `heap_realloc`) scattered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing external declarations (`extern_function`, `extern_global_var`). Undefined symbols (`_ccall`, `atomic_exchange`). Architecture mismatch (ARM64 source, x86 decompilation).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3×10 + 5×10 + 5×5 + 3×5) / 30  = 4.00
+Level 2 (Structural):  (4×8 + 5×7 + 4×5 + 5×5) / 25    = 4.48
+Level 3 (Type):        (4×8 + 3×7 + 4×5) / 20          = 3.65
+Level 4 (Semantic):    (1×5 + 2×3 + 3×3 + 2×4) / 15    = 1.87
+Level 5 (Contextual):  (4×4 + 4×3 + 3×3) / 10          = 3.70
+
+Overall = (4.00 × 0.30) + (4.48 × 0.25) + (3.65 × 0.20) + (1.87 × 0.15) + (3.70 × 0.10)
+        = 1.20 + 1.12 + 0.73 + 0.28 + 0.37
+        = 3.70/10
+```
+
+**Overall Readability Score: 3.7/10**
+
+---
+
+### Critical Defects
+
+- **Architecture mismatch**: Original ARM64 compiled to x86 decompilation - fundamental validity issue
+- **Variable `v0`, `v1`, `ptr` should be named** based on usage (e.g., `n`, `arr`, `i` in `heap_basic`)
+- **Struct fields all generic** (`field_0`, `field_4`, `padding_0[19751]`) losing all semantic meaning
+- **Zero comments** for complex logic like linked list traversal and VLA stack allocation
+- **Constant propagation created useless duplicates** (`alloca_usage.constprop.0` returns literal 15)
+- **Goto statements** used where structured loops should exist (`goto v1->field_50`)
+- **Dangerous patterns not flagged**: use-after-free in `dangling_pointer`, double-free in `double_free`
+
+---
+
+### Best Quality Aspect
+
+**Level 2: Structural Intelligibility (4.48/10)**  
+- Function boundaries mostly preserved and individual functions are reasonably sized; some original function names recovered correctly.
+
+---
+
+### Most Needs Improvement
+
+**Level 4: Semantic Transparency (1.87/10)**  
+- Virtually no comments, no idiom recognition, minimal anomaly flagging, and no contract recovery makes understanding intent nearly impossible.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., loop counters → `i`, array pointers → `arr`, size parameters → `n`/`size`)
+
+2. **Add decompilation confidence annotations**: Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target unknown` and warn about dangerous patterns (use-after-free, double-free)
+
+3. **Recover high-level constructs from patterns**: Recognize linked list traversal, memory allocation patterns, and VLA allocation to generate structured code with appropriate comments instead of raw pointer arithmetic

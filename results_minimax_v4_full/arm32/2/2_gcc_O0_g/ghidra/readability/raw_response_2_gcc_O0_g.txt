@@ -1,0 +1,91 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use mechanical naming pattern with "_local" suffix (e.g., `x_local`, `c_local`, `sum_local`) which provides no semantic meaning. The original used simple parameter names like `x`, `c` which were clearer. Generic names like `iVar1`, `uVar1` for temporaries obscure purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names almost perfectly match original source - `double_value`, `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. All 50+ functions have accurate names matching the source. Minor deduction for some internal runtime functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear like `' '` for case conversion and `'\0'` for string termination. However, magic numbers like `0x40`, `0x5b` (ASCII ranges for 'A'-'Z'), `0x2c` (40 = 10*4 for 2D array stride), and floating-point hex constants lack explanatory comments. The original had clear arithmetic expressions replaced with opaque constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompiler artifacts present: `undefined4`, `extraout_r0`, `CONCAT44`, `SUB84` macros, runtime functions like `__gmon_start__`, `call_weak_fn`, `__stack_chk_fail`. Floating-point operations buried in intrinsics (`__mulsf3`, `__addsf3`, `__aeabi_ddiv`). These 2000+ lines of runtime code obscure the actual application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops correctly recovered as `for`/`while` constructs. However, `array_2d_stack` uses awkward pointer arithmetic `*(int *)((int)arr + i * 0x2c)` instead of clean `arr[i][i]` indexing. The `array_oob` function correctly shows the off-by-one `i <= n` loop. Some control flow is natural but array access patterns are degraded.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition matching original - each small function (10-30 lines) remains separate. Test functions properly separated. Static helper functions like `complex_callback` correctly extracted. No over-fragmentation or monoliths. Parameter lists match original signatures.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without goto statements or computed jumps. Early returns used appropriately. No forward jumps into loop bodies. The flow is clean and follows natural execution order.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some repeated patterns in test setup code but that's necessary for testing. Floating-point intrinsics are verbose but required. Minor redundancy in some test initialization loops but acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Excellent type recovery - `int`, `short`, `char`, `long`, `long long`, `float`, `double`, `long double`, `_Bool` all correctly typed. Pointers properly typed: `int *`, `int **`, `int ***`. Function pointers have type signatures like `_func_int_int *`. Minor: some `undefined4` in float function internals.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Outstanding struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `DNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `Device` all perfectly reconstructed with field names. Nested structures work correctly. Bitfields handled. Enums like `State` recovered with named constants.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. No obvious unsafe casts between incompatible types. Pointer arithmetic is correct. Function pointer types are proper. Minor: `ptr_void` uses void* with type tags which is necessary for the function's purpose. No buffer overflow-prone patterns in recovered code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only file header comments present ("Decompiled by Ghidra 12.0"). No algorithm explanations, no recovery confidence indicators, no API contracts. The original had extensive comments (830 LOC with detailed explanations) completely lost. Test case comments like "DT-L1-01" present in printf but not explaining logic.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Good pattern recognition - linked list traversal (`while (current != NULL)`), binary tree recursion, graph adjacency list traversal all properly structured. State machine via switch on enum recognized. Array iteration idioms clear. Design patterns recognizable in code structure.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra provides generic warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". These are auto-generated and not specific to actual code anomalies. No indication of the `array_oob` off-by-one being undefined behavior. No flags for potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear expectations (e.g., "requires: ptr != NULL") completely lost. No error condition documentation. No contract information whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are explicit and clear. Global variables identified. Static functions properly marked. However, no documentation of call relationships (which functions call which), no callback documentation, no usage context. The test functions call the target functions but relationships aren't explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file with 87 functions. No logical grouping, no separation into modules. All 3600+ lines in one file. Original had clear sections (data types, arrays, pointers, composite types) not reflected in output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard library functions (`printf`, `puts`, `memset`) requiring linking with libc. Not standalone compilable without stubs for runtime functions. No build instructions or dependency documentation. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses meaningless "_local" suffix pattern (e.g., `x_local`, `sum_local`) instead of semantic names
+- 2000+ lines of runtime/compiler artifacts (`__mulsf3`, `CONCAT44`, `call_weak_fn`) obscure application code
+- All original source comments (830 LOC of documentation) completely lost
+- Magic numbers like `0x40`, `0x5b`, `0x2c` lack explanatory comments
+- No contract/precondition/postcondition recovery despite -O0 debug compilation
+- Array_2d_stack uses awkward pointer arithmetic instead of clean array indexing
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.3/10)  
+- Composite types (structs, unions, enums) almost perfectly recovered with field names
+- Type precision excellent - all basic types correct, pointers properly typed
+- Function pointer signatures accurate
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.75/10)  
+- Zero comment recovery from original 830 LOC of documentation
+- No algorithm explanations or intent documentation
+- No contract/precondition recovery
+- Only generic decompiler warnings, no code-specific anomaly flags
+
+**Top 3 Recommendations:**
+1. **Recover variable names from usage patterns**: Instead of `x_local`, infer semantic names like `packet_size` from arithmetic operations or array indexing patterns
+2. **Eliminate runtime/compiler artifacts from output**: Filter out intrinsics like `__mulsf3`, `CONCAT44` or present them as clean inline operations
+3. **Recover comments from debug symbols**: With -O0 -g compilation, DWARF debug info contains source comments - recover and attach to decompiled output

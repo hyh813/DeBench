@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `lVar2`, `puVar2`, `acStack_808`) with no semantic meaning. Original code had meaningful names like `arr`, `local`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but some initialization functions use generic names (`FUN_00101020`, `_init`). Good recovery overall.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers throughout (`0x2a`=42, `0x14`=20, `0x3c`=60, `0x1e`=30) with no explanation. Original used clear expressions like `x * 2 + 10` that are now opaque constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function wrappers that just call themselves (`free`, `printf`, `memset`), compiler initialization code (`__do_global_dtors_aux`, `_start`), and excessive variable declarations in `large_stack_frame` (cVar2-cVar17).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while patterns with manual index management. `large_stack_frame` has awkward 16-way loop unrolling instead of simple iteration. Some functions constant-folded beyond recognition.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with appropriate granularity. No inappropriate inlining observed. Some functions oversimplified (e.g., `local_struct` returns `param_1 * 3` directly).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions like `linked_list_heap` have awkward label jumps (`LAB_001016ba`). Test functions have inline code that should be function calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `large_stack_frame` declares 16 separate char variables instead of using array indexing. Test functions duplicate loop initialization code instead of calling original functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `ulong`) replacing specific types (`int`, `size_t`, `Point*`). Return types often wrong (`undefined4` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost (`Point`, `Node`, `TreeNode` not recovered). Uses raw pointer arithmetic (`*(undefined4 **)(__ptr + 2)`) instead of struct field access (`node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without proper typing. Function pointers declared as `undefined8` instead of proper function signature types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each test case, expected values, and scenarios. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation patterns) not identified or named. No algorithm recognition despite clear patterns in source.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code patterns (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged with warnings. No indication of undefined behavior or security concerns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference. Error return values (`0xffffffff`, `0xfffffffe`) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without explanation of their purpose or scope.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear section organization (stack, heap, static, memory ops) that is lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared but would need stubs for compilation. Some type mismatches would require fixes. Generally compilable with modifications.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+3)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+6)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.50/10
+```
+
+### Overall Readability Score: **4.5/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `lVar2`) - should infer from usage patterns
+- **Struct types not recovered** - `Point`, `Node`, `TreeNode` lost, replaced with pointer arithmetic
+- **Zero comments** - original had extensive documentation explaining each test case
+- **Magic hex constants** (`0x2a`, `0x14`, `0x3c`) without explanation of their meaning
+- **Dangerous code unflagged** - `dangling_pointer`, `double_free` not marked as undefined behavior
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately, making it possible to identify function purposes
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation despite original having extensive explanatory comments for each test case
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Recover struct/union types** from consistent memory access patterns instead of raw pointer arithmetic
+3. **Add anomaly detection** to flag dangerous patterns (use-after-free, double-free, buffer overflow) with warning comments

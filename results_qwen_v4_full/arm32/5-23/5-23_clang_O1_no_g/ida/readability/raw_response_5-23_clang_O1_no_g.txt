@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning recovered. For example, `param_macro_constants(int a1)` should have `a1` named `size` based on source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`). Only startup helpers have generic names (`sub_4EC`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072` (should be `0xDEF0`), `282` (line + counter sum), and `19` (string length) appear without explanation of their macro origins.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output, but `start()` function has confusing stack variable declarations (`v4`, `va_list BYREF`) and positive sp value warnings.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered as proper `for`/`while` constructs (e.g., `param_asm_clobber` do-while loop). Conditionals are clear and idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. No excessive inlining or fragmentation. Each test function remains separate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No disruptive forward jumps in main logic.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Constant folding present but expected at -O1. No dead code or duplicate expressions observed in recovered functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mostly generic `int` types instead of `int32_t`. Some `size_t` preserved correctly. No const-correctness recovered from original.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source, but `va_list` and array types (`_DWORD v9[8]`) recovered. Pointer distinctions mostly preserved.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(int *)mmap(...)`, `(_DWORD *)(a3 + 4 * i)`). Pointer arithmetic visible but generally safe patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated type annotations (`// r0`, `// [sp+0h]`). No explanation of macro expansion or constant origins.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns recovered as C equivalents (e.g., `param_asm_clobber` loop), but not identified as "recovered from inline assembly."
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: External functions marked as "FAILED to decompile." `start()` has warning about positive sp value. Some confidence indicators present.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). No postconditions or error condition explanations recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear, but global variables use opaque names (`dword_1280`, `dword_1290`, `asc_122F`). No call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Test functions grouped together. Static scoping mostly preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 external functions failed to decompile (`__imp_printf`, `__imp_mmap`, etc.). Would require stubs for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+7)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):  (8+8+8+8)/4 = 8.00  × 0.25 = 2.000
+Level 3 (Type):        (6+7+6)/3   = 6.33  × 0.20 = 1.267
+Level 4 (Semantic):    (3+5+6+3)/4 = 4.25  × 0.15 = 0.638
+Level 5 (Contextual):  (6+7+5)/3   = 6.00  × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.23/10
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects:
+- **Variable `a1`/`a2`** should be named `size`, `x`, `y` based on source parameter names and usage patterns
+- **Magic number `57072`** in `param_multi_branch_compile` loses macro origin (`0xDEF0` from `PLATFORM` conditional)
+- **No comments** explaining that constants like `64`, `512`, `16` come from macro expansion (`BUFFER_COUNT * 4`, `MAX_SIZE / 2`, `ADD_16`)
+- **Global variables** use opaque names (`dword_1280`, `dword_1290`) instead of `a[]`, `b[]` array names
+- **String literals** referenced as `aPpL201D`, `asc_122F` instead of showing actual format strings inline
+
+### Best Quality Aspect:
+- **Structural Intelligibility (8.0/10)** - Control flow, function decomposition, and code linearization are all well-recovered with natural C constructs despite optimization.
+
+### Most Needs Improvement:
+- **Semantic Transparency (4.25/10)** - Almost no comments explaining macro origins, constant folding, or recovered assembly semantics, making it hard to understand why certain values appear.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro-derived constants** - When constants match common macro patterns (powers of 2, round numbers), suggest original macro names in comments
+2. **Infer parameter names from usage** - Analyze how parameters are used (size comparisons, array indexing) to suggest semantic names like `size`, `count`, `buffer`
+3. **Add decompilation confidence annotations** - Mark recovered assembly patterns with comments like "// Recovered from inline assembly" and flag constant-folded expressions

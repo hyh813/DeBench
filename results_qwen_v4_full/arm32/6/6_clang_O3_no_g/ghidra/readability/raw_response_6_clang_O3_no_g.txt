@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_28`, `iVar1`, `uVar2`) with no semantic meaning. Original source used descriptive names like `dst`, `src`, `buffer`, `fd`, `shm` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from debug symbols (`param_strcpy`, `thread_compute`, `signal_handler`) accurately reflect original source. This is the strongest lexical aspect due to `-g` flag.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xffffffff` (-1), `0xfffffffe` (-2). No constants recovered; error codes appear as hex values obscuring meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Runtime boilerplate present (`_init`, `_start`, `deregister_tm_clones`) but individual functions are relatively clean. Some WARNING comments about unreachable blocks are helpful.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs, but `param_signal_handling` has "Could not recover jumptable" warnings. Conditionals are mostly natural if-else patterns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with good separation. However, some caller functions optimized away (`call_strcpy` returns constant instead of calling `param_strcpy`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns. No excessive goto usage; loop structures are clear and follow natural execution flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Test functions repeat some logic but this mirrors source. No obvious compiler artifact redundancy at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `param_strcpy` returns `void` instead of `int`, `size_t` becomes `int`, `param_2` in `param_strchr_strstr` is `int` instead of `char`. `pthread_t` and `FILE*` preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct recovered, but `ThreadData` struct lost (shown as array access `param_1[2]`). `sockaddr` shown as individual field assignments (`sa_data[0]`, `sa_data[1]`) rather than structured access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts present: `(int *)`, `(void **)`, `(pthread_mutex_t *)`. Function pointer types degraded to `code *` in `param_signal_handling`. Pointer arithmetic visible in TLS code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except Ghidra WARNING messages. No algorithm explanations, no API documentation, no parameter/return descriptions. Original source had extensive comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Signal handling and producer-consumer patterns present but not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra provides helpful warnings: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return". However, not all anomalies are flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Error return values (`0xffffffff`, `0xfffffffe`) not explained. No postcondition or invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, global variables (`signal_received`, `shared_counter`, `atomic_counter`) identifiable. No call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 65 functions in single output file. No file organization, no header separation, static functions not clearly scoped. Original source had clear section organization lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread, libc) not documented. Would need stubs for some platform-specific functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+2+7)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+5+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.25/10
+```
+
+**Overall Readability Score:** 5.25/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `local_28`, `iVar1` throughout - should infer `dst`, `src`, `buffer`, `length` from usage patterns
+- **Magic numbers obscure error codes**: `0xffffffff`, `0xfffffffe`, `0xfffffffd` should be `-1`, `-2`, `-3` or named constants
+- **Return type corruption**: `param_strcpy` returns `void` instead of `int`, losing the `strlen()` return value semantics
+- **No semantic comments**: Original source had extensive documentation; decompiled code has zero explanatory comments
+- **Struct recovery incomplete**: `ThreadData` struct lost, shown as array indexing `param_1[2]` instead of `data->result`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols (`-g` flag) preserved original function names accurately, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Literal Clarity (2/10)** - Magic hex numbers everywhere obscure error codes, return values, and constants; this is the single biggest barrier to understanding the decompiled logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant recovery from usage patterns**: Detect repeated values like `0x2a` (42), `0xffffffff` (-1) and suggest named constants or at least decimal representation
+2. **Infer variable names from function semantics**: For `param_strcpy(char *param_1, char *param_2)`, recognize strcpy pattern and name parameters `dst` and `src`
+3. **Recover struct types from access patterns**: When seeing `param_1[0]`, `param_1[1]`, `param_1[2]` with consistent offsets, suggest struct definition with semantic field names

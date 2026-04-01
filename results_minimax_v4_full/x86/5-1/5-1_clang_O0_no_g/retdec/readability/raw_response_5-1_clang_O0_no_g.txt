@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `result` - completely generic and meaningless. Original source had semantic names like `value`, `name`, `data`, `size`, `multiplier`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), but internal utility functions use generic names like `function_1040`, `function_1050`. The C++ name demangling is good but internal helpers lack semantic names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation - `0x1234` for class ID, complex offsets like `v1 + (int32_t)&g27 + 132`, string offsets computed at runtime. No named constants for meaningful values like `MAX_SIZE`, `BUFFER_LEN`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts present - redundant casts (e.g., `(int32_t *)result`), unnecessary intermediate variables, frame pointer manipulations, dead code paths. The code is cluttered with boilerplate that obscures logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is generally natural with proper loops and conditionals. Some computed jumps exist but are manageable. The flow matches source reasonably well for a decompiled output.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some over-fragmentation - template instantiations create many tiny functions (e.g., separate functions for `Container<int>` and `Container<double>` push/get). However, main test functions maintain reasonable cohesion.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. Some computed goto patterns but not severe.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions (e.g., computing same offset multiple times) but generally manageable. Loop unrolling is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently (good for ARM64), but most pointers are generic `int32_t*` without proper type information. Original had `int*`, `char*`, `size_t` - these are lost. Const correctness partially preserved in function signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery - `SimpleClass` fields accessed via offsets (`*result`, `*(int32_t*)(result2 + 4)`), but field names lost. Most structures are just raw pointer arithmetic. Original had `int value; char name[32];` - now just `int32_t*` with offset calculations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations - frequent `(int32_t*)` casts, pointer arithmetic without bounds checking, mixing signed/unsigned in comparisons. Not severe but requires careful analysis to ensure safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only demangling comments present (e.g., "// Demangled: SimpleClass::getValue() const"). No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms partially recognized (virtual function calls via vtable, constructor/destructor patterns) but not explicitly named or documented. Template instantiation pattern is recognized but not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly marking. Indirect calls that couldn't be resolved are not flagged. Unusual stack layouts not documented. Code presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No preconditions, postconditions, or invariants documented. Error conditions not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are clear from code structure, but no explicit documentation of who calls whom, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file (2653 lines). Functions grouped somewhat logically but no logical file separation. No namespace or package structure recovery.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile standalone - many undefined references (`_Znwj`, `_ZdlPv`, `_Znaj`, etc.). No stub implementations provided. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v1`, `v2`, `a1`, `a2`) making code comprehension extremely difficult
+- Composite types (structs/classes) are not properly recovered - all field access is raw pointer arithmetic with offsets
+- No comments explaining algorithms, magic numbers, or non-obvious logic
+- Type precision severely degraded - all pointers are `int32_t*` losing original type information
+- Build system compatibility is poor - code cannot compile without extensive stubs
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- At -O0 optimization, the decompiler correctly recovered natural loop and conditional structures that match source flow
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic single-letter variable names completely obscure semantic meaning. The decompiler should infer names from usage patterns (e.g., `temp_1` used as array index → `index` or `i`)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - Analyze how variables are used (array index, size parameter, pointer dereference) to suggest meaningful names like `index`, `count`, `ptr`
+2. **Recover struct/union layouts with field names** - Use type information and field access patterns to reconstruct meaningful field names instead of raw offsets
+3. **Add explanatory comments for magic numbers and offsets** - Detect patterns like `v1 + constant_offset` and suggest what that field might be (e.g., "// offset to 'name' field")

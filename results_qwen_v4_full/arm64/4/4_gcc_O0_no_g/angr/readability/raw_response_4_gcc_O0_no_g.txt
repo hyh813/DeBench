@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had descriptive names like `count`, `sum`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`cdecl_func`, `stdcall_func`, `varargs_func`), but many helper functions use address-based names (`sub_400764`, `sub_400830`). Some names like `$x` are meaningless.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (UINT_MAX mask), `18446744073709551608` (bitmask), `4294967294`. Original constants like expected test values (15, 50, 42) obscured by bit operations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Every function contains stack canary checks (`__stack_chk_guard`), frame pointer setup (`v0 = &v1`), and redundant variable assignments. Example: `call_cdecl()` has 4 lines of setup for a 1-line function call.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as `for` constructs, but some functions use `goto` unnecessarily (e.g., `register_tm_clones`). At -O0, this level of transformation is excessive.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries correctly identified, but helper functions like `frame_dummy` and `call_weak_fn` appear to be compiler runtime artifacts that clutter the output.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but stack canary checks at function end create backward-looking verification patterns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated in ~30 functions. Type casting patterns repeated (`& 4294967295`) without abstraction. No dead code removal evident.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types often become `unsigned int` or `unsigned long long`. `varargs_func` shows 8 explicit parameters instead of variadic signature. Pointer types lose const-correctness.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` and `SmallStruct` completely lost - shown as pointer arithmetic (`ptr + i * 8`). `func_struct_byptr` uses `unsigned int *a0` instead of `SmallStruct *`. One struct recovered (`struct_0`) but with generic `field_0`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(char *)&ptr[2] + 3 & 18446744073709551608`). Pointer arithmetic without bounds checking. `func_mixed_args` loses `double` and `long long` parameter types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had 200+ lines of documentation explaining calling conventions, test scenarios, and expected values. All semantic context lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition evident. Variadic pattern (`va_list`, `va_start`, `va_arg`) not identified. Struct passing patterns not annotated despite being key test cases.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about questionable patterns. `varargs_func` has suspicious parameter handling but no flag. Stack canary failures marked `/* do not return */` but no explanation of security implications.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note NULL check). No postconditions. Original test expectations (e.g., "期望: 15") completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `test_calling_conventions` calls 10+ functions with no call graph. Global variables (`g_402078`, etc.) unnamed and unexplained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 60+ functions in single output. No grouping by test category (calling conventions vs. parameter passing vs. return values). Runtime functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Missing includes (`stdio.h`, `string.h`, `stdarg.h`). External symbols undefined (`g_413f80`, `__TMC_END__`). Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 4.0 | 30% | 1.20 |
+| L2: Structural Intelligibility | 5.75 | 25% | 1.44 |
+| L3: Type System Fidelity | 3.67 | 20% | 0.73 |
+| L4: Semantic Transparency | 1.75 | 15% | 0.26 |
+| L5: Contextual Coherence | 4.0 | 10% | 0.40 |
+
+**Overall Readability Score: 4.03/10**
+
+---
+
+### Critical Defects
+
+- **Variable `a0`, `a1`, `v0`, `v1`** should recover original names like `count`, `sum`, `packet_size` based on usage patterns
+- **Zero comments recovered** from 200+ lines of original documentation explaining test purposes and expected values
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` all reduced to pointer arithmetic
+- **Variadic function signature degraded** - `varargs_func` shows 8 explicit parameters instead of `int count, ...`
+- **Stack canary noise in every function** inflates code size 2-3x without semantic value
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (6/10)** - Core test function names preserved (`cdecl_func`, `stdcall_func`, `fastcall_func`), allowing basic identification of test purposes despite other degradations.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding test purposes, expected values, and calling convention differences nearly impossible without original source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement comment recovery from debug symbols** - At -O0 with `-g` flag, debug information should preserve original comments and variable names; integrate DWARF parsing for semantic metadata.
+
+2. **Add type inference for composite structures** - Detect repeated pointer arithmetic patterns (`ptr + i * 8`) and suggest struct recovery with field names based on access patterns.
+
+3. **Filter runtime boilerplate** - Identify and optionally hide stack canary checks, frame setup, and compiler runtime calls (`__stack_chk_guard`, `register_tm_clones`) to reduce noise by 40-50%.

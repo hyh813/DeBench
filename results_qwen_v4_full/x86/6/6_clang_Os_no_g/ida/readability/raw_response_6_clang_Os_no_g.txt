@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all local variables use generic names (v0, v1, v2, a1, a2, temp) with no semantic meaning. For example, `param_malloc_free` uses `v2`, `v3`, `v5` instead of `ptr`, `sum`, `i`. Only function parameters occasionally preserve meaning (`s`, `src` in `param_strcpy`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserve original names excellently (`param_strcpy`, `call_strcmp`, `param_signal_handling`). However, runtime/helper functions use generic names (`sub_1030`, `sub_13E0`, `_x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: syscall numbers (5, 6), signal numbers (10, 14 instead of SIGUSR1/SIGALRM), socket constants (2, 1, 0 instead of AF_INET/SOCK_STREAM). String literals preserved but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `_x86_get_pc_thunk_bx`, `register_tm_clones`, `deregister_tm_clones`, `frame_dummy`. Architecture-specific constructs (`__readgsdword`, `__writegsdword`) appear in TLS code. 59 library functions listed as "FAILED to decompile."
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural if/else and loop structures. However, `param_signal_handling` uses awkward do-while with break pattern instead of clean while loop. `param_thread_local_storage` has deeply nested conditionals that obscure logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - test functions separated from implementation functions. Thread worker functions (`thread_compute`, `thread_sum`) properly extracted. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_thread_local_storage` has complex nesting with multiple early returns and goto-like LABEL patterns. `param_atomic_ops` uses LABEL_6 jump pattern disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some constant folding observed (call_* functions return pre-computed constants). `call_strcpy`, `call_strlen`, `call_memset` return constants directly instead of showing computation - appropriate for -O0 but loses traceability.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t, FILE*) but generic types appear (_DWORD, void*). Const-correctness lost (`const char*` becomes `char*` in `param_strcpy`). Function pointer types often degraded to `void*(*)(void*)`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct stat` recovered but with generic field access (`buf.st_size`). `ThreadData` struct flattened to `_DWORD` arrays in `param_pthread_join`. `sockaddr` struct partially recovered with raw field access (`addr.sa_family`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(_DWORD *)`, `(int *)`, `(char *)-1` comparisons. `param_malloc_free` uses `__usercall` with register annotations indicating calling convention issues. Pointer arithmetic visible in TLS code (`__readgsdword(0) - 32`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original source had extensive comments explaining purpose, expected values, and test scenarios. Only metadata comments present (function addresses, decompiler info). No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library patterns recognized (strcpy, strcmp, memcpy calls visible) but not explicitly identified as patterns. Producer-consumer pattern in `param_condition_variable` not labeled. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (59 functions) but no inline warnings about uncertain code. Architecture mismatch (original arm64, decompiled shows x86) not flagged. No confidence indicators on indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: filename != NULL"). Error return values not explained. Original comments like "期望: 8" (expected: 8) completely lost. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through direct calls. Global variables (`shared_counter`, `signal_received`, `atomic_counter`) used but not documented. Callback relationships (thread functions) visible through pthread_create calls.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Original had clear section headers (6.1 标准库函数, 6.2 系统调用, 6.3 线程与并发) completely lost. No namespace or file organization visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 59 library functions failed to decompile requiring stubs. Architecture-specific constructs (`__readgsdword`) need platform-specific handling. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (7+8+6+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (6+5+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.33/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects:
+- **Variable names are almost entirely generic** (v0, v1, v2, a1, a2) losing all semantic meaning from original source
+- **Zero comments** in decompiled output despite extensive original documentation explaining test purposes and expected values
+- **Magic numbers everywhere** - signal numbers (10, 14), syscall numbers (5, 6), socket constants (2, 1, 0) not recovered as named constants
+- **Architecture metadata mismatch** - original claims arm64/-O0 but decompiled shows x86 constructs (__readgsdword, esp, ebx)
+- **59 library functions failed to decompile** requiring external stubs for compilation
+
+### Best Quality Aspect: **Function Decomposition (8/10)**
+- Function granularity is appropriate with test functions properly separated from implementation, and thread worker functions correctly extracted as separate entities.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments loses all semantic documentation from original source including test purposes, expected values, and algorithm explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns - variables used in size checks should be named `size`/`length`, loop counters should be `i`/`j`, pointers should indicate target type
+2. **Recover and preserve original comments** from debug symbols (-g flag) or infer semantic comments from function patterns and string literals
+3. **Replace magic numbers with named constants** by detecting standard API patterns (signal numbers → SIGUSR1/SIGALRM, socket constants → AF_INET/SOCK_STREAM)

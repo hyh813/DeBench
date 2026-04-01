@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables are almost entirely generic: `param_1`, `param_2`, `iVar1`, `uVar2`, `piVar3`, `local_b8`, `local_d0`. The original source used meaningful names like `a`, `b`, `count`, `args`, `sum`. Only a few globals like `ret_opaque_handle_handle1` preserve semantics.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly: `cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions`. Minor issue: `FUN_00101020` is an unresolved stub. The test wrapper functions are correctly named.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear without explanation. The original source had comments showing expected values (e.g., "//期望: 15"). The varargs function uses unexplained `0x29` threshold. Some literals like `0x14` (20) in varargs calls are also unexplained.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts present. The code is relatively clean without excessive register spilling artifacts or debug instrumentation. Some stack frame manipulation visible but manageable.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and matches source well. Loops in `varargs_func` and `param_ptr_array` are properly recovered as do-while constructs. At -O0, the decompilation closely mirrors the original source structure.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are properly separated with appropriate granularity. The test wrapper functions (`call_cdecl`, `call_stdcall`, etc.) are correctly extracted. No over-fragmentation or monolithic functions observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. The varargs functions have some complexity with stack vs. register handling that creates minor non-linearity, but it's manageable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy. Some loop unrolling in `test_calling_conventions` for LargeStruct initialization is compiler behavior at -O0, not decompilation failure.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Significant type degradation. Parameters use generic `int` instead of specific types. `func_mixed_args` has parameters in wrong order: `double param_1` should be `int x`, and `char *param_3` should be `char *s`. Function pointers use `code *` instead of proper signatures. `undefined8` and `undefined4` used for return types.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct recovery. `LargeStruct` (128 bytes) and `SmallStruct` are completely lost. `func_struct_byval` uses raw stack access: `*(long *)(&stack0x00000008 + lVar1 * 8)`. The original had clear struct definitions with field names.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe operations present. The varargs handling uses raw pointer arithmetic without bounds checking. `param_double_ptr` uses `long *` for `int **` which could cause issues. Mixed signed/unsigned in loop counters.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No comments in decompiled code whatsoever. The original source had extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定", "// 测试: 参数从右到左压栈"). Zero recovery of documentation.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Some patterns visible but not explicitly identified. The varargs handling pattern is recognizable but not labeled. The callback pattern in `param_func_ptr` is visible but not documented as a callback idiom.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly flags. The indirect function call in `param_func_ptr` (`(*param_1)(param_2)`) could not be resolved to specific function but no warning is given. Some unusual stack layouts in struct functions not flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No contracts or preconditions recovered. Original source had implicit contracts (e.g., "ptr != NULL" checks) that are not documented. The `func_struct_byptr` null check is present but not explained.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are visible in the code (e.g., `test_calling_conventions` calls `printf`, `varargs_func`). However, no explicit documentation of call graph or which functions call which. The original had clear test function structure.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically by test category (calling conventions, parameter passing, return values). Matches source organization reasonably well. Static functions properly scoped.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Code should compile with minimal changes. External functions (`puts`, `printf`, `strlen`) are declared. Some type mismatches would need fixing (parameter order in `func_mixed_args`). No header dependencies documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 7) / 4 = 5.25
+L2_avg = (8 + 8 + 7 + 8) / 4 = 7.75
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 4 + 2 + 2) / 4 = 2.25
+L5_avg = (5 + 7 + 7) / 3 = 6.33
+
+Overall = (5.25 × 0.30) + (7.75 × 0.25) + (3.67 × 0.20) + (2.25 × 0.15) + (6.33 × 0.10)
+        = 1.575 + 1.9375 + 0.734 + 0.3375 + 0.633
+        = 5.22/10
+```
+
+### Overall Readability Score: 5.22/10
+
+### Critical Defects
+- **Variable naming**: All parameters are generic (`param_1`, `param_2`) losing semantic meaning of original `a`, `b`, `count`, `args`
+- **Type precision**: `func_mixed_args` has parameters in wrong order and wrong types (double vs int)
+- **Struct recovery**: Complete failure - `LargeStruct` and `SmallStruct` not recovered, replaced with raw stack pointer arithmetic
+- **No comments**: Zero documentation recovered from original source's extensive comments
+- **Composite types**: All struct types lost, making `func_struct_byval` nearly incomprehensible
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are properly separated with appropriate granularity. The test wrapper functions are correctly extracted and named, matching the source organization well.
+
+### Most Needs Improvement: Comment Quality (1/10)
+The decompiler recovered zero comments from the original source, which had extensive documentation explaining each test case, expected values, and calling convention details. This is critical for understanding the code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct types**: Use stack layout analysis to reconstruct struct definitions with field names, especially for `LargeStruct` (128 bytes) and `SmallStruct`
+2. **Add semantic variable naming**: Infer parameter names from usage patterns (e.g., `param_1 + param_2` suggests `a` and `b`)
+3. **Preserve or generate comments**: Either recover source comments or generate explanatory comments for magic numbers and complex patterns like varargs handling

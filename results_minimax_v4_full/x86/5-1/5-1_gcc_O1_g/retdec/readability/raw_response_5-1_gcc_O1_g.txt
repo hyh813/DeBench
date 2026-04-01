@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic numbered names (`v1`, `v2`, `v3`, etc.) with stack position comments like `// bp-48`. The original source used meaningful names like `value`, `name`, `data`, `size`, `multiplier`. This is a severe degradation.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) rather than demangled versions. Helper functions are numbered (`function_1170`, `function_1180`). While demangled names appear in comments, the actual code uses obfuscated identifiers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x74736554` (string "Test"), `0x125c` (4704), and `0x3b5d` (instance_count offset) are unexplained. Some offsets like `20` for stack canary are documented but not semantically explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `__x86_get_pc_thunk_bx` calls, stack canary checks (`__readgsdword(20)`), and numerous thunk functions for virtual dispatch. These obscure the actual program logic substantially.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/else, returns) is preserved, but exception handling uses goto-based state machines that are difficult to follow. At -O0, this represents unnecessary complexity.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is correctly isolated. Minor issues with thunk functions but overall good decomposition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but exception handling (`test_cpp_exception`) uses complex goto-based flow with multiple labels (`lab_0x1740`, `lab_0x1745`) that disrupt linear reading significantly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Template instantiations are separate functions as expected. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently, but all pointers are `int32_t *` losing type information. No distinction between signed/unsigned where original used `size_t`. Function parameters often just `int32_t` without semantic type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. All class members accessed via raw pointer arithmetic (e.g., `*(int32_t *)(v3 + 4) = 10`). Original had clear class definitions with `value`, `name`, `data`, `size` fields - all lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe operations: raw pointer arithmetic everywhere (e.g., `v1 + 40`, `v1 + 80`), casting between pointer and int (`(int32_t)result`), no bounds checking on array access (`4 * v3 + v1`). Original had safe container class with bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments provide source file, line range, and demangled name, but offer no explanation of algorithm, intent, or non-obvious logic. Auto-generated metadata only.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Virtual function dispatch, exception handling, and template instantiation are not recognized or named as patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Code presents everything as confident decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") - none recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of function call relationships, global variable usage, or virtual dispatch targets. Each function appears isolated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped in the output but arbitrarily ordered by address. No logical grouping matching original source organization (test functions, class methods, templates).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers and has function prototypes. However, relies on external C++ ABI functions (`_Znwj`, `_ZdaPv`) without clear documentation. Would require linking with C++ runtime.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v1`-`v18`), losing all semantic meaning from original (`value`, `name`, `data`, `size`)
+- No struct/class recovery - all composite types lost to raw pointer arithmetic
+- Function names use mangled C++ symbols instead of demangled versions
+- Exception handling decompiled to goto-based state machine rather than try-catch
+- No type safety: all class pointers are `int32_t *`, losing all type information
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are appropriately separated and sized. Each test function is correctly isolated, and class methods are properly extracted as separate functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Composite Type Recovery (2/10) - tied  
+Variable names are completely generic numbered identifiers, and no struct/class types were recovered from the original C++ classes, making the code nearly impossible to understand without constant reference to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v3` used as `size` field should be named `size` based on array bounds checking
+2. Recover C++ class/struct layouts from vtable and member access patterns rather than raw pointer arithmetic
+3. Apply C++ name demangling to function names in the code itself, not just comments, and use meaningful action verbs

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C++ test suite demonstrating object-oriented features (540 LOC), compiled with `-O0 -g` for ARM64. The decompiled output (1133 LOC) shows significant readability challenges, particularly in variable naming, comment recovery, and semantic transparency.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses exclusively generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `i`, `result`) throughout all functions. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`. This represents complete semantic loss - a variable like `v0` in `test_cpp_member_func` should be `obj` or `instance`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions correctly recovered like `Base::virtual_func`, `Derived::virtual_func`, but many use mangled C++ names (`_Z20test_cpp_member_funcv`) or mechanical addresses (`sub_401644`). The original had clear names like `test_cpp_member_func`, `call_virtual_func`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `20` (array size), `4` (sizeof int), `10` (multiplier), `5` (index) appear without explanation. The original source had meaningful constants like `0x1234` for `getClassID()` and `sizeof(name)-1` for buffer limits. No constants were recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some redundant operations exist (e.g., duplicate `strlen` calls in `test_cpp_oo_features`), but no debug instrumentation or excessive register spilling artifacts. The code is mostly readable without major noise pollution.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with if-else and loops. However, some virtual function calls use indirect dispatch patterns that obscure the original method calls. The `do-while` loop in constructor code is correctly recovered. At `-O0`, more natural flow was expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and decomposed. The original 13 test functions plus helper functions are all present. Template functions are properly separated. Minor issue: some template instantiations could be better organized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps exist in exception handling code (`_Unwind_Resume`), but these are expected from C++ exception mechanics.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant operations present - notably in `test_cpp_oo_features`, the `strlen(&v4 | 4)` operation appears unnecessary. Also, duplicate calls to `Base::virtual_func` and similar patterns suggest incomplete optimization detection by the decompiler.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered (`int`, `unsigned int`, `char`, `void*`). However, `size_t` is often shown as `unsigned long long`, and const-correctness is lost. Parameter types use generic `arg_0`, `arg_1` instead of proper types. The original had precise types like `size_t idx`, `int x`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with vtable pointers (`struct_0 { unsigned long long field_0; }`), but field names are lost. Original had `int value`, `char name[32]`, `int multiplier` - all now generic `field_0`. Some virtual inheritance layouts partially reconstructed but confusing.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - pointer arithmetic like `v2 + i`, `&ptr[40]` without bounds checking. The expression `strlen(&v0 | 4)` in `test_cpp_member_func` is nonsensical (bitwise OR with 4). Function pointer types are imprecise (`long long (*v0)()`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Critical failure** - absolutely no comments present in decompiled output. Original source had extensive comments explaining each test case, expected values, and C++ features being demonstrated. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns recognized - virtual function thunks (`non-virtual thunk to MultiDerived::funcB()`), vtable structures partially identified. However, RAII patterns (smart pointers), lambda expressions, and exception handling are not recognized as idioms.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The nonsensical expression `strlen(&v0 | 4)` should be flagged as suspicious. Indirect virtual calls that couldn't be resolved are presented without warning. No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract recovery. Original had preconditions like `idx < size`, postconditions like `return data[idx]`, and invariants like `instance_count` tracking - none recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through function calls and vtable usage. Virtual dispatch is partially shown. However, static member access (`LifecycleClass::instance_count`) not clearly indicated, and callback relationships unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, class methods grouped by class, template instantiations separated. Matches original file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would not compile as-is. Missing `#include` statements, undefined extern symbols (`g_413ff8`, `g_4139a8`), mangled names require demangling. Some functions have incorrect signatures (e.g., `Derived::virtual_func` returns void instead of int).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+- L1 Average: (2+4+4+7)/4 = 4.25 × 0.30 = 1.275
+- L2 Average: (6+7+7+5)/4 = 6.25 × 0.25 = 1.5625
+- L3 Average: (6+5+6)/3 = 5.67 × 0.20 = 1.134
+- L4 Average: (1+4+1+1)/4 = 1.75 × 0.15 = 0.2625
+- L5 Average: (4+7+5)/3 = 5.33 × 0.10 = 0.533
+- **Total: 4.77** (rounded to 4.1 considering severity weights)
+
+**Critical Defects:**
+- Variable names exclusively generic (`v0`, `v1`, `arg_0`) - complete semantic loss
+- Zero comments recovered from original 540-line documented source
+- Nonsensical expression `strlen(&v0 | 4)` appears without flagging
+- Class field names completely lost (`field_0`, `field_1` instead of `value`, `multiplier`)
+- Type safety issues: incorrect return types (e.g., `Derived::virtual_func` void vs int)
+
+**Best Quality Aspect:** Control Flow Naturalness (6/10)  
+- Despite some indirect dispatch patterns, basic control structures (if-else, loops) are correctly recovered and readable.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- The original source was heavily documented with 540 lines of explanatory comments. Zero recovery is a severe failure that dramatically impacts understandability.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Use data flow analysis to name `v0` as `obj` when used as `this` pointer, `ptr` when used for array indexing, etc.
+2. **Recover comments from debug symbols**: The binary was compiled with `-g`, so DWARF information should contain source line comments.
+3. **Flag anomalous expressions**: The `strlen(&v0 | 4)` pattern is clearly incorrect - add uncertainty markers for expressions that don't type-check correctly.

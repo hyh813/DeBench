@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler marks most variables as "Unresolved local var" with generic names like `temp1 @[???]`, `temp2 @[???]`, `temp3 @[???]`, `sum @[???]`, `i @[???]`, `count @[???]`, `result @[???]`. These generic names completely obscure the semantic purpose of each variable.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are nearly perfect - they match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `goto_forward`, `goto_backward`, etc. Excellent verb choice and semantic accuracy.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x3e9` (1001), `0x65` (101), `0x12` (18), `0xb` (11). The decompiler uses computed values like `x * 10 + 10` for `if_elseif_chain` but doesn't explain the semantic meaning of these constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal actual code noise - mostly compiler warnings like "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable". These warnings don't impede reading the actual decompiled logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops recognized as while/do-while, switch statements recovered. However, `loop_for_fixed` uses an unusual computed formula instead of a recognizable for-loop, and `single_if` uses bit-shift trick `x << (uint)(0 < x)` instead of clear if-else. At -O3, some restructuring is expected but this is aggressive.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility. The decompiler didn't over-fragment or monolithically combine functions. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some functions like `loop_complex_cond` have complex nested conditions that require tracing. The `goto_forward` and `goto_backward` functions are properly linearized.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling in `loop_for_fixed` is present but not commented. Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mostly generic `int` types used throughout. Some improvement with `uint` for unsigned, `bool` for boolean, and proper function pointer types like `_func_int_int *`. No `int32_t` or `size_t` recovery. Signed/unsigned correctness is maintained in comparisons.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler recognizes array shapes with unresolved fields: `int[5] arr @[???]`, `int[3][4] matrix @[???]`, `int[8] src @[???]`, `int[8] dst @[???]`. No struct recovery - all composite types are either unresolved arrays or raw pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate casts. Function pointers are properly typed. No obvious type confusion between pointers and integers. Minor issues with some pointer arithmetic but nothing severe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Basic header comments ("Decompiled by Ghidra 12.0") and WARNING comments for uncertain areas. "Unresolved local var" comments are auto-generated noise. No algorithm explanation, no API contracts, no useful documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized: switch statements, while/do-while loops, function pointers. However, no explicit naming of patterns like "state machine", "callback pattern", "Duff's device" (though Duff's device code is present). The state machine functions are recognized as switch statements but not identified as FSM.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system: "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return". These help identify decompilation uncertainty. However, some anomalies like the aggressive optimization in `loop_for_fixed` aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The decompiler doesn't recover any contracts or implicit assumptions from the code. Zero information about error conditions or valid input ranges.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code but relationships aren't documented. No indication of which functions call which, no callback relationships explained, no global variable usage transparency. The test functions show calls but no explicit documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are organized in binary order, roughly matching source layout. Static functions like `double_value`, `triple_value` are properly scoped. However, no logical grouping or header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code requires significant patching: missing `#include <stdio.h>`, `#include <setjmp.h>`, missing function prototypes, unresolved external references like `__gmon_start__`, `__cxa_finalize`. Won't compile standalone without substantial work.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is severely degraded - all meaningful names lost, replaced with "Unresolved local var" markers
+- Type precision is poor - generic `int` used everywhere, no `int32_t`/`size_t` recovery
+- No composite type recovery - structs completely lost, arrays only partially recognized
+- Magic numbers everywhere without explanation (0x3e9, 0x65, 0x12, etc.)
+- No contract/precondition/postcondition recovery despite clear validation patterns in source
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are nearly perfect matches to the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The complete loss of variable names is the most severe readability issue - variables like `temp1`, `temp2`, `temp3` should be recoverable from usage patterns as `a`, `b`, `temp1`, `temp2`, `result`.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables used in arithmetic operations like `temp1 = a + b` should be named based on their role, not marked as "Unresolved"
+2. **Recover struct types from stack frame analysis**: The source uses clear struct patterns (matrix, arr, callbacks) that should be reconstructable from memory access patterns
+3. **Add contract documentation**: Functions like `multi_return` have clear validation logic that could be documented as preconditions (e.g., "requires: x >= 0")

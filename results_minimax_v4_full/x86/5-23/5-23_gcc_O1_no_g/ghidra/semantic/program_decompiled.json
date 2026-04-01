@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/5-23/5-23_gcc_O1_no_g/ghidra/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "Testing Preprocessing Features\nparam_1 = 64\nResult: 30\nResult: 32\nResult: 57122\nResult: 116\nResult: 19\nResult: 60\nLOG: Values: 10, 20, 30\nvariadic_macro result: 60\nTesting ASM Features\nasm_basic result: 0\nasm_clobber result: 5\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

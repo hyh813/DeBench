@@ -1,0 +1,132 @@
+# Decompilation Readability Assessment
+
+## Analysis of `param_fake_branch` Function
+
+### Original Source Semantics
+The original `param_fake_branch` function demonstrates "fake branch" obfuscation with:
+- Parameter `x` (int)
+- Local variable `result` initialized to `x`
+- Two always-false conditions (opaque predicates): `x*x < 0` and `strlen(str) < 0`
+- Returns `result` (which equals `x`)
+
+### Decompiled Version Analysis
+```c
+undefined4 param_fake_branch(undefined4 param_1)
+{
+  return param_1;
+}
+```
+
+The decompiled version is severely degraded - it completely eliminates the fake branches and returns the parameter directly. This is semantically equivalent to the source but loses all the obfuscation demonstration code.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The parameter is named `param_1` which is completely generic. The original variable `result` is completely eliminated. No semantic meaning conveyed - just positional parameter numbering.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_fake_branch` exactly matches the original source function name. This is excellent recovery - the decompiler preserved the semantic function name.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in the simplified decompiled version. The magic numbers `0xDEADBEEF` and `1000` from the original are completely eliminated along with the dead code branches.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: Clean, minimal code with no compiler artifacts, redundant casts, or debug instrumentation. The simplification removed all noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The decompiled version has perfectly natural control flow - a simple return statement. The original's fake if-statements are eliminated, resulting in clean linear code.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately granular - just returns the input. No inlining artifacts or over-fragmentation.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear - reads top-to-bottom with no jumps, forward references, or disruption to flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundancy - the function is a single return statement. Dead code from the fake branches was eliminated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: The parameter is typed as `undefined4` which is overly generic. The original was `int` (32-bit), but the decompiler uses Ghidra's vague "undefined4" type. Return type is also `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types used in this simple function, so none lost. N/A for this case.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts or pointer arithmetic. The simplified code is type-safe, though the vague `undefined4` type reduces safety guarantees.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only the auto-generated function signature comment `// Function: param_fake_branch @ 0x101269` is present. No explanation of the fake branch obfuscation technique, no indication that dead code was eliminated, no documentation of the original logic.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler completely eliminated the fake branch idiom. The original intentionally used always-false conditions (`x*x < 0`, `strlen(str) < 0`) as obfuscation - this pattern is completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the function was simplified or that dead code was eliminated. The decompiler silently removed significant portions of the original logic without any warning to the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No explicit contracts recovered, but the simple return behavior is correct. No pre/postcondition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch` which is correctly identified. The call relationship is clear from the code.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically in the decompiled output - all related obfuscation test functions appear together.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The function would compile with minor type adjustments (`undefined4` → `int`). External dependencies (stdlib.h, string.h) are handled by the decompiler's stub functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 10 + 10) / 4 = 7.75
+L2_avg = (10 + 10 + 10 + 10) / 4 = 10.0
+L3_avg = (4 + 10 + 8) / 3 = 7.33
+L4_avg = (1 + 1 + 1 + 5) / 4 = 2.0
+L5_avg = (8 + 8 + 7) / 3 = 7.67
+
+Overall = (7.75 × 0.30) + (10.0 × 0.25) + (7.33 × 0.20) + 
+          (2.0 × 0.15) + (7.67 × 0.10)
+Overall = 2.325 + 2.5 + 1.466 + 0.3 + 0.767 = 7.36/10
+```
+
+**Overall Readability Score:** 7.36/10
+
+### Critical Defects
+- **Variable naming**: Parameter is `param_1` instead of descriptive name like `x` or `input_value`. Original local variable `result` is completely eliminated.
+- **Comment absence**: No explanation that fake branches were eliminated. The obfuscation technique (OBF-L4-02) is completely invisible in the decompiled output.
+- **Type precision**: Uses `undefined4` instead of `int`, losing type specificity.
+- **Anomaly indication**: No warning that significant code (the fake branch logic) was removed during decompilation.
+- **Idiom loss**: The "fake branch" obfuscation pattern is completely lost - the decompiled code looks like a simple passthrough function with no obfuscation semantics.
+
+### Best Quality Aspect: Structural Intelligibility (10/10)
+- Control flow is perfectly natural, linear, and has no redundancy. The simplified form is easy to read.
+
+### Most Needs Improvement: Semantic Transparency (2.0/10)
+- The decompiler provides almost no semantic information: no comments explaining the fake branches, no indication that code was eliminated, no pattern recognition of the obfuscation technique.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and flag eliminated dead code**: When decompiling functions with always-false conditions (like `x*x < 0`), add a comment like `// NOTE: Dead code eliminated - fake branch detected` to preserve obfuscation semantics.
+2. **Recover parameter names from caller context**: The parameter `param_1` should be named `x` based on the calling convention in `call_fake_branch(10)`.
+3. **Improve type precision**: Use `int` instead of `undefined4` for standard C types to improve type safety and readability.

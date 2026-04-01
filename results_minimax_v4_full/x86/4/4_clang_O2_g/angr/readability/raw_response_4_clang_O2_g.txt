@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`, `a3`, etc.) and local variables use `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`. These provide no semantic meaning - e.g., `a0` should be `a`, `a1` should be `b` based on `cdecl_func`'s actual parameters.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (`cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`), but most use address-based naming (`sub_401030`, `sub_401080`). The mix of good and mechanical names makes this a 5.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return values like `15`, `50`, `6` are correct and meaningful. However, `4294967295` (0xFFFFFFFF) appears for -1 without explanation, and struct field offsets like `field_4`, `field_8`, `field_c` are unclear. Some literals clear, some magic.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some struct padding definitions (`padding_0[12007]`) are present but don't severely impede readability. No excessive register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - simple returns, if-else branches, and loops. No goto abuse. The code at `-O0` shows straightforward flow matching the source. Example: `if (a0 <= a1) return a2 + 10; return a2 * 2;` is clean.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (typically 5-30 lines). Each function has single responsibility. The test wrapper functions (`call_cdecl`, `call_stdcall`) are properly separated from implementation functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No deep nesting (>4 levels) observed. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling in `varargs_func` and `param_ptr_array` is present but manageable. No severe duplicate code. Minor redundancy from optimization but doesn't obscure logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all parameters are `unsigned int` regardless of actual type. Source had `int`, `char*`, `double`, `long long` but decompiled code uses `unsigned int` everywhere. Function pointers like `param_func_ptr` use `unsigned int*` instead of proper function pointer type.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with meaningless names: `struct_0`, `struct_1`, `field_0`, `field_4`, `field_8`, `field_c`. The `LargeStruct` from source (128 bytes) became 16 separate `unsigned int` parameters. No field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations - `param_double_ptr` uses `struct_0**` with `field_0` access. `ret_pointer` returns `a0 + 4` (pointer arithmetic) but typed as int. Function pointer calls like `a0(a1)` are dangerous without proper typing. Some safety issues present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments like `// ebx`, `[bp-0x4]`, `Other Possible Types: unsigned int` present. No explanation of algorithm, purpose, or contracts. The `[D] PutI` annotations indicate decompilation uncertainty but aren't helpful.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted at but not named - varargs handling shows `va_list` pattern via struct, but not labeled. No explicit recognition of calling conventions (cdecl, stdcall, fastcall) as patterns. Could be improved.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers appear in `func_mixed_args` but provide no useful context about what went wrong or what the original code might have been. No indication of confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks like `if (!a0) return 4294967295;` in `func_struct_byptr` aren't explained as contract requirements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships partially clear - `test_calling_conventions` calls `cdecl_func` via `call_cdecl`. But global variable relationships (`g_403ff4`) not documented. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by address but logically separated (calling conventions, parameter passing, return values sections). However, all in single flat namespace. Static functions not marked.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for globals but incomplete. Missing `#include` statements. Type mismatches would prevent compilation. Not standalone-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- All parameters use generic names (`a0`, `a1`, `a2`) losing semantic meaning of original parameter names (`a`, `b`)
+- Type precision severely degraded - all `int`, `char*`, `double`, `long long` became `unsigned int`
+- Struct recovery failed - `LargeStruct` with meaningful `data[16]` array became 16 separate `unsigned int` parameters
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Function pointer types not properly recovered (`unsigned int*` instead of `int (*callback)(int)`)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At `-O0`, the control flow faithfully reproduces the original source's simple if-else, return, and loop patterns without goto abuse or confusing transformations.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every parameter and local variable uses generic names (`a0-a30`, `v0-v10`) providing zero semantic information about their purpose or usage.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer parameter names from call sites**: When `cdecl_func(5, 10)` calls the function, infer `a=5`, `b=10` and name parameters accordingly
+2. **Recover precise types from debug info**: Use `-g` debug symbols to recover `int`, `char*`, `double`, `long long` types instead of defaulting to `unsigned int`
+3. **Reconstruct struct layouts**: Recognize when multiple consecutive parameters represent a passed-by-value struct and reconstruct the original struct definition with field names

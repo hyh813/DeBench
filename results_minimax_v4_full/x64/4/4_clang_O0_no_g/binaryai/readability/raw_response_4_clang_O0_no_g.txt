@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_14`, `local_c`, `iVar1`, `uVar1`. The original source had meaningful names like `a`, `b`, `count`, `args`, `sum`. These generic names make it very difficult to track variable purpose across the 800+ lines of decompiled code.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from source: `cdecl_func`, `stdcall_func`, `varargs_func`, `func_many_args`, `ret_pointer`, etc. Minor issues include `<EXTERNAL>::strlen` and `FUN_00101020` for a stub function. The naming accurately reflects the original source function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (`0x2a` = 42 for func_no_args return, `0xf` = 15), but many remain unexplained: `0x51eb851f` (should be 3.14 as double), `0xa00000005` (composite struct value), and hex values like `0x14`, `0x1e`, `0x28` used without decimal equivalents. The varargs handling shows raw numeric offsets.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The `<EXTERNAL>` markers for library functions (strlen, printf, memset) are acceptable. No obvious dead code from register spilling. The code is relatively clean of redundant casts or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions have natural if-else and loop structures. However, the varargs functions (`varargs_func`, `param_varargs`) use complex conditional logic with offset calculations that obscure the simple "sum all arguments" intent. The `call_order_dep` function is broken - it calls `param_order_dep()` with no arguments when the source had two increment operations.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - most functions are 10-40 lines. The test wrapper functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are longer but that's expected for test code. Functions maintain single responsibility. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. No goto statements or computed jumps disrupting flow. The varargs loop is the main exception with its complex branching.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop unrolling is minimal. Common subexpression elimination artifacts are not significant. The code is clean with no duplicate logic blocks that could be refactored.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation observed: `undefined8`/`undefined4` used for unknown types, `code *` for function pointers instead of proper typedefs (e.g., `int (*)(int)`), `long` used inconsistently with `int`. Several functions have wrong return types: `call_cdecl` returns `void` instead of `int`, `call_ret_basic` returns `undefined4`. The varargs functions show `int *` and `uint` mixing.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. `SmallStruct` (with x, y fields) is not recovered - uses raw `int *` pointer arithmetic. `LargeStruct` (128-byte) is not recovered - uses raw stack offsets like `*(long *)(&stack0x00000008 + (long)local_14 * 8)`. The original had clear `typedef struct { int x, y; } SmallStruct` but decompiled code loses this entirely.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: function pointers cast to `code *` lose type information, pointer arithmetic in struct handling (`param_1[1]` for second field), some integer/pointer mixing. The `param_complex_cast` uses `int *` for `void *` which works but loses generality. No alignment annotations or restrict keywords.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present in the decompiled output. No explanation of complex logic like varargs handling, no documentation of calling convention behavior, no indication of what `0x51eb851f` represents. The decompiled code relies solely on function names for semantics.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified. The varargs pattern is present but not named as such. The callback pattern in `param_func_ptr` could be recognized but isn't. No recognition of common patterns like AAPCS calling convention.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags present. The broken `call_order_dep` function (missing arguments) is presented confidently without any warning. The complex varargs stack handling shows no uncertainty indicators. Indirect calls are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. The `func_struct_byptr` has an implicit null-check but no contract annotation. No error condition documentation. The code presents as if it were hand-written with full knowledge.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear (you can see `cdecl_func(5,10)`). However, there's no documentation of who calls each function, no callback relationship documentation, and no indication of the test harness structure. The caller-callee relationships are implicit but not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (calling convention functions together, parameter passing functions together, return value functions together). However, it's a single monolithic file with no clear module boundaries. Static functions are not explicitly marked as static in all cases.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is due to: wrong return types (void vs int), missing function definitions (callback_func referenced but needs static), undefined types (undefined8, undefined4), and the broken `call_order_dep` call. Significant patching would be required for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `local_14`, `iVar1`) making code comprehension extremely difficult
+- Type precision severely degraded: `undefined8`/`undefined4`/`code *` instead of proper types, wrong return types (void vs int)
+- Composite types not recovered: structs `SmallStruct` and `LargeStruct` lost, replaced with raw pointer arithmetic
+- `call_order_dep` is broken - calls `param_order_dep()` with no arguments, losing the original `++i, ++i` semantics
+- No comments or documentation explaining complex patterns like varargs handling or calling convention behavior
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names are correctly preserved from the original source (cdecl_func, stdcall_func, varargs_func, ret_pointer, etc.), making it easy to identify the intended purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The pervasive use of generic names like `param_1`, `param_2`, `local_c`, `iVar1` severely impedes understanding. At -O0 optimization, the decompiler should be able to infer more meaningful names from usage patterns (e.g., `param_1` used in addition is clearly `a` or `first_operand`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (arithmetic, indexing, comparison) to suggest names like `sum`, `count`, `index`, `ptr` instead of generic `param_1`, `local_14`
+2. **Recover struct/union types**: Analyze stack access patterns and pointer dereferences to reconstruct composite types with field names rather than raw offsets
+3. **Add semantic annotations**: For complex patterns like varargs, add comments explaining the pattern (e.g., "// varargs: iterates through stack arguments") and flag uncertain calls with "// UNCERTAIN: could not resolve indirect call"

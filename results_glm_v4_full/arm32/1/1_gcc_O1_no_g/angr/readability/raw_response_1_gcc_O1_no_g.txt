@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`a0`, `a1`, `v0`, `v1`) and do not reflect the original semantic names (`a`, `b`, `c`, `temp1`). In `loop_break`, array elements are flattened into individual stack variables (`v0` through `v4`), obscuring the array structure.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `single_if`, and `nested_if_2` are perfectly recovered from the symbol table, accurately matching the source intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The value `-1` is represented as the magic number `4294967295` (unsigned max) in functions like `switch_small`. Complex arithmetic like `1717986919 * v0 >> 34` in `loop_while` replaces the readable `x / 10` with compiler magic numbers.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with low-level artifacts like `armg_calculate_condition(194, ...)` and `armg_calculate_flag_c`, which represent CPU flag checks instead of high-level boolean logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is unnatural; `if (x > 0)` becomes `if (!armg_calculate_condition(...))`. `switch` statements in `switch_small` and `switch_large` are completely missing, reduced to only returning the default case.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source perfectly. The decompiler correctly identified separate functions like `double_value` and `triple_value` rather than inlining them.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code flow is disrupted by explicit `goto` labels (e.g., `LABEL_10904`, `LABEL_10aae`) and forward jumps that make top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: `sequential_ops` is simplified to a one-liner `(a0 + a1) * 2 - a2`, which is clean, but this is contrasted by verbose stack checking code in `loop_break` that adds noise without value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Source types `int` are consistently decompiled as `unsigned int`, causing logic errors in representation (e.g., `-1` becoming `4294967295`). Pointers are often cast to generic `unsigned int *`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Arrays like `int arr[]` in `loop_break` are not recovered; instead, the decompiler uses individual stack variables (`v0`...`v4`) and pointer arithmetic (`v6`), losing the composite structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: While there are no buffer overflows in the decompiled view, the reliance on `unsigned int` for signed logic and the use of raw pointer arithmetic (`goto (&v0)[a1]` in `computed_goto`) indicates low type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of obscure `armg_` helper functions. Only memory addresses are provided.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. `for` loops are rendered as `do-while` (e.g., `loop_for_fixed`), and `switch` statements are entirely failed/lost.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the incorrect `return 4294967295;` for `switch_small` with absolute confidence, providing no warning that the switch logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `n > 0` in `duffs_device` is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible and named correctly (e.g., `recursion_factorial` calling itself), allowing the call graph to be understood despite the poor local variable naming.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped in the order they appear in the source, and helper functions are placed near their usage, maintaining logical grouping.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile because it relies on non-standard intrinsic functions like `armg_calculate_condition` and `armg_calculate_flag_c` which do not exist in standard C libraries.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.25
+L2_avg: 5.25
+L3_avg: 3.67
+L4_avg: 1.25
+L5_avg: 4.67
+
+Overall = (4.25 × 0.30) + (5.25 × 0.25) + (3.67 × 0.20) + 
+          (1.25 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.3125 + 0.734 + 0.1875 + 0.467
+        = 3.98
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Switch Statement Failure**: Functions `switch_small` and `switch_large` are reduced to `return 4294967295;`, completely losing the case logic.
+- **Low-Level Flag Pollution**: The code uses `armg_calculate_condition` instead of lifting comparisons to C operators (e.g., `a > b`), making logic unreadable.
+- **Type Incorrectness**: Signed integers (`int`) are decompiled as `unsigned int`, causing literals like `-1` to appear as `4294967295`.
+- **Lost Array Semantics**: Arrays are flattened into individual stack variables, destroying the data structure abstraction.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully recovered the original function names from the binary's symbol table, making the high-level purpose of each unit immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Noise Reduction (2/10)**
+- **Why?** The pervasive use of `armg_calculate_condition` and `armg_calculate_flag_c` functions injects low-level CPU flag noise into the output, preventing the code from resembling readable C.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Lift Flag Checks to Boolean Expressions**: Replace `armg_calculate_condition` calls with semantic C comparisons (e.g., `a > b`) to restore natural control flow.
+2. **Improve Switch Statement Recovery**: Fix the logic that causes switch statements to collapse into only the default case; ensure jump tables are correctly mapped to case blocks.
+3. **Infer Signedness from Context**: Utilize debug information (DWARF) or usage patterns to correctly distinguish between `signed int` and `unsigned int` to avoid confusing magic numbers.

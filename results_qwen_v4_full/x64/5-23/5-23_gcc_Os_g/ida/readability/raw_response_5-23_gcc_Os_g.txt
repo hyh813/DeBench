@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3` are generic and obscure purpose (e.g., `v0` in `test_preprocessing_features` should be `variadic_result`). However, some names are meaningful (`counter`, `arr`, `dst`, `src`, `exec_mem`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_clobber`, `param_dynamic_code`). A few internal functions use generic names (`sub_1020`, `sub_1030`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many unexplained magic numbers remain: `57072` (should be `0xDEF0`), `282` (line number + counters), `19` (string length sum), `30` (sysconf `_SC_PAGESIZE`). String references like `asc_206A` are opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) add noise. Some redundant type casts (`(unsigned int)(i + 1)`). However, assembly is cleanly converted to C equivalents without raw asm blocks.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered well (`for (i = 0; (int)i < n; i++)` in `param_asm_clobber`). However, constant folding in caller functions (`call_macro_constants` returns 64 directly) loses original call structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately granular and match source structure. Each test case is a separate function. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive goto usage or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Constant folding actually reduces redundancy. Loop structures are clean without unrolling artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of `size_t`, `int`, pointers. However, some generic `__int64` and `__int32` instead of standard types. Stack canary uses `unsigned __int64` appropriately.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered well (`int arr[5]`, `char dst[32]`, `char src[10]`). No complex structs in this code to evaluate. Pointer arithmetic minimal.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(_DWORD *)`, `(__m128i *)`, `(func_t)exec_mem`. Function pointer casts for dynamic code execution are inherently unsafe but necessary.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. No explanation of magic numbers, algorithm intent, or preprocessing semantics lost during compilation. Only decompiler warnings present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition (e.g., "atomic operation", "memory copy", "string length calculation"). Assembly patterns converted but not identified as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("positive sp value has been detected", "bad sp value at call"). Failed decompilations listed at end (9 external functions). However, no confidence indicators on recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or error condition documentation. Return values unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph clear through direct calls. Global variable `global_var` usage visible. External function calls shown but 9 failed to decompile.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output. No logical grouping comments separating preprocessing tests from assembly tests. Source file organization not preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 9 external functions failed (`mmap`, `munmap`, `printf`, etc.). Would need stubs or library linking. String references (`asc_206A`) need resolution. Does not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (6 + 8 + 4 + 7) / 4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):   (7 + 8 + 8 + 8) / 4 = 7.75 × 0.25 = 1.938
+Level 3 (Type System):  (7 + 7 + 6) / 3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):     (2 + 4 + 6 + 3) / 4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):   (7 + 6 + 5) / 3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────────────
+Overall Score:                                  6.31/10
+```
+
+**Overall Readability Score:** 6.3/10
+
+### Critical Defects:
+- **Magic numbers unexplained**: `57072`, `282`, `19`, `30` have no semantic meaning in decompiled output
+- **No comments**: Zero documentation of algorithm intent, preprocessing semantics, or assembly recovery
+- **Constant folding obscures logic**: `call_macro_constants()` returns `64` directly instead of showing `param_macro_constants(2048)` call
+- **Preprocessing information lost**: Conditional compilation branches (`#ifdef DEBUG_MODE`) completely invisible in decompiled code
+- **String references opaque**: `asc_206A`, `aPpL201D` instead of actual string content in printf calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding intent and recovered semantics extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and display string literals inline** instead of opaque references (`asc_206A` → `"=== 测试预处理与条件编译 ==="`)
+2. **Add confidence annotations** for recovered code, especially where constant folding may have obscured original control flow
+3. **Detect and document preprocessing artifacts** - flag where `#ifdef` branches were compiled out and show both possibilities when debug symbols available

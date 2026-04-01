@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `v23`) with no semantic meaning. Only loop counters (`i`, `j`, `k`) and occasional `ptr`, `cur` provide minimal clarity. Original source had meaningful names like `packet_size` equivalents.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`process_char`, `array_1d_stack`, `ptr_single`) but surrounded by useless wrappers (`sub_401159`, `sub_40119f`). Struct types named generically (`struct_0`, `struct_1`) losing all semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `4294967295` (0xFFFFFFFF mask), `65`/`90` (ASCII 'A'/'Z'), `32` (case conversion). Original source used readable `'A'`, `'Z'` character literals. No constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary wrapper functions (`sub_401159` just calls `process_char`). `[D] unsupported_` markers pollute `process_ld` and `test_data_types_l1`. Redundant `& 4294967295` on most printf return values.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as proper for/while constructs. However, `enum_switch` uses goto for jump table, and `sub_401020` has `goto g_406010` which is unnatural. Acceptable for -O0 compilation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but duplicate wrapper functions create fragmentation. Function sizes are reasonable, but the wrapper pattern (`sub_XXXXX` calling real function) adds no value.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Goto usage in `enum_switch` and startup code disrupts flow. Loop structures are properly linearized without backward jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Wrapper functions create structural redundancy. Consistent `& 4294967295` masking on printf returns is redundant. No dead code elimination visible from -O0 compilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `char` return becomes `int` (`process_char`), `short` becomes `unsigned short`, `long long` becomes `unsigned long`. Pointer types often `unsigned long` instead of proper pointer types. `process_float` loses its `float` parameter entirely.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `padding_4`). Union types not recovered (treated as `void*`). Bitfields converted to manual bit operations instead of bitfield syntax. Nested struct access flattened to array indexing.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. Function pointers degraded to `unsigned long long *`. Pointer arithmetic uses raw integers (`ptr + i * 4`). No const-correctness preserved despite original `const int *` parameters.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Original source had extensive documentation explaining each test case. Only `[D]` markers indicate decompilation failures, not helpful documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common C idioms present (string length calculation, array summation) but not identified or labeled. No pattern recognition for linked list traversal, tree recursion, or state machine patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D] unsupported_` markers flag some failures (`process_ld`, parts of `test_data_types_l1`). However, many type mismatches and signature errors go unflagged. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions or error condition documentation. Original source had clear test expectations that are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables have opaque names (`g_403150`, `g_406008`). No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original source had clear section headers (`// 2.1 基础数据类型`, `// 2.2 数组类型`). No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains `[D]` markers that won't compile. External dependencies (`printf`, `__libc_start_main`) declared but not defined. Would require significant manual patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+6+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (4+5+4)/3   = 4.33  × 0.20 = 0.867
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25  × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.88/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects
+- **Variable names are entirely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original source
+- **Type precision severely degraded** - `char` returns become `int`, `float` parameters lost entirely in `process_float`
+- **`process_ld` function completely failed** - contains `[D] unsupported_` markers making it unreadable
+- **Wrapper function pollution** - every function has a `sub_XXXXX` wrapper that adds no value
+- **Zero comments recovered** - original source had extensive documentation explaining each test case
+
+### Best Quality Aspect
+- **Control Flow Naturalness (7/10)** - Loop structures and conditionals are mostly recovered correctly as natural C constructs despite -O0 compilation
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source comments explaining test purposes entirely lost
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Preserve original function signatures** - Maintain parameter types from debug symbols when available (`-g` flag was used but float parameters lost)
+3. **Add decompilation confidence annotations** - Replace `[D] unsupported_` with actionable comments explaining what failed and suggested manual review steps

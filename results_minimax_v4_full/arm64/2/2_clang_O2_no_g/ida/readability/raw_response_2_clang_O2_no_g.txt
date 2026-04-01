@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`. The original source uses meaningful names like `x`, `c`, `arr`, `n`, `p`, `str`, `pts`, `head`, but these are completely lost in decompilation. This is a severe degradation that makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. Nearly all function names match the original source exactly. Minor deduction for some helper functions like `test_data_types_l1` being less descriptive than original comments.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions contain hardcoded expected values instead of actual function calls (e.g., `printf("DT-L1-01 (process_char): %c\n", 97);` instead of `printf("DT-L1-01 (process_char): %c\n", process_char('A'));`). Magic numbers like 65, 32 in range checks and 0x1A in `(result - 65) >= 0x1Au` are unexplained. The decompiler computed the results at compile time rather than preserving the function call structure.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. SIMD intrinsics like `vaddq_s32`, `vaddvq_s32`, `vld3q_f32` are visible in array processing functions, which is expected for ARM64 with auto-vectorization. No obvious debug instrumentation or frame pointer manipulation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with if/else statements and while loops. However, some loop constructs use goto-style jumps (e.g., `array_1d_stack` has complex branching for vectorized vs scalar paths). At -O0, control flow should be nearly perfect, but the vectorized code paths introduce some complexity. The `array_2d_stack` function is completely unrolled into a single expression: `a1[99] + a1[88] + ... + *a1`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated with appropriate granularity. Each function maintains single responsibility - e.g., `process_char` handles only character case conversion, `array_string` only computes string length. No 500-line monoliths. Functions like `binary_tree` and `binary_tree_sum` show good decomposition with a thunk wrapper.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with good linearity. Early returns used appropriately (e.g., `if ( a2 < 1 ) return 0;`). No excessive goto usage. The `array_3d` function has deeply nested vaddq_s32 calls but still maintains readable structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Significant loop unrolling present in array functions - `array_1d_stack`, `array_3d`, `array_vla`, `ptr_increment` all have fully unrolled versions with SIMD. This is aggressive for -O0 but the code remains functional. No obvious dead code, but the unrolling creates visual redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `__int64` used consistently for return types, but parameter types show degradation: `int32x4_t*` used for int arrays (should be `int*`), `const int*` becomes `_DWORD*`, function pointers have generic signatures like `__int64 (__fastcall *)(_QWORD)`. Float/double types preserved correctly. The `int32x4_t` usage is particularly confusing - it's a SIMD vector type misapplied to scalar arrays.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is poor - fields accessed via array indices: `a1[0]`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`. The `struct_simple` function uses `a1[1] + *a1 + a1[2]` instead of `p->x + p->y + p->z`. Nested structs use raw offsets: `a1 + 20`, `a1 + 8`. Union types partially recovered but field names lost. Linked list nodes accessed via `*((_QWORD *)a1 + 1)` instead of `node->next`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with correct pointer arithmetic. Some concerning patterns: `ptr_diff` uses `>> 2` to convert byte offset to element count which is correct but implicit. The `struct_with_ptr` function has complex pointer casting that could be safer. No obvious buffer overflow vulnerabilities, but the lack of proper struct types makes reasoning about safety difficult.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments present. Only auto-generated function headers like `/* Function: process_char @ 0x7D4 */`. No explanation of algorithm logic, no documentation of what the function does, no pre/postconditions. The original source has extensive comments explaining each test case, but these are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C idioms are recognizable (linked list traversal, binary tree recursion) but not explicitly named or documented. No indication that these are well-known patterns. The decompiler doesn't recognize or label the linked list pattern, binary tree pattern, or graph traversal pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or problematic code. The test functions that have hardcoded values (instead of function calls) are presented as if they work correctly. No warnings about the computed goto patterns or the aggressive loop unrolling. No indication that `int32x4_t*` might be incorrect for scalar arrays.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant information. The original source has clear expectations (e.g., "正偶数为真" for process_bool) but these are completely lost. No documentation of what valid input ranges are or what the function guarantees about output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code (e.g., `binary_tree_sum(a1)` calls itself recursively, `graph_traverse` iterates over adjacency lists) but relationships are not documented. No call graph information, no indication of which functions call which. The relationship between `binary_tree` (wrapper) and `binary_tree_sum` (implementation) is visible but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - data type functions first, then array functions, pointer functions, composite type functions, then test functions. Related functions are near each other. However, the file is a single monolithic output with no separation into modules or headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile as-is. Missing declarations for standard library functions (`puts`, `printf`, `scanf` are not declared). The test functions contain hardcoded values instead of function calls, so they don't actually test anything. External dependencies not documented. However, the function signatures are syntactically correct.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable names are completely generic (`a1`, `a2`, `v1-v15`), making it nearly impossible to track variable purpose without extensive reverse engineering
+- Composite types (structs) are not recovered - fields accessed via array indices (`a1[0]`, `a1[1]`, `a1[2]`) instead of named fields (`p->x`, `p->y`, `p->z`)
+- Test functions contain hardcoded expected values instead of actual function calls, losing the ability to verify behavior
+- No comments or documentation explaining algorithm logic, preconditions, or postconditions
+- `int32x4_t*` (SIMD vector type) incorrectly used for scalar int arrays, causing type confusion
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are excellently preserved and match the original source almost perfectly, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The decompiled code has zero useful comments - no explanation of algorithm logic, no documentation of what functions do, no pre/postconditions, no indication of uncertain code. Combined with the poor variable naming, this makes the code extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct field names** from offset analysis - when accessing `a1[0]`, `a1[1]`, `a1[2]` at consecutive offsets, recognize this as a struct with 3 fields and assign meaningful names based on usage patterns
+2. **Preserve function call structure** in test functions instead of computing results at compile time - the test functions should call the functions being tested, not replace them with hardcoded values
+3. **Add semantic comments** explaining algorithm intent, such as "Iterates linked list" for while loops with pointer traversal, or "Binary tree post-order traversal" for recursive tree functions

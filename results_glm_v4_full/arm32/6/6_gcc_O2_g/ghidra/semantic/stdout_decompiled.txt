@@ -1,0 +1,23 @@
+=== Standard Library Tests ===
+call_strcmp: 8 (expected 0)
+call_strlen: 0 (expected 12)
+call_memcpy: 12 (expected 90)
+call_memcmp: 90 (expected 0)
+call_memcmp: -1 (expected 0)
+Value: 42, Name: TestName
+call_printf: 26 (expected 27)
+call_scanf: 579 (expected 579)
+call_fopen_fclose: 42 (expected 42)
+call_fread_fwrite: 42 (expected 42)
+call_malloc_free: 90 (expected 90)
+call_memset: 0 (expected 0)
+call_strchr_strstr: 15 (expected 15)
+=== System Call Tests ===
+call_linux_syscall: 42 (expected 42)
+call_win32_api: passed
+call_fork_exec: 42 (expected 42)
+call_pipe_communication: 42 (expected 42)
+call_socket_create: 42 (expected 42)
+call_shmget_shmat: 42 (expected 42)
+call_signal_handling: passed
+=== Thread Concurrency Tests ===

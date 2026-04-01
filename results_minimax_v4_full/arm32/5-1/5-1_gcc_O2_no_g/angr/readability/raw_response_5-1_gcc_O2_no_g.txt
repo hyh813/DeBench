@@ -1,0 +1,108 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+After examining the original source code (540 lines of C++14 with multiple OOP features) and the decompiled output (810 lines), I observe this is a comprehensive decompilation of a C++ test binary covering classes, inheritance, templates, exceptions, smart pointers, and RTTI. The function `getValue` from `SimpleClass` is not directly visible in the decompiled output - only the test harness functions are shown, with member functions like `Base::virtual_func` appearing as stubs.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use purely generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `cur`, `v10`, `v11`, `v13` throughout. For example, in `test_cpp_exception`, variables `flag1`, `v14`, `v15`, `v16` convey no semantic meaning about their purpose (exception pointer, flag, result). Compare to original source where variables like `result`, `capture_by_value`, `capture_by_ref` are meaningful.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions like `test_cpp_exception`, `test_cpp_member_func`, `template_max<int>` are correctly named, but many use mechanical addresses (`sub_1092c`, `sub_10b90`) or cryptic names (`call_weak_fn`, `frame_dummy`). The thunk functions like `_ZThn8_N12MultiDerived5funcBEv` are correctly demangled but lack semantic clarity about being "this pointer adjustment thunks."
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation. In `test_cpp_rtti`, the value `71212` (0x1164c) and `71232` (0x11640) are used as type_info pointers without documentation. The string "Test" is copied but its purpose (initializing SimpleClass::name) is not indicated. Constants like `0x1234` from `getClassID()` are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present. Stack guard checks (`__stack_chk_guard`) clutter logic. Many functions are empty stubs returning immediately (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`) - these appear to be decompilation failures where the actual code wasn't recovered. Register-related noise like `v3 = v4; v2 = v9;` pollutes the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of goto statements disrupts readability. In `test_cpp_exception`, complex conditional jumps with `armg_calculate_condition` create spaghetti flow. Many functions use `goto *((int *)*((int *)arg_0))` for virtual dispatch which is correct but not idiomatic C++. The control flow does not match the original try-catch structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function granularity is reasonable - separate functions exist for each test case and class method. However, many functions are empty stubs (e.g., `test_cpp_constructor` returns immediately without executing the test logic). Parameter lists expose implementation details like `void* this` instead of proper implicit this pointer.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Code generally reads top-to-bottom but forward jumps and computed gotos interrupt flow. In `test_cpp_rtti`, the if-else chain uses goto labels (`LABEL_10a90`, `LABEL_10e26`) that disrupt linear reading. The exception handling code is particularly non-linear.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy from optimization - repeated register saves like `v5 = v6; v4 = v7; v3 = v8; v2 = v9; v1 = v10; v0 = v11;` in `template_max<double>` are unnecessary artifacts. However, no major redundancy obscuring logic is present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Most pointers are `void*` or `unsigned int`. The `this` pointer is exposed as explicit `void*` parameter rather than implicit class reference. In `call_virtual_func`, the parameter is `class Base *arg_0` but the goto dispatch uses raw pointer arithmetic. Integer types are generic `unsigned int` instead of `int32_t` or `size_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Poor struct recovery. The RTTI section shows manual struct definitions:
+```c
+typedef struct struct_0 { char padding_0[4]; struct struct_1 *field_4; } struct_0;
+```
+This loses all semantic meaning - should be `std::type_info` or similar. Class layouts are not reconstructed; member access uses raw pointer arithmetic like `ptr[40]` for array offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations. In `test_cpp_rtti`, pointer arithmetic like `(int)(*(ptr))[4]` is dangerous and unclear. The virtual function dispatch uses `goto *((int *)*((int *)arg_0))` which bypasses type safety. Casts like `(unsigned int)test_cpp_constructor()` lose semantic meaning. No bounds checking is evident in container access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are decompiler artifacts like `/* do not return */` on abort calls. No explanation of algorithm logic, no documentation of what each test function validates, no indication of uncertainty. The original source comments explaining each test scenario are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognized but not named. Virtual function dispatch is present but not labeled as "vtable dispatch." Exception handling uses C++ ABI functions but isn't documented as "try-catch block." Template instantiation is visible but not identified as such. The diamond inheritance thunks are present but their purpose isn't explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. Many functions are empty stubs (`test_cpp_constructor` returns without doing anything) but this isn't flagged as a decompilation failure. The `call_virtual_func` uses indirect dispatch that couldn't be resolved, but there's no warning. The code confidently presents incomplete/incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions like "ptr != null" for `getData()` are not documented. Postconditions like "returns heap-allocated pointer" for `operator new` aren't indicated. The original source's error handling (e.g., `return -1` for out-of-bounds) is not explained as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some relationships visible through function names (e.g., `test_cpp_oo_features` calls other test functions), but not explicitly documented. Virtual dispatch relationships between Base and Derived classes are not clearly indicated. The call graph is inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by type (test functions, class methods, template instantiations, thunks), which roughly matches source organization. However, all functions are in a single flat listing rather than organized by class or feature. Static vs. global scope is not distinguished.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many extern declarations needed (`GLIBC_2.4::__stack_chk_guard`, `CXXABI_1.3::_ZTIi`). The code would require significant patching to compile - missing includes, stub implementations for standard library functions. The decompiled output includes function signatures but not compilation-ready code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Variable names are purely generic (`v0`, `v1`, `ptr`, `result`) with no semantic meaning
+- Many functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`) that don't execute their logic
+- Type information severely degraded - all pointers are `void*` or `unsigned int`, class members accessed via raw offset arithmetic
+- No comments explaining algorithm logic, test purpose, or decompilation confidence
+- Control flow uses goto and computed jumps instead of idiomatic C++ structures
+- Composite types not recovered - struct definitions use generic names like `struct_0`, `struct_1`
+
+**Best Quality Aspect:** Function Naming Quality (scored 4/10)  
+- Some functions are correctly named (e.g., `test_cpp_exception`, `template_max<int>`), showing the decompiler can handle symbol recovery when symbols are present
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every variable uses generic names like `v0`, `v1`, `v2`, `ptr`, `result`, making it impossible to track data flow without extensive reverse engineering
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used as array index → `index`; `result` accumulated in addition → `sum` or `total`)
+2. **Recover complete function bodies**: Many test functions are empty stubs - ensure decompilation captures all code paths, not just partial functions
+3. **Reconstruct class layouts and member access**: Instead of raw pointer arithmetic like `ptr[40]`, recover as `obj->data[size]` with proper struct definitions and field names

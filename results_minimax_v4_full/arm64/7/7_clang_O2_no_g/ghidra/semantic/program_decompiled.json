@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_clang_O2_no_g/ghidra/syntactic/bin/7_clang_O2_no_g_fixed",
+  "stdout": "Testing opaque predicate edge case\n\nopaque predicate(10) = 10\ncall_opaque_predicate() = 20\ncall_instruction_substitution() = 225\nparam_string_encryption() = 144\nparam_tail_call_optimized() = 500500\nparam_non_tail_call() = 5050\nparam_vectorized_loop() = 72\nparam_link_time_optimization() = 20\nparam_division_by_zero(5), param_division_by_zero(0) = 2\nparam_null_pointer_deref(&x), param_null_pointer_deref(0) = 1820156201\nbuffer_overflow() = 30\ninteger_overflow() = 2000000000\nundefined_behavior() = 10\nimplementation_defined() = 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

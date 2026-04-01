@@ -1,0 +1,20 @@
+Testing Standard Library Functions
+
+String length: 14
+strcmp result: 0
+strlen result: 12
+memcpy result: 90
+memcmp result: 4294967295
+Value: 42, Name: HelloLib
+printf chars: 26
+scanf result: 579
+fopen result: 42
+fread/fwrite result: -3
+malloc result: 90
+memset result: 0
+strchr/strstr result: 15
+Testing System Calls
+
+syscall result: 42
+stat result: 42
+fork/exec result: 42

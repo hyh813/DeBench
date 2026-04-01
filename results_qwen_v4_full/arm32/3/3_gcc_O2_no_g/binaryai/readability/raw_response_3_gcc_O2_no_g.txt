@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar2`, `piVar3`). No semantic meaning is recovered (e.g., `arr` becomes `piVar2`, `local` becomes `local_34`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are preserved from source (`local_vars`, `heap_basic`, `global_var_access`). However, some signatures are corrupted (e.g., `local_array` returns `void` instead of `int`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex obscure meaning (`0x2a` instead of `42`, `0x14` instead of `20`, `0xffffffff` instead of `-1`). Original decimal constants are lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`) add noise. External function wrappers that call themselves (`calloc`, `memcpy`) are redundant artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For-loops converted to do-while with pointer arithmetic (`piVar2 = piVar2 + 1; *piVar2 = iVar2`). Test functions print hardcoded values instead of calling actual functions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but signatures corrupted (`vla_stack` has extra `param_2`, `stack_alias` takes no parameters but should take two pointers).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but pointer arithmetic loops disrupt flow. Some functions have confusing early returns mixed with stack check failures.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant pointer calculations (`(int *)((int)__ptr + -4)`). Stack canary variables (`aiStack_14[2]`) add unnecessary complexity.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `undefined4` used instead of `int`. Pointer types degraded to `void*` or `undefined4*`. Lost distinction between `size_t`, `int`, and pointer types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct `Point` completely lost (becomes `malloc(8)` with raw field access). `Node` and `TreeNode` structs not recovered—all pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int *)((int)__ptr + -4)`, `(undefined4 *)((int)aiStack_14 + iVar1)`. Pointer arithmetic without type safety throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of logic, algorithms, or decompilation uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation/traversal pattern in `linked_list_heap` not identified. Tree structure in `tree_heap_traversal` completely obscured.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Stack canary checks present but not explained. No warnings about corrupted function signatures or lost type information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition or invariant recovery (e.g., "returns heap-allocated memory").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but test functions heavily modified (print constants instead of calling functions). Global variables referenced but relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping by category (stack/heap/static/memory ops) as in source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but many are self-referential wrappers. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.04/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on semantic usage (e.g., `input_value`, `loop_index`, `result`)
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` all reduced to raw pointer arithmetic with `malloc(8)`
+- **Test functions print hardcoded constants** instead of calling actual functions (e.g., `test_stack_memory` prints `0x14` instead of calling `local_vars(5)`)
+- **Function signatures corrupted** - `local_array` returns `void` instead of `int`, `stack_alias` takes no parameters
+- **Hex literals obscure meaning** - `0x2a`, `0x14`, `0xffffffff` instead of decimal `42`, `20`, `-1`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `global_var_access`), making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments throughout entire decompilation output, leaving all non-trivial logic unexplained
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from memory access patterns** - Detect consistent field offsets (e.g., `+0`, `+4`, `+8`) and propose named struct types
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, loop indices should be `i`/`index`
+3. **Preserve original function call relationships in test code** - Don't constant-fold test function calls; maintain actual function invocations for verification

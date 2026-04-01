@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## Critical Observation
+**⚠️ OPTIMIZATION LEVEL MISMATCH**: Original source claims `-O0 -g` (debug), but decompiled binary metadata shows `O3_no_g`. This explains aggressive SIMD vectorization, constant folding, and function propagation. Evaluation adjusted for O3 expectations.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v0`, `v1`, `a1`, `v2`, `retaddr`) with zero semantic meaning. For example, `local_vars` parameter `a1` should be `x`, and `heap_basic`'s `v11` should be `result`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`double_value`, `local_vars`, `heap_basic`), but many are generic (`sub_1020` through `sub_1110`) or compiler-modified (`alloca_usage.constprop.0`). Test functions like `test_stack_memory` preserved well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x28u`, `0x10u`, `0x18u` for struct sizes). Some recognizable (`42` in `address_of_local`), but SIMD constants (`xmmword_3720`) obscure intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts: stack canaries (`__readfsqword(0x28u)`), SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi32`), redundant casts (`(__m128i *)`, `(_DWORD *)`), and alignment padding code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original simple loops transformed into complex SIMD vectorized operations. `local_array` became unreadable SSE intrinsics instead of simple `for` loop. Some functions constant-folded entirely (`stack_alias` returns literal `20`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Most functions preserved separately, but compiler created propagation variants (`alloca_usage.constprop.0`). Some functions over-optimized to single return values losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some awkward patterns from optimization (e.g., `vla_stack` has complex alignment code before main logic).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: SIMD vectorization creates apparent redundancy (loading same constants repeatedly). Loop unrolling present but not recognized as such by decompiler.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `__int64`) but with generic naming. Signed/unsigned sometimes incorrect (`unsigned int` where `int` expected). Function pointers degraded to `__int64`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: `Point` struct not recovered (accessed as `malloc(8u)` with raw offsets). `Node` linked list struct lost (accessed as `_QWORD *` with `i[1]` for next pointer). `TreeNode` completely absent.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(__m128i *)`, `(_DWORD *)`, `(_QWORD *)`). Pointer arithmetic on void pointers. Array bounds not preserved (e.g., `heap_overflow` loop bounds lost).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No meaningful comments recovered**. Only auto-generated decompiler headers. Original source had extensive documentation (e.g., `// MEM-L1-01: 局部变量（基础类型）⭐`) completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list creation/traversal in `linked_list_heap` not identified as such. Tree structure in `tree_heap_traversal` not recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged ("FAILED to decompile: free", "positive sp value has been detected"), but inconsistent. Dangerous patterns (dangling pointer, double free) not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions recovered (e.g., `if (a1 > 0)` checks not documented as contracts). Null pointer checks present but not explained as API requirements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced (`global_counter`, `file_scope_static`) but no usage documentation. Callback mechanism (`global_func_ptr`) type information lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 80 functions in single output file. No logical grouping (stack/heap/static tests mixed). Original source's clear section organization (`// 3.1 栈内存操作`) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **18 library functions failed to decompile** (malloc, free, printf, memcpy, etc.). Requires extensive stubbing. External dependencies (`extern_global_var`, `extern_function`) declared but not resolved.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.77/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+---
+
+### Critical Defects
+
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic (`malloc(8u)`, `i[1]`) instead of named struct fields
+- **Zero semantic variable names**: All 200+ variables use `v0`, `v1`, `a1` pattern with no meaning inference
+- **18 library functions failed**: Core functions (malloc, free, printf, memcpy) not decompiled, requiring external stubs
+- **SIMD optimization obscures logic**: Simple loops transformed into incomprehensible SSE intrinsics (`_mm_load_si128`, `_mm_add_epi32`)
+- **No comments recovered**: Original 50+ documentation comments completely lost, including test case descriptions
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (5/10)** - Some original function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), allowing basic identification of test purposes despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - Complete absence of any recovered documentation. Original source had extensive comments explaining each test case's purpose, expected values, and scene classifications—all lost in decompilation.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement struct type inference**: Analyze malloc sizes and field access patterns to recover `Point {x, y}`, `Node {data, next}`, and `TreeNode {data, left, right}` with named fields instead of raw pointer arithmetic.
+
+2. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., `a1` in `local_vars` → `x`, `v11` in `heap_basic` → `result`) based on usage patterns and function context.
+
+3. **Detect and simplify SIMD optimizations**: Recognize when SSE/AVX intrinsics represent simple scalar operations (like `arr[i] = i * 2` loops) and present the original high-level logic with optimization notes rather than raw intrinsics.

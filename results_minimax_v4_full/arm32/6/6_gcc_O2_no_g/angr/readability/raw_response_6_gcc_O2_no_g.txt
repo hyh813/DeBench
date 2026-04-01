@@ -1,0 +1,230 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler uses generic variable names throughout: `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`. Parameters are named `a0`, `a1`, `a2` instead of descriptive names like `dst`, `src`, `size`. For example, `param_strcpy(char *a0, char *a1)` should be `param_strcpy(char *dst, const char *src)`. Even register-mapped variables like `// r0`, `// r3` provide no semantic meaning. This makes tracking variable purpose across the 2890-line output extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Standard library functions are correctly identified: `strcpy`, `strcmp`, `strlen`, `memcpy`, `pthread_create`, `signal`. Some internal functions have meaningful names: `signal_handler`, `thread_compute`, `thread_sum`, `thread_increment`. However, many functions use the auto-generated `sub_*` pattern: `sub_10ca8`, `sub_10fe0`, `sub_112b4`, `sub_112bc`. The function `call_strcpy` returns constant 8 without any implementation visible, losing the actual logic.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+String literals are preserved: "Value: %d, Name: %s\n", "123,456", "/etc/passwd", "HelloPipe". However, error return values use magic number `4294967295` (0xFFFFFFFF) without explanation. Address constants like `0x24120` (mutex location), `0x2413c`, `0x24158` are unexplained. The `armg_calculate_condition` function is a decompiler artifact with unclear purpose. Constants like `66` in `open("/tmp/binbench_shm", 66, 438)` are not explained as `O_CREAT | O_RDWR`.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution throughout:
+- Duplicate function calls: `param_fread_fwrite` called twice consecutively
+- Redundant `__printf_chk` calls appearing twice each
+- Spurious `armg_calculate_condition` function used extensively
+- Incomplete code: `return ...;` appears multiple times
+- Empty stub functions: `__sync_synchronize()`, `__aeabi_read_tp()`
+- Stack protection checks `__stack_chk_guard` add noise
+- Dead code from register spilling: `v3 = v4; v2 = v5; v1 = v6; v0 = v7;`
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The `armg_calculate_condition` function creates convoluted conditional logic that's hard to follow. For example in `param_strcmp`:
+```c
+if (armg_calculate_condition(18, v0, 0, 0))
+{
+    v2 = 4294967295;
+    if (!armg_calculate_condition(2, v0, 0, 0))
+        return v2;
+}
+```
+This obscures simple `if (v0 < 0)` logic. Some goto usage exists. Loop structures are present but could be cleaner. At -O0, this level of complexity is unexpected.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+The original function structure is mostly preserved - each test function (`call_strcpy`, `call_strcmp`, etc.) exists separately. However, some functions like `call_strcpy` are reduced to returning constants, losing implementation:
+```c
+unsigned int call_strcpy()
+{
+    return 8;
+}
+```
+This loses the actual logic of calling `param_strcpy(buffer, "HelloLib")`. The parameter passing is also problematic - functions receive more parameters than needed due to stack layout issues.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Generally reads top-to-bottom with some forward jumps. The `param_fread_fwrite` function has nested if-else chains that are traceable but lengthy. Some computed jumps interrupt flow. The code is not completely linear but manageable with effort.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Significant redundancy:
+- `call_fread_fwrite` calls `param_fread_fwrite` twice
+- `call_strcpy` has no visible implementation
+- Multiple duplicate function calls in test functions
+- Repeated stack protection checks
+- `param_printf` calls `__printf_chk` twice
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+
+Heavy type degradation:
+- Most parameters use `unsigned int` instead of specific types
+- `param_strcpy(char *a0, char *a1)` loses `const` qualifier on src
+- `param_strlen()` has no parameter declaration at all
+- Generic `void*` used extensively
+- No `size_t` usage - all converted to `unsigned int`
+- Function pointers not properly typed
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Structures are poorly recovered:
+```c
+typedef struct FILE {
+} FILE;
+```
+```c
+typedef struct sockaddr {
+    unsigned short sin_family;
+    char sa_data[14];
+} sockaddr;
+```
+The sockaddr is partially reconstructed but loses the `sin_port`, `sin_addr` fields. ThreadData struct is not recovered - fields accessed via raw pointer arithmetic. No union recovery visible.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Multiple unsafe operations:
+- Raw pointer arithmetic: `ptr + 1`, `ptr[1]`, `&ptr[1]`
+- Incorrect pointer arithmetic in `param_malloc_free`: `ptr = ptr + 1;` then later `free(ptr)` - this is a bug
+- Casting through `unsigned int` for addresses
+- No bounds checking visible
+- The malloc/free bug in `param_malloc_free` would cause crashes:
+```c
+ptr = ptr + 1;
+// ... later ...
+free(ptr);  // Wrong pointer!
+```
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no useful comments. What exists is noise:
+- `// r0`, `// r1`, `// r3` - register annotations
+- `/* do not return */` - auto-generated
+- No algorithm explanations
+- No decompilation confidence indicators
+- No API contracts (@param, @return)
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Standard library functions are recognized: `strcpy`, `strcmp`, `strlen`, `memcpy`, `fopen`, `pthread_create`. Some threading patterns exist but aren't explicitly named as patterns. No design pattern identification (producer-consumer, thread pool, etc.). The `armg_calculate_condition` is a decompiler artifact, not a recognized idiom.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly flagging. The decompiler presents:
+- Incomplete code: `return ...;` without explanation
+- The `armg_calculate_condition` function appears without context
+- Indirect calls not flagged
+- Potential bugs (the malloc/free pointer issue) not mentioned
+- Unusual stack layouts not documented
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No contract recovery. No preconditions (e.g., "requires: ptr != NULL"), no postconditions, no invariants documented. The error return values (4294967295, 4294967294, etc.) are not explained as error codes.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Function calls are present but relationships are unclear. No documentation of:
+- Who calls which function
+- Callback relationships
+- Global variable usage
+- Virtual dispatch patterns
+
+The code is essentially isolated - each function stands alone without context.
+
+### 17. Module Organization
+**Score: 4/10**
+
+All functions in single file. Some grouping by category (string functions, thread functions, test functions) but no clear organization. No header declarations, no namespace structure. Related functions like strcpy/strcmp are near each other but not explicitly grouped.
+
+### 18. Build System Compatibility
+**Score: 1/10**
+
+Does not compile. Issues include:
+- Undefined identifiers: `g_24008`, `g_240fc`, `completed.0`, `__TMC_END__`
+- Incomplete code: `return ...;`
+- Missing type definitions
+- `armg_calculate_condition` undefined
+- Multiple other undefined references
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+4+4+2)/4 = 3.0
+L2_avg = (4+6+5+3)/4 = 4.5
+L3_avg = (3+3+3)/3 = 3.0
+L4_avg = (2+4+1+1)/4 = 2.0
+L5_avg = (3+4+1)/3 = 2.67
+
+Overall = (3.0 × 0.30) + (4.5 × 0.25) + (3.0 × 0.20) + (2.0 × 0.15) + (2.67 × 0.10)
+        = 0.90 + 1.125 + 0.60 + 0.30 + 0.267 = 3.22/10
+```
+
+### Overall Readability Score: 3.2/10
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming**: All local variables use generic `v0`-`v9` pattern; parameters use `a0`, `a1` - completely untrackable
+2. **Type safety bug**: `param_malloc_free` has pointer arithmetic error (`ptr = ptr + 1` then `free(ptr)`) - would cause crash
+3. **Noise pollution**: Duplicate function calls, spurious `armg_calculate_condition`, incomplete `return ...;` statements
+4. **No comments**: Zero useful documentation - only register annotations and auto-generated markers
+5. **No anomaly indication**: Bugs and decompilation uncertainties presented as confident code
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- The original function boundaries are mostly preserved
+- Standard library functions are correctly identified by name
+- Threading functions maintain their structure
+
+### Most Needs Improvement: Anomaly Indication & Build Compatibility (1/10)
+- Code doesn't compile due to undefined identifiers and incomplete code
+- No flagging of uncertain or potentially incorrect decompilation
+- Critical bugs in the output would cause crashes if compiled
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage**: Track how variables are used (e.g., `a0` is used as destination in strcpy, rename to `dst`; `v0` compared to 0 in loop, suggest `count` or `index`)
+
+2. **Eliminate redundant function calls**: The decompiler should detect when a function is called twice with same arguments and consolidate to single call
+
+3. **Flag incomplete/uncertain code**: Mark `return ...;` and `armg_calculate_condition` with comments indicating decompilation uncertainty, rather than presenting as normal code

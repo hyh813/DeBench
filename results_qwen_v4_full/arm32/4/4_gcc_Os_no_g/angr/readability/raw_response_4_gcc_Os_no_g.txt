@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Even in `varargs_func`, variables like `v5`, `v4`, `v3` obscure their roles as parameter storage. Only rare exceptions like `idx` and `result` provide any clarity.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). However, some functions degraded to generic names (`sub_103e8`, `sub_104ac`) and internal helpers lack descriptive names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `0x100000`, `0x80000000`. String literals replaced with addresses (`0x1148c`). Test results constant-folded (15, 50, 6) losing original computation context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from decompiler artifacts: `armg_calculate_condition()` calls throughout, `vvar_` variables (`vvar_0`, `vvar_35{r64|4b}`), register annotations (`// r0`, `// [bp-0x4]`), and stack canary checks pollute every function.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage replaces natural loops (e.g., `varargs_func` uses `while(true)` with `break`). Complex functions like `__aeabi_dadd` use nested `armg_calculate_condition` instead of standard C operators, making logic nearly unreadable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but test functions constant-folded to single returns losing structure. `__aeabi_dadd` explodes to 500+ lines—should be a library call, not decompiled inline.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Scattered goto labels (`LABEL_104ec`, `LABEL_104f8`, `LABEL_11260`) disrupt top-to-bottom reading. Forward jumps into loop bodies and deep nesting in `__aeabi_dadd` make tracing execution difficult.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `__aeabi_dadd` contains massive duplicated conditional patterns. Test functions like `test_calling_conventions` have duplicate `__printf_chk` calls. No dead code elimination visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—`func_mixed_args` originally took `(int, char*, double, long long)` but decompiled as 6×`unsigned int`. `ret_small_struct` return type becomes `unsigned int [2]` instead of `struct SmallPoint`. All parameters default to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Original structs (`LargeStruct`, `SmallStruct`, `TestIntPair`) lost entirely, replaced with generic `struct_0 { unsigned int field_0; }`. `func_struct_byval` takes 16 separate `unsigned int` params instead of struct. No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer casts implicit throughout. `param_complex_cast` returns `struct_0 **` instead of proper cast result. `func_struct_byptr` has nonsensical condition `if ((vvar_0 == 0x0<32>))` indicating type confusion.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompiler confidence indicators, no API documentation. User must reverse-engineer all logic from code alone.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized: varargs handling appears as raw stack manipulation, struct passing becomes individual parameters, calling convention differences not documented. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Problematic constructs like `armg_calculate_condition`, `vvar_` variables, and `Goto None` appear without warning. `func_struct_byptr` contains obviously broken logic with no anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL`). No postconditions, no error handling contracts. Null checks present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced (`g_1148c`, `GLIBC_2.4::__stack_chk_guard`) without relationship explanation. Callback relationships (`callback_func`) not highlighted.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order, not grouped by purpose. Test functions mixed with implementation. No header file structure or API/implementation separation visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Cannot compile standalone—requires external symbols (`GLIBC_2.4::__stack_chk_guard`, `armg_calculate_condition`, `__aeabi_dadd`). Architecture-specific ARM helpers not abstracted.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+7+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):     (3+5+4+3)/4 = 3.75  × 0.25 = 0.94
+Level 3 (Type System):    (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):       (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):     (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────────────
+Overall Score:                                    3.30/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) obscuring all semantic meaning
+- **Type system collapsed**—all parameters become `unsigned int`, structs lost entirely
+- **`__aeabi_dadd` function** is 500+ lines of unreadable `armg_calculate_condition` nesting
+- **Zero comments** providing any guidance on logic, anomalies, or intent
+- **Test functions constant-folded** losing original computation structure (e.g., `call_cdecl()` returns 15 directly)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** — Most original function names preserved, allowing identification of purpose despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** — Complete absence of any documentation makes understanding decompiled logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** — Infer names from usage patterns (e.g., loop counters → `i`, size variables → `count`, pointers → `ptr_buffer`)
+2. **Recover composite types from memory access patterns** — Detect struct layouts from consistent field offsets and reconstruct named types
+3. **Add anomaly detection with warnings** — Flag `armg_calculate_condition`, unresolved calls, and type mismatches with explanatory comments

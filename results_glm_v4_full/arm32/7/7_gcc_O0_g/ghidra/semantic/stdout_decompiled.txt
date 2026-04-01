@@ -1,0 +1,3 @@
+Obfuscation and Optimization Test Results:
+
+opaque_predicate: 10

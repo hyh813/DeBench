@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`. For example, in `_ZN7Derived12virtual_funcEi`, the `multiplier` member is accessed as `*(int32_t *)((int32_t)result + 4)`, losing all semantic context.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: Functions use mangled C++ names (e.g., `_Z18test_cpp_exceptionv`) in the signature, though demangled names are provided in comments. While technically accurate to the binary symbols, the code itself is not readable without constantly referencing the comments.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and pointer arithmetic for string access, such as `v1 + (int32_t)&g5 - 0x1f7c`. Constants like `0x125c` (4704) appear directly without explanation of their derivation from the logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts clutter the code, including `__x86_get_pc_thunk_ax` calls for position-independent code, `__readgsdword(20)` for stack canaries, and `__asm_hlt`, which obscure the program's actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level constructs like `try/catch` blocks in `test_cpp_exception` are lost, replaced by low-level `__cxa_begin_catch` and `__cxa_throw` calls with complex `if/else` logic. The `template_max` function uses obscure bitwise comparisons instead of the clear ternary operator from the source.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decompiler correctly identifies function boundaries, including thunks and constructors. However, the logic inside many test functions (e.g., `test_cpp_virtual_func`) is reduced to returning a constant (`return 42;`), effectively hiding the algorithmic structure present in the source.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Within individual functions, the code generally reads top-to-bottom with minimal spaghetti code. However, the exception handling routine `_Z18test_cpp_exceptionv` is difficult to follow linearly due to the nature of the unwinding logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler optimized some functions to constants, the decompiler failed to recover the logic for `template_swap`, incorrectly reducing `temp=a; a=b; b=temp` to `*a1=*a2; *a2=*a1;`, which is a critical loss of necessary code (the temporary variable).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Primitive types like `int32_t` and `float64_t` are used, but C++ class types are completely erased. Object parameters are passed as generic pointers (e.g., `int32_t * a1` for `this`), and member access is done via raw pointer arithmetic.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: There is a total failure to recover C++ class structures. No definitions for `SimpleClass`, `Base`, `Derived`, or `Container` are generated. The code treats objects as raw byte arrays accessed via offsets (e.g., `*(int32_t *)(result2 + 40)`).
+
+**11. Type Safety:** Score: 2/10
+Justification: The decompilation introduces a critical type safety error in `_Z13template_swapIiEvRT_S1_` where the swap logic is corrupted (`*a1 = *a2; *a2 = *a1;`), leading to data loss. Additionally, frequent casts of object pointers to `int32_t*` for member access are unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: The only comments are demangled function names (e.g., `// Demangled: test_cpp_exception()`). There are no comments explaining the C++ ABI logic, the purpose of the magic numbers, or the complex exception handling flow.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. RAII (smart pointers) is shown as raw `new`/`delete` calls, `dynamic_cast` is shown as `__dynamic_cast`, and exception handling is shown as library calls rather than language constructs.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler provides no warnings about the corrupted logic in `template_swap` or the fact that the class structures are missing. It presents the low-level pointer arithmetic as confident, correct code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, the `Container::get` function has bounds checking logic in the source, but the decompiled version's contract regarding index validity is not explicitly stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: While function calls to `__cxa_*` and standard library functions are visible, the inheritance relationships (e.g., `Derived` inherits from `Base`) and virtual table dispatch mechanisms are completely obscured, making it hard to understand the object-oriented context.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions. There is no logical grouping by class or namespace, which is a significant departure from the modular structure of the original C++ source.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes necessary headers and prototypes, so it might syntactically compile. However, due to the logic error in `template_swap` and the missing class definitions, it would not functionally reproduce the program's behavior.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- **Logic Error in `template_swap`**: The decompiler failed to recover the temporary variable, resulting in `*a1 = *a2; *a2 = *a1;`, which destroys the original value of `*a1`.
+- **Missing Class Structures**: Zero recovery of C++ classes (`SimpleClass`, `Base`, `Derived`, etc.); objects are manipulated as raw `int32_t*` with magic offsets.
+- **Loss of High-Level Control Flow**: `try/catch` blocks are not reconstructed; the code exposes the low-level `__cxa` exception handling mechanism.
+- **Optimized-Out Logic**: Functions like `test_cpp_virtual_func` are reduced to `return 42;`, completely hiding the virtual dispatch and arithmetic logic present in the source.
+
+**Best Quality Aspect:** Code Linearization (scored 7/10)
+- Despite the complexity of the ABI, the internal flow of the decompiled functions is generally linear and readable from top to bottom, avoiding excessive spaghetti jumps.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The complete inability to map the binary's data structures back to C++ classes renders the object-oriented logic of the source code incomprehensible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Reconstruction**: Analyze vtables and member access patterns to reconstruct `struct` and `class` definitions with correct field names and types, rather than outputting raw pointer arithmetic.
+2.  **Fix Data Flow Analysis for Swaps**: Ensure that temporary variables (often register-held) are correctly identified and emitted in swap patterns to prevent logic corruption like `a=b; b=a`.
+3.  **Pattern Match Exception Handling**: Recognize sequences of `__cxa_throw`, `__cxa_begin_catch`, and landing pads to reconstruct high-level `try/catch/throw` blocks.
+4.  **Demangle Signatures**: Use demangled names directly in function signatures and variable types where type information is available, rather than relegating them to comments.

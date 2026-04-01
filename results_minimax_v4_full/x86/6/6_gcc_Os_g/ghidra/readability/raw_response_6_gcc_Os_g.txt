@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related test infrastructure)
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `sVar1` for strlen result, `iVar1/iVar2/iVar3` for general integers, and `piVar2/piVar3` for pointers are generic and uninformative. The decompiler uses a systematic but meaningless naming scheme (var_X, param_X) that obscures semantic purpose. For `param_strcpy`, `sVar1` should be `len` or `dst_len`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_strcpy`, `param_strcmp`, `param_strlen`, `thread_compute`, `signal_handler` accurately match the original source function names. The naming is action-oriented and semantically correct. Minor issue: some internal functions have cryptic names like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like `"HelloLib"`, `"/etc/passwd"` are correctly preserved. Magic numbers like `0x2a` (42 in decimal) appear in return value transformations but are somewhat inferable from context. The literal `0x14` for memcpy size (20 bytes) is clear from the 5-element int array context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: repeated `__x86.get_pc_thunk.bx` warnings, `__stack_chk_fail_local` calls for stack protection, unresolved local variable annotations (`/* Unresolved local var: int i@[???] */`), and numerous "WARNING" comments about calling conventions. These clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: For `param_strcpy`, control flow is natural - straightforward sequential execution of strcpy then strlen. At -O0, loops are properly structured as for/while loops. Minor issue: some complex functions like `param_fread_fwrite` have nested conditionals that are slightly awkward but traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 6 lines, `call_strcpy` is 12 lines. Each function has single responsibility. The test wrapper functions properly call the parameterized versions. No over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: `param_strcpy` reads linearly top-to-bottom. Most functions have minimal forward jumps. Early returns used appropriately in error handling (e.g., `param_fopen_fclose`). Some functions like `param_signal_handling` have deeper nesting but remain followable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal at -O0. Some redundant patterns like repeated `pthread_mutex_lock`/`unlock` in different functions are necessary for correctness, not redundancy. The `call_memcpy` function manually copies array data before calling `param_memcpy` - this appears to be stack canary handling rather than true redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved: `char *dst`, `char *src` in param_strcpy. However, `const` qualifier is lost - `src` should be `const char *src`. Return type `int` is correct. Size_t used for strlen result. Many functions use generic `int` where `size_t` or specific integer types would be more precise.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct `ThreadData` is properly recovered with fields `start`, `end`, `result`. Global variables like `signal_received`, `signal_number`, `shared_counter`, `atomic_counter` are correctly identified. Some struct-like usages in `param_pthread_join` show raw array access patterns but the ThreadData structure is recognizable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Minor type safety issues: missing `const` on string source parameters, some void pointer arithmetic (e.g., `src = (undefined1 *)((int)src + 1)` in param_memcpy). Function pointers like `thread_compute` are properly typed as `void *(*)`. No severe violations that would cause undefined behavior in practice.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated comments like "WARNING: Unknown calling convention" and "/* Unresolved local var: int i@[???] */". No meaningful algorithm explanations. The decompilation header comment is generic. No contracts or pre/postconditions documented. The "WARNING" comments are noise rather than useful documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcpy, strlen, strcmp, memcpy, pthread_create) are correctly identified. Threading patterns (pthread_create/join, mutex lock/unlock) recognized. Some patterns like the condition variable producer/consumer could be explicitly named but are functionally correct.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for "Unknown calling convention", "Unresolved local var", and "Function ... replaced with injection". However, these are generic and don't explain the actual anomaly. No indication of indirect call resolution failures or unusual stack layouts beyond the generic warnings.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (e.g., -1, -2, -3) are preserved but their meaning is not explained. The semantic purpose of return values (like returning string length) is implicit but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear within test functions (e.g., `call_strcpy` calls `param_strcpy`). However, no explicit documentation of call relationships, global variable usage, or callback patterns. The relationship between `signal_handler` and global `signal_received`/`signal_number` is implicit but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically: standard library tests, system call tests, thread tests. Static functions properly scoped. However, the file is a single monolithic output with no header/API separation. The organization matches the original source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with standard libc/pthread headers. External dependencies (libc functions, pthreads) are implicit rather than documented. The `__stack_chk_fail_local` and other compiler-specific symbols may require linking against standard libraries but should compile with `gcc -pthread`.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`sVar1`, `iVar1`, `piVar2`) that obscure semantic purpose
+- `const` qualifier lost on string source parameters throughout (e.g., `param_strcpy(char *dst, char *src)` should be `const char *src`)
+- Excessive compiler artifact warnings (`__x86.get_pc_thunk.bx`, "Unknown calling convention") clutter output
+- No meaningful comments explaining algorithm intent or contracts
+- Unresolved local variable annotations create noise without providing useful information
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names accurately reflect their purpose and match the original source names closely (param_strcpy, thread_compute, signal_handler, etc.).
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+The systematic use of generic variable names (sVar1, iVar1-iVar3, piVar2) makes it difficult to track data flow and understand function logic without significant mental effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as a loop counter with clear bounds, name it `i` or `index`; when it's a string length, use `len` or `str_len`
+2. **Preserve const correctness**: Track const qualifiers through data flow analysis and restore them in decompiled output
+3. **Reduce warning noise**: Move compiler-specific warnings to a separate log or suppress them by default, focusing on semantic anomalies rather than implementation details

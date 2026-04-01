@@ -1,0 +1,123 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `iVar2`, `pbVar2`, `local_28` throughout; original source had meaningful names like `x`, `result`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `call_tail_call_optimized`), but some are generic (`FUN_00100860`, `FUN_00100a7c`) and external stubs clutter the output.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a` (XOR key), `0x14`, `0x23` appear without explanation; original constants like `0xDEADBEEF` are lost due to dead code elimination; some literals like `10`, `5` remain clear.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) appear in every function; external function stubs that call themselves (`strlen`, `signal`, `malloc`) add significant noise without value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while patterns (e.g., `param_opaque_predicate` GCD loop), but `param_fake_branch` is empty losing original conditional structure; some functions use unnatural patterns due to optimization artifacts.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: `param_fake_branch` is empty (`void param_fake_branch(void) { return; }`) losing all original logic; `call_fake_branch` constant-folded to return 10 directly instead of calling the function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack check code at function ends disrupts flow (e.g., `param_string_encryption` has canary check that jumps to `__stack_chk_fail`); loop structures are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in most recovered functions; external stubs are redundant but identifiable; loop patterns are consistent without excessive duplication.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `undefined`, `undefined4`, `undefined8`, `byte` instead of precise types; original `int`, `size_t`, `char*` degraded; `param_instruction_substitution` takes `uint` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct from `param_implementation_defined` completely lost (function returns constant `0x30`); no struct/union reconstruction visible; all composite types reduced to primitives or constants.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(byte *)`, `(int *)`, `(undefined4 *)`); pointer arithmetic visible; stack canary provides some safety but `param_null_pointer_deref` has incorrect parameter count in decompiled call.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code; original source had extensive documentation explaining obfuscation techniques, expected values, and test scenarios; no decompiler confidence indicators present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified; XOR decryption pattern in `decrypt_string` not labeled; no algorithm or design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Empty functions (`param_fake_branch`, `param_buffer_overflow_stack`) not flagged as suspicious; `param_string_encryption` has broken stack check logic without warning; no uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `param_1 != 0` for normal path); no postconditions; error conditions not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code; global variables referenced (`jmp_buffer`, `segv_buffer`, `encrypted_0`); but no call graph documentation or relationship explanations provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: External functions grouped at top; related functions generally adjacent; but no logical grouping comments or namespace structure; all code in single flat file.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires libc stubs for external functions (`strlen`, `signal`, `malloc`, `free`); stack canary dependencies need resolution; `param_string_encryption` has incorrect function call signature that would fail compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+7)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.84/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+---
+
+### Critical Defects
+
+- **`param_fake_branch` completely empty** - Original function had two conditional branches with dead code; decompiler eliminated all logic instead of preserving structure for analysis
+- **`call_fake_branch` constant-folded** - Returns literal `10` instead of calling `param_fake_branch(10)`, losing call relationship
+- **Zero comments** - Original had extensive documentation explaining obfuscation techniques; decompiled code has none
+- **`param_string_encryption` broken** - Stack check calls `__stack_chk_fail` with wrong parameters; return type changed from `int` to `void`
+- **Generic variable names everywhere** - `param_1`, `iVar1`, `local_28` obscure semantic meaning that original names (`x`, `result`, `decrypted`) provided
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Most function names preserved from source (`param_opaque_predicate`, `param_tail_call_optimized`, `call_vectorized_loop`), making it possible to identify function purposes despite other issues.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is the most severe deficit; original source had extensive documentation explaining each obfuscation technique, expected values, and test scenarios that would be invaluable for reverse engineering understanding.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve dead code at -O0** - When debug symbols indicate no optimization, do not eliminate branches even if conditions are always false; annotate them as "dead code (condition always false)" instead of removing.
+
+2. **Recover and display original variable names from debug info** - DWARF debug information at -O0 contains original variable names; use these instead of generating `param_1`, `iVar1` generics.
+
+3. **Add semantic annotations for recognized patterns** - Detect common algorithms (GCD, XOR decryption, bit manipulation) and add comments like `// GCD computation` or `// XOR decryption with key 0x5A` to improve semantic transparency.

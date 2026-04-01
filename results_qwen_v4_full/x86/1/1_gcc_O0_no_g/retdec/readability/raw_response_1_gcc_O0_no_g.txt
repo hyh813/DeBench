@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `v3`, `result`, `temp`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`sequential_ops`, `single_if`, `loop_for_fixed`), but helper functions use generic names (`function_10a0`, `function_10b0`) losing original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x4ed4`, `0x4eb3`, `0x4e33` appear without explanation. Global constants (`g1`, `g2`) are defined but lack semantic names indicating purpose.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with `__x86_get_pc_thunk_*` calls in nearly every function, `__readgsdword(20)` stack canary checks, and lab labels (`lab_0x158c`, `lab_0x1c7d`) disrupting readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `switch_fallthrough` degraded to goto labels losing fall-through semantics. Some loops converted to while with extra complexity. `sequential_ops` remains reasonably clean but many functions use unnatural patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler helper functions (`function_10a0`, `__do_global_ctors_aux`) appear as separate entities. Function sizes remain reasonable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps via goto labels (`lab_0x158c`, `lab_0x1c7d`, `lab_0x1cab`) disrupt top-to-bottom reading. Some functions like `sequential_ops` read linearly but many have jump interruptions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in every function unnecessarily. `__x86_get_pc_thunk_*` calls appear redundantly. Some expressions duplicated across branches.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but some type mismatches exist (`loop_while` takes `int32_t *a1` instead of `int`). Pointer vs value confusion in several functions.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Basic structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) but fields are generic (`e0`, `e1`, `e2`). No meaningful field names recovered from original structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int32_t)a1`, `(int32_t)&v4`). Pointer arithmetic in jump table functions. Stack canary checks indicate awareness but no safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: State machine pattern in `state_machine` not identified. Loop optimization in `loop_for_fixed` (arithmetic series formula) not explained. No algorithm pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present after `longjmp`. No warnings about indirect calls, type mismatches, or potential undefined behavior. Stack canary checks present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or parameter validation documented. Original test verification comments completely lost. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage (`g1`, `g2`, `g3`) not explained. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with address-range organization only. Original had clear L1/L2/L3 control flow sections - completely lost. No logical grouping.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included (`stdio.h`, `stdlib.h`, `setjmp.h`). External function declarations present. Requires stubs for `__readgsdword`, `__x86_get_pc_thunk_*` platform-specific functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+3)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Compiler artifacts pollute every function**: `__x86_get_pc_thunk_*` calls add no semantic value and should be eliminated
+- **Variable names completely generic**: `v1`, `v2`, `v3` throughout - should infer from usage (e.g., `loop_while` counter should be `count`)
+- **All documentation lost**: Original 200+ lines of comments explaining purpose, test cases, and difficulty completely absent
+- **Control flow degradation**: `switch_fallthrough` converted to goto labels, losing intentional fall-through semantics
+- **Type mismatches**: `loop_while` and `loop_dowhile` take `int32_t *` instead of `int`, causing semantic confusion
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `sequential_ops`, `nested_if_2`, `loop_for_fixed` preserved accurately from source, maintaining semantic intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; decompiler should recover or generate comments explaining non-trivial logic patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate compiler thunk artifacts**: Detect and remove `__x86_get_pc_thunk_*` calls that serve no semantic purpose in decompiled output
+2. **Infer variable names from usage patterns**: Analyze variable roles (loop counter, accumulator, temporary) and assign meaningful names like `sum`, `count`, `index`
+3. **Recover control flow idioms**: Recognize switch fall-through patterns, loop optimizations (arithmetic series), and state machine structures, adding explanatory comments

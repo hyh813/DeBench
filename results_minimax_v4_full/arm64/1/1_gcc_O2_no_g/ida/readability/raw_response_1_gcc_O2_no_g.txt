@@ -1,0 +1,170 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Nearly all variables use generic names (a1, a2, a3, result, v1, v2, v3, v4, v5) that completely obscure semantic meaning. The source used meaningful names like `temp1`, `temp2`, `temp3`, `sum`, `count`, `x`, `a`, `b`. Only loop variables sometimes use `i`, which is acceptable.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names are perfectly preserved from source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. Minor deduction for some internal functions with generic names like `sub_940`.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers like `0xFFFFFFFF` (error return), `100`, `50`, `10` appear without explanation. The source had clear constants like `n`, specific return values. Some literals in test functions are hardcoded rather than computed.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+Justification: Clean decompilation with minimal compiler artifacts. Some `(unsigned int)` casts present but manageable. No debug instrumentation or frame pointer manipulation visible. The code is relatively noise-free.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Control flow structures are mostly preserved but with semantic errors. The `if_else` function returns `bool` instead of `int`, losing the original return type semantics. Switch statements use jump tables (CSWTCH_55) which is appropriate for -O0. Loops are converted to do-while forms. Some awkward constructs in complex functions like `duffs_device`.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Excellent function decomposition - each function is separate with appropriate granularity. At -O0, no inlining occurred, preserving the original function boundaries. Parameter counts match source. Functions are cohesive with single responsibilities.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. Some goto patterns in `goto_forward` and `goto_backward` are correctly converted to structured constructs. Minor disruption from switch jump tables.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy observed. No dead code. Loop unrolling is minimal at -O0. Common subexpression elimination artifacts are not prominent.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Severe type precision issues. All functions return `__int64` instead of `int`. Parameters use `int` but sometimes `unsigned int` or `__int64` incorrectly (e.g., `switch_small` uses `unsigned int a1`). Function pointers have imprecise types like `__int64 (__fastcall *)(_QWORD)`. The source used exact types like `int`, `volatile int*`.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+Justification: Not many composite types in this source code. Arrays are handled reasonably (e.g., `int arr[]` becomes inline initialization). The small amount of struct usage in source is minimal. What exists is usable though not perfectly reconstructed.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several type safety issues: excessive `(unsigned int)` casts throughout, function pointer type mismatches (`__int64 (__fastcall *)(_QWORD)` vs proper signatures), potential signed/unsigned confusion in comparisons. Some operations could cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. Only auto-generated headers like "Decompiled by IDA Pro 9.1" and function location comments. No explanation of algorithms, no decompilation confidence indicators, no @param/@return documentation. The source had extensive comments explaining each function's purpose.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns recognized but not named or documented. Switch statements are identified but not noted as potential state machines. The `duffs_device` pattern is present but not recognized as such. No explicit naming of patterns like "state machine", "callback", "recursion".
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: Some functions failed to decompile (_setjmp, __libc_start_main, __printf_chk, etc.) with "FAILED to decompile" messages, which is appropriate. However, no indication of semantic errors like `if_else` returning wrong type. No warnings about potential issues in the recovered code.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No contract information recovered. No preconditions, postconditions, or invariants documented. The source had clear expectations (e.g., "x must be positive", "returns sum of 0 to n-1") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function calls are visible in the code but relationships are not documented. No indication of which functions call which, no callback relationships documented, no global variable usage clarity. The test functions call many others but this relationship isn't made explicit.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped logically (all test functions together, all control flow functions together) but in a single monolithic output. Static functions are not clearly scoped. No header file structure or API declarations. Organization is reasonable but not optimal.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Several functions "FAILED to decompile" which breaks compilation. External dependencies (libc functions) are not declared. Would require significant patching to compile. The code mentions "Binary: build/..." showing path dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 8) / 4 = 5.5
+L2_avg = (5 + 9 + 7 + 8) / 4 = 7.25
+L3_avg = (4 + 7 + 5) / 3 = 5.33
+L4_avg = (2 + 4 + 6 + 2) / 4 = 3.5
+L5_avg = (4 + 6 + 4) / 3 = 4.67
+
+Overall = (5.5 × 0.30) + (7.25 × 0.25) + (5.33 × 0.20) + 
+          (3.5 × 0.15) + (4.67 × 0.10)
+        = 1.65 + 1.8125 + 1.066 + 0.525 + 0.467
+        = 5.54/10
+```
+
+**Overall Readability Score: 5.54/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming completely generic**: All variables use names like `a1`, `a2`, `result`, `v1`, `v2` - losing all semantic meaning from source (temp1, temp2, sum, count, x, a, b)
+
+2. **Type precision severely degraded**: All functions return `__int64` instead of `int`, and `if_else` returns `bool` instead of `int` - semantic error that changes function signature
+
+3. **No comments or documentation**: Zero useful comments explaining algorithms, contracts, or decompilation confidence - source had extensive documentation
+
+4. **Function `if_else` has wrong return type**: Returns `bool` in decompiled code but should return `int` per source - this is a semantic error
+
+5. **No contract/precondition recovery**: Source had clear expectations (e.g., "x > 0", "returns sum of 0 to n-1") completely lost in decompilation
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Decomposition (score: 9/10)**
+
+At -O0 optimization, the decompiler correctly preserved all function boundaries. Each function is separate with appropriate granularity and single responsibility. Parameter counts match source. This is excellent recovery.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Variable Naming Quality (score: 2/10)**
+
+The decompiler uses completely generic variable names (a1, a2, a3, result, v1-v5) for all parameters and local variables. The original source had meaningful names like `temp1`, `temp2`, `temp3`, `sum`, `count`, `x`, `a`, `b` that clearly indicated purpose. This complete loss of semantic naming severely impacts readability.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, comparisons, array indices) to suggest semantic names. For example, `a1 + a2` in arithmetic suggests `operand1` or `value1`, `v1 /= 10` in a loop suggests `digit_count`.
+
+2. **Preserve exact return types**: The decompiler should recover `int` return types correctly. The `if_else` returning `bool` instead of `int` is a semantic error that changes the function's contract.
+
+3. **Add meaningful comments**: Include algorithm explanations, decompilation confidence indicators, and recovered contracts. At minimum, document what each function does based on the recovered logic.

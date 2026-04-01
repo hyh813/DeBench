@@ -1,0 +1,29 @@
+=== Testing Standard Library Functions ===
+  call_strcpy: 8
+  call_strcmp: 0
+  call_strlen: 12
+  call_memcpy: 9
+  call_memcmp: -1
+Value: 42, Name: Test
+  call_printf: 22
+  call_scanf: 579
+  call_fopen_fclose: 42
+  call_fread_fwrite: -3
+  call_malloc_free: 90
+  call_memset: 0
+  call_strchr_strstr: 15
+=== Testing System Calls ===
+  call_linux_syscall: 42
+  call_win32_api: 42
+  call_fork_exec: 42
+  call_pipe_communication: 42
+  call_socket_create: 42
+  call_shmget_shmat: 42
+  call_signal_handling: 42
+=== Testing Thread Concurrency ===
+  call_pthread_create: 49
+  call_pthread_join: 465
+  call_mutex_lock: -3
+  call_condition_variable: 42
+  call_atomic_ops: 42
+  call_thread_local_storage: -3

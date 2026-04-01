@@ -1,0 +1,7 @@
+Starting optimization tests...
+Opaque predicate: 10
+Instruction substitution: 20
+Vectorized loop: 225
+String encryption: 55
+Tail call optimized: 500500
+Non-tail call: 5050

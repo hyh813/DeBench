@@ -1,0 +1,29 @@
+=== Testing Standard Library Functions ===
+Library Test L1.01: 8
+Library Test L1.02: 0
+Library Test L1.03: 12
+Library Test L1.04: 90
+Library Test L1.05: -1
+Value: 42, Name: Test
+Library Test L1.06: 22
+Library Test L1.07: 579
+Library Test L1.08: 42
+Library Test L1.09: 42
+Library Test L1.10: 90
+Library Test L1.11: 0
+Library Test L1.12: 15
+=== Testing System Calls ===
+System Call Test L3.01: 42
+System Call Test L3.02: 42
+System Call Test L3.03: 42
+System Call Test L3.04: 42
+System Call Test L3.05: 42
+System Call Test L3.06: 42
+System Call Test L3.07: 42
+=== Testing Thread Concurrency ===
+Thread Test L4.01: 49
+Thread Test L4.02: 4
+Thread Test L4.03: 42
+Thread Test L4.04: 42
+Thread Test L4.05: 42
+Thread Test L4.06: 4294967293

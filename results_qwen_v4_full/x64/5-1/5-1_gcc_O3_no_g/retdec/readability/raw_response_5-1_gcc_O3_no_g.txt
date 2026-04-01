@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `temp`, `result`) with zero semantic meaning. For example, in `test_cpp_rtti`, variables `v4`, `v5`, `v6` obscure their roles as type comparison results and should be named `type_match_a`, `type_match_b`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) with demangling comments, but many helper functions are generic (`function_1130`, `function_1140`). Original test function names are recoverable but buried in mangling.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x125c`, `0x3c70`, `0x4008`). The return value `0x125c` in `test_cpp_member_func` should be `4660` (getClassID constant) but is unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`), `__asm_` blocks for floating-point operations, and redundant runtime calls (`__cxa_*` functions) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions are optimized to constant returns (e.g., `test_cpp_virtual_func` returns `42` directly), losing all original control flow. Exception handling in `test_cpp_exception` is completely broken with unreachable code after throw.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Thunk functions (`_ZThn16_*`, `_ZTv0_n24_*`) are separated but not explained. Many functions are mere wrappers. Original class methods are fragmented across multiple functions without clear relationships.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads mostly top-to-bottom but has confusing forward references. The `test_cpp_rtti` function has nested conditionals that could be flattened for clarity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate vtable structures (`vtable_3c70_type`, `vtable_3c98_type`) with identical layouts. Stack canary checks repeated in every function add noise without value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, or `void*`. Original types like `size_t`, `const char*`, class pointers are lost. Float operations use bizarre `int128_t` casts instead of `double`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures completely lost. Only basic vtable structs recovered (`vtable_3c70_type` with generic `e0`, `e1`, `e2` fields). No `SimpleClass`, `LifecycleClass`, `Container` structures reconstructed.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Critical bug in `template_swap`: `*a1 = (int32_t)v1; *a2 = (int32_t)v1;` uses uninitialized `v1`, destroying both values. Multiple unsafe pointer casts throughout RTTI code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated demangling comments present ("Demangled: test_cpp_exception()"). No algorithm explanations, no uncertainty indicators, no API contracts documented.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: virtual dispatch appears as raw pointer dereference, templates as separate functions without relationship, lambdas optimized away entirely.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Zero anomaly warnings despite critical issues. The broken `template_swap` function presents incorrect code confidently. No indication that exception handling is incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` in Container::get). No postconditions. Exception contracts completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function prototypes listed but relationships unclear. Virtual dispatch chain not documented. Inheritance relationships mentioned in comments but not structurally represented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Related class methods scattered. No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references undefined symbols (`__asm_hlt`, `__asm_movsd`). Missing C++ runtime headers. Template instantiations won't link properly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+4+5+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (3+2+2)/3   = 2.33 × 0.20 = 0.47
+Level 4 (Semantic):    (3+2+1+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.04/10
+```
+
+### Overall Readability Score: **3.0/10**
+
+### Critical Defects:
+- **`template_swap` is completely broken**: Uses uninitialized variable `v1`, setting both parameters to garbage instead of swapping
+- **Most test functions return constants**: Original logic optimized away (e.g., `test_cpp_virtual_func` returns `42` directly instead of computing)
+- **All class structures lost**: No `SimpleClass`, `Container`, or inheritance hierarchies reconstructed
+- **Exception handling incorrect**: `test_cpp_exception` has unreachable code after `__cxa_throw` and missing catch blocks
+- **Variable names provide zero semantic value**: `v1`, `v2`, `v3` throughout make tracking data flow impossible
+
+### Best Quality Aspect: **Code Linearization (5/10)**
+- Code generally reads top-to-bottom without excessive goto statements, making basic traversal possible despite other issues
+
+### Most Needs Improvement: **Anomaly Indication (1/10)**
+- Decompiler presents confidently incorrect code (broken `template_swap`, missing exception logic) without any warnings about uncertainty or potential errors
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag optimization artifacts**: When functions reduce to constant returns, indicate original logic was optimized away rather than presenting as source-equivalent
+2. **Recover C++ class structures from vtables**: Use vtable layouts to reconstruct class hierarchies, field offsets, and method relationships
+3. **Add uncertainty annotations for critical operations**: Mark indirect calls, exception handling, and template instantiations with confidence levels and manual review hints

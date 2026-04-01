@@ -1,0 +1,11 @@
+Test Output
+
+Value: 10
+Result: 20
+Expected: 225
+Encrypted: 0
+Tail call: 0
+Non-tail: 5050
+Vectorized: 72
+LTO: 20
+Div zero: 2

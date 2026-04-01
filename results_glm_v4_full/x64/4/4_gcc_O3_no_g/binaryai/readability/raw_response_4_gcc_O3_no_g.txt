@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `param_2`, `local_38`, and `uVar1`, providing no semantic context about their usage (e.g., `count`, `sum`, or `args` are lost).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names such as `cdecl_func`, `test_calling_conventions`, and `main` are perfectly preserved from the original source, likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Integer constants are represented in hexadecimal (e.g., `0xf` for 15, `0x2a` for 42) which is less immediately readable than the decimal values used in the source, though technically accurate.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but retains compiler-generated stack canary checks (`__stack_chk_fail`) and uses `undefined8` types which act as minor noise artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Most functions have natural control flow matching the source, but `varargs_func` is decompiled into a complex loop involving explicit stack offsets (`stack0x00000010`) rather than a clean `va_list` iteration.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly with no inlining or outlining, maintaining the original modular structure (e.g., `call_cdecl` remains separate from `cdecl_func`).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps; the few `do-while` loops present are structured correctly and easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent dead code or redundant expressions; the logic is concise, likely aided by the `-O0` optimization level preventing aggressive transformations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type confusion exists; `func_mixed_args` lists parameters in the wrong order (`double` first) compared to the source due to ARM64 ABI register separation, and `func_struct_byval` is incorrectly typed as `long func_struct_byval(void)`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The `LargeStruct` parameter in `func_struct_byval` is completely lost; the decompiler fails to group the stack slots into a struct, instead accessing them as individual variables like `param_7` and `in_stack_00000010`.
+
+**11. Type Safety:** Score: 5/10
+Justification: Extensive use of generic types like `undefined8` and `undefined4` necessitates implicit casts, and the incorrect parameter ordering in `func_mixed_args` creates a type-unsafe view of the function signature.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the logic, especially for complex areas like varargs handling, is left unexplained.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler fails to recognize the `va_list` idiom in `varargs_func`, representing it as raw stack memory access rather than a standard variable argument pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings or flags are present to indicate the suspicious signature of `func_struct_byval` (missing arguments) or the parameter reordering in `func_mixed_args`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null checks) or postconditions; the logic is presented purely as operations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct recovered names, making the call graph easy to understand (e.g., `test_calling_conventions` calls `cdecl_func`).
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, generally matching the source file's flow from calling conventions to parameter passing and return values.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined8` and `code *` which would require significant patching to compile with a standard C compiler.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Struct Parameter Loss**: `func_struct_byval` completely fails to recover the `LargeStruct` parameter, listing it as `void` and accessing stack slots directly.
+- **Parameter Reordering**: `func_mixed_args` has incorrect parameter order/types due to ARM64 floating-point register handling, confusing the logic.
+- **Varargs Obfuscation**: `varargs_func` is decompiled into low-level stack manipulation rather than the standard `va_list` idiom.
+- **Generic Naming**: All variables use generic names (`param_1`, `local_38`), losing all semantic meaning.
+- **Missing Documentation**: Complete absence of comments explaining complex logic or anomalies.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- **Why?** Debug symbols were perfectly preserved, allowing exact recovery of original function names like `cdecl_func` and `test_calling_conventions`.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The failure to recover the `LargeStruct` parameter in `func_struct_byval` turns a simple function into a confusing sequence of stack variable accesses.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Stack Struct Grouping**: Enhance analysis to group contiguous stack slots passed as arguments into composite structure types, especially for large structs passed by value.
+2.  **Reorder Parameters for Source Fidelity**: On architectures like ARM64 where FP and general registers are separate, attempt to reorder parameters to match the likely source definition order rather than strict register file order.
+3.  **Recognize Varargs Patterns**: Implement specific pattern matching for `va_start`/va_arg` stack manipulation to reconstruct standard `for` loops with `va_list` instead of raw pointer arithmetic.

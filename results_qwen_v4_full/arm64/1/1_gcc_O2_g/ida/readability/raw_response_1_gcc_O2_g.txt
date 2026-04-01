@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v1`, `v2`, `v3`, `result`) obscuring purpose; e.g., `duffs_device` has `v3` through `v20` with no semantic meaning. Function parameters often preserved (`a`, `b`, `c`, `op`, `target`) which helps.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions retain original names (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`). Only runtime functions have generic names (`sub_940`, `call_weak_fn`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x140000000ALL` in `loop_break` and `CSWTCH_55` array reference are unexplained. Test functions hardcode expected values without indicating they're test oracles.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: register annotations (`// w0`, `// x1`), stack comments (`[xsp+10h] [xbp+10h]`), `__fastcall` markers, and `BYREF` annotations clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures recovered well (if-else chains → switch, goto → loops). However, `duffs_device` has excessive goto labels (LABEL_7 through LABEL_11) and `switch_fallthrough` logic is restructured awkwardly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Test functions are monolithic (200+ lines of printf calls) but this matches source structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom well. `duffs_device` and `test_control_flow_l1` have disruptive forward jumps and inline array initialization that breaks flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `duffs_device` has significant code duplication across labels. Test functions repeat `__printf_chk` patterns extensively. Temporary variables (`v1`, `v2`) in simple functions could be eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Parameter and return types mostly accurate (`int`, `int*`, `volatile int*`). Some precision loss: `obfuscated_cf` returns `__int64` instead of `int`. Function pointer types preserved correctly.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays declared inline correctly (`int arr[5]`, `int matrix[3][4]`). Function pointer arrays recovered (`int (*funcs[3])(int)`). No complex structs in this codebase to fully evaluate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(int (*)(int))off_14010[0]`, pointer arithmetic `(char *)v0 + 4`. `computed_goto` has inline assembly `__asm { BR X0 }`. Most integer operations are type-safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments. Only auto-generated annotations (register names, stack offsets). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (if-else chains → switch, goto → loops). No design pattern identification, no algorithm naming, no explicit pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 9 functions marked "FAILED to decompile" at end. `computed_goto` inline assembly unexplained. `CSWTCH_55` and `off_14010` external references not documented. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No invariant recognition. Error conditions not documented. Test functions hardcode expected values without explaining constraints.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved with original names. External references shown (`off_14010`, `xmmword_2590`) but not explained. No call graph documentation or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No file organization matching source structure. Test functions grouped together but helper functions scattered. No header file generation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses compiler-specific constructs (`__fastcall`, `__int64`). External dependencies not declared (`__printf_chk`, `memset`). 9 functions failed to decompile. Inline assembly in `computed_goto`. Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5+8+6+5)/4 = 6.00
+Level 2 Average: (6+7+6+5)/4 = 6.00
+Level 3 Average: (7+7+6)/3 = 6.67
+Level 4 Average: (2+5+4+2)/4 = 3.25
+Level 5 Average: (5+5+4)/3 = 4.67
+
+Overall = (6.00 × 0.30) + (6.00 × 0.25) + (6.67 × 0.20) + (3.25 × 0.15) + (4.67 × 0.10)
+        = 1.80 + 1.50 + 1.33 + 0.49 + 0.47
+        = 5.59
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects
+- **Variable `v1`-`v20` in `duffs_device`** should have semantic names based on their roles in the unrolled loop
+- **No comments explaining algorithm intent** - even simple functions like `sequential_ops` lack documentation
+- **Magic constants `0x140000000ALL`** in array initialization are unreadable and should be expressed as array literals
+- **`CSWTCH_55` jump table reference** loses semantic meaning of the original switch cases
+- **9 failed decompilations** including critical functions (`_setjmp`, `__longjmp_chk`) with no recovery attempt
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names are preserved almost perfectly from source, making function identification trivial
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; decompiler produces zero explanatory comments despite complex control flow patterns
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `i`, `count`, `index`)
+2. **Add confidence annotations** for recovered structures (e.g., "// RECOVERED: switch statement from jump table at 0xDF0")
+3. **Generate inline comments for magic numbers** by analyzing their usage context (e.g., `0x140000000ALL` → `// Array initialization: {10, 20, 30, 40, 50}`)

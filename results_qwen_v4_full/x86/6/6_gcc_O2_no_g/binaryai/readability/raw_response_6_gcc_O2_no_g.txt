@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `local_10`, `uVar3` with no semantic meaning. Only global variables (`signal_received`, `shared_counter`, `atomic_counter`) retain meaningful names from the original source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions preserve original names (`param_strcpy`, `thread_compute`, `signal_handler`), but all library calls are renamed to `FUN_00011XXX` pattern (e.g., `FUN_00011510` for `strcpy`), obscuring their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), `0x12` (18 bytes). String literals referenced as `&DAT_0001401d` instead of actual content, requiring external analysis.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local()`) appear in nearly every function. `in_GS_OFFSET` references for thread-local storage and `LOCK()/UNLOCK()` macros for atomics add compiler artifacts that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as do-while constructs, but goto labels (`LAB_00012435`, `LAB_00012fe3`) disrupt flow. Stack protection checks create non-linear exit paths in most functions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source structure. However, some caller functions are optimized away (e.g., `call_strcpy` returns constant 8 instead of calling `param_strcpy`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but frequent stack check comparisons at function exits (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`) create backward-looking verification patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeated identically in 20+ functions. Some functions show optimization artifacts where constants are pre-computed rather than computed at runtime.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most parameters typed as `undefined4` or generic `int`. Pointer types degraded (`char*` becomes `int` or `undefined4`). Return types often `undefined4` instead of specific types like `size_t` or `FILE*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—accessed via array indexing (`param_1[2]`, `piVar6[2]`). No struct definitions visible; all composite types represented as raw memory access patterns.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts present (`(int *)FUN_000115e0(4)`). Pointer arithmetic on generic types common. Some unsafe patterns but generally follows original semantics without introducing new vulnerabilities.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized but unnamed (`FUN_00011510` for `strcpy`). Thread patterns visible through function names but not explicitly identified as producer-consumer or mutex patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings for indirect calls, unresolved symbols, or uncertain decompilation. `FUN_00011XXX` functions presented confidently without indicating they're external library calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions or error condition documentation. Return value meanings not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but library functions unnamed. Global variables named correctly (`signal_received`, `ready`, `data`). No call graph documentation or relationship explanations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Original organization partially preserved through naming conventions. No header file separation or logical grouping comments.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references 50+ undefined `FUN_00011XXX` functions that would require extensive stubbing. External dependencies (pthread, libc) not documented. Would not compile without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+5+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named based on semantic usage (e.g., `dst`, `src` for `param_strcpy`)
+- **Library functions** all renamed to `FUN_00011XXX` losing all semantic meaning (strcpy, malloc, pthread_create unrecognizable)
+- **Zero comments** throughout 2000+ lines of decompiled code
+- **Magic numbers** like `0x2a`, `0xffffffff` used without explanation or constant definitions
+- **String literals** referenced as `&DAT_0001401d` instead of actual string content
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Function boundaries and granularity preserved well; thread functions properly separated with appropriate sizes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes code extremely difficult to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover library function names** by matching call signatures against known libc/pthread patterns (e.g., `FUN_00011510` → `strcpy`)
+2. **Infer variable names from usage context** (e.g., first parameter of `param_strcpy` used as destination → name it `dst`)
+3. **Add decompilation confidence annotations** for uncertain reconstructions and document magic numbers with their decoded meanings

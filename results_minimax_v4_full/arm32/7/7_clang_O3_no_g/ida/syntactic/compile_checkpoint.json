@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 11,
+  "source_file": "decompiled/ida_out/arm32/7/7_clang_O3_no_g.c",
+  "fixed_file": "results_minimax_v4_full/arm32/7/7_clang_O3_no_g/ida/syntactic/fix_7_clang_O3_no_g.c"
+}

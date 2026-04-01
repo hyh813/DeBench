@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: While function parameters (`a`, `b`, `count`) are preserved, local variables are overwhelmingly generic (`iVar1`, `local_8`, `uVar7`). The decompiler fails to infer semantic names like `sum` or `result` from usage context.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery of original function names (e.g., `cdecl_func`, `test_calling_conventions`) due to debug symbols, making the high-level purpose immediately clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Floating-point literals are severely degraded; `3.14` appears as raw hex `0x40091eb8` and `0x51eb851f`. String literals are preserved, but magic numbers in stack setup (e.g., `0x2a` for 42) lack context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains significant compiler artifacts such as `undefined4`, `in_stack_00000004`, and `__x86.get_pc_thunk` warnings. While expected for x86, they clutter the code and distract from logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals are natural, but critical logic is broken. In `test_calling_conventions`, `printf` calls are incorrectly split from their arguments (e.g., `call_cdecl(); printf("...");`), destroying the expression structure.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries match the source perfectly. The granularity is appropriate, with no monolithic functions or incorrect outlining observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. However, the split `printf` statements and redundant stack variable assignments in `test_calling_conventions` disrupt the linear flow of logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Fails to eliminate dead code effectively. Calls like `call_cdecl()` are decompiled as void statements even when their return values are required for subsequent `printf` arguments, creating logical gaps.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are correct, but struct return values are mishandled. `SmallPoint` and `LargeData` are returned as pointers (`SmallPoint *`) instead of by value, fundamentally altering the function signature.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions (`LargeStruct`, `SmallStruct`) are recovered with correct field names (`x`, `y`, `data`). However, the usage is flawed by the incorrect return type (pointer vs. value).
+
+**11. Type Safety:** Score: 3/10  
+Justification: The decompiled code for `ret_small_struct` and `ret_large_struct` appears to dereference uninitialized pointers (e.g., `p->x = x` where `p` is uninitialized). This makes the code look dangerously incorrect compared to the safe source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost entirely devoid of semantic comments. Only generic warnings like "WARNING: Unknown calling convention" are present, offering no insight into algorithmic intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Fails to recognize the `va_list` idiom, decompiling `va_arg` into raw pointer arithmetic (`args = args + 4`). Correctly identifies `sizeof` on decayed arrays as a constant `4`.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Correctly flags "Unknown calling convention" for `cdecl`/`stdcall`, which is accurate given the x86 context. However, it does not flag the suspicious pointer dereferences in struct returns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The logic of `test_calling_conventions` is broken without indication of the error.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are generally clear and named. The relationship between `call_cdecl` and `cdecl_func` is obvious, though the data flow between them is sometimes broken in the `test` wrappers.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically, matching the source file structure. The separation between calling convention tests, parameter tests, and return value tests is maintained.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code would not compile without significant modification. The struct return type mismatches (pointer vs value) and the split `printf` logic would cause compilation and runtime errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.0
+L2_avg: 6.75
+L3_avg: 5.0
+L4_avg: 3.5
+L5_avg: 6.67
+
+Overall = (6.0 × 0.30) + (6.75 × 0.25) + (5.0 × 0.20) + 
+          (3.5 × 0.15) + (6.67 × 0.10)
+Overall = 1.8 + 1.6875 + 1.0 + 0.525 + 0.667
+Overall = 5.68
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects
+- **Broken Expression Recovery**: In `test_calling_conventions`, `printf` calls are separated from their arguments (e.g., `call_cdecl(); printf("...");`), completely breaking the observable logic.
+- **Struct Return Mishandling**: Functions returning structs (`ret_small_struct`, `ret_large_struct`) are decompiled as returning pointers, creating code that appears to dereference uninitialized pointers.
+- **Floating-Point Obscurity**: Double literals like `3.14` are represented as raw hex integers (`0x40091eb8`), obscuring their actual values.
+- **Calling Convention Confusion**: The `fastcall` caller shows incorrect argument mapping (`in_EAX, 2, 1` vs source `1, 2, 3`), indicating register/stack analysis errors.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The preservation of original function names via debug symbols makes navigating the high-level structure trivial.
+
+### Most Needs Improvement
+- **Type Safety (3/10)**: The mishandling of struct return values makes the decompiled code look dangerously incorrect (dereferencing garbage pointers), which is a major barrier to understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Improve Varargs Analysis**: Enhance the analysis engine to correctly link register-stored return values to subsequent stack-based function arguments (e.g., `printf`).
+2. **Fix Struct Return (sret) Detection**: Distinguish between functions returning a struct value and those returning a pointer to a struct to avoid generating "null pointer dereference" code.
+3. **Reconstruct Floating-Point Literals**: Implement logic to convert IEEE 754 hex representations back into human-readable floating-point constants.

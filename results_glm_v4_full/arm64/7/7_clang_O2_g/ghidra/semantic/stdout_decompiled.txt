@@ -1,0 +1,16 @@
+Testing obfuscation and optimization techniques:
+
+10
+20
+225
+66
+500500
+5050
+72
+20
+2
+41
+30
+2000000000
+10
+48

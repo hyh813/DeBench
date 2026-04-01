@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10Justification: The decompiled code uses exclusively generic variable names (`v0`, `v1`, `v2`, `ptr`, `result`, `cur`) that completely obscure the original semantic meaning. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some function names are properly demangled (e.g., `SimpleClass::getValue`, `test_cpp_member_func`), but many use C++ mangled names (e.g., `_Z20test_cpp_member_funcv`) or generic addresses (e.g., `sub_401854`, `sub_401a30`). The original test function names like `test_cpp_virtual_func` are partially recovered but not consistently.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` (CLASS_ID) and `50`, `100`, `200` (data values) appear without explanation. However, some string literals and constants are preserved. The code shows values like `1000` (multiplier) and `5` (array size) without semantic naming.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack protection checks (`__stack_chk_guard`, `__stack_chk_fail`), weak function references (`call_weak_fn`, `g_416fe8`), frame dummy functions, and extensive boilerplate for STL implementations. The output is cluttered with runtime support code that obscures the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is generally readable with proper loops and conditionals. However, some goto patterns exist in error handling paths, and the virtual function call in `call_virtual_func` uses complex pointer dereferencing: `(*((long long *)*((long long *)*((long long *)&v1))))(arg_0, arg_1, *((long long *)*((long long *)&arg_0)))`. The stack protection adds unnecessary branching.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The test functions are properly separated from helper functions. Member functions are correctly extracted. However, the STL template instantiations create many tiny functions (e.g., `std::__get_helper`, `std::_Head_base`) that fragment the code unnecessarily.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, the exception handling code (`test_cpp_exception`) has complex control flow with `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch`, and `_Unwind_Resume` that disrupts linear reading. Some nested conditionals in RTTI code also interrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in STL/template code - the same pattern of `std::tuple`, `std::_Tuple_impl`, `std::_Head_base` operations repeat identically many times. The decompiler doesn't collapse these into cleaner abstractions. Some dead code from register saving/restoring is present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation - most integers are `unsigned int` or `unsigned long long` instead of specific types like `int32_t` or `size_t`. Pointers are often `char*` or `void*` rather than typed pointers. The original `int`, `size_t`, `bool` types are mostly lost. Const correctness is not preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler creates generic struct types with meaningless names: `struct_0`, `struct_1`, `struct_2` with fields like `field_0`, `field_1`, `padding_4`. The original class members (`value`, `name`, `data`, `size`, `multiplier`, `shared_data`) are completely lost, replaced with offset-based access patterns.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present but not severe. The virtual function call uses complex pointer arithmetic: `*((long long *)*((long long *)&v1))`. The exception handling has raw pointer casts. Overall manageable but requires careful analysis to ensure safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. The only comments are the function signature headers. No explanation of algorithms, non-obvious logic, or decompilation confidence levels. The original source had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified or named. The decompiler doesn't recognize the RAII pattern in smart pointers, the visitor pattern in virtual functions, or the factory pattern in constructors. Just raw code output.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or problematic areas. The indirect virtual function calls, exception handling complexity, and template instantiation details are presented with full confidence even though they're complex. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and traceable - you can see `SimpleClass::getValue(&v4)` being called. However, there's no documentation of call relationships, global variable usage, or callback patterns. The original test orchestration is not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped by class but the organization is arbitrary. The original source's clear separation into test functions is partially preserved but buried among STL boilerplate. Related functionality (e.g., all SimpleClass methods) is scattered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile standalone. It relies on extensive external declarations (`extern char g_416ee0`, `extern unsigned long long _ZTI12RTTIDerivedA`) and has undefined references. Significant patching would be required to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `result`) completely losing semantic meaning from original (`value`, `name`, `capture_by_value`)
+- **Struct recovery**: Composite types use generic names (`struct_0`, `field_0`) losing all original field names
+- **No comments**: Zero explanatory comments for algorithms, contracts, or decompilation confidence
+- **Excessive noise**: Compiler artifacts (stack checks, weak functions, frame dummies) clutter output
+- **Type precision loss**: Original `int`, `size_t`, `bool` types degraded to `unsigned int`, `char*`
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are appropriately sized with clear single responsibilities. Test functions are properly separated from helper functions, and member functions are correctly extracted as separate entities.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The complete loss of semantic variable names is the most severe issue - every meaningful identifier from the original source (`value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`) is replaced with generic names (`v0`, `v1`, `v2`, `ptr`).
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v0` compared against array bounds → should be `index` or `idx`; `v1` used in arithmetic with `strlen` → should preserve original name like `name`)
+2. **Recover struct field names**: Use vtable analysis and constructor patterns to reconstruct meaningful field names instead of `field_0`, `field_1`
+3. **Add semantic comments**: Document algorithm intent, decompilation confidence levels, and recovered contracts (preconditions/postconditions)

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Local variables use generic names (v0, v1, v2, i, sum) while function parameters preserve original names (c, x, p, arr). Test functions show excessive temp variables (v0-v14) that obscure data flow.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (process_char, array_1d_stack, ptr_single, struct_simple). Runtime functions use generic names (sub_1030, sub_1070) but application logic retains semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: ASCII values used as numbers (65, 90, 32) instead of character literals ('A', 'Z'). String literals preserved well, but magic numbers like 0x14u for memcpy size lack symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains 15+ runtime initialization functions not in original source (_do_global_dtors_aux, register_tm_clones, frame_dummy). Compiler artifacts (_x86_get_pc_thunk_*) pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered as natural for/while constructs. Switch statement in enum_switch properly reconstructed. Conditionals use clear if-else patterns matching -O0 expectations.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent function granularity matching source. Each function maintains single responsibility. No inappropriate inlining or fragmentation observed in application code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom but test functions have excessive temporary variable assignments disrupting flow. Core logic functions are well-linearized.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions create unnecessary temp variables (v0-v14) for each function call result. Some redundant stack variable declarations (BYREF annotations on simple locals).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, short, float, double). long long degraded to __int64. volatile semantics lost (volatile_access shows 2 * *p instead of two separate reads).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types referenced (Point3D, Rect, Widget) but definitions not shown in output. Bitfield recovery shows raw bit manipulation ((*(_WORD *)f >> 6)) instead of named field access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (*( _DWORD *)p, *(char *)p, (void *)size). Void pointer handling requires explicit casts. No type safety warnings generated for potentially dangerous operations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Original source comments completely lost. No algorithm explanations or API contracts. Only decompiler header comments present (processor info, binary path).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns present (linked list traversal, tree recursion) but not explicitly identified. No design pattern naming or algorithm identification in output.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations noted at end (printf, memcpy, __libc_start_main). No warnings about volatile semantics loss or potential undefined behavior in array_oob function.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Array bounds checks present in code but not documented as contracts. No null pointer precondition hints.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved with correct signatures. No explicit call graph documentation. Relationships inferable from code but not documented (e.g., complex_callback → ptr_func_complex).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Runtime functions mixed with application code. No clear module boundaries. Functions appear in load order rather than logical grouping from source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 4 functions failed to decompile (printf, memcpy, __libc_start_main, __cxa_finalize). Struct definitions missing. Would require significant stubbing and type reconstruction to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+6+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (8+9+7+6)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (7+5+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.94/10 ≈ 5.9/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Volatile semantics lost**: `volatile_access` shows `2 * *p` instead of two separate memory reads, losing the critical volatile behavior
+- **Bitfield recovery failed**: `struct_bitfields` shows raw bit manipulation `(*(_WORD *)f >> 6)` instead of named field access `f->flag1`
+- **No comments preserved**: All original source comments explaining test scenarios and expected behavior completely lost
+- **Struct definitions missing**: Types like Point3D, Rect, Widget referenced but not defined in decompilation output
+- **Runtime pollution**: 15+ compiler runtime functions mixed with application code, obscuring the actual test logic
+
+### Best Quality Aspect:
+- **Function Decomposition (9/10)** - Function granularity perfectly matches source with appropriate single-responsibility functions and preserved parameter lists
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation, making it difficult to understand test intent and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve and recover source comments** - Integrate debug symbol comment data and add confidence indicators for recovered logic
+2. **Improve volatile/bitfield recovery** - Detect volatile access patterns and reconstruct bitfield structures from access patterns rather than raw bit operations
+3. **Separate runtime from application code** - Filter compiler runtime functions or group them separately to reduce noise in the primary decompilation output

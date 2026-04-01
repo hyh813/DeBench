@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a0`, and `ptr`, providing no semantic hint about their purpose (e.g., `sum`, `index`, `x`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `struct_simple` are perfectly recovered from the binary symbols, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Floating-point constants are represented as opaque hex values (e.g., `0x3fc00000` for 1.5f in `process_float`), and logic like `(26 <= (a0 - 65 & 255))` obscures the original `c >= 'A' && c <= 'Z'` check.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is littered with decompiler artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()`, non-standard intrinsics (`AddV`, `InterleaveLOV`), and `CONCAT` macros, severely polluting the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple loops are replaced by complex vectorized blocks (e.g., `array_1d_stack` uses `int128_t` arithmetic and unrolling) or obscure `do-while` constructs (`array_string`), making the flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source; there is no inlining or monolithic merging, maintaining the original granularity effectively.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code is difficult to read linearly due to aggressive vectorization and pointer arithmetic (e.g., `array_3d` is a wall of nested pointer offsets), disrupting top-to-bottom comprehension.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While loop unrolling and vectorization eliminate redundancy, they do so at the cost of readability, replacing clear iterative logic with complex SIMD-like operations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Integer types are reasonably preserved, but floating-point operations are cast to `unsigned long long` and manipulated with hex, and `long double` operations fail completely.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are often flattened to generic `struct_0` with `field_0` or accessed via raw pointer arithmetic (e.g., `struct_bitfields` uses manual bit shifting `(v1 >> 6)` instead of field access).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code uses unsafe constructs like `goto a0` for function pointers (invalid C syntax) and frequent casts between `int*` and `int128_t*`, obscuring type boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments; only error markers like `[D] unsupported...` appear, which indicate failure rather than explaining logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like "summing an array" or "string length" are lost, replaced by low-level vector intrinsics (`AddV`, `InterleaveLOV`) that hide the algorithmic intent.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While it flags unsupported instructions (e.g., in `process_ld`), it does not explain *why* the code looks like vectorized IR or warn about the non-standard syntax used.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null check in `struct_with_ptr` is present but not explicitly documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function names provide good cross-referencing, but parameter types are generic (`a0`, `a1`), obscuring the data flow between functions.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are presented in a logical order that roughly follows the source file structure, making it easy to locate specific test groups.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to non-standard intrinsics (`AddV`), invalid syntax (`goto a0`), and embedded decompiler debug tags (`[D] ...`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Floating-point literals are represented as raw hex integers (e.g., `0x3fc00000`), destroying semantic meaning.
+- Simple loops are aggressively vectorized into unreadable `int128_t` arithmetic and `AddV` intrinsics.
+- The code contains invalid C syntax (e.g., `goto a0`) and debug artifacts (`[D] unsupported...`), making it unusable for compilation.
+- Composite types are flattened; bitfields are manually extracted via shifts rather than struct access.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered symbol names for almost all functions, making it easy to map the decompiled output back to the source logic.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The representation of constants, specifically floating-point values as hex and boolean logic as bitwise arithmetic, renders the mathematical intent of the source code completely opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pass to convert hex-encoded floating-point constants back to standard floating-point literals (e.g., `0x3fc00000` -> `1.5f`).
+2. Add a simplification option to lower vector intrinsics (`AddV`, `InterleaveLOV`) back to standard scalar loops when vectorization isn't explicitly required by the source context.
+3. Replace indirect jumps via variable (`goto a0`) with standard function pointer syntax (`(*func_ptr)(arg)`) or `if-else` chains for resolved targets.

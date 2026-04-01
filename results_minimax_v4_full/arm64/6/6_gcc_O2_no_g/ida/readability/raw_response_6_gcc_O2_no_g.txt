@@ -1,0 +1,160 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_strcpy` (and related test functions)
+
+**Original Source:**
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+**Decompiled:**
+```c
+__int64 __fastcall param_strcpy(char *a1, const char *a2)
+{
+  return (unsigned int)stpcpy(a1, a2) - (unsigned int)a1;
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a1` (dst) and `a2` (src) instead of descriptive names. The decompiler lost the semantic meaning of "destination" and "source" buffers. Compare to original where `dst` and `src` clearly indicate purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_strcpy` exactly matches the original source function name. The decompiler correctly preserved the semantic identity of this test function.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No magic numbers or unexplained literals in `param_strcpy`. The arithmetic `stpcpy(a1,a2) - a1` is self-evident as computing string length. Other functions like `call_strcpy` return constant 8 (expected length) which is appropriate.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The `param_strcpy` function is clean with no compiler artifacts. However, some functions like `call_memcmp` show complex stack manipulation with multiple local variables (`s1`, `s2`, `v7`, `v9`, `v10`, `v11`) that appear to be compiler-generated for array setup.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: `param_strcpy` has perfectly natural control flow - single return statement. Other functions like `thread_sum` show clear loop structures (`do-while`) matching original source. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function (`param_strcpy`, `call_strcpy`, etc.) is appropriately small (2-5 lines). The decompiler correctly separated what were separate functions in source. However, some large functions like `test_standard_library_functions` (60+ lines) could benefit from decomposition.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: `param_strcpy` reads perfectly top-to-bottom. Most other functions have good linearization with minimal forward jumps. The `param_signal_handling` function has some nesting but remains traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy in `param_strcpy`. However, some functions show repeated patterns - for example, file operations in `test_standard_library_functions` duplicate the fopen/fileno/fclose pattern that could be abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: `param_strcpy` uses `char *a1` and `const char *a2` which correctly matches the original. Return type `__int64` is slightly oversized (original was `int`) but acceptable. Some functions like `param_strlen` correctly return `size_t`. However, many functions use generic `__int64` where `int` would be more precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The decompiler did not recover the `ThreadData` struct used in `param_pthread_join`. Instead, it uses raw `_OWORD` and separate variables (`arg[0]`, `arg[1]`, `v10`). The struct:
+```c
+typedef struct {
+    int start;
+    int end;
+    int result;
+} ThreadData;
+```
+was reduced to unnamed array access, losing field semantics.
+
+**11. Type Safety:** Score: 7/10  
+Justification: `param_strcpy` is type-safe. However, some concerning patterns exist - in `call_memcmp`, there's extensive pointer arithmetic with raw bytes:
+```c
+s1 = 0x200000001LL;
+v9 = 4;
+v7 = 3;
+```
+This appears to be reconstructing int arrays but loses type safety. The atomic operations use proper atomic types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source had extensive comments explaining each function's purpose (e.g., "// strcpy将src包括结尾'\0'拷贝到dst"). The decompiler provides zero documentation, making it difficult to understand the `stpcpy` optimization without comparing to source.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: The decompiler correctly recognized the `stpcpy` pattern (returns pointer to end of string) and used it to compute length efficiently. Standard library functions like `pthread_mutex_lock`, `signal`, `fork` are properly identified. Threading patterns (mutex, condition variables) are recognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The output shows "FAILED to decompile" for 62 functions (mostly libc functions like `memcpy`, `strlen`, `fopen`, etc.) but these are external library calls, not anomalies in the target code. No warnings about indirect calls or suspicious patterns in the recovered functions themselves.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_strcpy` should document "requires: dst buffer large enough to hold src" but this is absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit through direct calls but not documented. For example, `main` calls `test_standard_library_functions`, `test_system_calls`, and `test_thread_concurrency` but there's no comment indicating this hierarchy. Global variables like `signal_received`, `signal_number`, `shared_counter` are used across functions but relationships aren't explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by category (standard library, system calls, threading) but the output is a single flat listing. Static functions like `signal_handler`, `thread_sum` are properly identified. The organization matches the logical structure of the original test file reasonably well.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The decompiled code has `// attributes: thunk` markers for functions that just call others (e.g., `call_strcpy` → `param_strcpy`). Function signatures use standard types. The code should compile with minimal patching. The `__fastcall` and `__attribute__` annotations are appropriate for ARM64.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score Calculation:**
+
+```
+L1_avg = (3+9+10+8)/4 = 7.50
+L2_avg = (8+8+9+7)/4 = 8.00
+L3_avg = (7+5+7)/3 = 6.33
+L4_avg = (1+8+2+2)/4 = 3.25
+L5_avg = (5+6+9)/3 = 6.67
+
+Overall = (7.50 × 0.30) + (8.00 × 0.25) + (6.33 × 0.20) + 
+          (3.25 × 0.15) + (6.67 × 0.10)
+        = 2.25 + 2.00 + 1.27 + 0.49 + 0.67
+        = 6.68/10
+```
+
+**Overall Readability Score:** 6.7/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming**: Parameters `a1`, `a2` throughout lose semantic meaning (dst/src, s1/s2, etc.)
+- **No comments**: Zero documentation explaining function purposes, the `stpcpy` optimization, or algorithm logic
+- **Struct loss**: `ThreadData` struct in pthread tests was not recovered, replaced with raw `_OWORD` arrays
+- **Type imprecision**: Many functions use `__int64` where `int` would be more accurate (e.g., return types)
+- **No contracts**: Missing preconditions/postconditions for functions like `param_strcpy` (requires: dst buffer size ≥ src length)
+
+---
+
+### Best Quality Aspect: Structural Intelligibility (8.0/10)
+The decompiler produced highly readable control flow with natural loops, appropriate function decomposition, and good linearization. At -O0, the code structure closely matches the original source.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (3.25/10)
+The complete absence of comments is the most severe issue. Combined with no anomaly warnings, no idiom explanations, and no contract recovery, the code requires constant reference to source to understand.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Add semantic comments**: Explain optimizations like `stpcpy` usage, document what each test function validates, and describe algorithm approaches. Example: `// Uses stpcpy to compute length in single pass (optimization)`
+
+2. **Recover struct types**: The `ThreadData` struct and similar composite types should be reconstructed with meaningful field names rather than exposing raw memory layouts.
+
+3. **Improve variable naming**: Use usage-pattern analysis to infer names. For `param_strcpy(a1, a2)`, if `a1` is written to and `a2` is read from, name them `dst` and `src` respectively.

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `__ptr`, `ppVar3`, `puVar4`) obscuring semantic meaning. Original source had descriptive names like `dst`, `src`, `buffer`, `iterations`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`, `consumer_thread`). This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic hex numbers everywhere: `0x2a` (42), `0x5a` (90), `0xc` (12), `0x1b6` (file permissions). Original used meaningful expressions like `thread_count * 100` and `strlen(write_data)`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`) not in original source, pervasive "Unresolved local var" comments, and "WARNING: Unknown calling convention" warnings throughout clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops converted to do-while instead of for-loops; some functions constant-folded entirely (`call_strcpy` just returns 8). Error handling uses goto labels (`LAB_00011458`) instead of structured returns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Function sizes are reasonable, though some caller functions are bloated with inline logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but interrupted by goto labels for error paths. Some functions have forward jumps that disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Over-aggressive constant folding removed actual logic from test functions (`call_memcpy` returns `0x5a` directly). Some redundant stack canary checks added.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many `int` instead of `size_t`, `pid_t`, `ssize_t`. Pointer types often generic (`void*`, `char*`). Some types preserved (`pthread_t`, `FILE*`, `atomic_int`) but inconsistently applied.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—fields accessed via offset arithmetic (`*(int *)((int)arg + 8)`). `sockaddr_in` fields individually initialized rather than as struct. Critical structural information lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts (`(int)arg`, `(void *)0x0`, `(pthread_mutex_t *)&counter_mutex`). Pointer arithmetic on typed pointers in some places. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments explaining logic. Only decompiler warnings present ("WARNING:", "Unresolved local var"). Original had extensive documentation about purpose and expected values.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`, `pthread_create`). Thread synchronization patterns not explicitly identified. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unresolved variables and calling conventions. "WARNING: Removing unreachable block" flags optimization artifacts. However, no confidence indicators for recovered logic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/post conditions documented. Error return values present but not explained (what does -1 vs -2 vs -3 mean?). Original had clear "期望" (expected) comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without explanation of their purpose or synchronization requirements.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in flat output with no logical grouping. Original had clear section headers ("6.1 标准库函数调用", "6.2 系统调用", "6.3 线程与并发"). No namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. However, external dependencies (pthread, libc) not clearly documented. Some platform-specific code paths collapsed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+3+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+6+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.00/10
+```
+
+### Overall Readability Score: **5.0/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `__ptr`, `ppVar3`) losing all semantic meaning from original (`dst`, `src`, `iterations`, `thread_count`)
+- **Magic hex literals** (`0x2a`, `0x5a`, `0xc`, `0x1b6`) replace meaningful expressions and constants
+- **ThreadData struct not recovered**—fields accessed via offset arithmetic (`*(int *)((int)arg + 8)`) instead of named fields
+- **Zero meaningful comments**—original had extensive documentation about purpose, expected values, and test scenarios
+- **Over-aggressive constant folding**—test functions like `call_strcpy` return constants directly, losing actual implementation logic
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source code, maintaining semantic clarity for entry points
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments; only decompiler warnings present, making intent completely opaque
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `iterations`, `size`)
+2. **Recover struct definitions** from consistent offset access patterns instead of leaving "Unresolved local var" comments
+3. **Preserve magic number context** by detecting common constants (42=0x2a, file permissions, signal numbers) and adding explanatory comments

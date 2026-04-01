@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `local_c`, `local_8`, `local_14` instead of semantic names like `result`, `encrypted`, `decrypted`. Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). However, helper functions use generic names (`FUN_00011030`, `FUN_000110f0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x21524111` (should be `-0xDEADBEEF`), `0x5a`, `0x41`, `0x42` appear without explanation. Test values (10, 5, 1000) are clear but no named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__i686.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`. Multiple external function stubs add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures mostly recovered correctly (if-else, while loops in GCD). `param_opaque_predicate` loop structure preserved well. Some simplification in `param_instruction_substitution` loses original intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes appropriate, but caller functions have incorrect signatures (`call_fake_branch` returns `void` instead of `int`). Function boundaries clear but some semantics lost.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with natural flow. No excessive goto usage. Loop structures use standard for/while patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_instruction_substitution` overly simplified (combined operations into single expression), losing the instructional substitution demonstration. Some compiler boilerplate remains.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types degraded to `int`, `undefined4`, `void*`. Original had `size_t`, `const char*`, `unsigned int`. `param_instruction_substitution` changed from `int` to `uint` parameter.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (function just returns `0x2b`). No struct/union recovery visible anywhere in decompiled output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(undefined4)(10 / (longlong)param_1)`, `(int)local_28[0]`. Pointer arithmetic without proper typing in buffer overflow functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, test scenarios, and expected values. All semantic context lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern not labeled. No design patterns or algorithm names recovered.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite significant simplifications (`param_implementation_defined` reduced to constant return). Silent failures on complex transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expected values in comments (e.g., "期望: 10", "期望: 20").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables (`jmp_buffer`, `segv_buffer`, `div_zero_caught`) referenced without declaration. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. No logical grouping by category (obfuscation, optimization, edge cases). Original had clear section organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined globals (`jmp_buffer`, `segv_buffer`, `param_string_encryption_encrypted`, `DAT_0001300d`). Would require significant patching and stub creation to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+6+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Context):     (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.91/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_c`, `local_8`) losing all semantic meaning from original source
+- **Zero comments** despite original having extensive documentation explaining obfuscation techniques and expected values
+- **Composite types lost** - bitfield struct in `param_implementation_defined` reduced to constant return `0x2b`
+- **Function signature errors** - caller functions return `void` instead of `int`, losing return value semantics
+- **Undefined global references** - `jmp_buffer`, `segv_buffer`, `DAT_0001300d` referenced without declaration
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic context, test expectations, and obfuscation technique explanations that were present in original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and string references (e.g., `local_28` used with `strlen` should be `decrypted_buffer`)
+2. **Recover and preserve source comments** from debug symbols when `-g` flag is present in compilation
+3. **Add anomaly flags** for significant simplifications (e.g., when complex functions reduce to constant returns, mark as "POTENTIALLY OVER-SIMPLIFIED")

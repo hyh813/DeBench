@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Most variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1` throughout the codebase. In `param_fake_branch`, `a0` should be `x`, `v1` should be `result`, and `v0` should be `str`. Only complex functions like `param_opaque_predicate` have slightly better names (`flag1`, `flag2`, `flag3`, `flag4`).
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: User-facing functions like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` correctly match source names. However, internal functions use mechanical addresses (e.g., `sub_400774`, `sub_400870`, `_init`, `_start`) providing no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic number `3735928559` (0xDEADBEEF) appears as decimal without explanation. Constant `2863311530` (0xAAAAAAAA) similarly unexplained. String literal "test" is clear. The decompiler shows raw decimal values where source had hex constants.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: Minimal compiler artifacts present. Stack frame setup (`v2 = &v3`) is minimal and doesn't impede readability. No redundant casts or debug instrumentation observed. Clean output overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow in `param_fake_branch` correctly mirrors source - checks `x * x < 0` then `strlen(str) < 0`. Loops in `param_opaque_predicate` and `param_vectorized_loop` are properly recognized. At -O0, flow is natural.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Each source function is correctly separated in decompiled output. Function granularity is appropriate - no monolithic functions. Parameter lists are reasonable, though types may be imprecise.
+
+**7. Code Linearization:** Score: 8/10
+Justification: Code generally reads top-to-bottom. In `param_fake_branch`, the early return pattern is clear. No excessive forward jumps disrupting flow. Good linearization.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: No obvious dead code or redundant expressions. The computation in `param_opaque_predicate` is properly structured without duplicate evaluations. Clean output.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: All functions use `unsigned int` where source uses signed `int`. This is a significant type degradation - in `param_fake_branch`, `a0 * a0` will wrap around for large values instead of triggering overflow. Parameter types should be `int`, not `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: No complex structs in these functions to recover. Simple types handled adequately. The assessment is not applicable to this specific decompilation unit.
+
+**11. Type Safety:** Score: 5/10
+Justification: The consistent use of `unsigned int` creates type safety issues - signed overflow behavior is lost. In `param_integer_overflow`, the decompiler computes `v1 = a0 + a1` twice (lines `v1 = a0 + a1; v0 = a0 + a1;`) which is redundant but not unsafe. Minor issues with pointer arithmetic in `param_vectorized_loop`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: No comments anywhere in the decompiled output. The source contains extensive documentation explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) that is completely lost. Zero useful comments.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The fake branch idiom (always-false conditions) is preserved in control flow. Opaque predicates in `param_opaque_predicate` are correctly computed. However, the semantic meaning of these obfuscation techniques is not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No indication that the branches in `param_fake_branch` are "fake" (always-false) or that `param_opaque_predicate` contains opaque predicates. The decompiler presents this as normal code without flagging the obfuscation patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants documented. The function contracts from source (e.g., "x can be any integer") are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function call relationships are clear - `call_fake_branch` calls `param_fake_branch`, etc. The call graph is understandable from the code structure. External dependencies (signal handlers, malloc, etc.) are properly identified.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are logically grouped in the output. Initialization functions (_init, _start), test functions, and helper functions are reasonably organized. However, all in single file with no namespace structure.
+
+**18. Build System Compatibility:** Score: 8/10
+Justification: Code should compile with minimal stubs for external functions (`__libc_start_main`, `__gmon_start__`, etc.). These are standard CRT dependencies. No compiler-specific hacks observed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: Generic names (`v0`, `v1`, `a0`) throughout; should infer semantic names from usage patterns
+- **Type precision**: All `int` parameters/returns incorrectly as `unsigned int`, losing signed overflow semantics
+- **No comments**: Complete loss of source documentation explaining obfuscation techniques
+- **Anomaly indication**: Fake branches and opaque predicates not flagged as obfuscation patterns
+- **Magic numbers**: Hex constants like 0xDEADBEEF shown as unexplained decimal 3735928559
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly preserves the logical structure of the original code - loops, conditionals, and function calls match the source semantics closely. At -O0, this is expected and well-executed.
+
+### Most Needs Improvement: Comment Quality (1/10)
+The complete absence of comments loses critical semantic information about obfuscation patterns, function purposes, and algorithm explanations that were present in the source.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Use data flow analysis to rename `a0`→`x`, `v1`→`result`, `v0`→`str` based on how variables are used in expressions and function calls
+2. **Recover type signedness**: Analyze arithmetic operations to determine if parameters should be signed vs. unsigned; the original uses `int`, not `unsigned int`
+3. **Add semantic comments**: Flag fake branches ("always-false condition"), opaque predicates, and other obfuscation patterns with explanatory comments matching source documentation

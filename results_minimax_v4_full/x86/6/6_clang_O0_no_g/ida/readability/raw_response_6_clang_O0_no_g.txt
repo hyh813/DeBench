@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3` throughout. For example, in `param_strcpy`, `a1` should be `dst` and `a2` should be `src` based on usage. The pattern `*(&GLOBAL_OFFSET_TABLE_ + 66)` is completely opaque, representing `shared_counter`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names match source almost perfectly - `param_strcpy`, `call_strcpy`, `param_strcmp`, `param_memcpy`, `param_fork_exec`, etc. all preserve the original naming. Only minor variations exist.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like "HelloLib", "abc", "def" are preserved correctly. However, magic numbers like `0x14u` (20 bytes), `0x28u` (40 bytes), and `66` (O_CREAT|O_RDWR) appear without explanation. The return value `42` used as success indicator is also unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: 58 functions failed to decompile (listed at end), cryptic expressions like `*(&GLOBAL_OFFSET_TABLE_ + 64)` instead of `signal_received`, and raw hex values like `0xFFFFFFDC` for TLS offsets. The "FAILED to decompile" section at the end pollutes the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `param_strcpy` has perfect natural flow (strcpy then strlen). However, `param_signal_handling` uses confusing patterns like `*(&GLOBAL_OFFSET_TABLE_ + 64)` for boolean checks. Loops are generally preserved but some use awkward `while(1)` constructs with breaks.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 3 lines (perfect), `param_pthread_join` is ~40 lines (reasonable). Each function has single responsibility. No 500-line monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. `param_strcpy` has perfect linear flow. Early returns in error handling (`if (!stream) return -1;`) are used appropriately. No excessive forward jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal. Common subexpression elimination is reasonable - the decompiled code doesn't have obvious redundant computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: `param_strcpy` correctly uses `size_t` return and `char*`/`const char*` parameters. However, `param_printf` shows `int a1, int a2` instead of `int, const char*`. Some returns use `int` where `size_t` would be more precise. `pthread_t` is sometimes cast to `_DWORD`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery - instead uses raw arrays like `_DWORD v2[3]`, `_DWORD v3[3]` for ThreadData. The `ThreadData` struct with fields `start`, `end`, `result` is lost, replaced by flat array indexing `s[0]`, `s[1]`, `s[2]`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `(void *(*)(void *))thread_compute` cast, `(Elf32_Dyn *)` casts for integers, `*(&GLOBAL_OFFSET_TABLE_ + 66) = (Elf32_Dyn *)((char *)*(&GLOBAL_OFFSET_TABLE_ + 66) + 1)` is completely wrong type usage. The expression `*(&GLOBAL_OFFSET_TABLE_ + 64)` used as boolean is concerning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source has extensive comments explaining each function's purpose, but none are recovered.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions (strcpy, strlen, strcmp, memcpy, printf, scanf, fopen, malloc, pthread_create) are all correctly identified. The fork-exec pattern and pipe communication are recognizable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "FAILED to decompile" section lists 58 functions that couldn't be resolved, but provides no context about why or what the uncertainty is. The `param_signal_handling` function has suspicious patterns (`*(&GLOBAL_OFFSET_TABLE_ + 64)`) but no warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has error handling but no contracts are recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present (e.g., `param_strcpy` calls `strcpy` and `strlen`), but there's no documentation of call relationships, global variable usage, or callback patterns. The `signal_handler` global is used but not documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: standard library functions first (param_strcpy, param_strcmp, etc.), then system calls, then thread functions. This matches the source organization in test_standard_library_functions(), test_system_calls(), test_thread_concurrency().
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The output states "Compilation Result: Yes" but the decompiled code has 58 failed functions and uses undefined symbols like `GLOBAL_OFFSET_TABLE_`. The expression `*(&GLOBAL_OFFSET_TABLE_ + 64)` won't compile as-is.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`a1`, `a2`, `v1`, `v2`, `v3`) - should infer from usage like `dst`, `src`, `result`
+- The expression `*(&GLOBAL_OFFSET_TABLE_ + N)` is completely opaque - should be `signal_received`, `ready`, `data`, `atomic_counter`, `shared_counter`
+- No comments at all - original source has extensive documentation
+- Type safety issues: incorrect casts, wrong type usage for globals
+- 58 functions failed to decompile, degrading overall analysis
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names match source almost perfectly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Comment Quality & Assertion Recovery (both 1/10)  
+- Zero comments in output loses all semantic context; no contract recovery means preconditions/postconditions are unknown
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` in `strcpy(a1, a2)` should be named `dst` or `dest`; `a2` should be `src`
+2. **Recover global variable identities**: The pattern `*(&GLOBAL_OFFSET_TABLE_ + 64)` clearly accesses `signal_received` - recover actual global names
+3. **Add semantic comments**: At minimum, document what each function does, what parameters mean, and flag uncertain decompilations with explanations

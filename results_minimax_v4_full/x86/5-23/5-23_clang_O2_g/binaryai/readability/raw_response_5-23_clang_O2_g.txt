@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic patterns like `param_1`, `param_2`, `iVar1`, `iVar2`, `local_1c`, `local_38` that provide no semantic meaning. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter` which are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler recovered the exact function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: While literal values are correct (e.g., `0x200` for 512, `0x40` for 64, `0x1e` for _SC_PAGESIZE), all symbolic constants are lost. The original had `MAX_SIZE`, `BUFFER_COUNT`, `PROT_READ|PROT_WRITE|PROT_EXEC` (7), but these appear as magic numbers.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some Ghidra-specific constructs like `CONCAT22`, `ZEXT816`, `__regparm1` appear, but no debug instrumentation, frame pointer manipulation, or register spilling artifacts visible. Clean overall.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. For loops are properly recognized (`for (iVar2 = 0; iVar2 < param_2; iVar2 = iVar2 + 1)`), if-else structures are clear, and no goto statements or spaghetti code patterns observed. At -O0, this is excellent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches original source. Each test function (`param_*`, `call_*`) is separate. The `test_asm_features` function is large but mirrors the original's inline test code. Good cohesion maintained.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. No excessive forward jumps. Early returns used appropriately in functions like `param_dynamic_code` and `param_memory_protection`. Flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code, obvious redundancy, or unnecessary duplications. At -O0, there's no loop unrolling or CSE artifacts to clean up. The code is compact and efficient.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision. `size_t` and `void*` are used correctly for sysconf/mmap, but most integers are generic `int`. Ghidra types like `undefined4`, `undefined`, `undefined *` are not standard C. Original had specific types like `int *arr`, `int n` which became generic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The original source didn't define complex structs, mostly using simple arrays and pointers. Array access is handled via pointer arithmetic: `*(int *)(param_1 + iVar2 * 4)`. No struct recovery needed, but no bonus for complex type handling either.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Pointer arithmetic `*(int *)(param_1 + iVar2 * 4)` is necessary for array access. No obvious unsafe casts between incompatible types. Minor issues with Ghidra's `undefined` types but no severe violations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量 ⭐", "// 测试: 编译时宏替换"). No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns, algorithms, or data structure patterns are identified or named. The code is presented as flat procedural code without recognizing the test harness patterns or the inline assembly idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The architecture mismatch (original says arm64, but decompiled shows x86 patterns like `__i686.get_pc_thunk.bx`) is not flagged. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, invariants, or error condition documentation. The original had error handling (checking `MAP_FAILED`, `mprotect` return values) but no contracts or assumptions are documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., `main` calls `test_preprocessing_features` and `test_asm_features`). However, no documentation of call graphs, global variable usage, or callback relationships. Reader must infer manually.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: preprocessing functions (0x11240-0x113f0), asm functions (0x115d0-0x11940), test functions, then main. This matches the original's logical structure. Single file output is expected from decompilers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code uses non-standard types (`undefined4`, `undefined`, `undefined *`) and Ghidra macros (`CONCAT22`, `ZEXT816`) that won't compile as standard C. External declarations for `printf`, `mmap`, `sysconf` are needed. Requires significant cleanup to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `iVar1`, `local_1c`) with no semantic meaning recovered
+- No comments explaining macro semantics, test purposes, or algorithm intent
+- No anomaly indication for the architecture mismatch (source says arm64, binary is x86)
+- Ghidra-specific types (`undefined4`, `undefined`) prevent standard C compilation
+- No contract or precondition documentation for functions with error handling
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The decompiler perfectly recovered all function names from the original source, making it easy to identify each test case's purpose.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The complete absence of comments severely impacts readability. The original had extensive documentation explaining preprocessing behavior, inline assembly constraints, and test expectations—all lost in decompilation.
+
+**Top 3 Recommendations:**
+1. **Add semantic variable naming**: Infer names from usage patterns (e.g., `param_1` used in `param_1 > 0x400` should be `size` or `input_size`)
+2. **Recover symbolic constants**: Detect magic numbers that match known constants (0x1e = _SC_PAGESIZE, 7 = PROT_READ|PROT_WRITE|PROT_EXEC) and suggest named constants
+3. **Generate explanatory comments**: Add comments for non-obvious logic, especially for preprocessor behavior (macro expansion results), inline assembly constraints, and test case purposes

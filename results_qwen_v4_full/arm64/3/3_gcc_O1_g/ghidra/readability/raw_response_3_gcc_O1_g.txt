@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are mostly generic (`iVar1`, `piVar2`, `__ptr`, `lVar1`) instead of semantic names like `arr`, `local`, `head`. Many marked as "Unresolved local var" losing all naming information.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Some runtime functions have generic names (`FUN_001009b0`, `FUN_00100bbc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Simple decimal values converted to hex (`0x2a` instead of `42`, `0x14` instead of `20`, `0x1e` instead of `30`, `0xf` instead of `15`). No constant recovery despite -O0 compilation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention"). Stack canary checks (`___stack_chk_guard`) add noise not in original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For loops converted to do-while patterns with pointer arithmetic (`do { *piVar2 = iVar1; ... } while (iVar1 != n * 3)`). At -O0, original for-loop structure should be recoverable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved. No inappropriate inlining or fragmentation. Each function maintains single responsibility from source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns. Some forward references in test functions but manageable for comprehension.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No severe dead code. Some redundant pointer arithmetic from optimization but not excessive. Loop patterns could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degraded (`int*` vs specific struct pointers). Function pointer typed as `_func_int_int*` instead of proper signature. Some `void*` where specific types existed.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct recovered with field names (`data`, `next`). `TreeNode` struct recovered. `Point` struct not explicitly defined in decompiled output, fields accessed via arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts visible (`(int *)(puVar2 + lVar4 * 4 + lVar1 + 0x10)`). Pointer arithmetic instead of array indexing increases risk. No buffer overflow warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments recovered. Original had extensive test scenario documentation. Only auto-generated warnings present ("Unresolved local var", "WARNING:").
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Linked list creation/traversal not recognized as such. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" comments indicate uncertainty. Unreachable block warnings present. However, dangerous patterns (dangling pointer, double free) not flagged as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks preserved but not documented as preconditions. No postcondition inference. Error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved. Global variable usage visible (`global_counter`, `file_scope_static`). No explicit call graph documentation or relationship annotations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source. Static functions properly scoped. Test functions grouped together logically.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Marked as compilable ("Compilation Result: Yes"). External dependencies visible (malloc, free, printf). Standard library calls properly identified.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (5+8+7+7)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (6+7+6)/3   = 6.33  × 0.20 = 1.27
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (6+7+8)/3   = 7.00  × 0.10 = 0.70
+─────────────────────────────────────────────────────
+Overall Score:                                  5.80/10
+```
+
+### Overall Readability Score: **5.8/10**
+
+### Critical Defects:
+- **Variable names lost**: `iVar1`, `piVar2`, `lVar1` should be `i`, `ptr`, `offset` based on usage patterns
+- **Magic hex numbers**: `0x2a`, `0x14`, `0x1e` should be decimal `42`, `20`, `30` matching source constants
+- **Loop structure degradation**: For loops converted to do-while with pointer arithmetic instead of array indexing
+- **Zero semantic comments**: Original test scenario documentation completely lost
+- **Unresolved locals**: Many variables marked "Unresolved local var" despite -O0 debug compilation
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names like `double_value`, `heap_basic`, `linked_list_heap` preserved accurately from source, maintaining semantic clarity at the function level.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic comments despite extensive original documentation; only auto-generated warnings present, making code intent opaque.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover decimal literals from hex**: Detect simple values (0x2a→42, 0x14→20) and use decimal notation for readability at -O0
+2. **Infer variable names from usage patterns**: Variables used in loop counters should be named `i`, `index`; pointers to arrays should be named `arr`, `buffer`
+3. **Preserve source comments in debug builds**: At -O0 with -g flag, DWARF debug info should enable comment/annotation recovery from original source

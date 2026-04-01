@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `lVar1`, `bVar2`, `piVar1`). Struct fields are accessed via raw offsets (e.g., `*(undefined4 **)(__ptr + 2)`) rather than semantic names like `next` or `data`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered accurately from the source (e.g., `local_vars`, `heap_basic`, `linked_list_heap`), likely due to debug symbols, providing clear entry points.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Aggressive constant propagation replaced function calls with magic numbers (e.g., `printf("... %d\n", 0x14)` instead of `local_vars(5)`), obscuring the source logic and intent.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present due to loop unrolling (e.g., in `large_stack_frame` and `vla_stack`), creating hundreds of lines of repetitive assignments that hide the simple loop logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted; simple loops are often unrolled into massive blocks, and functions like `tree_heap_traversal` are reduced to a single return statement (`return 0x3c;`), losing all structural context.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are generally well-separated and correspond to source boundaries (e.g., `create_tree_node` is distinct), though some logic is inlined into callers like `test_stack_memory`.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads linearly but is bloated by unrolled loops; some `goto` statements appear in complex functions like `vla_stack`, slightly disrupting the flow.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler failed to recognize loops, resulting in massive redundant code blocks (e.g., `large_stack_frame`). Conversely, it over-optimized by removing necessary function calls and replacing them with constants.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic (`undefined4`, `undefined8`, `void*`). Struct types like `Point` or `Node` are not recovered; fields are accessed via raw pointer arithmetic and hard-coded offsets.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; `Point` and `Node` are completely lost, replaced by raw pointer arithmetic (e.g., `__ptr + 2` instead of `node->next`).
+
+**11. Type Safety:** Score: 4/10
+Justification: Frequent unsafe casts between `undefined*` types and specific types, and manual offset arithmetic (`ptr + 2`) instead of struct field access, reducing safety and clarity.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: No comments are present to explain the aggressive transformations (unrolling, constant folding) or the logic of the code, leaving the user to interpret the artifacts.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms like linked list traversal are partially recognized, but others like tree creation or simple array initialization are obscured by optimization artifacts or constant propagation.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings or flags indicate that the code has been heavily optimized or that function calls have been replaced by constants, which is misleading for a `-O0` binary.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Basic null checks are preserved, but higher-level contracts (e.g., "returns sum of list") are lost because the logic is reduced to constants or inlined blocks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear where they remain, but the aggressive inlining in `test_...` functions breaks the call graph visibility by replacing calls with constants.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are organized logically, matching the source file's structure reasonably well, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: Code relies on Ghidra-specific types (`undefined4`) and contains logic that is too optimized to be representative of the original source for recompilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Aggressive constant propagation removed function calls in test functions (e.g., `test_stack_memory` prints constants instead of calling logic).
+- Loop structures are frequently unrolled or obscured (e.g., `large_stack_frame` is a wall of assignments).
+- Composite types (structs) are not recovered; pointer arithmetic is used instead (e.g., `heap_nested`).
+- Variable names are generic (`param_1`, `lVar1`), losing semantic meaning.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Function names match the source perfectly, likely due to debug symbols, providing clear entry points.
+
+**Most Needs Improvement:** Redundancy Elimination (scored 2/10)
+- The decompiler failed to recognize loops, creating massive redundant code blocks, while simultaneously over-optimizing necessary function calls into constants.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a "Source Fidelity" mode that disables aggressive constant propagation and loop unrolling for `-O0` binaries to preserve the original structure.
+2. Improve composite type recovery to identify and reconstruct structs (like `Node` or `Point`) from access patterns instead of defaulting to raw pointer arithmetic.
+3. Enhance variable renaming heuristics to infer names from usage context (e.g., `i` for loop counters, `size` for length parameters) rather than defaulting to `param_1`.

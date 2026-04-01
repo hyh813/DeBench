@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_gcc_O0_no_g/angr/syntactic/bin/5-23_gcc_O0_no_g_fixed",
+  "stdout": "Testing Preprocessing Features\n\nMacro Constants: 64\nMacro Functions: 30\nConditional Compile: 32\nMulti Branch Compile: 57122\nMacro Recursion: 116\nStringize: 19\nToken Paste: 60\nLOG: Values: 10, 20, 30\nLOG: Values: 10, 20, 30\nVariadic Macro: 60\nMacro Override: 16\nInclude Guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:26\nBuiltin Macros: 382\nTesting ASM Features\n\nBasic ASM: 15\nClobber: 2743673953\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

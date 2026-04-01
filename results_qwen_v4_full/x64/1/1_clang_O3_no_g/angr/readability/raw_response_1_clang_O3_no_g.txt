@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`) with no semantic meaning. Original `temp1`, `temp2`, `temp3` in `sequential_ops` became `a0`, `a1`, `a2` losing all intermediate variable clarity.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions (`sequential_ops`, `single_if`, `if_else`) preserved correctly, but wrapper functions use mechanical names (`sub_401169`, `sub_401178`). Helper functions like `double_value` retained meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX), `1717986919` (division optimization constant), `340282366683253975865241362417122803708` (SIMD constant) appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive redundant casts (`(unsigned int)`, `(unsigned long long)`), SIMD operations (`AddV`, `InterleaveLOV`, `CmpEQV`), and compiler artifacts pollute simple functions like `loop_continue`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `if_else`) recovered well as expressions. Complex loops (`loop_while`, `loop_dowhile`) degraded into unreadable SIMD-heavy code with broken loop conditions (`while ((unsigned int)v3 + 9 > 18)`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Unnecessary wrapper functions (`sub_401169` just calls `sequential_ops`) create fragmentation. `duffs_device` failed entirely ("Failed to decompile function"). Core functions appropriately sized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. `infinite_loop` has confusing redundant checks (four similar `if (*(ptr) == 1)` branches). `goto_forward` recovered as clean ternary expression.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `loop_continue` and `goto_backward` contain massive redundant SIMD unrolling code. `infinite_loop` has 5 nearly identical conditional branches that should be consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` types often became `unsigned int` or `unsigned long long`. `if_else` returns `long long` instead of `int`. `loop_break` uses `switch` instead of array lookup, changing type semantics.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source. Arrays handled inconsistently (`loop_break`'s array became switch statement). `struct_0` defined but unused. No field name recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `call_func_ptr` uses `goto a0` (type-unsafe indirect jump). `process_with_callback` has unsafe pointer arithmetic (`a2(*((int *)(a0 + i * 4)))`). Multiple implicit casts throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only failure message for `duffs_device` provides any context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic ternary operators recognized (`a0 > 0 ? a0 : 1`). Loop idioms not recognized (converted to complex expressions). No design pattern identification despite state machine functions.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One explicit failure noted (`duffs_device`). `[D] Unsupported jumpkind Ijk_SigTRAP` noted once. Most optimization artifacts not flagged as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite multiple return paths.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`g_4037e5`, `jump_buffer`) referenced without context. Test functions call original functions with hardcoded expected values.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by control flow level. Wrapper functions interspersed with core functions randomly by address.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`extern` statements) but many undefined (`g_405fe0`, `__TMC_END__`). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  4.41/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original `temp1`, `temp2`, `temp3`
+- **Loop constructs destroyed** - `loop_while` and `loop_dowhile` became unreadable SIMD-heavy expressions instead of recognizable loops
+- **Magic numbers unexplained** - `4294967295`, `1717986919`, and 30+ digit SIMD constants appear without context
+- **Zero comments** - No algorithm explanations, confidence indicators, or decompilation warnings
+- **Type-unsafe indirect calls** - `call_func_ptr` uses `goto a0` instead of proper function pointer invocation
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names (`sequential_ops`, `single_if`, `nested_if_2`) were preserved correctly from source, enabling basic identification.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of any documentation makes understanding optimization artifacts and decompilation confidence impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds should be `count`, `limit`, `index`)
+2. **Recover high-level control structures** - Detect loop patterns from backward jumps and reconstruct `for`/`while`/`do-while` instead of emitting raw SIMD operations
+3. **Add decompilation confidence annotations** - Flag optimized code regions, unresolved indirect calls, and potential reconstruction errors with inline comments

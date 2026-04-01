@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v0`, and `v1`, completely losing semantic meaning (e.g., `count`, `sum`, `args` in `varargs_func`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellently preserved from the original source (e.g., `cdecl_func`, `test_calling_conventions`), with only a few low-level stubs (`sub_1020`) remaining unnamed.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are perfectly preserved (e.g., `"CALL-L1-01: %d\n"`), but magic numbers like `0x28u` (stack guard) and `0xFFFFFFFFLL` (error code -1) appear without explanation.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains frequent redundant casts like `(unsigned int)` and stack canary checks (`__readfsqword`) which add visual noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is mostly natural with recovered loops, but the `varargs_func` implementation relies on manual pointer arithmetic (`v10 + 8`) instead of idiomatic `va_list` usage, making it harder to read.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well, though compiler optimizations (constant propagation) have inlined logic into callers (e.g., `call_cdecl` just returns `15`), hiding the original call structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal confusing jumps or forward references.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler effectively presents the optimized code without unnecessary temporary variables or dead stores, resulting in concise expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Integer types are frequently widened to `__int64` (e.g., `cdecl_func` returns `__int64` instead of `int`), and `char` parameters are inconsistently handled, obscuring the original data types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; `func_struct_byval` is decompiled as taking seven `__int64` arguments instead of a `LargeStruct`, and `ret_small_struct` returns a packed `__int64` instead of a struct value.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code is functionally correct, it relies on many explicit casts (e.g., `(_DWORD *)v10`) to handle pointer arithmetic, which reduces the perceived safety and readability.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic; only standard Hex-Rays headers are present, leaving complex operations like varargs handling undocumented.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard C idioms like `va_list` for variadic functions are not recognized; instead, the decompiler shows the underlying register/stack manipulation logic.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Standard anomalies like stack canaries are visible but not explicitly flagged as such; the comment `// positive sp value has been detected` in `_start` is a useful exception.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions or postconditions are inferred; for example, `param_complex_cast` does not indicate the pointer type requirements implied by the source code.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to understand (e.g., `test_calling_conventions` calling specific test functions).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, generally following the order of the original source file's definitions.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses compiler intrinsics (`__readfsqword`), non-standard types (`__int64`), and glibc internals (`__printf_chk`) without headers, preventing standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- **Struct Type Loss**: `LargeStruct` and `SmallStruct` are completely disintegrated into raw integer arguments (e.g., `func_struct_byval` takes 7 `__int64` args), destroying semantic meaning.
+- **Variable Naming**: Universal use of generic names (`a1`, `v0`) makes tracking data flow difficult compared to the source's descriptive names.
+- **Type Widening**: `int` return values and parameters are consistently typed as `__int64`, misrepresenting the original 32-bit intent.
+- **Idiom Failure**: Variadic functions (`varargs_func`) are decompiled to raw stack pointer arithmetic rather than the standard `va_list` pattern.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the original function names from the symbol table, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `struct` parameters and return values turns simple data structure operations into confusing lists of integers, severely impacting comprehension.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Structure Passing Analysis**: Detect register/stack argument patterns that correspond to structure passing (especially AAPCS/System V) and reconstruct struct definitions in function signatures.
+2. **Enhance Type Inference for Integers**: Utilize usage context (e.g., truncation, specific return sizes) to differentiate between `int`, `long`, and `int64_t` instead of defaulting to `__int64`.
+3. **Recognize Variadic Idioms**: Identify the standard prologue/epilogue patterns for `va_list` (e.g., `va_start`, `va_arg` on x64) and emit the corresponding high-level C constructs.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a1` throughout (e.g., `local_array` uses `v1`, `v2`, `v4`, `v5`, `v6`), completely obscuring semantic meaning compared to original `arr`, `i`, `local`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but some are generic (`sub_9B0`, `init_proc`) and `stack_alias` lost all semantic meaning by being constant-folded.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0xFFFFFFFFLL`, `0x3E7` for 1000, `0x28u` for 40 bytes) without explanation; original had clear expressions like `n * sizeof(int)`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: register annotations (`// x0`, `// w1`), redundant type casts (`(unsigned int)`, `(__int64 *)`), and frame pointer manipulation visible in stack functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while patterns but `vla_stack` and `alloca_usage` have extremely complex control flow from VLA handling; `stack_alias` collapsed to single return losing all logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but aggressive optimization caused constant folding (`test_stack_memory` prints pre-computed values instead of calling functions); some functions too simplified.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions like `vla_stack` have forward jumps and nested conditionals that disrupt flow; simple functions linearize well.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Type casts repeated frequently (`(unsigned int)`, `(__int64 *)`); some optimization artifacts create redundant comparisons but no obvious dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int`, `Point*`, `Node*` degraded to `__int64`, `_DWORD *`, `_QWORD *`; signed/unsigned often incorrect (`unsigned int)(2 * a1)` where original was signed `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point`, `Node`, `TreeNode` structs entirely lost; all access is raw pointer arithmetic (`v0[1]`, `*(_DWORD *)v4`) with no field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(_QWORD *)v4`, `(__int64 *)((char *)v1 + 4)`); pointer arithmetic without bounds checking; original type safety completely lost.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments; only auto-generated annotations (`// attributes: thunk`, `// BYREF`); no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition - linked list creation, tree traversal, VLA allocation all appear as raw pointer operations with no semantic identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (19 functions) but no inline warnings about suspicious code; `stack_alias` constant-folding not flagged as potential optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (NULL checks present but not explained); no postconditions; error returns (`0xFFFFFFFFLL`) not mapped to original `-1`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables (`global_counter`, `file_scope_static`) referenced without context about their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order but no logical grouping; static functions not distinguished from external; no header-like organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 19 external functions failed to decompile (`malloc`, `free`, `printf`, etc.); would require extensive stubs and type definitions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (3+2+5+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.53/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Composite types completely lost**: `Point`, `Node`, `TreeNode` structs reduced to raw pointer arithmetic with no field names
+- **Variable names entirely generic**: `v0`, `v1`, `v2` throughout instead of semantic names like `arr`, `head`, `current`
+- **Aggressive constant folding**: `test_stack_memory` prints pre-computed values instead of calling actual functions, hiding program flow
+- **`stack_alias` function collapsed**: Returns constant `20` instead of showing pointer aliasing logic (critical security pattern lost)
+- **19 external functions failed**: Core library functions (`malloc`, `free`, `printf`) not decompiled, requiring stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), providing immediate semantic context despite other degradations.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all composite types reduced to pointer arithmetic, making data structure understanding nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct pattern recognition** - Detect repeated pointer+offset access patterns and suggest struct definitions with inferred field names based on usage context.
+2. **Add optimization artifact annotations** - Flag constant-folded functions and inlined code with comments like `// OPTIMIZED: Original called local_vars()` to preserve semantic flow.
+3. **Improve variable name inference** - Use data flow analysis to infer names from usage patterns (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `ptr`, `head`).

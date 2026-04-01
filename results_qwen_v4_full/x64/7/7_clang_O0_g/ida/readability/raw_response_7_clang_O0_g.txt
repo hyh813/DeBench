@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `result`, `temp`, `a`, `b`, `v0-v13` instead of semantic names (e.g., `encrypted`, `decrypted`, `heap_buffer` in source). The decompiler doesn't infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). However, some helpers remain as `sub_1020` and the header claims "Decompiled by IDA Pro" while metadata says Ghidra.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `0xDEADBEEF` becomes `-559038737` (signed decimal), losing recognizability. Signal numbers appear as `8` and `11` instead of `SIGFPE`/`SIGSEGV`. The encrypted string bytes lose their XOR key context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack frame annotations (`[rsp+8h] [rbp-8h] BYREF`) and calling convention markers (`__cdecl`, `__fastcall`) add visual clutter. Failed decompilation notices for 12 library functions pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Critical semantic loss: `param_fake_branch` second branch (`if (strlen(str) < 0)`) becomes unconditional `strlen("test");` call. The conditional logic is completely stripped, changing program semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well; `param_tail_call_optimized` correctly preserves recursive structure. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally in most functions. Some functions like `test_obf_opt_edge` use sequential `v0-v13` temporaries that could be cleaner but don't impede understanding.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `param_instruction_substitution` correctly simplifies bit operations to arithmetic (`15 * x + (x & 0xF)...`). However, `param_implementation_defined` collapses to `return 47;` losing all original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (`int`, `char*`, `size_t`) recovered correctly. However, `param_integer_overflow` call site changes `0xFFFFFFFF` to `-1`, and unsigned arithmetic context is sometimes lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure: `param_implementation_defined` bitfield struct completely eliminated—function returns constant `47` instead of computing from struct fields. No struct definitions recovered anywhere.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer casts preserved (`(__sighandler_t)`, `(unsigned int)x`). However, `param_null_pointer_deref` call passes `0` instead of `NULL`, obscuring intent. No unsafe operations introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers present (`/* Function: param_fake_branch @ 0x11C0 */`). Zero comments explaining obfuscation patterns, opaque predicates, or why certain branches exist.
+
+**13. Anomaly Indication:** Score: 4/10  
+Justification: Failed library decompilations flagged (`/* FAILED to decompile: free @ 0x4240 */`), but semantic anomalies (missing conditionals, collapsed logic) go unflagged. No warnings about potential decompilation errors.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through direct calls. However, no call graph documentation, and global variables (`jmp_buffer`, `div_zero_caught`) appear without declaration context.
+
+**15. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source file structure. Related functions grouped together (e.g., `param_*` followed by `call_*`). No namespace pollution observed.
+
+**16. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions failed decompilation (`free`, `malloc`, `printf`, `strlen`, etc.). Code cannot compile standalone without significant stubbing. No dependency documentation provided.
+
+**17. Optimization Awareness:** Score: 6/10  
+Justification: At `-O0`, expected near-perfect recovery but second fake branch conditional lost. `param_opaque_predicate` loses p3 XOR predicate check. Optimization level not reflected in output quality.
+
+**18. Semantic Preservation:** Score: 4/10  
+Justification: Critical semantic losses: `param_fake_branch` second branch logic eliminated, `param_implementation_defined` reduced to constant, `call_integer_overflow` argument changed from `0xFFFFFFFF` to `-1`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (25%): (5+8+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (20%): (6+3+7)/3 = 5.33 × 0.20 = 1.067
+Level 4 (15%): (2+4)/2 = 3.0 × 0.15 = 0.450
+Level 5 (10%): (6+7+4+6+4)/5 = 5.4 × 0.10 = 0.540
+
+Overall = 1.725 + 1.688 + 1.067 + 0.450 + 0.540 = 5.47/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **`param_fake_branch`**: Second fake branch conditional (`if (strlen(str) < 0)`) completely eliminated—`strlen("test")` called unconditionally
+- **`param_implementation_defined`**: Entire function logic collapsed to `return 47;`—bitfield struct and all implementation-defined behavior tests lost
+- **`param_opaque_predicate`**: Third predicate (p3 XOR identity check) missing from condition
+- **Magic numbers**: `0xDEADBEEF` rendered as `-559038737`, signal numbers as `8`/`11` instead of `SIGFPE`/`SIGSEGV`
+- **12 library functions**: Failed decompilation prevents standalone compilation
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, making navigation and identification straightforward despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero semantic comments explaining obfuscation techniques, opaque predicates, or why certain patterns exist—critical for understanding protection code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve conditional structures**: Detect and retain all branch conditions even when they appear always-false (obfuscation patterns intentionally use such conditions)
+2. **Recover composite types**: Reconstruct struct/union definitions from stack layouts and access patterns instead of collapsing to constants
+3. **Add semantic annotations**: Flag obfuscation patterns (opaque predicates, fake branches) and explain magic numbers in hexadecimal with context comments

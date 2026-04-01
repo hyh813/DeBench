@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_clang_Os_no_g/binaryai/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\nstrlen result: 12\ncall_strlen: 0\ncall_memcpy: 12\ncall_memcmp: 90\nmemcmp result: -1\nValue: 42, Name: TestName\nprintf result: 26\nsscanf result: 579\nfopen result: 42\nfread result: 42\nmalloc result: 90\nmemset result: 0\nstrstr result: 15\n=== Testing System Calls ===\nlinux_syscall result: 42\nstat result: 42\nfork_exec result: 42\npipe result: 42\nsocket result: 42\nshm result: -1\nsignal result: 42\n=== Testing Thread Concurrency ===\npthread_create result: 49\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

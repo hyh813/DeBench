@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions have mechanical names (`function_1060`, `function_1070`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xfffffffe`, `0x3fffffffc`, `0x100000000`) without explanation. String literals stored as hex-encoded globals (`g1`, `g2`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Assembly intrinsics present (`__asm_addss`, `__asm_mulsd`), stack canary checks (`__readfsqword`, `__stack_chk_fail`), and redundant bit masking operations throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: At `-O0`, control flow should match source, but loops decompiled as complex `while` conditions instead of clean `for` loops. Conditional expressions overly convoluted (e.g., `array_complex_index` boundary check).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but many signatures incorrect (missing parameters in `ptr_single`, `const_param`, `volatile_access`). Runtime helper functions mixed with user code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but nested while loops in `array_3d` and `graph_traverse` create confusing flow with forward references.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Excessive redundant bit operations (`& 0xffffffff`, `& 0xfffffffe`) on nearly every return statement. Duplicate expressions in loop conditions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion - `int64_t` used universally instead of `int`, `short`, `char`, `float`, `double`. Float operations shown as assembly intrinsics. Pointer types collapsed to integers.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure - all struct/union access via pointer arithmetic (`a1 + 4`, `a1 + 8`, `a1 + 20`). No struct definitions recovered. Bitfields shown as arithmetic operations.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Many uninitialized variables used (`v1` in `ptr_single`, `const_param`, `volatile_access`). Unsafe pointer arithmetic without type information. Multiple implicit casts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from source. No decompiler-generated annotations explaining uncertain operations or algorithm intent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition - linked list traversal, tree recursion, and graph traversal all shown as raw pointer arithmetic without semantic identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uninitialized variables, potential undefined behavior, or unresolved indirect calls. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. NULL checks exist in code but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no call graph documentation. Global variables referenced (`g1`-`g6`) without clear purpose documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Runtime/compiler helpers mixed with user code without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and prototypes but references undefined symbols (`__asm_hlt`, `__asm_movsd`). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+6+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type System): (2+1+2)/3   = 1.67 × 0.20 = 0.334
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.74/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Complete type system collapse**: All types degraded to `int64_t`, losing `float`, `double`, `char`, `short` distinctions
+- **Zero struct/union recovery**: All composite types accessed via raw pointer arithmetic (`a1 + 8`, `a1 + 20`)
+- **Uninitialized variables used**: Functions like `ptr_single`, `const_param`, `volatile_access` use undefined `v1`
+- **No comments recovered**: Original source had extensive documentation; decompiled code has none
+- **Float operations as assembly**: `process_float` and `process_double` show `__asm_addss` instead of arithmetic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify function purpose despite other issues
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct, union, or bitfield definitions; all accessed via opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct pattern detection** - Analyze consistent offset access patterns (`+4`, `+8`, `+12`) to reconstruct struct definitions with field names
+2. **Preserve original type information** - Use debug symbols (`-g` flag present) to recover original variable and parameter types instead of defaulting to `int64_t`
+3. **Add uncertainty annotations** - Flag uninitialized variables, unresolved calls, and type-ambiguous operations with warnings rather than presenting incorrect code confidently

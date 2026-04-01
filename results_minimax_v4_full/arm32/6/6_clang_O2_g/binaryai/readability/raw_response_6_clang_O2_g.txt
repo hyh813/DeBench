@@ -1,0 +1,124 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_strcpy`
+
+The original source shows:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);  // Returns copy length
+}
+```
+
+The decompiled version:
+```c
+void param_strcpy(char *param_1,char *param_2)
+{
+  char *__s;
+  __s = strcpy(param_1,param_2);
+  strlen(__s);
+  return;
+}
+```
+
+**Critical Issue:** The return value is completely lost - function returns `void` instead of `int`.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `param_1` (should be `dst`), `param_2` (should be `src`). Local variable `__s` is somewhat descriptive but uses double underscore prefix. The semantic purpose of storing strcpy result is unclear.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_strcpy` exactly matches the original source function name. This is excellent recovery - the decompiler correctly identified the function's purpose.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: No magic numbers or literals present in this simple function. The string operations don't involve any constants that need explanation.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The function is clean with no compiler artifacts, redundant casts, or debug instrumentation. Minimal noise from the decompilation process.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Simple sequential control flow - strcpy followed by strlen, then return. At -O0 optimization, this matches the expected natural structure perfectly.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: This is a small utility function (3 lines of logic) that is appropriately granular. No inlining or outlining issues at -O0.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads perfectly top-to-bottom with no forward jumps, goto statements, or control flow disruption. Very clean linear execution.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code, dead code, or duplicate expressions. The strlen result is used (assigned to __s) even though not returned - this is actually a minor issue.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **CRITICAL DEFECT** - Return type is `void` instead of `int`. The original function returns `strlen(dst)` (an int), but decompiled version returns nothing. Parameter types `char *` are correct. This is a severe type degradation.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No structs/unions in this function, so not applicable. Would be scored N/A.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts observed. However, the missing return value could cause undefined behavior if caller expects a value. Minor deduction for this semantic mismatch.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the function's purpose, the strcpy+strlen pattern, or the return value semantics. The function is a complete black box.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The common "strcpy then get length" idiom is not recognized or documented. The assignment `__s = strcpy(...)` followed by `strlen(__s)` could be documented as "copy string and return length" pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **CRITICAL** - The missing return value is a severe anomaly that should be flagged. No indication that the function's signature differs from expected pattern (similar functions like param_strlen return int).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"), no postconditions (e.g., "ensures: returns string length"), and no error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls to `strcpy` and `strlen` are clear. The relationship to `call_strcpy` (the test harness) is inferable from the naming pattern.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Function appears in logical order among other param_* test functions. Static function scoping is appropriate.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code will compile but has wrong return type. If caller expects `int` return value, this will cause undefined behavior. The function signature mismatch is a semantic error, not just a readability issue.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Return type is `void` instead of `int`** - The most severe issue; the function should return `strlen(dst)` but returns nothing
+- **Parameter names are generic** (`param_1`, `param_2`) - Should be `dst` and `src` based on usage pattern
+- **No anomaly flagging** - The missing return value should be flagged as suspicious
+- **No comments** - Function purpose and idiom are undocumented
+- **Unused variable** - `__s` stores strlen result but it's never used/returned
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The function name `param_strcpy` exactly matches the original source, demonstrating excellent symbol recovery.
+
+**Most Needs Improvement:** Type Precision (2/10)  
+The return type being `void` instead of `int` is a fundamental semantic loss that breaks the function's contract. This is the most severe readability issue.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer return types from caller expectations** - When a function is called and its return value is used (like in `call_strcpy` which returns the result), the decompiler should infer the return type rather than defaulting to void
+2. **Recover parameter names from usage patterns** - When `param_1` is passed to `strcpy` as destination and `param_2` as source, names like `dst`/`src` should be inferred
+3. **Flag semantic anomalies** - When a function calls strlen but doesn't return its result, flag this as "ANOMALY: return value possibly missing" rather than silently dropping it

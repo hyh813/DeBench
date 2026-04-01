@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `v4` throughout the codebase. For example, in `sequential_ops`, the parameter should be `a, b, c` but is `v1`. In `loop_for_fixed`, variables `v1`, `v2` obscure `n`, `sum`, `i`. This is severely degraded from the original source which had clear variable names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. Some helper functions have generic names like `function_8a0`, but the core test functions are correctly recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x66666667` (used for division by 10) and `0xffffffff` (representing -1) appear without explanation. String literals are encoded in UTF-8 hex (`\xe6\xb5\x8b...`) rather than readable Chinese text. No named constants recovered from the original code.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bit-masking with `& 0xffffffff` appears throughout (e.g., `result = result + 1 & 0xffffffff;`). Redundant casts like `(int32_t)v1` are pervasive. These compiler artifacts significantly clutter the code and impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow structures (if-else, loops, switch) are preserved. However, some expressions are convoluted, like `v2 >= 3 == (v2 != 3)` in `switch_small`. At -O0, the control flow should be nearly identical to source but some degradation exists.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated and maintain reasonable granularity. Each function from the original source is recovered as a separate function. No inlining or outlining issues at this optimization level.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some goto statements exist in complex functions like `loop_multi_exit` but are manageable. The code flow is mostly linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present, particularly the pervasive `& 0xffffffff` masks. Loop constructs are recognizable but could be cleaner. No severe redundancy that makes code unmaintainable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` for most values when the original used `int` (32-bit). For example, `sequential_ops` returns `int64_t` instead of `int`. The original code used `int` consistently, but decompiler promotes to 64-bit. Signed/unsigned distinctions are sometimes lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The original code has minimal composite types (mostly arrays like `int arr[]`). The decompiler correctly handles these as array accesses (`*(int32_t *)(4 * v1 + (int64_t)&g6)`). Struct recovery for `jmp_buf` is adequate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Excessive bit-masking operations (`& 0xffffffff`) create potential type confusion. Pointer arithmetic is sometimes obscure (e.g., `4 * v1 + (int64_t)&g6`). Some unsafe patterns but no severe violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address range comments present (`// Address range: 0xa54 - 0xa64`). No explanation of algorithm logic, no recovery of original comments from source code. Zero useful semantic comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops, conditionals, and recursion are recognizable. However, no explicit naming of patterns (e.g., "This implements a state machine" or "Duff's device detected"). Some patterns like `switch_fallthrough` are identifiable but not highlighted.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings about uncertain decompilation. The code presents everything with equal confidence, even where indirect calls or complex logic exists. No indication of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The original code had no formal contracts either, but the decompiler could infer some (e.g., "requires: n > 0" for factorial). None recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls. Global variables like `g6`, `g7`, `g8` are used but their purpose is obscure. Callback relationships (e.g., `process_with_callback`) are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (test functions together, helper functions at top). Static functions properly scoped. Single file output is reasonable for decompilation but doesn't match original file organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears to compile with standard library dependencies. Includes `<setjmp.h>`, `<stdio.h>`, `<stdlib.h>`. No compiler-specific hacks. Should compile with minimal patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: all parameters and locals use generic `v1`, `v2`, `v3` instead of meaningful names like `a`, `b`, `temp1`, `sum`
+- Excessive bit-masking noise (`& 0xffffffff`) clutters nearly every expression
+- No comments explaining algorithm logic or recovered from source
+- Type precision issues: uses `int64_t` where original used `int` (32-bit)
+- No anomaly indication for uncertain decompilation results
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered most function names from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic numbered variables (`v1`, `v2`, etc.) completely obscure the semantic purpose of each variable. At -O0 optimization, the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic operations, array indices, function parameters) to assign meaningful names like `a`, `b`, `sum`, `index` instead of generic `v1`, `v2`
+2. **Eliminate redundant bit-masking**: At -O0, the `& 0xffffffff` masks are unnecessary noise; the decompiler should recognize these as artifacts and remove them
+3. **Add semantic comments**: Recover comments from debug symbols or add explanatory comments for complex patterns like state machines, recursion, and switch fall-through cases

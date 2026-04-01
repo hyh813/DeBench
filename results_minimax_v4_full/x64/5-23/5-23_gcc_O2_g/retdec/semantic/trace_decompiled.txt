@@ -1,0 +1,2 @@
+TRACE_ENT|0|test_preprocessing_features|0|Arg0=1,Arg1=2053823624,Arg2=2053823640,Arg3=861347224|rax=0x601c3356f100,rbx=0x7ffd7a6adc88,rcx=0x601c33571d98,rdx=0x7ffd7a6adc98,rsi=0x7ffd7a6adc88,rdi=0x1,r8=0x0,r9=0x7fe3cca4a380
+TRACE_PRINT|0|%B8%02%57%33%1C%60

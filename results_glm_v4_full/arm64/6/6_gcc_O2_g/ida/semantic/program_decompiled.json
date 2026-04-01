@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/6/6_gcc_O2_g/ida/syntactic/bin/6_gcc_O2_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\nLibrary Test L1.01: 8\nLibrary Test L1.02: 0\nLibrary Test L1.03: 12\nLibrary Test L1.04: 90\nLibrary Test L1.05: -1\nValue: 42, Name: Test\nLibrary Test L1.06: 22\nLibrary Test L1.07: 579\nLibrary Test L1.08: 42\nLibrary Test L1.09: 42\nLibrary Test L1.10: 90\nLibrary Test L1.11: 0\nLibrary Test L1.12: 15\n=== Testing System Calls ===\nSystem Call Test L3.01: 42\nSystem Call Test L3.02: 42\nSystem Call Test L3.03: 42\nSystem Call Test L3.04: 42\nSystem Call Test L3.05: 42\nSystem Call Test L3.06: 42\nSystem Call Test L3.07: 42\n=== Testing Thread Concurrency ===\nThread Test L4.01: 49\nThread Test L4.02: 4\nThread Test L4.03: 42\nThread Test L4.04: 42\nThread Test L4.05: 42\nThread Test L4.06: 4294967293\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

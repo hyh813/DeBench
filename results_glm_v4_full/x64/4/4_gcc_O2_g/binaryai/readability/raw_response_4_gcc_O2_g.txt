@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are universally generic (`param_1`, `param_2`), and local variables use stack offsets (`local_10`, `local_18`) or generic types (`uVar1`), providing no semantic context about their purpose (e.g., `sum`, `count`, `i`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly recovered from the symbol table, accurately reflecting the original source's intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with opaque pointers to data segments (e.g., `&DAT_00102008`), forcing the user to manually inspect memory to see the text. Integer constants like `0xf` (15) are used instead of the original decimal values or function calls, which is slightly less readable.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with stack canary checks (`in_FS_OFFSET`) and `undefined` types (e.g., `undefined8`, `undefined4`). While the canary checks are security features, the `undefined` types represent a failure to resolve basic types, adding significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Simple functions like `cdecl_func` are natural, but complex logic like `varargs_func` is represented as nested `do-while` loops with pointer arithmetic (`piVar3 = piVar3 + 2`) instead of the idiomatic `for` loop with `va_arg`, making it hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source. There is no inlining or outlining of code blocks; the granularity matches the original source perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom. While `varargs_func` has some nested loops and labels (`LAB_001013c0`), the overall structure is reasonably linear for a decompiled output.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious dead code, but the stack canary verification logic is repeated in almost every function, adding visual redundancy that isn't in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Many functions return `undefined8` instead of `int` (e.g., `call_cdecl`, `call_stdcall`). The parameter `count` in `varargs_func` is correctly typed as `int`, but the variable arguments are lost as `undefined8`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Large structures passed by value are completely lost; `func_struct_byval` takes `void` and accesses the stack via `&stack0x00000008`. Small struct returns like `ret_small_struct` are reconstructed as a packed `ulong` (`param_1 | param_2 << 0x20`) rather than a struct.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on `undefined` types and casts. For example, `func_struct_byval` casts stack pointers to `long*` without the context of the original `LargeStruct` definition, losing type safety boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic like the varargs implementation or struct packing is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed. The `va_list` pattern in `varargs_func` is not recognized; it is decompiled to raw stack pointer manipulation. The `printf` family is mapped to `__printf_chk` (a glibc implementation detail) rather than the standard `printf`.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the messy `varargs` implementation and the `void` parameter for `func_struct_byval` with high confidence, offering no warning that these might be recovery failures or complex patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null checks) or postconditions. The `__stack_chk_fail` call is present but not annotated as a security assertion.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the correct names. However, string references are opaque pointers (`&DAT_...`), requiring a manual jump to the data section to understand the context of the output.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order that roughly follows the source flow (calling conventions -> parameters -> returns), and helper functions are grouped near their callers.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses `undefined` types and references external symbols like `__printf_chk` and `__stack_chk_fail` without headers. It would require significant manual modification (defining types, including headers) to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Struct Parameter Loss**: `func_struct_byval` is decompiled as taking `void` and accessing raw stack memory (`&stack0x00000008`), completely erasing the `LargeStruct` parameter.
+- **Varargs Idiom Failure**: `varargs_func` fails to recover the `va_list` abstraction, instead showing complex pointer arithmetic and stack offsets that obscure the simple summation logic.
+- **Opaque String Literals**: String constants are replaced with pointers (e.g., `&DAT_00102008`), making it impossible to read the output messages without inspecting the data segment.
+- **Type Erasure**: Return types for simple functions like `call_cdecl` are `undefined8` instead of `int`, reducing type safety and clarity.
+- **Struct Return Packing**: `ret_small_struct` returns a `ulong` with bit-shifting (`param_1 | param_2 << 0x20`) instead of returning a `SmallPoint` struct, hiding the semantic structure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully preserved all original function names from the symbol table, making the high-level flow easy to map back to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover struct parameters (passed by value) and struct returns (packed into integers) fundamentally breaks the understanding of the data model in this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Stack-Based Struct Parameters**: Implement analysis to recognize large stack blocks as structure arguments rather than raw stack access, specifically for ARM64 ABI.
+2.  **Inline String Literals**: Replace references to global string data pointers with the actual string literal content in the pseudo-code for immediate readability.
+3.  **Recognize Varargs Patterns**: Improve pattern matching for `va_start`, `va_arg`, and `va_end` to generate idiomatic C code instead of exposing raw stack pointer manipulation.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `addr`, `cur`) with no semantic meaning. For example, in `heap_basic`, `v2` holds the input parameter but isn't named `n` or `count`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`double_value`, `local_vars`, `heap_basic`), but many became `sub_XXXXXX` wrappers. Test functions like `test_stack_memory` retained names, but helper wrappers lost semantics.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (error return), `316912650130844326686193876996` (SIMD constant), `0x3000000020000000100000000` (vector init). No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: SIMD intrinsics (`AddV`, `ShlNV`, `InterleaveHIV`), vector operations (`uint128_t`), and unnecessary complexity from loop vectorization that wasn't in original source.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` statements (e.g., `goto g_405f58` in `sub_401020`, `goto LABEL_401cbb` in `linked_list_heap`). Vectorized loops obscure original simple `for` constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive wrapper functions (`sub_401339` just calls `double_value`). Some functions constant-folded entirely (`alloca_usage.constprop.0` returns `15` directly), losing original logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but vectorized loops with `do-while` patterns and label jumps disrupt natural flow in functions like `vla_stack`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling creates massive redundancy (e.g., `large_stack_frame` has 128+ bytes of vector initialization code for a simple byte-fill loop). Duplicate struct definitions throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision—basic `int`/`unsigned int` recovered, but many use generic `unsigned long long`. Pointer types often lose specificity (e.g., `void*` instead of `int*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_1`, `padding_4`). Multiple duplicate struct definitions (`struct_0` defined 6+ times with different layouts).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(char *)ptr + 4 * idx`). Pointer arithmetic obscured by vector operations. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated artifacts like `// [D] Unsupported jumpkind Ijk_SigTRAP`. No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Original idioms (linked list traversal, tree creation) obscured by vectorization. Memory allocation patterns not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`). Dangerous patterns like `dangling_pointer` use-after-free not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 > 0` checks exist but aren't labeled as contracts). Error returns (`4294967295`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables use generic names (`g_405fe8`, `global_counter`). Callback relationships not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output. No logical grouping by functionality (stack/heap/static tests intermixed). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but external dependencies unclear (`__printf_chk`, `__libc_start_main`). Some functions reference undefined globals.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+6+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.00/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+### Critical Defects
+- **Variable `v0`, `v1`, `ptr` should be named semantically** (e.g., `loop_index`, `array_ptr`, `node_count`) based on usage patterns
+- **SIMD vector operations obscure original simple loops** - `large_stack_frame` byte-fill became 200+ lines of vector intrinsics
+- **Struct fields all generic** (`field_0`, `padding_4`) losing semantic meaning for `Node`, `TreeNode` structures
+- **Constant propagation eliminated actual logic** - `alloca_usage.constprop.0` returns `15` directly instead of showing allocation logic
+- **No comments explaining magic numbers** like `4294967295` (UINT32_MAX error code) or SIMD constants
+
+### Best Quality Aspect
+- **Build System Compatibility (6/10)** - Code structure is syntactically valid C that could compile with appropriate stubs, showing basic decompilation correctness.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes reverse engineering extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `buffer`, `array`)
+2. **Detect and simplify compiler optimizations** - Recognize vectorized loops and emit original scalar equivalents with optimization notes rather than raw SIMD intrinsics
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, document magic numbers, and indicate where original semantics may be lost due to optimization

@@ -1,0 +1,15 @@
+test
+10
+ObfL40-3: 20
+ObfL40-4: 225
+ObfL40-5: 121
+OptL40-1: 500500
+OptL40-1: 5050
+OptL40-2: 0
+OptL50-1: 20
+EdgeL30-1: 1
+EdgeL30-2: 41
+EdgeL30-3: 30
+EdgeL30-4: 2000000000
+EdgeL40-1: 10
+EdgeL40-2: 47

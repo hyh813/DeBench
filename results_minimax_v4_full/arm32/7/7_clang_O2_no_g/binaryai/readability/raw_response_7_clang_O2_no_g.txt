@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Generic variable names throughout (uVar1, uVar2, iVar1, param_1, local_28). The target function `param_fake_branch` has no variables at all due to complete decompilation failure. No semantic naming like "result" or "x" recovered.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names match source well (param_fake_branch, call_fake_branch, param_opaque_predicate). Action verbs used appropriately. Minor issue: some internal compiler functions have generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers (0x14, 0x23, 0xe1, 0x1e, 0x48). Some like 0x5A (XOR key in string decryption) are inferable from context. The target function has no literals due to being empty.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Relatively clean code without obvious compiler artifacts. The __divsi3 runtime function is included but that's expected. No redundant casts or debug instrumentation in the main functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `param_fake_branch` is completely empty - no control flow to analyze. Other functions like `param_opaque_predicate` use complex do-while loops with goto-like patterns that obscure logic. The fake branch obfuscation is completely lost.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure - `param_fake_branch` has no implementation body. The function was either optimized away entirely or decompilation failed completely. Other functions are reasonably decomposed but the target function is missing entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The empty param_fake_branch has no flow to analyze. Some complex functions like param_opaque_predicate have nested conditions but are still followable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant calculations visible (param_opaque_predicate recalculates gcd in both the function and call site). Loop unrolling not present at -O0. Moderate redundancy from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Critical type failure - `param_fake_branch` returns `void` instead of `int` and has no parameters (should be `int x`). Many parameters use `undefined4` instead of proper int types. The target function's entire signature is wrong.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs or unions present in this code. Not applicable to the target function, but other functions don't use composite types either.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present (mixing signed/unsigned in param_integer_overflow). The empty param_fake_branch has no type safety to evaluate. Moderate risk of undefined behavior in some functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Minimal comments - only function headers with addresses (e.g., "// Function: param_fake_branch @ 0x106a4"). No explanation of what the fake branch obfuscation does or why the function is empty. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The fake branch idiom (always-false conditions like `x*x < 0`) is completely lost - the function is empty. The opaque predicate pattern in param_opaque_predicate is not identified or named. No pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The critical anomaly that `param_fake_branch` is completely empty and has wrong signature is not flagged. No warnings about suspicious code or decompilation uncertainty. The function just silently returns void.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The contract that param_fake_branch should return its input x is completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Call relationships are partially visible (call_fake_branch calls param_fake_branch) but not explicitly documented. The relationship between the fake branch and its caller is not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order (0x106a4, 0x106a8, 0x106b0...) rather than logical grouping. Related obfuscation functions not grouped together.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will NOT compile as-is. `param_fake_branch` has wrong signature (void return instead of int, no parameters). Multiple type mismatches would cause compilation failures. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- `param_fake_branch` is completely empty - no implementation recovered (should contain fake branch obfuscation)
+- Function signature wrong: returns `void` instead of `int`, has no parameters instead of `int x`
+- No variable names recovered - the semantic meaning of the fake branches is completely lost
+- Type precision critical failure - the target function's entire interface is incorrect
+- No anomaly indication that the function is essentially a stub
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Most function names match the original source accurately (param_fake_branch, call_fake_branch, etc.)
+
+**Most Needs Improvement:** Type Precision (scored 2/10)  
+- The target function has completely wrong types (void return, no parameters) and the decompiler failed to recover the function signature at all
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover function signatures accurately - param_fake_branch should be `int param_fake_branch(int x)` not `void param_fake_branch(void)`
+2. Detect and preserve always-false condition branches - the fake branch obfuscation (x*x < 0) should be preserved in the decompiled output
+3. Flag critical anomalies - when a function body is empty or completely optimized away, add a warning comment explaining the decompilation uncertainty

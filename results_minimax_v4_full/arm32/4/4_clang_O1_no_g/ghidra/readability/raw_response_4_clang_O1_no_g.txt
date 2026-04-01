@@ -1,0 +1,87 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_10`, `local_c`. While functional, these don't convey semantic meaning like the original source's `a`, `b`, or meaningful parameter names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source: `cdecl_func`, `call_cdecl`, `stdcall_func`, etc. The decompiler correctly maintained the original function identifiers.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Literals are shown in hex (e.g., `0xf` for 15, `0x2a` for 42) which is less readable than decimal. However, in context (like test functions), the values are correct.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Code is relatively clean. Some warnings about unreachable blocks appear in comments but don't affect readability. No significant compiler artifacts clutter the main logic.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and straightforward. The `cdecl_func` simply returns `param_2 + param_1` with no complex branching. Loops in other functions (like `varargs_func`) use proper while/do-while constructs.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is appropriately sized with clear single responsibilities. The original source's modular design (separate functions for each calling convention test) is well preserved.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without goto abuse or confusing jumps. Early returns are used appropriately in functions like `func_struct_byptr`.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code or duplicate expressions. Each function performs its intended computation without unnecessary operations.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are correctly identified as `int` for integer parameters and return values. The decompiler accurately recovered the function signature `int cdecl_func(int, int)`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Basic types are well-recovered. For complex functions like `func_struct_byval`, the decompiler correctly handles the LargeStruct parameter despite using generic parameter names.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts or type confusion. Pointer arithmetic is correct (e.g., `param_1 + 1` in `ret_pointer`). Type relationships are properly maintained.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Minimal comments present. The decompiler adds file header comments but no explanatory comments for complex logic. However, the code is self-documenting for this simple function.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: C idioms like parameter passing, return statements, and va_list handling are correctly recognized. The varargs implementation properly identifies the va_list pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Some warnings about unreachable blocks appear in comments for functions like `deregister_tm_clones`. No significant anomalies in the main test functions.
+
+**15. Assertion & Contract Recovery:** Score: 6/10  
+Justification: No explicit pre/postcondition comments. However, the code structure makes implicit contracts clear (e.g., null checks in `func_struct_byptr`).
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function call relationships are clear. The test functions correctly call their corresponding implementation functions with appropriate parameters.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically. Related functions (implementation + test wrapper) are placed near each other in the decompiled output.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code appears syntactically correct and compilable. Standard library functions (printf, puts) are properly referenced.
+
+---
+
+## FINAL SUMMARY
+
+**Overall Readability Score:** 7.6/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `param_2`) rather than semantic (`a`, `b`)
+- Literals displayed in hex rather than decimal (e.g., `0xf` vs `15`)
+- Minimal comments explaining the code purpose
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler perfectly preserved all original function names from the source, making it easy to identify each test function's purpose.
+
+**Most Needs Improvement:** Variable Naming Quality (5/10)  
+While functional, generic parameter names like `param_1` and `param_2` don't convey the semantic meaning that the original source's parameter names provided.
+
+**Top 3 Recommendations:**
+1. Infer parameter names from function context (e.g., `a`, `b` for `cdecl_func`)
+2. Convert hex literals to decimal for better readability in test output functions
+3. Add basic comments explaining each function's purpose when non-trivial

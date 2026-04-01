@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are universally generic (`v1`, `v2`, `v3`) and globals are renamed to `g1`, `g2`, completely stripping semantic meaning (e.g., `global_counter` becomes `g8`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `local_vars`, `heap_basic`), making it easy to locate specific logic blocks despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0xfffffffe` (used for masking) and hardcoded constants in test functions (e.g., printing `20` instead of calling `local_vars(5)`) obscure the original logic and intent.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with compiler intrinsics like `__asm_sbfiz`, `__asm_dmb`, and redundant casts to `int64_t`, which significantly hinders readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While some loops are recovered as `while`, others use `goto` (e.g., `linked_list_heap`), and the logic for VLA/alloca is obscured by low-level stack pointer arithmetic.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Functions are generally separated, but the test functions (`test_heap_memory`, etc.) contain inlined logic or constant-folded results instead of clear calls to sub-functions.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Forward jumps and `goto` labels (e.g., `lab_0x12d8`) disrupt the top-to-bottom reading flow, requiring manual tracing of execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler presents constant-propagated values (e.g., printing `20` directly) instead of the function calls present in the source, hiding the program's structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are aggressively generalized to `int64_t` or `int32_t`; pointer types are often lost or treated as integers, and signedness is inconsistent.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct definitions (`Point`, `Node`, `TreeNode`) are completely missing; struct fields are accessed via raw pointer arithmetic (e.g., `*(int64_t *)(v1 + 8)`), making data structures unreadable.
+
+**11. Type Safety:** Score: 3/10
+Justification: Frequent unsafe casts between `int64_t` and pointers (e.g., `(int64_t *)v1`) and incorrect pointer arithmetic patterns suggest potential safety issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining logic; only address ranges and auto-generated headers are present.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns like linked list traversal or VLA allocation are obscured by low-level assembly instructions and generic variable names.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents incorrect code (e.g., missing function parameters) without any warnings or uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `n > 0` in `vla_stack` is not explicitly stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the arguments are missing or incorrect, making the data flow between functions impossible to trace accurately.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order rather than logical grouping, and static/local scope distinctions are lost in the flat list.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to missing struct definitions, incorrect function signatures (missing parameters), and undefined intrinsic functions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Function parameters are missing (e.g., `double_value` takes `void` instead of `int x`).
+- Composite types (structs) are not recovered; fields are accessed via raw offsets.
+- Control flow in `heap_struct` is incorrect (freeing memory before using it).
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- Function names are accurately preserved from the source, providing the only reliable semantic anchors.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- Complete failure to recover `struct` definitions reduces complex data manipulation to unreadable pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve ARM64 calling convention analysis to correctly recover function arguments from registers.
+2. Implement struct type recovery based on field access patterns and memory offsets.
+3. Replace compiler intrinsics (e.g., `__asm_sbfiz`) with higher-level semantic equivalents or explanatory comments.

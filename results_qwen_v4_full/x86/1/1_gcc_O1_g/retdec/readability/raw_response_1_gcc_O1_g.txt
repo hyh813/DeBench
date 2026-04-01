@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names (`a1`, `a2`, `a3` instead of `a`, `b`, `c`), and local variables follow `v1`, `v2`, `v3` patterns. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are largely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `loop_for_fixed`). However, helper functions use generic names (`function_10a0`, `function_10b0`) which reduces clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x100000000`, `0x80000000` in `op_div`/`op_mod` without explanation. String literals stored in global `g1` with encoded content rather than inline strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*` calls, `__readgsdword(20)` stack canary checks, and 20+ runtime support functions (`deregister_tm_clones`, `frame_dummy`) pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `if_elseif_chain` incorrectly transformed to switch with fall-through. `loop_nested` becomes extremely convoluted with nested while loops instead of clean for-loops. Some functions use goto labels (`lab_0x1a7a`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but `call_func_ptr` returns uninitialized `result` variable (broken decomposition). Runtime helper functions are properly separated but add noise.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `loop_multi_exit` uses goto labels that disrupt flow. `switch_fallthrough` has awkward case fall-through structure that's hard to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in many functions. `loop_while` has redundant condition checks (`v2 >= 0 == (v2 != 0)`). Some expressions are unnecessarily complex.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `uint32_t` consistently. However, some signed/unsigned mismatches (`nested_if_2` takes `uint32_t a1` but compares `a1 >= 1`). Function pointer types mostly preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf_tag` struct recovered but with generic field names (`e0`, `e1`, `e2`). No complex structs in this codebase to fully evaluate, but basic recovery is adequate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `call_func_ptr` returns uninitialized variable (critical safety issue). Multiple implicit casts between signed/unsigned. Function pointer array in `call_func_ptr_array` uses address arithmetic instead of proper array access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output despite original source having extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine functions (`state_machine`, `fsm_func_table`) not identified as such. Duff's device completely lost its recognizable pattern. No algorithm or pattern annotations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Broken functions like `call_func_ptr` (returns uninitialized value) not flagged. `duffs_device` logic completely lost without warning. No confidence indicators for uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No error condition documentation. Original test case expectations completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Test functions call target functions but relationships not explicit. Callback relationships (`process_with_callback`) not clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no header separation. Runtime support functions mixed with application code. No logical grouping of related functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has necessary includes but references external symbols (`__libc_start_main`, `__printf_chk`). Would require stubs for full compilation. Some architecture-specific code (`__readgsdword`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (7+6+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.096 ≈ 5.1/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **`call_func_ptr` returns uninitialized `result` variable** - functionally broken decompilation
+- **`duffs_device` completely loses loop logic** - returns calculation instead of performing copy
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Generic variable names** (`a1`, `v1`, `v2`) obscure semantic meaning throughout
+- **Compiler artifacts** (`__readgsdword`, `__x86_get_pc_thunk_*`) pollute readable code
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation despite original source having comprehensive comments explaining purpose, test cases, and difficulty levels for each function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even at -O0 with debug symbols, comments should be extractable from DWARF debug info or at minimum add auto-generated function summaries.
+2. **Fix broken function recovery** - Functions like `call_func_ptr` and `duffs_device` produce incorrect code; add validation passes to detect uninitialized returns and missing logic.
+3. **Infer semantic variable names** - Use data flow analysis to rename `v1`, `v2` to meaningful names based on usage patterns (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`).

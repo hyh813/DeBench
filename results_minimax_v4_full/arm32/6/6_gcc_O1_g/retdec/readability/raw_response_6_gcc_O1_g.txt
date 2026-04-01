@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_strcpy` is a simple wrapper that calls `strcpy(dst, src)` and returns `strlen(dst)`. The decompiled version correctly recovers this logic, but I need to evaluate the broader context since the decompiled output contains 50 functions from the full binary.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:5/10  
+Justification: While target functions like `param_strcpy` use good names (`dst`, `src`), many helper functions use cryptic names like `v1`-`v24`, `result`, `strcmp_rc`, `memcmp_rc`. The global thread callback functions are named `g1`-`g6`, completely obscuring their purpose as thread entry points.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_strcpy`, `call_strcpy`, `param_memcpy`). However, thread callback functions are named `g1`-`g6` instead of meaningful names like `thread_compute` or `thread_sum`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `66` (O_CREAT|O_RDWR), `950` (IPC_CREAT|0666), `16` (sockaddr size), `18` (string length). The decompiler uses raw numeric values instead of recovering the symbolic constants from the source.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present: `__printf_chk` instead of `printf`, `__snprintf_chk` instead of `snprintf`, `__stack_chk_fail` unreachable code blocks. However, these are manageable and don't severely impede readability for the target function.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Target functions like `param_strcpy` have natural flow. However, complex functions like `param_pthread_join` and `param_thread_local_storage` use excessive goto statements creating spaghetti code. The decompiler recovered goto-based control flow instead of proper loop constructs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match the original source well. The decompiler correctly separated `param_strcpy` from `call_strcpy`. Functions are reasonably sized with appropriate parameter lists matching the source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Target functions read top-to-bottom naturally. However, functions like `param_pthread_join` have complex goto-based jumps that disrupt linear reading. Forward jumps into loop bodies are present.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Loop unrolling in `param_malloc_free` is present but not commented. The decompiler correctly eliminated most redundant computations from the -O0 build.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently, matching ARM64 32-bit int. Pointers are properly typed (`char *dst`, `char *src`). However, function pointer types are generic: `(int32_t * (*)(int32_t *))` instead of proper thread function signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Basic structures recovered (`struct _IO_FILE`, `struct sockaddr`, `struct stat`) but all fields use generic names (`e0`, `e1`, ..., `e19`). The original source uses `FILE*`, `struct sockaddr_in` directly without these wrapper structs.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Most casts are reasonable. However, unsafe patterns exist: `(int32_t *)dst` in memcpy calls, `(int32_t *)&buffer` in fread. The `param_fread_fwrite` function has incorrect pointer arithmetic: `*(char *)((int32_t)&v1 + 4 + items_read) = 0`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "From module: /work/src/6.c", "Address range: 0x11310 - 0x11328", "Line range: 45 - 49". No explanation of algorithm, preconditions, or semantic intent. The target function `param_strcpy` has zero useful comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls are recognized (`strcpy`, `strlen`, `memcpy`). Threading patterns (pthread_create, pthread_join) are identified but not named as patterns. No recognition of producer-consumer or TLS patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `param_signal_handling` function uses `signal(SIGBUS, 0x11088)` instead of `SIGUSR1` - this is a critical error that should be flagged. Indirect function calls through `g1`-`g6` have no uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no assertions either, but the decompiler could infer: "requires: dst != NULL && src != NULL", "ensures: return == strlen(dst)".
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships unclear. No documentation of "called by" or "calls" relationships. Global variables like `atomic_counter`, `signal_received` are declared but their usage across functions isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (standard library, system calls, threading). Static functions properly scoped. The organization matches the source file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers and mostly compiles. However, unreachable code with `__stack_chk_fail` and `return &g36` creates compilation warnings. The target function `param_strcpy` compiles cleanly.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`-`v24` and `g1`-`g6` obscuring semantic purpose
+- Signal handling uses wrong signal number (`SIGBUS` instead of `SIGUSR1`) - critical semantic error
+- No comments explaining any function logic or algorithm intent
+- Composite type fields all use generic names (`e0`, `e1`, etc.) losing field semantics
+- Magic numbers like `66`, `950`, `18` appear without symbolic constant explanations
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to identify the target functions.
+
+**Most Needs Improvement:** Anomaly Indication (2/10)  
+The decompiler silently produces incorrect code (wrong signal numbers, indirect calls without resolution indicators) without any warnings or uncertainty flags.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v1` used as loop counter should be named `i` or `iterations`
+2. Add uncertainty flags for indirect calls and unresolvable function pointers
+3. Recover symbolic constants from magic numbers (e.g., `66` → `O_CREAT | O_RDWR`)

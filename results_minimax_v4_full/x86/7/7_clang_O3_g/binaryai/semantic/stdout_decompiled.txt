@@ -1,0 +1,16 @@
+Testing obfuscated optimizations:
+
+opaque predicate: 10
+instruction substitution: 20
+call instruction substitution: 225
+string encryption: 0
+tail call optimization: 500500
+non-tail call: 5050
+vectorized loop: 72
+link-time optimization: 20
+division by zero: 1
+null pointer deref: 41
+buffer overflow: 30
+integer overflow: 2000000000
+undefined behavior: 10
+implementation-defined: 43

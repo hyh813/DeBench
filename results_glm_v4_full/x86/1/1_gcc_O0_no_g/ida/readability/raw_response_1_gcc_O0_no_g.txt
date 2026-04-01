@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are reduced to generic names like `a1`, `a2` for arguments and `v2`, `v3` for locals, losing semantic meaning (e.g., `sum` becomes `v2`, `count` becomes `v2`). While loop indices like `i` and `j` are preserved, the loss of descriptive names like `temp1` or `result` hinders quick understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `duffs_device`, `loop_multi_exit`), making the high-level intent immediately clear and matching the original source exactly.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0x14u` (stack canary offset) appear without explanation. In `switch_small`, the compiler/decompiler folded constants (e.g., `case 0: return 15;` instead of `return a + b;`), which obscures the arithmetic operation being performed.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is polluted with stack canary checks (`__readgsdword(0x14u)`) inserted into local variable arrays. Inline `__asm` blocks (e.g., in `computed_goto`) and `__usercall` conventions add noise that disrupts the reading flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Standard loops and conditionals are recovered naturally. However, complex patterns like `duffs_device` are decompiled into a "goto soup" (`goto _L151`, `goto _L150`) rather than the structured `do-while` inside a `switch`, and `computed_goto` fails entirely, leaving an assembly jump.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions. There is no unwanted inlining or outlining of code, preserving the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns. The non-linearity is largely confined to specific complex cases like Duff's device, where the control flow is inherently spaghetti-like in the binary.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully simplifies expressions, such as collapsing `2 * (a1 + a2) - a3` in `sequential_ops` and folding constants in `switch_small`, which actually improves conciseness despite the `-O0` source setting.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While basic types are correct, there are significant errors in function signatures. For example, `op_or` is decompiled as `op_or(__int64 a1)` instead of `op_or(int a, int b)`, and `op_shl` uses `char a2` instead of `int b`, indicating register merging or type confusion.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: The source code primarily uses primitive types and arrays, which are handled correctly. There are no complex structs to recover, so the decompiler defaults to a correct "no struct" state.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, but the presence of `__asm` blocks and the `__usercall` convention (which relies on register parameter mapping) introduces type-unsafe elements that wouldn't compile in standard C without modification.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic like Duff's device or the state machine transitions are presented without explanation, requiring the user to reverse-engineer the intent from the control flow alone.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler fails to recognize specific idioms. Duff's device is not identified as such, nor is it reconstructed into its canonical form. It is presented as a raw control flow graph with labels and gotos, missing the semantic pattern entirely.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Failures are indicated by the presence of `__asm` blocks (e.g., in `computed_goto`), but there are no textual warnings or comments explaining *why* the decompiler failed or what the likely intent was.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `n > 0` in `duffs_device` is not documented, nor are the constraints on the state machine inputs.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and use the correct names. The relationships between functions (e.g., `indirect_recursion_a` calling `indirect_recursion_b`) are clear and easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, matching the source file's structure (L1, L2, L3 tests are grouped). Helper functions like `double_value` are placed near their usage.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Hex-Rays specific syntax (`__usercall`, `__asm`, `__readgsdword`) and non-standard types (`_BOOL4`, `_DWORD`). It would require significant patching to compile, failing the standalone compilation test.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Variable names are generic (`v2`, `a1`), losing semantic context like `sum` or `packet_size`.
+- Duff's device is decompiled into unstructured goto labels (`_L151`, `_L150`) rather than the canonical `switch`-inside-`do-while` loop.
+- Function signature corruption in `op_or` (merged `__int64` param) and `op_shl` (`char` vs `int`).
+- Computed goto (`computed_goto`) failed to decompile, leaving an inline `__asm { jmp eax }` block.
+- Stack canary checks (`__readgsdword(0x14u)`) pollute the local variable declarations.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function names, allowing for immediate high-level understanding of the code's purpose.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The complete absence of comments, especially for complex algorithms like Duff's device or state machines, forces the user to derive all logic from raw control flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Variable Name Recovery**: Infer variable names from usage context (e.g., accumulators named `sum`, counters named `i` or `count`) or utilize debug symbols more effectively if present.
+2. **Pattern Matching for Duff's Device**: Implement specific control flow graph (CFG) pattern matching to detect and reconstruct Duff's device into its idiomatic C form (`do { switch(...) { ... } } while(...)`).
+3. **Improve Computed Goto Handling**: For GCC's "labels-as-values" extension, attempt to reconstruct the jump table/array and represent the logic as a `switch` statement or an array of function pointers rather than falling back to inline assembly.

@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a1`, `a2`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`. These provide no semantic meaning - the original parameters `a`, `b`, `count`, `str` are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names match the original source exactly: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, etc. Excellent recovery.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: The "call_" wrapper functions correctly show computed results (15, 50, 6, etc.). Minor issue: some magic numbers in varargs_func like `0xFFFFFF80FFFFFFC8` without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: varargs_func has excessive noise with many temporary variables (`v8`-`v17`) that obscure the logic. Other functions are relatively clean.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural. The varargs_func has complex nested while loops but this is necessary for handling variable arguments.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Functions are perfectly decomposed - each original function is preserved as a separate entity matching the source exactly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom. The varargs_func has some backward jumps but they're necessary.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in varargs_func with multiple similar variables tracking the same concept, but generally acceptable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic types like `_DWORD*`, `_QWORD*`, `unsigned __int8*` instead of proper int/char*. The original `int` and `char*` are lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The original `LargeStruct` and `SmallStruct` are represented as raw `_DWORD*` arrays, losing all semantic information about field names and structure layout.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations like casting between `_DWORD*` and `_QWORD*` without proper type safety. The original type safety is degraded.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern naming. The calling convention tests and parameter passing patterns are not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The "FAILED to decompile" messages for some functions are not integrated into the code flow.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No assertions, preconditions, or postconditions recovered. The original had none but documentation would help.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No cross-reference information. Call relationships between functions are not documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - calling convention functions together, parameter passing functions together, return value functions together.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable. Uses standard types like `int`, `char*` in some places but mixed with `_DWORD*`.
+
+---
+
+## FINAL SUMMARY
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v8`-`v17` instead of meaningful names like `a`, `b`, `count`, `sum`
+- No struct type recovery - `LargeStruct` and `SmallStruct` are just `_DWORD*` arrays
+- No comments explaining function purposes or algorithm logic
+- No anomaly indication for failed decompilations
+- Type precision is poor - uses `_DWORD*`, `_QWORD*` instead of proper types
+
+**Best Quality Aspect:** Function Naming Quality (10/10) - All function names match original source exactly.
+
+**Most Needs Improvement:** Comment Quality (1/10) and Anomaly Indication (1/10) - completely absent.
+
+---
+
+## Top 3 Recommendations
+
+1. **Add meaningful variable names**: Infer from usage patterns - `a1`, `a2` should be `a`, `b`; `v8`, `v9` should be `sum`, `count`
+
+2. **Recover struct types**: Instead of `_DWORD*`, represent `LargeStruct` and `SmallStruct` with proper struct definitions
+
+3. **Add comments**: Document function purposes, especially for complex functions like varargs_func, and flag anomalies like failed decompilations

@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are reduced to generic names like `a1`, `v1`, `result`, completely losing semantic context from the original source (e.g., `a`, `b`, `sum`, `count`). This forces the reader to reverse-engineer variable purposes from usage.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved perfectly from the source (e.g., `sequential_ops`, `recursion_factorial`), likely due to symbol presence. This makes navigating the code significantly easier.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: While arithmetic constants are clear, the code is littered with Position Independent Code (PIC) offsets (e.g., `v1 + 0x4e93`, `v1 + 0x4eb4`) which act as magic numbers obscuring the data access logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present from compiler/runtime support, specifically `__x86_get_pc_thunk_bx(v1)` calls in almost every function and `__readgsdword(20)` for stack canaries, which disrupts the reading flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The decompiler aggressively transforms logic, deviating from the source structure. For example, `if_else` is decompiled to a boolean expression `(bool)(a1 >= 0 == (a1 != 0))`, and `recursion_factorial` is transformed into a `while` loop, losing the original recursive intent.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and not inlined. Helper functions like `double_value` and `state_idle` remain distinct, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The requirement to initialize the PIC base pointer (`__x86_get_pc_thunk_bx(v1)`) at the start of functions forces variable declarations to the top, disrupting the top-to-bottom logic flow of the original source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler eliminates redundancy effectively, sometimes too aggressively for `-O0` code. For instance, `sequential_ops` is folded from a 3-step process into a single expression `2 * (a2 + a1) - a3`, removing the intermediate steps present in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, correctly distinguishing between `int32_t`, `uint32_t`, and pointers. Function signatures match the original source definitions accurately.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Complex types like `struct __jmp_buf_tag` are recovered and defined, including nested structures like `_TYPEDEF___sigset_t`, providing good visibility into data layouts.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are generally safe and correct. The use of `(bool)` casts in conditional logic (e.g., `(bool)(a1 > 0)`) is syntactically safe, even if stylistically obscure.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output consists solely of code and address markers, offering no semantic guidance.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler fails to recognize standard programming idioms, transforming a simple recursive factorial into a loop and a basic `if` statement into a bit-shift operation, obscuring the original coding patterns.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about the aggressive transformations (like recursion-to-loop) or the presence of compiler intrinsics, leaving the reader to guess why the structure differs from expected C norms.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `n > 0` in `duffs_device` is not explicitly stated in the decompiled view.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the correct names. The relationship between callers and callees is easy to follow, though the specific data flow is obscured by generic variable names.
+
+**17. Module Organization:** Score: 8/10
+Justification: The code is organized logically, with functions appearing in a coherent order (mostly matching the source file order) and helper functions grouped appropriately.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to the use of compiler intrinsics (`__x86_get_pc_thunk_bx`, `__readgsdword`) and inline assembly (`__asm_hlt`) without specific headers or definitions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 5 + 4) / 4 = 5.25
+L2_avg: (5 + 8 + 6 + 7) / 4 = 6.50
+L3_avg: (9 + 8 + 8) / 3 = 8.33
+L4_avg: (1 + 4 + 5 + 2) / 4 = 3.00
+L5_avg: (7 + 8 + 3) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (8.33 × 0.20) + 
+          (3.00 × 0.15) + (6.00 × 0.10)
+Overall = 1.575 + 1.625 + 1.666 + 0.45 + 0.60
+Overall = 5.916
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable Naming:** Variables like `a1`, `v1`, and `result` replace semantic names like `sum`, `count`, and `target`, requiring manual tracking of data flow.
+- **Control Flow Transformation:** The decompiler converts simple `if-else` logic into complex boolean expressions (e.g., `(bool)(a1 >= 0 == (a1 != 0))`), making the code harder to read than the source.
+- **Structural Deviation:** Recursive functions (e.g., `recursion_factorial`) are decompiled as iterative loops, fundamentally altering the algorithm's presentation.
+- **Noise Pollution:** Runtime artifacts like `__x86_get_pc_thunk_bx` and `__readgsdword` are inlined into every function, cluttering the logic.
+- **Expression Folding:** Intermediate variables in `sequential_ops` are folded into a single return expression, erasing the step-by-step logic present in the `-O0` source.
+
+### Best Quality Aspect
+- **Type Precision (Score: 9/10)**
+- **Why?** The decompiler accurately recovers specific integer types (`int32_t`, `uint32_t`) and complex structures like `jmp_buf`, ensuring the data interface is correct.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (Score: 1/10)**
+- **Why?** The complete absence of comments or annotations explaining the aggressive logic transformations leaves the reader struggling to map the decompiled output back to the source intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Preserve Intermediate Variables:** For `-O0` binaries, disable constant folding and expression propagation to maintain the original source's step-by-step logic (e.g., keep `temp1`, `temp2` in `sequential_ops`).
+2.  **Filter Runtime Intrinsics:** Abstract or hide Position Independent Code (PIC) setup and stack canary checks (`__x86_get_pc_thunk`, `__readgsdword`) into a separate macro or hidden block to improve main logic readability.
+3.  **Retain Recursive Structures:** Add an option to disable pattern matching that converts tail recursion or simple recursion into loops, as this changes the fundamental nature of the code for analysis.

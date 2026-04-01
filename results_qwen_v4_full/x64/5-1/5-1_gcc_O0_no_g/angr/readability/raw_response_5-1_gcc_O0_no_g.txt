@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, ptr, result) with no semantic meaning. In `test_cpp_member_func`, variables v0, v1, v2 should be r1, r2, r3 based on source usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retained original names (test_cpp_member_func, test_cpp_constructor), but hundreds of helper functions use generic names (sub_402020, sub_40202d). C++ mangled names are partially demangled but still unreadable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: 4294967295 (UINT_MAX mask), 65535 (initialization constant), 0x4004000000000000 (double literal as hex). No constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution: 50+ stub functions (sub_402020-sub_402170), stack canary checks (__stack_chk_fail), runtime calls (__cxa_*, operatornew) exposed throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow preserved but uses goto with labels (LABEL_402e4a in test_cpp_rtti). Exception handling is extremely convoluted with explicit __cxa_* calls instead of try/catch.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe over-fragmentation with 3395 LOC vs 540 original. Hundreds of tiny wrapper functions (sub_40202d calls sub_402030 which calls sub_402020). C++ methods split across multiple functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but forward jumps and exception handling paths create non-linear flow. Stack canary checks at function ends disrupt reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from fragmentation. Similar initialization patterns repeated across dozens of stub functions. C++ template instantiations not consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most variables degraded to unsigned long long, unsigned int, or void*. C++ class types mostly lost. Function signatures show excessive parameters (v5-v10 unused in test_cpp_member_func).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic names (struct_0, struct_1) and fields (field_0, field_1, padding_4). Class hierarchies partially visible but inheritance relationships obscured.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts and pointer arithmetic exposing C++ object layouts. Vtable calls shown as raw pointer dereferences: `(*((long long *)*((long long *)&arg_0)))`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No explanation of C++ mechanisms (vtables, RTTI, exception handling). Only one anomaly note: "[D] Unsupported jumpkind Ijk_SigTRAP".
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized. RAII patterns (unique_ptr), virtual dispatch, and template instantiation shown as raw operations without semantic labeling.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (unsupported jumpkind) but inconsistently. No warnings about potentially incorrect vtable recovery or exception handling complexity.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts completely lost (try/catch blocks converted to __cxa_* calls).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through direct calls, but virtual dispatch obscured. Inheritance relationships partially visible through vtable setup code.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Related C++ class methods scattered. No namespace or header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Requires extensive stubs for __cxa_*, operatornew/operatordelete, std:: functions. Many external dependencies undocumented. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+3+5+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.56/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named `r1`, `r2`, `r3` based on source return value usage in test_cpp_member_func
+- **50+ stub functions** (sub_402020 through sub_402170) are compiler initialization artifacts that should be collapsed or hidden
+- **Struct fields** all generic (`field_0`, `field_1`, `padding_4`) losing all semantic meaning from original class members
+- **Exception handling** converted to raw __cxa_* calls instead of recognizable try/catch blocks
+- **Vtable calls** shown as raw pointer arithmetic `(*((long long *)*((long long *)&arg_0)))` instead of virtual method calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Test functions retained original names (test_cpp_member_func, test_cpp_constructor, test_cpp_virtual_func), providing anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero explanatory comments for complex C++ mechanisms; a reader cannot understand vtable dispatch, exception handling, or template instantiation without external knowledge
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic recovery** - Recognize vtable patterns, exception handling (__cxa_*), and RTTI operations to restore high-level C++ constructs instead of raw pointer operations
+2. **Add usage-based variable naming** - Analyze variable usage patterns to infer semantic names (e.g., variables used in return statements should be named after their purpose)
+3. **Collapse compiler initialization stubs** - Detect and hide/elide repetitive initialization functions (sub_402020-series) that add noise without semantic value

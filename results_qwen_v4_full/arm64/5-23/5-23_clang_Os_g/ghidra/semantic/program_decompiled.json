@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/5-23/5-23_clang_Os_g/ghidra/syntactic/bin/5-23_clang_Os_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\nparam_macro_constants returned: 64\ncall_macro_constants returned: 30\nparam_conditional_compile returned: 32\ncall_conditional_compile returned: 57122\nparam_macro_recursion returned: 116\ncall_macro_recursion returned: 19\nparam_token_paste returned: 60\nLOG: Values: 10, 20, 30\ncall_token_paste returned: 60\nparam_macro_override returned: 16\ncall_macro_override returned: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:47\ncall_builtin_macros returned: 382\n=== Testing ASM Features ===\ncall_asm_basic returned: 15\ncall_asm_clobber returned: 15\ncall_asm_multi_insn returned: 42\ncall_asm_simd returned: 36\ncall_asm_atomic returned: 30\ncall_asm_privileged returned: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

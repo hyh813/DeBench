@@ -1,0 +1,28 @@
+Testing standard library functions
+strcpy result: 8
+strcmp result: 0
+strlen result: 12
+memcpy result: 90
+memcmp result: -1
+Value: 42, Name: Test
+printf result: 22
+sscanf result: 579
+fopen/fclose result: 42
+fread/fwrite result: 42
+malloc/free result: 90
+memset result: 0
+strchr/strstr result: 15
+Testing system calls
+linux syscall: 42
+win32 api: 42
+fork/exec: 42
+pipe communication: 42
+socket create: 42
+shmget/shmat: 42
+signal handling: 42
+Testing thread concurrency
+pthread create: 49
+pthread join: 410
+mutex lock: 42
+condition variable: 42
+atomic ops: 42

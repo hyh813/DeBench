@@ -1,0 +1,3 @@
+TRACE_ENT|0|test_preprocessing_features|0|Arg0=1,Arg1=-1098831916,Arg2=-1098831908,Arg3=68800|r0=0x1,r1=0xbe8127d4,r2=0xbe8127dc,r3=0x10cc0,r4=0xbe812698,r5=0x0,r6=0x0,r7=0x0
+TRACE_PRINT|0|%40%0F%01
+TRACE_PRINT|0|%0A

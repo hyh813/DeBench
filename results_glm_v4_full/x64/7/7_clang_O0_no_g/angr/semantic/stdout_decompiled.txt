@@ -1,0 +1,7 @@
+test_obf_opt_edge starting...
+  param_fake_branch: 10
+  param_opaque_predicate: 20
+  param_instruction_substitution: 225
+  param_string_encryption: 33
+  param_tail_call_optimized: 500500
+  param_non_tail_call: 5050

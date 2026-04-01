@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a1`, `v2`) with no semantic meaning. In `heap_basic`, the malloc result is `v2` and return value is `v6` instead of `arr` and `result` as in source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`local_vars`, `heap_basic`, `create_tree_node`, `test_stack_memory`). Only runtime helpers like `sub_8E0` use generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x10u`, `0x18u`, `0x28u` for struct sizes lack explanation. Error code `0xFFFFFFFFLL` and alignment constant `0x7FFFFFFF0LL` are unclear without context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(unsigned int)`, `(unsigned __int8)`, `(__int64)`) throughout. Architecture-specific types (`_DWORD`, `_QWORD`) and stack annotations (`[xsp+0h] [xbp-10h] BYREF`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use do-while instead of for loops (e.g., `local_array`). Some functions like `local_struct` are constant-folded to `return 3 * a1` losing original struct operation semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but test functions (`test_stack_memory`, `test_heap_memory`) have significant inlining that bloats them beyond original structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with recognizable loop structures. Complex functions like `vla_stack` have forward jumps that disrupt flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions duplicate similar loop patterns from inlining. Type casts repeat unnecessarily throughout (e.g., `(unsigned int)` on every return).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses architecture-specific types (`__int64`, `_DWORD`, `_QWORD`) instead of standard C types. Pointer types often degrade to `void*` or `_DWORD*`. Signed/unsigned handling is inconsistent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct types recovered. `Point` struct accessed as raw memory (`*(_DWORD *)v4`). `Node` struct accessed via pointer arithmetic (`v4[1]`, `*(_QWORD *)v4`) instead of `node->next`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts throughout. Pointer arithmetic without type safety (e.g., `(_DWORD *)((char *)v7 - ...)`). No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments beyond function headers. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. malloc/free patterns not identified as memory management. Linked list traversal in `linked_list_heap` not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about VLA/alloca handling complexity. No indication of optimization artifacts or potential undefined behavior in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present in code but not documented as preconditions. No postcondition inference (e.g., "return value is from heap").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls and global variable usage visible through code structure. No explicit call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 external functions marked "FAILED to decompile" (malloc, free, printf, etc.). Would require significant stubs to compile. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 5.50 | 30% | 1.65 |
+| L2: Structural Intelligibility | 6.00 | 25% | 1.50 |
+| L3: Type System Fidelity | 3.00 | 20% | 0.60 |
+| L4: Semantic Transparency | 2.00 | 15% | 0.30 |
+| L5: Contextual Coherence | 5.00 | 10% | 0.50 |
+| **TOTAL** | | **100%** | **4.55/10** |
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic instead of field names
+- **Variable names all generic** - `v0`, `v1`, `a1` provide no semantic information about purpose
+- **No comments or documentation** - Zero explanation of algorithms, patterns, or decompilation confidence
+- **VLA/alloca functions nearly unreadable** - `vla_stack` and `alloca_usage` have complex pointer arithmetic obscuring original intent
+- **18 external functions failed to decompile** - Would require manual stubs to compile standalone
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately, making it easy to identify purpose of each function
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from memory access patterns** - Detect struct layouts from consistent field offsets and generate named struct definitions
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, malloc results should be named after their purpose
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (VLA, alloca, indirect calls) with comments indicating manual review needed

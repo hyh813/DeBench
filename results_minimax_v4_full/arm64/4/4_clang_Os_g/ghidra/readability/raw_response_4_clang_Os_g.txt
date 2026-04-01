@@ -1,0 +1,140 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 6/10**
+Justification: Simple functions like `cdecl_func` have parameters named `a` and `b` matching source. However, complex functions like `varargs_func` and `func_struct_byval` contain numerous "Unresolved local var" markers (e.g., "va_list args@[???]", "int sum@[???]", "int i@[???]"), making variable purposes unclear.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Every function name perfectly matches the original source: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_many_args`, `param_by_value_int`, `ret_pointer`, etc. The decompiler recovered all function names with 100% accuracy.
+
+### 3. Literal Clarity
+**Score: 7/10**
+Justification: Literal values are correct but displayed in hex format (e.g., `0xf` for 15, `0x2a` for 42, `0xad` for 173) which reduces readability. The magic number `0x12345678` in `call_complex_cast` is correctly preserved. However, decimal would be more readable for most values.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Significant noise present including repeated "WARNING: Unknown calling convention -- yet parameter storage is locked" messages, "Unresolved local var" annotations throughout, and "WARNING: Removing unreachable block" comments. While these indicate decompilation confidence, they clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and matches source. Simple functions like `cdecl_func` have straightforward `return b + a;`. Complex functions like `varargs_func` use clear do-while loops. The `ret_large_struct` has unrolled loop logic but remains readable. At `-O0`, no optimization artifacts obscure the logic.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Function granularity perfectly matches the source. Each small test function (e.g., `call_cdecl`, `call_stdcall`) remains separate. The decompiler correctly kept all 79 functions distinct with appropriate parameter lists. No over-fragmentation or monolith formation observed.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom without goto statements or confusing jumps. Early returns are used appropriately (e.g., `func_struct_byptr` returns -1 for null pointer). No forward jumps into loop bodies. The code flows naturally.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code observed. The `varargs_func` and `param_varargs` show some loop unrolling in the decompilation but this reflects the actual ARM64 varargs handling. No significant redundant expressions that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 8/10**
+Justification: Types are precise - `int cdecl_func(int a, int b)`, `int * ret_pointer(int *p)`, `void * ret_opaque_handle(int type)`. Function pointer types use generated names like `_func_int_int *callback` which are functional but not pretty. Minor issue: some `longlong` instead of `int64_t`.
+
+### 10. Composite Type Recovery
+**Score: 9/10**
+Justification: Excellent struct recovery. `SmallPoint` has fields `x` and `y`, `LargeData` has `data[16]`, `LargeStruct` and `SmallStruct` are correctly used. The decompiler properly identified nested arrays and struct layouts. Only minor issue is some struct names from debug info rather than semantic names.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `p + 1` in `ret_pointer`). Function pointers are called correctly with proper signature matching. The code is type-safe with no obvious undefined behavior patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+Justification: Comments are primarily decompilation warnings ("WARNING: Unknown calling convention") rather than code explanation. The "Unresolved local var" annotations indicate uncertainty but don't explain the code's purpose. No algorithm documentation or API contracts recovered. Useful content is minimal.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: C idioms are clearly represented - varargs handling shows `va_list` style access, function pointers are used correctly for callbacks, struct by-value/pointer passing is distinguished. The ternary operator in `ret_complex_expr` is correctly recovered as `if (x <= y)`. Pattern recognition is good but not explicitly named.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: The decompiler does flag anomalies with "WARNING" messages, but they're generic. "Unknown calling convention" appears repeatedly without specific guidance. "Unresolved local var" markers indicate uncertainty but don't explain what the variable might be. Could be more specific about potential issues.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No implicit preconditions, postconditions, or invariants are documented. The null check in `func_struct_byptr` (`if (p != (SmallStruct *)0x0)`) is recovered but not explained as a precondition. No contract information recovered from the binary.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear - `main` calls the three test functions, `test_calling_conventions` calls all the convention test wrappers. Static functions like `callback_func` are correctly identified. However, no explicit documentation of call graph or usage relationships.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions appear in binary order, roughly corresponding to source organization (calling conventions section, then parameter passing, then return values). However, the file is a single monolithic output without logical grouping or section headers matching the source's comment-based organization.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: The code would not compile standalone. Missing includes (`<stdio.h>`, `<stdarg.h>`, `<string.h>`). Unknown types like `EVP_PKEY_CTX` (from OpenSSL initialization code) and `undefined8`. The core test functions could be made compilable with moderate effort, but the boilerplate (init, start, fini) would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 10 + 7 + 5) / 4 = 7.00
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (8 + 9 + 8) / 3 = 8.33
+L4_avg = (5 + 7 + 6 + 3) / 4 = 5.25
+L5_avg = (7 + 7 + 4) / 3 = 6.00
+
+Overall = (7.00 × 0.30) + (8.25 × 0.25) + (8.33 × 0.20) + (5.25 × 0.15) + (6.00 × 0.10)
+        = 2.10 + 2.0625 + 1.666 + 0.7875 + 0.60
+        = 7.216 ≈ 7.2/10
+```
+
+### Overall Readability Score: 7.2/10
+
+---
+
+### Critical Defects (Bullet List)
+- **"Unresolved local var" markers** clutter complex functions like `varargs_func`, `func_struct_byval`, and `test_calling_conventions`, making variable purposes unclear
+- **Missing includes and dependencies** prevent compilation - no `<stdio.h>`, `<stdarg.h>`, `<string.h>` declarations
+- **Hex literals instead of decimal** reduce readability (e.g., `0xf` instead of `15`, `0x2a` instead of `42`)
+- **No contract or assertion recovery** - null checks like `if (p != (SmallStruct *)0x0)` have no precondition documentation
+- **Generic warning messages** - "Unknown calling convention" appears repeatedly without specific guidance
+
+---
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+The decompiler achieved perfect function name recovery. Every single function name (`cdecl_func`, `call_cdecl`, `varargs_func`, `param_by_value_int`, `ret_pointer`, etc.) matches the original source exactly. This is exceptional and greatly aids readability.
+
+---
+
+### Most Needs Improvement: Assertion & Contract Recovery (3/10)
+The decompiler recovered no implicit contracts, preconditions, or postconditions from the binary. While null checks were identified (e.g., in `func_struct_byptr`), there's no documentation of what the function requires or guarantees. Adding contract information would significantly improve semantic transparency.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: The "Unresolved local var" markers could be replaced with inferred names. For example, a variable used as loop counter could be named `i`, or a sum accumulator could be named `sum` based on patterns like `iVar2 = *piVar3 + iVar2;`.
+
+2. **Add contract documentation**: When null checks are found, add comments like "requires: ptr != NULL" or "ensures: return value is valid". This would improve semantic transparency without requiring debug info.
+
+3. **Display decimal literals by default**: While hex is useful for bit manipulation, most arithmetic results (like `15`, `42`, `173`) are more readable in decimal. Consider a toggle or default to decimal for computed values.

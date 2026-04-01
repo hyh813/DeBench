@@ -1,0 +1,115 @@
+Looking at this decompilation task, I need to carefully evaluate the Ghidra decompiled code against the original C source code across all 18 dimensions specified in the rubric.
+
+Key observations from the code comparison:
+
+1. **Simple functions recovered well**: `double_value`, `process_int`, `process_char`, `ptr_single`, etc. are nearly identical to source
+2. **Test functions heavily transformed**: Instead of calling functions with variables, they print pre-computed constants
+3. **Complex floating point operations**: `process_ld` uses `__multf3`/`__addtf3` library calls instead of simple `d * d + 1.0L`
+4. **Bitfields lost**: `struct_bitfields` uses manual bit manipulation instead of field access
+5. **Many "Unresolved local var" comments** throughout
+6. **Compiler runtime functions** mixed with user code (`_init`, `_start`, `__do_global_dtors_aux`, etc.)
+7. **Type prefixes for variables**: iVar, lVar, uVar, piVar, etc.
+8. **Some function names preserved**, others generic (FUN_001006d0)
+
+Let me score each dimension carefully with specific evidence.
+</think>
+
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Simple functions preserve parameter names (`x`, `p`, `arr`), but complex functions use generic type-prefixed names (`iVar1`, `lVar2`, `uVar3`, `piVar2`). Test functions show "Unresolved local var: int sum@[???]" indicating lost semantic information.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions correctly recovered (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`), but runtime functions use generic names (`FUN_001006d0`, `FUN_0010083c`). Test functions properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions print pre-computed hex values (0x61, 0xb, 0x14, 0x102) instead of showing actual computations. Magic numbers like `0x12345678` appear without context. Floating point constants shown as hex (0x400c000000000000).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `___stack_chk_guard`, `__stack_chk_fail`, "WARNING: Removing unreachable block" comments, and runtime functions (`_init`, `_fini`, `deregister_tm_clones`) mixed with user code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use natural constructs, but `array_2d_stack` converts for-loops to do-while with pointer arithmetic. `enum_switch` becomes nested if-else chains. Floating point functions (`__multf3`, `__addtf3`) have excessive goto labels (LAB_00101b40, etc.).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and cohesive. Test functions properly separated from implementation. However, floating point library functions are monolithic (500+ lines each) and could be better abstracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. Complex functions have many forward jumps disrupting flow. Stack checking code appended to test functions (`if (lVar1 - ___stack_chk_guard == 0)`) breaks natural ending.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show significant redundancy—printing pre-computed values instead of actual function calls. Floating point functions contain duplicated bit-manipulation patterns from compiler optimization that aren't consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved correctly (int, char, short, long, longlong, long_double). Pointer types accurate (`int *`, `int **`, `int ***`). Function pointer types recovered as `_func_int_int *`. Some void* degradation in `ptr_void` and `opaque_handle_op`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structs recovered with field names (Point3D, Rect, Widget, Node, DNode, TreeNode). Nested structures preserved correctly. **Critical loss**: bitfields in `Flags` struct not recovered—`struct_bitfields` uses manual bit manipulation (`uVar1 & 1`, `uVar1 >> 1 & 3`) instead of field access.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor unsafe casts present: `(int)(long)handle` in `opaque_handle_op`, void* casts in `ptr_void`. Pointer arithmetic generally correct. No major type confusion or buffer-overflow patterns introduced by decompiler.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("Unresolved local var", "WARNING: Subroutine does not return"). No algorithm explanations, no API contracts, no parameter documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns present but unnamed—linked list traversal in `linked_list`, array summation in `array_1d_stack`, tree recursion in `binary_tree_sum`. No design pattern identification or algorithm naming by decompiler.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Unresolved local var", "Unknown calling convention", "Removing unreachable block"). However, critical issues like bitfield loss and test function transformation not indicated as decompiler limitations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions inferred. No invariants recognized. Original source's implicit contracts completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, but no call graph documentation. Global variable usage visible (`___stack_chk_guard`) but not explained. Callback relationships (e.g., `ptr_func_simple` with `double_value`) not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 70 functions in single output file. No header file separation. Runtime functions (`_init`, `_start`, `_fini`) mixed with user functions. No logical grouping by functionality (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies not clearly documented (requires libc, floating point library). Runtime functions would need proper linking. Stack protector functions need runtime support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.25 | 30% | 1.575 |
+| L2: Structural | 4 | 6.00 | 25% | 1.500 |
+| L3: Type System | 3 | 6.67 | 20% | 1.334 |
+| L4: Semantic | 4 | 3.75 | 15% | 0.563 |
+| L5: Contextual | 3 | 5.00 | 10% | 0.500 |
+
+**Overall Readability Score: 5.47/10**
+
+### Critical Defects:
+- **Test functions transformed**: `test_data_types_l1` prints pre-computed constants (0x61, 0xb, 0x14) instead of calling actual functions, losing all computational semantics
+- **Bitfields completely lost**: `struct_bitfields` uses manual bit manipulation (`uVar1 & 1`, `uVar1 >> 1 & 3`) instead of named field access
+- **Floating point operations obscured**: `process_ld` calls `__multf3`/`__addtf3` library functions instead of showing `d * d + 1.0L`
+- **Variable names generic**: Complex functions use `iVar1`, `lVar2`, `uVar3` instead of semantic names like `sum`, `index`, `result`
+- **No documentation recovered**: All original source comments explaining test purposes completely lost
+
+### Best Quality Aspect:
+- **Type System Fidelity (Level 3: 6.67/10)** - Basic types, pointer hierarchies, and most struct layouts correctly recovered with field names preserved
+
+### Most Needs Improvement:
+- **Semantic Transparency (Level 4: 3.75/10)** - No comments, no idiom recognition, no contract recovery, minimal anomaly indication beyond auto-generated warnings
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function semantics**: Instead of constant-folding test outputs, preserve actual function calls to show computational relationships
+2. **Detect and reconstruct bitfields**: Recognize bit manipulation patterns (`& 1`, `>> 1 & 3`, `>> 3 & 7`) and reconstruct original bitfield struct definitions
+3. **Add semantic comments**: Generate explanatory comments for non-trivial operations (e.g., "// Left shift by 1 equals multiply by 2" for `x << 1`)

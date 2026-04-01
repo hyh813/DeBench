@@ -1,0 +1,15 @@
+fake_branch: 137073864
+opaque_predicate: 10
+instruction_substitution: 20
+string_encryption: 225
+tail_call: 0
+non_tail_call: 500500
+vectorized_loop: 5050
+lto: 72
+div_by_zero: 20
+null_deref: 1
+buffer_overflow: 41
+integer_overflow: 30
+undefined_behavior: 2000000000
+implementation_defined: 10
+result: 47

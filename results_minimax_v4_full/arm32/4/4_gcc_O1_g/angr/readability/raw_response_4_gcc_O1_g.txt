@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr`, `i` throughout. For example, in `cdecl_func(unsigned int a0, unsigned int a1)`, parameters should be `a` and `b` based on source. The semantic meaning is completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (cdecl_func, stdcall_func, fastcall_func, varargs_func), but many use address-based names like `sub_103e8`, `sub_10494`. The function `call_thiscall` returns constant 15 without showing the TestClass implementation.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most numeric literals are clear (15, 50, 6, etc.) as they're computed constants. Minor magic numbers like `0x11594` for string pointers are present but expected for embedded strings.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_guard`) add noise but are expected at -O0. Some redundant code like double calls to `param_varargs(4, 10, 20, 30)` in `call_varargs_param`. Overall manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, simple loops). However, `arm_aapcs_func` uses `*((int *)&v0)` accessing stack memory confusingly. Some goto statements present but not excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines). No extreme monoliths. The `__aeabi_dadd` function is complex but that's a library function, not user code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present. Some forward jumps in complex functions like `ret_opaque_handle` but not severe.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No major dead code. Loop unrolling is minimal. Some duplicate calls in wrapper functions (e.g., calling `param_varargs` twice in `call_varargs_param`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters use `unsigned int` instead of `int`. Pointers like `char*` are sometimes `unsigned int`. No `const` correctness. In `param_by_value_ptr`, the parameter should be `int*` not `unsigned int*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. In `param_ptr_array`, uses `typedef struct struct_0 { char field_0; } struct_0;` losing original `char*` array semantics. `SmallStruct` and `LargeStruct` not recovered at all.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations. In `func_struct_byval`, pointer arithmetic like `ptr + 1`, `ptr + 2` without proper bounds. The `param_complex_cast` uses void pointer casting that could be safer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. No explanation of algorithm intent, parameter contracts, or return value semantics. The source had rich comments explaining calling conventions that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (varargs using va_list style, function pointers as callbacks), but no explicit naming. The calling convention tests (cdecl, stdcall, etc.) aren't identified as a test suite.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `armg_calculate_condition` calls are unexplained. No warnings about potential undefined behavior in `call_order_dep` (which returns 4 but source has undefined behavior).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `func_struct_byptr` has implicit null-check logic that isn't documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships unclear. No documentation of which functions call which. The callback relationship between `param_func_ptr` and `callback_func` isn't explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (test functions together, library functions separate), but no clear separation matching source sections (calling conventions, parameter passing, return values).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations needed. External functions like `__printf_chk`, `__stack_chk_fail` require linking against libc. Not standalone compilable without significant work.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic names (v0, v1, a0, a1) losing all semantic meaning
+- Type precision severely degraded - all `int` become `unsigned int`, pointers lose type info
+- Composite types not recovered - structs use generic `struct_0` with `field_0`
+- No comments explaining algorithm intent or calling convention behavior
+- Function `call_thiscall` returns constant 15 without showing TestClass.thiscall_method implementation
+
+**Best Quality Aspect:** Control Flow Naturalness (6/10)  
+- Basic control structures (if/else, while loops) are reasonably recovered, making execution flow followable
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- The original source has extensive comments explaining each test case (CALL-L1-01, PARAM-L2-06, etc.) that completely disappeared. Without comments, understanding the purpose of each function requires cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` used in `a0 + a1` should suggest `a` and `b` parameters; `ptr` dereferenced as `ptr[1] * *ptr` suggests multiplication operation
+2. **Recover struct types from allocation patterns**: The 128-byte memcpy in `test_calling_conventions` should reconstruct `LargeStruct` with its `data[16]` field
+3. **Add semantic comments for test functions**: Detect test patterns (multiple assert-like calls with expected values) and add comments like "// Test calling conventions: cdecl, stdcall, fastcall, etc."

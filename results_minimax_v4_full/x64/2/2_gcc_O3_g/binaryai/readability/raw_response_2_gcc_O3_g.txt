@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic names (`iVar1`, `piVar2`, `uVar6`, `local_10`). No semantic meaning recovered - completely obscures variable purposes like `x`, `sum`, `arr`, `n`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names match source almost perfectly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree`. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x20` (should be ' ' or 32), `0xb` for diagonal index, `0x19`, `0xbfU`. Array indices like `0xb`, `0x16`, `0x21` for 10x10 matrix are incomprehensible. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean for -O0. Some loop unrolling in `array_1d_stack` and `ptr_increment` but expected at debug level. No obvious register spilling artifacts or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recognized as `for`/`while` constructs. Some loop unrolling present but appropriate for -O0. Conditional expressions are clear. Minor awkwardness in `array_2d_stack` where loop is fully unrolled.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity - all test functions properly separated. Each function has single responsibility. Parameter counts match source. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in complex functions like `binary_tree_sum` but traceable. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Significant loop unrolling in array functions (`array_1d_stack` has 4-element unroll, `array_3d` fully unrolled to 125 additions). At -O0 this is excessive but expected. No dead code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `float`, `double`, `char*`) but no precision (`int32_t` vs `int`). `uint` used for unsigned but inconsistent. Function pointers use `code *` instead of proper signatures. `long` correctly identified for arm64.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - all structs lost. `Point3D` accessed as `param_1[0] + param_1[1] + param_1[2]`. `Node` (linked list) accessed via `*(int **)(param_1 + 2)` for `next` pointer. Unions treated as raw memory. Enums just `int`. No struct/union/typedef recovery whatsoever.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Manual pointer arithmetic throughout (`param_1 + (ulong)(param_2 - 1) * 10`). Unsafe casts in `ptr_triple` using `undefined8`. Some type confusion but no buffer overflow-prone patterns in simple functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **No useful comments**. Only auto-generated function location comments. No algorithm explanations, no magic number documentation, no decompilation confidence indicators. Source had extensive comments explaining test scenarios - completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal in `linked_list`, tree traversal in `binary_tree_sum`. But no explicit naming or documentation of these patterns. Caller/callee relationships not indicated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some `UNRECOVERED_JUMPTABLE` markers present in `ptr_func_simple`. But no flags for: indirect calls, unusual stack layouts, potential undefined behavior (like `array_oob` with off-by-one), or hand-written assembly patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: **Zero contract recovery**. No preconditions documented (e.g., "requires: n > 0"), no postconditions, no invariants. Source had no explicit contracts but semantic expectations are unstated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and clear. But relationships not documented: `complex_callback` used by `ptr_func_complex`, `process_int` used by `struct_func_ptr`, `double_value` used by `ptr_func_simple`. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped matching source: data type functions, array functions, pointer functions, composite functions. Static functions properly scoped. Matches test function organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Should compile with minimal stubs for external functions (`puts`, `__printf_chk`, `__stack_chk_fail`). No compiler-specific hacks. Dependencies are standard C library.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct/union recovery completely failed** - all composite types accessed as raw pointer arithmetic (`param_1[0]`, `*(int **)(param_1 + 2)`)
+- **Variable naming is unusable** - all parameters are `param_N` and locals are `iVarN`/`piVarX`
+- **No comments** - source had extensive documentation explaining test scenarios, completely lost
+- **Magic numbers everywhere** - `0x20`, `0xb`, `0x16` without explanation
+- **Type precision lost** - no `int32_t`, no proper function pointer signatures, enums just `int`
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names almost perfectly match source: `process_char`, `array_1d_stack`, `ptr_double`, `linked_list`, `binary_tree`. Excellent semantic recovery.
+
+### Most Needs Improvement: Composite Type Recovery (scored 2/10)
+Structures like `Point3D`, `Node`, `Rect`, `Widget` are completely lost - accessed as raw arrays with manual offset calculations. This is the most severe readability failure.
+
+### Top 3 Recommendations:
+1. **Recover struct layouts** - infer from field access patterns; `param_1[0] + param_1[1] + param_1[2]` should become `p->x + p->y + p->z`
+2. **Add semantic variable naming** - infer from usage: `param_1` used as array with index `param_2` should become `arr` and `n`
+3. **Document magic numbers** - detect patterns like `0x20` (32) in char functions and suggest `' '` (space) or explain as ASCII offset

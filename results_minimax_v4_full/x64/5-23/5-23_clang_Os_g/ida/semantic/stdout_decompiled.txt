@@ -1,0 +1,21 @@
+test
+Value: 64
+Value: 30
+Value: 32
+Value: 57122
+Value: 116
+Value: 19
+Value: 60
+LOG: Values: 10, 20, 30
+LOG: Values: 60, 0, 0
+Value: 16
+Value: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:58
+Value: 382
+ASM Test
+ASM basic: 15
+ASM clobber: 981062604
+ASM multi: 42, , 0
+ASM SIMD: 1145324612, 0, 0, 19, 0, 1229782938247303441, 25769803781, 34359738375, 8589934593, 17179869187, 138340546993183
+ASM atomic: 30
+ASM privileged: 77

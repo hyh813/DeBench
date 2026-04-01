@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `ptr`). In `linked_list_heap`, `v8` and `v7` are used for `head` and `current`, offering no semantic hint about their role in the list structure.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `heap_basic`, `vla_stack`, `global_var_access`), likely due to the presence of debug symbols (`-g`), making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers are prevalent; `4LL` is used for `sizeof(int)`, `0x10u` for `sizeof(Node)`, and `0xBu` for the memory barrier argument. While inferable, named constants or sizeof expressions would significantly improve readability.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of dead stores, but it introduces noise like `__fastcall` (incorrect for ARM64) and frequent casts to `unsigned int` or `__int64` that clutter the logic, such as in `local_vars`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow matches the source perfectly due to `-O0` compilation. Loops are recovered as `for` loops, and conditionals are standard `if/else` blocks, making execution paths easy to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. There is no inlining or outlining; boundaries like `create_tree_node` are preserved exactly as written, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or `goto` statements interrupting the flow, which is excellent for unoptimized code.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully propagates values to eliminate intermediate variables where possible (e.g., `local_vars` is reduced to a single return statement), which actually improves readability over the verbose `-O0` source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are mostly correct, though `int` is often widened to `__int64` or cast to `unsigned int`. Pointers are generally accurate (e.g., `_DWORD *` for `int *`), but the distinction between `int` and `size_t` is sometimes blurred.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are completely lost. In `heap_struct`, the `Point` struct is treated as an array (`ptr[0]`, `ptr[1]`). In `heap_nested`, the `Node` struct is accessed via raw pointer casts (`*(_DWORD *)*a1`), obscuring the data model.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts to access memory, such as `(_DWORD *)v5` and `(_QWORD *)v5[1]` in `linked_list_heap`. While accurate to the binary, it removes the type safety boundaries provided by the original structs.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled body. Complex logic like the VLA stack pointer calculation in `vla_stack` is presented without explanation, leaving the user to reverse-engineer the intent.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard algorithms are present but not explicitly identified. The linked list traversal in `linked_list_heap` is recognizable only by the `malloc` and pointer manipulation pattern, not by any semantic labeling.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not flag anomalies, but it also doesn't hide them. The manual stack adjustment for VLAs is presented "as-is" without warning that it represents a variable-length array.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are documented. For example, `heap_basic` does not indicate that `ptr` must be freed by the caller, nor does it document the null check logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit and use the correct names. Global variable accesses (e.g., `global_counter`) are clear, though the lack of struct definitions makes accessing fields of global structs (like `global_point`) look like separate variable accesses.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source flow. Helper functions like `create_tree_node` are placed near their usage, maintaining a coherent module structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types (`__int64`) and incorrect calling convention attributes (`__fastcall` on ARM64). Intrinsics like `_ReadStatusReg` and `__dmb` would require specific headers to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Struct types (`Point`, `Node`, `TreeNode`) are completely lost, replaced by pointer arithmetic and array indexing (e.g., `ptr[1]`).
+- Variable names are generic (`v1`, `a1`), requiring the user to manually track semantics (e.g., `v8` as `head` in linked list).
+- Platform-specific noise (`__fastcall` on ARM64) and non-standard types (`__int64`) reduce portability and add confusion.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The preservation of original function names (likely due to debug symbols) makes navigating the code and understanding high-level intent trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to recover `struct` definitions turns high-level data manipulation into low-level memory offsetting, significantly hindering understanding of the data models.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct recovery heuristics to identify and reconstruct `struct` types from sequential `malloc` sizes and access patterns (e.g., `ptr[0]`, `ptr[1]`).
+2. Infer variable names from context, such as renaming loop counters to `i` or `n` based on usage, and identifying pointers like `head` or `current` in linked list patterns.
+3. Remove architecture-mismatched annotations like `__fastcall` on ARM64 binaries and replace compiler intrinsics with standard C equivalents or comments where possible.

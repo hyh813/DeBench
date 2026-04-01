@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_clang_O3_g/binaryai/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "Testing obfuscation and optimization techniques:\n\n  param_opaque_predicate: 10\n  param_string_encryption: 20\n  param_instruction_substitution: 225\n  param_string_encryption result: 31\n  param_tail_call_optimized: 500500\n  param_non_tail_call: 5050\n  param_vectorized_loop: 72\nTesting exception handling:\n  param_division_by_zero:   param_null_pointer_deref: 41\n  param_buffer_overflow: 30\n  param_integer_overflow: 2000000000\n  param_undefined_behavior: 10\n  param_implementation_defined: 47\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 9/10
+Justification: Most original variable names (`a`, `b`, `c`, `x`, `n`, `sum`, `count`, `target`, `op`) are successfully recovered, likely due to debug symbols. Only generic temporaries like `iVar1` or `iVar2` appear for intermediate calculations, which is acceptable.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Every function name in the decompiled output (`sequential_ops`, `single_if`, `duffs_device`, etc.) matches the original source exactly, providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Magic numbers used in logic (e.g., `2`, `100`, `10`) are preserved as-is. While not replaced with named constants, they are simple enough to understand. The test functions contain hardcoded results (e.g., `0x15`), which are less clear but accurate to the binary.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains significant compiler/runtime noise such as `in_GS_OFFSET` checks (stack canaries), `__x86.get_pc_thunk` calls, and `__printf_chk` usage instead of standard `printf`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple loops are preserved, complex structures are significantly altered. `switch` statements are converted to jump table lookups or arithmetic (e.g., `switch_large` becomes `op * 10`), and recursive functions (`recursion_factorial`) are transformed into iterative loops, deviating heavily from the source structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. There is no inlining or outlining of code blocks; every function in the source corresponds to a distinct function in the decompiled output.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most functions read linearly, but constructs like `duffs_device` and `switch_fallthrough` rely on `goto` and labels (`LAB_0001153d`, `_L194`), disrupting the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Dead code in obfuscated functions (`obfuscated_cf`, `opaque_predicate`) was successfully removed. However, `loop_nested` was optimized (inner loop removed/replaced by addition), which, while efficient, obscures the original nested loop logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Standard types (`int`, `void*`) are accurate. Function pointers are correctly typed as `_func_int_int` or `_func_int_int_int`. Some low-level entry points use `undefined4`, which is appropriate for the context.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Arrays and multi-dimensional arrays (`int matrix [3] [4]`, `int arr [5]`) are recovered perfectly with correct dimensions and types.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and array accesses are safe. The use of `undefined` types in specific low-level contexts (like `non_local_jump`) is accurate to the binary's ambiguity rather than a safety error.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are almost entirely absent except for automated warnings (e.g., "WARNING: Unknown calling convention"). There are no explanations of algorithms or logic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler fails to recognize standard C idioms. `switch` statements are not reconstructed (shown as table lookups), recursion is displayed as iteration, and `if-else if` chains are collapsed into complex conditional expressions.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags issues it cannot resolve, such as "WARNING: Could not recover jumptable" for indirect calls, which is helpful for the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: No preconditions or postconditions are documented. The logic of parameter validation (e.g., `n <= 0` checks) is visible but not explicitly annotated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear. Function pointer arrays are initialized with correct addresses (e.g., `funcs[0] = double_value`), making the relationships explicit.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure (L1, L2, L3 tests grouped together). Helper functions are placed near their usage.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on injected functions (`get_pc_thunk_bx`) and non-standard types (`undefined4`, `__jmp_buf_tag`). It would require significant cleanup (removing warnings, defining headers) to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (9 + 10 + 8 + 7) / 4 = 8.5
+L2_avg = (5 + 9 + 7 + 8) / 4 = 7.25
+L3_avg = (8 + 9 + 8) / 3 = 8.33
+L4_avg = (3 + 4 + 7 + 4) / 4 = 4.5
+L5_avg = (8 + 9 + 5) / 3 = 7.33
+
+Overall = (8.5 × 0.30) + (7.25 × 0.25) + (8.33 × 0.20) + 
+          (4.5 × 0.15) + (7.33 × 0.10)
+Overall = 2.55 + 1.8125 + 1.666 + 0.675 + 0.733
+Overall = 7.4365
+```
+
+**Overall Readability Score:** 7.4/10
+
+### Critical Defects
+- **Control Flow Transformation**: Recursive functions (e.g., `recursion_factorial`) are decompiled as iterative loops, completely altering the source's algorithmic representation.
+- **Switch Statement Loss**: `switch` statements are reduced to jump table lookups (e.g., `*(char *)((int)&CSWTCH_56 + op)`) or arithmetic, losing the high-level case structure.
+- **Loop Optimization Artifacts**: `loop_nested` had its inner loop optimized away into an addition operation (`iVar2 = iVar2 + n`), which, while efficient, hides the original nested logic.
+- **Duff's Device**: The `duffs_device` function is decompiled into a spaghetti of labels and gotos, failing to reconstruct the structured switch-in-loop pattern.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?**: Every function name from the original source is preserved exactly, making navigation and intent identification trivial.
+
+### Most Needs Improvement
+- **Idiom Recognition (4/10)**
+- **Why?**: The decompiler fails to recognize fundamental C control structures like `switch` and `recursion`, presenting them as low-level jumps or loops instead of their original high-level forms.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Switch Statement Recovery**: Implement pattern matching to reconstruct `switch-case` blocks from jump tables and array lookups rather than displaying the raw memory access.
+2.  **Recursion Detection**: Add heuristics to detect and preserve recursive function calls instead of unrolling them into iterative loops, especially when debug symbols suggest a specific structure.
+3.  **Structured Loop Reconstruction**: For `duffs_device` and similar patterns, attempt to reconstruct the `do-while` loop containing the `switch` structure to improve readability of optimized code.

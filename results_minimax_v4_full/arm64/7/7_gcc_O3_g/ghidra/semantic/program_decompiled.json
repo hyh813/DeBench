@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O3_g/ghidra/syntactic/bin/7_gcc_O3_g_fixed",
+  "stdout": "Test\n\nValue: 10\nOpaque predicate result: 20\nInstruction sub result: 225\nString encrypt result: 0\nTail call result: 500500\nNon-tail call result: 5050\nVectorized loop result: 72\nLTO result: 20\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

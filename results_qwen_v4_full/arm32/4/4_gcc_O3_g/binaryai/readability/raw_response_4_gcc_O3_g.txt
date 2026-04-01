@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2` with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, some have compiler artifacts appended (`varargs_func_constprop_0`) and test functions lost their computational logic through constant folding.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0xf`, `0x32`, `0x2a`, `0x12345678` with no explanation. String literals replaced with opaque references like `&DAT_0001143c`. Original had clear values (5, 10, 15) and descriptive strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Massive floating-point helper functions (`__aeabi_dadd`, `__floatsidf`, `__subdf3`) each 200+ lines of bit manipulation. Runtime initialization artifacts (`call_weak_fn`, `deregister_tm_clones`) pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but test functions are constant-folded (e.g., `call_cdecl` returns `0xf` directly). Floating-point helpers use excessive gotos and labels (`LAB_00011200`, `LAB_000110a8`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `func_struct_byval` catastrophically failed—128-byte struct expanded to 21+ individual parameters. Floating-point helpers are over-fragmented. Original struct-passing semantics completely lost.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but floating-point routines have frequent forward jumps disrupting flow. Test functions collapsed to single return statements, losing original structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point functions repeat identical bit-manipulation patterns across multiple helpers. Constant folding eliminated redundancy but also eliminated semantic meaning of computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `undefined4` used for float/double parameters in `func_mixed_args`. `size_t` returned as generic `int`. Original had precise types (`double`, `long long`, `char*`, `va_list`) all degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—`LargeStruct` (128 bytes) completely lost, `func_struct_byval` has 21 parameters instead of struct. `SmallStruct` partially recovered as `int*` with array indexing. No struct type definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(undefined4 *)`, `(byte **)`, `(int *)0x0`. `func_mixed_args` has wrong parameter count (6 params vs 4 in source). Varargs functions don't handle variable arguments at all.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original had extensive comments explaining calling conventions and test purposes.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern (`va_start`, `va_arg`, `va_end`) not recognized—`varargs_func` shows empty loop instead. Function pointer callback pattern partially recognized but `code *` type is opaque.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about constant-folded test functions, broken varargs handling, or struct-passing failures. Decompiler presents incorrect code confidently without flagging issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `param_1 != NULL` check). No postconditions or invariants. Original had clear test expectations documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Callback in `param_func_ptr` uses opaque `code *` type. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order, not grouped by test category. No header file structure. Runtime initialization functions mixed with test code. Original had clear section organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions undeclared (`__printf_chk`, `__aeabi_dadd`, `strlen`). References undefined globals (`handle1_1`, `handle2_0`, `DAT_0001143c`). Would require extensive stubs to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.825/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects
+- **Struct passing completely broken**: `func_struct_byval` has 21 parameters instead of receiving a `LargeStruct`, making the function signature meaningless
+- **Varargs handling failed**: `varargs_func` shows empty loop instead of `va_start`/`va_arg`/`va_end` pattern, losing all variable argument semantics
+- **Constant folding destroyed test logic**: All `call_*` functions return hardcoded constants instead of showing actual computation (e.g., `call_cdecl` returns `0xf` instead of `cdecl_func(5, 10)`)
+- **Floating-point operations expanded to 200+ line bit-manipulation routines**: `__aeabi_dadd`, `__floatsidf` obscure simple arithmetic operations
+- **Zero documentation**: No comments explaining purpose, no anomaly warnings despite multiple decompilation failures
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, allowing identification of test purposes despite semantic degradation
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or explanations for the numerous decompilation failures
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite type structures**: Detect struct-by-value passing patterns and reconstruct struct types instead of expanding to individual parameters
+2. **Recognize standard library patterns**: Identify `va_start`/`va_arg`/`va_end` sequences and floating-point operations, emitting high-level C instead of bit-manipulation routines
+3. **Add decompilation confidence annotations**: Flag constant-folded functions, unresolved varargs, and type ambiguities with warnings so analysts know where manual review is needed

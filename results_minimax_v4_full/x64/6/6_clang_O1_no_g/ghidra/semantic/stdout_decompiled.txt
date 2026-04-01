@@ -1,0 +1,9 @@
+Testing Standard Library Functions
+
+String length: 14
+strcmp result: 0
+strcmp result (call): 12
+memcpy result (call): 90
+memcmp result: -1
+Value: 42, Name: HelloLib
+printf returned: 26

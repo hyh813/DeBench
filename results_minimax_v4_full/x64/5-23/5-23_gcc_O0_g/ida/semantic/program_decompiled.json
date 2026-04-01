@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_gcc_O0_g/ida/syntactic/bin/5-23_gcc_O0_g_fixed",
+  "stdout": "Preprocessing Tests\nParam macro constants: 64\nParam macro functions: 30\nParam conditional compile: 32\nParam multi branch compile: 57122\nParam macro recursion: 116\nParam stringize: 19\nParam token paste: 60\nLOG: Values: 10, 20, 30\nParam variadic macro: 60\nParam macro override: 16\nParam include guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:23\nParam builtin macros: 382\nASM Features Tests\nParam asm basic: 15\nParam asm clobber: 15\nParam asm multi insn: 42\nParam asm SIMD: 36\nParam asm atomic: 30\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

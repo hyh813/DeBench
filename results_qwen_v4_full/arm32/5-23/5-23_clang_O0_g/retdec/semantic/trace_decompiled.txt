@@ -1,0 +1,8 @@
+TRACE_ENT|0|test_preprocessing_features|0|Arg0=0,Arg1=-1097340940,Arg2=-1097340932,Arg3=71160|r0=0x0,r1=0xbe97e7f4,r2=0xbe97e7fc,r3=0x115f8,r4=0xbe97e6b8,r5=0x0,r6=0x0,r7=0x0
+TRACE_PRINT|0|%74%16%01
+TRACE_ENT|1|call_macro_constants|1|Arg0=3,Arg1=0,Arg2=-1158991104,Arg3=-1158991104|r0=0x3,r1=0x0,r2=0xbaeb3300,r3=0xbaeb3300,r4=0xbe97e6b8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|2|param_macro_constants|2|Arg0=2048,Arg1=0,Arg2=-1158991104,Arg3=-1158991104|r0=0x800,r1=0x0,r2=0xbaeb3300,r3=0xbaeb3300,r4=0xbe97e6b8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|2|param_macro_constants|2|139388
+TRACE_EXT|1|call_macro_constants|1|139388
+TRACE_PRINT|0|%9C%16%01
+TRACE_ENT|3|call_macro_functions|1|Arg0=3,Arg1=0,Arg2=-1158991104,Arg3=-1158991104|r0=0x3,r1=0x0,r2=0xbaeb3300,r3=0xbaeb3300,r4=0xbe97e6b8,r5=0x0,r6=0x0,r7=0x0

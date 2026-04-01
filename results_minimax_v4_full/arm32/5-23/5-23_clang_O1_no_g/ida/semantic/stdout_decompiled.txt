@@ -1,0 +1,21 @@
+Preprocessing Test
+Result: 64
+30
+32
+57122
+116
+19
+60
+LOG: Values: 10, 20, 30
+60
+16
+500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:16
+382
+Assembly Features Test
+ASM Basic: 15
+ASM Clobber: 15
+ASM Multi: 42
+ASM SIMD: 20
+ASM Atomic: 30
+ASM Mem/Prot: 77

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v1`, and `v2`, losing all semantic meaning (e.g., `count` in `varargs_func` becomes `a1` or `v2`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `cdecl_func`, `test_calling_conventions`), matching the original source exactly.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Integer constants like `42` and `15` are preserved clearly, but string literals are stored as hex-encoded global variables (e.g., `g1`, `g2`) rather than inline strings, reducing readability.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The code is heavily polluted with compiler artifacts, specifically stack canary checks (`__readfsqword(40)`) and redundant bitwise masks (`& 0xffffffff`) in almost every function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While basic `if/else` structures are present, loops are often awkwardly reconstructed using `goto` labels (e.g., `lab_0x14e0`) and manual counter management instead of standard `for` or `while` constructs.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions map 1:1 with the source code; boundaries are correctly identified, and there is no unwanted inlining or fragmentation of logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent use of `goto` for control flow (especially for stack check failures and loop exits) disrupts the top-to-bottom reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Stack canary verification code is duplicated in every function, and redundant sign-extension masks (`& 0xffffffff`) appear on almost every arithmetic operation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic integer types are generally correct (`int64_t` for `int` on 64-bit), but composite types are severely degraded; structs are replaced by primitive types like `int128_t` or vector types.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Struct definitions are completely lost. For example, `LargeStruct` in `func_struct_byval` is treated as `int128_t` and manipulated with SIMD intrinsics (`__asm_paddq`), completely obscuring the original logic of summing an array.
+
+**11. Type Safety:** Score: 3/10  
+Justification: The code relies heavily on unsafe casts and pointer arithmetic (e.g., `*(int32_t *)(v4 + (int64_t)&v6)` in varargs functions) rather than typed accesses.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no meaningful comments explaining logic; only address range comments (e.g., `// Address range: 0x1000 - 0x101b`) are present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard C idioms like `va_list` and `va_arg` are not recognized; `varargs_func` is decompiled into raw stack pointer arithmetic, making the variable argument logic obscure.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies or potential decompilation errors are flagged; the code is presented confidently even when using SIMD intrinsics for simple struct operations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the null check in `func_struct_byptr` is present but not explicitly documented as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10  
+Justification: Function calls are direct and clear, and global variable references (like string literals) are correctly linked, making the call graph easy to follow.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The code is organized into a single file with prototypes at the top, which is standard and readable, though it lacks the original source's section comments.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code uses GCC-specific intrinsics (`__asm_...`, `__readfsqword`) which ties it to GCC/Clang, but it is syntactically valid C that would likely compile with the right toolchain.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Struct `LargeStruct` is completely lost in `func_struct_byval`, replaced by obscure SIMD intrinsics (`__asm_paddq`).
+- Variable argument logic (`va_list`) is decompiled to raw stack pointer arithmetic (`*(int32_t *)(v4 + ...)`) instead of standard idioms.
+- Excessive noise from stack canary checks (`__readfsqword`) and bitmasking (`& 0xffffffff`) clutters every function.
+- Variable names are entirely generic (`a1`, `v1`), providing no semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler successfully recovered all function symbols from the binary, making the high-level flow easy to map to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)  
+- The failure to reconstruct structs, replacing them with SIMD vectors and raw memory access, makes data-heavy functions unreadable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to aggregate SIMD instructions back into struct field accesses or loops when appropriate.
+2. Recognize and abstract standard library varargs patterns (`va_start`, `va_arg`) into idiomatic C code.
+3. Filter or abstract stack security checks (canaries) into a macro or separate function to reduce visual noise.

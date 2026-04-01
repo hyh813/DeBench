@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr`, `i` - no semantic meaning. Compare to original: `cdecl_func(int a, int b)` becomes `cdecl_func(unsigned int a0, unsigned int a1)` losing parameter names entirely.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: Some functions correctly named (`callback_func`, `func_a`, `func_b`, `cdecl_func`) but most use address-based names like `sub_401030`, `sub_401040`. The original function `call_cdecl` is correctly recovered but wrapper functions lose semantic names.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Return values like `15`, `50`, `42` are inlined correctly. However, magic numbers like `4294967295` (for -1) appear without explanation. Some literals like `15959`, `16007` in struct offsets are unexplained.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Relatively clean output but contains some decompilation artifacts like `[D]` markers and incomplete expressions. The `__stack_chk_fail_local` and `__x86.get_pc_thunk` functions add noise but are necessary compiler artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Most control flow is natural (if/else, loops), but some functions use `goto` statements that could be better represented. The `varargs_func` uses do-while which is correct but could be more readable as for-loop.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Functions are reasonably decomposed but `test_calling_conventions` at ~50 lines is large. Some inlining occurred - `call_cdecl()` returns constant `15` directly rather than showing the call to `cdecl_func`.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code is mostly linear with top-to-bottom flow. Some forward jumps exist in switch-like structures but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Some redundancy in struct definitions (multiple `struct_0` definitions). The code shows repeated patterns in struct padding definitions that could be consolidated.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 4/10
+Justification: Most types are generic `unsigned int` instead of `int`. Original `int` parameters become `unsigned int`. The original `int a, int b` became `unsigned int a0, unsigned int a1`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Some struct recovery attempted (`struct_0`, `struct_1`) but field names are generic (`field_0`, `field_1`, `padding_0`). Original `LargeStruct` with `data[16]` not properly recovered.
+
+**11. Type Safety:** Score: 5/10
+Justification: Some type safety issues - pointer arithmetic in `func_struct_byval` uses `cur += 2` which assumes 4-byte alignment. Function pointers passed as `unsigned int` instead of proper function pointer types.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: No comments in decompiled code. Original had extensive comments explaining each function's purpose. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Some idioms recognized (varargs, callbacks) but not explicitly named or documented. The `va_list` pattern is partially recovered but not identified as stdarg.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Some `[D]` markers indicate decompilation issues but no explanation of what couldn't be resolved. The `func_mixed_args` has incomplete code but no clear indication of the problem.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No pre/post conditions or contracts recovered. Original had detailed documentation about parameter requirements.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Function calls are visible but relationships not documented. The connection between `call_cdecl` and `cdecl_func` is visible but not explicitly documented.
+
+**17. Module Organization:** Score: 3/10
+Justification: All functions in single file with no logical grouping. Original had clear sections (Calling Conventions, Parameter Passing, Return Values).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: Code has syntax issues - incomplete expressions like `return;` without value, undefined identifiers like `frame_dummy`, `__do_global_ctors_aux`. Would not compile as-is.
+
+---
+
+## FINAL SUMMARY
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- All parameter names lost (`a`, `b` → `a0`, `a1`)
+- No comments or documentation recovered from original
+- Type precision lost (`int` → `unsigned int`)
+- Function names use addresses instead of semantics
+- Struct field names generic (`field_0`, `padding_0`)
+- Build incompatible - incomplete return statements, undefined identifiers
+
+**Best Quality Aspect:** Literal Clarity (6/10) - Return values from inlined functions are correct
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10) - Zero documentation recovery from original extensively commented source
+
+**Top 3 Recommendations:**
+1. Recover parameter names from debug symbols or source patterns
+2. Add comments explaining decompilation confidence and unresolved calls
+3. Improve struct field naming by analyzing usage patterns across functions

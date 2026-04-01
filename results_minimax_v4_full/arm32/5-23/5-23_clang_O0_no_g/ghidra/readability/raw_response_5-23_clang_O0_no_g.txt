@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_4`, `local_10`, `iVar1`, `sVar1` that completely obscure their semantic purpose. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are preserved almost perfectly from the source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`, `header_func`. The verb-noun pattern is appropriate and matches original intent.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most magic numbers are correctly resolved (0x200 for 512, 0x40 for 64, 0xdef0 for default platform). However, `0x401` for MAX_SIZE check is off-by-one (1025 vs 1024), and `0x117` for __LINE__ is hardcoded rather than explained as a line number macro.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean decompilation with no compiler artifacts, redundant casts, or debug instrumentation. The code is remarkably free of noise artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with simple if-else statements and for loops properly recognized. At -O0, no goto statements or confusing conditionals. The decompiler correctly recovered loop constructs.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity is excellent - all small functions from source are preserved as separate entities: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc. Each function has clear single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without forward jumps into loop bodies. Early returns are used appropriately. No computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or duplicate expressions observed. Loop unrolling in SIMD functions is appropriately represented as loops rather than expanded code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct (`int`, `size_t`, `void*`). However, `undefined4` appears in some signatures (e.g., `param_variadic_macro`) where `int` would be appropriate. The atomic operations correctly use `__atomic_fetch_add_4`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Source had no complex structs, but arrays are handled reasonably via pointer arithmetic (`*(int *)(param_1 + local_10 * 4)`). No struct recovery needed but what's present is functional.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe with no obvious unsafe casts. Pointer arithmetic is necessary for array access and handled correctly. Memory operations use proper types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only the standard Ghidra header comment is present. No useful comments explaining macro expansion, inline assembly replacement, or any non-trivial logic. The preprocessing and assembly transformations are completely undocumented.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The decompiler recognized inline assembly and converted to C equivalents (e.g., `param_asm_basic` returns `param_1 + 10`), and atomic operations use `__atomic_fetch_add_4`. However, there's no explicit naming or comments indicating these were assembly/intrinsics in the original.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies are flagged. The hardcoded values like `0x401` (off-by-one error in MAX_SIZE boundary) and `0x117` (hardcoded __LINE__) should be flagged as suspicious but aren't.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function parameters have no documentation about valid ranges or expected behavior.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible in the code (e.g., `call_macro_constants()` calls `param_macro_constants(0x800)`), but there's no documentation of call graphs or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped in order matching source: preprocessing functions first, then asm functions, then test functions, then main. Static functions are properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses `undefined4` type which is Ghidra-specific and won't compile in standard C. Some function signatures may need adjustment. However, the core logic is compilable with moderate patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `local_10`, `iVar1`) losing all semantic meaning from source
+- No comments explaining macro expansions or inline assembly replacements
+- `0x401` used for MAX_SIZE boundary check (should be 0x400 = 1024)
+- `__LINE__` hardcoded as `0x117` instead of being recognized as a line number macro
+- No anomaly indication for suspicious hardcoded values
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the source, maintaining semantic clarity at the function level.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Variables use completely generic names that require reverse-engineering to understand their purpose, significantly impeding readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `param_1 > 0x401` suggests `param_1` should be named `size` or `max_size`)
+2. Add comments explaining preprocessing transformations (macro expansions, #ifdef branches taken, __LINE__/__FILE__ resolution)
+3. Flag suspicious hardcoded values as potential decompilation anomalies (e.g., `0x401` off-by-one from expected `0x400`)

@@ -1,0 +1,18 @@
+=== Standard Library Tests ===
+strlen: 8
+strcpy: 0
+strcmp: 12
+memcpy: 90
+memcmp: 0
+Value: 42, Name: BinBench
+printf chars: 26
+scanf sum: 579
+fopen: 0x2a
+fread/fwrite: 42
+malloc/free: 90
+memset: 0
+strchr/strstr: 15
+=== System Call Tests ===
+syscall: 0x2a
+stat: 0x2a
+fork/exec: 0x2a

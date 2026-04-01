@@ -1,0 +1,21 @@
+some_string
+Preprocessing test: 64
+Preprocessing test: 30
+Preprocessing test: 32
+Preprocessing test: 57122
+Preprocessing test: 116
+Preprocessing test: 19
+Preprocessing test: 60
+LOG: Values: 10, 20, 30
+Preprocessing test: 60
+Preprocessing test: 16
+Preprocessing test: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:56
+Preprocessing test: 382
+ASM Test
+ASM basic: 15
+ASM clobber: -1862863840, 0, 5, 14, 0, 5dcac7eb5220, 0
+ASM multi: 42, , 0, 0, 0, 5dcac7eb5220, 0, 5341206f6c6c6548
+ASM SIMD: 36
+ASM atomic: 30
+ASM privileged: 77

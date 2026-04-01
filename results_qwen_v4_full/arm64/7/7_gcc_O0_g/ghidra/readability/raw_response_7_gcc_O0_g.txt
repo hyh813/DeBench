@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mixed quality—`param_instruction_substitution` has good names (`div2`, `mod16`, `mul15`), but most functions use generic `iVar1`, `iVar2`, `x_local` that obscure semantic purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User functions retain original names (`param_fake_branch`, `decrypt_string`), but runtime functions use generic names (`FUN_00100860`, `FUN_00100a3c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0x2a` (42), signal numbers `8` and `0xb` lack explanation; `'Z'` recovery for `0x5A` is good but inconsistent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary `_local` suffixes on parameters, stack canary checks (`___stack_chk_guard`) at function ends, and "Unknown calling convention" warnings add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Critical semantic loss—`param_fake_branch` reduced to `return x;` eliminating the fake branches entirely; GCD loop in `param_opaque_predicate` uses awkward division pattern instead of modulo.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate and helper functions like `decrypt_string` are preserved, but obfuscation intent is lost through over-simplification.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate loop constructs, but stack check code at function ends disrupts natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant `_local` variables for parameters (`x_local` when `x` exists), and stack canary checks add unnecessary verification code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types correct (int, char, size_t, uint), but some precision lost in casts like `(__sighandler_t)0x0` and `(__jmp_buf_tag *)`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered well (`char decrypted [32]`), but struct `bitfield` becomes generic `anon_struct_4_3_4e909822` losing semantic meaning.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer arithmetic generally safe, but unsafe casts present and void* usage in malloc without explicit type documentation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"); no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm, string decryption pattern, and signal handling idioms completely unrecognized; no design pattern documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and calling conventions, but critical semantic loss (fake branches removed) goes unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `x != 0` for division), no postcondition inference, error conditions undocumented.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and global variables (`div_zero_caught`, `jmp_buffer`) referenced, but no call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in flat output with no logical grouping; static functions not clearly scoped; no header structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but requires stubs for `___stack_chk_guard`, `__dso_handle`, and external library functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+5+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (5+7+7+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (7+6+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (4+3+5+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.82/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects:
+- **`param_fake_branch` completely simplified** to `return x;` — the fake branch obfuscation (core test purpose) is entirely lost without warning
+- **`param_opaque_predicate` missing `p3` variable** — bit运算恒等式 check removed, changing semantic transparency
+- **`param_undefined_behavior` altered** — original `i * 2` became `i << 1`, and all UB test cases removed silently
+- **Generic variable names** — `iVar1`, `iVar2`, `x_local` obscure semantic purpose throughout
+- **No anomaly warnings for semantic loss** — decompiler optimizes away obfuscation without flagging confidence issues
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** — User-defined function names preserved accurately from source, making navigation straightforward
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** — Zero pattern recognition for GCD algorithm, string decryption, signal handling, or obfuscation techniques
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag semantic simplification** — When decompiler optimizes away code patterns (fake branches, opaque predicates), add confidence warnings like `// DECOMPILER: Branch eliminated - may be intentional obfuscation`
+2. **Recognize common algorithms** — Implement pattern matching for GCD, string XOR decryption, and signal handling to add explanatory comments
+3. **Reduce variable naming noise** — Eliminate unnecessary `_local` suffixes on parameters and use context-aware naming (e.g., `gcd_result` instead of `a`)

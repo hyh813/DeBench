@@ -1,0 +1,22 @@
+=== Testing Preprocessing Features ===
+TEST-L1-01: 64
+TEST-L1-02: 30
+TEST-L1-03: 32
+TEST-L1-04: 57122
+TEST-L1-05: 116
+TEST-L1-06: 19
+TEST-L1-07: 60
+LOG: Values: 10, 20, 30
+TEST-L1-08: 60
+TEST-L1-09: 16
+TEST-L1-10: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19
+TEST-L1-11: 382
+TEST-L1-11: 382
+=== Testing ASM Features ===
+ASM-L1-01: 15
+ASM-L1-02: 15
+ASM-L1-03: 42
+ASM-L1-04: 36
+ASM-L4-05: ASM-L1-05: 77
+ASM-L1-05: 77

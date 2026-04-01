@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3` with no semantic meaning (e.g., `int64_t v1; // 0xa94` in `param_macro_constants`). Original source had meaningful parameter `size` but decompiled version loses this entirely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`), but many have incorrect signatures (e.g., `param_macro_constants(void)` should be `param_macro_constants(int size)`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0xdef0`, `0xdf22`, `282`). String literals stored in opaque globals (`g8`, `g9`) instead of inline. Original `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like stack canary checks (`if (*(int64_t *)g2 != *(int64_t *)g2)`) and unnecessary bit masking (`& 0xffffffff`). Some functions have redundant goto patterns (`lab_0xe10`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto for simple conditionals (`goto lab_0xe10` in `call_asm_multi_insn`). Some functions have unnatural overflow checking logic (`v3 == 0 | v3 < 0 != ((v3 ^ v2) & (v2 ^ (int32_t)&g27)) < 0`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity preserved but many functions incorrectly simplified to constant returns. `param_macro_constants` should compute based on input but returns constant `512` or `64` based on broken logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but unnecessary labels and jumps disrupt flow. `call_asm_multi_insn` has confusing goto structure for simple if-else logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated stack canary checks in multiple functions. Bit masking (`& 0xffffffff`, `& 0xfffffffe`) appears redundantly throughout without clear purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed int32_t/int64_t usage inconsistently. Many parameters lost (`param_macro_constants(void)` should take `int`). Pointer types sometimes correct (`int32_t * arr`) but often degraded to `int64_t *`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. All composite data accessed through raw pointer arithmetic. Original code had no complex structs but this limits extensibility.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int64_t)arr`, `(int32_t)n`). Pointer arithmetic without bounds checking. Architecture mismatch causes type confusion (ARM64 atomics for x86_64 source).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated address/line metadata (`// Line range: 704 - 708`). Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Macro expansions not identified (e.g., `SQUARE(x)` became `v3 * v3`). Assembly patterns simplified without noting original intent.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about parameter loss or architecture mismatch. Silent failures where logic was simplified (e.g., `param_stringize` returns constant `19` without explaining string operations lost).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No error condition documentation. Original expected values completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph preserved but relationships unclear. Global variables (`g1`-`g28`) have no semantic names. String globals (`g8`-`g26`) could be better organized.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably but no file organization. All 65 functions in single output. Original had clear section comments (5.2, 5.3) completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with proper headers. External dependencies declared (`mmap`, `sysconf`, `printf`). Some architecture-specific intrinsics may need adjustment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────
+Overall Score:                                  4.70/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Parameter loss**: Functions like `param_macro_constants(void)` lost critical `int size` parameter, making logic incomprehensible
+- **Generic variable naming**: All local variables named `v1`, `v2`, `v3` with no semantic meaning
+- **Macro semantics lost**: Original `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE(x)` macros completely unrecoverable
+- **Architecture mismatch**: ARM64 atomic operations (`__aarch64_ldadd4_acq_rel`) for x86_64 source code
+- **No documentation**: Original extensive comments (preprocessing explanations, expected values) completely absent
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (`param_macro_constants`, `call_asm_basic`), providing some semantic anchor points for understanding code purpose.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments recovered; original source had extensive documentation explaining each test case, expected values, and preprocessing behavior that is completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery from calling conventions**: Analyze register usage patterns to recover lost function parameters (e.g., `param_macro_constants` clearly uses one integer argument based on comparison logic)
+2. **Constant propagation with semantic naming**: Detect compile-time constants and suggest named constants (e.g., `1024` → `MAX_SIZE`, `16` → `BUFFER_COUNT`) based on usage patterns
+3. **Architecture-aware decompilation**: Detect target architecture from binary and avoid mixing instruction sets (ARM64 atomics for x86_64 binary creates confusion)

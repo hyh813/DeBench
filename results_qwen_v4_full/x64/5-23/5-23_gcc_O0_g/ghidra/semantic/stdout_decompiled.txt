@@ -1,0 +1,8 @@
+Testing preprocessing features...
+param_macro_constants result: 64
+param_macro_functions result: 30
+param_conditional_compile result: 32
+param_multi_branch_compile result: 57122
+param_macro_recursion result: 116
+param_stringize result: 19
+param_token_paste result: 60

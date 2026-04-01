@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names (`param_1`, `param_2` instead of `dst`, `src`), local variables use cryptic names like `local_30`, `local_28`, and loop variables are `iVar1`, `uVar1`. Only `__s` in param_strcpy has minimal semantic meaning. This obscures the actual purpose of variables throughout the code.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (`param_strcpy`, `param_strcmp`, `param_strlen`, `param_memcpy`, `param_malloc_free`). However, some internal functions like `FUN_001012e0` and `FUN_001017fc` lack meaningful names. The standard library wrapper functions are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants are properly named (e.g., `SIGUSR1` = 10, `SIGALRM` = 14), but many syscall numbers are unexplained magic values (0x38 for SYS_openat, 0x39 for SYS_close). The value 0x2a (42) used for success returns is not explained. Mixed result - some clarity but significant gaps.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The decompiled output includes extensive external function declarations (50+ lines of `<EXTERNAL>::` functions) that clutter the output. These are compiler-generated PLT stubs that add noise. However, within actual function bodies, there's minimal debug artifact noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with recognizable loops and conditionals. At -O0, there's no loop unrolling or goto abuse. The param_strcpy function has straightforward linear flow. Some complex functions like param_signal_handling have nested loops but remain readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are excessively large. Each function has a single clear purpose. The decomposition matches the original source well, with separate functions for each test case (call_strcpy, call_strcmp, etc.).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error handling. Some forward jumps exist in complex functions like param_fread_fwrite but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist - for example, in param_strcpy the result of strcpy is stored in `__s` then passed to strlen, when param_1 could be used directly. Loop patterns in call_* functions are somewhat repetitive but this is expected from decompilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation observed. The critical bug: `param_strcpy` returns `void` instead of `int` (losing the strlen return value). `call_strcpy` returns `undefined8` instead of `int`. Parameter types lost `const` qualifier (`const char *` → `char *`). Many functions use `undefined4`/`undefined8` instead of proper types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct types were recovered. Complex structures like `ThreadData` in pthread tests are represented as raw memory with manual offset calculations. The sockaddr structure in param_socket_create is partially reconstructed but with generic field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In param_strcpy, the return value from strlen is computed but discarded (type mismatch issue). Pointer arithmetic is generally correct but could be safer. No alignment annotations or restrict keywords recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments in the decompiled output. No explanation of algorithm logic, no documentation of preconditions/postconditions. The only comments are auto-generated (e.g., "Decompiled by BinaryAI"). Original source had extensive comments explaining each function's purpose - none of this was recovered.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library function calls are correctly identified (strcpy, strlen, memcpy, pthread_*). Some patterns like the pthread create/join pattern are recognizable. However, no design patterns or algorithms are explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication whatsoever. The critical bug where param_strcpy returns void instead of int is presented without any warning. Indirect calls and unresolved references are not flagged. The code confidently presents incorrect type information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error handling is present in the code (checking for NULL returns, negative values) but the reasoning behind these checks is not explained. No contracts recovered from the original source comments.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., call_strcpy calls param_strcpy) but not explicitly documented. Global variables like `signal_received`, `signal_number`, `shared_counter` are used across functions but their relationships aren't clearly shown.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output, roughly matching the original source sections (standard library functions, system calls, thread functions). However, all functions are in a single flat namespace without clear section markers.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code would compile with appropriate headers. External function declarations are present. However, the return type mismatch in param_strcpy would cause compilation issues. Dependencies on standard library functions are implicit rather than documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+5)/4 = 5.25
+L2_avg = (7+8+7+6)/4 = 7.00
+L3_avg = (4+5+6)/3 = 5.00
+L4_avg = (2+6+1+2)/4 = 2.75
+L5_avg = (5+6+7)/3 = 6.00
+
+Overall = (5.25 × 0.30) + (7.00 × 0.25) + (5.00 × 0.20) + 
+          (2.75 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.75 + 1.0 + 0.4125 + 0.6
+        = 5.34/10
+```
+
+**Overall Readability Score:** 5.34/10
+
+### Critical Defects (Bullet List)
+- **param_strcpy returns void instead of int** - The most critical bug: the function should return `strlen(dst)` but the decompilation shows return type `void`, completely losing the return value semantics
+- **Parameter names are generic** - `param_1`, `param_2` instead of meaningful names like `dst`, `src` that match the original source
+- **No comments recovered** - Original source had extensive documentation explaining each function's purpose; none was recovered
+- **No anomaly indication** - The return type mismatch is presented without any warning or flag
+- **Type qualifiers lost** - `const char *` parameters became `char *`, losing important type safety
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names mostly match the original source exactly, making it easy to identify which function is being analyzed. Standard library functions are correctly recognized and named.
+
+### Most Needs Improvement: Anomaly Indication (1/10) and Comment Quality (2/10)
+The decompilation provides no warnings about semantic issues (like the incorrect return type) and includes no explanatory comments. These are fundamental to helping analysts understand the code's intent and identify potential issues.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Fix return type inference** - The return value from strlen in param_strcpy is computed but discarded; the decompiler should recognize this pattern and preserve the int return type
+2. **Recover parameter names from source** - Use debug symbols and calling convention analysis to infer meaningful parameter names (dst, src) rather than generic param_1, param_2
+3. **Add semantic annotations** - Flag anomalies like lost return values, unhandled function results, and type mismatches with warnings; add basic comments explaining what each function does

@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3` throughout. Parameters like `a0` and `a1` in `param_strcpy` should be named `dst` and `src` based on their usage in `strcpy(a0, a1)`. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions like `param_strcpy`, `call_strcpy`, `param_strlen` correctly match source names, but many functions use generic patterns like `sub_402020`, `sub_40202c`. The test wrapper functions are named correctly, but internal helper functions lack meaningful names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF, representing -1 as unsigned), `4294967294`, `4294967293` appear extensively without explanation. String literals are referenced via external symbols (e.g., `g_4040b7`) with no indication of their content. The number `42` used as success indicator is unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including: unused variable assignments (e.g., `v3 = v5; v2 = v6; v0 = v7` in `param_scanf`), complex bit manipulation for sign extension (`& 4294967295`), and type confusion between signed/unsigned. However, no debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is relatively natural. Loops use do-while constructs correctly. However, some awkward patterns exist like the computed goto in `param_strchr_strstr` using complex bit operations for pointer arithmetic. The control flow generally matches source intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized (not monolithic). However, some functions like `test_standard_library_functions` contain all test code inline rather than calling individual test functions. The parameter passing exposes implementation details (e.g., passing `&v1` to pthread_create).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling (e.g., `if (!fp) return 4294967295;`). No excessive nesting observed. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy from optimizations like repeated `& 4294967295` masks in printf arguments. The loop in `param_malloc_free` is partially unrolled but not clearly marked. Dead code appears minimal, but expression duplication exists.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `unsigned long long` instead of `size_t`, `char*` instead of `const char*`, `void*` without const. Parameters like `a0`, `a1` in `param_strcpy` lose the `const` qualifier from source. Integer types are not precision-matched (should be `size_t` for strlen return).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are either empty (`typedef struct FILE {} FILE;`) or use generic field names. The `sockaddr` struct is partially reconstructed but with wrong field layout (`sin_family` at wrong offset). Thread data structures like `ThreadData` are completely lost, accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: casting between pointer types without casts, pointer arithmetic in `param_strchr_strstr` using complex bit manipulation, passing `&v1` (address of stack variable) to pthread_create which may outlive the thread. The code in `param_strchr_strstr` has undefined behavior with pointer arithmetic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. No explanation of algorithm intent, no documentation of parameters or return values, no indication of uncertainty. The code provides zero guidance to the analyst.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls are correctly identified (strcpy, strlen, pthread_create). However, no recognition of patterns like "normalize strcmp return to -1/0/1" or "producer-consumer with condition variable". The thread patterns are identified but not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No uncertainty flags for indirect calls or unresolved references. The architecture mismatch (source arm64 → decompiled AMD64) is not indicated. Complex pointer arithmetic in `param_strchr_strstr` could trigger undefined behavior but no warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (like -1) are not explained. The contract of functions (e.g., "returns length of copied string") is not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships are not documented. No indication of which functions call `param_strcpy` or what uses its return value. Global variables like `signal_received`, `atomic_counter` are declared extern but their purpose is unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order, not logically grouped. The test functions (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`) are present but their grouping is coincidental. No namespace or static scoping indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone due to: undefined extern symbols (`g_4040b7`, etc.), incomplete struct definitions, missing function prototypes. Requires significant patching to compile. The architecture mismatch (AMD64 vs arm64) would cause issues.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable names are universally generic (`a0`, `a1`, `v0`, `v1`) with no semantic inference from usage
+- No comments or documentation explaining any function's purpose or logic
+- Type precision severely degraded: `const char*` becomes `char*`, `size_t` becomes `unsigned long long`
+- Composite types lost: ThreadData struct accessed via raw pointer arithmetic
+- Magic numbers everywhere (4294967295 for -1) without explanation
+- Build system compatibility broken: extern symbols, incomplete types, won't compile
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+At -O0, the decompiler correctly recovers loop constructs (do-while) and conditional logic. The execution flow is generally traceable despite other issues.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The universal use of generic names like `a0`, `a1`, `v0`, `v1` makes the code nearly impossible to analyze. The decompiler should infer names from usage patterns (e.g., `a0` used as destination in `strcpy` should be named `dst`).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: Analyze how parameters are used (e.g., `strcpy(a0, a1)` → `dst`, `src`) to generate semantic names
+2. **Add basic comments**: At minimum, document function purpose, parameters, and return value contracts
+3. **Recover type qualifiers**: Preserve `const` correctness and use `size_t` for memory-related functions; reconstruct struct layouts with meaningful field names

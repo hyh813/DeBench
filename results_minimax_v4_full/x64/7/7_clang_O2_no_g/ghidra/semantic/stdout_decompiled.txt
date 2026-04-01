@@ -1,0 +1,17 @@
+Running obfuscation optimization edge case tests...
+
+Opaque predicate result: 10
+Tail call optimization result: 0x14
+Instruction substitution result: 0xe1
+String encryption result: 139
+Tail call (non-optimized) result: 0x7a314
+Non-tail call result: 0x13ba
+Vectorized loop result: 0x48
+
+All edge case tests completed successfully.
+Null pointer dereference result: 140734552009184
+Null pointer dereference result: 41
+Buffer overflow (heap/stack) result: 0x1e
+Integer overflow result: 2000000000
+Link-time optimization result: 10
+Implementation-defined result: 0x2f

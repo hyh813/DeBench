@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (e.g., `param_1`, `iVar1`, `uVar1`, `puVar1`) and do not reflect the original semantic meaning like `size`, `sum`, or `arr`. This forces the reader to track data flow manually to understand purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_macro_constants`, `test_preprocessing_features`, and `param_asm_simd` are perfectly recovered from the symbol table, accurately reflecting the original source structure and intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers due to macro expansion and constant propagation (e.g., `0x400` for `MAX_SIZE`, `0x1e` for `_SC_PAGESIZE`, `7` for `PROT_READ|PROT_WRITE|PROT_EXEC`), making the logic obscure without external reference.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The decompiled output contains significant noise, including Ghidra-specific artifacts like `CONCAT44` (used for register concatenation in SIMD operations) and generic types like `undefined8`, which impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple functions are natural, optimized functions like `param_asm_clobber` and `param_asm_simd` exhibit complex control flow (unrolled loops, vectorized pointer arithmetic) that is difficult to map back to the simple source logic, though this is expected for an `-O3` binary.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are preserved excellently, matching the source 1:1. There is no monolithic code or inappropriate fragmentation; the granularity is identical to the original C source.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, optimized loops (e.g., in `param_asm_clobber`) use `do-while` structures with complex pointer updates that disrupt linear reading compared to the original `for` loop.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler accurately represents the compiler's optimizations, such as loop unrolling in `param_asm_clobber`. While this introduces redundancy in the decompiled view (repeated addition logic), it is a faithful representation of the binary's efficiency.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Type information is significantly degraded; standard types like `int`, `size_t`, and `void*` are frequently replaced with generic `undefined4` and `undefined8`, losing semantic context and signedness information.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: N/A - The source code does not utilize complex structs or unions that require recovery, so the decompiler defaults to a perfect score by omission.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains numerous implicit casts to `undefined*` types and uses macros like `CONCAT44` which obscure type safety. Pointer arithmetic in `param_asm_simd` relies on `undefined8` casts, making it hard to verify safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no meaningful comments explaining the logic. The only comments present are auto-generated warnings (e.g., "WARNING: Removing unreachable block"), which offer no semantic insight.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common system call idioms are not recognized; `sysconf(0x1e)` is not identified as getting the page size, and `mmap` flags are raw integers rather than symbolic constants like `MAP_ANONYMOUS`.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra correctly flags unreachable blocks and overlapping symbols, providing useful warnings about compiler artifacts or potential issues in the binary structure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement for `mmap` to succeed or the valid range of inputs is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow. The relationship between `test_preprocessing_features` and its sub-functions is preserved.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are organized in a logical sequence that closely mirrors the original source file, maintaining the grouping of preprocessing tests vs. assembly tests.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile without significant modification due to the use of `undefined` types, `CONCAT44` macros, and missing header definitions for standard constants.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Magic Numbers**: Critical constants like `0x400` (MAX_SIZE) and `0x1e` (_SC_PAGESIZE) are hardcoded, obscuring the original logic.
+- **Type Erasure**: Extensive use of `undefined8` and `undefined4` instead of concrete types like `int` or `size_t` reduces code safety and clarity.
+- **Macro Loss**: Preprocessor macros (e.g., `PROT_READ`, `MAP_ANONYMOUS`) are fully expanded into raw integers, losing all semantic context regarding system calls.
+- **Optimized Complexity**: The auto-vectorized loop in `param_asm_simd` is represented as complex pointer arithmetic (`CONCAT44`), which is very hard to read compared to the source's simple loop.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The symbol table was preserved, allowing the decompiler to recover the exact function names from the source, which significantly anchors the analysis.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- **Why?** The reliance on magic numbers for constants and flags makes understanding the code's intent (e.g., memory protection settings, buffer sizes) nearly impossible without manual lookup.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Constant Mapping**: Implement a database to map common syscall numbers (e.g., `sysconf` arguments) and flag bitmasks (e.g., `mmap`, `mprotect`) back to their standard C macro names.
+2.  **Type Inference Heuristics**: Improve type propagation to replace `undefined` types with likely concrete types (e.g., inferring `size_t` from `sysconf` usage or `int` from arithmetic operations) to reduce casting noise.
+3.  **SIMD Abstraction**: For vectorized loops, detect common patterns (like parallel addition) and represent them using pseudo-code or intrinsic calls (e.g., `vec_add`) rather than raw register concatenation macros like `CONCAT44`.

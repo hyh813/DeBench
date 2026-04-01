@@ -1,0 +1,16 @@
+Testing obfuscation and optimization edge cases
+
+Opaque predicate result: 10
+Instruction substitution: 20
+String encryption length: 225
+Tail call optimized: 35
+Non-tail call result: 500500
+Vectorized loop sum: 5050
+Division by zero caught: -2073143230
+Null pointer dereference test:
+Buffer overflow test: 30
+Integer overflow result: 41
+Undefined behavior result: 30
+Implementation defined: 2000000000
+All tests completed!
+Final status: 47

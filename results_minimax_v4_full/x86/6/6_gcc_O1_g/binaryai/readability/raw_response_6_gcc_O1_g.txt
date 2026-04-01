@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `param_1` (dst), `param_2` (src), and local variables use `local_30`, `local_10`, `in_GS_OFFSET` - all completely non-descriptive. The original source uses meaningful names `dst` and `src`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: The function name `param_strcpy` correctly matches the original source. However, internal library calls use cryptic names like `FUN_000115b0` (strcpy) and `FUN_00011630` (strlen).
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literal "HelloLib" is correctly preserved. However, the stack canary check `*(int *)(in_GS_OFFSET + 0x14)` uses unexplained magic numbers and the value `0x2a` (42) in return statements is not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checking (`__stack_chk_fail_local`, `in_GS_OFFSET` access), GS register offset calculations, and undefined4 types. These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is straightforward - sequential calls to strcpy and strlen. The stack canary conditional is a minor distraction but expected at -O0. No goto abuse.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function is appropriately small (8 lines). The call_strcpy function properly allocates the 32-byte buffer and calls param_strcpy.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with only one conditional (stack canary check). No forward jumps or complex nesting.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code. The stack canary check is compiler-generated but not redundant in the sense of dead code elimination.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Parameters are `undefined4` instead of `char*`, return type is `void` instead of `int`. The original returns `strlen(dst)` (an int), but decompiled shows no return value.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Not applicable for this simple function - no structs/unions needed. The 32-byte buffer is correctly allocated as `undefined local_30 [32]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple type safety issues: using `undefined4` for pointers, implicit pointer-to-integer conversions, and the return value is completely wrong (void instead of int).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever. The function does not explain that it performs strcpy followed by strlen, or that it returns the string length.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The strcpy + strlen pattern is not recognized. The library functions are shown as cryptic `FUN_xxxx` addresses rather than named stdlib functions.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the return type is wrong (void vs int), or that the function signatures don't match the original source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "dst must have sufficient space"), no postconditions (e.g., "returns length of copied string").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: The function calls are shown as `FUN_000115b0` and `FUN_00011630` instead of `strcpy` and `strlen`. No indication these are standard library functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the decompiled output. The test functions are properly separated.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile. Uses `undefined4` type (Ghidra-specific), missing return value, and has GS register references that won't work in standard C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Return type is `void` instead of `int` - completely loses the return value of strlen
+- Parameters use `undefined4` instead of `char*` pointers
+- Library functions shown as `FUN_000115b0` and `FUN_00011630` instead of `strcpy` and `strlen`
+- No comments explaining the function's purpose or semantics
+- Stack canary checking code obscures the actual logic
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- The function is appropriately sized and the call wrapper properly allocates the buffer
+
+**Most Needs Improvement:** Type Precision (scored 3/10)  
+- Using `undefined4` for pointers and `void` return type completely loses type information from the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover return types correctly**: The function should return `int` (the strlen result), not void
+2. **Name library functions**: Recognize strcpy/strlen patterns and replace `FUN_xxxx` with actual function names
+3. **Use standard C types**: Replace `undefined4` with proper types like `char*`, `int`, etc.
+4. **Add semantic comments**: Document that param_strcpy copies a string and returns its length
+5. **Flag anomalies**: Indicate when return types or signatures don't match expected patterns

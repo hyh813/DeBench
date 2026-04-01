@@ -1,0 +1,5 @@
+=== Test Obfuscation, Optimization, and Edge Cases ===
+
+Opaque Predicate: 10
+Opaque Predicate Result: 20
+Instruction Substitution: 225

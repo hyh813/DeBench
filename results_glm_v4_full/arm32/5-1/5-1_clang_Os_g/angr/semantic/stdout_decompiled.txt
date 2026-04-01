@@ -1,0 +1,14 @@
+Testing C++ OO features
+
+strlen: 4704
+instance_count: 21
+value: 42
+71
+650
+22
+39
+16
+85
+0x10890
+703
+67828

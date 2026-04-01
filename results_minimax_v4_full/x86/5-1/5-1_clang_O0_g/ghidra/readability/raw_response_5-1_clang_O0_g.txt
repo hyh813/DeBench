@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `r1`, `r2`, `local_3c`, `param_1`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`. The decompiler lost all semantic variable names, making it very difficult to track purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the source well: `test_cpp_member_func`, `SimpleClass::getValue`, `call_virtual_func`, `test_cpp_lambda`. However, some compiler-generated functions have generic names like `FUN_00011030`. The core functionality is well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0x1234` (class ID), `0x1f` (31 = name buffer size-1), `0x2a` (42 = throw value), `0x32` (50), `0x96` (150), `0xfa` (250). No named constants are recovered from the source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution includes: "WARNING: Unknown calling convention", "WARNING: Struct overlapping field", "WARNING: Removing unreachable block", try-catch block annotations with CatchHandler comments, and numerous auto-generated function stubs. This significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is generally natural with standard if-else, for loops (e.g., LifecycleClass constructor), and while loops. Exception handling adds complexity with try-catch blocks. At -O0, the flow should be closer to source but some restructuring is evident.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately decomposed - each class method is separate, operators are separate functions, templates are instantiated as distinct functions. The granularity is appropriate for C++ code. Some helper functions for smart pointers are fragmented but reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some complex expressions in template/STL code but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy exists in template/STL code with repeated patterns (multiple unique_ptr implementations, tuple/_Tuple_impl/_Head_base for different types). Loop unrolling is minimal at -O0. Overall manageable but not perfectly clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise: `int`, `size_t`, `bool`, `char*`, various pointer types. Some generic types like `undefined4`, `pointer`, `type` appear. The decompiler correctly identifies `size_t` for memory sizes and `bool` for conditionals.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class structures are recovered with fields: `SimpleClass` has `value` and `name`, `LifecycleClass` has `data` and `size`. Inheritance is shown via `super_BaseA`, `super_BaseB`. Virtual table pointers are identified. Some field names are generic (`field_0x10`) but structure is clear.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic in virtual inheritance handling (`_vptr_MiddleA[-3]`), raw pointer operations in smart pointer implementations. However, most operations are type-safe. The virtual function call pattern `(**obj->_vptr_Base)(obj,x)` is correct but low-level.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Limited useful comments. Some DWARF metadata preserved ("DWARF original prototype"), but no explanatory comments about algorithm logic. Warnings are present but don't explain the code. No documentation of what the functions do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns are present (virtual function calls, exception handling, smart pointers, templates) but not explicitly named or explained. The decompiler recovers the mechanisms but doesn't identify "this is a virtual dispatch" or "this is RAII with unique_ptr".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Generic warnings present: "WARNING: Unknown calling convention", "WARNING: Struct overlapping field", "WARNING: Removing unreachable block". However, these don't explain the actual anomalies or provide guidance. No indication of uncertainty in indirect call resolution.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't indicate requirements like "ptr != NULL" or "size > 0". This is a significant gap for understanding function contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and traceable. Virtual dispatch is shown through vtable. Inheritance relationships shown via `super_*` prefixes. However, no explicit documentation of call graphs, global usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: test functions first, then class methods, then STL implementation helpers. Static vs non-static is distinguished. Related functions are reasonably clustered. Some arbitrary ordering but acceptable.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would require significant patching to compile. Many undefined types: `undefined4`, `undefined8`, `pointer`, `type`. Missing standard library declarations. Would need substantial work to produce compilable code.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`iVar1`, `r1`, `local_3c`) losing all semantic meaning from source
+- Magic numbers like `0x1234`, `0x1f`, `0x2a` appear without explanation or constant names
+- Heavy noise from warnings ("WARNING: Unknown calling convention") and CatchHandler annotations
+- No contract/precondition/postcondition recovery despite -O0 debug compilation
+- Type aliases like `undefined4`, `pointer`, `type` obscure actual types
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered most function names from the source, including class methods, operators, and test functions. This makes it possible to identify what each function does at a high level.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+At -O0 debug level, variable names should be nearly perfectly recoverable from debug symbols. The decompiler failed to leverage this, producing generic names that make tracking data flow extremely difficult.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from DWARF debug info**: At -O0, variable names like `value`, `name`, `capture_by_ref` are available in debug symbols and should be used directly
+2. **Replace magic numbers with named constants**: Detect constants like `0x1234` (getClassID return), `0x1f` (31 = NAME_SIZE-1) and create appropriate #define or const expressions
+3. **Reduce noise in output**: Suppress or consolidate generic warnings; move CatchHandler annotations to optional debug output; remove "WARNING: Unknown calling convention" spam

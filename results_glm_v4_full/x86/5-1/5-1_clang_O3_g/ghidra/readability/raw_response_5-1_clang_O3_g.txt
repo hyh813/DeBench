@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are predominantly generic names like `iVar1`, `puVar1`, and `local_28`, which obscure semantic meaning (e.g., `local_28` represents a `SimpleClass` object but is treated as a byte array).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent, accurately reflecting the original source (e.g., `test_cpp_member_func`, `Container<int>::push`), likely due to preserved DWARF debug symbols.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The code contains many "magic numbers" resulting from compiler optimization (e.g., `0x125c`, `0x2a`, `0x47`) which replace the original logic, making the calculations hard to understand without cross-referencing the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with Ghidra-specific warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* WARNING: Removing unreachable block */`, which significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural and readable where logic remains (e.g., `if` statements in `test_cpp_rtti`), though the heavy optimization has reduced many functions to simple constant returns.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods are correctly separated into distinct functions (e.g., `Container<int>::push`, `RTTIDerivedA::~RTTIDerivedA`), maintaining the original modular structure well.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal confusing jumps; exception handling blocks are marked with comments indicating the try/catch ranges, aiding flow comprehension.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While the decompiler presents the code accurately, the compiler's inlining (e.g., the `SimpleClass` constructor logic inside `test_cpp_member_func`) creates redundancy that the decompiler cannot abstract away without losing fidelity to the binary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are mostly accurate (e.g., `Base *`, `int`), but generic placeholders like `undefined4` and `undefined1` appear frequently for stack variables and padding, reducing precision.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: While vtable pointers like `_vptr_Base` are correctly identified, stack-based objects are often recovered as raw byte arrays (e.g., `char local_28 [36]`) rather than their specific struct types, losing field-level semantics.
+
+**11. Type Safety:** Score: 4/10
+Justification: C++ features are represented using unsafe C patterns, such as direct vtable manipulation (`(**(code **)(*piVar2 + 4))(piVar2)`) and casts to `undefined4`, which is inherent to the decompilation process but reduces safety perception.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: Comments are a mix of useful metadata (e.g., `/* DWARF original prototype: ... */`) and distracting noise (e.g., `/* WARNING: This is an inlined function */`), providing moderate value.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: High-level C++ idioms like RTTI and exceptions are visible via standard library calls (`__dynamic_cast`, `__cxa_throw`), but they are not explicitly annotated or summarized as recognized patterns.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra effectively flags potential issues, such as `/* WARNING: Do nothing block with infinite loop */` in `_start` and `/* WARNING: Subroutine does not return */` for `__cxa_throw`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants; logic checks are embedded in the code flow without explicit contract documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Cross-references to vtables (`PTR__RTTIBase_00013ecc`) and type info objects are clear, making the object-oriented structure understandable despite the optimization.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order, and related class methods are grouped, though the flat file structure typical of decompilation listings limits higher-level organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code requires significant modification to compile due to `undefined` types, injected thunks, and missing headers, making it unsuitable for direct recompilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 4) / 4 = 5.25
+L2_avg = (8 + 8 + 8 + 6) / 4 = 7.50
+L3_avg = (7 + 6 + 4) / 3 = 5.67
+L4_avg = (6 + 6 + 8 + 3) / 4 = 5.75
+L5_avg = (8 + 7 + 3) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (5.67 × 0.20) + 
+          (5.75 × 0.15) + (6.00 × 0.10)
+Overall = 1.575 + 1.875 + 1.134 + 0.8625 + 0.6
+Overall = 6.05/10
+```
+
+### Overall Readability Score: 6.1/10
+
+### Critical Defects
+- **Variable Naming**: Excessive use of generic names (`iVar1`, `puVar1`, `local_28`) obscures data flow and intent.
+- **Stack Object Recovery**: Composite types on the stack (like `SimpleClass`) are recovered as byte arrays (`local_28`) instead of structured objects, forcing manual offset tracking.
+- **Noise Pollution**: High frequency of Ghidra-specific warnings and "unresolved variable" comments clutters the output.
+- **Optimization Artifacts**: While accurate to the binary, the constant folding (e.g., `return 0x2a`) completely hides the original algorithmic logic, making the code hard to map back to source without external context.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?**: The decompiler successfully recovered the original function signatures and names (including template specializations like `Container<int>::push`), which provides a high-level roadmap that matches the source code perfectly.
+
+### Most Needs Improvement
+- **Variable Naming Quality (3/10)**
+- **Why?**: The reliance on default generic names for local variables and parameters makes understanding the data manipulation within functions extremely difficult compared to the descriptive names in the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Stack Variable Typing**: Improve type propagation for stack-allocated objects to recover structs (e.g., `SimpleClass`) instead of defaulting to byte arrays, utilizing constructor/destructor call patterns as hints.
+2.  **Semantic Variable Renaming**: Implement heuristic-based renaming for variables (e.g., `iVar1` used in a size check -> `size`) to reduce cognitive load, even if exact source names aren't available.
+3.  **Noise Filtering Options**: Provide a "clean" view mode that suppresses routine compiler warnings (e.g., "calling convention", "inlined function") to focus on the program logic.

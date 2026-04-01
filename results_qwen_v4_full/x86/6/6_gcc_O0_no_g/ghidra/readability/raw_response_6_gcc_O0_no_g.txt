@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_10`, `local_18`, `iVar1`, `uVar2`, `param_1`) with no semantic meaning. Original variables like `buffer`, `fd`, `sock`, `shm` are lost, making it difficult to track data purpose across functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names well (`param_strcpy`, `call_strcmp`, `thread_compute`, `param_pthread_create`). However, helper functions have cryptic names (`FUN_00011030`, `__x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12345` in syscall, signal numbers as `10` and `0xe` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2,1,0` instead of `AF_INET,SOCK_STREAM,0`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `in_GS_OFFSET` stack canary checks in every function, `__stack_chk_fail_local()` calls, `__x86.get_pc_thunk.*` injection warnings, and "WARNING: Removing unreachable block" comments throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs, but `param_pthread_join` uses `do-while(true)` with `goto LAB_00012df5` instead of clean loop. At -O0, this restructuring is unexpected and reduces clarity.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well with reasonable granularity. Thread functions (`thread_compute`, `thread_sum`) properly separated. No monolithic functions, though some could benefit from further splitting.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but disrupted by stack check epilogues and goto labels. `param_pthread_join` has forward jump that breaks linear reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in ~40 functions. Error handling paths repeat similar patterns (`if (iVar1 < 0) { uVar1 = 0xffffffff; }`). No consolidation of common patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4` instead of `int`/`size_t`, `void*` instead of `pthread_t`/`FILE*`. Function parameters use `undefined4 param_1` losing all type information. Original `size_t`, `atomic_int`, `__thread` types lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered (`local_68.st_size`), but `ThreadData` struct becomes raw array indexing (`local_40[3]`, `local_40[4]`). TLS variables use pointer arithmetic (`in_GS_OFFSET[-9]`) instead of proper struct access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(pthread_cond_t *)cond`. Pointer arithmetic replaces array indexing in `param_malloc_free` (`__ptr[param_1 + 0x3fffffff]` is suspicious). Function pointer signatures degraded to `void*`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated warnings ("WARNING: Function: __x86.get_pc_thunk.bx replaced"). No algorithm explanations, API contracts, or decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `memcpy`, `pthread_create`). Atomic operations shown as `LOCK()/UNLOCK()` macros without explanation. Signal handling and producer-consumer patterns not explicitly identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (thunk replacements, unreachable blocks), but indirect calls not flagged, unusual TLS access patterns not highlighted, and architecture mismatch (ARM64 source → x86 decompiled) not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Error return codes (`0xfffffffd`, `0xfffffffe`) have no meaning attached. No postcondition inference or invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without declaration context. Callback relationships (thread entry functions) not explicitly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by category matching source (library/syscall/thread). Static functions properly scoped. However, all 77 functions in single output with no header file organization or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing external function declarations (`pthread_create`, `socket`, `syscall`). Architecture mismatch (ARM64 source vs x86 decompiled). String literals reference `&DAT_00014xxx` instead of inline strings. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00
+Level 3 (Type):        (4+5+4)/3   = 4.33
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50
+Level 5 (Contextual):  (5+6+3)/3   = 4.67
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (4.33 × 0.20) + 
+          (3.50 × 0.15) + (4.67 × 0.10)
+        = 1.425 + 1.50 + 0.866 + 0.525 + 0.467
+        = 4.78/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`local_10`, `iVar1`) - should infer `buffer`, `fd`, `sock` from usage context
+- **Magic numbers everywhere** - `0x2a`, `0xffffffff`, signal numbers `10`/`0xe` should be named constants
+- **Type system severely degraded** - `undefined4` instead of proper types, losing `size_t`, `pthread_t`, `atomic_int`
+- **No semantic comments** - original source had extensive documentation; decompiled has only auto-generated warnings
+- **Architecture mismatch unflagged** - ARM64 source decompiled as x86 without warning about potential issues
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names preserved well from source (`param_strcpy`, `thread_compute`, `param_pthread_create`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original source documentation with no replacement; only auto-generated compiler warnings remain, providing zero semantic value.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables passed to `strlen()` should be named `string` or `buffer`, variables from `socket()` should be `sock` or `fd`)
+2. **Recover named constants** from common patterns (signal numbers, socket constants, error codes) and replace magic numbers with symbolic names
+3. **Preserve or regenerate semantic comments** by analyzing function behavior and documenting preconditions, postconditions, and algorithm intent

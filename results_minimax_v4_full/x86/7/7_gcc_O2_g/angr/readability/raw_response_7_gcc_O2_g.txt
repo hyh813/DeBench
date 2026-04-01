@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named generically like `v0`, `v1`, `v2`, `ptr`, `result`, `flag1`, `flag2`. The original source used meaningful names like `x`, `result`, `str`, `a`, `b` for the GCD computation. The decompilation completely lost these semantic names.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions are named with address-based identifiers (`sub_401030`, `sub_401040`, `sub_4013b0`). Only `main`, `div_zero_handler`, and `segv_handler` retained proper names. The original had descriptive names like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some computed results are correct (e.g., `return 10`, `return 225`, `return 500500`), but the original expressions like `x * x < 0`, `strlen(str) < 0`, and `0xDEADBEEF` are lost. The decompiler computed the results but didn't preserve the original literal expressions.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant decompilation artifacts present, including: weird struct definitions with padding arrays (`struct_0 { char padding_0[60]; unsigned int field_3c; }`), spurious goto statements (`goto v1->field_3c`), and incorrect type signatures like `char [2] decrypt_string`. These artifacts severely impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else and while loops are recognizable. However, some goto statements appear as artifacts (e.g., `goto ptr[2]` in sub_401030). At -O0, the control flow should be nearly identical to source, but the decompilation introduced some distortions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated and maintain boundaries. Each original function (param_fake_branch, call_fake_branch, etc.) is recovered as a separate function. However, some wrapper functions like `sub_4013b9` that just call `call_fake_branch()` add unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps and weird constructs like `goto v1->field_3c` that disrupt flow. The original source had straightforward linear code, but the decompilation introduced non-linear artifacts.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant struct definitions (multiple `struct_0` definitions with different padding sizes). The loop in `param_tail_call_optimized` was partially unrolled but remains recognizable. Not severe, but some cleanup would help.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int` and `unsigned int` are used. However, the original used `unsigned int` for specific variables, and the decompilation sometimes uses wrong types (e.g., `char [2]` for decrypt_string return type). The original `int` vs `unsigned int` distinction for parameters is sometimes lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Multiple struct definitions with generic names like `struct_0`, `struct_1` with fields like `field_0`, `field_3c`, `padding_0`. The original had no complex structs in the target function. These are decompilation artifacts that don't correspond to the source.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The `param_opaque_predicate` has complex expression with `CONCAT` operations that are artifacts. Function signatures like `char [2] decrypt_string(...)` are incorrect. Mixed signed/unsigned handling in some places.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), but none of this context is preserved. No explanation of what the fake branch or opaque predicate functions do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The GCD computation in `param_opaque_predicate` is somewhat recognizable as a loop, but the original's opaque predicate pattern (p1 && p2 && p3) is not clearly represented. The fake branch condition (`x * x < 0`) is completely lost - only the result is returned.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags or warnings for suspicious constructs. The weird `goto v1->field_3c` statements and `CONCAT` operations are presented without any indication they are decompilation artifacts or uncertain interpretations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants are documented. The original had clear semantics (e.g., "永假条件" - always false condition), but this is completely lost. No indication that param_fake_branch always returns the input value.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present in the code but relationships aren't documented. The call graph (call_fake_branch → param_fake_branch) exists but isn't explicitly shown. External dependencies like `extern unsigned int jmp_buffer` are declared but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in a single file with arbitrary ordering. The original source grouped functions by category (obfuscation, optimization, edge cases), but this organization is lost. Functions appear in address order rather than logical groups.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations for undefined symbols (`g_403ff4`, `encrypted.0`, `jmp_buffer`). The code uses undefined identifiers and would not compile standalone. No clear dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+2+5+3)/4 = 3.0
+L2_avg = (6+7+5+6)/4 = 6.0
+L3_avg = (5+3+5)/3 = 4.33
+L4_avg = (2+4+3+2)/4 = 2.75
+L5_avg = (3+4+3)/3 = 3.33
+
+Overall = (3.0 × 0.30) + (6.0 × 0.25) + (4.33 × 0.20) + (2.75 × 0.15) + (3.33 × 0.10)
+        = 0.90 + 1.50 + 0.87 + 0.41 + 0.33
+        = 4.01/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- Function names are all address-based (`sub_401030`) instead of semantic (`param_fake_branch`)
+- Variable names are generic (`v0`, `v1`, `flag1`) instead of descriptive (`x`, `result`, `str`)
+- No comments explaining the obfuscation techniques or function purposes
+- Spurious struct definitions with padding arrays are artifacts, not from source
+- Weird goto statements (`goto v1->field_3c`) are decompilation artifacts
+- Type signatures like `char [2] decrypt_string` are incorrect
+- The fake branch condition (`x*x < 0`) is completely eliminated - only the result is visible
+
+### Best Quality Aspect: Function Decomposition (Score: 7/10)
+- Functions are properly separated and maintain their boundaries
+- Each original function is recovered as a distinct unit
+- The call relationships between functions are preserved
+
+### Most Needs Improvement: Variable Naming Quality (Score: 2/10)
+- All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `result`
+- The original source had meaningful variable names (`x`, `result`, `str`, `a`, `b`)
+- This makes it extremely difficult to understand what each variable represents
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `x * x` suggests a square operation, `strlen()` suggests a string) to generate semantic names
+2. **Recover function names from debug symbols or patterns**: The original function names like `param_fake_branch` should be recoverable from debug info or by recognizing the function's semantic purpose
+3. **Preserve original expressions instead of computing results**: Instead of showing `return 10`, preserve the original logic like `return x` (since the fake branches are never taken)
+4. **Eliminate spurious struct definitions**: The padding structs are decompilation artifacts that should be recognized and removed
+5. **Add semantic comments**: Document what each function does based on pattern recognition (e.g., "Implements opaque predicate with GCD computation")

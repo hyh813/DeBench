@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `var_1`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `canary` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but runtime helpers use mechanical names (`sub_4004b8`, `sub_4005a0`). Mixed quality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers unexplained: `3735928559` (0xDEADBEEF), `305419896` (0x12345678), signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`. Some hex values preserved (`0x3b9aca00`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `armg_calculate_condition` calls, redundant variable assignments (`v1 = v0; return v1`), and unnecessary double function calls in wrapper functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed patterns - some functions use natural `for`/`while` loops (`param_vectorized_loop`), but others use `goto` labels (`LABEL_4005c4`, `LABEL_4005f0`) for simple conditionals.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but wrapper functions have critical flaw: `call_fake_branch` calls `param_fake_branch(10)` twice, returning only the second result - clear decompilation error.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt reading flow in initialization functions. Core logic functions (`param_instruction_substitution`) read more linearly but still have awkward patterns.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy: every `call_*` function calls its `param_*` counterpart twice unnecessarily. Example: `call_opaque_predicate` has `v0 = param_opaque_predicate(5); return param_opaque_predicate(5);`
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `int` becomes `unsigned int`, `char*` often becomes `unsigned int`, `size_t` lost. Original `jmp_buf`, `sighandler_t` partially preserved but inconsistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost - converted to bitwise operations (`v0 |= 7; v0 |= 248;`). Array `v1[32]` recovered but most composite types flattened.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic on `unsigned int` (`*((char *)&v3 + i)`), implicit casts everywhere, no const-correctness. Original type safety completely lost.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially zero useful comments. Only auto-generated function headers present. No explanation of obfuscation patterns, algorithm intent, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not recognized. No design pattern documentation despite obvious obfuscation techniques.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `armg_calculate_condition` calls unexplained - these are QEMU/Angr artifacts that should be flagged. No warnings about potential decompilation uncertainties or unresolved calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for pointer functions). No postconditions. Original comments about expected values (期望: 10) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_4016a5`, `g_412008`) referenced without context. No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat namespace. No logical grouping - initialization code mixed with test functions. Original section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies undeclared (`printf`, `malloc`, `signal`, `strlen`). References to undefined symbols (`__divsi3`, `.divsi3_skip_div0_test`). Would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.33/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Double function call bug**: Every `call_*` function invokes its `param_*` counterpart twice (e.g., `call_fake_branch` calls `param_fake_branch(10)` twice, returning only second result)
+- **Variable names completely generic**: `v0`, `v1`, `v2` provide zero semantic information compared to original `result`, `str`, `canary`
+- **Magic numbers unexplained**: `3735928559`, `305419896`, `4294967295` should be hex constants or named values
+- **Composite types lost**: Bitfield struct converted to bitwise operations, losing all field semantics
+- **Zero documentation**: No comments explaining obfuscation patterns, algorithm intent, or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names were preserved from original source (`param_fake_branch`, `param_opaque_predicate`), providing some semantic anchor points.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding obfuscation intent nearly impossible; original source had extensive documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate redundant function calls**: Detect and remove duplicate calls in wrapper functions where return value is computed twice unnecessarily.
+2. **Recover semantic variable names**: Use data-flow analysis to infer names from usage patterns (e.g., variables used in size comparisons should be named `*_size` or `*_len`).
+3. **Flag decompilation artifacts**: Annotate QEMU/Angr-specific calls (`armg_calculate_condition`) with warnings indicating they may need manual review or replacement.

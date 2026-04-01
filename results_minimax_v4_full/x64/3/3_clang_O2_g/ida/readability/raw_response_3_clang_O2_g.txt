@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic numbered names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`). Parameters use `a1`, `a2`, `a3` style. Only `si128` hints at SSE register usage but is cryptic. No meaningful names like `packet_size` or `buffer_length` are recovered.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions correctly match source names: `local_vars`, `local_array`, `heap_basic`, `double_value`, `memop_memset`. However, infrastructure functions use generic names like `sub_1020`, `init_proc`. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x14u`, `0x28u`, `0x10u`, `0x18u` appear without explanation. String literals are cryptic (`asc_3737`, `asc_3755`, `asc_3779`). Constants like `100` in `access_extern_global` and `42` in `read_const_data` are unexplained magic numbers.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy SSE/AVX intrinsic noise (`_mm_load_si128`, `_mm_add_epi8`, `_mm_xor_si128`, `_mm_mfence`) clutters the code. Auto-generated comments like "positive sp value has been detected" add noise. Redundant casts and register manipulations are present throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow matching source (if/else, for loops). However, `large_stack_frame` and `vla_stack` show complex loop structures with SIMD that obscure the original simple loops. At -O0, this level of transformation is excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Test functions are properly isolated. The `linked_list_heap` function is 60+ lines but maintains cohesion. Minor issue: some infrastructure functions like `init_proc` are not meaningful decompositions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `heap_basic`. Some forward jumps in complex functions like `vla_stack` but overall good linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is extensively present in `large_stack_frame`, `vla_stack`, `alloca_usage`, `heap_basic`, `heap_array`, `memory_leak` but NOT commented or abstracted. This creates significant visual clutter. At -O0, such unrolling is unexpected.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types are mostly generic `int` or `unsigned int`. Pointers are properly typed. Some `size_t` usage in memory functions. Function pointers are cast to `__int64` losing signature information (e.g., `global_func_ptr = (__int64)f`). Mixed precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct is properly recovered with `data` and `next` fields. `TreeNode` struct recovered with `data`, `left`, `right`. However, `Point` struct is used but not defined in the decompiled output. Some field access uses raw pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present: `(char *)dst + (n & 0xFFFFFFFFFFFFFFFCLL) - 4` in `memop_memcpy`. Function pointer type confusion: `global_func_ptr = (__int64 (__fastcall *)(_QWORD))double_value`. Pointer arithmetic is generally safe but some expressions are complex.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated comments like "positive sp value has been detected, the output may be wrong!" No algorithm explanations, no pre/postcondition documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified or named. Some patterns like linked list traversal are visible in code structure but not documented. Memory allocation patterns (malloc/free) are recognized but not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function returns `*v1` after `free(v1)` - undefined behavior - but no warning. `double_free` function is completely wrong (returns -2 without doing anything). No indication of these critical issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition detection (e.g., "requires: ptr != NULL"). No postcondition inference. No invariant recognition. Error conditions are present in code but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. Global variable usage (`global_counter`, `global_array`, `file_scope_static`) is transparent. Callback relationships like `global_func_ptr` are visible but not documented. No call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by category (stack, heap, static, memory ops). Test functions are together. Static functions are properly indicated. However, infrastructure functions (`init_proc`, `frame_dummy`) are interleaved with test functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code requires external declarations for `malloc`, `free`, `printf`, etc. Some functions have wrong signatures (e.g., `double_free` completely different from source). The code would require moderate patching to compile. Dependencies on libc functions are implicit, not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v0`-`v17`, `a1`-`a3`), making code flow extremely difficult to trace
+- `double_free` function is completely wrong - returns -2 without any allocation/free logic, losing the intentional double-free bug pattern
+- No comments explaining loop unrolling in `large_stack_frame`, `vla_stack`, `heap_basic` - at -O0 this is unexpected
+- No anomaly indication for `dangling_pointer` returning freed memory value
+- String literals are cryptic (`asc_3737`) with no human-readable labels
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core test functions correctly match source names (`local_vars`, `heap_basic`, `double_value`), making the codebase navigable
+
+**Most Needs Improvement:** Semantic Transparency (2.75/10)  
+- No comments, no pattern recognition, no anomaly flags, no contract recovery - the decompiled code provides no semantic context to help analysts understand the code's purpose or identify critical issues
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v2` used as `malloc(4LL * n)` should be named `arr` or `buffer`
+2. Add comments for loop unrolling: "/* Loop unrolled 8x for SIMD */" to explain why simple loops become complex
+3. Flag anomalies explicitly: "WARNING: returns value of freed pointer" for `dangling_pointer`, "ERROR: function logic doesn't match source" for `double_free`

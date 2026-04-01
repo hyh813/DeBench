@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `ptr3`). While `arg_0` and `arg_1` are used for parameters, local variables like `v6` (used for a double register) lack semantic context, making it hard to track data flow.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ name demangling is excellent; functions like `_ZN14DiamondDerived4funcEv` are correctly presented as `DiamondDerived::func()`, and thunks are clearly labeled (e.g., `non-virtual thunk to MultiDerived::funcB()`), preserving high-level semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `4700`, `42`, `71` in `test_cpp_oo_features`) with no indication they are computed results. String literals like `"12RTTIDerivedA"` are clear but represent mangled type names.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present from stack canaries (`__stack_chk_guard`) and FORTIFY_SOURCE checks (`__printf_chk`). Additionally, in `test_cpp_template_func`, stack addresses are incorrectly passed as arguments to `template_max` (`&__stack_chk_guard`), obscuring the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily disrupted by optimization. `call_virtual_func` uses an unsafe `goto *((long long *)...)` for vtable dispatch. `test_cpp_rtti` contains spaghetti logic with labels (`LABEL_4014dd`) and complex nested `if` structures that are hard to follow.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Due to aggressive inlining (O3), most test functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) are empty stubs. The logic has been smashed into `test_cpp_oo_features`, creating a monolithic function that prints pre-calculated constants rather than calling subroutines.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code does not read linearly. `test_cpp_rtti` and `register_tm_clones` utilize forward jumps and labels that break top-to-bottom reading. The `goto` statement in `call_virtual_func` acts as a computed jump, interrupting standard flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler successfully removed redundant code (dead code elimination), leaving only the essential logic. However, the decompiler shows artifacts like `v0 = v2; v1 = v3;` in `_init` which are register moves that add no semantic value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally well-recovered; `class Base *`, `unsigned int`, and `double` are used correctly. However, some generic pointers (`void* *ptr`) are used where specific RTTI structures might exist, and `char` buffers are used for stack space in `test_cpp_member_func`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structs are recovered but with generic field names (e.g., `struct struct_2 { char padding_0[8]; struct struct_3 *field_8; };`). Class layouts are inferred via offsets (e.g., `ptr[40]` in `Container<int>::push`), but the semantic field names (`size`, `data`) are lost.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe operations. The vtable call in `call_virtual_func` is a raw `goto` to a dereferenced pointer cast to `long long`. `test_cpp_rtti` performs pointer arithmetic on `void*` and casts function pointers to data pointers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like the RTTI checks or the vtable thunk adjustments is left unexplained, requiring significant reverse engineering effort to understand.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: High-level C++ idioms are recognizable via function names (e.g., `__cxa_throw` for exceptions, `typeid` for RTTI, `operator new`). However, the implementation details (like the vtable thunk adjustments) are presented as raw pointer arithmetic rather than abstracted concepts.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the unsafe `goto *((long long *)...)` in `call_virtual_func` without any warning or annotation that this is an indirect virtual call. The garbage arguments in `test_cpp_template_func` are also not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic in `test_cpp_oo_features` relies on pre-calculated constants (e.g., `4700`) with no indication of how they were derived or what they represent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Despite the optimization, the relationships between classes and methods are clear due to accurate naming (e.g., `Derived::virtual_func`). Calls to global constructors (`_GLOBAL__sub_I...`) and standard library functions are explicit.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped, but the class hierarchy is flattened. Thunks and constructors are intermixed with regular functions. While the order is logical (address-based), logical grouping by class is absent.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Angr-specific helper macros like `arm64g_calculate_condition` which are not valid standard C. The `goto` based vtable call is also not valid C for function invocation, preventing recompilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`), obscuring data flow.
+- `test_cpp_template_func` contains garbage arguments (`&__stack_chk_guard`) passed to template functions, likely due to stack analysis errors.
+- Virtual function calls are represented as unsafe `goto` statements without warning or abstraction.
+- Logic is heavily optimized away (inlined/constant folded), leaving empty stubs for test functions.
+- No comments explain the complex RTTI logic or the constant propagation results.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- C++ symbol demangling is excellent, perfectly recovering class names, namespaces, and thunk labels.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.5/10)
+- The lack of comments and anomaly indication makes the optimized control flow and unsafe pointer operations very difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Filter Stack Canary Artifacts:** Detect and remove stack guard variables (`__stack_chk_guard`) from function argument lists and local variable lists where they are not semantically relevant.
+2.  **Abstract Virtual Calls:** Replace `goto *((long long *)*(obj+offset))` patterns with a pseudo-call or comment indicating a virtual dispatch (e.g., `/* vtable call */`).
+3.  **Annotate Constant Propagation:** When functions are reduced to printing constants (like in `test_cpp_oo_features`), add a comment noting that the logic was optimized out or inlined.

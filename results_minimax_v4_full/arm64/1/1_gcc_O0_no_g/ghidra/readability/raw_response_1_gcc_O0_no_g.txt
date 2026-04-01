@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` instead of original semantic names like `a`, `b`, `c`. Local variables use cryptic names like `local_4`, `local_8`, `local_14` which obscure their purpose as `temp1`, `sum`, `count` from the source. This is a significant readability degradation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. Excellent preservation of function identity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many magic numbers remain unexplained. For example, `0x3e9` (1001) in `infinite_loop`, `0x65` (101) in `loop_external_state`, and hex values like `0x14` (20), `0x1e` (30) in `if_elseif_chain` are not named. The decompiler could have recognized these as loop bounds or return values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Contains compiler artifacts including `___stack_chk_guard` checks, "WARNING: Removing unreachable block" comments, and "WARNING: Globals starting with '_' overlap" warnings. These are standard Ghidra outputs but add noise. However, no redundant casts or debug instrumentation clutter the core logic significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control structures are natural and readable. For loops, while loops, and do-while loops are correctly recovered. The `goto_backward` function is properly converted to a for loop. Switch statements are converted to if-else chains which is appropriate for -O0. Minor issue: `switch_fallthrough` uses goto labels which could be more idiomatic.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains appropriate granularity - none are monolithic. The original decomposition is preserved: small, focused functions like `sequential_ops` (3 lines), `single_if` (5 lines), `loop_for_fixed` (6 lines). Good cohesion and single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some disruption in `switch_fallthrough` and `duffs_device` due to their complex fall-through patterns, but this is expected given the source complexity.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy detected. The decompiled code is clean without duplicate expressions. Loop unrolling is minimal at -O0.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` types throughout rather than more specific types like `int32_t` or `size_t`. Parameter types are correct but generic. Return types vary between `int`, `undefined4`, and `undefined8` which is inconsistent. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays are reconstructed as individual element initializations (e.g., `local_38[0] = 10; local_38[1] = 20;`) rather than proper array declarations. No struct recovery visible. The `loop_break` function shows raw array initialization that obscures the original `int arr[] = {10, 20, 30, 40, 50}` declaration.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with correct pointer usage. Some minor issues: function pointer types use `code *` which is generic. No major unsafe casts or buffer overflow patterns. The `duffs_device` function has complex pointer arithmetic but is semantically correct.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Ghidra provides auto-generated comments like "WARNING: Removing unreachable block" and file path headers, but these don't explain the actual logic. No algorithm explanations, no recovery confidence indicators, no API contracts. The comments are noise rather than useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are partially recognized - `duffs_device` shows goto labels (`LAB_00101960`, etc.) indicating fall-through detection. However, no explicit naming of patterns like "Duff's device" or "state machine". The `fsm_func_table` could be identified as a function pointer table pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra correctly flags unreachable blocks with warnings, notes when globals overlap, and indicates "WARNING: Could not recover jumptable" for `computed_goto`. However, these are generic warnings without specific guidance on how to resolve or interpret them.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation recovered. The original source had implicit contracts (e.g., "n must be > 0" for `duffs_device`) that are not reflected in the decompiled code.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls within the code are clear (e.g., `recursion_factorial(param_1 + -1)`). However, there's no documentation of which functions call which, or the relationship to external code like libc functions (`printf`, `puts`, `__stack_chk_fail`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output, roughly matching the source organization (test functions grouped together, helper functions separate). However, the file is a single monolithic output rather than organized into logical sections.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code requires libc dependencies (`printf`, `puts`, `__stack_chk_fail`, `_setjmp`, `longjmp`). The `___stack_chk_guard` global is referenced but not defined. Some patching would be needed for standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Calculation:**
+- L1 Average: (3+9+5+7)/4 = 6.0
+- L2 Average: (8+9+7+9)/4 = 8.25
+- L3 Average: (6+5+7)/3 = 6.0
+- L4 Average: (4+5+7+3)/4 = 4.75
+- L5 Average: (6+7+6)/3 = 6.33
+
+Overall = (6.0 × 0.30) + (8.25 × 0.25) + (6.0 × 0.20) + (4.75 × 0.15) + (6.33 × 0.10) = 1.8 + 2.06 + 1.2 + 0.71 + 0.63 = 6.4
+
+Wait, let me recalculate with more precision:
+- L1: (3+9+5+7)/4 = 6.0
+- L2: (8+9+7+9)/4 = 8.25  
+- L3: (6+5+7)/3 = 6.0
+- L4: (4+5+7+3)/4 = 4.75
+- L5: (6+7+6)/3 = 6.33
+
+Weighted: (6.0 × 0.30) + (8.25 × 0.25) + (6.0 × 0.20) + (4.75 × 0.15) + (6.33 × 0.10) = 1.8 + 2.0625 + 1.2 + 0.7125 + 0.633 = 6.408 ≈ **6.4/10**
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `param_2`, `local_4`, `local_8` instead of semantic names from source (`a`, `b`, `temp1`, `sum`)
+- No comments explaining algorithm logic or recovery confidence
+- Magic numbers like `0x3e9`, `0x65`, `0x14` remain unexplained
+- No struct/array type recovery - arrays shown as individual element initializations
+- No contract or precondition documentation recovered
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+The decompiler preserved the original function boundaries and granularity perfectly. Each function is small, focused, and maintains single responsibility - matching the source exactly.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 3/10)  
+The decompiler provides no documentation of preconditions, postconditions, or invariants from the original source. Combined with poor comment quality (4/10), the code lacks semantic context that would aid understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how parameters and locals are used to suggest semantic names (e.g., `param_1` used in addition → suggest `addend` or match source name `a`)
+2. **Detect and explain magic numbers**: Recognize common patterns like loop bounds (1001, 101) and replace with named constants or add explanatory comments
+3. **Recover array/struct types**: Instead of showing `local_38[0] = 10; local_38[1] = 20;`, reconstruct the original `int arr[] = {10, 20, 30, 40, 50}` declaration

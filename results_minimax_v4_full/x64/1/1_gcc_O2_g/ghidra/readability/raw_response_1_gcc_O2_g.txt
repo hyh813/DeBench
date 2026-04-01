@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use systematic but meaningless names like `iVar1`, `iVar2`, `uVar1`, `piVar2`, `param_1`. These generic patterns (iVar=int variable, piVar=pointer) provide type information but completely obscure semantic purpose. Original source used meaningful names like `a`, `b`, `c`, `sum`, `target`, `count`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `goto_forward`, `duffs_device`, `recursion_factorial`. Excellent recovery of function identity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex values without explanation: `0x3e9` (1001), `0x65` (101), `0x78` (120), `0x2d` (45). Array initializations use hex: `arr[1] = 0x14` (20), `arr[2] = 0x1e` (30). Some values are inferable but not documented.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal noise - mostly expected compiler artifacts: `__stack_chk_fail`, `__printf_chk`, stack canary checks (`in_FS_OFFSET + 0x28`), switch jump tables (`CSWTCH_55`). No spurious casts or debug instrumentation. Clean output overall.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops preserved as `while`/`do-while`, switches use jump tables. Some conditions inverted (e.g., `if (x < 1)` instead of `if (x > 0)` in `single_if`). At -O0, loops use do-while with manual iteration which is expected. Goto preserved as-is.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity - all 20+ small functions from original source remain separate. Each function has clear single responsibility. No inlining or fragmentation. Functions like `duffs_device` and `state_machine` maintain their complex structure appropriately.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `loop_multi_exit` but manageable. No excessive nesting (>4 levels). Good flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (natural -O0 output). Common subexpressions not duplicated. The code is clean without unnecessary repetition.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `int` for parameters matches original, function pointers use specific signatures (`_func_int_int*`, `_func_int_int_int*`). Some uses of `ulong`, `long`, `uint`. Minor type erosion but mostly accurate. Shift operations use `byte` appropriately: `(byte)b & 0x1f`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered: `int arr[5]`, `int matrix[3][4]`, `int (*funcs[3])(int)`, `int (*ops[10])(int,int)`. However, array initialization values are scattered as individual assignments rather than literal initializers. 2D matrix properly reconstructed.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with minor issues. Some pointer arithmetic: `paiVar2 = (int (*) [4])((long)paiVar2 + 0x10)`. Function pointer handling has some uncertainty ("WARNING: Could not recover jumptable"). Stack canaries present. No obvious buffer overflows or severe violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly compiler warnings: "WARNING: Unknown calling convention", "WARNING: Subroutine does not return", "WARNING: Could not recover jumptable". No substantive comments explaining algorithms, logic, or intent. Auto-generated warnings dominate over meaningful documentation.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Good pattern recognition - Duff's device identified as switch with do-while, state machines recognized, function pointer arrays recovered. Some complex patterns like `computed_goto` show "WARNING: Could not recover jumptable". Patterns are visible even if not explicitly named.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Appropriate warnings present: "WARNING: Could not recover jumptable at 0x00101d89. Too many branches", "WARNING: Treating indirect jump as call", "WARNING: Removing unreachable block". These flag uncertain decompilation areas. However, some anomalies like the inverted condition in `single_if` aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The decompiled code presents logic without any contract information that might have existed in comments or assertions in the original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships not explicitly documented. However, function names and structure make some relationships inferable (e.g., `call_func_ptr_array` uses `double_value`, `triple_value`, `recursion_factorial`). No explicit call graph or callback documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file. Original had logical grouping (test functions, helper functions, state handlers) but this organization isn't preserved. All 72 functions in one file without grouping or section headers.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Many undefined references: `puts`, `__printf_chk`, `__stack_chk_fail`, `__gmon_start__`. Uses non-standard types like `_func_int_int*`. Architecture is x86 (decompiled) vs arm64 (source). Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`iVar1`, `uVar2`, `piVar1`) that completely obscure semantic purpose
+- No substantive comments explaining algorithms or logic - only compiler warnings present
+- Build system compatibility is poor - won't compile without significant modifications
+- Literal values use unexplained hex (e.g., `0x3e9`, `0x65`) without named constants
+- Module organization lost - all functions in single file without logical grouping
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names perfectly match the original source (`sequential_ops`, `loop_for_fixed`, `duffs_device`, etc.), making it easy to identify each function's purpose
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic variable names like `iVar1`, `iVar2`, `param_1` provide no semantic information about variable purpose, forcing analysts to trace usage to understand intent
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., variables used as loop counters should be named `i`, `j`; variables storing sizes should be `size`, `count`, `length`
+2. Add meaningful comments explaining algorithms and complex logic, not just compiler warnings
+3. Recover literal values into named constants where semantic meaning is determinable (e.g., `0x3e9` → `MAX_COUNT` or `TIMEOUT_ITERATIONS`)

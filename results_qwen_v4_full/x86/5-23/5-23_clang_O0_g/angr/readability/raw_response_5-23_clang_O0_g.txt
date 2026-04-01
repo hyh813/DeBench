@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning; only occasional names like `result`, `len`, `idx`, `cur` provide minimal context compared to original source's meaningful names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_macro_constants`, `call_macro_functions`) but surrounded by numerous meaningless wrapper functions (`sub_401251`, `sub_40128f`) that just call the real functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400`, `0x200`, `57072` appear without explanation; original constants (`MAX_SIZE`, `BUFFER_COUNT`) not recovered; string literals preserved but context lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `_GLOBAL_OFFSET_TABLE_` references, runtime initialization functions (`_init`, `__do_global_ctors_aux`), and redundant wrapper functions pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else and for loops, but some contain spurious goto statements (`sub_401030`, `sub_4010d0`); at `-O0` this level of restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions preserved but surrounded by unnecessary wrapper functions (`sub_401xxx`); function granularity reasonable but decomposition creates artificial fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally; loop structures recovered as for-loops; minor forward jumps in runtime functions don't significantly disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments common (`v0 = v1; v1 = v0` patterns); wrapper functions create call-chain redundancy; no dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to generic `unsigned int` or `int`; original types like `size_t`, `const char*`, `void*` lost; `param_include_guard` incorrectly returns `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions present but generic (`struct_0`, `struct_1` with `field_0`, `padding_0`); no meaningful field name recovery; original struct semantics completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple incorrect function signatures (`param_include_guard`, `call_include_guard`); implicit casts throughout; pointer arithmetic with generic types creates safety concerns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output; original source had extensive documentation explaining macros, conditionals, and assembly; complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Macro expansions not identified (e.g., `ADD_16(x)` becomes `x + 16` without noting macro origin); no pattern recognition for common idioms like string operations or atomic operations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`); incorrect function signatures not flagged; no uncertainty indicators for ambiguous decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; error conditions (e.g., `mmap` failure returns) not explained; original contract information lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variable usage (`global_var`, `g_403099`) not explained; no call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping; runtime initialization functions mixed with user code; no namespace or module structure preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`printf`, `mmap`, `sysconf`) but would require significant stubbing; GOT references need resolution; not standalone compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.25/10
+```
+
+**Overall Readability Score:** 4.25/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on semantic usage (e.g., `result`, `temp_value`, `loop_counter`)
+- **Function `param_include_guard`** incorrectly returns `void` but should return `int` per original source
+- **Zero comments** despite original source having extensive documentation explaining macro behavior and assembly logic
+- **Magic numbers** like `57072`, `0x400`, `0x200` not recovered as named constants (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Wrapper functions** (`sub_401xxx`) create artificial call chains that obscure the actual program structure
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Loop structures recovered as natural for-loops and most code reads top-to-bottom without excessive jumps
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation despite original source having extensive comments explaining preprocessing behavior, macro semantics, and assembly logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant names from usage patterns** - Detect repeated literals (0x400, 0x200) and suggest named constants based on comparison context
+2. **Preserve original function signatures** - Validate return types against call sites to catch mismatches like `param_include_guard` returning void instead of int
+3. **Generate semantic comments for macro expansions** - When detecting patterns like `x + 16` from nested additions, annotate as potential macro expansion (e.g., `ADD_16(x)`)

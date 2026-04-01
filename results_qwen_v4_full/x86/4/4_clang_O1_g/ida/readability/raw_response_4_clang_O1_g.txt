@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Generic names dominate (`v0`, `v1`, `v2`, `result`, `i`) throughout; only parameter names like `count`, `callback`, `x`, `y` retain original semantics. Variables like `v4[3]` in `test_calling_conventions` obscure the `LargeStruct` array being initialized.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved well (`cdecl_func`, `varargs_func`, `param_by_value_int`). Runtime helpers use generic names (`sub_1030`, `sub_1080`) but core test functions maintain semantic clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Aggressive constant folding replaces actual computation with pre-computed values (e.g., `call_cdecl()` returns `15` directly instead of `cdecl_func(5, 10)`). Magic number `305419896` appears without hex notation or explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__usercall@<eax>`, `__userpurge`, register annotations (`a1@<ebx>`), and stack comments (`[esp+0h] [ebp-8h] BYREF`). These don't block understanding but add visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural `if/else`, `for`, `do-while` constructs. However, test functions collapse to constant returns losing original control flow structure (e.g., `test_calling_conventions` no longer shows actual function calls).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but aggressive inlining/constant folding merges computation into callers. `call_cdecl()` should call `cdecl_func()` but returns `15` directly, losing the call relationship.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with standard control structures. Some functions like `ret_multi_branch` use flattened conditionals (`10 * op + 10`) instead of switch, which is acceptable optimization.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates semantic redundancy—computation disappears entirely. `call_ret_large_struct()` initializes array at indices 100-115 instead of 0-15, showing optimization artifact that obscures original intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `double`), but generic types appear (`_DWORD`, `__int64`). Function pointer types partially recovered (`func_ptr_t`), but some use raw casts (`*(_DWORD *)p`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types recovered (`LargeStruct`, `SmallStruct`, `BigStruct`) with field access preserved (`s.data[v1]`, `p->x * p->y`). Field names match source but no struct definitions visible in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `*(_DWORD *)p`, `(_BYTE *)&loc_1BE9`, `(char *)&dword_64`. Pointer arithmetic visible in `ret_opaque_handle` returning `int**` instead of `void*`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only function header comments from decompiler. No algorithm explanations, no decompilation confidence indicators. Original source comments (calling convention documentation) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C idioms preserved (varargs with `va_start`/`va_arg`, struct access) but not identified or named. No pattern recognition for common constructs like accumulator loops.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for library functions, "positive sp value has been detected"). No detailed explanations of why decompilation failed or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present (`if (p)`, `if (pp)`) but not documented as preconditions. No postcondition inference or invariant recognition. Original test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Test functions no longer show which functions they're testing (constants replace actual calls).
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output maintaining original grouping. Runtime helpers (`_do_global_dtors_aux`, `frame_dummy`) mixed with test code without clear separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Five external functions marked "FAILED to decompile" (printf, strlen, etc.). Would require stubs for compilation. Global variables referenced but not defined (`ret_opaque_handle_handle1`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted Contribution |
+|-------|--------------|--------|----------------------|
+| L1: Lexical Clarity | 5.75/10 | 30% | 1.725 |
+| L2: Structural Intelligibility | 6.25/10 | 25% | 1.563 |
+| L3: Type System Fidelity | 6.00/10 | 20% | 1.200 |
+| L4: Semantic Transparency | 3.75/10 | 15% | 0.563 |
+| L5: Contextual Coherence | 5.00/10 | 10% | 0.500 |
+
+**Overall Readability Score: 5.55/10**
+
+### Critical Defects:
+- **Constant folding destroys test semantics**: Functions like `call_cdecl()` return `15` directly instead of calling `cdecl_func(5, 10)`, losing the actual test behavior
+- **Variable names are generic**: `v0`, `v1`, `v2` throughout obscure semantic meaning (e.g., `v4[3]` should be `large_struct_data`)
+- **No comments recovered**: Original 200+ lines of documentation about calling conventions completely lost
+- **Unsafe casts without warning**: `*(_DWORD *)p` and similar casts present without decompilation confidence indicators
+- **Test expectations lost**: Original printf statements showed expected values; decompiled version just prints constants
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify which test case each function represents
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete loss of semantic documentation; no algorithm explanations, no decompilation confidence indicators, no recovery of original source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call relationships over constant folding** - When original source shows explicit function calls for testing purposes, maintain those calls even if optimizer folded them
+2. **Infer variable names from usage patterns** - Variables used in loop counters should be named `i`, `index`; accumulator variables should be named `sum`, `total`
+3. **Add decompilation confidence annotations** - Mark uncertain type casts, unresolved indirect calls, and optimization artifacts with comments explaining the uncertainty level

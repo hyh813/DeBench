@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All variables use generic names like `param_1`, `param_2`, `param_3` for parameters and `iVar1`, `uVar1`, `lVar2`, `bVar1`, `puVar3` for locals. The original source uses meaningful names like `temp1`, `temp2`, `sum`, `count` which are completely lost. This makes tracking variable purpose extremely difficult across the 74 functions decompiled.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: Core test functions like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` correctly match source names. However, infrastructure functions use cryptic addresses: `FUN_00100880`, `FUN_001009fc`, and internal helpers like `call_weak_fn`, `deregister_tm_clones` are auto-generated without semantic meaning. Mixed results - main logic functions named well, boilerplate poorly.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple unexplained magic numbers appear: `0x3e9` (1001), `0x65` (101), `0x12` (18), `0xe` (14). The test functions print hardcoded hex values like `0x15` (21) instead of calling the actual functions. Constants like loop bounds are not named, making it unclear what `0x12 < uVar1` represents (digit counting threshold).
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts - no register spilling debris or redundant casts. Ghidra's standard warnings about "Removing unreachable block" appear but don't impede reading. The code is relatively clean except for some type-related noise like `undefined4`, `undefined8` in function signatures.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: At -O0, control flow is well-preserved. `sequential_ops` correctly inlines to single expression `(param_2 + param_1) * 2 - param_3`. Loops use `do-while` constructs matching source. Some clever optimizations like `param_1 << (0 < param_1)` for doubling positive numbers, but these are readable. The `goto_forward` and `goto_backward` use goto as expected.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are appropriately sized - each control flow pattern is its own function. No 500-line monoliths. Parameter counts match original (e.g., `sequential_ops(int,int,int)`). However, test functions contain hardcoded values rather than actual function calls, suggesting the decompiler couldn't resolve the call graph properly.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `if_else`. No excessive forward jumps. The `duffs_device` has computed goto labels but they're labeled clearly (`switchD_00101024_caseD_7`). Deep nesting is minimal (max 2-3 levels).
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal at -O0. Common subexpression elimination is limited. The code is clean without redundant computations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Parameters correctly typed as `int` or `uint`. However, some precision loss: `undefined4` appears where `int` should be, `code *` used for function pointers instead of proper signatures like `int (*)(int)`. The original uses `volatile int *flag` but decompiled shows just `int *param_1`, losing volatile qualifier.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: No struct/union reconstruction. Arrays like `int arr[] = {10,20,30,40,50}` are accessed via pointer arithmetic: `(&DAT_001018d8)[lVar1]`. The matrix in `loop_multi_exit` becomes raw memory access without type information. Some data sections referenced but not typed.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Justification: Generally type-safe operations. Function pointer calls use `(*param_1)(param_2)` which is reasonable. No obvious buffer overflows or incorrect pointer arithmetic. Minor concerns: some implicit conversions between signed/unsigned (e.g., `param_1 - 1U`). No severe type safety violations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Only auto-generated comments like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return". No algorithm explanations, no decompilation confidence indicators. Test functions print hardcoded hex values instead of calling actual functions - this is a major semantic loss. No @param/@return documentation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Basic patterns recognized - switch statements, loops, recursion all identifiable. However, no explicit naming of patterns like "Duff's device", "state machine", "tail recursion". The `duffs_device` is recognized as a switch with goto but not labeled as such. Some pattern hints but not named.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: Ghidra warns about unreachable blocks and subroutines that don't return. However, no indication of uncertain indirect calls or unusual stack layouts. The test functions clearly have wrong (hardcoded) values but no warning about this. Some generic warnings present but inconsistent.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No precondition, postcondition, or invariant documentation. The original has explicit comments like "基准条件" (base case) for recursion which are lost. No recovery of input validation logic (e.g., "requires: n > 0" for factorial). Zero contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are visible in the code (e.g., `recursion_factorial(param_1 + -1)`). However, no documentation of who calls whom, no call graph, no global variable usage transparency. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is visible but not explained.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions grouped by address (00100a54, 00100a64, etc.) rather than logically. Related control flow functions scattered: L1 tests, L2 tests, L3 tests not clearly separated. Static functions like `double_value`, `triple_value` appear near their usage but organization is arbitrary, not matching the original file structure.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Test functions print hardcoded hex values (`printf("CF-L1-01 (sequential_ops): %d\n",0x15);`) instead of calling `sequential_ops(5,7,3)`. This means the decompiled code cannot compile and produce correct output. Missing dependencies not documented. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+4+7)/4 = 4.75
+L2_avg = (8+7+8+8)/4 = 7.75
+L3_avg = (6+5+7)/3 = 6.00
+L4_avg = (3+5+6+2)/4 = 4.00
+L5_avg = (5+4+3)/3 = 4.00
+
+Overall = (4.75 × 0.30) + (7.75 × 0.25) + (6.00 × 0.20) + (4.00 × 0.15) + (4.00 × 0.10)
+        = 1.425 + 1.9375 + 1.2 + 0.6 + 0.4 = 5.56/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming**: All parameters use `param_N` and locals use `iVar1`, `uVar1`, etc. - completely generic, losing all semantic meaning from source (temp1, temp2, sum, count)
+- **Test function corruption**: Test functions print hardcoded hex values (e.g., `0x15`) instead of calling actual functions, making the decompiled code unusable for verification
+- **No contract recovery**: Zero precondition/postcondition/invariant documentation despite clear contracts in source (e.g., "requires: n > 0" for factorial)
+- **Composite type loss**: All arrays/structs reduced to pointer arithmetic (`(&DAT_001018d8)[lVar1]`), losing type information
+- **Literal mystery**: Magic numbers like `0x3e9`, `0x65`, `0x12` appear without explanation of their purpose (1001, 101, 18)
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (8/10)**
+- **Why?** At -O0, the decompiler preserved the original control flow structures well - sequential ops inlined, loops use do-while, conditionals clear. The goto patterns for `goto_forward` and `goto_backward` are appropriately rendered.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**
+- **Why?** Every single variable uses generic names (param_1, iVar1, uVar1) making it nearly impossible to track purpose across 74 functions. The original source's meaningful names (temp1, sum, count, target, flag) are completely lost.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as an accumulator, name it `sum` or `acc`; when used as counter, use `count` or `i`. Analyze data flow to recover semantic names rather than generic param_N.
+
+2. **Fix test function decompilation**: The test functions should call the actual decompiled functions with test inputs, not print hardcoded values. This destroys the ability to verify decompilation correctness.
+
+3. **Recover magic numbers**: Detect constants used as loop bounds, array sizes, or thresholds and either compute their meaning (0x3e9 = 1001) or suggest named constants like MAX_COUNT, BUFFER_SIZE.

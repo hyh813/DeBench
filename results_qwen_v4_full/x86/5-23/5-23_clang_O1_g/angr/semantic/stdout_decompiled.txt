@@ -1,0 +1,12 @@
+Preprocessing features test:
+call_macro_constants returned: -1076847052
+call_macro_functions returned: -1076847052
+call_conditional_compile returned: -1076847052
+call_multi_branch_compile returned: -1076847052
+call_macro_recursion returned: -1076847052
+call_stringize returned: -1076847052
+call_token_paste returned: -1076847052
+LOG: Values: 10, 20, 30
+call_macro_override returned: 10
+call_macro_override returned: 10
+call_include_guard returned: 10

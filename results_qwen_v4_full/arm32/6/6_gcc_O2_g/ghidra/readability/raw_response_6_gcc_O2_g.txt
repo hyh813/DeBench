@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `piVar1`, `local_c`, `local_24` that obscure semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved (`param_strcpy`, `thread_sum`, `consumer_thread`, `param_mutex_lock`). Action-oriented names clearly reflect purpose, matching original source closely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xc` (12), `0x5a` (90), signal numbers as `10`/`0xe`, socket constants as `2`/`1`. No symbolic constant recovery despite debug compilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__stack_chk_fail()` calls, `__printf_chk` instead of `printf`, "Unresolved local var" comments, "Unknown calling convention" warnings throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while patterns reasonably well, but fork/exec branches have awkward structure. Some functions use goto labels (`LAB_000123b4`) instead of structured constructs.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; thread functions properly separated. Test functions inline some logic that could be extracted but overall cohesion is maintained.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels disrupt flow. Early returns used appropriately in some functions, but stack check epilogues create non-linear patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks add redundancy throughout. Otherwise clean with no obvious dead code, though some compiler optimization artifacts remain visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, size_t) but significant degradation: `void*` where specific types expected, pthread types sometimes generic. Original `const char*` often becomes `char*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: ThreadData struct partially recovered but fields accessed via pointer arithmetic (`*(int *)((int)arg + 8)`). sockaddr_in fields visible but not named as proper struct in all cases.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present throughout (`(int)uVar5`, `(pthread_mutex_t *)&counter_mutex`). Pointer arithmetic replaces struct field access in several locations, risking undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "WARNING: Removing unreachable block"). No algorithm explanations, API contracts, or semantic documentation recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, strcmp, pthread_create) but not explicitly named as patterns. Atomic operations shown as `__sync_*` functions without higher-level semantic recovery.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Unreachable blocks and unknown calling conventions flagged with WARNING comments. Stack check failures noted. However, indirect call resolution issues not always clearly communicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: ptr != NULL"). Error conditions visible in code but not documented. No postcondition or invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage (`signal_received`, `shared_counter`) visible but relationships not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No header file separation, static functions not properly scoped, no namespace or package structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubs to compile. External dependencies not documented. Compiler-specific constructs (`__printf_chk`, `__sync_*`) need manual replacement for portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (5+5+6)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (4+5+6+3)/4 = 4.50 × 0.15 = 0.68
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.31/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- Variable names like `iVar1`, `local_24` should be `thread_count`, `iterations` based on usage context
+- Magic numbers `0x2a`, `0xc`, `0x5a` should be recovered as constants (42, 12, 90)
+- Struct field access via pointer arithmetic `*(int *)((int)arg + 8)` instead of `data->result`
+- Signal numbers shown as `10`/`0xe` instead of `SIGUSR1`/`SIGALRM`
+- Stack canary checks (`__stack_chk_fail`) add noise without semantic value
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names are accurately preserved from original source, maintaining semantic clarity for entry points
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- No precondition/postcondition documentation recovered, making error handling paths unclear
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant recovery**: Detect repeated magic numbers and suggest named constants based on usage patterns and debug symbols
+2. **Enhance struct field naming**: Use debug information (-g flag present) to recover original field names instead of pointer arithmetic
+3. **Add semantic comments**: Generate API contract documentation from function behavior analysis (null checks, return value meanings)

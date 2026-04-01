@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` with zero semantic meaning. For example, `func_mixed_args` uses `param_1` through `param_5` instead of `x`, `s`, `d`, `ll_high`, `ll_low`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names mostly preserved (`cdecl_func`, `varargs_func`), but optimization created mangled names like `varargs_func_constprop_0` and meaningless names like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy use of hex magic numbers (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. These are constant-folded results that obscure the original test values (15, 50, 42).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple compiler artifacts present: `__x86.get_pc_thunk.bx` injection warnings, "Removing unreachable block" warnings, and inlined function markers clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/else and do-while constructs. The `varargs_func` loop is correctly recovered as a do-while pattern.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Constant propagation created duplicate functions (`varargs_func` vs `varargs_func_constprop_0`). Some functions like `func_struct_byval` have 32 parameters due to struct decomposition failure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate returns. No excessive goto usage observed in recovered functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Optimization artifacts create redundancy (duplicate constprop functions). However, no significant dead code remains in individual functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `double` becomes `undefined4` in `func_mixed_args`, `long long` split into two `undefined4` parameters (`param_4`, `param_5`), function pointers become `code *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete struct recovery failure. `LargeStruct` (128 bytes) becomes 32 separate int parameters in `func_struct_byval`. `SmallStruct` becomes `int *` in `func_struct_byptr`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `(char *)*param_1` cast in `param_ptr_array`, void pointer usage without type info in `ret_opaque_handle`, double pointer becomes single `int *` in `param_double_ptr`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra warnings present (e.g., "WARNING: Function: __x86.get_pc_thunk.bx replaced"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Varargs pattern, struct passing patterns, and callback patterns are not identified or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (unreachable blocks, function injections), but critical issues like struct decomposition failure are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition/postcondition documentation. Null checks exist in code but aren't documented as contracts (e.g., `func_struct_byptr` null check).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph, no indication of which functions are test harnesses vs. test targets.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order without logical grouping. Test functions mixed with implementation functions without section markers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies undeclared (`__printf_chk`, `strlen`, `puts`, `__libc_start_main`). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+6)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (7+5+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.61/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects
+- **Struct recovery completely failed**: `LargeStruct` with 16 `long long` fields became 32 separate `int`/`undefined4` parameters
+- **Type information severely degraded**: `double` and `long long` types lost, represented as `undefined4`
+- **Constant folding obscures semantics**: Test functions return pre-computed constants (`0xf`, `0x32`) instead of showing actual computation
+- **Variable names provide zero semantic value**: All `param_N`, `iVarN` naming makes tracking data flow difficult
+- **Architecture mismatch unexplained**: Source claims ARM64, decompiled binary is x86 (potential metadata error)
+
+### Best Quality Aspect
+- **Control Flow Naturalness (7/10)** - Loop constructs and conditionals are correctly recovered with idiomatic C patterns despite optimization
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types, converting them to primitive parameter lists
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement struct pattern recognition** - Detect consecutive memory accesses with regular offsets and propose struct definitions with field names based on access patterns
+2. **Preserve type information from debug symbols** - When `-g` flag is present, extract and apply DWARF type information rather than inferring from usage
+3. **Add semantic annotations for constant-folded code** - When functions return constants, indicate the original computation that was folded (e.g., `// Originally: cdecl_func(5, 10) = 15`)

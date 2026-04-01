@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `puVar1`, `local_10`), obscuring the semantic meaning of parameters like `n`, `i`, or `arr`. While `global_counter` and `large_buf` are recovered, the majority of local variables lack descriptive names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `double_value`, `local_vars`, and `heap_basic` are perfectly recovered from symbols, accurately reflecting the original source intent. Only a few stub functions (e.g., `FUN_00011030`) lack meaningful names.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers (e.g., `0x2a` for 42, `0x14` for 20, `0x800` for 2048) due to compiler optimization. These hex values replace the original decimal constants and variables, significantly hindering readability.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, particularly the "stack clash" protection code in `vla_stack` and `alloca_usage`. This complex pointer arithmetic and page-probing logic obscures the simple intent of allocating stack memory.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural; `vla_stack` and `alloca_usage` contain convoluted loops for stack probing. Additionally, `linked_list_heap` uses a `while(true)` construct with a break, which is less readable than the standard `for` loop in the source.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Test functions like `test_stack_memory` are bloated monoliths because the compiler inlined the logic of the functions being tested. While the core logic functions (e.g., `heap_basic`) are distinct, the test harness structure is lost.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the stack probing logic in VLA functions introduces non-linear pointer manipulation that disrupts the flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the optimized binary, removing dead stores and redundant assignments (e.g., `local_vars` is reduced to `return x * 2 + 10`). While this deviates from the source structure, it is clean for the optimized binary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate, with `int`, `void*`, and specific struct pointers like `Node*` recovered correctly. However, raw memory accesses often use generic types like `undefined1` or `undefined4`, and pointer arithmetic is frequently cast to `int`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs like `Node` and `TreeNode` are well-defined and used correctly in the decompiled code (e.g., `__ptr->data`). The layout and field access patterns match the source definitions well.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are frequent unsafe casts, such as casting `void*` to `int` to perform pointer arithmetic (e.g., `(int)__ptr + iVar1 * 2`). While functional, this erases type safety compared to the original array indexing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are mostly limited to warnings like "Unknown calling convention" or "Unresolved local var". There are no explanatory comments for complex logic like the stack probing or the inlined test calculations.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls (`malloc`, `free`, `fork`) are recognized. However, the compiler's stack probing idiom is not abstracted, and the memory barrier is replaced by undefined `LOCK()`/`UNLOCK()` macros rather than a clear semantic description.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler consistently flags "Unknown calling convention" and "Unresolved local var", which accurately alerts the user to uncertainties in the analysis.
+
+**15. Assertion & Contract Recovery:** Score: 6/10
+Justification: Basic precondition checks (e.g., `if (ptr == NULL)`) are preserved. However, the semantic intent of functions like `heap_overflow` is lost because the overflow loop was optimized away, leaving no trace of the intended bug.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between callers and callees is preserved. Global variable accesses (e.g., `global_counter`) are explicit.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and static functions are identified. The output is a flat list, which is standard for decompilation views, but the order roughly follows the binary layout.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on injected macros like `LOCK()` and `UNLOCK()` which are not defined in the output, and uses specific compiler intrinsics (`__printf_chk`) that would require porting to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Stack Probing Noise**: Functions `vla_stack` and `alloca_usage` are obfuscated by complex stack clash protection code, hiding the simple allocation logic.
+- **Generic Variable Names**: Extensive use of `iVar1`, `puVar1`, etc., instead of semantic names like `i`, `arr`, or `n`.
+- **Optimized-away Logic**: In `test_stack_memory` and `heap_overflow`, function calls and loops are replaced by hardcoded constants (e.g., `0x14`), making the original logic invisible.
+- **Undefined Macros**: Memory barriers are represented by `LOCK()`/`UNLOCK()` without definition, breaking semantic understanding.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered symbol names for almost all user-defined functions, making the high-level purpose of each code block immediately identifiable.
+
+**Most Needs Improvement:** Noise Reduction (scored 2/10)
+- The exposure of low-level stack probing logic as raw pointer arithmetic makes dynamic stack allocation functions extremely difficult to read.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Stack Probing**: Detect and abstract the "stack clash" protection sequence (page-by-page probing) into a pseudo-function or comment to preserve the `alloca` semantic.
+2. **Symbolic Constant Recovery**: For inlined code, attempt to map hardcoded results back to the function calls that produced them (e.g., annotate `0x14` as `result of local_vars(5)`).
+3. **Improved Type Inference for Loops**: Better analyze loop induction variables to recover names like `i` or `counter` instead of `iVar1`.

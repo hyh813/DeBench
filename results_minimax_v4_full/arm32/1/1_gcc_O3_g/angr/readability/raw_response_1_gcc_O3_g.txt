@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) instead of original names (`a`, `b`, `c`). Local variables are `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` - completely non-descriptive. For example, `sequential_ops` should have variables named `temp1`, `temp2`, `temp3` but instead uses computed expressions with no names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most algorithmic functions retain original names: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `double_value`, `triple_value`, `loop_for_fixed`. However, some helper functions have generic names like `sub_10454`, `sub_10530`. Test functions correctly named `test_control_flow_l1/l2/l3`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF, representing -1) appears frequently without explanation. Constants like `1001` (loop limit), `100` (threshold), `10` (multiplier) are unexplained. However, string literals in test output are preserved. The switch lookup table reference `CSWTCH.56[4]` is partially informative.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Register location comments (`// r0`, `// r3`, `// [bp-0x4]`) add noise. Some dead code paths visible (e.g., unreachable labels). Stack guard references (`GLIBC_2.4::__stack_chk_guard`) are compiler artifacts. However, no debug instrumentation or frame pointer manipulation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/else structures recovered but use goto jumps (e.g., `goto LABEL_109aa` in `goto_forward`). The `loop_while` and `loop_dowhile` have broken loop conditions using division by 10 for digit counting - semantically correct but obfuscated. Switch statements partially recovered but some use if-else chains with goto. At -O0, these goto patterns are unnecessary decompilation artifacts.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function is properly separated. No inlining artifacts - all original functions exist as separate entities. Function sizes are reasonable (not monolithic). Parameter counts match original (e.g., `sequential_ops` has 3 params, `loop_nested` has 2 params).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but excessive forward jumps disrupt flow. The `if_elseif_long` function has 5+ goto labels creating spaghetti flow. `nested_if_deep` has confusing nested conditions with goto. Some functions like `loop_continue` read linearly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions visible in complex conditionals (repeated `armg_calculate_condition` calls). Loop unrolling present in `loop_for_fixed` but semantically correct. No obvious dead code elimination failures. Some common subexpression duplication in conditional returns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters and returns use `unsigned int` when original used `int`. This loses critical sign information - `single_if(-5)` should return -5 but unsigned interpretation breaks. Pointers correctly typed as `unsigned int*` for addresses. No `const` correctness recovered. Function signatures lose signedness: `sequential_ops` should return `int`, not `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The `loop_break` function references array elements `{10, 20, 30, 40, 50}` but no array reconstruction - values hardcoded in switch cases. The `matrix` in `loop_multi_exit` not recovered. All composite types lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer calls use raw addresses without proper typing (e.g., `goto a0` in `call_func_ptr`). Pointer arithmetic visible in loops but type-safe. Some unsafe operations in `opaque_predicate` with flag calculations. No `restrict` or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only register location comments (`// r0`, `// r3`) which are noise. No algorithm explanations. No decompilation confidence indicators. The comment `/* do not return */` on `abort()` calls is helpful but auto-generated.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements (partially), loops (for/while/do-while), if-else chains. But no explicit pattern naming (e.g., "State machine pattern", "Duff's device"). The `duffs_device` function is severely mangled - original switch-do-while combination not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of indirect call resolution failures. No warnings about unresolvable targets. The `call_func_ptr` uses `goto a0` which is anomalous but not flagged. Some "do not return" annotations on abort calls are present but minimal.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. The `op_div` checks for division by zero but no comment explaining it. No error condition documentation. Completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some `extern` declarations show external dependencies. But no clear call graph documentation. No indication of which functions call which. Callback relationships not documented. The `call_func_ptr_array` builds function pointer array but relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in source order. Test functions grouped together. Helper functions (ops: op_add, op_sub, etc.) grouped. But no logical headers or API groupings. Static functions not explicitly marked as static in all cases.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone. Many `extern` references to undeclared items (`__gmon_start__`, `__libc_start_main`, `GLIBC_2.4::__stack_chk_guard`). Missing standard library declarations (`puts`, `printf`, `memset`). Would require significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming: All parameters `a0`/`a1`/`a2` and locals `v0`-`v6` are completely generic, losing all semantic meaning
+- Type precision: All `int` types converted to `unsigned int`, breaking signed semantics (e.g., `single_if(-5)` returns wrong value)
+- No struct/array recovery: `loop_break` array hardcoded as switch cases instead of reconstructed array
+- Excessive goto: Control flow uses goto jumps instead of natural structures, especially in `if_elseif_long` and `nested_if_deep`
+- No comments: Zero algorithm explanations or semantic documentation
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Each source function properly separated with correct parameter counts; no inlining artifacts
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- All variables use generic names (`v0`, `v1`, `a0`, `a1`) with no semantic recovery; completely unusable for analysis
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns: `a0` + `a1` in arithmetic → suggest `operand1`, `operand2`; `v0` accumulating sum → suggest `result` or `sum`
+2. Recover signed types: Analyze comparison operations to determine signedness; `if (a0 > 0)` indicates signed parameter
+3. Add semantic comments: Document algorithm intent (e.g., "// Digit counter: divides by 10 until zero"), flag uncertain patterns (e.g., "// Possibly: state machine pattern")

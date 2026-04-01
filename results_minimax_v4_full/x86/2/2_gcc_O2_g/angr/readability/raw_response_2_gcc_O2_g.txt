@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C test program (830 LOC) testing data types, arrays, pointers, and composite types, compiled with `-O0 -g` (debug mode). The decompiled output is ~2500 LOC from Angr, showing significant readability degradation despite the low optimization level.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `a0`, `a1`, `idx`, `i`, `p`. The original names like `c`, `x`, `sum`, `arr`, `str`, `n` are completely lost. Even loop counters are generic rather than descriptive like `i` or `index`.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: Every function uses auto-generated address-based names like `sub_401030`, `sub_401040`, `process_char` (only some recovered). The original semantic names like `process_char`, `process_short`, `array_1d_stack`, `ptr_double` are mostly replaced with `sub_XXXXX` patterns. This is the worst possible naming approach.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `return a0 * 2 + 1` for `process_int`), but magic numbers like `4294967295` (for -1), array strides like `11` (for 10x10 matrix), and computed offsets lack explanation. The decompiler shows computed values but doesn't explain their origin.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present including: `[D] unsupported_<class 'pyvex.expr.GetI'>()` annotations, weird `__x86.get_pc_thunk.*` functions, goto-based control flow that obscures loops, and stack frame manipulation artifacts. The float/double handling shows extensive VEX IR noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some loops are correctly recovered (e.g., `array_1d_stack` uses do-while), but many use goto statements instead of proper loops (e.g., `ptr_increment` uses computed goto). The `process_bool` has inverted logic (`~(a0) & 1` instead of `x % 2 == 0`). At -O0, this should be much cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. The test wrapper functions (`test_data_types_l1`, `test_array_types`, etc.) are correctly identified. Minor issues with some functions being too large (e.g., `test_composite_types` has complex inline setup).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read reasonably top-to-bottom, but some have forward jumps (e.g., `array_2d_stack` uses unusual pointer arithmetic `ptr += 11` instead of nested loops). The `binary_tree_sum` has deeply nested do-while loops that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling is present but not commented. The `array_3d` shows unusual manual unrolling patterns. Dead code is minimal. Some redundant computations in complex functions like `binary_tree_sum`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `int` becomes `unsigned int` in many places, `short` becomes `unsigned short`, `char*` becomes `char *a0`. The `process_bool` returns `unsigned int` instead of `_Bool`. Const correctness is partially preserved in `const_param` but lost elsewhere. Float/double handling shows extensive type confusion.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structures are reconstructed (e.g., `struct_0 { unsigned int field_0; struct_1 *field_4; }` for Node), but field names are generic (`field_0`, `field_1`, `field_4`). The `Point3D` struct is recovered as flat array access (`a0[0]`, `a0[1]`, `a0[2]`). Union types are partially recognized but with generic names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: pointer arithmetic without bounds checking, void pointer casts in `ptr_void`, function pointer calls via `goto a0` without type safety. The `array_oob` correctly shows the off-by-one bug (`ptr != &a0[a1 + 1]`) but doesn't flag it as dangerous.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are `[D] unsupported_<class 'pyvex.expr.GetI'>()` which are decompiler artifacts, not helpful explanations. No algorithm documentation, no @param/@return, no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are hinted at (linked list traversal in `linked_list`, tree traversal in `binary_tree_sum`) but not explicitly named or documented. The switch statement in `enum_switch` is recovered as indirect jump table but not explained as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The decompiler shows `[D] unsupported_<class 'pyvex.expr.GetI'>()` for float operations but doesn't explain what couldn't be resolved. No flags for potential undefined behavior (like the array_oob off-by-one). No warnings about indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The `array_1d_stack` has implicit `n > 0` requirement but no documentation. No error condition documentation. The `array_complex_index` returns -1 (as 4294967295) for out-of-bounds but doesn't explain this is an error case.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships aren't documented. The callback pattern in `ptr_func_simple` uses `goto a0` which obscures the function pointer call. No documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address but not logically organized. The test functions (`test_*`) are separated from the functions they test. Static functions like `double_value` aren't clearly marked as such.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code has `extern` declarations for global variables but missing for many standard library functions. Would require moderate patching to compile (adding printf, etc. declarations). The `__x86.get_pc_thunk.*` functions are compiler-specific and wouldn't be needed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- All function names are auto-generated (`sub_401XXX`) instead of semantic names (`process_char`, `array_1d_stack`)
+- All variable names are generic (`v0`, `v1`, `a0`, `ptr`) losing semantic meaning
+- Type precision severely degraded (`int` → `unsigned int`, `short` → `unsigned short`)
+- No comments explaining algorithms, contracts, or recovery confidence
+- Control flow uses goto instead of proper loops in several places
+- Float/double handling shows extensive VEX IR noise making code unreadable
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+- Functions are appropriately sized and separated; test wrappers correctly identified
+
+**Most Needs Improvement:** Function Naming Quality (1/10)  
+- Every function uses address-based auto-generated names, completely losing semantic meaning from the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer function names from string references**: The decompiled code contains format strings like "DT-L1-01 (process_char): %c\n" which directly reveal the original function name - use these to recover `process_char`, `array_1d_stack`, etc.
+2. **Recover variable names from usage patterns**: Variables used as array indices should be named `i`, `j`, `n`; pointers to data should be named `ptr`, `arr`, etc. Use semantic context.
+3. **Add algorithm documentation**: When recovering common patterns (linked lists, trees, switches), add comments explaining what was found. Flag anomalies like `[D] unsupported_*` with explanations of what couldn't be resolved.

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `temp`, `result`) with no semantic meaning. For example, `test_cpp_member_func` uses `v1[4]` instead of `name[32]` for the class's name buffer.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain readable names (`test_cpp_member_func`, `test_cpp_virtual_func`), but many have mangled C++ names (`_Z20test_cpp_member_funcv`). Some match source intent but require demangling.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `1001`, `130`, `14` appear without explanation. These are constant-folded results but provide no insight into original computation logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `HIBYTE`, `LODWORD`, stack variables initialized to 0 (`v2=0, v3=0, v4=0...`), and `BYREF` annotations clutter the code without adding clarity.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most test functions are constant-folded (trivial control flow). Where logic exists (Container methods), control flow is natural with proper if-else structures.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized. Template instantiations are correctly separated (`template_max<int>`, `template_max<double>`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom well. No excessive jumps or goto statements. Container methods show clean linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in `test_cpp_member_func` and `test_cpp_oo_features` with multiple variables initialized to 0 that serve no purpose (dead code from stack frame setup).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `double`, `char*`), but some erosion exists (`size_t` becomes `int`, `__int64` used inconsistently). Return type of `test_cpp_member_func` is `size_t` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered (Container has `size` and `data` fields), but field names are generic. Vtable pointers visible (`_vptr$Base`) but class layouts not fully reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(RTTIDerivedA *)operator new(4u)`, `(void **)v1`, `(int (**)(void))`. No const-correctness preserved on member function pointers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments, mostly auto-generated ("attributes: thunk", "BYREF"). No algorithm explanations or semantic documentation. Failed decompilations listed but not explained.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns partially recognized (vtable calls shown as `*obj->_vptr$Base`), but not named or explained. Exception handling, RTTI patterns not identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted (22 functions) with "FAILED to decompile" markers. Warning present ("positive sp value has been detected") but no guidance on resolution.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception throwing in `test_cpp_exception` shows no contract about what exceptions may be raised.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Vtable dispatch shown but inheritance relationships not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (Container methods together, RTTI classes together), but no namespace or module structure. Static initialization functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 22 functions failed to decompile including critical runtime functions (`_cxa_throw`, `operator new`, `printf`). Would require extensive stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3×10 + 6×10 + 4×5 + 5×5) / 30  = 105/30  = 3.50
+Level 2 (Structural):  (7×8 + 7×7 + 8×5 + 5×5) / 25    = 170/25  = 6.80
+Level 3 (Type):        (6×8 + 5×7 + 5×5) / 20          = 108/20  = 5.40
+Level 4 (Semantic):    (3×5 + 4×3 + 5×3 + 2×4) / 15    = 50/15   = 3.33
+Level 5 (Contextual):  (5×4 + 6×3 + 3×3) / 10          = 47/10   = 4.70
+
+Overall = (3.50 × 0.30) + (6.80 × 0.25) + (5.40 × 0.20) + (3.33 × 0.15) + (4.70 × 0.10)
+        = 1.05 + 1.70 + 1.08 + 0.50 + 0.47
+        = 4.80/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Constant folding obscures logic**: Most test functions return pre-computed constants (42, 71, 650) instead of showing actual computation, making verification impossible
+- **Generic variable naming**: All variables use `v0`, `v1`, `v2` pattern with no semantic meaning (e.g., `v1[4]` should be `name[32]`)
+- **22 failed decompilations**: Critical runtime functions (`_cxa_throw`, `operator new`, `printf`) not recovered, breaking build compatibility
+- **No C++ semantic recovery**: Exception handling, RTTI, and virtual dispatch shown as raw pointer operations without C++ context
+- **Missing class structure**: Class fields not properly named or typed (e.g., `Container` data array lacks type specification)
+
+### Best Quality Aspect:
+- **Code Linearization (scored 8/10)** - Code reads top-to-bottom naturally with minimal jumps; Container methods show clean sequential flow without confusing control transfers.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (scored 2/10)** - No preconditions, postconditions, or exception contracts documented; critical for understanding C++ semantics like exception safety guarantees.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used with `strlen` should be named `string` or `buffer`, not `v1`)
+2. **Recover C++ high-level constructs**: Recognize exception handling patterns (`_cxa_throw`/`_cxa_begin_catch`), RTTI operations, and vtable dispatch as C++ semantics rather than raw pointer operations
+3. **Document constant folding**: When compiler has pre-computed values, annotate with original computation (e.g., `// Original: r1 + r2 + r3 = 10 + 34 + 4660`) to preserve semantic intent

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `iVar2`, `uVar2`, `puVar5`. Multiple "Unresolved local var" annotations appear (e.g., `int temp1@[???]`, `int sum@[???]`, `int i@[???]`). The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names accurately match the original source (e.g., `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`). The decompiler preserves the intended function identities well, with only minor issues like internal compiler functions having generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions print hardcoded values (e.g., `0x15`, `0x14`, `0xfffffffb`) instead of computed results. Magic numbers like `0x3e9` (1001), `0x65` (101) appear without explanation. The decompiler does not recover constants or explain the meaning of numeric literals.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise pollutes the output: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable". Multiple "Unresolved local var" annotations create visual clutter. The code includes compiler runtime functions (`__divsi3`, `__aeabi_idivmod`) that aren't part of the original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flows are natural (e.g., `loop_while`, `loop_dowhile`, `switch_small`), but others are distorted. The `loop_for_fixed` uses complex arithmetic formula instead of recognizable loop. The `goto_forward` produces incorrect logic (returns `x * iVar1 * 2` instead of proper if-else). At -O0, more natural structures should be recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler preserves the original function count (~20 test functions). However, it includes compiler runtime functions (`__divsi3` at 100+ lines) that shouldn't be part of the decompilation. Function granularity is mostly appropriate, though some are slightly large.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. However, `loop_multi_exit` has complex nested goto structure that disrupts linear flow. The `duffs_device` function has deeply nested switch-case with goto labels that interrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions in the main functions. Some optimization artifacts exist (e.g., complex formulas in `loop_for_fixed`) but these are compiler transformations, not redundancy introduced by decompilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` throughout instead of more specific types like `int32_t` or `uint32_t`. Function pointers appear as `_func_int_int *` or generic `code *`. No use of `size_t`, `uintptr_t`, or other semantically precise types. Parameter types are mostly correct but not optimized.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The decompiler uses raw pointer arithmetic (e.g., `puVar5[iVar3]` for array access). Array dimensions are partially recognized (`int[3][4] matrix@[???]`) but not as proper C arrays. No struct/union types reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: pointer arithmetic without bounds checking, indirect function calls via `code *` type, raw pointer arithmetic in `loop_break` and `loop_multi_exit`. No `restrict` keywords, no alignment annotations. The indirect call pattern `(*(code *)(&PTR_xxx)[idx])(x)` is type-unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention"). No algorithm explanations, no recovery confidence indicators, no API contracts. The comments are noise rather than useful documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. State machine (`state_machine`, `fsm_func_table`) appears as plain switch statement without pattern recognition. Duff's device (`duffs_device`) is a messy switch with goto labels but not identified as a known idiom. No algorithm naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call") but they're generic. The "Unresolved local var" annotations indicate uncertainty but don't explain what the variable should be. No indication of semantic anomalies like the incorrect `goto_forward` logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The decompiler provides zero contract information about what functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call which, no callback relationships explained, no global variable usage documented. The `call_func_ptr_array` references `PTR_double_value_00022ebc` but doesn't explain the relationship.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary decompilation order (starting with `_init`, `_start`, then test functions). No logical grouping of related functions. The original source's clear section organization (CF-L1, CF-L2, CF-L3) is lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone. Missing types (`EVP_PKEY_CTX`, `__jmp_buf_tag`), undefined weak functions (`call_weak_fn`), and compiler runtime functions (`__divsi3`) would need significant patching. No dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `iVar2`, `uVar2`) with many "Unresolved local var" annotations - completely unusable for analysis
+- The `goto_forward` function produces semantically incorrect code (returns `x * iVar1 * 2` instead of proper if-else logic)
+- No struct or composite type recovery - all arrays accessed via raw pointer arithmetic
+- Test functions print hardcoded values instead of actual computed results, losing the ability to verify correctness
+- Zero comment quality - only compiler warnings present, no algorithm or logic documentation
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Function names accurately match the original source (e.g., `sequential_ops`, `loop_for_fixed`, `state_machine`)
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Variables should be inferred from usage patterns (e.g., `temp1` used as `a + b` should be named `sum_ab` or similar)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, array indices, function parameters) to suggest semantically meaningful names instead of generic `iVar1`, `iVar2`
+2. **Recover struct types from allocation patterns**: Detect `malloc(size)` calls and field offsets to reconstruct struct definitions with meaningful field names
+3. **Add algorithm pattern recognition**: Identify known idioms (Duff's device, state machines, finite state automata) and add explanatory comments naming the pattern

@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `undefined8 *param_1`. The original variable `x` in `process_int(int x)` becomes meaningless `param_1`. Array indices like in `array_3d` use raw pointer arithmetic without meaningful variable names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from source: `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple` all match exactly. Minor issue: some internal functions like `FUN_001006d0` are not named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions use hex literals like `0x61` ('a'), `0xb` (11), `0x14` (20) instead of character/integer constants. Magic numbers like `0x2d` (45) for matrix diagonal sum appear without explanation. The `process_ld` function is completely broken - returns void instead of long double.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise pollution includes: "WARNING: Removing unreachable block" comments throughout, stack canary checks (`__stack_chk_guard`), library functions `__addtf3` and `__multf3` inlined as 500+ line monstrosities, and "WARNING: Could not recover jumptable" messages.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `array_3d` function is completely unrolled into 100+ lines of direct array accesses - no loop structure remains. `binary_tree_sum` has deeply nested if-else chains instead of recursive calls. At -O0 this is excessive; loops should be recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are mostly kept separate which is good. However, `binary_tree_sum` at ~200 lines is too large, and `__addtf3`/`__multf3` (library functions) should not be decompiled as part of the main code - they clutter the output.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions like `process_char`, `process_int` read top-to-bottom well. But `array_3d` and `binary_tree_sum` have extreme non-linearity with hundreds of sequential statements. The `array_2d_stack` uses hardcoded indices like `param_1[0xb]`, `param_1[0x16]` which disrupts flow.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Severe redundancy in `array_3d` - same pattern repeated 125 times for 5x5x5 array. `binary_tree_sum` has massive code duplication. Loop unrolling at -O0 level is inappropriate; the original `for` loops should be recoverable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Type precision is poor: `undefined8` used instead of `int*` or `char*`, `uint` used where `int` should be (e.g., `process_bool` returns `uint`), `long` parameters become `long` but original was `int`. The `process_ld` function signature is completely wrong (returns void).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is severely degraded. `Point3D` struct becomes `int *param_1` with manual offset access: `*param_1 + param_1[1] + param_1[2]`. The original `p->x + p->y + p->z` becomes `*param_1 + param_1[1] + param_1[2]`. Nested structs like `Rect`, `Widget` are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: `*(int **)(param_1 + 2)` for accessing struct next pointer, raw pointer arithmetic throughout. However, basic type conversions are mostly correct. The `ptr_void` function incorrectly treats `uint*` as `void*`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". No useful comments explaining algorithm intent. The source code's rich comments (e.g., "// DT-L1-01: 字符类型") are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted at but not named. The linked list traversal in `linked_list` is recognizable but not commented as such. The tree traversal pattern is completely obscured by unrolling. No recognition of "diagonal sum" idiom in `array_2d_stack`.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning messages present: "WARNING: Could not recover jumptable at 0x001012bc. Too many branches", "WARNING: Treating indirect jump as call". However, the broken `process_ld` function (returns void) has no warning - it should clearly indicate a problem.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has no explicit assertions but the semantics (e.g., "positive even numbers return true" for `process_bool`) are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in `main()`: `test_data_types_l1()`, `test_array_types()`. But relationships like "callback function used by `ptr_func_simple`" are not documented. The `complex_callback` function is used but not connected.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a flat list with no logical grouping. The original's clear sections (Data Types, Array Types, Pointer Types, Composite Types) are lost. Library functions (`__addtf3`, `__multf3`) are interspersed with user code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile as-is: `process_ld` returns void when it should return `long double`. Missing declarations for `__printf_chk`, `puts`, etc. The test functions have hardcoded expected values instead of actual function calls.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 3) / 4 = 4.5
+L2_avg = (4 + 6 + 5 + 2) / 4 = 4.25
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (3 + 4 + 7 + 1) / 4 = 3.75
+L5_avg = (4 + 5 + 3) / 3 = 4.0
+
+Overall = (4.5 × 0.30) + (4.25 × 0.25) + (3.67 × 0.20) + 
+          (3.75 × 0.15) + (4.0 × 0.10)
+        = 1.35 + 1.0625 + 0.734 + 0.5625 + 0.4
+        = 4.11/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Struct recovery completely failed**: `Point3D`, `Rect`, `Widget` all become raw `int*` with manual offset arithmetic (`param_1[1]`, `param_1[2]`)
+- **Loop unrolling at -O0**: `array_3d` and `binary_tree_sum` are completely unrolled, making 125-element and tree traversals unreadable
+- **Variable naming is generic**: All parameters use `param_1`, `param_2`, `undefined8` - no semantic meaning
+- **Broken return type**: `process_ld` returns `void` instead of `long double`, making it unusable
+- **Magic numbers everywhere**: Test functions use hex values like `0x61`, `0xb` instead of readable constants
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**  
+- Function names are almost perfectly preserved from the original source, making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (2/10)**  
+- Struct and union types are completely lost, reducing complex data structures to raw pointer arithmetic with numeric offsets, destroying all semantic meaning of the original composite types.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct layouts**: Use type information from debug symbols (-g flag present) to reconstruct `struct Point3D { int x; int y; int z; }` instead of `int*` with manual offsets
+2. **Preserve loop constructs**: At -O0, loops should be recoverable. The 5x5x5 array iteration should remain as nested `for` loops, not 125 individual element accesses
+3. **Infer variable names from usage**: Parameters like `param_1` in `process_char(char param_1)` should be named `c` based on the function's semantic purpose and the source's parameter names

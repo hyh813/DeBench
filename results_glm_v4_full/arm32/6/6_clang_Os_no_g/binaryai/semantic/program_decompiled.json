@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_clang_Os_no_g/binaryai/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "Standard Library Functions Test\nstrlen test: 12\nstrcmp test: 0\nmemcpy test: c\nmemcpy test: 5a\nmemcmp test: 0\nValue: 42, Name: TestName\nprintf return: 26\nscanf return: -1095071744\nfopen test: 2a\nfread test: 2a\nmalloc return: 5a\nmemset test: 0\nstrchr_strstr: f\nSystem Calls Test\nsyscall test: 2a\nstat test: 2a\nfork test: 2a\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

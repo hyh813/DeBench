@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Most variables preserve original names (`temp1`, `temp2`, `sum`, `count`, `arr`), but generic names like `iVar1`, `iVar2` for return values and `in_GS_OFFSET` for stack canary obscure intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User functions retain original names (`sequential_ops`, `nested_if_deep`, `duffs_device`), but system functions use generic names (`FUN_00011030`, `_init`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hex literals dominate without explanation (`0x14`=20, `0x3e9`=1001, `0x65`=101); `switch_small` returns `0x32` instead of `50`, requiring mental conversion.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local()`) appear in many functions; 16+ `__x86.get_pc_thunk.*` warnings clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `switch_fallthrough` degrades to goto labels (`LAB_0001158c`); `switch_small` becomes nested if-else instead of switch; `computed_goto` shows "Could not recover jumptable" warning.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well; helper functions (`double_value`, `triple_value`) remain separate; no problematic inlining observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; `loop_multi_exit` uses `while(true)` with goto disrupting flow; `switch_fallthrough` has multiple label jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed; stack checking code is repetitive but necessary; no loop unrolling artifacts present at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Function pointers use generic `_func_int_int` instead of proper signatures; `(uint)(0 < x)` shows signed/unsigned confusion; basic int types preserved well.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recover correctly (`int arr[5]`, `int matrix[3][4]`); function pointer arrays work (`_func_int_int *funcs[3]`); no structs in source to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Stack canary introduces casting complexity; function pointer calls maintain safety; no unsafe casts or buffer overflow patterns detected.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler warnings present ("WARNING: Unknown calling convention"); zero semantic comments explaining algorithm purpose; original test validation comments lost entirely.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns recognized correctly; Duff's device structure recovered but not identified; state machine pattern in `state_machine` not explicitly named.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage ("Could not recover jumptable", "Subroutine does not return", "Removing unreachable block"); helps identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n>0`); error conditions unexplained; original test case expectations completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear throughout; global `jump_buffer` identifiable; callback relationships visible through function pointers; no call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source order; static functions properly scoped (`indirect_recursion_b`); no header file structure; matches original organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation success; external dependencies present (`__libc_start_main`); architecture mismatch (original ARM64, decompiled x86); requires stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (7+8+5+6)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (6+8+7+8)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (7+7+6)/3   = 6.67 × 0.10 = 0.67
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.47 ≈ 6.5/10
+```
+
+**Overall Readability Score:** 6.5/10
+
+### Critical Defects
+- **Hex literals without explanation**: `0x3e9`, `0x65`, `0x14` require mental conversion to understand loop bounds and comparisons
+- **Switch fallthrough degraded to goto**: `switch_fallthrough` uses `LAB_0001158c` labels instead of recognizable fall-through structure
+- **Zero semantic documentation**: No comments explain algorithm purpose, test expectations, or function contracts
+- **Generic function pointer types**: `_func_int_int` loses parameter/return type semantics
+- **Computed goto unrecoverable**: `computed_goto` shows "Could not recover jumptable" with indirect call treatment
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names preserved almost perfectly from source, enabling immediate recognition of purpose
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - Complete absence of precondition documentation, error condition explanations, and test validation comments that existed in source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Convert hex literals to decimal or add inline comments** - Automatically detect loop bounds and magic numbers, suggesting named constants (e.g., `0x3e9` → `1001 /* timeout limit */`)
+2. **Recover switch fall-through patterns from goto chains** - Detect sequential case label jumps and reconstruct as switch with intentional fall-through comments
+3. **Generate semantic documentation from function structure** - Infer and document preconditions (e.g., `// requires: n > 0`), test expectations, and algorithm patterns from control flow analysis

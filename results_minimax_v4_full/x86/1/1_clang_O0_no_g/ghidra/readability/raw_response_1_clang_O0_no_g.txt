@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and all local variables use stack position names (`local_8`, `local_c`, `local_10`). Zero semantic meaning - impossible to track purpose without analyzing usage.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, etc. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some magic numbers unexplained (0x3e9=1001, 0x65=101, 0xe=14), but most small constants are clear. The hex values for larger numbers obscure their semantic meaning in some cases.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - warnings about unreachable blocks and inlined functions are appropriately flagged. No register spilling debris or excessive debug instrumentation. Clean overall.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recovered as `for`/`while`/`do-while` constructs. Switch statements properly identified. The `goto_forward` function correctly linearized without goto. Minor: `goto_backward` uses for-loop instead of goto, which is actually an improvement.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each source function decompiled as separate function with appropriate granularity. No over-fragmentation or monoliths. Parameter counts match original (e.g., `sequential_ops(int,int,int)`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. One forward jump in `loop_break` but it's necessary for the break pattern. Good linearity overall.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpressions not excessively duplicated. Loop unrolling in `duffs_device` is appropriately represented with switch-case fall-through structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `undefined4` instead of `int`. Function `if_else` returns `bool` instead of `int`. Some functions use `undefined4` for parameters where `int` would be appropriate. At -O0, types should be more precise.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Function pointer arrays properly reconstructed (e.g., `local_18[0] = double_value`). Arrays accessed via pointer arithmetic (`param_1 + local_10 * 4`). No struct recovery needed for this codebase.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer types use `code *` which is generic but functional. Pointer arithmetic is correct. No obvious unsafe casts. Minor issues with signed/unsigned mixing in some operations.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra adds auto-generated comments like "WARNING: Removing unreachable block" which are useful. However, no semantic comments explaining algorithm intent or purpose. Decompilation confidence not indicated.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard patterns recognized - recursion (factorial), loops, switch statements. Duff's device correctly identified with switch-case fall-through. State machine patterns in `fsm_func_table` recognized.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warnings present: "WARNING: Subroutine does not return" for longjmp, "WARNING: Could not recover jumptable" for computed_goto. Some indirect calls flagged appropriately.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts completely absent. No indication of error handling expectations.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships not documented. No indication of who calls whom or global variable usage. Static functions not marked as such consistently.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (test functions together, helper functions together). Static helper functions like `double_value`, `triple_value` properly placed near their usage.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code appears compilable with minimal stubs. External dependencies (printf, memcpy, setjmp/longjmp) are standard C library functions. No compiler-specific hacks.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `local_8`) - zero semantic information
+- Type precision poor: `undefined4` used extensively instead of `int`
+- Function `if_else` returns `bool` instead of `int`, changing the API
+- No comments explaining algorithm intent or non-obvious logic
+- No cross-reference documentation between functions
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names perfectly match the original source, making it immediately clear what each function does.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All parameters and local variables use generic positional names, making it extremely difficult to understand code logic without analyzing every usage pattern.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `param_1` used in `param_1 + param_2` should suggest `addend` or `lhs`
+2. Recover precise integer types from debug info (this is -O0 with -g, so types should be available)
+3. Add semantic comments explaining algorithm purpose and cross-function relationships

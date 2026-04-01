@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_fake_branch` in the original source implements always-false conditional branches (永假条件) for obfuscation testing. The decompiled version at address 0x106d0 is completely empty - just `void param_fake_branch(void) { return; }`. This is a critical failure where the function body was not recovered at all.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use auto-generated names (uVar1, uVar2, iVar1, pbVar2, bVar1). The original source used meaningful names like `result`, `str`, `x` but these are completely lost. No semantic information recovered.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Function names like `param_fake_branch` and `call_fake_branch` match source, but the critical `param_fake_branch` function is empty - its body was not decompiled at all. Partial match but severely incomplete.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0xDEADBEEF` (0xDEADBEEF in source) are completely absent since the function body is missing. Other functions have unexplained constants like `0x14`, `0x1e`, `0xe1` without documentation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from 30+ external function stubs (printf, signal, longjmp, etc.) that clutter the output. The decompiled output includes 1023 LOC vs 464 source LOC, indicating substantial artifact pollution.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: `param_fake_branch` has no control flow whatsoever - it's completely empty. Other functions show some loop structures but with goto-style jumps. At -O0, control flow should be nearly perfect.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: The critical function `param_fake_branch` was not decomposed - it was completely eliminated. The function exists in symbol table but body is missing. This is a severe decomposition failure.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Since `param_fake_branch` is empty, there's no code to linearize. Other functions have forward jumps and computed goto patterns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some dead code visible (e.g., param_buffer_overflow_stack returns void without doing anything). Loop unrolling present in call_vectorized_loop but not clearly marked.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types - uses `uint`, `int`, `undefined4`, `bool`. Original source used `int` consistently. Some type precision lost but not severe. The empty function has `void` return instead of `int`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/union recovery visible. Original source had no complex structs in this function anyway, but other functions like `param_implementation_defined` with bitfields are not reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe casts present (e.g., `(undefined4 *)param_1` in param_null_pointer_deref). Mixed signed/unsigned in param_integer_overflow. Moderate issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Original source had extensive comments explaining obfuscation techniques (OBF-L4-02, 永假条件, etc.). All semantic documentation lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithms recognized. The always-false branch pattern (永假条件) is completely lost. Opaque predicates, instruction substitution - none identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The critical issue that `param_fake_branch` body is missing is not flagged. No warnings about suspicious code or unresolvable calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. Preconditions, postconditions, invariants - all absent. The function should document "x can be any int" but nothing.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships visible (call_fake_branch calls param_fake_branch), but incomplete. External dependencies (libc functions) listed but not clearly organized.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions grouped by address rather than logical purpose. Original source organized by chapter (OBF-L4, OPT-L4, EDGE-L3) but decompiled output is arbitrary address-based grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata shows "Compilation Result: Yes". Code appears syntactically valid. However, the empty function `param_fake_branch` would cause runtime issues since it returns void instead of int.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- **CRITICAL**: `param_fake_branch` function body completely missing - just returns void instead of implementing the always-false branch logic
+- All variable names are auto-generated (uVar1, iVar2, pbVar2) with no semantic meaning
+- No comments explaining obfuscation techniques (永假条件, OBF-L4-02)
+- Type mismatch: function declares `void` return but source uses `int`
+- Excessive noise from 30+ external function stubs polluting the output
+
+**Best Quality Aspect:** Build System Compatibility (scored 7/10)  
+The decompiled code appears syntactically valid and compiles. External function signatures are reasonably accurate.
+
+**Most Needs Improvement:** Function Decomposition (scored 2/10)  
+The core function `param_fake_branch` was not decomposed at all - it was completely eliminated. This is a fundamental decompilation failure where the binary analysis failed to recover the function body.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover missing function bodies**: The `param_fake_branch` at 0x106d0 should contain the always-false conditional branches (`if (x * x < 0)` and `if (strlen(str) < 0)`) but instead returns void. Investigate why the decompiler failed to recover this code.
+2. **Infer variable names from usage**: Variables like `param_1` should be renamed to `x` based on being used in arithmetic operations. `result` should be recovered as the return value accumulator.
+3. **Add semantic comments**: Document the obfuscation patterns (永假条件, opaque predicates) that the original source intentionally includes for testing deobfuscation capabilities.

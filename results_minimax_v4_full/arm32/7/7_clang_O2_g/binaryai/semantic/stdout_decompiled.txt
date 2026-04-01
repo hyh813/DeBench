@@ -1,0 +1,10 @@
+Running all obfuscation tests...
+
+Testing obfuscated optimizations:
+Opaque predicate result: 35
+Instruction substitution result: 0xe1
+String encryption result: 48
+Tail call optimization result: 0x7a314
+Non-tail call result: 0x13ba
+Vectorized loop result: 72
+LTO result: 20

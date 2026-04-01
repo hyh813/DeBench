@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`sequential_ops`, `single_if`, `loop_for_fixed`, `duffs_device`). Names accurately reflect functionality and match original source intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` appear without explanation. Original had clearer intent with named constants and inline comments explaining expected values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs at beginning (`<EXTERNAL>::raise`, `__libc_start_main`) add noise. Type casts like `(undefined4 *)` and `__jmp_buf_tag *` create visual clutter but don't severely impede reading.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else recovered well, but `loop_for_fixed` uses bit manipulation instead of clear loop. `duffs_device` has complex switch with goto labels (`switchD_00010d28_caseD_7`) disrupting natural flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. No severe inlining issues. However, `loop_multi_exit` is overly complex with multiple exit paths that could be cleaner.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `loop_multi_exit` uses goto labels (`LAB_00010c44`, `LAB_00010c58`) disrupting top-to-bottom reading. `duffs_device` has multiple case fall-throughs with explicit goto statements.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `loop_for_fixed` shows optimization artifacts with complex bit shifting that obscures the simple sum formula. Some functions have redundant variable assignments (`iVar1 = param_1` then immediately modified).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`int`, `uint`, `undefined4`). Lost original type specificity. Signed/unsigned confusion visible (`param_1` as `int` in some functions, `uint` in others for same semantic purpose).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays handled as pointer arithmetic (`(&DAT_00011974)[iVar1]`). No struct recovery needed for this code sample, but function pointer arrays use generic `code **` instead of proper typed arrays.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)`, `(code *)`). Function pointers degraded to generic `code *` type. `op_div` and `op_mod` have mismatched return types (`void` vs `undefined4`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive comments explaining each function's purpose, test cases, and expected behavior. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device partially recognized with switch-case structure, but fall-through logic obscured. State machine patterns in `state_machine` and `fsm_func_table` not explicitly identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly flags for questionable code. `setjmp/longjmp` handling in `non_local_jump` has complex condition (`param_1 + 1 < 0 == SCARRY4(param_1,1)`) without explanation of why this check exists.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). Original had test validation comments showing expected inputs/outputs. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`jump_buffer`, `DAT_00011974`) referenced without explanation of their purpose or relationship to other functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Original had clear section organization (L1, L2, L3 control flow features). Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`__libc_start_main`, `printf`). Some stubs for external functions present but functional.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (25%): (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (20%): (5+6+5)/3   = 5.33 × 0.20 = 1.066
+Level 4 (15%): (2+5+4+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (10%): (5+5+7)/3   = 5.67 × 0.10 = 0.567
+
+Overall = 1.725 + 1.563 + 1.066 + 0.525 + 0.567 = 5.45/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original having extensive documentation for each function's purpose and test cases
+- **`loop_for_fixed` optimization artifact** uses complex bit manipulation instead of recoverable loop structure
+- **`duffs_device` control flow** has goto labels (`switchD_00010d28_caseD_7`) instead of clean fall-through structure
+- **Type degradation** with `undefined4`, `code *` losing original type precision and safety
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making it easy to identify each function's purpose and correlate with original code.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation means readers must reverse-engineer intent that was explicitly documented in original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop counters should be named `i`, `j`, `count`; accumulators should be `sum`, `total`, `result`)
+2. **Recover and preserve source comments** from debug symbols when `-g` flag is present, or generate semantic comments based on pattern recognition
+3. **Detect and simplify optimization artifacts** like the `loop_for_fixed` bit manipulation, recognizing it as a sum formula and emitting cleaner loop or formula representation

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `idx`, `cur`) with no semantic meaning recovered. For example, `param_macro_constants` uses `a0` instead of `size`, losing the original parameter intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names are preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), matching source well. However, numerous wrapper functions use mechanical names (`sub_401209`, `sub_401228`) that add confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers obscure logic: `3229874313` (machine code bytes), `57072` (should be `0xDEF0`), `282` (line+counter sum). Some constants like `64` and `500` are recognizable as expected outputs but lack explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive wrapper functions (`sub_401xxx` series) that simply call main functions create significant noise. External globals like `g_403fe8`, `g_40203d` clutter the code without clear purpose.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else and for-loop constructs. However, some functions like `sub_401020` use `goto` patterns, and `call_asm_multi_insn` has complex conditional chains that could be cleaner.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Severe over-fragmentation with wrapper functions for every call site (e.g., `sub_401209` just calls `param_macro_constants`). Core functions are appropriately sized but the duplication harms maintainability.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Functions like `param_memory_protection` have clear sequential flow, though `test_asm_features` has complex local variable usage that disrupts linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding removes computation but obscures original logic (e.g., `call_macro_constants` returns `64` directly instead of showing the call). Wrapper functions create significant redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic integer types are reasonable (`unsigned int`, `unsigned long long`), but SIMD operations incorrectly use `double` for vector operations (`param_asm_simd` returns `double` for integer vector addition). Pointer types lack specificity.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only one trivial struct recovered (`struct_0` with single field). Array operations use raw pointer arithmetic (`*((int *)(ptr + idx * 4))`) instead of proper array types. No struct recovery for complex data.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(unsigned long long)v1`, `(int)(&v2)[4]`, `(char *)&<0x401b30...>`. Pointer arithmetic in `param_asm_clobber` could cause alignment issues. No const-correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining code purpose or logic. Only annotation is a decompiler error (`[D] Unsupported jumpkind Ijk_SigTRAP`). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: macro expansion, atomic operations, memory mapping workflows all appear as raw code. `atomic_exchange_add` is recognized but not contextualized as atomic operation idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`), but most issues silent. Constant-folded functions that lost original computation logic are not marked as potentially misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for memory operations). No postconditions or error handling contracts. Functions like `param_memory_protection` return magic error codes (-1, -2, -3) without explanation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables use opaque names (`g_40203d`, `g_403ff8`). No call graph or dependency documentation provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address rather than logical grouping. Preprocessing and assembly sections intermixed without clear separation. No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code references external functions (`__printf_chk`, `atomic_exchange_add`, `mmap`) without clear dependency documentation. Would require stubs and linking to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):   (6+5+7+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type System):  (6+4+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):     (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):   (5+4+6)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `a0` should be named `size`** in `param_macro_constants` based on comparison usage pattern
+- **Excessive wrapper functions** (`sub_401xxx` series) create noise without adding value
+- **Magic numbers without explanation**: `3229874313`, `57072`, `282` obscure original intent
+- **Zero comments** explaining function purpose, algorithm, or non-obvious logic
+- **Constant folding hides original computation** - `call_macro_constants()` returns `64` directly instead of showing the call chain
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`), making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size comparisons should be named `size`, `count`, `length` based on context
+2. **Eliminate wrapper function proliferation** - Detect and inline trivial wrapper functions that only forward calls
+3. **Add semantic annotations for constant-folded code** - Mark functions where computation was optimized away with comments showing original logic

@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `iVar1`, `lVar1`, and `puVar1`, obscuring their semantic roles (e.g., `result`, `obj`). While some objects like `obj` in `test_cpp_member_func` are recovered, the majority are type-based placeholders.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly recovered, including class methods like `Base::virtual_func` and test functions like `test_cpp_rtti`, matching the original source exactly due to symbol preservation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"Test"` are preserved, but integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x125c` instead of `4704`), which reduces immediate readability of arithmetic results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The code contains compiler artifacts such as stack canary checks (`___stack_chk_guard`) and numerous warnings (e.g., `WARNING: Unknown calling convention`), which clutter the output despite the `-O0` metadata.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions have been reduced to simple `return` statements with pre-calculated constants (e.g., `return 0x2a;`), indicating aggressive optimization (likely `-O3` based on the filename) that destroys the original algorithmic control flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Class methods and virtual function thunks are correctly separated into individual functions, maintaining the logical structure of the C++ classes despite the optimization of the calling code.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code is highly linear, mostly consisting of direct returns or straightforward sequences of library calls, making it easy to read top-to-bottom where logic remains.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: The compiler has successfully eliminated all redundant code and dead stores, resulting in very concise decompiled output for the optimized functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally accurate, correctly identifying `int`, `double`, and class pointers. However, some low-level allocations use `undefined4*` or `long*` instead of specific struct types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: While simple classes like `SimpleClass` are recovered, complex inheritance patterns like `DiamondDerived` trigger warnings about "ignoring overlapping field," and the struct layouts rely on generic base class names rather than a unified view.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer arithmetic and casts are mostly correct for the context (e.g., exception handling), though the use of `undefined4*` for exception objects represents a minor loss of type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are limited to DWARF prototype warnings and decompiler error messages (e.g., `WARNING: Removing unreachable block`), providing no high-level explanation of the code's purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: High-level C++ idioms like virtual dispatch are exposed as low-level vtable dereferences (`(**obj->_vptr_Base)(obj,...)`), and RTTI checks are shown as string comparisons, failing to abstract the language semantics.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler clearly flags issues like "Unresolved local var" and "Removing unreachable block," which accurately communicates where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; the logic is reduced to raw execution.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Calls to standard library functions (`strlen`, `operator_new`) and internal methods are clear and named correctly, allowing for easy tracing of execution.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped by class scope in their names (e.g., `Container<int>::push`), preserving the logical organization of the source modules.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code relies on implicit definitions of runtime types (e.g., `int::typeinfo`) and compiler intrinsics, requiring significant stubbing to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- **Metadata Mismatch**: The binary filename indicates `-O3` optimization, but the task metadata specifies `-O0`. The code exhibits constant folding and inlining consistent with `-O3`, rendering the logic of test functions (e.g., `test_cpp_member_func`) opaque.
+- **Variable Naming**: Heavy reliance on generic names (`iVar1`, `lVar1`) makes tracking data flow difficult.
+- **Semantic Loss**: High-level C++ concepts like virtual inheritance and RTTI are represented as complex pointer arithmetic and string checks rather than semantic constructs.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Why? The decompiler perfectly recovered all function symbols, including namespaced class methods and mangled template instantiations, providing a clear map of the binary's API.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.0/10)  
+- Why? The decompiler fails to abstract low-level implementation details (like vtable lookups and typeinfo string comparisons) back into high-level C++ concepts, making it hard to understand the *intent* of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Optimization Detection**: Automatically detect when functions have been optimized to constants and annotate them (e.g., "Logic optimized away by compiler") to manage user expectations.
+2. **Variable Name Inference**: Implement heuristic-based naming for local variables (e.g., inferring `result` for return values or `len` for variables used in `strlen` calls) to reduce reliance on `iVar1`.
+3. **C++ Semantic Lifting**: Improve the lifting of RTTI and virtual inheritance patterns to represent them as `dynamic_cast` or base-class access where possible, rather than raw pointer offsets and string comparisons.

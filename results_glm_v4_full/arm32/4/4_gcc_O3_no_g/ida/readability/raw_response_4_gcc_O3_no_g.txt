@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v2`, `v3`, and `result`. No semantic meaning (e.g., `count`, `sum`, `ptr`) is preserved or recovered, making it hard to understand the logic without cross-referencing the original source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `cdecl_func`, `test_calling_conventions`, `param_varargs`). This provides excellent high-level context and matches the original source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with global variable references (e.g., `puts(s)`, `_printf_chk(1, aCallL206, v0)`), obscuring the actual text being printed. Magic numbers like `15`, `50`, and `6` appear as constants due to compiler optimization/folding, losing the context of the arithmetic operations that produced them.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but the `__fastcall` calling convention attribute is incorrectly applied to ARM functions (which use AAPCS), and floating-point helper functions (`__aeabi_dadd`) contain macro noise like `LODWORD` and `HIDWORD`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural. Loops are correctly identified as `do-while` structures (e.g., in `varargs_func`), and conditionals are clear. The compiler's optimization of `ret_multi_branch` into `return 10 * (a1 + 1)` is presented cleanly, accurately reflecting the binary logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source granularity. While the compiler inlined some logic (e.g., `call_cdecl` returning `15`), the decompiler presents these as distinct functions, maintaining the original module structure effectively.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. Even complex logic like the `va_list` processing is linearized into a readable loop structure without confusing `goto` chains.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized code without redundant intermediate variables. The constant propagation (e.g., `return 15`) is shown directly, which is clean, though it differs from the source structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int`, `unsigned __int8`, and `double` are recovered well. However, specific types like `size_t` or `va_list` are often defaulted to `int` or `void*` implementations, and signedness is sometimes genericized.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: This is a critical failure. The `LargeStruct` parameter in `func_struct_byval` is completely exploded into 31 separate integer arguments (`a1` through `a31`). The structure is entirely lost, making the function signature unreadable and the logic obscure.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, with casts mostly implicit or necessary for the architecture. There are no obviously dangerous pointer arithmetic errors introduced by the decompiler, though the lack of struct types reduces safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no comments explaining the logic. The only comments are auto-generated warnings like `// positive sp value has been detected` or `// attributes: thunk`, which offer little semantic value to the user.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While the `va_list` logic is visible, it is not explicitly recognized or labeled as a "varargs pattern". The switch-case optimization in `ret_multi_branch` is presented as math but not annotated as a jump table or switch statement.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler flags the stack pointer anomaly but fails to flag the struct explosion in `func_struct_byval` as an anomaly or reconstruction failure, presenting it confidently as 31 arguments, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., `ptr != NULL`) or postconditions. The logic is presented "as-is" without documenting the implicit contracts present in the original source (like the `count` parameter in `varargs_func`).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear because the function names are preserved. However, string references are opaque global variables, and the relationship between the "constprop.0" versions of functions and their originals is not explicitly explained.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order that roughly follows the source flow. Helper functions and runtime support (`__aeabi_*`) are grouped at the end, keeping the main logic distinct.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code includes low-level runtime intrinsics (`__aeabi_dadd`, `__floatunsidf`) and uses non-standard attributes (`__fastcall` on ARM). It would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 5 + 7) / 4 = 6.25
+L2_avg: (9 + 8 + 9 + 8) / 4 = 8.50
+L3_avg: (6 + 1 + 7) / 3 = 4.67
+L4_avg: (2 + 4 + 3 + 2) / 4 = 2.75
+L5_avg: (7 + 8 + 4) / 3 = 6.33
+
+Overall = (6.25 × 0.30) + (8.50 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (6.33 × 0.10)
+Overall = 1.875 + 2.125 + 0.934 + 0.4125 + 0.633
+Overall = 5.98/10
+```
+
+### Overall Readability Score: 6.0/10
+
+### Critical Defects
+- **Struct Explosion**: `func_struct_byval` is decompiled with 31 integer arguments instead of a single `LargeStruct` parameter, completely destroying the function's interface.
+- **Generic Variable Naming**: Parameters and locals are named `a1`, `a2`, `v2`, etc., providing no semantic context (e.g., `count`, `sum`).
+- **Opaque String Literals**: String constants are replaced with global variable pointers (e.g., `s`, `asc_115F8`), forcing the user to lookup data elsewhere.
+- **Incorrect Calling Convention Annotation**: Functions are annotated with `__fastcall`, which is an x86 convention, not ARM (AAPCS), adding confusion.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly recovered the original function names from the binary symbols, making the high-level flow easy to follow despite the low-level readability issues.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**
+- **Why?** The failure to reconstruct `LargeStruct` (and the hidden pointer return for `SmallStruct`) turns a simple function signature into an unreadable list of arguments, severely impacting understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Stack Argument Coalescing**: Detect patterns where multiple consecutive stack arguments correspond to a structure passed by value and reconstruct the struct type.
+2.  **Inline String Literals**: Instead of replacing string literals with global variable references, display the actual string content in the decompilation view (e.g., `puts("=== 测试基础调用约定 ===")`).
+3.  **Architecture-Specific Calling Conventions**: Correctly identify and apply ARM AAPCS calling conventions instead of defaulting to `__fastcall` or `__usercall` for standard functions.

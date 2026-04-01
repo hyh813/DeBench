@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3` with no semantic meaning (e.g., `param_strcpy` uses `a1`/`a2` instead of `dst`/`src`). Only a few variables like `thread_return` and `newthread` have descriptive names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`param_strcpy`, `call_strcmp`, `param_mutex_lock`), clearly indicating purpose. However, some helper functions use generic names like `sub_C48` and `thread_compute`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `syscall(5, a1, 0)` where 5/0 are syscall numbers, `signal(10, ...)` where 10 is SIGUSR1). String literals are preserved but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (e.g., `__fastcall` calling conventions, register hints like `// r0`, `// r4`). However, no excessive dead code or redundant casts observed in most functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/else/while constructs. Some functions show optimization artifacts (e.g., `param_strcmp` has awkward conditional chain instead of ternary), but execution paths are traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate - most functions match source structure. However, 65 functions failed to decompile entirely, and some call functions are constant-folded losing original structure (e.g., `call_strcpy` no longer calls `param_strcpy`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but some functions have awkward branching (e.g., `param_signal_handling` has nested conditionals with multiple early returns). Loop structures are mostly preserved correctly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal redundancy observed. Some constant folding occurred (call functions return pre-computed values), but this is optimization artifact rather than decompiler error. No significant duplicate expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation - many parameters use generic `int` instead of specific types (e.g., `param_scanf(int a1)` should be `const char*`). Pointer types often become `void*` or `_DWORD*`. Some size_t preserved correctly.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is poor - `ThreadData` becomes anonymous arrays (`_DWORD v4[2]`), `sockaddr` loses field names. Global variables like `atomic_counter` become `unk_141BC`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (e.g., `(_DWORD *)thread_return`, `(void *(*)(void *))thread_compute`). Pointer arithmetic on void pointers without proper casting. Some const-correctness lost.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments. Only auto-generated type hints (`// r0`, `// [sp+0h]`). No algorithm explanations, no decompiler confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`) but not explicitly identified as patterns. Thread synchronization patterns (mutex, condition variable) not labeled as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: 65 functions marked "FAILED to decompile" but no explanation why. No warnings about indirect calls, stack layout issues, or potential undefined behavior. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained (e.g., why `param_fopen_fclose` returns -1). No null pointer check documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code but not documented. Global variable usage unclear (e.g., `signal_received`, `shared_counter` appear without context). No call graph provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source structure. Related functions grouped together. However, no file/module boundaries indicated, and 65 failed functions break coherence.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references many external functions marked "FAILED to decompile" (`__imp_pthread_mutex_unlock`, `__imp_printf`, etc.). Cannot compile standalone without extensive stubbing. Architecture mismatch (ARM32 vs ARM64).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+7+6+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (3+4+2+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Context):     (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 5.15/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **65 functions failed to decompile** with no explanation, making large portions of code unusable
+- **Variable names are generic** (`a1`, `a2`, `v1`, `v2`) obscuring parameter semantics (e.g., `dst`/`src` in `param_strcpy`)
+- **Architecture mismatch** - Original is ARM64/O0, decompiled binary is ARM32/O2, causing structural differences
+- **No type recovery for structs** - `ThreadData` becomes `_DWORD[2]` arrays losing field semantics
+- **Zero semantic comments** - No explanation of syscall numbers, signal constants, or error conditions
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most function names preserved from source code clearly indicating purpose (`param_strcpy`, `param_mutex_lock`, `param_condition_variable`)
+
+### Most Needs Improvement: **Anomaly Indication (2/10)**
+- 65 failed decompilations listed without any explanation of why they failed or what manual analysis might be needed
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Parameters used in `strcpy(dst, src)` pattern should be named `dst`/`src` not `a1`/`a2`
+2. **Provide failure analysis for undecompilable functions** - Explain why 65 functions failed (missing symbols, obfuscation, unsupported instructions)
+3. **Recover symbolic constants from system headers** - Replace magic numbers like `syscall(5, ...)` with `syscall(SYS_open, ...)` using platform knowledge

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The parameter `x` is completely missing - the function signature shows `param_fake_branch(void)` when it should be `param_fake_branch(int x)`. The variable `result` exists but is uninitialized and returned directly, losing all semantic meaning of the original `result = x` initialization.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function correctly named `param_fake_branch` matching the source exactly. Good verb-noun pattern. Minor deduction for lack of parameter indication in name.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: No literals present in the function body itself. The caller `call_fake_branch` hardcodes return value 10, which happens to be correct but obscures that it should be calling the function with parameter 10.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: No compiler artifacts, redundant casts, or debug instrumentation in this specific function. Clean minimal output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The entire control flow is missing. The original has two fake branch conditions (`if (x*x < 0)` and `if (strlen(str) < 0)`), but the decompiled version has no conditionals whatsoever - just returns an uninitialized variable. This is a complete failure to recover the control structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate - single responsibility as intended. The caller `call_fake_branch` is properly separated. No over-fragmentation issues.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code is perfectly linear - single return statement, no jumps, reads top-to-bottom. However, this is because all logic was lost.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code present. The function is minimal to the point of being incorrect, but not redundant.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. The function should take `int x` as parameter but takes nothing (`void`). Return type is `int64_t` instead of `int`. The original `int result` is completely lost - it's now an uninitialized stack variable.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No structs/unions used in this function, so nothing to recover. N/A for this case.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The uninitialized variable `result` is returned, causing undefined behavior. No unsafe casts present, but the fundamental issue of using an uninitialized variable is a severe type safety problem.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only contains address comments (`// 0xb14`). No explanation of what the function does, that it's missing logic, or that the fake branch conditions are not recovered. The "obfuscation & protection" context from the source is completely lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (永假条件) idiom is completely lost. The original demonstrates always-false conditions as an obfuscation technique, but this is not indicated anywhere in the decompiled code.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the function is missing its parameter or that the logic is incomplete. The decompiler silently produces incorrect code without any warning about the missing parameter or the uninitialized variable.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No preconditions/postconditions to recover. The implicit contract that `x` should be any integer is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The relationship with `call_fake_branch` is clear - it's defined nearby and calls this function. However, the caller hardcodes the return value, obscuring the actual call relationship.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are properly organized in the output. The obfuscation-related functions are grouped together logically.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code would compile but produces undefined behavior due to uninitialized variable. The missing parameter means the function signature doesn't match any potential caller expecting `int x`.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Parameter loss**: Function signature `param_fake_branch(void)` missing the `int x` parameter entirely
+- **Logic elimination**: Both fake branch conditions (`x*x < 0` and `strlen(str) < 0`) completely missing
+- **Uninitialized variable**: `int64_t result` is used without initialization, causing undefined behavior
+- **Type mismatch**: Uses `int64_t` instead of `int` for return type and lost the parameter type
+- **No anomaly warning**: Decompiler provides no indication that the function is incomplete or incorrect
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+The function name `param_fake_branch` correctly matches the source, providing a solid foundation for understanding.
+
+**Most Needs Improvement:** Variable Naming Quality / Type Precision (both scored 1-2/10)  
+The complete loss of the parameter `x` and the uninitialized `result` variable represent fundamental failures in recovering the function's interface and semantics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Parameter recovery**: When a function uses a stack variable that matches the calling convention's parameter passing mechanism (e.g., w0 in ARM64), infer that it's an undeclared parameter rather than an uninitialized local.
+2. **Dead code detection**: Recognize that the fake branch conditions are optimized out by the compiler and attempt to recover them by analyzing the condition expressions (e.g., `x*x < 0` is always false for integers).
+3. **Anomaly flagging**: When a function returns an uninitialized local variable, flag this as a potential decompilation issue with a comment like "WARNING: result may be uninitialized - check if parameter is missing".

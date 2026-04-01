@@ -1,0 +1,16 @@
+Testing obfuscated/optimized edge cases:
+
+call_opaque_predicate: 10
+call_opaque_predicate result: 20
+call_instruction_substitution: 225
+call_string_encryption: 31
+call_tail_call_optimized: 500500
+call_non_tail_call: 5050
+call_vectorized_loop: 72
+call_link_time_optimization: 20
+call_division_by_zero: 2
+call_null_pointer_deref: 41
+call_buffer_overflow: 30
+call_integer_overflow: 2000000000
+call_undefined_behavior: 10
+call_implementation_defined: 48

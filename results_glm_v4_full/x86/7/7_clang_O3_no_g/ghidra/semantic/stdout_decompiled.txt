@@ -1,0 +1,17 @@
+
+Testing obfuscation and optimization techniques:
+
+param_fake_branch: 10
+call_opaque_predicate: 20
+call_instruction_substitution: 0xe1
+param_string_encryption: 0
+call_tail_call_optimized: 0x7a314
+call_non_tail_call: 0x13ba
+call_vectorized_loop: 0x48
+call_link_time_optimization: 0x14
+call_division_by_zero: 1
+call_null_pointer_deref: 41
+call_buffer_overflow: 0x1e
+call_integer_overflow: 2000000000
+call_undefined_behavior: 10
+call_implementation_defined: 0x2b

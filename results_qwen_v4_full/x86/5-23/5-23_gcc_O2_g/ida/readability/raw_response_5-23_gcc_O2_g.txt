@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function parameters retain meaningful names from debug info (`size`, `x`, `y`, `counter`), but local temporaries are generic (`v0`, `v1`, `v2`, `v3`). Example: `param_macro_constants` uses `result` and `size` well, but `param_memory_protection` uses `v0`, `v1`, `v2`, `v3` obscuring their roles.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent recovery of original function names (`param_macro_constants`, `test_preprocessing_features`, `param_asm_simd`). However, some internal helpers remain generic (`sub_1030`, `sub_1040`, `sub_1050`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many magic numbers without explanation (57072, 57122, 282, 382). String literals replaced with obfuscated references (`asc_21F4`, `aPpL201D`). Original macro constants (MAX_SIZE=1024, BUFFER_COUNT=16) folded to raw values losing semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary artifacts present (`__readgsdword(0x14u)`) but not excessive. No register spilling noise. Some compiler initialization functions included that aren't part of original source logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well-recovered (if/else, for loops). `param_asm_clobber` shows proper for loop reconstruction. No excessive goto usage. Conditional compilation branches resolved cleanly to single paths.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent function boundary preservation. Each function maintains single responsibility. No inappropriate inlining or fragmentation. Original function structure fully intact.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (`if (v2 == (void *)-1) return -1`). No confusing forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding loses call relationships (`call_macro_constants()` returns 64 directly instead of calling `param_macro_constants(2048)`). Some test functions duplicate printf calls unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type recovery (int, void*, size_t, char*). SIMD types preserved (`__m128i`). However, some generic `int` where `int32_t` or `size_t` would be more precise. Pointer types generally correct.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays properly identified (`arr[5]`, `v6[10]`, `dst[32]`). `__m128i` union access shown correctly (`m128i_i64`, `m128i_i32`). No major struct recovery issues in this code.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts visible. Pointer arithmetic minimal and correct. Atomic operations use proper intrinsics (`_InterlockedExchangeAdd`). Generally type-safe decompilation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation (section headers, test expectations, macro explanations). No decompiler confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Assembly patterns converted to C equivalents well. Atomic operations recognized (`_InterlockedExchangeAdd`). SIMD intrinsics preserved (`_mm_add_epi32`, `_mm_load_si128`). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (8 functions). Stack warning present ("positive sp value has been detected"). No inline warnings about constant folding decisions or uncertain code paths.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Return values not explained. Original had extensive test expectations (期望: 64, 期望: 30) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls preserved correctly. Global variable usage clear (`global_var`). Call relationships visible in test functions. Some string references obfuscated (`asc_21F4`, `aPpL201D`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order. Test functions grouped together. Original section comments (5.2 预处理，5.3 内联汇编) completely lost. No file separation preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions listed as failed (mmap, printf_chk, sysconf). Would need stubs for library functions. No dependency documentation. **Critical metadata inconsistency**: Claims Ghidra but output shows IDA Pro/Hex-Rays.
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6 + 8 + 5 + 7) / 4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (8 + 9 + 8 + 6) / 4 = 7.75 × 0.25 = 1.94
+Level 3 (Type):        (7 + 8 + 8) / 3   = 7.67 × 0.20 = 1.53
+Level 4 (Semantic):    (2 + 6 + 5 + 3) / 4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (7 + 6 + 5) / 3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────────
+Overall Readability Score: 6.62/10
+```
+
+### Critical Defects:
+- **Metadata inconsistency**: Claims "Ghidra 12.0_PUBLIC" but decompiled output header states "IDA Pro 9.1 with Hex-Rays"
+- **Optimization mismatch**: Original claims `-O0` but binary path shows `-O2`, causing aggressive constant folding
+- **Comment loss**: All original documentation (200+ lines of comments) completely absent
+- **Call relationship loss**: `call_macro_constants()` returns hardcoded 64 instead of calling `param_macro_constants(2048)`
+- **String literal obfuscation**: Format strings replaced with `asc_21F4`, `aPpL201D` reducing readability
+
+### Best Quality Aspect:
+- **Function Decomposition (9/10)** - Function boundaries and single-responsibility structure perfectly preserved from original source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation, test expectations, and semantic explanations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics**: Detect constant-folded values and suggest original macro names based on usage patterns (e.g., 1024 → MAX_SIZE, 64 → BUFFER_COUNT * 4)
+2. **Preserve call relationships**: Avoid over-aggressive constant folding that eliminates function calls, especially in test harness code
+3. **Generate semantic comments**: Auto-generate comments for test functions showing expected vs. actual values, and flag constant-folded regions with confidence indicators

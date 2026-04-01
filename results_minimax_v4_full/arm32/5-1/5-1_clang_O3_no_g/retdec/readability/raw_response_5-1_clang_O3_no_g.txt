@@ -1,0 +1,166 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `v4`, `a1`, `a2`, `a3`, `a4`, `result`, `result2`). Parameters use single-letter names with numbers that provide no semantic meaning. Compare to source's meaningful names like `value`, `name`, `size`, `data` - all lost in decompilation.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Some functions are properly demangled (`test_cpp_member_func()`, `test_cpp_virtual_func()`), but many remain cryptic (`function_874`, `function_880`, `function_88c`). The mangled C++ names like `_Z20test_cpp_member_funcv` are partially resolved but inconsistent - some use demangled form in comments only.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Multiple unexplained magic numbers throughout: `0x74736554` (string "Test" reversed), `0x5a5f0065`, `0x10dc` (4660 = 0x1234). Global variables `g1 = 8`, `g2 = 8`, `g3 = 8` have no explanation. The value `42` appears in exception code but isn't documented as the thrown exception value from source.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant compiler artifact pollution. Runtime functions like `__cxa_allocate_exception`, `__cxa_throw`, `__cxa_begin_catch`, `__dynamic_cast` are properly identified but many infrastructure functions (`function_874`, `function_880`, etc.) are unnamed. The decompilation includes 59 functions when only ~12 are from the actual source.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Most test functions return constant values (e.g., `return 42;` for `test_cpp_virtual_func`), which is natural for -O0 debug builds. The exception handling in `test_cpp_exception` has awkward control flow with `__cxa_end_cleanup` but this reflects actual exception machinery. Overall flow is readable.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Template functions are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). However, `test_cpp_oo_features` at ~60 lines mixes printing and testing logic. The Container template class methods are properly decomposed but lack class structure.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most functions read top-to-bottom without forward jumps. The exception function has some branching but remains traceable. Early returns are used appropriately in Container::get methods. No severe non-linearity issues.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: The `test_cpp_oo_features` function contains duplicated RTTI code (lines 0xeac-0xed8 repeat lines 0xcb0-0xd08). Some redundant pointer manipulations in template functions. Not severe but noticeable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Uses `int32_t` consistently which is good for ARM64. However, `template_max<double>` has severe type errors - it compares `this` pointer as float (`__aeabi_dcmpgt`) and returns wrong type. Function parameters like `int32_t * a1` lose const-correctness. Float/double handling is broken.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No struct recovery. The `Container` class is accessed via raw pointer arithmetic: `*(int32_t *)(result2 + 40)` for size, `*(int32_t *)(4 * v2 + result2)` for data array. All field semantics lost - should be `container.size`, `container.data[idx]`. The `LifecycleClass` with its `data` pointer is completely lost.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Justification: Multiple unsafe operations: `(int32_t)a2` casts in `template_swap`, `(int32_t)this` in `template_max<double>`, raw pointer arithmetic everywhere. The `template_swap` implementation is completely wrong - it assigns pointers instead of values: `*a1 = (int32_t)a2; *a2 = (int32_t)a1;` (should swap values, not pointers).
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Only comments are demangled function names in format `// Demangled: function_name()`. No algorithm explanations, no source code references, no uncertainty indicators. The comment `// .thread` appears incorrectly in Container<int>::push. No useful documentation for complex features like virtual inheritance or RTTI.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: No design patterns or algorithms identified. The virtual function mechanism is not explained. Exception handling machinery is not documented as C++ exception handling. Template instantiation patterns not recognized. Lambda capture patterns not identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No warnings about suspicious code. The broken `template_max<double>` is presented as correct. The wrong `template_swap` implementation has no flag. No indication of potential undefined behavior in the exception handling code.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants documented. The Container bounds checking (`if (v2 <= 9)`) is not flagged as bounds validation. No contract information recovered from source assertions or documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function calls are visible in the code. The `test_cpp_oo_features` calls all test functions. However, no documentation of call relationships, no indication of which functions call virtual methods, no global variable usage documentation.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are somewhat grouped (test functions together, template functions together, Container methods together). However, the file is a single monolithic output with no logical sectioning. Runtime support functions are interleaved with user code.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Code includes standard headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). However, the code will NOT compile correctly due to: (1) `template_max<double>` returns wrong type, (2) `template_swap` is completely broken, (3) `Container<double>::push` has wrong parameter order. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 4) / 4 = 3.50
+L2_avg = (6 + 6 + 7 + 5) / 4 = 6.00
+L3_avg = (4 + 2 + 3) / 3 = 3.00
+L4_avg = (3 + 2 + 2 + 1) / 4 = 2.00
+L5_avg = (4 + 5 + 4) / 3 = 4.33
+
+Overall = (3.50 × 0.30) + (6.00 × 0.25) + (3.00 × 0.20) + 
+          (2.00 × 0.15) + (4.33 × 0.10)
+        = 1.05 + 1.50 + 0.60 + 0.30 + 0.43
+        = 3.88/10
+```
+
+### Overall Readability Score: 3.9/10
+
+---
+
+### Critical Defects
+
+1. **Broken template functions**: `template_max<double>` incorrectly uses `this` pointer in comparison and returns wrong type; `template_swap` swaps pointers instead of values - these are functionally incorrect, not just readability issues.
+
+2. **No struct recovery**: All class/struct data accessed via raw pointer arithmetic (`*(int32_t*)(result + 40)` instead of `obj.size`), completely losing semantic meaning.
+
+3. **Variable naming completely generic**: All variables use single letters with numbers (`v1`, `a1`, `result`) - no semantic names like `size`, `data`, `index` recovered.
+
+4. **Type precision failures**: `template_max<double>` demonstrates severe type handling errors; function pointers not properly typed.
+
+5. **No semantic annotations**: No comments explaining algorithms, no pattern recognition, no anomaly warnings, no contract recovery.
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (6/10)** - At -O0 optimization, the control flow is relatively readable. Most test functions simply return expected values, which is natural for debug builds. Exception handling is awkward but reflects actual C++ runtime machinery.
+
+---
+
+### Most Needs Improvement
+
+**Type System Fidelity (3/10)** - The decompilation fails on multiple levels: no struct/class recovery, broken template instantiations, incorrect type handling for doubles, and pervasive unsafe pointer arithmetic. This is the most severe degradation from the original source.
+
+---
+
+### Top 3 Recommendations
+
+1. **Recover class/struct layouts**: Instead of raw pointer arithmetic like `*(int32_t*)(result + 40)`, reconstruct the Container class with proper field names: `struct Container { T data[10]; int size; };`
+
+2. **Fix template instantiation analysis**: The `template_max<double>` and `template_swap` functions are functionally incorrect. The decompiler should recognize template patterns and generate correct code for each instantiation.
+
+3. **Add semantic variable naming**: Infer names from usage patterns - variables used as array indices should be named `idx` or `index`, size fields should be `size`, data pointers should be `data`. Use type information and common patterns to suggest meaningful names.

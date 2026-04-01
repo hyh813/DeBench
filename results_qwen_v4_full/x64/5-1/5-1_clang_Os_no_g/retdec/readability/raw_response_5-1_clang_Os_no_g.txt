@@ -1,0 +1,104 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`, `str`) with zero semantic meaning. No variable indicates purpose like `obj`, `instance_count`, or `capture_by_value` from the original source.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) instead of readable names. Demangled comments exist but the actual function names are unusable for human understanding.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x13d7`, `0xffffffffffffffff`). String literals stored as hex-encoded globals (`g1`, `g2`) with no readable content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Assembly intrinsics pollute code (`__asm_movups`, `__asm_maxsd`, `__asm_xorps`). Compiler artifacts like `__do_global_dtors_aux` and `register_tm_clones` included without filtering.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Critical functions return constant values instead of actual logic (e.g., `test_cpp_virtual_func` just returns 42). `test_cpp_member_func` has nonsensical strlen on stack variable instead of class method calls.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Helper functions (`function_1030` through `function_1130`) are trivial wrappers around library calls. Main test functions vary wildly—some are constants, others have incorrect parameter lists.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Some functions read linearly, but others have confusing patterns. The `test_cpp_constructor` while loop structure is recoverable but uses raw pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple wrapper functions for single library calls create redundancy. However, no severe loop unrolling or dead code duplication observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy type erosion—everything is `int64_t`, `int32_t`, or `void*`. Original types like `size_t`, `bool`, class types completely lost. Function signatures have extra parameters (`int64_t a1, a2, a3, a4`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtable structures partially recovered (`vtable_3d78_type`, `vtable_3da0_type`) but class definitions lost. No `SimpleClass`, `LifecycleClass`, `Container<T>` structures reconstructed. Fields accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int64_t *)`, `(int32_t *)`, `(float32_t)`). Raw pointer arithmetic throughout. `template_swap` sets both parameters to uninitialized `v1`—clearly broken type handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only demangled function names in comments. No algorithm explanations, no logic documentation. Comments like "// Demangled: test_cpp_member_func()" add minimal value.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: Zero pattern recognition. C++ idioms (RAII, virtual dispatch, template instantiation, lambda captures) completely obscured. No design patterns identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Broken functions (constant returns) presented confidently without flags. No indication that `test_cpp_member_func` logic is wrong.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts lost. No null checks or bounds validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships undocumented. Virtual dispatch reduced to `__dynamic_cast` calls without vtable explanation. Global variable usage (`g1`-`g27`) opaque.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Related functions (Container<int> vs Container<double>) not organized together. No namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has includes and declarations but won't compile as-is. Missing C++ runtime support, undefined assembly intrinsics, incorrect function signatures need fixing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+2+3)/4 = 2.50
+Level 2 (Structural):  (2+4+5+5)/4 = 4.00
+Level 3 (Type):        (3+3+3)/3   = 3.00
+Level 4 (Semantic):    (3+1+2+1)/4 = 1.75
+Level 5 (Contextual):  (4+4+5)/3   = 4.33
+
+Overall = (2.50 × 0.30) + (4.00 × 0.25) + (3.00 × 0.20) + 
+          (1.75 × 0.15) + (4.33 × 0.10)
+        = 0.75 + 1.00 + 0.60 + 0.26 + 0.43
+        = 3.04/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Constant return functions**: `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` all return hardcoded constants instead of actual logic
+- **Broken member function test**: `test_cpp_member_func` performs `strlen` on stack variable instead of testing `SimpleClass` methods
+- **Template swap broken**: `_Z13template_swapIiEvRT_S1_` sets both parameters to uninitialized `v1`, losing both values
+- **No class structure recovery**: All C++ classes (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>`, `Point`) lost—only vtable stubs remain
+- **Assembly intrinsics pollution**: `__asm_movups`, `__asm_maxsd`, `__asm_xorps` make code non-portable and hard to understand
+
+### Best Quality Aspect:
+- **Level 5: Contextual Coherence (4.33/10)** - Function call relationships are at least present in the code, and the overall program structure (main → test_cpp_oo_features → individual tests) is recognizable despite severe logic loss.
+
+### Most Needs Improvement:
+- **Level 4: Semantic Transparency (1.75/10)** - Zero idiom recognition, no anomaly flags for broken code, no contract documentation. The decompiler presents confidently incorrect code without any warnings to the analyst.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag constant-return functions** - When a function body reduces to `return <constant>`, add a warning comment indicating potential optimization artifact or decompilation failure
+2. **Recover C++ class structures from vtable patterns** - Use vtable layout to reconstruct class definitions with method names and inheritance relationships
+3. **Replace assembly intrinsics with portable equivalents** - Convert `__asm_movups`, `__asm_maxsd` to standard C operations or provide clear comments explaining the intended operation

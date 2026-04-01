@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/7/7_gcc_O2_no_g/angr/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "Test 0\nTest 7: 10\nTest 8: 20\nTest 9: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

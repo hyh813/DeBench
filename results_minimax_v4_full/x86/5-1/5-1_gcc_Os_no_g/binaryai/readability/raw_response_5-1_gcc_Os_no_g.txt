@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (local_30, local_11, iVar1, puStack_3c, uVar2, ppuVar4). Only a few like `local_10` for stack canary tracking are inferable. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions perfectly match source (`test_cpp_member_func`, `test_cpp_constructor`). Template instantiations are well-named (`template_max_int_`, `Container<int>::push`). However, many internal functions remain as `FUN_00011030` style, and some like `call_virtual_func` lack proper thiscall convention indication.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x2a` (42), `0x3e9` (1001), `0x15` (21), `0x47` (71), `0x16` (22), `0x55` (85). Some like `0x14` (20) for array size are inferable. String literals like "Derived" are preserved but not explained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts from -O0. Stack canary checks present but expected. Some redundant type casts like `(undefined4 *)` and `(undefined *)` add noise. No debug trace instrumentation. Overall relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - if/else, loops preserved. Exception handling in `test_cpp_exception` shows complex goto-style jumps due to try/catch implementation. At -O0, structure should be nearly identical to source, and mostly it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - test functions are ~30-50 lines. Template instantiations are separate as expected. Member functions are properly extracted. Some virtual function thunks create redundant entries (e.g., multiple `MultiDerived::funcB` variants).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Exception handling has multiple jumps but that's inherent to the pattern. Some forward declarations needed. No excessive nesting.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. No obvious common subexpression duplication. Template instantiations are properly specialized. Some virtual function duplication (multiple destructor variants) but that's ABI-related.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types often generic `int` or `undefined4` instead of `int32_t`. Pointers are properly typed as `int*`, `undefined4*`. Function pointers have proper signatures in some cases (`int __thiscall`). Const correctness partially preserved. Some `void*` where specific types expected.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Classes mostly recovered with proper names (`Base`, `Derived`, `Container<int>`). Template classes show proper specialization. However, struct-like local variables use raw arrays (`undefined4 local_3c[10]`) instead of recovered struct names. Virtual inheritance offsets use raw pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Most casts are appropriate for the decompilation context. Pointer arithmetic in virtual inheritance (`this + *(int *)(*(int *)this + -0xc)`) is complex but accurate. No obvious buffer overflow patterns in the test functions. Some unsafe conversions between pointer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only file header comment from decompiler. No useful comments explaining algorithm, contracts, or non-obvious logic. No indication of uncertainty for indirect calls. Function headers absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized - virtual function calls identified, template instantiation recognized. But no explicit naming of patterns (vtable dispatch, RAII, etc.). Exception handling not labeled as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Code presents everything as confident when some things are uncertain (e.g., exception handling complexity).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. No invariant detection. Function contracts completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Class relationships partially clear through vtable symbols. Template relationships clear. But global variable usage not documented. Call graph not explicit. Virtual dispatch relationships not fully explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by class (Base, Derived, Container). Test functions grouped. But all in single file. Static vs non-static not always clear. No namespace recovery.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code appears to compile (marked "Compilation Result: Yes"). External dependencies (std::) properly referenced. Some stubs needed for runtime. Minimal patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`local_30`, `iVar1`, `puStack_3c`) - no semantic inference from usage
+- No comments explaining algorithms, contracts, or non-obvious logic
+- Magic numbers like `0x2a`, `0x3e9`, `0x47` unexplained
+- No anomaly indication for complex code like exception handling
+- Type precision suffers from `undefined4` and generic `int` usage
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are properly extracted with appropriate granularity. Test functions match source exactly. Template instantiations are correctly separated. Member functions properly isolated.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10) and Comment Quality (2/10)  
+Variables are completely generic with no semantic inference. Combined with absence of comments, the code requires significant reverse engineering effort to understand even though the original source was clear.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - e.g., `local_14` used as size counter should be named `size` or `count`
+2. **Add explanatory comments** for complex patterns like exception handling, virtual dispatch, and virtual inheritance
+3. **Detect and explain magic numbers** - suggest constants like `0x3e9 = 1000` for instance_count multiplier

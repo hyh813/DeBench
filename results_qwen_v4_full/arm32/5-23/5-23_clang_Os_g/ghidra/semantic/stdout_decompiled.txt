@@ -1,0 +1,21 @@
+=== Testing Preprocessing Features ===
+param_macro_constants returned: 64
+call_macro_constants returned: 30
+param_macro_functions returned: 32
+call_macro_functions returned: 57122
+param_conditional_compile returned: 116
+call_conditional_compile returned: 19
+param_multi_branch_compile returned: 60
+LOG: Values: 10, 20, 30
+call_multi_branch_compile returned: 60
+param_macro_recursion returned: 16
+call_macro_recursion returned: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:23
+param_stringize returned: 382
+=== Testing ASM Features ===
+call_stringize returned: 15
+param_token_paste returned: 15
+call_token_paste returned: 42
+param_variadic_macro returned: 336662027
+call_variadic_macro returned: 30
+param_macro_override returned: 77

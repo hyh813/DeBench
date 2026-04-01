@@ -1,0 +1,47 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "arm32",
+  "src_name": "3",
+  "source_path": "src/3.c",
+  "target_src_names": [
+    "3",
+    "3-3_extern_defs"
+  ],
+  "build_cmd": "clang --target=arm-linux-gnueabi -O3 -g src/3.c src/3-3_extern_defs.c -o build/arm32/3/3_clang_O3_g",
+  "original_bin": "results_minimax_v4_full/arm32/3/3_clang_O3_g/binaryai/semantic/native_arm32_bin/3_clang_O3_g_native",
+  "decompiled_bin": "results_minimax_v4_full/arm32/3/3_clang_O3_g/binaryai/syntactic/bin/3_clang_O3_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "results_minimax_v4_full/arm32/3/3_clang_O3_g/binaryai/semantic/native_arm32_bin/3_clang_O3_g_native",
+      "src_name": "3",
+      "target_src_names": [
+        "3",
+        "3-3_extern_defs"
+      ],
+      "error": null,
+      "event_count": 66,
+      "entry_count": 6,
+      "exit_count": 6,
+      "print_count": 54
+    },
+    "decompiled": {
+      "status": "failed",
+      "label": "Decompiled",
+      "binary_path": "results_minimax_v4_full/arm32/3/3_clang_O3_g/binaryai/syntactic/bin/3_clang_O3_g_fixed",
+      "src_name": "3",
+      "target_src_names": [
+        "3",
+        "3-3_extern_defs"
+      ],
+      "error": "bootstrapper crashed with signal 11; please file a bug\n\t pc: b6f5728c\n\t lr: b6f53997\n\t sp: b6f43550\n\t r0: 00000029\n\t r1: b6f43578\n\t r2: 00000029\n\t r3: 62696c2f\n\t r4: b6f6628e\n\t r5: 00005996\n\t r6: b6f32fd4\n\t r7: b6f43580\n\t r8: 00000035\n\t r9: b6f63d00\n\tr10: b6f641f8",
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0
+    }
+  }
+}

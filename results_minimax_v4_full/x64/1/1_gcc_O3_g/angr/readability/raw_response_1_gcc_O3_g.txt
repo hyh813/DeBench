@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `v1`, `v2`, `v3` throughout. No semantic meaning can be derived - e.g., in `sequential_ops`, parameters are `a0`, `a1`, `a2` instead of `a`, `b`, `c`. This is the worst possible naming scenario for readability.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most target functions correctly preserve original names (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`). However, many wrapper/thunk functions use generic names like `sub_401020`, `sub_40102d`. The core function names are good, but the noise from wrapper functions degrades overall quality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently without explanation. Some constants like `CSWTCH.55` for switch jump tables are named. However, many numeric literals lack semantic meaning - e.g., `316912650130844326686193876996` in loop optimization appears without context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present - many wrapper functions (sub_40102d, sub_40103f, etc.) that just call other functions. Some incomplete functions like `duffs_device` that only handle case 0. SIMD intrinsics (`AddV`, `CmpEQV`, `InterleaveLOV`) exposed without explanation. Multiple empty functions present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops, conditionals, switches are recognizable. However, several functions have critical bugs: `loop_while` and `loop_dowhile` use `while (i != v4)` where `v4` is uninitialized, creating infinite loops. Some goto usage in `call_func_ptr` and `conditional_func_ptr` for indirect calls is unconventional.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably decomposed. However, `loop_for_fixed` is ~100 lines due to heavy unrolling, and `loop_complex_cond` has ~50 lines of nested if-else chains. Some wrapper functions could be eliminated. Overall acceptable for -O0 compilation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in many functions. Some forward jumps present in switch statements. The `goto_forward` function correctly linearizes the goto pattern. Overall good linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present (expected at -O3) but not commented. Common subexpression patterns visible but not abstracted. Dead code minimal. The SIMD loop unrolling in `loop_for_fixed` and `loop_continue` could be better abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly appropriate - `unsigned int` for parameters, `unsigned long long` for return values. However, signed/unsigned mixing causes issues (e.g., `single_if` returns `long long` but source is `int`). Some type erosion - no `int32_t` vs `uint64_t` distinction.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct types recovered. All parameters are primitives. The `process_with_callback` takes `unsigned int *a0` for array but no struct for callback context. Some function pointer arrays use `InterleaveLOV` which obscures the actual array type.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Most operations are type-safe. Minor issues: operator precedence bugs in `nested_if_2` (`a0 + a1 & 4294967295` should be `(a0 + a1) & 4294967295`). Some pointer arithmetic in `process_with_callback` but generally correct. No severe type safety violations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the entire decompiled output. Zero explanation of algorithms, no decompilation confidence indicators, no documentation of non-obvious logic. This is a severe deficiency.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - switch statements use jump tables (CSWTCH.55), tail recursion converted to loop (`tail_recursion`). However, no explicit naming of patterns like "state machine", "jump table", "Duff's device". The `duffs_device` is not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags present. Critical issues not flagged: infinite loops in `loop_while`, `loop_dowhile`, `loop_external_state` (all use uninitialized `v4` in conditions). The incomplete `duffs_device` not flagged. No indication of uncertain indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation. The `multi_return` function has wrong logic (checks `a0 <= 50` instead of `temp > 100`) but no contract hints to explain the expected behavior.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships partially visible through code structure. `test_control_flow_l1` calls the L1 functions. Some callback relationships visible in `process_with_callback`. However, no explicit documentation of call graph or global variable usage.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by test level (test_control_flow_l1, l2, l3). Related functions near each other. However, many wrapper functions interspersed. No clear separation between test harness and core logic.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has compilation issues - infinite loops would cause problems at runtime. Several functions have uninitialized variable bugs. External dependencies (puts, __printf_chk, __libc_start_main) declared but some missing prototypes. Not standalone compilable without fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 4) / 4 = 4.5
+L2_avg = (6 + 7 + 7 + 6) / 4 = 6.5
+L3_avg = (7 + 5 + 7) / 3 = 6.33
+L4_avg = (1 + 5 + 2 + 2) / 4 = 2.5
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (4.5 × 0.30) + (6.5 × 0.25) + (6.33 × 0.20) + 
+          (2.5 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.625 + 1.266 + 0.375 + 0.533
+        = 5.14/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet List)
+- **Infinite loops in 3 functions**: `loop_while`, `loop_dowhile`, `loop_external_state` all use `while (i != v4)` where `v4` is uninitialized - these are runtime bugs in the decompiled code
+- **Operator precedence bugs**: `nested_if_2` has `a0 + a1 & 4294967295` which parses incorrectly; `if_elseif_long` has `(a0 + 1) * 100` needing parentheses
+- **Incomplete function**: `duffs_device` only handles case 0, returns -1 for all other cases - the actual copy logic is missing
+- **Wrong logic**: `if_else` returns `a0 > 0` (boolean) instead of `1` or `0`; `multi_return` checks `a0 <= 50` instead of `temp > 100`
+- **No comments**: Zero documentation for any function, algorithm, or non-obvious pattern
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (7/10)** - Core function names like `sequential_ops`, `single_if`, `loop_for_fixed` correctly match the original source, preserving semantic meaning for the main logic functions.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality (1/10)** - Complete absence of comments is the most severe readability issue. Without any documentation, even well-structured code becomes difficult to maintain and understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add comments explaining optimization artifacts**: When SIMD intrinsics (AddV, CmpEQV), loop unrolling, or jump tables are detected, add comments explaining what the compiler did (e.g., "// Loop unrolled 8x with SIMD accumulation")
+2. **Flag anomalies and potential bugs**: The uninitialized variable issue in loop conditions should be flagged as "POTENTIAL BUG: uninitialized variable used in loop condition" rather than silently producing broken code
+3. **Recover variable names from usage patterns**: Use data flow analysis to infer semantic names - e.g., if `a0` is always used as a loop bound in `loop_for_fixed`, name it `n` or `count` based on the arithmetic patterns

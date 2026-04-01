@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## Executive Summary
+
+This assessment evaluates Ghidra's decompilation of a control flow test suite. **Critical finding**: Despite metadata claiming `-O0 -g` compilation, the decompiled code shows heavy optimization artifacts (loop unrolling, vectorization), suggesting the binary was actually compiled with `-O3`. This mismatch significantly impacts readability expectations.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `a0`, `a1`) with zero semantic meaning. For example, `loop_for_fixed` uses `v1` through `v17` instead of meaningful names like `sum`, `i`, or `remainder`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`sequential_ops`, `single_if`, `nested_if_2`), but ~40% are generic (`sub_401xxx`). The naming is inconsistent—some functions are well-named while wrapper functions add noise.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervade the code without explanation: `4294967295` (UINT32_MAX), `1717986919` (division optimization constant), `316912650130844326686193876996` (vector constant). None are replaced with named constants.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution including non-standard functions (`AddV`, `CmpEQV`, `InterleaveLOV`), redundant casts (`(unsigned int)v5 + 1`), and vector operations (`uint128_t`) that obscure simple logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) recover well, but loops are catastrophically unrolled (`loop_for_fixed` has 50+ lines of unrolled code for a 5-line source loop). Some use `goto` instead of structured constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Unnecessary wrapper functions (`sub_4013a4` calls `sequential_ops`) fragment the code. Actual functions are appropriately sized, but the dual-layer structure adds confusion without benefit.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Function pointer calls use `goto v1` patterns (`call_func_ptr`, `conditional_func_ptr`), breaking linear reading. Computed gotos (`large_jump_table`, `fsm_func_table`) use indirect jumps instead of switch statements.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Aggressive loop unrolling creates massive redundancy—`loop_for_fixed` and `loop_continue` each have 100+ lines of nearly identical code blocks that should be a simple loop.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent type usage throughout—`sequential_ops` returns `int` but similar functions return `unsigned long long` or `long long`. Sign handling is inconsistent (`a0 < 0` compared against unsigned type).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only one trivial struct recovered (`struct_0 { unsigned long long field_0; }`). Arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` are completely lost, replaced with switch-case hardcoding.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `goto v1` with function pointers, `InterleaveLOV` with unclear semantics, implicit truncations (`(unsigned int)v5`), and pointer arithmetic without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only one anomaly marker exists (`[D] Unsupported jumpkind`).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: State machine patterns (`state_machine`, `fsm_func_table`) are structurally present but not identified. Loop patterns are so transformed they're unrecognizable. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Critical issues like non-compilable code (`AddV`, `InterleaveLOV`) and type mismatches go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `recursion_factorial` have no indication of valid input ranges or expected behavior.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. Test functions (`test_control_flow_l1`) hardcode expected values instead of calling actual functions, breaking the call graph.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed in address order, not logical groups. Related functions (`state_idle`, `state_processing`, `state_done`, `state_error`) are scattered. No header file or API boundary.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: **Does not compile**—uses non-standard functions (`AddV`, `CmpEQV`, `InterleaveLOV`, `CONCAT`), undefined globals, and platform-specific constructs. Requires extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+3+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (4+5+4+3)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System):  (5+2+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):     (1+3+2+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):   (4+4+1)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.20/10
+```
+
+### Overall Readability Score: **3.2/10**
+
+---
+
+### Critical Defects
+
+- **Non-compilable code**: Functions `AddV`, `CmpEQV`, `InterleaveLOV`, `CONCAT` are not valid C and prevent compilation
+- **Catastrophic loop unrolling**: `loop_for_fixed` and `loop_continue` expanded from 5-line loops to 100+ line unrolled blocks
+- **Zero semantic variable names**: All variables are `v0`, `v1`, `a0`, `a1` with no meaning inference
+- **Lost data structures**: Arrays and structs completely lost (e.g., `loop_break`'s array became hardcoded switch)
+- **Test functions broken**: `test_control_flow_l1/2/3` hardcode expected values instead of calling actual functions
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (6/10)** - Core algorithm functions retained original semantic names (`sequential_ops`, `nested_if_deep`, `recursion_factorial`), providing anchor points for understanding despite other deficiencies.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or explanations makes the decompiled code nearly unusable for analysis without the original source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (loop counters, accumulators, indices) to suggest semantic names like `i`, `sum`, `index` instead of `v0`, `v1`.
+
+2. **Detect and collapse loop unrolling** - Recognize unrolled loop patterns and reconstruct them as compact `for`/`while` loops with comments noting the optimization transformation.
+
+3. **Add decompilation confidence annotations** - Flag non-standard constructs (`AddV`, `InterleaveLOV`), type ambiguities, and unrecovered structures with warnings like `// DECOMPILER: Vector operation - verify manually`.

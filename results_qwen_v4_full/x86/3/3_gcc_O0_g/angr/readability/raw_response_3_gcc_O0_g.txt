@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) instead of semantic names like `local`, `arr`, `large_buf` from source. Some improvement with `idx` for loop counters, but critical variables like `large_buf[2048]` become `v1[bp-0x410]`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`double_value`, `local_vars`, `heap_basic`), but runtime helpers use mechanical names (`sub_401030`, `sub_401140`). Original `static_helper` preserved but `frame_dummy` is generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `4294967295` (should be `-1`), struct offsets like `15552`, `15512` instead of named constants. Some literals clear (`42`, `10`, `20`) but array sizes become opaque calculations.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: `__x86.get_pc_thunk.ax()` calls in nearly every function, `_ccall` for stack canary checks, `padding_0` arrays in struct definitions, and `[D] Unsupported jumpkind` annotations pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops recovered as `for` constructs, but several functions use `goto` (`sub_401030`, `sub_401140` have `goto v1->field_50`). Stack canary checks at function ends disrupt natural flow with `if (v3 != ...) return __stack_chk_fail_local()`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity mostly preserved (original functions remain separate), but many auto-generated helper functions (`sub_401xxx` series) fragment the code. `linked_list_heap` and `tree_heap_traversal` maintain appropriate cohesion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions, but stack canary epilogues create repetitive patterns. VLA functions (`vla_stack`, `alloca_usage`) have complex alignment loops that disrupt linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary code duplicated in ~30 functions. `__x86.get_pc_thunk.ax()` called in nearly every function. Struct definitions duplicated with different padding layouts (`struct_0` defined 15+ times with varying `padding_0` sizes).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `int` becomes `unsigned int` throughout, pointer types lost (`unsigned int ptr` instead of `int*`), `size_t` becomes `unsigned int`. Original `Point` struct fields become `field_0`, `field_4`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_4`, `padding_0`). `Node` struct recovered as `struct_0` with `field_0` (data) and `field_4` (next). Multiple conflicting `struct_0` definitions with different layouts confuse type identity.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe patterns: pointer arithmetic on `unsigned int` (`ptr + idx * 4`), type confusion in `heap_nested` (`*(ptr)->field_4`), implicit casts throughout. `dangling_pointer` use-after-free not flagged as unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers (`// Function: double_value at 0x4013c1`). No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: malloc/free patterns not identified as heap operations. Stack canary checks not explained. VLA/alloca patterns present but not labeled. No recognition of linked list traversal or tree patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but critical issues silent: use-after-free in `dangling_pointer`, double-free in `double_free`, heap overflow in `heap_overflow` not warned.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error returns (`4294967295`) not explained as `-1`.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships undocumented. Global variables have opaque names (`g_403008`, `g_403158`). No call graph documentation. `extern_function` called but relationship unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output. Original test groupings (`test_stack_memory`, `test_heap_memory`) preserved but no file organization. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies undeclared (`extern_function`, `g_403xxx` globals). `_ccall` intrinsic not standard. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 6 + 5 + 3) / 4 = 4.50
+Level 2 (Structural):  (5 + 6 + 6 + 4) / 4 = 5.25
+Level 3 (Type):        (4 + 4 + 3) / 3     = 3.67
+Level 4 (Semantic):    (2 + 3 + 4 + 3) / 4 = 3.00
+Level 5 (Contextual):  (4 + 5 + 4) / 3     = 4.33
+
+Overall = (4.50 × 0.30) + (5.25 × 0.25) + (3.67 × 0.20) + (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.31 + 0.73 + 0.45 + 0.43
+        = 4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `local_value`, `array_ptr`, `result`)
+- **Stack canary code** (`__stack_chk_fail_local`) duplicated in 30+ functions obscures core logic
+- **Struct field names** all generic (`field_0`, `field_4`) losing semantic meaning (should be `data`, `next`, `x`, `y`)
+- **Magic number `4294967295`** used throughout instead of `-1` for error returns
+- **`__x86.get_pc_thunk.ax()`** calls in every function are compiler artifacts that should be eliminated
+
+### Best Quality Aspect
+- **Function Decomposition (6/10)** - Original function boundaries mostly preserved; `double_value`, `local_vars`, `heap_basic` remain as coherent units matching source structure.
+
+### Most Needs Improvement
+- **Comment Quality (2/10)** - Zero meaningful comments despite complex operations; even basic explanations like "stack canary check" or "VLA alignment" are absent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Eliminate stack canary boilerplate** - Move `__stack_chk_fail` checks to function epilogue comments or separate analysis layer rather than inline code
+2. **Recover semantic variable names** - Use data flow analysis to infer names (e.g., variables used in malloc size calculations should be `size` or `count`)
+3. **Consolidate duplicate struct definitions** - Merge the 15+ `struct_0` variants into unified type definitions with consistent field names based on usage patterns

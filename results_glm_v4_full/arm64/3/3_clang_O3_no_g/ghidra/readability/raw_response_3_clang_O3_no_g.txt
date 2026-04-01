@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `param_1`, `uVar3`, `cVar4`, and `local_810`, which provide no semantic context about their role in the logic (e.g., `local_810` is actually a stack buffer).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `local_vars`, `heap_basic`, and `test_stack_memory` are perfectly preserved from the source symbols, making the high-level purpose of each unit immediately clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The code is littered with magic numbers (e.g., `0x2a` for 42, `0x14` for 20) and hex constants without comments explaining their derivation or meaning, significantly obscuring the original intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The decompilation is polluted with Ghidra-specific macro artifacts like `CONCAT17` and `CONCAT44` (likely from vectorized operations), which act as severe noise that impedes understanding of the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: While simple functions are readable, complex loops like those in `large_stack_frame` and `heap_basic` are represented as unrolled scalar operations or confusing macro expansions rather than recognizable loop constructs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler correctly identifies function boundaries and does not arbitrarily fragment code; the separation of concerns matches the source structure well, even if the compiler inlined some logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: The code reads mostly top-to-bottom, but the aggressive loop unrolling (e.g., the massive block of assignments in `heap_basic`) creates long stretches of repetitive code that disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: The decompiler fails to abstract the compiler's loop unrolling optimizations, explicitly listing every iteration of a loop (e.g., `iVar8` through `iVar15`) instead of collapsing them back into a single `for` loop statement.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are frequently degraded to generic `undefined4`, `undefined8`, or `void*`, losing the specific integer sizes and pointer types defined in the original source (e.g., `int *` vs `undefined4 *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types like `Point` and `Node` are completely lost; the decompiler uses raw pointer arithmetic (e.g., `*(undefined4 **)(__ptr + 2)`) instead of accessing fields like `next` or `x`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The code relies heavily on casts to `undefined*` and raw pointer arithmetic, which is technically accurate to the binary but represents a significant loss of type safety and high-level abstraction compared to the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are sparse and limited to auto-generated warnings (e.g., "WARNING: Subroutine does not return"), providing no insight into the algorithm's purpose or the logic behind complex operations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common idioms like array initialization loops are not recognized; instead, they are presented as unrolled sequences of assignments, failing to convey the iterative nature of the original code.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra correctly flags unreachable blocks and indirect jumps it cannot resolve, but it does not flag the `CONCAT` macro usage or the aggressive unrolling as potential readability issues for the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Preconditions (like `if (arr == NULL)`) are present as code but are not documented as explicit contracts or assertions, leaving the analyst to infer safety guarantees manually.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Because function names are preserved, calls to standard library functions (`malloc`, `free`) and user-defined functions are clear and easy to trace, despite the internal obfuscation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are presented in a logical order (mostly address-based, which correlates with source order here), and related test functions are grouped together, maintaining a coherent module structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The output relies on Ghidra-specific pseudo-C macros (`CONCAT17`, `CONCAT44`) and non-standard types (`undefined4`), making it impossible to compile without significant modification or a proprietary header.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.75
+L2_avg: 4.75
+L3_avg: 3.67
+L4_avg: 3.50
+L5_avg: 5.67
+
+Overall = (4.75 × 0.30) + (4.75 × 0.25) + (3.67 × 0.20) + 
+          (3.50 × 0.15) + (5.67 × 0.10)
+        = 1.425 + 1.1875 + 0.734 + 0.525 + 0.567
+        = 4.4385
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects
+- **Loop Unrolling Not Abstracted**: Functions like `heap_basic` and `vla_stack` display hundreds of lines of unrolled assignments instead of a simple `for` loop, destroying readability.
+- **Loss of Composite Types**: Structured data (`Point`, `Node`) is accessed via raw pointer offsets (e.g., `__ptr + 2`), completely obscuring the data model.
+- **Ghidra Macro Pollution**: The use of `CONCAT17`/`CONCAT44` macros in `large_stack_frame` renders the logic unintelligible and the code uncompilable.
+- **Generic Variable Naming**: Variables are named `param_1`, `uVar3`, etc., offering no clues about their data content or purpose.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The preservation of original function symbols (e.g., `local_vars`, `test_heap_memory`) provides a crucial high-level map of the binary, allowing the user to navigate the code effectively despite the low-level obfuscation.
+
+### Most Needs Improvement
+- **Redundancy Elimination (2/10)**: The decompiler's failure to re-roll unrolled loops is the single biggest readability killer. Transforming 50 lines of scalar assignments back into a single loop statement is essential for understanding optimized code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Loop Pattern Recognition**: Implement aggressive pattern matching to detect and re-roll unrolled loops (e.g., sequences of `iVar[i] = iVar[i-1] + constant`) back into standard `for` or `while` constructs.
+2.  **Struct Recovery Heuristics**: Improve type propagation to identify and reconstruct structs based on access patterns (e.g., consistent offsets like `+0`, `+4`, `+8` should suggest a struct definition).
+3.  **Macro Abstraction**: Replace low-level register concatenation macros (`CONCAT`) with higher-level intrinsic calls or simplified scalar assignments to improve readability and standard C compatibility.

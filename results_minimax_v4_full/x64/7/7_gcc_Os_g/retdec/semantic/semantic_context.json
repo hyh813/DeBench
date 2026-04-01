@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "x64",
+  "src_name": "7",
+  "source_path": "src/7.c",
+  "target_src_names": [
+    "7"
+  ],
+  "build_cmd": "x86_64-linux-gnu-gcc -Os -g src/7.c -o build/x64/7/7_gcc_Os_g",
+  "original_bin": "build/x64/7/7_gcc_Os_g",
+  "decompiled_bin": "results_minimax_v4_full/x64/7/7_gcc_Os_g/retdec/syntactic/bin/7_gcc_Os_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "build/x64/7/7_gcc_Os_g",
+      "src_name": "7",
+      "target_src_names": [
+        "7"
+      ],
+      "error": null,
+      "event_count": 10,
+      "entry_count": 3,
+      "exit_count": 2,
+      "print_count": 5
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_minimax_v4_full/x64/7/7_gcc_Os_g/retdec/syntactic/bin/7_gcc_Os_g_fixed",
+      "src_name": "7",
+      "target_src_names": [
+        "7"
+      ],
+      "error": null,
+      "event_count": 2,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 1
+    }
+  }
+}

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`a0`, `a1`), and local variables are mostly single-letter (`v0`, `ptr`, `cur`) or indexed (`idx`). While `ptr` and `cur` hint at pointers, names like `v0` in `varargs_func` obscure the `va_list` abstraction.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: User-defined function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly recovered. Only runtime/internal functions (e.g., `sub_401020`) have generic names, which is expected.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are replaced with global addresses (e.g., `puts(&g_402008)`), making the output unreadable without cross-referencing. Magic numbers like `4294967295` (0xFFFFFFFF) are used instead of `-1` or `UINT_MAX`.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with redundant casts and masking operations, such as `& 4294967295` appearing frequently. Compiler intrinsics like `AddV` and `__printf_chk` are exposed instead of standard library equivalents.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: `varargs_func` decompiles into a complex `do-while` loop with pointer arithmetic (`v1 + 2`, `v0 + 8`) instead of a simple `for` loop with `va_arg`. `func_struct_byval` uses byte-wise pointer iteration (`cur += 1`) instead of array indexing.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well. The decomposition is logical, with no monolithic functions or inappropriate fragmentation of the user's code.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. While there are some forward jumps and complex loop structures (especially in varargs handling), the overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is significant redundancy in type masking (e.g., `& 4294967295`) which obscures the logic. Constant propagation (e.g., `call_cdecl` returning `15`) removes redundancy but at the cost of hiding the function's purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are often `unsigned int` where the source used `int`. The `va_list` type is lost, replaced by raw stack variables. `uint128_t` appears for struct returns, which is a low-level representation rather than the struct type.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are poorly recovered. `LargeStruct` in `func_struct_byval` is treated as a raw byte range (`&v0` to `&v1`), and the access is byte-wise (`char cur[8]`) rather than accessing `long long` members.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous casts and pointer arithmetic operations that bypass type safety, such as treating a struct pointer as a `char*` for iteration. `func_mixed_args` uses `AddV` and casts that imply unsafe type conversions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The output is devoid of semantic annotations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. The `va_list` iteration in `varargs_func` is not recognized, nor is the struct iteration in `func_struct_byval`. The code presents low-level implementation details instead of the idioms used in the source.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no indication of potential issues or decompilation uncertainties in the main logic. The only indication is a raw print statement in `sub_4010e5` regarding an unsupported jumpkind, which is not a structured warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `ptr` to be non-null in `func_struct_byptr` is checked but not stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are clear, but global data references (strings) are opaque addresses. The relationship between the decompiled code and the original string literals is lost without manual lookup.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which roughly groups related code, but it lacks the logical grouping of the source file (e.g., all "Calling Convention" tests together).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on specific compiler intrinsics (`__printf_chk`, `AddV`) and non-standard types (`uint128_t` in some contexts) that would require modification to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable `v0` in `varargs_func` should be named `args` or `ap` to reflect `va_list` usage.
+- Control flow in `varargs_func` exposes raw `va_list` implementation (pointer arithmetic) instead of `va_arg` macro.
+- Struct `LargeStruct` in `func_struct_byval` is lost; the code iterates bytes (`char cur[8]`) instead of `long long` members.
+- String literals are replaced with global addresses (e.g., `&g_402008`), completely losing semantic meaning.
+- Constant propagation in `call_cdecl` reduces the function to `return 15`, hiding the calling convention demonstration logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- User-defined function names are recovered accurately, making it easy to map decompiled functions back to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- Struct types are completely absent, replaced by raw memory offsets and byte-wise access, making data structures nearly impossible to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for `va_list` usage to reconstruct `va_start`/`va_arg` loops instead of exposing stack pointer arithmetic.
+2. Improve type recovery for struct parameters by analyzing access patterns (e.g., 8-byte strides) to reconstruct `long long` arrays or struct fields.
+3. Resolve global string addresses to their actual string content in the decompiled output to preserve literal clarity.

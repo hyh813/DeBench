@@ -1,0 +1,18 @@
+test_macro_constants: -754342600
+test_macro_functions: 64
+test_conditional_compile: 30
+test_multi_branch_compile: 32
+test_macro_recursion: 57122
+test_stringize: 116
+test_token_paste: 19
+test_variadic_macro: 60
+LOG: Values: 10, 20, 30
+test_macro_override: 60
+test_include_guard: 16
+test_builtin_macros: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:38
+
+test_asm_basic: 1180458136
+test_asm_clobber: 15
+test_asm_multi_insn: -661842973
+test_asm_simd: 42

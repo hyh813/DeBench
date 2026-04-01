@@ -1,0 +1,94 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `iVar1`, `piVar2`, `puVar4`, `pvVar2`, `__ptr` are extremely generic and obscure purpose. While some names like `arr`, `large_buf`, `global_counter` are good, the majority use cryptic patterns that make tracking purpose difficult. DWARF comments show "Unresolved local var" for most stack variables.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions correctly match source names (e.g., `double_value`, `local_array`, `heap_basic`, `memop_memset`). However, some functions remain as `FUN_001009b0`, `FUN_00100c7c`, `FUN_0010120c` with generic addresses. The core memory test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048), `0x400` (1024) appear without explanation. The decompiler uses hex notation consistently but provides no named constants. `0x1e` for 30 and `0x32` for 50 are also unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with numerous "WARNING" comments about unreachable blocks, unknown calling conventions, and overlapping globals. DWARF debug comments like `/* Unresolved local var: int a@[DW_OP_reg0(x0)] */` clutter every function. Multiple "WARNING: Subroutine does not return" annotations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper while/do-while loops. At -O0, loops are correctly recovered. Some minor awkwardness in complex functions like `vla_stack` and `alloca_usage` where the VLA/alloca handling is intricate.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is excellent - each function maintains single responsibility similar to source. No 500-line monoliths. Functions like `linked_list_heap` and `tree_heap_traversal` are properly decomposed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error-checking code. Some forward jumps in complex functions like `vla_stack` but manageable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal (appropriate for -O0). Some duplicate patterns in test functions but not excessive. Code is reasonably clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - uses `undefined1`, `undefined4`, `undefined8` for uninitialized data. Generic `int` and `void*` dominate. Function pointer types like `_func_int_int` are auto-generated. `long` used inconsistently for sizes. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs are properly recovered with field names (data, next, left, right). `Point` struct appears in some places. However, some heap allocations use raw `void*` without struct recovery. Mixed results.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts present (void* to typed pointers). Pointer arithmetic throughout without bounds checking. Function pointer types are imprecise (`_func_int_int` vs proper signature). No `restrict` keywords. Some buffer operations could be unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings and DWARF debug comments. No algorithm explanations or API contracts. "Unresolved local var" comments are noise, not useful. Some function headers present but minimal useful content.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns (malloc/calloc/realloc) are recognized. Loop patterns identified. Linked list and tree traversal patterns visible but not explicitly named. Some common patterns hinted but unclear.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Generic warnings present for unreachable blocks and calling conventions. "WARNING: Could not recover jumptable" appears. However, these are boilerplate warnings, not specific to code anomalies. Some indirect calls flagged but not thoroughly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. Error handling visible (NULL checks) but not explained as contracts. Completely missing semantic contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible and traceable. Global variable usage is clear (`global_counter`, `global_array`). Callback relationships visible in `set_global_callback`/`call_global_callback`. But no explicit call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions organized roughly in source order (test functions first, then implementations). Static functions properly scoped. Some grouping by category (stack, heap, static, memop). Matches source file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses `undefined1`, `undefined4`, `undefined8` types which won't compile. Some function signatures may not match. External dependencies (`extern_global_var`, `extern_function`) declared but undefined. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- Variable naming is extremely poor with generic patterns like `iVar1`, `piVar2`, `pvVar2`, `__ptr` obscuring all semantic meaning
+- Severe noise pollution from DWARF comments ("Unresolved local var") and WARNING annotations
+- Type precision severely degraded with `undefined1`/`undefined4`/`undefined8` types throughout
+- Magic numbers like `0x2a`, `0x14`, `0x800` appear without explanation
+- No contract or assertion recovery - completely missing semantic documentation
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions maintain proper granularity matching source
+- Each function has single responsibility
+- No excessive inlining or fragmentation
+- Parameter lists are reasonable
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+- Generic variable names make code practically unusable for analysis
+- Should infer names from DWARF debug info and usage patterns
+- `iVar1`, `piVar2` patterns should be replaced with descriptive names like `index`, `ptr`, `result`
+
+### Top 3 Recommendations:
+1. **Infer variable names from DWARF debug info** - The decompiler has access to `DW_OP_*` annotations but doesn't use them to name variables. Extract semantic names from debug symbols.
+2. **Eliminate noise comments** - Remove or consolidate "Unresolved local var" and generic WARNING annotations that don't aid understanding.
+3. **Replace magic numbers with named constants** - Detect common values (42→ANSWER, 2048→BUFFER_SIZE) and add explanatory comments for arithmetic results.

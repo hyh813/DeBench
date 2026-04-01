@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O0_g/ghidra/syntactic/bin/7_clang_O0_g_fixed",
+  "stdout": "fake_branch: 137073864\nopaque_predicate: 10\ninstruction_substitution: 20\nstring_encryption: 225\ntail_call: 0\nnon_tail_call: 500500\nvectorized_loop: 5050\nlto: 72\ndiv_by_zero: 20\nnull_deref: 1\nbuffer_overflow: 41\ninteger_overflow: 30\nundefined_behavior: 2000000000\nimplementation_defined: 10\nresult: 47\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

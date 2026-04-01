@@ -1,0 +1,23 @@
+=== Standard Library Functions Test ===
+[Lib] 1: strcpy = 8
+[Lib] 2: strcmp = 0
+[Lib] 3: strlen = 12
+[Lib] 4: memcpy = 90
+[Lib] 5: memcmp = -1
+Value: 42, Name: Test
+[Lib] 6: printf = 22
+[Lib] 7: scanf = 579
+[Lib] 8: fopen_fclose = 42
+[Lib] 9: fread_fwrite = 42
+[Lib] 10: malloc_free = 90
+[Lib] 11: memset = 0
+[Lib] 12: strchr_strstr = 15
+=== System Calls Test ===
+[Sys] 1: linux_syscall = 42
+[Sys] 2: win32_api = 42
+[Sys] 3: fork_exec = 42
+[Sys] 4: pipe_communication = 42
+[Sys] 5: socket_create = 42
+[Sys] 6: shmget_shmat = 42
+[Sys] 7: signal_handling = 42
+=== Thread Concurrency Test ===

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `a0`, `ptr`, `flag1`) with no semantic meaning. Original source used meaningful names like `result`, `str`, `p1`, `p2`, `p3`, `encrypted`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions (`param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`) preserved correctly from source. However, numerous helper functions use generic `sub_401XXX` naming (e.g., `sub_401241`, `sub_401255`) that add no semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `90` instead of `0x5A` for XOR key, signal numbers `8`/`11` instead of `SIGFPE`/`SIGSEGV`, `4294967295` for `-1`. Original `0xDEADBEEF` constant completely eliminated by optimization.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `deregister_tm_clones`, `register_tm_clones`, `frame_dummy`. Platform mismatch (X86 decompilation of arm64 original). Unsupported jumpkind annotation `[D] Unsupported jumpkind Ijk_SigTRAP` left in output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as do-while constructs, but `param_opaque_predicate` contains convoluted `_ccall` and `CONCAT` expressions obscuring the original GCD and predicate logic. Some functions use raw `goto` statements (`sub_401030`, `sub_4010c0`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but excessive wrapper functions created (`sub_401241` just calls `param_fake_branch`, `sub_401255` just calls `call_fake_branch`). Some functions over-simplified due to constant folding.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with appropriate do-while loops. However, `param_opaque_predicate` has complex nested conditionals that disrupt linear reading. Goto statements in startup code break flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from always-false conditions correctly eliminated (good optimization recovery). However, wrapper function pairs create redundancy. Constant-folded functions (`call_fake_branch` returns `10` directly) lose original computation traceability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `int x` became `unsigned int a0` in `param_fake_branch`. Pointer types often generic `void*` or `unsigned int *` instead of specific types. Signal handlers return `int` instead of `void`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs exist but with meaningless names (`struct_0`, `struct_1`) and fields (`field_0`, `field_2ea7`, `padding_0[11943]`). Massive padding arrays indicate failed structure recovery. No semantic meaning preserved from original data structures.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int)v1[16]`, `(char *)&ptr[3017]`, `(unsigned int [1])v0`. Void pointer arithmetic throughout. Signal handler type mismatches. Original type safety guarantees lost in translation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except minimal `/* do not return */` annotations. Original source had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern not labeled. Tail call optimization pattern not noted despite being present in source comments.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but always-false conditions not identified as dead code. Signal handling edge cases not warned about. Type mismatches not flagged as potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expected values in comments (e.g., `// 期望: 10`, `// 期望: 20`). Error conditions (division by zero, null deref) not documented in decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_402008`, `g_402028`, etc.) without explanation of purpose. Signal handler relationships unclear. Original test function hierarchy lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat file with no logical grouping. Original source had clear section organization (7.1 Obfuscation, 7.2 Optimizations, 7.3 Edge Cases). Helper functions mixed with main functions arbitrarily.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims "Compilation Result: Yes" but type issues exist. External dependencies declared (`extern unsigned int g_402008`). Platform mismatch (X86 vs arm64) could cause runtime issues. Standard library functions properly referenced.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+7+5+4)/4 = 5.00
+Level 2 Average: (5+6+6+6)/4 = 5.75
+Level 3 Average: (5+4+4)/3 = 4.33
+Level 4 Average: (2+3+5+2)/4 = 3.00
+Level 5 Average: (5+4+6)/3 = 5.00
+
+Overall = (5.00 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.50 + 1.44 + 0.87 + 0.45 + 0.50
+        = 4.76/10
+```
+
+**Overall Readability Score:** 4.76/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning from original (`result`, `encrypted`, `decrypted`, `p1`, `p2`, `p3`)
+- **Zero documentation** - original had extensive comments explaining obfuscation techniques and expected values; decompiled has none
+- **Type degradation** - `int` parameters became `unsigned int`, pointer types generic `void*` instead of specific types
+- **Platform mismatch** - X86 decompilation of arm64 original introduces potential compatibility issues
+- **Excessive wrapper functions** - `sub_401241`, `sub_401255`, etc. add noise without functionality
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`) preserved accurately from source, maintaining semantic identity despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation is the most severe issue; original source's extensive explanations of obfuscation techniques, expected values, and test scenarios are entirely lost, making the decompiled code practically unusable for understanding intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer meaningful names (e.g., variables used in size comparisons should be named `size`/`length`, XOR operations suggest `key`/`encrypted`)
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments, especially for obfuscation test cases where intent documentation is critical
+3. **Detect and annotate optimization artifacts** - Flag constant-folded functions, dead code elimination, and type promotions with annotations explaining what was optimized away from the original source

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `p1`, `p2`, `encrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but many wrapper functions have generic `sub_401XXX` names that add no value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers shown as decimal instead of hex (`0xDEADBEEF` → `-559038737`, `0xAAAAAAAA` → `2863311530`). String literals referenced as `&g_402009` instead of actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive wrapper functions (`sub_4011b9`, `sub_401221`, `sub_401311`) that just call one other function. Stack variable declarations for every temporary add visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: **CRITICAL ERROR**: `param_fake_branch` has inverted condition (`if (strlen(v0) >= 0)` instead of `< 0`). GCD loop uses obscure `CONCAT` operations instead of simple modulo.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many single-line wrapper functions that add no value. `param_link_time_optimization` doesn't return the value from `lto_target_func` (missing return statement).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Stack variable declarations at function top is standard decompiler output.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant assignments (`v0 = v1; return v1;`). However, `param_instruction_substitution` correctly recovered `x*6` from bit shifts, which is actually an improvement.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant signed/unsigned mismatches (`int` → `unsigned int`). Pointer types shown as `unsigned long` instead of proper pointer types (`int*` → `unsigned long`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **SEVERE**: Bitfield struct in `param_implementation_defined` completely lost, shown as bitwise operations (`v0 = v0 & 0xfffffff8 | 7`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int256_t)v0`, `(unsigned int)param_tail_call_optimized(...)`). Signal handler signatures don't match expected types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except `/* do not return */` annotations. No algorithm explanations, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm not recognized. String decryption pattern not identified. Obfuscation patterns (fake branches, opaque predicates) not flagged.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted (`Unsupported jumpkind Ijk_SigTRAP`). Critical semantic error in `param_fake_branch` NOT flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Signal handler contracts not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Global variables shown as `g_403fe8`, `g_404008` with no semantic names. String references shown as addresses not content.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Flat organization with no logical grouping. Original source had clear section comments (7.1, 7.2, 7.3) that are lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External declarations present but incomplete. Type mismatches would cause compilation errors. Requires moderate patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (3+5+7+6)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type System):  (5+3+4)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):     (2+3+4+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):   (4+4+5)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.45/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Control flow inversion**: `param_fake_branch` condition `strlen(v0) >= 0` is inverted from source (`< 0`), changing program semantics
+- **Bitfield struct lost**: `param_implementation_defined` bitfield operations reduced to raw bitwise math with no struct recovery
+- **Missing return value**: `param_link_time_optimization` calls `lto_target_func` but doesn't return its value
+- **Generic variable names**: All temporaries named `v0`, `v1`, `a0` with no semantic meaning
+- **Magic numbers as decimal**: Hex constants like `0xDEADBEEF` shown as `-559038737`, obscuring intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test functions preserved their original descriptive names (`param_fake_branch`, `param_opaque_predicate`, etc.)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation, no algorithm explanations, no decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag semantic anomalies** - The control flow inversion in `param_fake_branch` should be flagged as a potential decompilation error with confidence warning
+2. **Recover composite types from access patterns** - Bitfield access patterns (`& 7`, `>> 3 & 31`) should trigger struct reconstruction heuristics
+3. **Preserve hex literal formatting** - Display constants in original hex format when recognizable (e.g., `0xDEADBEEF` not `-559038737`)

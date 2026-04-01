@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_fake_branch` from the original source demonstrates "always-false" branch obfuscation using two conditions: `x * x < 0` and `strlen(str) < 0`. The decompiled version is critically broken:
+
+```c
+// Decompiled - COMPLETELY WRONG
+void param_fake_branch(void)
+{
+  return;
+}
+```
+
+This is a **critical decompilation failure** - the function has lost its parameter, return type, and all logic.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The `param_fake_branch` function has no variables at all due to being completely empty. Other functions use cryptic names like `iVar1`, `iVar2`, `param_1`, `lVar2` which obscure semantic purpose. For example, in `param_opaque_predicate`, variables should be named `p1`, `p2`, `p3` for the opaque predicates, but instead they're completely absent or unnamed.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly match source names (`param_fake_branch`, `call_fake_branch`, `param_division_by_zero`), but many use auto-generated patterns like `FUN_00100860`, `FUN_00100a3c`. The target function name is preserved but the function itself is broken.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The critical constant `0xDEADBEEF` from the source is completely absent (the code using it is missing). Some literals like `0x5A` (XOR key) and signal numbers (8 for SIGFPE, 0xB for SIGSEGV) are present but unexplained. Magic numbers are not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from external function stubs (`__printf_chk`, `__stack_chk_fail`, `__longjmp_chk`), stack canary checks (`___stack_chk_guard`), and weak function stubs (`call_weak_fn`). The target function is too minimal to assess, but the overall output is cluttered.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The `param_fake_branch` function has NO control flow - it's just `return;`. The original had two if-statements with always-false conditions, but these are completely lost. This is the most severe structural failure - the function logic simply doesn't exist in the decompiled output.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized and separated. The `call_fake_branch` wrapper correctly calls `param_fake_branch`. However, the target function's complete failure makes proper decomposition assessment impossible.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Since `param_fake_branch` is empty, there's nothing to linearize. Other functions like `param_vectorized_loop` read reasonably top-to-bottom with do-while loops.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code in the target function (because there's no function!). Other functions show some redundancy from optimization but nothing severe.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type loss for `param_fake_branch`: parameter `x` is completely removed (should be `int x`), return type is `void` (should be `int`). Other functions have mixed precision - `param_instruction_substitution` uses `uint` which is correct for unsigned operations.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery needed for the target function. Other functions like `param_implementation_defined` show bitfield structures but with generic field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The target function has severe type safety issues - returning nothing from a function that should return int. Some unsafe pointer arithmetic in other functions (e.g., `param_vectorized_loop` uses raw pointer arithmetic).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in `param_fake_branch`. The decompiled output has only auto-generated function headers like `// Function: param_fake_branch @ 0x100ad4`. No explanation of the always-false conditions or the obfuscation technique.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of the "fake branch" obfuscation pattern. The decompiler should have identified `x * x < 0` as an always-false condition but the code is missing entirely.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler shows NO indication that `param_fake_branch` is incorrectly decompiled. It confidently presents an empty function with no warning about the missing parameter, return type, or logic. This is dangerously misleading.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contracts or preconditions recovered. The function should have documented that it takes an int parameter and returns an int, but neither is present.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: The call relationship between `call_fake_branch` and `param_fake_branch` is clear. However, the broken function makes this relationship meaningless - the caller passes 10 but the callee has no parameter to receive it.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (obfuscation, optimization, edge cases sections visible in `test_obf_opt_edge`). Static functions like `div_zero_handler` are properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The `param_fake_branch` function signature mismatch would cause compilation errors. The return type `void` vs expected `int` and missing parameter would break any code trying to use it. External dependencies (libc functions) are not clearly documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- `param_fake_branch` is completely broken: no parameter (`int x` lost), wrong return type (`void` instead of `int`), empty function body - all logic including the two always-false conditions is missing
+- No anomaly indication that the function is incorrectly decompiled - the empty function is presented as correct
+- Variable naming is cryptic (`iVar1`, `param_1`, `lVar2`) with no semantic meaning
+- Type precision is severely degraded - the function signature is fundamentally wrong
+- No comments explaining the obfuscation technique (fake/always-false branches)
+
+**Best Quality Aspect:** Function Decomposition (6/10)  
+Functions are reasonably separated and sized. The wrapper pattern (`call_*` calling `param_*`) is correctly recovered.
+
+**Most Needs Improvement:** Control Flow Naturalness & Anomaly Indication (both 1/10)  
+The target function has NO control flow at all - it's just `return;`. The decompiler should have flagged this as a critical failure rather than presenting broken code as valid.
+
+**Top 3 Recommendations:**
+1. **Detect and flag incomplete functions**: When a function has no meaningful logic (just returns), flag it as "DECOMPILATION FAILURE" with confidence level - don't present broken code as valid
+2. **Recover function signatures**: The parameter `int x` and return type `int` must be inferred from call sites and usage patterns
+3. **Identify always-false conditions**: The pattern `x * x < 0` and `strlen(str) < 0` should be recognized as constant-false conditions that may indicate obfuscation, not optimized away

@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `param_1`, `iVar1`, `local_28`, `pvVar1`, `unaff_EBX`. The original had meaningful names like `arr`, `n`, `i`, `result`, `leak`, `p`. These cryptic names make tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered (`local_vars`, `local_array`, `heap_basic`, `double_value`), but many use generic patterns like `FUN_00011030`, `FUN_00011af0`. Critical functions like `static_local`, `global_var_read` are missing entirely or inlined incorrectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0x2a` (42), `0xf` (15) appear without explanation. Some values like `0x800` (2048) are partially inferable from context (`local_800`). However, most literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Only minor noise like `__regparm1` attribute in `alloca_usage`. No redundant casts or debug instrumentation observed. Clean overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures (`for`/`do-while`) and conditionals are mostly natural. Some loop unrolling present (e.g., `local_array` increments by 2), which is expected at -O0 but slightly awkward. Control flow generally matches source intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Most functions correctly separated, but several issues: `static_local` missing entirely, `global_var_read` inlined into `test_static_global`, `create_tree_node` returns void instead of TreeNode*. Function granularity is reasonable but not perfect.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in null-check patterns. Good linear flow overall.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling artifacts (e.g., `local_array` uses `iVar1 + param_1` pattern). Array indexing uses `*2` instead of `*4` for int arrays in some places, causing incorrect offset calculations. Moderate redundancy present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all integers become `int` or `undefined4`, pointers are `void*` or `undefined4*`. No distinction between signed/unsigned. `size_t` preserved only in `heap_calloc`. Original had precise types like `int*`, `size_t`, `Node*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `Point` and `Node` types completely lost. `heap_nested` uses raw `undefined4*` with manual offsets (`*param_1 = __ptr`, `__ptr[1] = puVar1`). Original had proper `Point` and `Node` struct definitions with named fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: incorrect array indexing (`*2` instead of `*4` for int arrays in `heap_basic`, `heap_array`), dangerous pointer arithmetic in `vla_stack` and `alloca_usage` using stack offsets like `&stack0xfffffff4`, no bounds checking visibility.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only auto-generated function signatures. Original had extensive comments explaining test scenarios.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. Memory operations (malloc/free patterns) not labeled as such. Original source clearly organized tests by pattern (MEM-L1, HEAP-L2, etc.).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The dangerous `dangling_pointer` function accesses freed memory but isn't marked. No indication of undefined behavior. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks visible in code but not explained. Error return values (-1, -2, etc.) not documented as contract elements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships somewhat inferable from code structure (e.g., `test_stack_memory` calls `local_vars`, `local_array`). However, no explicit documentation of call graph or global variable usage across functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic output file. No logical grouping of related functions. Original had clear sections: stack memory, heap memory, static/global, memory operations. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared (`extern_function`, `double_value`). Would require moderate patching to compile. Missing headers, no build instructions. Some functions have incorrect signatures (e.g., `create_tree_node` returns void).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: `param_1`, `iVar1`, `local_28` are meaningless; original had `arr`, `n`, `i`, `result`
+- **Missing functions**: `static_local` completely absent; `global_var_read` inlined incorrectly
+- **Type loss**: All structs (`Point`, `Node`, `TreeNode`) reduced to raw `undefined4*` with manual offsets
+- **Incorrect indexing**: Array access uses `*2` instead of `*4` for int arrays in `heap_basic`, `heap_array`
+- **No comments**: Zero semantic documentation; original had extensive test scenario explanations
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- Loop and conditional structures mostly match source intent
+- Good use of early returns for null checks
+- Code flow is generally traceable
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Generic names like `param_1`, `iVar1`, `pvVar1` make code practically unusable
+- Should infer names from usage patterns (e.g., `param_1` used as array size → `array_size`)
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` multiplied in loop → `multiplier`; `local_800` of size 2048 → `large_buffer`
+2. **Recover struct types**: Detect linked allocations → reconstruct `Node` struct; detect field pairs → reconstruct `Point`
+3. **Add semantic comments**: Label memory patterns (malloc/free pairs), flag undefined behavior (dangling pointer), document test scenarios

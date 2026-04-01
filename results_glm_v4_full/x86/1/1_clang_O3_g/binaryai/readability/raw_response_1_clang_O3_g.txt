@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, and `uVar1`, completely losing the semantic meaning of original names like `a`, `b`, `sum`, or `count`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names such as `sequential_ops`, `loop_for_fixed`, and `duffs_device` are perfectly preserved from the source, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers abound, particularly in optimized math expressions (e.g., `0x20`, `0x1f` in `loop_for_fixed`), with no named constants to explain their significance.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the code is generally clean, it contains Ghidra-specific artifacts like `undefined4` types and casts such as `(ulonglong)` which add unnecessary noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The decompiler presents optimized machine logic rather than source structure; simple loops are replaced by complex mathematical formulas (e.g., `loop_for_fixed`) and recursion is flattened into loops, making the flow unnatural compared to the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without arbitrary splitting or merging.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom, but the logic is often condensed into single-line return statements containing complex expressions, disrupting the linear flow of the original multi-step operations.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removes redundant intermediate variables (e.g., collapsing `temp1`, `temp2` in `sequential_ops`), though this sometimes comes at the cost of readability.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic or incorrect; `undefined4` is used frequently instead of `int`, and `uint` is used where `int` might be expected, losing signedness information.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Arrays are handled reasonably well (e.g., accessing `DAT_00013108` with offsets), though they are often treated as raw memory accesses rather than high-level array constructs.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are frequent casts to `undefined4` and `code *`, and the use of `unaff_retaddr` in pointer arithmetic suggests unsafe type assumptions.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the heavy optimizations applied (e.g., the closed-form math in `loop_for_fixed`).
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize standard loop idioms, replacing them with optimized arithmetic; it also fails to recover the ternary operator in `single_if`, presenting a bit-shift instead.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings are provided for obscure constructs like the bit-shift logic in `single_if` or the aggressive optimization of `recursion_factorial` into a loop.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no documentation of preconditions, postconditions, or invariants (e.g., the requirement for `n > 0` in `duffs_device` is not explicitly stated).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct names; data references to global arrays (like `DAT_00013108`) are explicit, if not semantically named.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure, with helper functions grouped near their usage.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on non-standard types like `undefined4` and `code *`, and uses Ghidra-specific macros, preventing it from compiling without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 9 + 4 + 6) / 4 = 5.25
+L2_avg: (3 + 9 + 7 + 8) / 4 = 6.75
+L3_avg: (5 + 7 + 6) / 3 = 6.00
+L4_avg: (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg: (8 + 8 + 3) / 3 = 6.33
+
+Overall = (5.25 × 0.30) + (6.75 × 0.25) + (6.00 × 0.20) + 
+          (1.75 × 0.15) + (6.33 × 0.10)
+Overall = 1.575 + 1.6875 + 1.2 + 0.2625 + 0.633
+Overall = 5.358
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects
+- **Variable Naming**: Universal use of `param_1`, `iVar1`, etc., obscures all semantic meaning (e.g., `sum` vs `iVar1`).
+- **Control Flow Obfuscation**: Simple loops (e.g., `loop_for_fixed`) are replaced by complex, unreadable mathematical formulas due to binary optimization.
+- **Type Precision**: Extensive use of `undefined4` and `code *` types degrades type safety and clarity.
+- **Missing Comments**: Total absence of comments makes understanding optimized logic (like Duff's device or math formulas) unnecessarily difficult.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully preserved the original function names, making it easy to identify the purpose of each unit despite the poor internal variable naming.
+
+### Most Needs Improvement
+- **Semantic Transparency (1.75/10)**: The lack of comments and failure to recognize/recover standard programming idioms (like loops or ternary operators) makes the optimized logic very hard to reverse engineer back to the source intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Variable Name Recovery**: Implement heuristic analysis to infer variable names from usage context (e.g., variables used in accumulation should be named `sum` or `acc`).
+2.  **Loop Pattern Recovery**: Detect and expand closed-form arithmetic optimizations back into loop structures when the optimization level is known or suspected to be high, to improve readability.
+3.  **Type Refinement**: Replace `undefined4` with `int` or `uint32_t` based on usage context (arithmetic vs. bitwise operations) to improve type precision.

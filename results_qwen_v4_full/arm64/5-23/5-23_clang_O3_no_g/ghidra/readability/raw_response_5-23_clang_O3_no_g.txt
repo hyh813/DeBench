@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`param_1`, `iVar1`, `uVar1`, `local_14`) with no semantic meaning. Original source used meaningful names like `size`, `x`, `y`, `counter`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_macro_constants`, `call_asm_basic`), but runtime functions use generic names (`FUN_001007a0`, `FUN_0010097c`). Good preservation of intentional function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x40`, `0x200`, `0x401`, `0xdef0`, `0x117` without explanation. Original source had `MAX_SIZE`, `BUFFER_COUNT`, `MAP_ANONYMOUS` constants that are completely lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`undefined8`, `undefined4` types), but no excessive dead code. Warning comments about unreachable blocks are helpful but indicate incomplete analysis.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple conditionals recovered well (e.g., `param_macro_constants` has clear if-else). However, `param_asm_clobber` shows complex loop unrolling that obscures the original simple assembly loop intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but `param_asm_clobber` is excessively complex (100+ lines) due to loop unrolling that should be recognized as a simple iteration pattern.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some forward references in `test_preprocessing_features` where printf calls are scattered, but generally acceptable flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Compiler constant-folding is evident (e.g., `call_macro_constants` returns `0x40` directly). Some redundancy in `param_asm_clobber` with multiple accumulator variables from loop unrolling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `ulong` used throughout. Original `int32_t`, `size_t`, `atomic_t` types lost. Function `param_variadic_macro` has incorrect signature (`uint, ulong, ulong` vs `int, int, int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. Original code had no complex structs, but pointer types like `void*` for `mmap` return lose semantic meaning. No type information for `EVP_PKEY_CTX` in `_init`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(ulong)param_1`, `(int)*puVar1`). Pointer arithmetic in `param_asm_clobber` uses generic `undefined8*` which obscures actual array semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block"). No algorithm explanations, no recovery of original source comments about macro semantics or assembly intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Simple arithmetic patterns recognized (`param_1 + 0x10` for macro recursion), but assembly patterns not identified as such. No recognition of atomic operation patterns or memory barrier idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present for unreachable blocks and non-returning subroutines. However, critical anomalies like architecture mismatch (ARM64 binary vs x86 assembly in source) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Function `param_macro_constants` doesn't indicate valid input range. Error conditions (mmap failures) not documented in contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships preserved (e.g., `call_macro_constants` → `param_macro_constants`). Global variable `global_var` referenced but not clearly defined in context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed alphabetically/by address rather than logical grouping. Test functions (`test_preprocessing_features`, `test_asm_features`) not grouped with their callees.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code references external functions (`sysconf`, `mmap`, `printf`) without declarations. Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) may not be portable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+6+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.19/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on comparison pattern with `0x401` (MAX_SIZE+1)
+- **Magic numbers `0x40`, `0x200`, `0x401`** should be recovered as `BUFFER_COUNT*4`, `MAX_SIZE/2`, `MAX_SIZE+1`
+- **No struct/type recovery** for `EVP_PKEY_CTX`, `mmap` return types lose semantic meaning
+- **Assembly semantics lost** - `param_asm_clobber` shows unrolled loop instead of recognizing original assembly block
+- **No contract documentation** for functions with error paths (mmap failures, mprotect errors)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test function names preserved accurately from original source, maintaining semantic intent
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error handling contracts documented despite multiple failure paths in the code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant recovery from comparison patterns** - Detect `param_1 < 0x401` followed by return values to infer `MAX_SIZE` constants
+2. **Add semantic variable naming from usage context** - Variables used in size comparisons should be named `size`, `length`, `count` based on pattern
+3. **Recover function contracts from error handling patterns** - Functions with `MAP_FAILED` checks should document error return conditions and valid input ranges

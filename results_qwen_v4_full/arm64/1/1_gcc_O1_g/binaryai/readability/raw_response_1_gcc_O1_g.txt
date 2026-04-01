@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`). Some helper functions have generic names (`FUN_00100940`) but core functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x14`, `0x1e`, `0x32`) instead of decimal. Original used clear decimal values (10, 20, 30). No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`___stack_chk_guard`), excessive local variables in `fsm_func_table` (35+ `uVar` declarations), and byte-by-byte copy loops that obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow recovered (if-else, loops) but uses `do-while` instead of `for` loops. `switch_fallthrough` uses goto labels. At `-O0`, more natural structures should be recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but test functions have hardcoded return values instead of actual function calls (e.g., `test_control_flow_l1` prints constants instead of calling functions).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `switch_fallthrough` has forward jump labels (`LAB_00100e40`). Most functions have reasonable flow without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `fsm_func_table` and `computed_goto` have massive redundant byte-copying code (35+ nearly identical copy operations). This appears to be decompiler noise, not original code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types are generic (`undefined4`, `ulong`, `int`). Some type mismatches: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`. Original had consistent `int` types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in this code. Arrays handled as pointer arithmetic in `loop_break` (`undefined8 *puVar2`). No struct recovery issues since source had minimal structs.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe casts present (`(ulong)(param_2 & 0x1f)`, `(int)param_1`). Function pointer calls have type mismatches. Return type inconsistencies between source and decompiled.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. State machine functions (`state_machine`, `fsm_func_table`) not identified as such. Duff's device not recognized as an optimization pattern.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for clearly broken functions. `fsm_func_table` and `computed_goto` have obvious decompilation failures but no warnings. `UNRECOVERED_JUMPTABLE` appears without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error documentation. Original specified test cases and expected values; none recovered in decompiled output.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. No call graph information. Test functions don't actually call the functions they claim to test (hardcoded values).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3). Original had clear section organization with comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues: undefined variable `tmp_ldXn` in `fsm_func_table` and `computed_goto`. External dependencies not clearly documented. Stack canary checks require specific runtime.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+6+6+4)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (2+3+3)/3   = 2.67 × 0.15 = 0.40
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.81/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) - original semantic names (`temp1`, `sum`, `count`) lost entirely
+- **Test functions don't actually call functions** - `test_control_flow_l1` prints hardcoded constants instead of calling `sequential_ops()`, `single_if()`, etc.
+- **Massive decompiler noise in complex functions** - `fsm_func_table` and `computed_goto` have 35+ redundant byte-copy operations that don't exist in source
+- **Zero comments recovered** - original had extensive documentation explaining purpose, test cases, and difficulty levels
+- **Type mismatches** - `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names were preserved (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`), making it easy to identify what each function should do.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation. At `-O0` with debug symbols (`-g`), the decompiler should have recovered at least basic function purpose comments from debug info.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - With `-g` flag, DWARF debug info contains original variable names that should be used instead of `param_1`, `iVar1`
+2. **Eliminate decompiler noise patterns** - The byte-by-byte copy loops in `fsm_func_table` appear to be analysis artifacts, not real code; implement better pattern recognition
+3. **Preserve test function semantics** - Test functions should call actual functions, not print hardcoded values; recover the actual function call relationships from the binary

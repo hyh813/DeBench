@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 15,
+  "source_file": "decompiled/ghidra_out/x64/4/4_clang_O0_no_g.c",
+  "fixed_file": "results_qwen_v4_full/x64/4/4_clang_O0_no_g/ghidra/syntactic/fix_4_clang_O0_no_g.c"
+}

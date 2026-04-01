@@ -1,0 +1,19 @@
+[PREPROC] Testing preprocessing features...
+
+[PREPROC] Macro constants: 64
+[PREPROC] Macro functions: 30
+[PREPROC] Conditional compile: 32
+[PREPROC] Multi-branch compile: 57122
+[PREPROC] Macro recursion: 116
+[PREPROC] Stringize: 19
+[PREPROC] Token paste: 60
+LOG: Values: 10, 20, 30
+[PREPROC] Variadic macro: 60
+[PREPROC] Macro override: 16
+[PREPROC] Include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:25
+[PREPROC] Builtin macros: 382
+[ASM] Testing basic assembly operations...
+
+[ASM] Basic: 15
+[ASM] Clobber: 15

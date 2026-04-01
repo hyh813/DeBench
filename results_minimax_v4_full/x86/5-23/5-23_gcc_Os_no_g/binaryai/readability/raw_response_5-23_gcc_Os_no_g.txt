@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `param_1`, `iVar1`, `uVar1`, `local_24`, `puVar2`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter` which are completely lost. These cryptic names make it extremely difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_macro_constants`, `call_macro_functions`, `param_conditional_compile`, `param_asm_basic`, `param_asm_atomic`, etc. The symbol table was clearly preserved, resulting in exact name recovery.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literal values are correct (e.g., `0x40` for 64, `0xdf22` for 57122, `0x2a` for 42), but they're presented as magic numbers without meaningful constant names. The original had `MAX_SIZE`, `BUFFER_COUNT`, `MAX_SIZE/2` which provided semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some Ghidra-specific types like `undefined4` and `undefined` appear, plus stack canary checks (`__stack_chk_fail_local`) which are expected at -O0. No significant noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if/else and for/while loops. The `param_asm_clobber` function correctly shows a for loop, and `param_asm_multi_insn` uses a while-style loop. Minor awkwardness in array initialization loops but overall readable.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Perfect decomposition matching source. Each small function (macro wrappers, test callers, asm wrappers) is correctly separated. The granularity matches the original 709 LOC source with all functions properly extracted.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in error handling paths (e.g., `param_memory_protection`) but these are manageable. No excessive goto abuse or deeply nested structures.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Some array initialization patterns in `call_asm_simd` could be simplified, but no dead code or obvious duplicate expressions that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` for most integers and `undefined4` extensively (Ghidra's "unknown 4-byte type"). The original used `size_t` for memory sizes and `int` for logic, but the decompilation doesn't distinguish. Pointer types are reasonable but not precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery (original had minimal composite types). For SIMD functions, there's an attempt with `undefined (*param_3) [16]` representing 128-bit vectors, but it's awkward. Raw pointer arithmetic used throughout.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No severe type safety violations. Some pointer arithmetic in array access (e.g., `*(int *)(param_1 + iVar2 * 4)`) but this is standard for decompiled code. No obvious undefined behavior triggers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Absolutely no comments in the decompiled output. The original source had extensive documentation explaining each test case (PP-L2-01, ASM-L4-01, etc.), macro semantics, and expected values. All this context is completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. The inline assembly patterns (LOCK/UNLOCK for atomics, SIMD vector operations) are decompiled to C but not recognized as idioms. Could have labeled "atomic increment pattern" or "SIMD vector addition".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertainties or anomalies. The decompiled code presents everything as definitive, even when there could be ambiguity (e.g., the SIMD type interpretation, the external function calls like `FUN_00011110`).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original had no explicit assertions, but the semantic contracts (e.g., "returns x+5", "atomic increment") are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function relationships are implicit through naming but not explicitly documented. The call graph (main → test_preprocessing_features → call_* → param_*) is traceable but not annotated. No mention of which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. The original had clear section comments (5.2 Preprocessing, 5.3 Inline Assembly) which are lost. Related functions are grouped by address but not logically separated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile as-is due to Ghidra-specific types (`undefined4`, `undefined`) and undefined external references (`FUN_00011110` which is printf). Would require significant patching to compile. The metadata shows "Compilation Result: Yes" but this appears to be incorrect.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable naming**: All variables use cryptic auto-generated names (`param_1`, `iVar1`, `local_24`) losing all semantic meaning from source
+- **No comments**: Complete absence of documentation explaining macro behavior, assembly semantics, and test expectations
+- **Type uncertainty**: Extensive use of `undefined4` instead of precise types like `size_t`, `uint32_t`
+- **No anomaly indication**: Uncertainties like external function calls presented as definitive
+- **Build incompatibility**: Uses Ghidra-specific types that prevent standalone compilation
+
+### Best Quality Aspect: Function Naming (10/10)
+- All function names exactly match the original source due to preserved symbol table
+
+### Most Needs Improvement: Comment Quality (1/10)
+- Zero comments despite 700+ line source with extensive documentation explaining each test case's purpose and expected behavior
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` used in size comparison should be `size`; `iVar1` accumulating array elements should be `sum`
+2. **Add semantic comments**: Document macro expansions ("SQUARE(x) → x*x"), assembly patterns ("LOCK/UNLOCK: atomic operation"), and test expectations
+3. **Resolve external references**: Replace `FUN_00011110` with `printf`, add proper includes, replace `undefined4` with standard types for compilation compatibility

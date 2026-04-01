@@ -1,0 +1,16 @@
+=== Testing Standard Library Functions ===
+[LIB] strcpy result: 8
+[LIB] strcmp result: 0
+[LIB] strlen result: 12
+[LIB] memcpy result: -4639052416166133750
+[LIB] memcmp result: -1
+Value: 42, Name: Test
+[LIB] printf result: 22
+[LIB] scanf result: 579
+[LIB] fopen_fclose result: 42
+[LIB] fread_fwrite result: 42
+[LIB] malloc_free result: 90
+[LIB] memset result: -4639052416166133760
+[LIB] strchr_strstr result: 15
+=== Testing System Calls ===
+[SYS] linux_syscall result: 42

@@ -1,0 +1,20 @@
+=== Standard Library Test ===
+
+String length: 12
+strcmp("Hello", "World"): 0
+strcmp("Hello", "Hello"): 12
+strcmp result: 90
+memcmp result: -1
+Value: 42, Name: TestName
+printf result: 26
+scanf result: 579
+fopen result: 0x2a
+fread/fwrite result: 42
+malloc/free result: 0x5a
+memset result: 0
+strchr/strstr result: 15
+=== System Calls Test ===
+
+syscall result: 0x2a
+stat result: 0x2a
+fork/waitpid result: 0x2a

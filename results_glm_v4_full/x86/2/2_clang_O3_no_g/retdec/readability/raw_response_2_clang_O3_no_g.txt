@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10
+Justification: Variables are exclusively generic names like `a1`, `a2`, `v1`, `v2`, and `result`. No semantic meaning is preserved (e.g., `arr` becomes `a1`, `n` becomes `a2`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `process_char`, `array_1d_stack`, `struct_simple`), making the high-level intent immediately clear despite the poor implementation recovery.
+
+**3. Literal Clarity:** Score: 1/10
+Justification: Critical constants are lost; `1.5f` and `0.5f` in `process_float` are replaced by opaque memory loads like `*(float32_t *)(a1 + 0x1d93)`. String literals in `test_...` functions are replaced with offsets like `(char *)(v1 + 0x22b7)`.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with Position Independent Code (PIC) artifacts, such as `__x86_get_pc_thunk_bx` calls and the exposure of the Global Offset Table (GOT) base pointer as a function argument (`a1` in `process_float`), which severely obscures the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple loops are transformed into complex, unrolled blocks with bitwise arithmetic (e.g., `while ((a2 & -8) != v3)` in `array_1d_stack`), making the flow extremely difficult to follow compared to the original `for` loop.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity effectively.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The aggressive unrolling of loops and the use of pointer arithmetic for data access break the top-to-bottom reading flow, requiring the reader to mentally reconstruct the loop structure.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler presents massive redundancy by unrolling loops (e.g., `array_3d` manually sums 25+ variables per iteration) instead of collapsing them back into the concise loops present in the `-O0` source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Basic types like `int32_t` are used, but signatures are incorrect (e.g., `process_float` takes an extra `int32_t a1` argument for the GOT base). Return types like `float80_t` are used where `float` was expected.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are completely lost; `struct_simple` and `struct_nested` are reduced to raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4)`), with no struct definitions or field names recovered.
+
+**11. Type Safety:** Score: 5/10
+Justification: While the casts are technically valid for the underlying assembly, the loss of struct types and the exposure of memory offsets (`a1 + 0x1d93`) remove all type safety guarantees and abstractions provided by the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; only address ranges (e.g., `// Address range: 0x1200 - 0x1216`) are provided, which offer no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like string length calculation (`array_string`) or array summation are obscured by pointer arithmetic and unrolled loops, failing to recognize the standard patterns used in the source.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the exposure of the GOT base pointer as a function argument or the presence of x86 artifacts (`__x86_get_pc_thunk_bx`) in what was supposed to be an `arm64` binary, presenting these anomalies as normal code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement that `arr` be non-null in `array_1d_stack` is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, data references are opaque; strings and constants are accessed via offsets, making it impossible to see *what* data is being used without manual calculation.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically and appear in a reasonable order, matching the source structure, which is the only organizational strength.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile standalone due to the reliance on hardcoded global offsets (e.g., `0x1d93`), missing struct definitions, and incorrect function signatures (extra arguments).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- **Loss of Struct Abstraction:** `struct_simple` and `struct_nested` are reduced to raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4)`), completely losing the semantic field names (`x`, `y`, `z`).
+- **PIC Artifacts Exposed:** The Global Offset Table (GOT) base pointer is exposed as a function argument (e.g., `int32_t a1` in `process_float`), and constants are loaded via offsets (`a1 + 0x1d93`) instead of being literal values.
+- **Loop Unrolling at -O0:** Simple loops like `array_1d_stack` are decompiled into complex, unrolled blocks with bitwise math (`a2 & -8`), which contradicts the expected structure of unoptimized code.
+- **String Literal Loss:** Format strings and messages in `test_...` functions are replaced with pointer offsets (e.g., `(char *)(v1 + 0x22b7)`), making the output logic incomprehensible.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The decompiler successfully preserved the original function names (e.g., `process_int`, `linked_list`), which is the only remaining link to the source code's intent.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- **Why?** The complete failure to recover `struct` or `union` definitions, reducing complex data structures to raw memory offsets, destroys the high-level semantics of the program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Debug Symbols:** Utilize the `-g` debug information to recover struct definitions, field names, and correct function signatures, rather than defaulting to raw pointer arithmetic.
+2.  **Resolve PIC/GOT References:** Implement logic to resolve Position Independent Code artifacts, mapping global offset loads back to the actual constant values or string literals defined in the binary.
+3.  **Loop Reconstruction:** Improve pattern matching to reconstruct simple `for`/`while` loops from their assembly counterparts, avoiding the presentation of unrolled or Duff's-device-style logic for unoptimized (`-O0`) code.

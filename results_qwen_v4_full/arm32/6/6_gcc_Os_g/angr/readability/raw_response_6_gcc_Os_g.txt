@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Only global variables like `signal_received` and `shared_counter` retain original names; local variables in `param_strcpy` use `ptr` and `a1` instead of `dst` and `src`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions preserve names (`param_strcpy`, `thread_compute`, `signal_handler`), but many helpers are generic (`sub_10ca8`, `sub_11298`). Critical issue: function signatures are wrong (`param_strlen` has no parameters, `param_fopen_fclose` missing filename parameter).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (unsigned -1), `42` (success code), signal numbers as raw integers (`10`, `14`), socket constants (`2`, `1`, `0`). String literals preserved but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive stack canary checks (`GLIBC_2.4::__stack_chk_guard`) in nearly every function, `armg_calculate_condition` calls obscuring simple comparisons, redundant variable shuffling (`v2 = v3; v1 = v6; v0 = v7`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` statements and labels (`LABEL_11664`, `LABEL_11709`) instead of structured if/else. `armg_calculate_condition` calls replace simple comparisons. Some loops recovered but with awkward structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but parameter lists are corrupted (e.g., `param_signal_handling` has 8 parameters instead of 0). `param_thread_local_storage` is excessively complex with nested conditionals.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Deep nesting in `param_fread_fwrite` with multiple goto targets. Stack canary checks at function ends create artificial non-linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. `armg_calculate_condition` patterns repeated for simple comparisons. Some functions call themselves unnecessarily (`call_printf` calls `param_printf` twice).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion—nearly everything is `unsigned int` or `void*`. `param_strlen` lost its `const char*` parameter entirely. `param_scanf` has extra spurious parameters. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are generic (`struct_0`, `field_0`, `field_78`). `sockaddr` partially recovered but `FILE` is empty. ThreadData struct lost—accessed via array indexing (`ptr[0]`, `ptr[1]`, `ptr[2]`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(unsigned int)free(ptr)`). Pointer arithmetic on typed data (`ptr + i * 4`). Function pointer calls with incorrect signatures. No distinction between signed/unsigned in comparisons.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no API contracts, no decompilation confidence indicators. Only auto-generated type annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Producer-consumer pattern in `param_condition_variable` not identified. Mutex lock/unlock sequences not recognized as critical sections. Atomic operations reduced to `__sync_*` calls without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for suspicious code. `armg_calculate_condition` calls indicate unresolved semantics but aren't flagged. Incorrect function signatures not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values (`4294967295`, `42`) not explained. No invariant recognition for loops.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships unclear due to wrong signatures. Global variable usage not documented. Thread function relationships (`thread_compute` → `param_pthread_create`) not explicitly linked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. No header file separation. Static functions not properly scoped. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile as-is—`armg_calculate_condition` undefined, function signatures mismatch, missing includes. Requires extensive manual patching. Dependencies on pthread not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00  × 0.30 = 1.200
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50  × 0.25 = 1.125
+Level 3 (Type):        (2+3+3)/3   = 2.67  × 0.20 = 0.533
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.225
+Level 5 (Contextual):  (3+4+3)/3   = 3.33  × 0.10 = 0.333
+─────────────────────────────────────────────────────
+Overall Score:                                  3.42/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Type information completely lost**: `param_strlen()` has no parameters when it should accept `const char*`
+- **Function signatures corrupted**: `param_fopen_fclose()` missing filename parameter, `param_scanf()` has extra spurious parameters
+- **Control flow uses goto instead of structured constructs**: `LABEL_11664`, `LABEL_11709` patterns throughout
+- **Magic numbers unexplained**: `4294967295` (-1), `42` (success), signal numbers `10`/`14` as raw integers
+- **Zero documentation**: No comments explaining algorithm intent, error conditions, or API contracts
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core function names like `param_strcpy`, `thread_compute`, and `signal_handler` were preserved from debug symbols, providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes understanding the decompiled logic extremely difficult, especially for complex functions like `param_thread_local_storage`.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter types from debug symbols** - The `-g` flag was present during compilation; use DWARF information to restore correct signatures instead of inferring from usage.
+2. **Replace `armg_calculate_condition` with native C comparisons** - These opaque calls obscure simple boolean logic; translate to standard `if (x < 0)` patterns.
+3. **Add semantic comments for recognized library patterns** - Detect `strcpy`/`strlen` sequences and add comments like `// String copy with length return` to aid human understanding.

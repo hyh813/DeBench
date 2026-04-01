@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `result` throughout. For example, `param_macro_constants(int a1)` should use `size` based on the comparison `if (a1 > 1024)`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved well (`param_macro_constants`, `call_asm_basic`). Only startup functions use generic names (`sub_1020`, `sub_1030`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072` (should be `0xDEF0`), `282` (line number + counters), and string references like `asc_21F0`, `aPpL201D` obscure meaning without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`), type casts (`LODWORD`, `(unsigned int)`), and IDA-specific types (`__int64`, `__fastcall`) add clutter but don't prevent understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered well (e.g., `param_asm_clobber` shows clean for loop). `param_macro_constants` uses natural if-else structure matching source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. No excessive inlining or fragmentation. Each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (e.g., `param_macro_constants` returns 64 early). No disruptive forward jumps.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding obscures semantics—`call_macro_constants()` returns 64 directly instead of calling `param_macro_constants(2048)`, losing call relationship clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `__int64` instead of `int32_t`. However, `volatile signed __int32 *` in `param_asm_atomic` and `__m128i` for SIMD show good type recovery for special cases.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `__m128i` SIMD types well-recovered with field access (`m128i_i64[0]`, `m128i_i32[0]`). Limited structs in this code but arrays handled reasonably.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(_DWORD *)-1LL` for mmap error check). Pointer arithmetic in `param_asm_clobber` (`a1 + 4 * i`) is clear but could use array typing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond auto-generated type annotations. No algorithm explanations, decompilation confidence indicators, or API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns recovered as C but not identified as such. No recognition of macro expansion patterns (e.g., `ADD_16` → `x + 16` not noted).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted at end ("FAILED to decompile: mmap"), but no warnings about suspicious patterns or uncertain recoveries within function bodies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` should note `arr != NULL`). No postconditions or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear, but string references like `asc_21F0`, `aPpL201D` obscure printf content. Global variable `global_var` usage is transparent.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source structure. Related functions grouped (preprocessing together, assembly together).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions noted as "FAILED to decompile" but not declared. Would need stubs for `mmap`, `printf_chk`, `sysconf` to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):  (8+8+8+5)/4 = 7.25  × 0.25 = 1.813
+Level 3 (Type):        (6+7+7)/3   = 6.67  × 0.20 = 1.334
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+5)/3   = 6.00  × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.997 ≈ 6.0/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **Variable `a1` should be named `size`** in `param_macro_constants` based on comparison pattern `if (a1 > 1024)`
+- **String references like `asc_21F0`, `aPpL201D`** obscure printf format strings and test labels
+- **Constant folding eliminates call relationships** - `call_macro_constants()` returns 64 directly instead of showing `param_macro_constants(2048)` call
+- **No comments explaining magic numbers** like `57072` (0xDEF0 + offset) or `282` (line + counters)
+- **Optimization level mismatch** - Source claims `-O0` but binary shows `-O2` optimizations, affecting recovery expectations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original semantic function names preserved accurately (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no human-readable comments; decompiler provides zero semantic guidance beyond type annotations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Detect `a1 > 1024` pattern and suggest `size` or `max_size` instead of generic parameter names
+2. **Recover string literal content** - Resolve `asc_21F0`, `aPpL201D` references to actual strings in the output for printf calls
+3. **Add decompilation confidence annotations** - Mark constant-folded expressions with comments like `// Original: param_macro_constants(2048) → constant-folded to 64`

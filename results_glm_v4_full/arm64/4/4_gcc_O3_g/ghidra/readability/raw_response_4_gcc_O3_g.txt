@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are predominantly generic names like `param_1`, `iVar1`, and `piVar3`. While some semantic names like `count`, `s`, and `p` are recovered, the heavy use of `iVar` prefixes and "Unresolved local var" comments indicates significant difficulty mapping optimized register usage back to original source names.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names (`cdecl_func`, `test_calling_conventions`, `main`) are accurately recovered from symbols, matching the source perfectly. However, a few functions like `FUN_00100710` remain unnamed, and `varargs_func` appears twice at different addresses, causing slight confusion.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are perfectly recovered (e.g., `"CALL-L1-01: %d\n"`). However, due to `-O3` constant propagation, many functions return magic hex numbers like `0xf` or `0x32` instead of showing the arithmetic logic (e.g., `5 + 10`), which obscures the original intent despite being binary-accurate.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with Ghidra-specific warnings like "WARNING: Unknown calling convention" and "WARNING: Removing unreachable block". While these highlight analysis issues, they significantly distract from reading the actual logic. The code body itself is relatively free of register spilling noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The decompilation of `param_varargs` is extremely complex, using nested `do-while` loops and pointer arithmetic (`piVar3 + 2`) instead of the simple `for` loop and `va_arg` found in the source. Additionally, `func_struct_byval` is heavily unrolled, replacing a loop with a massive addition expression, which is hard to read.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions maintain appropriate granularity matching the source. Although `-O3` inlined many calls (e.g., `call_cdecl` is just `return 0xf`), this is a correct representation of the binary's structure rather than a decomposition failure by the decompiler.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `param_varargs` and `varargs_func` suffer from non-linear control flow with confusing loop structures and early returns that make tracing execution difficult compared to the source.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully presents the optimized code without redundant calculations. The unrolling in `func_struct_byval` is the only redundancy, but it is intentional optimization rather than decompiler error.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise, correctly identifying `int`, `char *`, `double`, and `longlong`. Notably, Ghidra correctly identified the hidden pointer optimization for `func_struct_byval` (parameter is `LargeStruct *s` in decompiled code vs `LargeStruct s` in source), which is a high-fidelity recovery of the ABI implementation.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structures like `LargeStruct`, `SmallStruct`, and `SmallPoint` are perfectly reconstructed with correct field names (`data`, `x`, `y`) and types. The layout matches the source exactly, facilitating understanding of data manipulation.
+
+**11. Type Safety:** Score: 7/10
+Justification: Necessary casts for low-level stack modeling in varargs functions (e.g., `(int *)register0x00000008`) are present and safe. The use of `CONCAT44` macros in `ret_large_struct` is technically accurate for vectorized register assignment but looks unsafe to a C reader.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are almost exclusively Ghidra warnings (e.g., "WARNING: Variable defined which should be unmapped"). There are no semantic comments explaining the logic of complex functions like `param_varargs` or the purpose of the unrolled calculations.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The varargs idiom is technically recognized via `va_list` usage, but the implementation is obscured by pointer arithmetic. Standard calling conventions are handled naturally, but the "sum of array" idiom is lost to unrolling.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra explicitly flags "Unknown calling convention" and "Unresolved local var", which accurately communicates where the decompiler struggled or where the binary deviates from standard patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., `p != NULL` checks) or postconditions. The logic is presented flatly without semantic contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The replacement of `printf` with `__printf_chk` accurately reflects the secure build context of the binary.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by memory address, mixing test harnesses with implementation. While this is standard for decompilation, it loses the logical grouping present in the source file.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `undefined`) and macros (`CONCAT44`, `register0x00000008`), making it non-compilable without significant modification or a Ghidra SDK.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- The decompilation of `param_varargs` is unreadable, using complex pointer arithmetic and nested loops instead of the standard `va_arg` pattern.
+- Aggressive constant propagation (e.g., `return 0xf` in `call_cdecl`) completely hides the original arithmetic logic (`5 + 10`).
+- Ghidra-specific macros like `CONCAT44` and types like `undefined8` prevent the code from being treated as valid C.
+- "Unresolved local var" comments appear frequently where optimization removed variables, cluttering the output.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Structures are recovered with perfect field accuracy, and the decompiler correctly handles complex ABI details like the hidden pointer for large struct pass-by-value.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 5/10)
+- The handling of varargs and loop unrolling results in control flow that is vastly more difficult to read than the original source, particularly in `param_varargs`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for `va_list` iteration to simplify complex stack-walking pointer arithmetic back into `va_arg`-like loops.
+2. Annotate constant-folded return values with the original expression (e.g., `return 0xf /* 5 + 10 */`) to preserve semantic meaning.
+3. Replace architecture-specific macros (like `CONCAT44`) with standard C bit-shifting or struct assignments to improve pseudo-code readability.

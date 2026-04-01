@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3`, `v4` in `test_cpp_rtti()` and `v1`-`v9` in `test_cpp_member_func()` are completely generic. The decompiler made no attempt to infer semantic meaning from usage patterns (e.g., `v0` is clearly a `RTTIDerivedA*` pointer).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most test functions retain their original names (`test_cpp_member_func`, `test_cpp_virtual_func`), but some have issues: `_ZN12RTTIDerivedAD0Ev_0` is a mangled destructor with a confusing suffix, and template functions like `template_max<int>` lack proper namespace context.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Return values like `4700`, `1001`, `42`, `71`, `650` appear as unexplained magic numbers. The formula `1001 * LifecycleClass::instance_count + 21` in `test_cpp_constructor()` is particularly opaque—it should document that `instance_count` is 0 at that point.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts include: "positive sp value has been detected" warnings, `JUMPOUT(0)` in `sub_854()`, 22 functions with "FAILED to decompile", and raw import table references like `__imp__Znwj`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions are trivial returns of constants, which is natural for fully-optimized-away code. However, `test_cpp_member_func()` shows unusual stack manipulation (`_WORD v1[4]`, `strcpy`, `HIBYTE`) that doesn't map cleanly to the original source's object construction.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template instantiations are properly separated (`template_max<int>`, `template_max<double>`, `Container<int>`, `Container<double>`). Function granularity is appropriate, with no excessive inlining or fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Nearly all functions are single-return, reading top-to-bottom without jumps. The only exception is `test_cpp_rtti()` with conditional logic, which is still reasonably linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The compiler's constant propagation is visible but not presented as redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses IDA-specific types like `_DWORD`, `_WORD`, `__int16` instead of standard C types. Function pointers like `int (**)(void)` are technically correct but verbose. The `Base*` in `call_virtual_func` is properly typed.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery is visible. The vtable is shown as raw pointer `obj->_vptr$Base` without reconstructing the `vtable` structure. Class members like `RTTIDerivedA::multiplier` are completely absent.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns: `*(void**)(obj + 8)` style vtable access, raw `void*` casts in `operator new` results. However, basic type safety is maintained—no obvious buffer overflows.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments ("Decompiled by IDA Pro 9.1"). No explanation of algorithm intent, no uncertainty markers for indirect calls, no documentation of what the return values represent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified. The virtual function call mechanism (`*(int (__fastcall **)(Base *, int))*obj->_vptr$Base`) is shown but not explained as vtable dispatch.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "positive sp value has been detected" warning is present, and "FAILED to decompile" sections are clearly marked. However, the unusual stack layout in `test_cpp_member_func()` isn't flagged as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function `test_cpp_exception()` that never returns should have "noreturn" documented (which it has) but no explanation of the exception flow.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships are documented. The virtual dispatch in `call_virtual_func` isn't linked to the actual overridden methods. Static member `LifecycleClass::instance_count` is used but its relationship to the class isn't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by test (test_cpp_*, template_*, Container_*), but there's no namespace reconstruction, no header file structure, and the import stubs are mixed with actual code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 22 functions "FAILED to decompile", leaving significant gaps. The code references undefined imports like `__imp__Znwj` without stubs. Would not compile without substantial work.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`-`v9`, `v1`-`v9`), providing no semantic hints about their purpose
+- 22 functions failed to decompile, leaving the binary incompletely analyzed
+- No struct/class recovery—vtables shown as raw pointers without reconstructing class layouts
+- Magic numbers everywhere (4700, 1001, 42, etc.) without explanation of what they represent
+- No comments explaining algorithms, virtual dispatch mechanisms, or RTTI usage
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)  
+The decompiled code reads top-to-bottom without confusing jumps or goto artifacts, making control flow easy to follow.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic single-letter variable names completely obscure data flow. At -O0 debug level, the decompiler should be able to infer meaningful names from stack frame analysis and usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from stack frame analysis and usage patterns (e.g., `v0` used as `RTTIDerivedA*` should be named `derived_obj`)
+2. Reconstruct class/struct layouts from vtable pointers and object sizes, showing meaningful field names
+3. Detect constant return values and annotate them with comments explaining the computed result (e.g., "// Returns: 10 + 34 + 4660 = 4704")

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `uVar1`, `piVar1`, and `local_10`. For example, in `heap_basic`, the allocated memory is named `__ptr` but the loop index is `iVar1`, offering no semantic hint about "count" or "index".
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols (e.g., `local_array`, `heap_realloc`, `memop_memset`), matching the original source exactly and clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent and not replaced with constants. For instance, `0x2a` is used instead of `42` in `address_of_local`, and `0x14` (20) appears in `test_stack_memory` instead of the expected return values, requiring mental conversion.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but compiler artifacts like `__stack_chk_fail` appear in functions like `local_array` and `vla_stack`, adding minor clutter to the control flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered well, there are critical errors in function signatures that break flow. `local_array` is defined as `void` but its return value is used in `test_stack_memory`, and `call_global_callback` drops the argument `x` in the indirect call `(*global_func_ptr)()`.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions correspond perfectly to the source structure with appropriate granularity. Helper functions like `create_tree_node` are correctly separated, and there are no monolithic inlined messes.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom effectively. Loops like the one in `heap_basic` are naturally structured as `for` loops, avoiding excessive `goto` statements or confusing jumps.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code or redundancy. The logic in `local_vars` is simplified to `return param_1 * 2 + 10;`, which is a clean semantic reduction of the original intermediate variables.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded to generic `undefined4` or `int`. For example, `size_t` parameters in `memop_memset` are treated as `int`, and pointers are often `void *` or `undefined4 *`, losing signedness and size specificity.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed completely. `Point`, `Node`, and `TreeNode` are lost. In `heap_nested`, accessing `(*head)->next` is decompiled to `__ptr[1] = puVar1;`, treating the struct as a raw array of integers.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on unsafe casts and pointer arithmetic. In `vla_stack`, the VLA access is calculated via `*(int *)((int)local_10 + iVar3 * 4 + iVar1)`, which is a manual offset calculation rather than safe array indexing.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and mostly limited to warnings like "WARNING: Subroutine does not return". There are no comments explaining the logic of complex functions like `linked_list_heap` or the purpose of the `__sync` functions.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level patterns are not recognized. The linked list creation in `linked_list_heap` is presented as a series of `malloc` and pointer assignments (`piVar2[1] = 0`) rather than identifying the "linked list insertion" idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags unreachable blocks and stack check failures, but it fails to flag the semantic error in `call_global_callback` where the function call signature is incorrect (missing arguments), presenting it confidently as valid code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions are not documented. For example, the check `if (param_1 < 1)` in `alloca_usage` is present but not explicitly labeled as a guard clause or precondition for the subsequent `alloca` logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and reference the correct symbols. The relationship between `test_stack_memory` and its sub-functions is obvious, and global variable usage (e.g., `global_counter`) is direct.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the logical grouping of the source file. Functions are listed in a coherent order, and static functions like `static_helper` (inlined as `param_1 * 2 + 1` in `call_static_func`) are handled within their context.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined1` which are not standard C. The incorrect function signatures (e.g., `void` functions returning values) would cause compilation errors if strictly enforced.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Composite types (`Point`, `Node`, `TreeNode`) are completely lost, replaced by array indexing (e.g., `__ptr[1]`).
+- Function signatures are incorrect for `local_array`, `vla_stack`, and `alloca_usage` (defined as `void` but return values are used).
+- Arguments are dropped in indirect calls; `call_global_callback` invokes `(*global_func_ptr)()` instead of `(*global_func_ptr)(x)`.
+- Variable naming is purely generic (`param_1`, `uVar1`), requiring significant effort to track data flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols allowed perfect recovery of function names, making the high-level purpose of each block immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions turns data structure manipulation into obscure pointer arithmetic, severely impacting understanding of heap and linked list operations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance type recovery algorithms to identify and reconstruct `struct` layouts from heap allocation patterns (`malloc(sizeof(Point))`) and field access offsets.
+2. Improve signature analysis for indirect calls to ensure argument counts and types match the register/stack state at the call site.
+3. Implement heuristic variable renaming based on usage context (e.g., renaming variables used in `malloc` size calculations to `size` or `count`).

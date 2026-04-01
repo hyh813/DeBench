@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `a`, `b`, `count`. Local variables use `v2`, `v3`, `v4` pattern. This is a severe degradation from the source where variables had meaningful names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) and core functions (`cdecl_func`, `stdcall_func`) are correctly named. However, many helper functions use generic `sub_XXXX` naming, and wrapper functions like `call_cdecl` don't indicate they're constant-returning stubs.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are meaningful - computed constants like `15`, `50`, `6` in wrapper functions are correct results. Magic number `4` in `param_array_decay()` correctly represents pointer size. Minor issue: `varargs_func` has confusing `char a2` parameter instead of proper va_list representation.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Calling convention hints like `__usercall`, `__userpurge` are present but don't significantly impede reading. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. Loops use do-while constructs correctly (e.g., `varargs_func`). Conditionals are clear. At -O0, no loop unrolling or goto transformation artifacts expected, and none present.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear single responsibility. The decomposition matches the source well. Minor issue: `func_struct_byval` has 31 parameters (expanded struct) which is unwieldy but reflects ABI handling.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps disrupting flow. The varargs loop is straightforward.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Wrapper functions like `call_cdecl()` returning constant `15` are actually correct - they're the compiler optimizing the call. No dead code or obvious duplication that obscures logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of specific types. Function pointers have proper signatures (e.g., `int (__cdecl *a1)(int)`). However, `char` used for varargs second parameter is incorrect - should be `va_list`. Pointer types are mostly correct.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `SmallStruct` completely lost - represented as `_DWORD *a1`. `LargeStruct` expanded into 31 individual parameters (a1-a31), losing structure semantics. No struct type recovery whatsoever.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `varargs_func`: `*((_DWORD *)&a2 + v2++)` is unsafe pointer arithmetic treating `char` as `DWORD`. In `param_complex_cast`: raw `_DWORD*` used without proper type distinction. Overall manageable but concerning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm, purpose, or contracts. Only function names provide minimal context. The decompilation header mentions "Decompiled by IDA Pro" but no useful analysis comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern is partially recognized (though incorrectly typed). No explicit naming of patterns like "cdecl calling convention" or "AAPCS ARM calling convention". The calling convention annotations (`__cdecl`, `__stdcall`, `__fastcall`) are present but not explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler indicates "FAILED to decompile" for 5 functions (`__libc_start_main`, `__cxa_finalize`, `puts`, `strlen`, `__printf_chk`). However, no flagging of suspicious code patterns like the varargs type mismatch or the `param_array_decay` returning constant 4.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `func_struct_byptr` with NULL checks don't have comments explaining the contract. No documentation of expected parameter constraints.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear within test functions (e.g., `test_calling_conventions` calls multiple functions). However, no documentation of which functions call `cdecl_func`, what callbacks are used, or global variable relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - initialization, calling conventions, parameter passing, return values. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with standard library linkage. External functions (`puts`, `__printf_chk`, `strlen`) are standard. No compiler-specific hacks. Minor issue: `__attribute__((unused))` not represented but not needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v2`, `v3` instead of semantic names from source
+- Composite types completely lost - `SmallStruct` and `LargeStruct` not recovered
+- Varargs handling incorrect: `char a2` parameter instead of proper `va_list` type
+- No comments explaining algorithm logic, calling conventions, or contracts
+- Type precision poor: generic `int` throughout, no `int32_t`/`size_t` recovery
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, the decompiled code preserves natural loop and conditional structures matching the source
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic parameter names (`a1-a31`) make it extremely difficult to track which parameter corresponds to which semantic role from the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `a1 + a2` in `cdecl_func` suggests parameters should be named `a` and `b`
+2. Recover composite types from parameter expansion patterns - 31 consecutive int parameters likely represents a struct passed by value
+3. Fix varargs handling - detect `va_list` pattern and emit proper stdarg.h usage instead of treating as `char` parameter with pointer arithmetic

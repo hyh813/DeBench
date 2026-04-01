@@ -1,0 +1,19 @@
+Testing preprocessing features:
+64
+30
+32
+57122
+116
+19
+60
+LOG: Values: 10, 20, 30
+60
+16
+500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=D�&�
+382 0
+Testing assembly features:
+649303311
+42
+1819043216
+30

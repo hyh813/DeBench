@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `a0`, `a1`, `a2`, `a3`. The original source had meaningful names like `arr`, `n`, `local`, `p1`, `p2`, `head`, `temp`. For example, in `local_array`, the original uses `arr[10]` and `i`, but decompiled code uses `struct_0 *ptr` with generic field names `field_0`, `field_4`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `address_of_array`, `large_stack_frame`, `vla_stack`, `alloca_usage`, `stack_alias`, `heap_basic`, `heap_calloc`, `heap_realloc`, `heap_array`, `heap_struct`, `heap_nested`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `heap_overflow`. Only a few helper functions have generic names like `sub_10598`.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: String literals are shown as raw addresses (e.g., `puts(0x128e8)` instead of actual strings). Magic number `4294967295` (0xFFFFFFFF) is used for error returns without explanation. The original had clear string outputs like `"=== 测试栈内存操作 ==="` but these are lost. Constants like `1000` (for VLA bounds) appear without named constants.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant compiler artifacts present: stack canary checks (`GLIBC_2.4::__stack_chk_guard`), register annotations (`// r0`, `// r3`, `// lr`), auto-generated struct definitions (`struct_0`, `struct_1`), and condition code comments (`// cc_dep1`, `// cc_dep2`). The decompiled output is 2137 LOC vs 888 LOC original - more than 2x inflation from noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Original `for` loops are often converted to `do-while` with manual index management. For example, `local_array` uses `do { ... } while (ptr != &v2)` instead of `for (int i = 0; i < 10; i++)`. At `-O0` this transformation is unnecessary. Some goto patterns exist but are manageable.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions remain separate as in original source. The test wrapper functions (`test_stack_memory`, `test_heap_memory`, etc.) are correctly preserved. No obvious inlining of small functions like `double_value` (which was correctly kept separate). Function sizes are reasonable.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Generally reads top-to-bottom with some forward jumps. The `heap_realloc` function has confusing control flow with multiple labels (`LABEL_10ba1`, `LABEL_10ba2`). Most functions are reasonably linear but some complex ones like `test_heap_memory` have nested conditions.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: Some loop unrolling present (e.g., in `local_array`, `heap_basic`) but not excessive. No major dead code. The `call_extern_func` calls `extern_function(5)` twice, which appears to be a decompilation artifact.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Most parameters use `unsigned int` when original had `int` (e.g., `double_value(unsigned int a0)` instead of `int`). Function pointers are often shown as `unsigned int` instead of proper function pointer types. However, pointers are correctly identified as pointers. The original `int` return types are sometimes `unsigned int`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: The original `Point` struct is completely lost - `local_struct` returns `a0 * 3` directly without struct. The `Node` struct is partially recovered with generic names (`struct_2`, `struct_3` with `field_0`, `field_4`). The `TreeNode` struct is not recovered. Original had clear field names like `data`, `next`, `left`, `right`.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe operations present. In `heap_realloc`, the code has type confusion with `unsigned int [5]` as return type. Pointer arithmetic is sometimes incorrect (e.g., `ptr = ptr + 1` before loop, then `ptr[1]` access). The `call_static_func` shows `int` but should be `static int`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., `// MEM-L1-01: 局部变量（基础类型）⭐`, `// 测试: 纯栈上基础变量`). Zero recovery of documentation.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some data structures are somewhat recognizable (linked list traversal in `linked_list_heap`, tree structure in `tree_heap_traversal`). However, no explicit pattern naming or recognition comments. The original patterns like "VLA", "alloca", "TLS" are not identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No indication of suspicious code or uncertainties. The `dangling_pointer` function accesses memory after `free(ptr)` - this dangerous pattern is presented without warning. The `double_free` is shown without anomaly flag. No decompilation confidence indicators.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No pre/postcondition recovery. Original had explicit checks like `if (n <= 0 || n > 1000) return -1;` but these are not documented as preconditions. No recovery of function contracts or error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Some external functions are declared as `extern` (e.g., `extern unsigned int extern_global_var;`, `extern int extern_function(int x);`). However, no clear documentation of which functions call which, or the complete call graph. The `main` function has confusing parameter passing to test functions.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are grouped logically - stack memory functions together, heap functions together, static/global functions together, memory operations together. Matches the original source organization reasonably well. Static functions like `static_local` helper are correctly identified.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: Many `extern` declarations present for external dependencies. However, some functions have incorrect signatures (e.g., `global_array_access` takes 4 parameters instead of 1). The code would require significant patching to compile - missing declarations for `puts`, `__printf_chk`, `malloc`, `free`, etc.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 3) / 4 = 4.00
+L2_avg = (5 + 7 + 6 + 7) / 4 = 6.25
+L3_avg = (6 + 4 + 6) / 3 = 5.33
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.00
+L5_avg = (5 + 7 + 6) / 3 = 6.00
+
+Overall = (4.00 × 0.30) + (6.25 × 0.25) + (5.33 × 0.20) + (2.00 × 0.15) + (6.00 × 0.10)
+        = 1.20 + 1.56 + 1.07 + 0.30 + 0.60
+        = 4.73/10
+```
+
+**Overall Readability Score: 4.73/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming**: All meaningful variable names lost - `arr`, `i`, `n`, `local`, `p1`, `p2` become `v0`, `v1`, `ptr`, `a0`, making code nearly impossible to trace
+
+2. **No comments**: Original had extensive documentation (888 LOC with comments) but decompiled output has zero comments, losing all semantic context
+
+3. **Struct recovery failure**: Original `Point`, `Node`, `TreeNode` structs with meaningful field names (`data`, `next`, `left`, `right`) are reduced to generic `struct_0`, `struct_1` with `field_0`, `field_4`
+
+4. **String literal loss**: All string constants replaced with raw addresses (e.g., `puts(0x128e8)`), making test output completely unreadable
+
+5. **Type degradation**: Original `int` types often become `unsigned int`, losing sign information critical for understanding error returns
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)**
+- **Why?** Most function names match the original source exactly, preserving the semantic identity of the code (e.g., `double_value`, `local_vars`, `heap_basic`, `linked_list_heap`)
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)** and **Assertion & Contract Recovery (1/10)** (tied)
+- **Why?** The decompiler recovered zero comments from the original source which had extensive documentation explaining each test case, function purpose, and expected behavior. Additionally, no pre/postconditions or contracts were recovered, leaving critical semantic information completely lost.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename variables like `ptr` to `array_ptr` when used with array indexing, or `i` when used as loop counter. The original had clear names that should be recoverable.
+
+2. **Recover string literals from .rodata**: Instead of showing `puts(0x128e8)`, resolve the string address to the actual string content. The original had clear test output strings that are critical for understanding.
+
+3. **Add decompilation confidence comments**: Flag suspicious patterns like dangling pointers (`dangling_pointer` accessing memory after `free`), potential undefined behavior, and uncertain indirect calls. The original code intentionally has anti-patterns that should be flagged.

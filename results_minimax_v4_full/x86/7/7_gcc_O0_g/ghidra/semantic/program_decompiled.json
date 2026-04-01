@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_gcc_O0_g/ghidra/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "=== Testing Obfuscation Optimizations ===\n\nFake branch result: 10\nOpaque predicate result: 20\nInstruction substitution result: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

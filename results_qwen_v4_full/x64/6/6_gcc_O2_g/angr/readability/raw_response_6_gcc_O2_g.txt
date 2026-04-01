@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`) obscuring semantic purpose. Original names like `dst`, `src`, `buffer`, `shared_counter` are lost; only occasional meaningful names like `fp`, `count`, `result` appear.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mix of preserved names (`param_strcpy`, `call_strcpy`, `signal_handler`) and generic `sub_402XXX` names. Many unnecessary wrapper functions created (`sub_402ad1` just calls `call_strcpy`), fragmenting the codebase.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: syscall numbers (2, 3, 10, 14), socket constants (2, 1, 0), signal values. String literals preserved but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive stub/wrapper functions (`sub_402020` through `sub_4023b0` series) add ~200 lines of noise. Redundant type casts and compiler artifacts present throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto LABEL_40324b` in `test_standard_library_functions` instead of structured control flow. Do-while loops used where for-loops would be clearer. At -O0, this restructuring is unexpected degradation.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with wrapper functions that serve no purpose. Original cohesive functions split into caller/callee pairs (`param_strcpy`/`sub_402ad1`/`call_strcpy`), destroying logical grouping.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jump labels (`LABEL_40324b`) disrupt top-to-bottom reading. Some functions linear but many have awkward branching patterns from optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from wrapper function proliferation. Same logic appears in multiple places (e.g., `call_fopen_fclose` duplicates `param_fopen_fclose` logic).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`unsigned long long`, `unsigned int`) replacing specific types (`size_t`, `const char*`, `FILE*`). Const-correctness completely lost; `const char *src` becomes `char *a1`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_0`, `FILE`, `sockaddr`) but field names are generic (`field_0`, `field_8`, `field_c`). Original meaningful struct layouts lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(int)ptr`, `(char *)ptr`). Pointer arithmetic exposed without safety checks. Type-confused operations in thread functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Only one anomaly note: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`) but not identified as patterns. No design pattern or algorithm naming. Producer-consumer pattern in condition variables not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Type mismatches, potential undefined behavior, and optimization artifacts not indicated. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions inferred. Error conditions not explained. Original return value semantics lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`signal_received`, `shared_counter`, `atomic_counter`) not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with arbitrary ordering. Original clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread, libc) not clearly documented. Some stubs needed for globals. Portability issues (ARM64→AMD64 mismatch).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+4+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.22/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on usage (e.g., `dst`, `src`, `buffer_size`)
+- **~200 lines of stub functions** (`sub_402020` through `sub_4023b0`) add zero value and obscure real code
+- **Magic numbers** (syscall 2, 3, 10, 14; socket constants) lack semantic explanation
+- **Const-correctness lost** - `const char *` parameters become mutable `char *`
+- **No comments** explaining algorithm intent, error conditions, or decompilation confidence
+
+### Best Quality Aspect: **Build System Compatibility (6/10)**
+- Code compiles successfully per metadata, indicating basic structural integrity despite semantic losses.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation exists; a single anomaly note is the only meta-information provided, making reverse engineering extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate stub/wrapper function proliferation** - Detect and merge trivial pass-through functions that add no semantic value
+2. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop counter → `iteration_count`)
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, magic numbers, and type ambiguities with inline comments for analyst review

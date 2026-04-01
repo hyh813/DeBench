@@ -1,0 +1,12 @@
+=== Testing Obfuscation, Optimization, and Edge Cases ===
+
+Obf L402D: 10
+Obf L403D: 20
+Obf L404D: 225
+Obf L405D: -4635760478352572383
+Opt L401: 500500
+Opt L401: 5050
+Opt L402: 72
+Opt L501 LTO Demo: 20
+Edge L301 Demo: 1
+Edge L302 Demo: -4635760478352572375

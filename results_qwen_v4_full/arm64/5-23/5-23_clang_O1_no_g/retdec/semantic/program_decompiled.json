@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/5-23/5-23_clang_O1_no_g/retdec/syntactic/bin/5-23_clang_O1_no_g_fixed",
+  "stdout": "P\u0014d���\n\\\u0012d���w\u0012d��ʒ\u0012d��ʭ\u0012d����\u0012d����\u0012d���\u0012\u0013d���LOG: Values: 10, 20, 30\n-\u0013d���H\u0013d���c\u0013d���file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:40\n\u0013d���w\u0014d���\n�\u0013d����\u0013d����\u0013d����\u0013d���",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

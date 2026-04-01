@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`, `a2`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `count`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names recovered well (`sequential_ops`, `single_if`, `loop_while`), but many wrapper functions have mechanical names (`sub_401020`, `sub_401169`). Original function names preserved where identifiable.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (0xFFFFFFFF), `1717986919` (division constant), `340282366683253975865241362417122803708` with no explanation. Original had clear literals (10, 5, 2).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including vector register operations (`xmm0`, `xmm4`, `uint128_t`), redundant casts (`(unsigned int)(a0 & 4294967295)`), and concatenation operations (`CONCAT`) that obscure simple integer arithmetic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex vectorized code (e.g., `loop_while` uses SIMD operations for division by 10). Some functions recovered well (`sequential_ops`), but `goto_backward` became unreadable vector math instead of a simple factorial loop.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but many unnecessary wrapper functions created (`sub_401169` just calls `sequential_ops`). Some functions bloated with optimization recovery artifacts.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by complex vector operations and forward jumps. `conditional_func_ptr` uses `goto v1` for function pointer call instead of direct invocation.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy from loop unrolling recovery. `recursion_factorial` and `tail_recursion` contain nearly identical 200+ line vectorized blocks instead of simple recursive calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type mismatches throughout. Original `int` parameters become `unsigned long long` returns. `sequential_ops` takes `unsigned int` but original used `int`. Return types often wrong (`long long` vs `int`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited structs in this code, but arrays partially recovered (`g_403280[4]`). Most composite type information lost; `jmp_buf` becomes `unsigned long long jump_buffer`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `goto a0` in `call_func_ptr`, `goto v1` in `conditional_func_ptr` for function pointer calls. Excessive casting throughout. Pointer arithmetic obscured by type conversions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. Original had extensive comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. State machines (`state_machine`, `fsm_func_table`) not identified as such. Loop patterns not recognized (converted to vector math). Switch-case fallthrough not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only two anomalies flagged: "Failed to decompile function duffs_device" and "Unsupported jumpkind Ijk_SigTRAP". Most other issues (type mismatches, optimization artifacts) silently presented as correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Original test cases with expected values completely absent from function documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced (`g_405fe0`, `g_406008`) without context. No indication of callback relationships or virtual dispatch.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original test functions (`test_control_flow_l1/2/3`) mixed with implementation functions. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies (`puts`, `printf`, `__libc_start_main`, `_setjmp`, `longjmp`) declared but not defined. Would require significant stubbing to compile standalone. Some syntax issues (`CONCAT` operator not standard C).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+5+3)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.54/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on semantic usage (e.g., `sum`, `count`, `result`)
+- **Loop functions** (`loop_while`, `loop_dowhile`, `loop_for_fixed`) decompiled to unreadable vectorized math instead of simple loops
+- **Magic numbers** like `4294967295`, `1717986919` used without explanation or constant recovery
+- **Function pointer calls** use `goto` instead of proper call syntax (`goto a0`, `goto v1`)
+- **Zero comments** despite complex optimization artifacts requiring explanation
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names from original source were successfully recovered and preserved
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding optimization artifacts nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures** from optimization patterns - recognize division-by-constant multiplication and convert back to simple `/` operators
+2. **Add decompilation confidence annotations** - flag regions where optimization recovery is uncertain or where type information is inferred
+3. **Infer variable names from usage context** - variables used in loop counters should be named `i`, `j`; accumulators should be `sum`, `count`, `total`

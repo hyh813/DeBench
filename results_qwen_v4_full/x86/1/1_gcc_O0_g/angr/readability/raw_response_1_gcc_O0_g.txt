@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions (`sequential_ops`, `single_if`, `loop_for_fixed`) preserved well, but many helpers are generic (`sub_401030`, `sub_401040`). Test functions retained names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (UINT_MAX/-1) appears frequently without explanation. Optimization constant `1717986919` for division is opaque. Original had clear integer literals.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive compiler artifacts: `__x86.get_pc_thunk.*` calls in nearly every function, stack canary checks (`__stack_chk_fail_local`), auto-generated struct padding definitions bloating output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops/conditionals recovered well (`loop_for_fixed`, `goto_forward`). However, `switch_large` uses goto instead of switch, and `switch_fallthrough` is awkwardly reconstructed.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Core functions appropriately sized, but many helper functions are fragments (`sub_401030` just does `goto ptr[2]`). Some are mere wrappers adding no value.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally. Goto statements in `switch_large`, `duffs_device`, and `computed_goto` disrupt linear flow significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code repeated in many functions. Redundant variable assignments (`v0 = v5; v0 = v9`). No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to `unsigned int` instead of specific `int`. Original `int` types inconsistently recovered. Function return types vary (`int` vs `unsigned int`) without justification.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct definitions auto-generated with meaningless names (`field_0`, `padding_0[40]`). Many structs appear to be incorrect inferences from stack layouts rather than actual data structures.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(char *)&v1[4035] + 2`). Function pointer calls use generic `unsigned int *` type. Pointer arithmetic without proper typing throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only one anomaly note: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop patterns (for/while/do-while) recognized. Switch statements partially recovered. No design pattern identification (state machines, callbacks not labeled).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Inconsistent anomaly flagging. One unsupported jump noted, but indirect calls, potential undefined behavior, and optimization artifacts not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite multiple return paths.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced (`g_403030`, `g_4032c8`) without context. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. No header file structure. Static functions not properly scoped. Helper functions scattered arbitrarily.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile standalone. External dependencies (`_ccall`, `g_405ff4`) undeclared. Undefined references throughout. Would require extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+3)/4 = 4.50 × 0.30 = 1.350
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Compiler artifacts pollute output** - `__x86.get_pc_thunk.*` calls in every function, stack canary checks repeated unnecessarily
+- **Platform mismatch** - Original ARM64 compiled, decompiled as x86, causing structural inconsistencies
+- **Switch statements degraded** - `switch_large` uses goto instead of switch construct, `switch_fallthrough` logic corrupted
+- **Zero documentation** - No comments explaining algorithm intent, no confidence indicators for uncertain decompilation
+
+### Best Quality Aspect
+- **Control Flow Naturalness (6/10)** - Basic loop constructs (for/while) and simple conditionals were successfully recovered with recognizable structure
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding decompiler confidence and algorithm intent impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns and debug symbols when available (`-g` flag was used but names not recovered)
+2. **Filter compiler artifacts** - Remove or comment `__x86.get_pc_thunk.*` calls and consolidate repeated stack canary checks
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (indirect calls, computed gotos) with warnings for manual review

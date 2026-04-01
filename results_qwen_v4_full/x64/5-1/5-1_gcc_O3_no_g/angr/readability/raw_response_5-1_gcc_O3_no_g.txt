@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `p`) with no semantic meaning. Original names like `capture_by_value`, `instance_count`, `multiplier` are completely lost. In `test_cpp_rtti()`, variables `ptr`, `v2`, `v3`, `p`, `v5` provide zero insight into their purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some C++ mangled names recovered (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), and class methods identified (`Base::virtual_func`, `Container<int>::push`). However, many functions remain as `sub_XXXXXX` and most test function bodies are empty stubs despite having meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers scattered throughout without explanation (42, 100, 200, 250, 150 in thunk functions). String "Test" preserved but no named constants recovered. The value `0x4004000000000000` appears without any context for what it represents.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`. Multiple thunk functions (`_ZThn16_`, `_ZTv0_n24_`) for virtual dispatch. Output is 1561 lines vs. 540 original—nearly 3x bloat from runtime infrastructure.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy use of `goto` instead of structured constructs. `call_virtual_func()` uses computed goto: `goto *((long long *)*((long long *)&arg_0))`. Exception handling in `test_cpp_exception()` is a goto chain rather than try-catch. Many functions are empty returns losing all original logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries identified but most test functions (`test_cpp_constructor()`, `test_cpp_virtual_func()`, `test_cpp_lambda()`) are empty stubs. Thunk functions scattered as separate entities. `test_cpp_oo_features()` has some logic but calls hardcoded values instead of actual test functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Non-linear flow with excessive forward jumps. Exception handling uses goto chains that disrupt reading. Thunk functions interrupt logical grouping. Code doesn't read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple thunk variants for same virtual function (`_ZThn16_`, `_ZTv0_n24_`, `_ZThn16_N12MultiDerivedD0Ev`, etc.). Initialization code duplicated. Many empty stub functions (`sub_401748`, `sub_40175d`, `sub_401768`) serve no purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—`unsigned long long` used everywhere. Class types become `void* this` parameters. Template instantiations lose type information (`template_max<double>` takes 6 parameters instead of 2). Pointer arithmetic replaces member access throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class definitions almost entirely lost. `class Base {}` has no fields. `struct_0`, `struct_2`, `struct_3` have generic `field_0`, `field_8` names. No recovery of `SimpleClass`, `LifecycleClass`, `Point`, `Container<T>` layouts. Array members like `char name[32]` not recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(long long)v3[8]`, `(char *)a0 + (*(a0))[24]`, `(unsigned long long)(MaxV(...))`. Pointer arithmetic replaces safe member access. Function signatures use `void*` instead of proper class types. Thunk functions perform arithmetic on `this` pointers without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Completely absent. No comments explain any logic, algorithms, or C++ semantics. No decompilation confidence indicators. Original source had extensive comments (section headers, test expectations) all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: RAII (smart pointers), virtual dispatch, exception handling, template instantiation, lambda captures all lost. No pattern identification. Thunk functions present but not explained as virtual dispatch mechanism.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4199301`. Most decompilation failures (empty function bodies, incorrect signatures) presented confidently without warnings. No indication that exception handling recovery failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. API contracts completely absent. Original test expectations (e.g., "期望: 10 + 34 + 4660 = 4704") entirely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Virtual dispatch not documented (thunk functions exist but purpose unexplained). Global variables (`g_403fe8`, `g_403f40`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions in arbitrary order. Related functions not grouped (test functions scattered, class methods separated from test code). No namespace structure. Initialization functions mixed with application logic.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile standalone. Missing headers (`<iostream>`, `<memory>`, etc.). Undefined externals (`operatornew`, `__cxa_allocate_exception`, `CXXABI_1.3::_ZTIi`). Incorrect function signatures. Requires extensive modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+4+4+5)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System): (3+2+3)/3   = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.22/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `ptr`) with zero semantic meaning preserved from original (`capture_by_value`, `instance_count`, `multiplier`)
+- **Most test function bodies are empty stubs** despite having correct names—`test_cpp_constructor()`, `test_cpp_virtual_func()`, `test_cpp_lambda()` return immediately
+- **Class structures not recovered**—`class Base {}` has no fields, no member layouts preserved
+- **Exception handling decompiled as goto chains** instead of try-catch blocks, making logic incomprehensible
+- **No comments whatsoever**—original had extensive documentation all lost
+
+### Best Quality Aspect: Function Naming Quality (scored 5/10)
+- C++ name mangling was partially decoded, recovering some original function names like `test_cpp_member_func` and class method names like `Base::virtual_func`
+
+### Most Needs Improvement: Comment Quality & Presence (scored 1/10)
+- Complete absence of any comments means no explanation of C++ semantics, decompilation confidence, or recovered vs. guessed code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic recovery**—detect class layouts from vtable structures and recover member field names from access patterns
+2. **Add decompilation confidence annotations**—flag uncertain reconstructions (empty bodies, goto chains) with warnings like `// DECOMPILER_UNCERTAIN: exception handling not recovered`
+3. **Infer variable names from usage context**—analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop bounds → `count`) to generate meaningful names

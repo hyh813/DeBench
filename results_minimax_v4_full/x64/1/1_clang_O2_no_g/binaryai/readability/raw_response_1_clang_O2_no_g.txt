@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source code contains 40+ functions testing various control flow patterns from basic sequential operations to extreme control flow (setjmp/longjmp, computed goto, Duff's device). The decompiled output shows significant quality degradation, particularly in:
+- Loop pattern recovery (many loops converted to formulas or goto)
+- Variable naming (generic parameter names)
+- Control flow structures (goto instead of loops)
+- Type precision (bool returned as int, byte, etc.)
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`, `auVar5`). The decompiler makes no attempt to infer semantic meaning from usage patterns. Compare source `int temp1 = a + b;` to decompiled code having no trace of meaningful variable names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names mostly match original source (`sequential_ops`, `single_if`, `loop_for_fixed`), showing good recovery. However, functions like `call_func_ptr` use implementation terminology instead of original `double_value` context.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are computed expressions like `(param_1 + param_2) * 2 - param_3` that are readable. Some magic numbers like `0x3e9` (1001) appear in test output but are from precomputed results, not code logic.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Generally clean with minimal compiler artifacts. However, unnecessary auto variables like `auVar5`, `auVar6` arrays in `goto_backward` add clutter. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many loops are incorrectly reconstructed or use goto. `loop_while` (0x1012e0) uses do-while pattern. `loop_continue` (0x1013b0) is extremely complex with 20+ variables instead of a simple for loop with continue. `goto_backward` (0x101530) has ~50 local variables for what should be a simple factorial loop. At -O0, this level of degradation is excessive.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each original function is decomposed into a single corresponding function. No inlining artifacts or over-fragmentation observed. Function sizes are appropriate, matching source granularity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Early returns used appropriately in some functions. Forward jumps are minimal. Some complexity in `loop_continue` disrupts linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_for_fixed` uses formula `(param_1 - 2) * (param_1 - 1) / 2` instead of loop, which is acceptable for readability but differs from source. `loop_nested` correctly simplified to multiplication. However, `loop_continue` has significant redundant computation with many unused variables.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Several type mismatches: `if_else` returns `bool` but source returns `int`. `nested_if_deep` returns `byte` instead of `int`. Parameter types are generic `int`/`uint` without specificity (should be `int32_t` where appropriate). Signed/unsigned is inconsistent in some comparisons.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery attempted. Functions like `loop_break` that should use arrays (`int arr[] = {10, 20, 30, 40, 50}`) are implemented as switch statements with hardcoded values. `loop_multi_exit` uses lookup tables from data sections without struct reconstruction.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code with minimal unsafe casts. No obvious buffer overflow patterns. Some unsigned/signed mixing in comparisons but nothing dangerous. Code is safe to reason about despite type precision issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. The output contains only function names and code. No explanation of algorithms, recovery confidence, or non-obvious logic. Missing typical Ghidra comments like "WARNING:..." or "RUNTIME NOTE:".
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements for jump tables (`switch_small`, `computed_goto`), do-while pattern for `loop_dowhile`. However, Duff's device (0x101a60) shows goto labels but isn't identified as the classic pattern. State machines are recognized but not explicitly named as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. `call_func_ptr` shows `code *UNRECOVERED_JUMPTABLE` but without explanation. Functions with complex goto logic (like `goto_backward`) show no indication of the underlying pattern. Indirect calls not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. Preconditions from source like "n must be > 0" not documented. Error conditions not explicitly noted. Basic invariant hints absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No cross-reference information provided. No indication of which functions call `process_with_callback` or relationships between test functions and tested functions. Global variables like `jump_buffer` appear without context.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically following original source structure: control flow L1 functions, L2 functions, L3 functions. Test functions grouped together. Static helper functions (`double_value`, `triple_value`) properly placed near usage.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile as valid C with minimal stubs for external functions (`puts`, `printf`). External declarations are implicit. No compiler-specific hacks. Data section references (`&DAT_00103280`) would need to be defined for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+8+7+7)/4 = 6.0
+L2_avg = (3+9+6+5)/4 = 5.75
+L3_avg = (4+2+8)/3 = 4.67
+L4_avg = (2+5+2+3)/4 = 3.0
+L5_avg = (3+8+8)/3 = 6.33
+
+Overall = (6.0 × 0.30) + (5.75 × 0.25) + (4.67 × 0.20) + (3.0 × 0.15) + (6.33 × 0.10)
+        = 1.80 + 1.44 + 0.93 + 0.45 + 0.63
+        = 5.25/10
+```
+
+**Overall Readability Score:** 5.25/10
+
+### Critical Defects
+
+- **`loop_continue` (0x1013b0)**: Over 20 auto variables with complex bit manipulation instead of simple `for` loop with `continue`. Source: `if (i % 2 == 0) { continue; } sum += i;` — completely unrecognizable.
+- **`goto_backward` (0x101530)**: ~50 local variable declarations with massive vectorized computation for simple factorial. Should be a simple recursive or iterative loop.
+- **Variable naming**: Zero semantic inference — all parameters are `param_N`, all temporaries are `iVarN/uVarN`, losing all source variable intent (`temp1`, `temp2`, `sum`, `count`).
+- **`loop_while` at 0x1012e0**: Incorrectly uses do-while pattern with loop condition `0x12 < uVar2` instead of `x != 0`. Source has `while (x != 0)` but decompiled has inverted logic.
+- **Type precision**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`.
+
+### Best Quality Aspect
+
+**Function Decomposition (scored 9/10)**: Function boundaries are perfectly preserved. Each source function maps to exactly one decompiled function with appropriate granularity. No inlining or outline artifacts.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (scored 2/10)**: The decompiler makes no attempt to infer semantic names from usage patterns. A variable used as `sum += i` across iterations should be named `sum`, not `iVar2`. This affects every function and makes code nearly impossible to trace.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage**: Track how variables are used across statements. A variable accumulating sum should become `sum`. A variable used as loop index should become `i` or `index`. This is the single biggest readability gap.
+
+2. **Recover loop constructs more faithfully**: At -O0, loops should be recognizable. The `loop_continue` decompilation with bit manipulation is unacceptable for debug-build binaries. The decompiler should prefer `for`/`while` constructs over goto-based loops.
+
+3. **Add semantic comments**: Include basic comments explaining what each function does, what patterns are used (state machine, jump table, Duff's device), and confidence levels. Even minimal comments like "/* State machine pattern */" would help significantly.

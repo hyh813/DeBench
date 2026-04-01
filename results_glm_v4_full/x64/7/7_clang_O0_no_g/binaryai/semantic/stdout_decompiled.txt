@@ -1,0 +1,15 @@
+call_fake_branch: 20
+call_opaque_predicate: 225
+call_instruction_substitution: 0
+call_string_encryption: 500500
+call_tail_call_optimized: 5050
+call_non_tail_call: 2289427929
+call_vectorized_loop: 20
+call_link_time_optimization: 1
+call_division_by_zero: 41
+call_null_pointer_deref: 30
+call_buffer_overflow: 2000000000
+call_integer_overflow: 10
+call_undefined_behavior: 47
+call_implementation_defined: 2437864032
+done

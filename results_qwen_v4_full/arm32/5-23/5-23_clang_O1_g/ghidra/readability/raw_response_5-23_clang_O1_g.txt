@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `__len`, `__addr`, `local_c` instead of semantic names (e.g., `page_size`, `exec_mem`). Many locals marked "Unresolved local var" with no meaningful identifiers.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Original function names preserved perfectly (`param_macro_constants`, `call_asm_simd`, `test_preprocessing_features`). Action-oriented naming clearly reflects purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x200` (should be `MAX_SIZE`), `0x40` (should be `64`), `0x400` (should be `1024`), `0xdef0` (should be platform constant). No constant recovery from preprocessor macros.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Unknown calling convention" and "Unresolved local var" annotations clutter output. No dead code from register spilling, but warning noise is distracting.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures are natural (if-else, do-while loops). `param_asm_clobber` correctly recovered loop from assembly. No spurious goto usage.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. No monolithic functions or over-fragmentation. Each test function properly separated.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop structures use standard do-while pattern. No forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Constant folding applied appropriately (`call_macro_constants` returns `0x40` directly). No duplicate expressions or dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types correct (`int`, `void*`, `size_t`), but many locals show "Unresolved local var: int result@[???]". Pointer arithmetic types sometimes generic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays properly typed (`int local_18[4]`, `char[32] dst`). No complex structs in this code to evaluate, but array handling is correct.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer operations maintain type consistency. Atomic operations use proper intrinsic (`__atomic_fetch_add_4`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings ("Unresolved local var", "Unknown calling convention"). Zero semantic comments explaining algorithm purpose or macro recovery.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition for macro expansions (SQUARE, MAX, ADD_16). Assembly-to-C conversion done but not annotated as "recovered from inline asm".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" warnings flag recovery issues. However, no explanation of WHY variables are unresolved or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No recovery of macro semantics (e.g., "MAX_SIZE was 1024"). Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear but no call graph documentation. Global variable `global_var` referenced without context. No callback relationship info.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source order (preprocessing tests, then asm tests). Related functions grouped logically. No header file separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions (`printf`, `mmap`, `sysconf`) without declarations. `__atomic_fetch_add_4` intrinsic may need specific headers. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+3+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (8+8+8+8)/4 = 8.00 × 0.25 = 2.00
+Level 3 (Type):        (6+7+8)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 6.18/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects
+- **Magic numbers replace all macro constants**: `0x200`, `0x40`, `0x400` should be `MAX_SIZE`, `BUFFER_COUNT*4`, `1024`
+- **Zero semantic comments**: No explanation of recovered logic or decompiler confidence levels
+- **Generic variable names**: `iVar1`, `__len`, `local_c` obscure semantic purpose
+- **No macro recovery documentation**: Cannot tell which code came from macro expansion vs. original
+- **Unresolved local variables**: Multiple "Unresolved local var@[???]" annotations without recovery attempts
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original function names preserved perfectly, making navigation and identification trivial
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Completely lacks semantic documentation; only auto-generated warnings present
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro constant names from debug symbols**: When `-g` flag is present, map magic numbers back to original `#define` names (MAX_SIZE, BUFFER_COUNT)
+2. **Add semantic confidence annotations**: Mark recovered code with confidence levels and explain transformations (e.g., "// Recovered from inline assembly: x + 10")
+3. **Infer variable names from usage patterns**: Variables used in size comparisons should be named `size`, `limit`, `max`; loop counters should be `i`, `index`, `count`

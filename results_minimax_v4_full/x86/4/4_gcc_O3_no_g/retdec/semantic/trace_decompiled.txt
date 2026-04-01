@@ -1,0 +1,5 @@
+TRACE_ENT|0|test_calling_conventions|0|Arg0=-1208424080,Arg1=-1081248384,Arg2=0,Arg3=-1210470495|eax=0xb7f5bdd8,ebx=0x0,ecx=0xbf8d7580,edx=0xbf8d75a4,esi=0xb7f5a000,edi=0x0
+TRACE_PRINT|0|%0A
+TRACE_EXT|0|test_calling_conventions|0|0
+TRACE_ENT|1|test_parameter_passing|0|Arg0=-1208424080,Arg1=-1081248384,Arg2=0,Arg3=-1210470495|eax=0x0,ebx=0x0,ecx=0x0,edx=0xb7f5b890,esi=0xb7f5a000,edi=0x0
+TRACE_PRINT|1|%0A

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `a0`, `a1`, `a2` throughout. For example, in `local_vars`: `v1 = a0 * 2; v0 = v1 + 10;` should be `b = x * 2; return b + 10;`. The original had clear names `a`, `b`, `c` but these are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many test functions retain original names (`local_vars`, `heap_basic`, `test_stack_memory`), but helper/utility functions use generic names like `sub_400588`, `sub_4006b8`. The core test functions are preserved but internal helpers are not.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears as error return without explanation. Complex expressions like `4294967293 & (a0 + (a0 >> 31)) * 2` for `n/2` are cryptic. Array bounds like `9 >= idx` instead of `i < 10` lack clarity.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: At -O0, minimal compiler artifacts exist. Some Ghidra-specific annotations like `<0x400a40[is_1]|Stack bp-0x20, 1 B>` appear, and many auto-generated sync atomic functions clutter output, but core logic is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops and conditionals are generally recognizable. However, `global_array_access` uses `armg_calculate_condition(66, idx, 0, 0)` which is obscure. Some goto patterns exist but are manageable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries are preserved. Test functions like `test_stack_memory` are 80+ lines but this matches source. Function granularity is appropriate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in error handling paths. The `vla_stack` and `alloca_usage` have complex stack calculations that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_extern_func` calls `extern_function(5)` twice redundantly. Some duplicate expressions exist, but overall structure is acceptable for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most parameters use `unsigned int` when original was `int`. Pointers are generic `void*` or `unsigned int`. The original `int x` becomes `unsigned int a0`. Const correctness is lost - `const int const_global` becomes regular access.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structures are partially reconstructed with generic names. The Node struct becomes `struct_0 { unsigned int field_0; struct struct_1 *field_4; }` - structure is there but field names `data`, `next` are lost. Point struct is completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations exist. Pointer arithmetic like `ptr + idx * 4` instead of proper array indexing. The `heap_nested` has incorrect pointer handling: `*(ptr)->field_4 = ptr;` should be `(*ptr)->next = new_node`. Some type-confused operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. No explanation of algorithms, no documentation of preconditions/postconditions. The decompiled code is bare without any explanatory text.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list traversal, tree operations) but not explicitly named or documented. The idioms are implicit in the code structure but not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The dangling pointer access in `dangling_pointer` (use after free) is presented without warning. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "n > 0" in `alloca_usage`, postconditions, and error handling are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: External functions marked with `extern` keyword, but relationships not documented. No indication of which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions organized by address (sub_400xxx) rather than logically. Related functions like all memory test functions should be grouped but aren't.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Missing `#include <stdio.h>`, `Point` typedef undefined, `Node` and `TreeNode` types need definition. Many syntax issues exist.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning from original (`x`, `arr`, `counter`)
+- Type information severely degraded: `int` becomes `unsigned int`, `Point` struct lost entirely, field names become `field_0`, `field_1`
+- No comments or documentation explaining algorithms, contracts, or anomalies
+- Build system completely broken - missing includes, undefined types, won't compile
+- Magic numbers like `4294967295` used without explanation for error returns
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Loop constructs and conditional logic are mostly recognizable, preserving the algorithmic structure despite other issues
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic variable names like `v0`, `v1`, `a0` completely obscure the semantic purpose that was clear in the original source (`x`, `arr`, `counter`, `result`)
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0` used in multiplication should be `n` or `size`; `v0` storing calculation result should be `result` or `sum`
+2. Recover struct field names from context - `field_0` in Node struct is clearly `data`, `field_4` is `next`
+3. Add basic comments explaining preconditions (e.g., "requires: n > 0") and flag dangerous patterns like dangling pointer access after free

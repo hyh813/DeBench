@@ -1,0 +1,142 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `g1`, `g2`. The decompiler made no attempt to infer semantic meaning from usage patterns. For example, in `param_strcpy`, variables should reflect `dst`, `src`, and return value semantics.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+Justification: Mixed results - test functions (`test_standard_library_functions`, `test_system_calls`) and param functions (`param_strcpy`, `param_malloc_free`) are well-named, but many internal functions remain as address-based names like `function_10cd8`, `function_10e10`. The latter are clearly PLT stubs or thunks that weren't resolved.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Format strings preserved but Chinese characters escaped (`\xe6\x9c\x9f\xe6\x9c\x9b` for "期望"). Some magic numbers lack explanation (e.g., `438` for file permissions, `950` for IPC flags). However, string literals like "HelloLib", "/etc/passwd" are preserved.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Significant noise from ~50 stub functions (e.g., `function_e0433000`, `function_e0811143`) that just return. These appear to be unresolved PLT entries. Also, many `__sync_synchronize` calls and redundant casts between int32_t and pointers.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Generally readable if/else structures. However, `param_pthread_join` and `param_thread_local_storage` use goto-based state machines that are difficult to follow. At -O0, this represents decompilation artifacts rather than optimization.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Functions are reasonably sized (20-80 lines typical), but `param_thread_local_storage` is ~150 lines and `param_pthread_join` is ~110 lines - too large. Some granularity issues where related logic could be extracted.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Most functions read top-to-bottom, but complex functions like `param_thread_local_storage` have multiple goto jumps (`goto lab_0x12754`, `lab_0x1319c_2`) that disrupt flow. Early returns used appropriately in some places.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: Minimal dead code at -O0. Some redundant calculations visible (e.g., `function_10e7c` called multiple times for same string). Loop unrolling not excessive, which is appropriate for debug build.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Uses `int32_t` consistently, some `uint32_t`. Pointers correctly typed as pointers, though often cast through int32_t for ARM64 calling convention. Minor issues: `size_t` parameters shown as `uint32_t` instead.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct/union recovery. All composite types lost. For example, `ThreadData` struct in pthread_join is completely flattened - fields accessed via pointer arithmetic like `*(int32_t *)(v2 - 56 + 4 * v10)`. This severely obscures data flow.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe casts between pointers and integers (e.g., `(int32_t)a1`, `(int32_t *)v2`). Pointer arithmetic without bounds checking throughout. Function pointers not properly typed - all are `int32_t (*)()`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, no decompilation confidence indicators, no @param/@return documentation. The code is bare metal.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Standard library functions (strcpy, strcmp, strlen, memcpy, malloc, fopen) are recognized and properly named. However, threading idioms (pthread_create patterns, mutex lock sequences) aren't explicitly identified as such.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+Justification: No anomaly flags. The many unresolved stub functions (`function_10cd8`, etc.) are presented without any indication they couldn't be resolved. No warnings about indirect calls or unusual patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: No precondition/postcondition documentation. No error handling annotations. The complex error return paths (-1, -2, -3, etc.) in functions like `param_fork_exec` have no explanation of what each failure means.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function call relationships visible in code but not documented. No indication which functions call which, no callback relationships shown. Global variables `g34`, `g35`, `g36` used for signal/threading without explaining their roles.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions logically grouped (test functions, param functions, stub functions). Static functions properly scoped. However, all 146 functions in single file with no header separation.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Function prototypes declared at top. Should compile with standard library linkage. Minor issues: some unresolved external references (stub functions), but core logic is compilable with `-lpthread`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 5 + 3) / 4 = 3.75
+L2_avg = (6 + 6 + 6 + 7) / 4 = 6.25
+L3_avg = (7 + 2 + 5) / 3 = 4.67
+L4_avg = (1 + 5 + 1 + 1) / 4 = 2.00
+L5_avg = (4 + 6 + 7) / 3 = 5.67
+
+Overall = (3.75 × 0.30) + (6.25 × 0.25) + (4.67 × 0.20) + (2.00 × 0.15) + (5.67 × 0.10)
+        = 1.125 + 1.5625 + 0.934 + 0.30 + 0.567
+        = 4.49/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables are `v1`, `v2`, `a1`, `a2`, `g1`, `g2` - zero semantic inference from usage patterns
+- **No struct recovery**: `ThreadData` struct completely flattened to pointer arithmetic, losing all semantic meaning
+- **No comments**: Zero explanatory text for algorithms, parameters, or return values
+- **Stub pollution**: ~50 unresolved function stubs (`function_10cd8`, etc.) clutter the output without indication they couldn't be resolved
+- **Type safety**: Extensive unsafe pointer<->int32_t casts throughout, particularly for ARM64 calling convention parameters
+
+---
+
+### Best Quality Aspect
+- **Function Decomposition (L2)** scored highest at 6.25/10
+- Functions are reasonably sized with appropriate separation between test wrappers and implementation functions. The decompiler correctly separated `call_strcpy` (test wrapper) from `param_strcpy` (implementation).
+
+---
+
+### Most Needs Improvement
+- **Variable Naming (L1.1)** scored lowest at 2/10
+- The decompiler made no attempt to infer meaningful names. Variables like `v1` used as loop counter should be named based on context (e.g., `iterations`, `thread_index`). This single issue cascades into making the entire codebase nearly incomprehensible.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Track how variables are used (array index → `index`/`i`, buffer pointer → `buffer`/`ptr`, size parameter → `size`/`count`) and assign semantic names. Even simple heuristics would dramatically improve readability.
+
+2. **Recover composite types**: Analyze malloc/allocation sizes and pointer access patterns to reconstruct structs. The `ThreadData` struct (3 fields: start, end, result) could be recovered from the 12-byte allocation and field accesses.
+
+3. **Add explanatory comments**: At minimum, document function purpose, parameter meanings, and return value semantics. Flag unresolved calls with `// UNCLEAR: could not resolve target`. This costs little but adds tremendous value.

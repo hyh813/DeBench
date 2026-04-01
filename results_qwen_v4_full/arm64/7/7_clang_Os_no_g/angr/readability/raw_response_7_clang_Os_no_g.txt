@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `flag1`, `result`, `cur`) with no semantic meaning. For example, `param_fake_branch` uses only `v0` instead of preserving `x` or `result` from source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions retained original names (`param_fake_branch`, `param_opaque_predicate`), but many runtime functions use mechanical names (`sub_400744`, `sub_400830`) and some are mislabeled (`$x`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `9223372036854775807` (INT64_MAX), signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`. XOR key `90` should be `0x5A`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime artifacts pollute output: `_init`, `_start`, `_fini`, `register_tm_clones`, `deregister_tm_clones`, `__do_global_dtors_aux` - none relevant to application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_opaque_predicate` uses `arm64g_calculate_condition` calls obscuring simple comparisons. `register_tm_clones` uses `goto` instead of structured conditionals.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical functions are broken: `param_fake_branch`, `param_buffer_overflow_stack`, `param_buffer_overflow_heap` all just `return v0` with no logic. Runtime functions unnecessarily included.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but `register_tm_clones` has nested if-else-goto patterns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_weak_fn` calls `__gmon_start__` twice identically. `sub_400744` calls `strlen(v0)` twice with same result.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `param_fake_branch` lost its `int x` parameter entirely. Mixed `unsigned long`, `unsigned long long`, `int` without clear rationale. Some signedness lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Original `param_implementation_defined` had a bitfield struct - decompiled version just returns constant `48`. No struct/union recovery evident anywhere.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts (`(unsigned int)a0`, `(char)arm64g_calculate_condition`). Pointer arithmetic in `decrypt_string` uses `cur[0]`, `cur[1]` pattern that's error-prone.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Complex GCD loop in `param_opaque_predicate` has no explanation. No decompilation confidence indicators for broken functions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. XOR decryption pattern in `decrypt_string` not identified. No algorithm naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Completely broken functions (`param_fake_branch`, `param_buffer_overflow_*`) return uninitialized `v0` with no warning. No flags indicating decompilation failure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `a0 != 0` for normal path). No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g_411ff8`, `$d.1`, `jmp_buffer`) referenced without explanation of purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Runtime initialization code mixed with application logic. No separation between test functions and C runtime support functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many undefined external symbols (`g_411ff8`, `$d.1`, `$d.2`, `$d.3`, `$d.4`, `g_400f30`, etc.). Would require significant stubbing to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+6+4+4)/4 = 4.25
+L2 Average: (4+5+6+5)/4 = 5.00
+L3 Average: (5+3+5)/3 = 4.33
+L4 Average: (2+3+2+2)/4 = 2.25
+L5 Average: (5+4+4)/3 = 4.33
+
+Overall = (4.25 × 0.30) + (5.00 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.275 + 1.250 + 0.866 + 0.338 + 0.433
+        = 4.16/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken** - Returns uninitialized `v0` instead of implementing the two always-false condition checks from source
+- **`param_buffer_overflow_stack` and `param_buffer_overflow_heap` non-functional** - Both just `return v0` losing all buffer manipulation logic
+- **No anomaly warnings for failed decompilation** - Broken functions presented confidently without indicating decompilation failure
+- **GCD algorithm obscured** - `arm64g_calculate_condition` calls hide simple integer comparisons that should be recoverable at -O0
+- **Runtime pollution** - 15+ C runtime functions (_init, _start, register_tm_clones, etc.) clutter the output
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Main test functions retained their original semantic names, allowing identification of purpose despite logic loss.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero explanatory comments for complex logic; broken functions lack any warning indicators about decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag incomplete decompilation** - Add confidence indicators (e.g., `// DECOMPILATION_INCOMPLETE`) when functions lose significant logic like `param_fake_branch`
+2. **Recover high-level patterns** - Recognize GCD loops, XOR decryption, and always-false conditions to restore semantic meaning
+3. **Filter runtime artifacts** - Exclude or separate C runtime initialization code from application logic to reduce noise

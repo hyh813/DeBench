@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `result`, `result2`. The original source has meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` that are completely lost. These cryptic names make tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions are demangled correctly (e.g., `test_cpp_member_func()`, `Base::virtual_func(int)`), but helper functions use numeric addresses like `function_2150`, `function_2160`. The demangled names are adequate but lack the clarity of the original descriptive function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some strings are preserved correctly ("Base", "Derived", "12RTTIDerivedA"), but many magic numbers lack explanation (vtable addresses like `0x59a0`, stack canary offset `40`, thunk offsets like `24`, `16`, `32`). The original source has no magic numbers - all are meaningful constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readfsqword(40)`), inline assembly for floating-point operations (`__asm_movsd`, `__asm_maxsd`), numerous redundant casts, and many thunk functions for virtual inheritance. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved but exception handling uses complex `_Unwind_Resume` patterns that don't map cleanly to try-catch blocks. Some conditional expressions are convoluted (e.g., the template_max implementation uses bit manipulation instead of simple comparison).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The 12 main test functions are preserved. However, many thunk functions were added (e.g., `_ZThn16_N12MultiDerived5funcBEv`, `_ZTv0_n24_N7MiddleA4funcEv`) which fragment the code. Function sizes are reasonable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but exception handling has complex flow with forward jumps. The `test_cpp_exception` function has particularly non-linear flow with multiple `_Unwind_Resume` calls disrupting readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist, particularly in template instantiations where similar code is duplicated for `int` and `double` versions. Virtual function thunks add mechanical redundancy. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t` and `int32_t` appropriately. Some parameters use generic `int` instead of specific sizes. Function pointer types in vtables are partially reconstructed. The original `int`, `size_t`, `bool` types are mostly preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures are recovered but with generic field names:
+```c
+struct vtable_59a0_type {
+    int64_t (*e0)(int64_t *, int32_t);
+    int64_t (*e1)();
+    int64_t (*e2)();
+    int64_t (*e3)();
+};
+```
+The original class member variables (`value`, `name`, `multiplier`, `dataA`, `dataB`) are not recovered as named struct fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: pointer arithmetic in virtual function implementations (e.g., `*(int32_t *)((int64_t)result + 8)`), unusual casts in template code (`(int128_t)(int32_t)(float32_t)(float64_t)(int64_t)v3`), and raw memory operations in Container template implementations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mechanical - they indicate "From class:", "Type:", address ranges, and demangled names. No explanation of algorithm logic, vtable mechanism, or virtual inheritance. The original source has extensive explanatory comments that are completely absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are implicitly present (virtual dispatch through vtables, template instantiation, exception handling) but not explicitly named or documented. The decompiler doesn't explain "this is a virtual function call through vtable" or "this implements diamond inheritance".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The code presents everything as confident, even though some operations are ambiguous (e.g., the complex virtual inheritance offset calculations). No warnings about indirect calls or uncertain reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition information recovered. The original source has no explicit assertions, but the decompiled code doesn't document expected states (e.g., "requires: obj != nullptr" for virtual calls).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear through demangled names. However, class relationships (inheritance hierarchy), virtual dispatch relationships, and callback patterns are not documented. The original shows clear `Base*`, `Derived*` relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Code is organized into logical sections (prototypes, globals, functions). However, it's all in one massive file. The original source has clear section comments and separates classes logically.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has proper includes (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Function prototypes are declared. Should compile with minimal changes. The metadata notes "Compilation Result: Yes".
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable names are extremely generic (`v1`, `v2`, `a1`, `a2`) losing all semantic meaning from original (`value`, `name`, `multiplier`, `capture_by_ref`)
+- No class member variable recovery - struct fields are all generic (`e0`, `e1`, `field0`)
+- Extensive compiler noise (stack canaries, inline asm, thunk functions) obscures logic
+- No comment explanation of C++ idioms (vtables, virtual inheritance, RTTI, exceptions)
+- Complex virtual inheritance offset calculations without explanation
+
+**Best Quality Aspect:** Type System Fidelity (scored 5.3/10)  
+- Basic integer types are precise (int64_t, int32_t), and vtable structures are partially recovered
+
+**Most Needs Improvement:** Lexical Clarity (scored 4.0/10)  
+- Variable naming is nearly unusable with generic single-letter names that completely obscure purpose
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v1` used as `strlen` result should be named `len` or `name_len`)
+2. Recover class member variables as named struct fields instead of raw pointer arithmetic
+3. Add explanatory comments for C++ mechanisms (vtable dispatch, virtual inheritance offsets, exception handling)

@@ -1,0 +1,247 @@
+# BinBench Evaluation Report
+
+**Generated:** 2026-03-20 13:19:01
+
+## 1. Test Object
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `src/5-23.c` |
+| Decompiled | `decompiled/ghidra_out/x86/5-23/5-23_clang_Os_g.c` |
+| Decompiler | GHIDRA |
+| Architecture | x86 |
+| Compiler | clang |
+| Optimization | Os |
+| Debug | yes |
+
+## 2. Evaluation Results
+
+| Dimension | Status |
+|-----------|--------|
+| Readability | ✅ Completed |
+| Syntactic | ✅ Compiled |
+| Semantic | ⏭ Skipped (--skip-step3) |
+
+## 3. Detailed Results
+
+### 3.1 Readability Evaluation
+
+*No readability results found.*
+
+### 3.2 Syntactic Correctness Evaluation
+
+#### Repair Trace Log
+
+```json
+{
+  "file_name": "results_glm_v4_full/x86/5-23/5-23_clang_Os_g/ghidra/syntactic/fix_5-23_clang_Os_g.c",
+  "total_iterations": 4,
+  "successful_tool_calls": 4,
+  "final_status": "compile_failed",
+  "termination_reason": "unknown_error_no_parsed_diagnostics",
+  "resumable": true,
+  "resume_mode": "linker",
+  "next_iteration": 5,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 4,
+        "stats": {
+          "Syntax Error": 2,
+          "Undeclared Identifier": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6045,
+        "completion_tokens": 721,
+        "total_tokens": 6766
+      },
+      "time_cost": 14.557044267654419,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Syntax Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6003,
+        "completion_tokens": 568,
+        "total_tokens": 6571
+      },
+      "time_cost": 9.497359275817871,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6030,
+        "completion_tokens": 1443,
+        "total_tokens": 7473
+      },
+      "time_cost": 19.971281051635742,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 2,
+        "stats": {
+          "Redefinition": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6611,
+        "completion_tokens": 891,
+        "total_tokens": 7502
+      },
+      "time_cost": 13.153663635253906,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 4,
+    "total_tokens": 28312,
+    "total_time_seconds": 57.18,
+    "initial_state": {
+      "error_count": 4,
+      "error_types": {
+        "Syntax Error": 2,
+        "Undeclared Identifier": 2
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.3333,
+        "error_trajectory": [
+          4,
+          1,
+          1,
+          2
+        ],
+        "max_error_count": 4,
+        "min_error_count": 1
+      },
+      "effort": {
+        "initial_error_count": 4,
+        "lowest_error_count": 1,
+        "lowest_at_iteration": 2,
+        "error_reduction": 3,
+        "error_reduction_ratio": 0.75
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Syntax Error": 2,
+          "Undeclared Identifier": 2
+        },
+        "final_types": {
+          "Redefinition": 2
+        },
+        "types_eliminated": [
+          "Syntax Error",
+          "Undeclared Identifier"
+        ],
+        "types_introduced": [
+          "Redefinition"
+        ]
+      },
+      "score": {
+        "effort_score": 37.5,
+        "stability_score": 33.33,
+        "total_score": 70.83,
+        "grade": "B"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 4,
+    "type_breakdown": {
+      "Syntax Error": {
+        "initial_count": 2,
+        "max_count": 2,
+        "final_count": "unknown"
+      },
+      "Undeclared Identifier": {
+        "initial_count": 2,
+        "max_count": 2,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 0,
+        "max_count": 2,
+        "final_count": "unknown"
+      },
+      "Missing Header": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      }
+    }
+  }
+}
+```
+
+### 3.3 Semantic Fidelity Evaluation
+
+*No semantic analysis report found.*
+

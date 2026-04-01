@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a1`, `a2`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`. The original source had meaningful names like `x`, `n`, `arr`, `p1`, `p2`, `global_counter`, `leak`, `head`, `current`. This is a severe degradation making it nearly impossible to track variable purposes without analyzing every usage.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `heap_realloc`, `global_var_access`, `static_local`, `memop_memset`, `memop_memcpy`, etc. The decompiler preserved the original function naming almost perfectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are preserved (e.g., `42` in address_of_local, `20` in stack_alias, array sizes like `0x14u`, `0x28u`), but many magic numbers lack explanation. The original source had clear constants like `2048` for buffer size, `10` for array bounds, but these are sometimes buried in computation without semantic explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The output contains register annotations (`// w0`, `// x1`, `// x19`), type casts (`(_DWORD *)`, `(__int64 *)`, `(unsigned int *)`), and BYREF markers. The output is 1173 LOC vs 888 LOC source - a 32% increase indicating significant noise. However, no debug instrumentation or frame pointer manipulation clutter is present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while` constructs, conditionals use `if/else`. At -O0, the control flow should closely match source, and it does for most functions. Minor awkwardness in some complex functions like `vla_stack` and `alloca_usage` where the VLA handling is convoluted.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original. No over-inlining or outlining artifacts. Each function has a single responsibility. The test wrapper functions (`test_stack_memory`, `test_heap_memory`) are preserved as in source. Parameter counts match original (e.g., `double_value(int a1)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling (e.g., `if (!v2) return 0xFFFFFFFFLL;`). Some functions like `linked_list_heap` have deeper nesting but it's manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some constant folding is present (e.g., `2 * a1 + 10` computed directly instead of step-by-step), but this is minor. No significant dead code observed. Loop unrolling is minimal, which is appropriate for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: The decompiler uses generic types: `int` becomes `int` or `unsigned int`, pointers become `_DWORD *`, `_QWORD *`. Original had precise types like `int *`, `char *`, `size_t`. Function pointers are cast to `void *` or `__int64`. Signed/unsigned is sometimes preserved but not consistently. Const correctness is lost (`const int` becomes `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The original defined `Point` struct, `Node` struct, `TreeNode` struct - none are recovered. Instead, raw pointer arithmetic is used: `Node` becomes `_QWORD *` with manual field access via `*v1`, `v1[1]`. The struct layouts are completely lost, losing field names like `data`, `next`, `x`, `y`, `left`, `right`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(unsigned int *)malloc(4u)`, `(_DWORD *)v1`, `(__int64 *)v4`. Pointer arithmetic is manual and error-prone (e.g., `*((_DWORD *)&v6[2] + v4)`). Function pointer type confusion exists (e.g., `global_func_ptr = (__int64 (*)(void))double_value`). No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）", "// HEAP-L2-01: malloc + free"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: linked list creation/traversal in `linked_list_heap`, tree creation in `tree_heap_traversal`. However, no explicit naming or comments identify these as design patterns. The original had clear patterns like "完整链表创建、遍历、销毁".
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The output correctly identifies 19 functions that failed to decompile (memcpy, memmove, exit, malloc, etc.) at the end with "FAILED to decompile" messages. However, no in-code warnings about potential undefined behavior (e.g., dangling_pointer accessing freed memory, double_free).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Original had error checking (e.g., `if (arr == NULL) return -1;`) which is preserved in logic but not explained as contracts. No documentation of what -1, -2 return codes mean.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present and traceable (e.g., `main` calls `test_stack_memory`, `test_heap_memory`). Global variables like `global_counter`, `global_array`, `file_scope_static` are accessed correctly. However, no documentation of call relationships or usage context. The original showed clear relationships through the test functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output, roughly matching the source file sections (stack functions, heap functions, static functions, memory operations). Static functions are marked but not explicitly scoped. The organization is reasonable but not explicitly documented.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would require significant patching to compile: external declarations for `malloc`, `free`, `printf`, `memset`, etc. are needed. No header includes. The original had proper `#include` statements. The decompiled output is not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `v0`, `v1`) - loses all semantic meaning from original (`x`, `n`, `arr`, `leak`)
+- Composite types (Point, Node, TreeNode) completely lost - replaced with raw pointer arithmetic losing field names
+- Zero comments recovered - original had extensive documentation for each test case
+- Type precision severely degraded - no const correctness, generic types everywhere
+- Build system compatibility poor - no includes, requires manual patching to compile
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler preserved nearly all original function names exactly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All variable names are generic single-letter variants (`a1`, `v0`, `v1`, `v2`), completely losing the semantic meaning present in the original source where variables had descriptive names like `packet_size`, `user_count`, `buffer`, `head`, `current`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `index`, `counter`, `pointer`, `size`
+2. **Recover struct/union types**: Detect consistent field access patterns (e.g., `*(int*)(ptr+0)`, `*(void**)(ptr+8)`) to reconstruct struct layouts with meaningful field names
+3. **Add minimal useful comments**: Include basic documentation for function purpose, parameter meaning, and return value semantics based on analysis of the function body

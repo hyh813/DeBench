@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter names preserved well (`x`, `c`, `arr`, `n`), but unnecessary `_local` suffix variables (`x_local`, `c_local`, `p_local`) are created and never used, adding confusion without semantic value.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`) due to `-O0 -g` debug symbols; action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals clear, but `enum_switch` uses hex `0x32` instead of `50` for STATE_PAUSED return value; string literals preserved but referenced as `&DAT_00103010` in some test functions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from unused `_local` parameter copies in nearly every function; stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) in test functions; "Unknown calling convention" warnings clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for`/`while` constructs correctly; however `enum_switch` uses nested if-else chain instead of switch statement despite clear case structure in source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches original source perfectly; each function maintains single responsibility with appropriate size (no monolithic functions or over-fragmentation).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally; minimal forward jumps; early returns used appropriately in functions like `process_bool` and `volatile_access`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Pervasive redundant `_local` variable assignments that copy parameters but are never used (e.g., `int x_local;` in `double_value`); no dead code removal from debug build artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered correctly (int, char, short, long); `process_ld` incorrectly returns `longdouble *` instead of `longdouble`; function pointers use custom typedefs (`_func_int_int`) which is acceptable but non-standard.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery with field names preserved (Point3D, Rect, Widget, Node, DNode, TreeNode); nested structures correctly represented with proper field access syntax.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `ptr_diff` shows explicit casting `(int)((long)p1 - (long)p2 >> 2)` obscuring clean pointer arithmetic; `struct_bitfields` loses bitfield semantics showing raw bit manipulation; `volatile_access` loses volatile semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler warnings present ("WARNING: Unknown calling convention", "WARNING: Subroutine does not return"); no original source comments recovered; no algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns (linked list traversal, tree recursion) recovered structurally but not identified by name; no pattern hints like "linked list iteration" or "recursive tree sum".
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for decompiler uncertainty ("Unknown calling convention", "Globals starting with '_' overlap smaller symbols"); stack canary failures properly marked as "Subroutine does not return".
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `arr != NULL`, `n > 0`); no postcondition inference; `array_oob` intentional overflow not flagged as undefined behavior.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls clear with preserved names; `double_value` correctly referenced in `ptr_func_simple` test; callback relationships visible through function pointer usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order matching source structure (data types → arrays → pointers → composites); test functions grouped appropriately after their target functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Requires external symbols (`__libc_start_main`, `__stack_chk_fail`, `__gmon_start__`); struct typedefs need forward declarations; would need stubs for runtime functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     6.75 × 0.30 = 2.025
+Level 2 (Structural):  7.50 × 0.25 = 1.875
+Level 3 (Type):        7.33 × 0.20 = 1.466
+Level 4 (Semantic):    4.50 × 0.15 = 0.675
+Level 5 (Contextual):  7.33 × 0.10 = 0.733
+─────────────────────────────────────────
+Overall Score:                    6.77 ≈ 6.8/10
+```
+
+**Overall Readability Score:** 6.8/10
+
+### Critical Defects
+- **Unused `_local` variables** in nearly every function create noise without semantic value (e.g., `int x_local;` in `double_value` never used)
+- **`process_ld` type error** - returns `longdouble *` instead of `longdouble`, breaking semantic correctness
+- **`volatile_access` loses volatile semantics** - shows `*p + *p` instead of two distinct memory reads
+- **`struct_bitfields` loses field access** - shows raw bit manipulation `(uint)(*(byte *)f >> 1 & 3)` instead of `f->flag2`
+- **`enum_switch` degrades to if-else** - switch statement not recovered despite clear case structure
+
+### Best Quality Aspect
+- **Composite Type Recovery (9/10)** - Struct and union types perfectly reconstructed with accurate field names and nested structure preservation (Point3D, Widget, Node, TreeNode all correctly recovered)
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Zero semantic comments recovered; only decompiler warnings present; no algorithm explanations or API documentation to aid understanding
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Eliminate unused `_local` parameter copies** - Detect when local variables are never used and suppress their declaration to reduce noise
+2. **Recover switch statements from if-else chains** - When consecutive if-else tests the same variable against constants, emit switch construct
+3. **Preserve volatile semantics** - Track volatile qualifiers through decompilation and maintain separate read statements for volatile accesses

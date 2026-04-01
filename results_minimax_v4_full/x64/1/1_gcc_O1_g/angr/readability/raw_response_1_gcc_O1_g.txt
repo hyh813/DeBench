@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of meaningful names (e.g., `sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)` should be `a, b, c`). Local variables are `v1`, `v2`, `v3` - completely opaque. Only `loop_for_fixed` has a decent parameter name `i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Target functions are correctly named: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `double_value`, `triple_value`, etc. Some internal functions like `sub_401020` are generic, but the main logic functions match source perfectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for 32-bit masking. The pattern `& 4294967295` is used to simulate 32-bit arithmetic but lacks explanation. Constants like `1001` in `infinite_loop` are unexplained. Some literals like `10`, `20`, `30` in test output are hardcoded.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The `_ccall` function in `duffs_device` appears to be a decompilation artifact. Goto labels like `LABEL_401ab0`, `LABEL_401abc` are present. Frequent bit-masking operations add visual noise. However, no obvious debug artifacts or register spilling debris.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - if-else, switch-case, and loops are recognizable. `loop_for_fixed` uses do-while instead of for-loop (optimization artifact). The division-by-10 pattern `i = (i * 1717986919 >> 34) - (i >> 31)` is a compiler optimization. `duffs_device` correctly recovers the complex fall-through structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. No 500-line monoliths. Each function handles one logical operation. Parameter counts match original (e.g., `nested_if_deep` has 5 parameters correctly).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Switch statements have multiple case labels but are traceable. `duffs_device` has complex goto patterns which are necessary for that idiom. Some forward jumps in switch-case but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is present in `loop_for_fixed` and `loop_continue` but these are expected at -O1. The `& 4294967295` pattern appears frequently as a side effect of 32-bit simulation on 64-bit.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `unsigned int` vs `signed int` appropriately in most places. Function parameters correctly use unsigned types. However, function pointers are typed as `unsigned long long *` which is imprecise. The frequent `& 4294967295` masks suggest 32-bit operations on 64-bit architecture.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: This code uses primarily primitive types, so struct recovery isn't critical. The few arrays like in `loop_break` are correctly handled as stack variables. No complex struct/union reconstruction needed for this benchmark.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. The `& 4294967295` is a form of type narrowing. Function pointer calls like `a0(a1)` in `call_func_ptr` lack type safety. The `_ccall` in `duffs_device` is unusual. No buffer overflow protection in array accesses.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **No comments present in the entire decompiled output.** This is a critical gap. The original source had extensive comments explaining each function's purpose, test cases, and difficulty ratings. The decompilation provides zero explanatory text.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable but not explicitly named. Duff's device is correctly structured with switch-case fall-through but not labeled. State machine functions (`state_idle`, `state_processing`, etc.) exist but aren't identified as a state machine pattern. The ternary operator in `single_if` is recovered as `a0 <= 0 ? a0 : a0 * 2`.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of anomalies or uncertainties. The unusual `_ccall` in `duffs_device` is presented without warning. No flags for indirect calls that couldn't be resolved. No confidence indicators for complex control flow recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No error condition documentation. No indication of what inputs are valid (e.g., `duffs_device` requires `n > 0`). The original source had extensive test cases showing expected behavior - none of this is recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions are declared with `extern` (e.g., `extern unsigned long long g_405fa0;`). However, no documentation of which functions call which, or the callback relationships. The test functions call many targets but relationships aren't explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - initialization functions first, then test functions, then main. Related helper functions (state handlers, operators) are near each other. However, it's a single flat file with no namespace or module structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone. Requires many `extern` declarations for global variables (`g_405fe8`, `g_405fa0`, etc.). The `__printf_chk`, `__libc_start_main`, `__cxa_finalize` are external. Needs significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a0`, `a1`, `a2`, `v1`, `v2`, `v3`) - cannot track purpose
+- No comments whatsoever - zero explanatory text for 1429 lines of code
+- No indication of function contracts, preconditions, or expected behavior
+- Magic number `4294967295` used 20+ times without explanation
+- Function pointer types are imprecise (`unsigned long long *`)
+- No anomaly warnings for unusual constructs like `_ccall`
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered the original function names for all the target test functions (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, etc.), making it easy to identify what each function does.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompilation has zero comments across 1429 lines. The original source had extensive documentation explaining each function's purpose, test cases, difficulty ratings, and expected outputs. This absence makes the code much harder to understand than necessary.
+
+**Top 3 Recommendations:**
+1. **Add variable name inference** - Analyze usage patterns to rename `a0`/`a1`/`a2` to meaningful names like `a`, `b`, `c` for `sequential_ops`, or `x` for `single_if`
+2. **Generate explanatory comments** - Add comments explaining test cases, expected outputs, and function purposes based on string literals in the binary
+3. **Document magic numbers** - Explain `4294967295` as 0xFFFFFFFF mask for 32-bit operations, and flag other constants that need explanation

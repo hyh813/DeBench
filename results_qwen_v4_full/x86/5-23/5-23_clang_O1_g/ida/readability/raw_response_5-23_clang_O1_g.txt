@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v2`, `v3`, `i`, `result`) instead of semantic names; only function parameters retain original names (`size`, `x`, `y`, `arr`). At `-O0` with debug symbols, variable names should be recoverable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined functions preserve original names (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`sub_1030`, `sub_10B0`, `_x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate without macro context: `1025` (should be `MAX_SIZE+1`), `64` (should be `BUFFER_COUNT*4`), `57072` (should be `0xDEF0`), `282` (line number + counters). No constant recovery attempted.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without excessive compiler artifacts; some unnecessary stack variables (`v3`, `retaddr` in `_start`) and type annotations (`@<eax>`, `BYREF`) add minor noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures are natural (if/for/while); no problematic goto usage; loop in `param_asm_clobber` correctly recovered as for-loop from assembly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source; each test function remains separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally; early returns used appropriately; no forward jumps disrupting flow in user functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some constant folding creates redundancy (`call_macro_constants` returns `64` directly instead of calling `param_macro_constants(2048)`); this is optimization artifact, not decompiler error.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`, `__m128i`); some generic types used where specific types would help (`signed __int32` vs `int32_t`); const-correctness partially lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in original code; `__m128i` SIMD types correctly recovered; array handling appropriate; no significant composite type loss.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed; pointer arithmetic minimal and correct; function pointer types preserved; atomic operations use appropriate intrinsics (`_InterlockedExchangeAdd`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining macro expansions, constant folding, or optimization transformations; critical semantic information completely absent despite `-g` debug symbols.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns not identified (no indication `1025` came from `MAX_SIZE`); SIMD intrinsics recognized but not documented; no algorithm pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function decompilation failures noted (`FAILED to decompile: printf`); but no warnings about constant folding, macro loss, or optimization artifacts that changed semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`); no postconditions; error return values (`-1`, `-2`, `-3`) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; no call graph comments; global variable usage (`global_var`, `xmmword_2010`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source; test functions grouped; but no file-level organization comments or section headers recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions undeclared (`printf`, `mmap`, `sysconf`); cannot compile standalone; architecture-specific intrinsics (`__m128i`, `_mm_add_epi32`) require specific headers not included.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+7)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75  × 0.25 = 1.94
+Level 3 (Type):        (7+7+8)/3   = 7.33  × 0.20 = 1.47
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+3)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.17/10
+```
+
+**Overall Readability Score: 6.2/10**
+
+### Critical Defects
+- **Magic numbers without context**: `1025`, `57072`, `282` should indicate original macro names (`MAX_SIZE`, `0xDEF0`, `__LINE__+__COUNTER__`)
+- **Zero comment recovery**: Despite `-g` debug flags, no comments explain macro expansions or constant folding transformations
+- **Generic variable names**: Local variables `v2`, `v3`, `i` instead of semantic names available in debug symbols
+- **Missing external declarations**: `printf`, `mmap`, `sysconf` undeclared preventing standalone compilation
+- **Lost precondition documentation**: No indication of valid input ranges or null pointer requirements
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names perfectly preserved from debug symbols, maintaining semantic clarity for the core test functions.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments despite debug symbols being available; macro expansions and constant folding completely undocumented.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage debug symbol variable names**: At `-O0 -g`, DWARF debug info contains original variable names that should be recovered instead of generating `v1`, `v2`, `v3`.
+
+2. **Add macro expansion annotations**: When constants differ from obvious values, add comments like `// Originally: MAX_SIZE (1024)` or `// Macro expanded: BUFFER_COUNT * 4 = 64`.
+
+3. **Recover function contracts from assertions**: Detect and document implicit preconditions (null checks, range validations) and error return value meanings in comments.

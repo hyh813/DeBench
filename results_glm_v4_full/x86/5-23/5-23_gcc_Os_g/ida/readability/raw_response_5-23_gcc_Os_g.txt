@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Parameters like `size`, `x`, and `y` are preserved, but local temporaries often use generic names like `v2`, `v3`, or `v0` (e.g., in `param_builtin_macros` and `test_preprocessing_features`), which obscures their specific role in string formatting or intermediate calculations.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names, including `param_macro_constants`, `param_asm_simd`, and `test_preprocessing_features`, are perfectly recovered from the debug symbols, matching the source exactly and providing immediate semantic context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Macro constants are fully expanded into magic numbers (e.g., `1024` instead of `MAX_SIZE`, `57072` instead of `0xDEF0`), and constant-folded results like `19` in `param_stringize` completely hide the original logic (string length calculations), significantly reducing readability compared to the source.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean, though it contains minor compiler artifacts like stack canary checks (`__readgsdword(0x14u)`), FORTIFY_SOURCE variants (`__printf_chk`), and IDA-specific memory functions (`qmemcpy`), which slightly clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural; ternary operators like `MAX(x, y)` are correctly expanded into readable `if` blocks, and loops in `param_asm_clobber` are reconstructed as standard `for` loops, making the logic easy to follow.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions; no inlining or outlining has fragmented the code structure, preserving the original modular design perfectly.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom with no confusing forward jumps or computed branches disrupting the flow, matching the structured nature of the original C code.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately represents the compiler's optimizations, such as reducing `param_stringize` to a constant return, without introducing redundant variables or dead code of its own.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including specific standard types like `size_t`, `__m128i` for SIMD vectors, and correct pointer signatures for functions like `mmap` and `mprotect`.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: While the source primarily uses primitives and arrays, the decompiler correctly handles the `__m128i` type (a composite SIMD type) and array parameters without resorting to raw pointer arithmetic or generic `void*` casts where specific types exist.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer casts and arithmetic are safe and accurate; for example, SIMD operations use the correct `__m128i*` casts rather than `void*`, preserving the semantic intent of the vector operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: The decompiled output lacks any comments explaining the logic, such as noting that `57072` corresponds to a platform-specific macro or that `19` is a constant-folded result, leaving the user to infer the "why" behind the values.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: The decompiler excellently recognizes complex idioms, translating inline assembly blocks into high-level intrinsics like `_mm_add_epi32` (SIMD) and `_InterlockedExchangeAdd` (atomic), and identifying `memcpy` patterns as `qmemcpy`.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about potential anomalies, such as the hardcoded date strings in `param_builtin_macros` or the missing logic in `param_dynamic_code` (where the self-modifying code appears optimized away), resulting in a "silent" presentation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred; for example, the requirement for `mmap` to succeed is implicit in the control flow rather than stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved clearly; `test_preprocessing_features` explicitly calls the specific test functions, and the relationship between callers and callees is immediately obvious.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, with preprocessing tests and assembly tests appearing in distinct blocks, closely mirroring the source file's organization.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code relies on compiler-specific intrinsics (`__m128i`, `_InterlockedExchangeAdd`) and non-standard functions (`__readgsdword`), requiring specific headers and environments to compile, but the C syntax is otherwise valid.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.8/10
+
+**Critical Defects:**
+- **Macro Information Loss**: The expansion of macros like `MAX_SIZE` and `PLATFORM` into magic numbers (`1024`, `57072`) removes the high-level configuration logic, making the code harder to maintain or understand.
+- **Constant Folding Obscures Logic**: Functions like `param_stringize` are reduced to `return 19;`, completely hiding the string manipulation logic and making the binary behavior opaque compared to the source.
+- **Missing Semantic Context**: The lack of comments for hardcoded values (e.g., "Jan 15 2026") and optimized-away blocks (e.g., `param_dynamic_code`) fails to alert the analyst to the original source intent.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The presence of debug symbols (`-g`) allowed the decompiler to recover the exact original function names, providing perfect navigational context.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- **Why?** The absence of annotations for magic numbers, optimized logic, and complex intrinsics forces the user to reverse-engineer the "why" behind the code, significantly increasing the cognitive load.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Macro/Constant Inference**: Implement analysis to detect repeated integer constants and suggest potential macro definitions (e.g., flag `57072` as a potential named constant).
+2.  **Optimization Annotation**: Add comments when functions are reduced to constant returns or trivial expressions to indicate that logic was likely optimized out (e.g., "Logic reduced to constant by compiler").
+3.  **Intrinsic Documentation**: Provide brief tooltips or comments for compiler intrinsics (e.g., `_InterlockedExchangeAdd`) explaining their atomic semantics to aid understanding.

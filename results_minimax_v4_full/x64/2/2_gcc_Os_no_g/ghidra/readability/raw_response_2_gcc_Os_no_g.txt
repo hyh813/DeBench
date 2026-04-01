@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`. Local variables use cryptic patterns like `iVar1`, `lVar1`, `uVar1`, `puVar3`. The original source used meaningful names like `x`, `c`, `arr`, `n`, `p` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (`double_value`, `process_int`, `array_1d_stack`, `ptr_single`). Minor issues: `process_ld` returns void instead of long double, `process_bool` returns uint instead of _Bool.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x61` ('a'), `0x62` ('b'), `0xb` (11), `0x14` (20), `0xf` (15), `0x20` (32). No named constants recovered. The original had clear literals like 'A', 'Z', 10, 5.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler warnings in comments ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable"). Type mismatches like `process_ld` returning void. Overall manageable noise level.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops use natural `for` and `do-while` constructs matching source. At -O0, control flow should be nearly identical to source, and it largely is. Minor awkwardness in some array traversals.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are appropriately sized (<50 lines each), matching source decomposition. Parameter lists are reasonable. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex array functions but manageable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy. Loop unrolling in `array_3d` is present but reflects compiler behavior at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Several type degradations: `process_ld` returns void instead of long double, `process_bool` returns uint instead of _Bool, `process_char` returns int instead of char. Most other types reasonably accurate.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs completely lost. `Point3D` becomes `int*` with field access via `param_1[1]`, `*param_1`. `Node` becomes `int*` with manual pointer arithmetic `*(int**)(param_1 + 2)`. Unions partially recovered but with type confusion. Original had clear struct definitions with named fields.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present, particularly in pointer arithmetic for struct field access. Function pointer types have issues ("UNRECOVERED_JUMPTABLE"). Overall manageable but not ideal.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Auto-generated warnings present ("WARNING: Could not recover jumptable", "WARNING: Subroutine does not return"). No algorithm explanations or semantic documentation. Original source had extensive comments explaining test scenarios.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms explicitly identified. Some data structure patterns (linked list traversal) are recognizable but not named or documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings for unresolved indirect calls and unreachable blocks. However, suspicious code (like `array_oob` with intentional out-of-bounds) not flagged. Type mismatches not clearly indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expectations (e.g., "requires: ptr != NULL") not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships not explicitly documented. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) not indicated. Some relationships inferable from code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped together but no clear logical organization. Static functions not distinguished. Original had clear section comments (e.g., "2.1 基础数据类型").
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Type mismatches would prevent compilation (e.g., `process_ld` void return). External dependencies (puts, __printf_chk) not documented. Some patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 7) / 4 = 5.25
+L2_avg = (8 + 9 + 8 + 9) / 4 = 8.50
+L3_avg = (6 + 3 + 7) / 3 = 5.33
+L4_avg = (5 + 5 + 6 + 3) / 4 = 4.75
+L5_avg = (5 + 6 + 6) / 3 = 5.67
+
+Overall = (5.25 × 0.30) + (8.50 × 0.25) + (5.33 × 0.20) + (4.75 × 0.15) + (5.67 × 0.10)
+        = 1.575 + 2.125 + 1.066 + 0.7125 + 0.567 = 6.05/10
+```
+
+**Overall Readability Score:** 6.05/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `param_N` and locals use cryptic `iVar1`, `lVar1` patterns - original meaningful names completely lost
+- **Composite type loss**: Structs like `Point3D`, `Node`, `Rect` reduced to raw `int*` with manual field offset calculations
+- **Type precision failures**: `process_ld` returns void instead of long double, `process_bool` returns uint instead of _Bool
+- **Magic numbers**: Literals like `0x61`, `0x20`, `0xb` replace original character constants and clear numeric values
+- **No semantic context**: Original's extensive test scenario comments completely absent
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Decomposition (9/10)**
+- **Why?** Functions maintain appropriate granularity matching source, with reasonable parameter lists and no over-fragmentation or monoliths.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Variable Naming (2/10)**
+- **Why?** Every variable uses cryptic auto-generated names (`param_1`, `iVar1`, `puVar3`) that provide zero semantic information about purpose or type.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → likely "index" or "i", pointer dereferencing → likely a noun like "node", "item")
+2. **Recover struct/union layouts**: Detect regular pointer arithmetic patterns (e.g., `*(int*)(param+4)`) and reconstruct struct field access with named members
+3. **Preserve type precision for special types**: Handle long double returns, _Bool types, and const/volatile qualifiers that are currently lost or degraded

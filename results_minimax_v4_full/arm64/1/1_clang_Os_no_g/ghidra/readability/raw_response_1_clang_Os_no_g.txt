@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` instead of original names `a`, `b`, `c`, `x`, `n`. Local variables are cryptic: `iVar1`, `lVar2`, `uVar1`, `auVar4`, `auVar5`. The original had meaningful names like `temp1`, `temp2`, `sum`, `count` - completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions correctly named (`sequential_ops`, `single_if`, `if_else`), but many internal/runtime functions use auto-generated names like `FUN_00100880`, `FUN_001009fc`. Helper functions like `op_add`, `op_sub`, `double_value` are well-recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers unexplained: `0x14` (20), `0x15` (21), `0x3e9` (1001), `0x65` (101). Some pre-computed values like `0x15` for expected result 21. Original source had clear constants like `10`, `20`, `100` - these are now obfuscated.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution: warnings about "unreachable block", "UNRECOVERED_JUMPTABLE" markers, internal runtime functions (`_init`, `_start`, `register_tm_clones`) included, complex NEON vector operations in simple functions like `goto_backward` and `recursion_factorial` that don't reflect original logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `sequential_ops` are clear, but `loop_continue` uses bizarre bit manipulation instead of loop+continue pattern. `goto_backward` and `recursion_factorial` use NEON vector operations that obscure the simple loop/recursion. At -O0, these transformations are unexpected and unacceptable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: 74 functions decompiled (vs ~35 source functions), including many runtime/initialization functions that shouldn't appear. Some simple functions like `loop_break` are reasonably decomposed, but overall excessive fragmentation with internal symbols exposed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. Early returns used appropriately. Some complex expressions but generally follows natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present (e.g., `loop_continue` uses unrolled pattern with bit manipulation). Dead code warnings present but not always eliminated. Redundancy is manageable but noticeable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameters mostly `int` or `uint` which matches original. However, many uses of `undefined4`, `undefined8`, `undefined1` for intermediate values. Function pointer type is `code *` which is non-standard. Original used `int` consistently - partially recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays like `int arr[] = {10,20,30,40,50}` recovered as `DAT_0010196c` - just a data pointer, not proper array. Matrix `int matrix[3][4]` similarly lost. No struct recovery at all. Original composite types completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: implicit int-to-bool conversions, unsigned/signed mixing in comparisons (e.g., `param_1 - 1U`). No severe type safety violations but not fully type-safe either.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated comments like "WARNING: Subroutine does not return", "WARNING: Removing unreachable block" present but not useful. No algorithm explanation, no decompilation confidence indicators, no API contracts. Original source had extensive comments - completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device partially recognized with `switch` + `do-while` pattern (though with goto labels). Some patterns like state machines have hints but not explicitly named. Most idioms not recognized or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "WARNING: Could not recover jumptable at 0x001012c0. Too many branches", "UNRECOVERED_JUMPTABLE". However, warnings are generic and not consistently applied across all problematic areas.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. Original had clear semantics (e.g., "requires: n > 0", "returns sum of 0 to n-1") - completely absent in decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present in code but relationships not documented. No comments indicating "Calls: X, Called by: Y". Some callback relationships visible in code but not explicitly stated.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output file. Runtime/initialization functions mixed with user functions. No logical grouping, no namespace structure, no header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code won't compile as-is: undefined types `EVP_PKEY_CTX`, `code`, `bool` (in C mode), `jmp_buf`, missing `#include` statements. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `auVar4`) - original names like `temp1`, `sum`, `count` completely lost
+- Complex functions (`goto_backward`, `recursion_factorial`, `loop_continue`) use NEON vector operations that completely obscure simple loop/recursion logic
+- No composite type recovery - arrays like `int arr[] = {10,20,30,40,50}` become raw data pointers `DAT_0010196c`
+- Extensive noise from runtime/initialization functions polluting the output
+- No comment recovery - original's extensive documentation completely absent
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 5/10)  
+Even though it scored lowest among Level 2, it's the best relative to other dimensions because simple functions like `sequential_ops`, `single_if`, `switch_small` maintain recognizable control flow structure.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+At -O0 debug level, variable names should be nearly perfectly recoverable. The complete loss of meaningful names like `temp1`, `temp2`, `sum`, `count` in favor of generic `param_X` and `iVarX` is the most severe readability failure.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: At -O0, stack variables should retain their semantic purpose. Detect patterns like `sum += i` to name variables `sum`, detect `count++` to name `count`.
+2. **Eliminate NEON vectorization artifacts in simple functions**: Functions like `goto_backward` and `recursion_factorial` are simple loops/recursion - the NEON unrolling is a decompilation bug, not a feature to preserve.
+3. **Recover composite types from data references**: Arrays like `{10,20,30,40,50}` should be reconstructed as `int arr[] = {...}` not raw `DAT_0010196c` pointers.

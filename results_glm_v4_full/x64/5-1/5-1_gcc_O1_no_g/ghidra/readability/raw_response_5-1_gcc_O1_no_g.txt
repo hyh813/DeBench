@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `local_34`, `local_10`, `sVar1`, and `pvVar2`, which obscure the semantic meaning found in the original source (e.g., `obj`, `result`, `data`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly recovered from symbols, including complex C++ names like `Container<int>::push`, `non-virtual thunk to MultiDerived::funcB`, and `test_cpp_member_func`.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like `"Test"` are clear, but integer logic is often reduced to magic numbers (e.g., `0x125c` instead of `4700`) due to compiler constant propagation, which is accurate to the binary but less readable than the original expression.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) are present in almost every function, wrapping the return logic and adding visual noise to the control flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: While simple functions are linear, complex C++ flows like exception handling (`test_cpp_exception`) and RTTI checks (`test_cpp_rtti`) are decompiled into low-level library calls (`__cxa_throw`, `__dynamic_cast`) and manual string comparisons, losing the high-level `try-catch` or `typeid` structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Class methods are correctly separated into individual functions, and compiler-generated artifacts like virtual and non-virtual thunks are explicitly identified and labeled, which is excellent for understanding the ABI layout.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom with minimal spurious jumps; the stack canary checks at the end of functions are the primary minor disruption to linearity.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: The decompiler accurately reflects the compiler's optimizations, such as reducing `test_cpp_multiple_inheritance` to a simple `return 0x47`, without introducing artificial redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: While high-level types like `Base *` and `int *` are recovered, many integers and pointers are reduced to generic `undefined8`, `undefined4`, or `long`, losing the specific distinction between `int`, `size_t`, or specific pointer types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures are not defined or used as types; instead, the decompiler relies on raw pointer arithmetic (e.g., `*(int *)(this + 8)`) to access members, forcing the reader to manually reverse the class layout.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The code contains necessary casts to handle the lowered types (e.g., `(long)pvVar2`), which is expected for C decompilation of C++, but it does not introduce unsafe operations beyond what the binary dictates.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are limited to auto-generated warnings (e.g., "Unknown calling convention") and provide no semantic explanation of the algorithms or C++ constructs being used.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The decompiler exposes the implementation details of C++ idioms (vtables, `__cxa_allocate_exception`) rather than recognizing the high-level patterns (polymorphism, exception handling), making it hard to see the original design intent.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Standard warnings about calling conventions and unreachable blocks are present, but there is no specific flagging of the complex RTTI logic or the missing exception handling structure as potential analysis hurdles.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds checking logic in `Container::get` is visible but not explicitly documented as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear due to the excellent recovery of function names, making the call graph easy to follow despite the lack of struct definitions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by class (e.g., all `Container` methods are adjacent), and the overall order follows the binary layout, which is reasonably organized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code relies on undefined types and specific C++ runtime intrinsics (`__cxa_throw`, `operator_new__`) that would require significant stubbing and header definitions to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Composite types (classes/structs) are not recovered, resulting in obscure raw pointer arithmetic (e.g., `*(int *)(this + 8)`).
+- High-level C++ control flow like `try-catch` blocks is lost, replaced by low-level runtime calls (`__cxa_throw`).
+- Variable names are entirely generic (`local_XX`), obscuring the data flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler perfectly preserved symbol information, including mangled C++ names, namespaces, and template instantiations.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)  
+- The failure to reconstruct class definitions forces the reader to manually reverse engineer object layouts from offsets, significantly hindering understanding of the Object-Oriented logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class structure recovery to define structs with member names and access specifiers, replacing raw pointer offsets.
+2. Enhance exception handling recovery to reconstruct `try-catch` blocks using the LSDA (Language-Specific Data Area) and personality routines.
+3. Leverage RTTI or debug information to recover local variable names to improve data flow clarity.

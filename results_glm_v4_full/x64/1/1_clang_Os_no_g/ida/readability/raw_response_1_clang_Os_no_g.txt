@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`a1`, `v1`, `v2`), providing no semantic hint about their purpose (e.g., `sum`, `count`, `index`). While standard for decompilation, it requires significant effort to map back to source concepts like `temp1` or `result`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`sequential_ops`, `single_if`, `loop_continue`) are perfectly preserved from the source, allowing immediate identification of functionality without analyzing the body.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with compiler-generated magic numbers from vectorization and loop unrolling (e.g., `0x1F`, `0xFFFFFFFC`, `0x12`), which obscure the original logic (like loop bounds or bit-masks) and lack explanatory comments.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The decompiler failed to abstract low-level SIMD intrinsics (`_mm_shuffle_epi32`, `_mm_unpacklo_epi32`) used for auto-vectorization, resulting in "noise" that makes high-level logic unreadable in functions like `loop_continue`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple control flow is often mathematically simplified (e.g., `loop_for_fixed` becomes a formula), which is acceptable, but complex loops are replaced by incoherent SIMD intrinsics, destroying the natural `for`/`while` structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source; there is no undesirable inlining or outlining observed, maintaining the original modular boundaries effectively.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While non-vectorized functions read linearly, the vectorized sections (e.g., `loop_continue`) introduce dense blocks of intrinsic calls that disrupt the top-to-bottom reading flow and obscure the iteration logic.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler presents the compiler's loop-unrolling and vectorization artifacts directly. It failed to re-roll these optimizations into readable loops, leaving the user to parse redundant SIMD operations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate for the ABI (e.g., `__int64` for return values, `__m128i` for vector registers), though `__int64` is used loosely where the source specified `int`, and signedness is occasionally cast to `unsigned int` unnecessarily.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Arrays are accessed via raw pointers (e.g., `unk_20D0`), and while the access patterns are correct, the semantic structure (e.g., `int matrix[3][4]`) is lost, leaving only flat memory accesses.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is functionally safe but cluttered with explicit casts (e.g., `(unsigned int)`, `(__m128i)xmmword_2030`) that reflect compiler optimizations rather than source logic, slightly reducing readability.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the heavy optimizations, or the purpose of the complex SIMD instructions, leaving the user to decipher everything manually.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler failed to recognize standard algorithmic patterns in optimized code; for example, a "sum of integers" loop became a closed-form math formula (good), but a "sum of odds" loop became unrecognizable SIMD gibberish (bad).
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication that the code contains aggressive compiler optimizations or vectorization; the complex SIMD intrinsics are presented as standard source code, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement that `n > 0` in `duffs_device` is implicit in the code flow but not stated).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to standard library (`printf`, `puts`) and internal functions are clear and easily traceable, maintaining good navigability.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, matching the source file's structure, which helps in locating specific implementations.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on specific compiler intrinsics (`<xmmintrin.h>`) and hardcoded global data references (`xmmword_2010`), making it difficult to compile or run without significant modification or stubbing.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Auto-vectorized loops (e.g., `loop_continue`, `goto_backward`) are emitted as raw SIMD intrinsics (`_mm_shuffle_epi32`), making the algorithm completely unreadable.
+- Magic numbers derived from compiler optimizations (e.g., `0x1F`, `0xFFFFFFFC`) are present without explanation, obscuring loop bounds and masks.
+- Lack of any comments or annotations to indicate that the code has been heavily optimized, leading to confusion between source logic and binary artifacts.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully preserved all original function names, providing excellent navigability despite the unreadable bodies.
+
+**Most Needs Improvement:** Idiom Recognition (scored 2/10)
+- The decompiler failed to abstract low-level vectorized instructions back into high-level loop constructs, rendering standard algorithms incomprehensible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement "de-vectorization" patterns to detect common SIMD intrinsics sequences and re-emit them as standard C loops (e.g., recognizing a horizontal add reduction).
+2. Add automatic annotations for compiler-generated magic numbers (e.g., `// 0xFFFFFFFC represents alignment mask -4`).
+3. Detect and flag aggressively optimized sections with comments like `/* Loop auto-vectorized by compiler */` to manage user expectations.

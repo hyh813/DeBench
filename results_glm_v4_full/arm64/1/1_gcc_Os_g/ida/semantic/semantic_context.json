@@ -1,0 +1,43 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "src_name": "1",
+  "source_path": "src/1.c",
+  "target_src_names": [
+    "1"
+  ],
+  "build_cmd": "aarch64-linux-gnu-gcc -Os -g src/1.c -o build/arm64/1/1_gcc_Os_g",
+  "original_bin": "build/arm64/1/1_gcc_Os_g",
+  "decompiled_bin": "results_glm_v4_full/arm64/1/1_gcc_Os_g/ida/syntactic/bin/1_gcc_Os_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "build/arm64/1/1_gcc_Os_g",
+      "src_name": "1",
+      "target_src_names": [
+        "1"
+      ],
+      "error": null,
+      "event_count": 2,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 1
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_glm_v4_full/arm64/1/1_gcc_Os_g/ida/syntactic/bin/1_gcc_Os_g_fixed",
+      "src_name": "1",
+      "target_src_names": [
+        "1"
+      ],
+      "error": null,
+      "event_count": 2,
+      "entry_count": 1,
+      "exit_count": 1,
+      "print_count": 0
+    }
+  },
+  "trace_runs_complete": true
+}

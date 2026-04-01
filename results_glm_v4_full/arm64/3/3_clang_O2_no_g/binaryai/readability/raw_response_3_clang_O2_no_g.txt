@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `param_1`, `lVar1`, `uVar2`, and `local_810`. Semantic names from the source (e.g., `x`, `n`, `arr`, `large_buf`) are completely lost, even with `-g` debug flags present in the compilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names (`local_vars`, `heap_basic`, `test_stack_memory`) are successfully recovered from symbols, accurately reflecting the source. Only a few runtime/internal functions have generic names like `FUN_001008e0`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Integers are consistently represented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`). While accurate, this adds a translation burden for the reader compared to the decimal literals used in the source.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The decompilation is plagued by `CONCAT17` and `CONCAT44` macros (e.g., in `large_stack_frame` and `heap_basic`). These artifacts represent vectorized register operations but render the loop logic completely unreadable, acting as severe noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: While simple functions are readable, loops involving memory operations (e.g., `vla_stack`, `heap_basic`) are transformed into complex `do-while` structures containing bit-manipulation macros, destroying the natural `for` loop semantics of the source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries and granularity match the source perfectly. The decompiler correctly identified separate functions without inlining or outlining them inappropriately.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: The code reads linearly in simple cases, but the "vectorized" loops (e.g., in `large_stack_frame`) introduce massive blocks of repetitive, non-linear-looking macro calls that disrupt the reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The compiler successfully optimized away trivial variables (e.g., in `local_vars`), which the decompiler reflects cleanly. However, the decompiler fails to abstract the repetitive SIMD instructions in loops, resulting in verbose redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: There is a heavy reliance on generic types like `undefined4`, `undefined8`, and `void *`. Specific types like `int`, `char`, and size-specific integers are often lost or generalized, reducing type safety clarity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types (`Point`, `Node`, `TreeNode`) are completely unrecovered. Access is performed via raw pointer arithmetic and offsets (e.g., `*(undefined4 **)(__ptr + 2)`), completely obscuring the data structure layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code is littered with unsafe casts on `undefined*` types and pointer arithmetic on `void*`. The lack of struct recovery forces the reader to manually track offsets, increasing the risk of misunderstanding.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled code. No logic is explained, and no annotations are provided for complex sections like the `CONCAT` macros or the pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common idioms like linked list traversal are present but obscured by the lack of struct definitions and generic pointer math. The "VLA" (Variable Length Array) idiom is visible but buried in stack pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler presents the complex `CONCAT` macro expansions and raw pointer arithmetic with absolute confidence, offering no warnings that these might be artifacts or difficult to interpret.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not highlighted as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls to standard library (`malloc`, `printf`) and internal functions are clear and named. The relationships between functions are easy to trace via the call graph.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are ordered logically, matching the source flow. Helper functions and test drivers are grouped distinctly.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile due to Ghidra-specific macros (`CONCAT17`, `CONCAT44`) and the use of `undefined` types which are not valid C types.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: Structs (`Node`, `Point`) are not recovered; accessed via raw offsets (e.g., `__ptr + 2`), destroying data model understanding.
+- **Vectorization Noise**: Loops are decompiled into unreadable `CONCAT` macro chains (e.g., in `large_stack_frame`), obscuring simple memory operations.
+- **Variable Naming**: Debug symbols (or semantic inference) were ignored; variables are generic (`param_1`, `lVar1`) instead of semantic (`x`, `n`, `arr`).
+- **Type Precision**: Overuse of `undefined` types (`undefined4`, `undefined8`) instead of concrete types (`int`, `char`).
+
+**Best Quality Aspect:** Function Decomposition (Score: 9/10)  
+- The decompiler perfectly preserved the function boundaries and granularity from the original source.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)  
+- The failure to recover `struct` definitions turns pointer-heavy logic into obscure offset arithmetic, which is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Composite Types**: Implement analysis to group offset-based pointer accesses (e.g., `ptr+0`, `ptr+8`) into reconstructed struct definitions to restore the data model.
+2.  **Simplify Vectorized Loops**: Detect patterns of `CONCAT` macros used for memory filling/copying and collapse them back into simpler `for` loops or standard library calls (like `memset`).
+3.  **Utilize Debug Symbols**: Since the binary was compiled with `-g`, prioritize loading variable names from DWARF information to replace generic `param_1` and `local_XX` identifiers.

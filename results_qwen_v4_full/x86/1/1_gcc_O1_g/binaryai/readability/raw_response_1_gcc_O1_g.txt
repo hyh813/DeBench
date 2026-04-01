@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names (e.g., `sequential_ops` uses `param_1/2/3` instead of `a/b/c`, `loop_while` uses `iVar2` instead of `count`). Original source had meaningful names like `temp1`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test function names preserved correctly (`sequential_ops`, `single_if`, `recursion_factorial`), but helper functions use generic names (`FUN_00011030`, `FUN_000110a0`). Runtime functions (`_init`, `_start`) appropriately named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers in hex obscure meaning (`0x14`=20, `0x1e`=30, `0xffffffff`=-1). Test functions hardcode expected values without explanation. Original used decimal constants with comments.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local()`, `in_GS_OFFSET`) appear in many functions. Compiler artifacts like `__x86_get_pc_thunk_*` functions present. Runtime initialization code mixed with test functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `sequential_ops` recovered as clean expression, but `nested_if_2` uses convoluted combined conditions. `switch_fallthrough` uses goto (appropriate for fall-through). Loops recovered as do-while instead of for (`loop_for_fixed`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Individual test functions appropriately sized and cohesive. `test_control_flow_l1/2/3` are very long with many printf calls. Runtime functions properly separated but mixed in output.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Stack canary checks at function ends disrupt flow slightly. `switch_fallthrough` uses goto label `LAB_000115a7` which is appropriate for fall-through semantics.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated stack canary pattern in many functions (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`). Variable assignment patterns (`iVar1`, `iVar2`) create redundancy. No obvious dead code detected.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `if_else` returns `bool` instead of `int` (original returns 0/1). `nested_if_deep` returns `char` instead of `int`. Many `undefined4` types used. `state_idle` returns `bool` instead of `int`. Signed/unsigned mismatches present.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered as local arrays (`local_24[5]`, `local_38[10]`). Function pointer arrays properly recovered (`local_1c[3]`, `local_38[10]`). No complex structs in this code to evaluate. Matrix in `loop_multi_exit` flattened to individual locals.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Stack canary checks provide runtime safety. Some implicit casts present (int to uint in `loop_continue`). Function pointer calls properly typed. No obvious buffer overflow patterns in recovered code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Switch statements recognized in `if_elseif_long`, `switch_large`. Loop patterns generally recognized. Fall-through partially recognized (uses goto). No explicit pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly warnings or confidence indicators. Stack canary checks present but unexplained. `computed_goto` recovered as function pointer array without flagging the unusual construct. Silent on potential decompilation uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). No postconditions or error condition documentation. Original had test validation comments showing expected inputs/outputs.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Callback relationships visible (`process_with_callback`) but not explained. Global variable usage (`jump_buffer`) not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Runtime code (`_init`, `_start`, `__do_global_dtors_aux`) mixed with test functions. Original had clear section organization (L1/L2/L3 control flow features).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies not clearly documented. Stack canary requires specific runtime support. Some compiler-specific constructs (`get_pc_thunk`) present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+6+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (5+6+7)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25  × 0.15 = 0.4875
+Level 5 (Contextual):  (5+4+6)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.46 ≈ 5.5/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Zero comments** - Complete loss of original documentation explaining function purposes and test cases
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` obscure semantic meaning (e.g., `count`, `sum`, `temp`)
+- **Type precision errors** - `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`
+- **Hex magic numbers** - `0x14`, `0x1e`, `0xffffffff` without decimal equivalents or explanations
+- **Runtime code pollution** - Stack canary checks and `__x86_get_pc_thunk_*` functions mixed with application logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test function names preserved correctly (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`), maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments represents the most severe degradation from original source which had extensive documentation for each function's purpose, test cases, and difficulty levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve original comments** - Extract debug symbols (-g flag was used) to restore function documentation and test case information
+2. **Infer semantic variable names from usage patterns** - Analyze variable roles (e.g., loop counters → `i`, accumulators → `sum`, divisors → `count`) instead of generic `iVarN`
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (type mismatches, indirect calls) and explain compiler artifacts (stack canaries, thunk functions)

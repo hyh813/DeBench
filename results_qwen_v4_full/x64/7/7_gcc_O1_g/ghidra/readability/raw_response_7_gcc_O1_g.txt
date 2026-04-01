@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`iVar1`, `iVar2`, `uVar2`, `pbVar2`) throughout, losing semantic meaning from original (`result`, `encrypted`, `decrypted`, `p1`, `p2`, `p3`). Only function parameters retain original names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - all function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Names accurately reflect functionality and match original intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x14`, `0xe1`, `0x2f`, `0x2a` appear without explanation where original had comments. Some literals are clear (array size `8`, loop bounds `1000`), but expected values lack documentation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) and "WARNING: Unknown calling convention" comments add noise. However, no excessive register spilling artifacts or debug instrumentation present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if-else structures. `param_opaque_predicate` uses do-while for GCD instead of original while loop. Dead code elimination in `param_fake_branch` is appropriate for optimization level.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent - each function maintains single responsibility with appropriate granularity. No monolithic functions; decomposition matches original source structure precisely.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Loop structures are recognizable. Some do-while patterns slightly disrupt natural reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code from fake branches properly eliminated. No obvious redundant expressions. Some functions over-simplified (`call_fake_branch` returns constant `10` instead of calling function).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types mostly match original (`int`, `char*`, `size_t`). Some unsigned conversions visible (`(uint)x >> 1`). Stack canary uses `long` type appropriately for architecture.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Arrays properly typed (`int a[8]`, `char decrypted[32]`). No complex structs in this code, but available composite types recovered accurately with correct dimensions.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Several casts present (`(int)(10 / (long)x)`, `(__sighandler_t)0x0`, `(byte *)buffer`). Generally safe operations but cast density could indicate type inference uncertainty.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: **Critical weakness** - zero comments from original source recovered. Only decompiler warnings present ("WARNING:", "Unresolved local var"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern unlabeled. No design patterns or algorithm names recovered despite clear patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for unresolved variables and non-returning subroutines (`__longjmp_chk`). Stack canary checks flagged. Warnings are generic but present.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Error conditions visible in code but not explicitly documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are clear and traceable. Global variables visible (`jmp_buffer`, `segv_buffer`). No call graph documentation but relationships inferable from code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. No header file separation or proper static scoping. Original section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions requiring headers (`signal`, `malloc`, `strlen`). Undefined symbols present (`__gmon_start__`, `__cxa_finalize`, `__dso_handle`). Requires moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+7)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+9+8+8)/4 = 8.00 × 0.25 = 2.00
+Level 3 (Type):        (8+9+7)/3   = 8.00 × 0.20 = 1.60
+Level 4 (Semantic):    (3+4+7+4)/4 = 4.50 × 0.15 = 0.68
+Level 5 (Contextual):  (7+6+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                              6.83/10
+```
+
+**Overall Readability Score:** 6.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `iVar2`, `uVar2`) losing all semantic meaning from original (`result`, `p1`, `p2`, `p3`, `encrypted`)
+- **Zero source comments recovered** - all documentation about obfuscation techniques, expected values, and test scenarios lost
+- **Over-optimization in caller functions** - `call_fake_branch` returns constant `10` instead of calling `param_fake_branch(10)`, hiding the call relationship
+- **Magic numbers without context** - `0x14`, `0xe1`, `0x2f` appear where original had documented expected values
+- **Section organization lost** - original 7.1/7.2/7.3 structure completely absent from decompiled output
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All original function names perfectly preserved, making navigation and identification straightforward despite other readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete loss of all source documentation including obfuscation explanations, test expectations, and algorithm descriptions severely impacts understandability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Integrate debug symbol comment extraction to retain original documentation about obfuscation techniques and test expectations.
+2. **Infer semantic variable names from usage patterns** - Analyze variable usage to suggest names like `gcd_result` for the GCD loop variable instead of `iVar3`/`iVar4`.
+3. **Preserve caller-callee relationships** - Avoid over-optimizing caller functions; maintain explicit function calls even when constant folding is possible to preserve code structure.

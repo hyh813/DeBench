@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3` throughout. For example, in `param_strcpy(char *a0, char *a1)`, parameters should be `dst` and `src`. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+Justification: Core test functions correctly named: `param_strcpy`, `param_strcmp`, `param_strlen`, `param_memcpy` match source exactly. However, wrapper functions use generic `sub_XXXXXX` format (e.g., `sub_4024c2` calls `call_strcpy`). Mixed result - some semantic recovery, some mechanical naming.
+
+### 3. Literal Clarity
+**Score: 7/10**
+Justification: String literals preserved correctly: "HelloLib", "Value: %d, Name: %s\n", "/etc/passwd". Magic number 4294967295 (0xFFFFFFFF) used for -1 in unsigned return types - understandable given signed/unsigned confusion. Minor issues with constant naming.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts. No register spilling debris, redundant casts, or debug instrumentation. Clean decompilation without obvious noise. Some type confusion (unsigned vs signed) but manageable.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Simple functions like `param_strcpy` have natural flow: strcpy then strlen. Complex functions like `param_malloc_free` show loop unrolling artifacts from optimization. At -O0, control flow should be cleaner but most is readable.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Good separation: `param_strcpy` (implementation) vs `call_strcpy` (test caller). Functions appropriately sized (10-50 lines). Clear single responsibility. Minor issue: some very large functions like `param_malloc_free` (80+ lines) could be split.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Most functions read top-to-bottom. Early returns used appropriately in error handling (e.g., `if (!fp) return 4294967295`). No excessive forward jumps. Good linear flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No dead code. Loop unrolling in `param_malloc_free` and `param_memset` is present but represents compiler optimization, not redundancy. Some duplicate expressions in complex functions but minimal.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Mixed types - `int`, `unsigned long long`, `long long`, `char*`. In `param_strcpy`: `long long param_strcpy(char *a0, char *a1)` - return type should be `int` (matches `strlen` return). Parameter `a1` should be `const char*`. Significant type degradation.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Some struct definitions present but incomplete: `typedef struct FILE {} FILE;` is empty. `struct sockaddr` partially reconstructed with `sin_family` and `sa_data`. Most structs use raw pointer arithmetic. Poor recovery of composite types.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several unsafe operations: pointer arithmetic like `*((int *)((char *)&v0 + 4))` in `param_scanf`, cast-heavy code. Function pointer types mostly generic. Some buffer access patterns could be unsafe. Moderate type safety issues.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No meaningful comments in decompiled code. Only auto-generated annotations like "/* do not return */" on `_exit` calls. Zero algorithm explanation, no API contracts, no decompilation confidence indicators. Severely lacking.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: Standard library functions correctly identified: `strcpy`, `strcmp`, `strlen`, `memcpy`, `memset`, `printf`, `fopen`, `pthread_create`. System calls recognized: `syscall`, `fork`, `pipe`. Good pattern recognition for common libc functions.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: Some "Other Possible Types" annotations present (e.g., "Other Possible Types: unsigned int" for `v0` in pipe function). No flags for indirect calls, unusual stack layouts, or potential undefined behavior. Minimal anomaly communication.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The function `param_strcpy` has implicit contract (src must be null-terminated) but this is not communicated. Zero contract recovery.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships clear - `call_strcpy` calls `param_strcpy`. External dependencies declared with `extern`. Global variables referenced. Some relationships inferable but not explicitly documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions grouped logically: standard library tests, system calls, thread functions. Related functions near each other in address space. Static vs extern not distinguished. Reasonable organization matching source structure.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Has extern declarations for external functions. Requires linking against libc, libpthread. Should compile with appropriate stubs. Dependencies not documented but inferable. Moderate patching needed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 6 + 7 + 8) / 4 = 6.0
+L2_avg = (7 + 8 + 8 + 7) / 4 = 7.5
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (2 + 7 + 3 + 2) / 4 = 3.5
+L5_avg = (7 + 7 + 7) / 3 = 7.0
+
+Overall = (6.0 × 0.30) + (7.5 × 0.25) + (4.67 × 0.20) + (3.5 × 0.15) + (7.0 × 0.10)
+        = 1.80 + 1.875 + 0.934 + 0.525 + 0.70 = 5.83/10
+```
+
+**Overall Readability Score: 5.83/10**
+
+### Critical Defects
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names like `dst`, `src`, `result`
+- Type precision severely degraded: `param_strcpy` returns `long long` instead of `int`, parameter `a1` should be `const char*`
+- Zero comments or documentation - no algorithm explanation, no API contracts, no decompilation confidence indicators
+- Composite type recovery poor: struct definitions empty or partial, most use raw pointer arithmetic
+- Anomaly indication absent: no flags for indirect calls, potential undefined behavior, or uncertain patterns
+
+### Best Quality Aspect: Function Naming Quality (6/10) & Idiom Recognition (7/10)
+- Core library functions correctly identified and named matching source: `param_strcpy`, `param_strcmp`, `param_memcpy`
+- Standard library patterns (strcpy, printf, pthread_create) well recognized
+
+### Most Needs Improvement: Comment Quality & Contract Recovery (2/10)
+- No meaningful comments explaining algorithms or intent
+- Zero recovery of preconditions/postconditions/invariants
+- Decompiled code provides no guidance for understanding complex logic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: `a0` used as destination in strcpy should be named `dst`; variables passed to pthread_create should suggest thread-related semantics
+2. **Add semantic comments**: Explain what functions do, not just that they exist. Document implicit contracts (e.g., "requires: src is null-terminated")
+3. **Improve type precision**: Use `const` correctness, match return types to actual library functions (strlen returns `size_t`, not `long long`), recover struct field names

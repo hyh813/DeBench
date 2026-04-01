@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v0`, `v1`, `v2` in test functions are generic and obscure their roles as return values from specific function calls. While some variables like `sum`, `i`, `count` are reasonable, the predominant use of single-letter generic names makes tracking purpose difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `cdecl_func`, `stdcall_func`, `varargs_func`, `param_by_value_int`, `ret_pointer` accurately match the original source function names. The naming clearly reflects their purpose with appropriate action verbs.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Format strings like `aCallL206`, `aCallL207` are auto-generated and meaningless. Magic numbers like `0x70` (112 bytes), `0x80000000`, `0x100000` appear without explanation. The string `asc_125F4` provides no semantic context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Register-related annotations like `// r0` clutter variable declarations in test functions. The `__cdecl` and `__fastcall` calling convention specifiers are present but unnecessary for ARM32. Some redundant variable declarations in test functions add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper `for` loops, `if-else` chains, and switch-like structures. At `-O0`, the decompiler correctly recovers the original control flow patterns without spurious goto statements. The `ret_multi_branch` function uses appropriate if-else chain.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are monolithic. The test functions properly call sub-functions. Function sizes are reasonable (e.g., `varargs_func` is 15 lines, `func_many_args` is 1 line). Good cohesion with clear single responsibilities.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `param_double_ptr` and `param_complex_cast`. No goto abuse or confusing jump patterns disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal redundancy observed. The `test_calling_conventions` function has some repeated patterns for calling and printing results, but this mirrors the source structure. No obvious dead code or excessive duplication that would impede understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types are generic `int` rather than `int32_t`. Pointer types are mostly preserved (`int *`, `char *`, `int **`). Function pointer types are reasonably accurate (`int (*callback)(int)`). The `__int64` appears for 64-bit values. Const correctness is partially preserved (`const char *str`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types like `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`, `TestIntPair` are recovered with their field names (`data`, `x`, `y`, `a`, `b`). The struct layouts are accurate and match the source definitions.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `*(_DWORD *)p` in `param_complex_cast`, `*(_DWORD *)"\n"` in `call_ret_pointer` (treating string literal as int array is incorrect). Some pointer arithmetic is correct. Function pointer casting `(int (*)(int))callback_func` is present but reasonable for the pattern.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only the header comment indicates decompiler provenance. Format string references like `aCallL206` are auto-generated and unhelpful. No comments explain algorithm purpose, calling convention implications, or recovered contracts. Sparse but not completely absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. The code presents calling convention patterns (`__cdecl`, `__fastcall`) without highlighting them as significant. Variable argument handling (`va_list`, `va_start`, `va_arg`) is recognized but not explicitly named as an idiom.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly flags 9 functions that "FAILED to decompile" (`__imp_puts`, `__imp_strlen`, `__imp_memset`, etc.). This is valuable information. However, other potential anomalies like the incorrect `*(_DWORD *)"\n"` are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The code doesn't indicate expected states (e.g., "requires: ptr != NULL") or error conditions beyond what's in the logic. Completely absent contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - you can see `call_cdecl()` calling `cdecl_func()`. Global variables like `handle1_0`, `handle2_0` in `ret_opaque_handle` are visible. However, relationships aren't explicitly documented with caller/callee comments.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by binary order, which roughly corresponds to source order. Related functions (calling conventions, parameter passing, return values) are clustered together. However, no logical section headers or module separation exists.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many undefined identifiers require standard library headers: `puts`, `printf`, `memset`, `memcpy`, `strlen`, `va_start`, `va_copy`, `va_arg`, `va_end`. The code structure would compile with appropriate includes, but dependencies aren't documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `v2`) obscuring their roles as specific function return values
+- Literal clarity is poor - format strings like `aCallL206` and magic numbers like `0x70` lack semantic meaning
+- Type safety issues: `*(_DWORD *)"\n"` incorrectly treats string literal as int array
+- Comment quality is minimal with no explanation of calling convention patterns or algorithm intent
+- No contract recovery - preconditions and postconditions are completely absent
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names accurately reflect their purpose and match the original source exactly, making it easy to identify what each function does.
+
+**Most Needs Improvement:** Literal Clarity (3/10)  
+The pervasive use of auto-generated format string names (aCallL206, aRetL101D) and unexplained magic numbers severely impedes understanding of the test output statements.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used immediately after `call_cdecl()` should be named `cdecl_result` or similar
+2. Replace auto-generated format string references with meaningful names based on the string content
+3. Add contract recovery to flag preconditions (e.g., "requires: pp != NULL") and postconditions for functions with complex semantics

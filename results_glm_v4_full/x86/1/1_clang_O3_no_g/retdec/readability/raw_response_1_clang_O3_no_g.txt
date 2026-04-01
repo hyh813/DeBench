@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v1`, `v2`, and `result`, completely losing the semantic meaning of original names like `sum`, `count`, `target`, or `op`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `loop_for_fixed`, `duffs_device`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are replaced by obscure pointer arithmetic offsets (e.g., `v1 + 0x2097`), and magic numbers like `0x66666667` (used for division by 10) appear without explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with excessive casting and boolean logic noise, such as `(uint32_t)(int32_t)(bool)(a1 >= 0 == (a1 != 0))` in `single_if`, which severely impedes readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow structures are aggressively destroyed; loops are replaced by mathematical formulas (e.g., `loop_for_fixed` returns a calculation instead of iterating), and simple `if` statements are transformed into obscure bitwise operations.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and correspond to the source boundaries, maintaining a 1:1 mapping with the original implementation.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While the code generally reads top-to-bottom, the aggressive optimization of control flow into complex single-line expressions disrupts the natural linear progression of logic.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: While redundancy is low, the decompiler eliminates *meaningful* structural redundancy (like loop bodies) required to understand the algorithm's flow, replacing it with optimized arithmetic that obscures the source intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise, correctly using `int32_t`, `uint32_t`, and `int64_t` where appropriate, matching the source's integer usage.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: The `jmp_buf` structure is recovered with reasonable accuracy, including the nested `_sigset_t` structure, though field names are generic (`e0`, `e1`).
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is type-safe with explicit casts, though the sheer volume of casting (e.g., `(int64_t)((int32_t)a1 >> 31)`) suggests aggressive compiler optimizations that the decompiler preserved faithfully.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the heavy transformations applied (e.g., replacing recursion with iteration).
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard idioms; Duff's device is reduced to a division, recursion is flattened to loops, and `switch` statements are often turned into array lookups or arithmetic, completely obscuring the original patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler presents the heavily optimized and transformed code with high confidence, despite it being structurally vastly different from the `-O0` source.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the requirement for `n > 0` in `duffs_device` is implicit in the math rather than documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but the logic inside `test_control_flow_l1` is reduced to a series of opaque `printf` calls with offset pointers, breaking the clear link to the test cases.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file is well-organized with functions grouped logically, and helper functions like `double_value` are correctly placed.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on position-independent code offsets (e.g., `v1 + 0x2097`) for strings and global access, making it difficult to compile standalone without the specific binary context or linker script.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- **Control Flow Destruction**: `loop_for_fixed` and `recursion_factorial` are converted into mathematical formulas and iterative loops respectively, erasing the source's control flow structures.
+- **Obscure Boolean Logic**: Simple conditions like `if (x > 0)` are transformed into unreadable bitwise expressions (e.g., `a1 << (uint32_t)(int32_t)(bool)(...)`).
+- **String Literal Loss**: Readable strings are replaced by pointer arithmetic offsets (e.g., `v1 + 0x2097`), making the output text unintelligible.
+- **Idiom Loss**: Duff's device is optimized away into a simple division, missing the specific code pattern entirely.
+- **Variable Naming**: All semantic variable names (`sum`, `count`, `target`) are replaced with generic names (`a1`, `v1`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, making it easy to identify the purpose of each unit at a glance.
+
+**Most Needs Improvement:** Idiom Recognition (scored 1/10)
+- The decompiler aggressively optimizes away standard programming idioms (loops, recursion, switch-fallthrough) into mathematical equivalents, making the code semantically correct but structurally unrecognizable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Preserve Loop Structures**: Add an option to disable aggressive loop-to-math transformations, especially when the source code clearly indicates iterative logic (e.g., induction variables).
+2.  **Recover String Literals**: Implement logic to map data section offsets back to their actual string values to restore `printf` format strings and messages.
+3.  **Simplify Boolean Expressions**: Detect and simplify complex boolean/bitwise conditional expressions back into standard `if` statements or ternary operators for better readability.

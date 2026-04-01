@@ -1,0 +1,4 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=-1208264336,Arg1=-1076529728,Arg2=0,Arg3=-1210310751|eax=0xb7f82dd8,ebx=0x0,ecx=0xbfd575c0,edx=0xbfd575e4,esi=0xb7f81000,edi=0x0
+TRACE_PRINT|0|%41%C3%0E%08%41%C6%0E%04%4C
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%04

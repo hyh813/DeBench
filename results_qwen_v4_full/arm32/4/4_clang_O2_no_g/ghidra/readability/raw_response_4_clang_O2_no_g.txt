@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `local_c` with zero semantic meaning. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but are `param_1` through `param_6`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved accurately from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0xf`, `0x32`, `0x2a`, `0x12345678` are constant-folded results with no explanation. Original expressions like `cdecl_func(5, 10)` lost entirely.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Floating-point helper functions (`__adddf3`, `__floatsidf`, `__fixdfsi`) are extremely verbose (100+ lines each). Runtime functions (`__libc_start_main`, `__gmon_start__`) included unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses do-while with manual pointer arithmetic instead of va_list macros. Floating-point functions have excessive branching.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure: `func_struct_byval` has 31 parameters instead of 1 struct parameter. `call_cdecl` constant-folded to return `0xf` instead of calling `cdecl_func(5, 10)`.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom reasonably well. Some floating-point functions have forward jumps but generally maintain linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding eliminated actual function calls (information loss). Floating-point library functions contain massive duplicated bit-manipulation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `undefined4`, `undefined8` used for ambiguous types. `func_mixed_args` double parameters became `undefined4 param_3, param_4`. Return types often `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Catastrophic failure: `LargeStruct` (128 bytes) became 31 individual `int/undefined4` parameters. `SmallStruct` reduced to `int *param_1` with no struct definition recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)0x0`, `(char *)0x0`, `(undefined4 *)`. `func_struct_byptr` uses `int *` instead of `SmallStruct *`, losing field semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra headers present. No algorithm explanations, no varargs pattern documentation, no struct layout comments. WARNING comments only for unreachable blocks.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern completely unrecognizable (manual pointer arithmetic instead of `va_list`). Struct-by-value calling convention not identified. No pattern naming whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block") but no explanation of critical failures like struct parameter explosion. Silent on type degradation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No null-check documentation, no precondition/postcondition recovery. `func_struct_byptr` null check present but not explained as API contract.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph, no indication that `call_cdecl` originally called `cdecl_func`. Constant folding obscures relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime helpers mixed with application code. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`strlen`, `printf`, `__libc_start_main`) undeclared. Floating-point helpers would need ARM runtime. Cannot compile standalone without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+3+7+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (3+2)/2     = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+2+5+5+4)/5 = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.26/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Struct type completely lost**: `func_struct_byval` has 31 parameters instead of 1 `LargeStruct` parameter - makes code practically unusable
+- **Constant folding destroyed call relationships**: `call_cdecl` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Varargs pattern unrecognizable**: Manual pointer arithmetic instead of `va_list` macros obscures the variadic function pattern
+- **Floating-point operations expanded**: 100+ line helper functions (`__adddf3`, `__floatsidf`) instead of simple `+` operators
+- **All variables generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information about purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct types; 128-byte struct became 31 individual parameters, making the code semantically incorrect
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from stack layout patterns** - Analyze parameter access patterns to identify struct boundaries and reconstruct composite types
+2. **Preserve call relationships over constant folding** - Show original function calls even when compiler optimized them, with optional "constant-folded" annotations
+3. **Recognize standard library patterns** - Identify `va_list` usage, floating-point operations, and common idioms to emit high-level C instead of raw helper calls

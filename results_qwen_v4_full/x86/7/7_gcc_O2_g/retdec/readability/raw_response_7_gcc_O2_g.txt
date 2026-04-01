@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) losing semantic meaning from original (`x`, `result`, `str`, `encrypted`). For example, `param_opaque_predicate` uses `v1-v6` instead of meaningful names like `p1`, `p2`, `p3` for predicate variables.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved from source (`param_fake_branch`, `call_opaque_predicate`), but many wrapper functions have mechanical names (`function_10f0`, `function_1100`). Good recovery of original intent for main test functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (globals `g1=0x26b4`, `g2=0x604ff`). XOR key `90` (0x5A) visible in `param_string_encryption` but not documented. Some constants like `225` in `call_instruction_substitution` are clear as return values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_bx` calls throughout, stack canary checks (`__readgsdword(20)`), and 20+ wrapper functions for standard library calls (`function_1150` for malloc, `function_1170` for strlen).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as `while` instead of `for` (e.g., `param_tail_call_optimized`). Some functions constant-folded (`call_fake_branch` returns `10` directly). `param_opaque_predicate` has awkward conditional chain `v2 || 1 + a1 * a1 == v1 * v1 == v3 == 1`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original functions preserved but fragmented with wrapper functions. `call_fake_branch` (5 lines) just returns constant, losing the call relationship. Library wrappers (`function_1180` for strncpy) add unnecessary indirection.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear function boundaries. Some forward references in complex functions but no excessive goto usage. Stack variable declarations at function start follow C convention.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding removed original logic (`call_fake_branch` doesn't call `param_fake_branch`). Wrapper functions create redundancy (20+ functions just call standard library). Some dead code from optimization not eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses semantic types. Original `const char *str` becomes `int32_t str2`. `param_division_by_zero` takes `uint32_t x` but original used `int x`. Pointer types often degraded to `int32_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buf` struct recovered with fields `e0[8]`, `e1`, `e2` but field names are generic not semantic. `struct __jmp_buf_tag` layout preserved but no field meaning documentation. Bit-field structures from `param_implementation_defined` completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)result`, `(int32_t)&g5`. Pointer arithmetic on `int32_t` instead of proper types. `param_null_pointer_deref` takes `int32_t * p` but NULL handling unclear. Stack canary checks add false safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only metadata comments (address range, line range). No explanation of obfuscation techniques (fake branches, opaque predicates). Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. GCD algorithm in `param_opaque_predicate` not identified. String decryption loop not marked as XOR decryption. Obfuscation patterns completely unrecognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies flagged despite suspicious patterns. Constant-folded functions (`call_fake_branch` returns 10) not marked as optimized. Signal handler relationships not documented. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions or return value guarantees. Error conditions in signal handlers not explained. Original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables `g1-g6` have no semantic meaning. `test_obf_opt_edge` calls many functions but no call graph documentation. Signal handler registration not clearly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address not logic. Wrapper functions scattered throughout. Original section organization (7.1, 7.2, 7.3) completely lost. No header file separation between API and implementation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdio.h`, `stdlib.h`, `string.h`). Metadata indicates compilation successful. Some external dependencies (`__libc_start_main`, `__printf_chk`) may need linking. Generally compilable with minor adjustments.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (5+5+4)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):    (3+3+4+3)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+7)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  5.05/10
+```
+
+### Overall Readability Score: **5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `v3`) losing all semantic meaning from original (`x`, `result`, `str`, `encrypted`)
+- **No comments explaining obfuscation techniques** - original had extensive documentation about fake branches, opaque predicates, instruction substitution
+- **20+ wrapper functions for standard library** creating unnecessary indirection and noise
+- **Type degradation** - `const char*` becomes `int32_t`, pointer arithmetic on integers
+- **Constant folding hides original logic** - `call_fake_branch` returns `10` directly instead of calling `param_fake_branch(10)`
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `call_vectorized_loop`) maintaining semantic connection to original purpose.
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Original source had 100+ lines of documentation explaining obfuscation techniques, expected values, and test scenarios; decompiled code has virtually no explanatory comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `index`; variables XOR'd → `key`, `encrypted`)
+2. **Recover and preserve source comments** - When debug symbols available (`-g` flag), extract and embed original comments in decompiled output
+3. **Eliminate standard library wrappers** - Recognize common library function patterns and emit direct calls (`malloc`, `strlen`, `printf`) instead of `function_1150`, `function_1170` indirection

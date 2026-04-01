@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_O3_no_g/angr/syntactic/bin/5-23_gcc_O3_no_g_fixed",
+  "stdout": "Preprocessing Test Results:\n64\n30\n32\n57122\n116\n19\n60\nLOG: Values: 10, 20, 30\n60\n16\n500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:37\n382\nASM Test Results:\n15\n-1765713176\n-1\n-1004652256\n35\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `ptr`, `i`. The original source uses meaningful names like `value`, `name`, `data`, `size`, `instance_count`, but these are completely lost. Even stack variables like `v0` at `[bp-0x28]` provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some functions retain proper names like `test_cpp_member_func`, `call_virtual_func`, `Base::virtual_func`, `template_max<int>`, the majority use mechanical address-based names like `sub_402020`, `sub_40202c`. The original source has 12 test functions with clear names, but many are either missing or renamed to generic patterns.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation: `4`, `20`, `50`, `10`, `1000`, `5`, `3`, `100`, `200`. String literals are replaced with global variable references like `&g_40307d`, `&g_40309b` making it impossible to understand output messages. The constant `0x1234` from `getClassID()` is completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: At -O0, the code is relatively clean with minimal compiler artifacts. Some unnecessary casts exist but are manageable. The main noise is the verbose stack frame notation like `[bp-0x28]` which is expected from Ghidra.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The code uses goto statements (e.g., `goto g_406010`) and has awkward control flow in functions like `test_cpp_exception`. Loop constructs like the do-while in `test_cpp_constructor` are recognizable but presented with raw index manipulation. The control flow is traceable but not idiomatic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are reasonably sized (20-80 lines). However, many small wrapper functions exist (e.g., `sub_402269` just calls `test_cpp_member_func`). Some functions like `test_cpp_oo_features` are 100+ lines mixing multiple test cases. The decomposition is adequate but not optimal.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but has forward jumps and computed addresses that disrupt flow. The `test_cpp_oo_features` function has multiple printf calls in sequence which is linear, but virtual function calls through vtables add indirection.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling is visible in `test_cpp_constructor` (manual unroll with `do-while`). Some redundant calculations like `strlen(&v4)` called but result not used. Dead code elimination appears incomplete.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic: `unsigned int`, `unsigned long`, `unsigned long long`, `void*`. The original uses `int`, `size_t`, `char[32]`, `int*` but these are lost. Function parameters often use `unsigned long` instead of proper pointer types. Const correctness is mostly absent.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Some struct shells exist like `struct_0 { unsigned long long field_0; }` but field names are generic. Class definitions like `class Base {}` are empty shells. The original has rich class hierarchies with data members (`value`, `name`, `multiplier`, `dataA`, `dataB`) but these are not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic like `ptr + 1`, `&ptr[1]`, cast operations `*(int*)ptr`, `*(unsigned int*)p`. Function pointer calls through vtables use raw pointer manipulation. Memory allocation returns `void*` without type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments exist. The only comments are auto-generated like "// Function: sub_402020 at 0x402020". No explanation of algorithm, no documentation of what each test function does, no indication of expected behavior.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are partially recognized: virtual function calls through vtables, constructor/destructor patterns, template instantiation. However, no design patterns or algorithms are explicitly named or documented. The exception handling uses `__cxa_throw`, `__cxa_begin_catch` but without explanation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. Indirect calls that couldn't be resolved are presented as confident code. The thunk functions for multiple inheritance have complex pointer adjustments but no warnings. The cross-architecture decompilation (arm64 source to AMD64 output) isn't noted.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear expectations (e.g., "期望: 4704") but these are completely lost. No bounds checking documentation for array access.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are visible through direct calls but not documented. Global variables like `_ZN14LifecycleClass14instance_countE` are referenced but their purpose isn't explained. The relationship between test functions and the main `test_cpp_oo_features` isn't clear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are roughly grouped by test case but the organization is flat. Related class methods (constructors, destructors, virtual functions) are scattered. No namespace or class hierarchy organization is visible in the output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses `extern` declarations for external symbols. Many functions have proper prototypes. However, the code won't compile standalone due to missing `operatornew[]`, `operatordelete[]`, and other runtime functions. Would require significant stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2+3+3+7)/4 = 3.75
+Level 2 avg: (4+5+5+4)/4 = 4.50
+Level 3 avg: (4+3+4)/3 = 3.67
+Level 4 avg: (2+4+1+1)/4 = 2.00
+Level 5 avg: (3+4+5)/3 = 4.00
+
+Overall = (3.75 × 0.30) + (4.50 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 1.125 + 0.734 + 0.30 + 0.40
+        = 3.684/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects (Bullet List)
+- Variable names are entirely generic (`v0`-`v9`, `ptr`, `i`) with no semantic meaning recovered from source
+- All string literals replaced with opaque global references (`&g_40307d`) making output incomprehensible
+- Class data members completely lost - `value`, `name`, `data`, `size`, `multiplier` not recovered
+- No comments explaining any test function's purpose or expected results
+- Expected return values from source (e.g., "期望: 4704") completely absent
+- Type information severely degraded - `int`, `size_t`, `char[32]` become `unsigned long`, `void*`
+- No anomaly indication for complex multiple inheritance thunks or cross-architecture issues
+
+### Best Quality Aspect: Noise Reduction (7/10)
+- At -O0 optimization, the code has minimal compiler artifacts
+- Loop constructs are recognizable (do-while pattern in constructor)
+- Basic function structure is preserved
+
+### Most Needs Improvement: Semantic Transparency (2.0/10)
+- Nearly absent comments (only auto-generated headers)
+- No pattern recognition or algorithm documentation
+- Zero anomaly indication for complex C++ features
+- No contract or precondition documentation
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index` or `i`, those storing sizes should be `size`, those for counting should be `count`. The original source provides clear semantic roles.
+2. **Recover string literals inline**: Instead of `&g_40307d`, extract and display the actual string content (e.g., "CPP-L3-01: %d (期望: 4704)") so output is understandable.
+3. **Add semantic annotations for C++ features**: Document virtual function calls, vtable access, multiple inheritance thunks, and exception handling with comments explaining what's happening (e.g., "// vtable dispatch for Base::virtual_func").

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_O3_no_g/ghidra/syntactic/bin/7_gcc_O3_no_g_fixed",
+  "stdout": "Testing obfuscated code and optimizations:\n\ncall_opaque_predicate: 10\ncall_opaque_predicate result: 20\ncall_instruction_substitution: 225\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

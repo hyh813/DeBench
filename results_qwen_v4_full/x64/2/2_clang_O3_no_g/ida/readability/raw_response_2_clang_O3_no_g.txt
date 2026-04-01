@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with zero semantic meaning. For example, `process_char(unsigned int a1)` should have `input_char` or `c` to match source intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`), matching original source. However, some helper functions use generic names (`sub_1020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout (e.g., `32`, `65`, `0x1Au` in `process_char` for ASCII conversion) without explanation. Test functions print hardcoded constants instead of computed values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy SIMD intrinsics (`_mm_add_epi32`, `_mm_loadu_si128`, `_mm_shuffle_epi32`) obscure simple arithmetic. Compiler artifacts like `LODWORD(result)` and explicit casts clutter simple functions.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have clean flow, but array functions use complex SIMD loops with `goto LABEL_13` instead of natural `for/while` constructs. Original simple loops transformed into vectorized code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. However, test functions collapsed into constant-printing stubs losing actual computation structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but SIMD-optimized functions have multiple forward jumps (`goto LABEL_13`, `LABEL_8`, `LABEL_11`, `LABEL_14`) disrupting linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive code duplication (see `array_1d_stack` with 40+ lines for a 5-line source loop). Same SIMD pattern repeated across multiple functions without abstraction.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `float`, `double`, `long long`), but pointer types degraded to `_DWORD *`, `__int64`. `volatile` qualifier lost in `volatile_access`. Function pointer signatures partially recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure** - All struct/union types lost. `struct_simple` accesses `a1[2] + *a1 + a1[1]` instead of `p->x + p->y + p->z`. Bitfield struct accessed as `_WORD *` with manual bit shifts. No struct definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(unsigned int)`, `(_DWORD *)`, `(__int64)`). Pointer arithmetic on typed data (`a1 + 4 * v3`) loses type safety. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated decompiler headers present. No explanation of SIMD operations, magic numbers, or algorithm intent. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (array sum, string length, linked list traversal) not identified or named. SIMD vectorization not explained as optimization artifact.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some decompilation failures noted at end (`FAILED to decompile: __libc_start_main`), but no inline warnings about uncertain type recovery or potential misinterpretations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). Bounds checking in `array_complex_index` preserved but not explained as safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but test functions don't actually call computation functions (print constants instead). Callback relationships in `ptr_func_simple` partially recovered.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source, but no file/module structure. All code in single output without header separation or static function scoping hints.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains platform-specific intrinsics (`__m128i`, `_mm_*`) requiring specific headers. External function calls (`printf`, `puts`) not properly declared. Won't compile standalone without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+4)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (6+3+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.69/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Struct/union types completely lost** - All composite types accessed via raw pointer arithmetic (`a1[2] + *a1 + a1[1]` instead of `p->x + p->y + p->z`)
+- **Test functions optimized to constants** - Actual computation calls replaced with hardcoded printf values, losing test logic
+- **SIMD intrinsics obscure simple logic** - 5-line loops expanded to 40+ lines of vector operations without explanation
+- **Zero semantic variable names** - All parameters named `a1`, `a2`, `v1`, `v2` with no type or purpose hints
+- **No comments recovered** - Original source documentation completely absent, magic numbers unexplained
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most computation function names preserved accurately from source (`process_char`, `array_1d_stack`, `struct_simple`), enabling function identification.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding optimized code nearly impossible; original source comments entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions** from access patterns - detect consistent field offsets and generate type definitions with inferred field names (e.g., `field_x`, `field_y`, `field_z` for Point3D).
+2. **Add optimization awareness comments** - When SIMD/vectorization detected, add comments like `// OPTIMIZED: Original was simple for-loop, vectorized by compiler`.
+3. **Infer variable semantics from usage** - Parameters used in size checks should be named `count`/`length`, character operations should suggest `char` type, pointer dereferences should indicate `ptr_` prefix.

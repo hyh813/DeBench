@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `local_28` instead of semantic names like `dst`, `src`, `buffer_size`. Pointer variables like `pcVar1`, `piVar2` indicate type but not purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`param_strcpy`, `thread_compute`, `consumer_thread`), but some return types incorrect (e.g., `param_strcpy` returns `void` instead of `int`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `10`/`0xe` (signal numbers), `2`/`1` (socket constants). String format references external data (`&DAT_000128cb`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs call themselves recursively (e.g., `pthread_mutex_unlock` calls `pthread_mutex_unlock`). Stack initialization split into byte assignments (`local_28._0_1_ = 'H'`). `SCARRY4` overflow checks add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs, but `SCARRY4(iVar1,1)` overflow checks obscure simple comparisons. Fork/exec branching logic preserved but verbose.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries match source, but `test_standard_library_functions` inlines `call_*` functions. Some functions have wrong signatures (`call_strcpy` returns `void` instead of `int`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions have deep nesting (e.g., `param_signal_handling` has 5+ levels).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Error codes repeated (`0xffffffff`, `0xfffffffe`, `0xfffffffd`). `call_*` functions sometimes duplicated in test functions. No consolidation of common patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `size_t` degraded to `int` or `size_t` inconsistently. `pthread_t` sometimes `undefined4`. Atomic operations use generic `__atomic_*_4` instead of proper typed intrinsics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `stat` struct partially recovered (`sStack_60.st_size`). `sockaddr` fields accessed individually (`sa_data[0]`, `sa_data[1]`). TLS uses `__aeabi_read_tp` instead of proper `__thread` variables.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)`, `(char *)`, `(pthread_mutex_t *)`. Thread function signatures wrong (`void*` → `undefined4`). Pointer arithmetic on thread data without safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. No API contracts documented. External stubs have no documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Library functions recognized (`strcpy`, `memcpy`) but not contextualized. Producer-consumer pattern with condition variables not identified. Fork-exec pattern not named.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about `__aeabi_read_tp` (TLS), `SCARRY4` (overflow), or recursive external stubs. Problematic patterns presented confidently without flags.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: param_1 != NULL"). Error return values not explained. Null checks exist but not documented as contracts.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without relationship clarity.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by category but external stubs scattered throughout. No header file structure. Related functions not logically grouped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—uses Ghidra types (`undefined4`, `undefined`), recursive external stubs, missing declarations. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+4)/2     = 3.00 × 0.15 = 0.45
+Level 5 (Context):     (3+3+5+5+3)/5 = 3.80 × 0.10 = 0.38
+
+Overall Score: 4.42/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named `dst`, `src` based on `strcpy` usage pattern
+- **External function stubs** call themselves recursively (e.g., `pthread_mutex_unlock` → `pthread_mutex_unlock`)
+- **Magic numbers** like `0x2a`, `0xffffffff`, signal numbers `10`/`0xe` lack symbolic names
+- **Return type mismatches**: `param_strcpy` returns `void` instead of `int`, losing return value semantics
+- **Zero comments** explaining any non-trivial logic, algorithms, or decompilation uncertainty
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source (`param_strcpy`, `thread_compute`, `consumer_thread`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding algorithm intent, error handling, and decompilation confidence impossible without cross-referencing source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Analyze how `param_1` is used (passed to `strcpy` as first argument) to name it `dst` instead of generic `param_1`
+2. **Eliminate recursive external stubs** - External library functions should be declared, not defined as self-calling wrappers that add no value
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (TLS access via `__aeabi_read_tp`, overflow checks with `SCARRY4`) with comments indicating manual review needed

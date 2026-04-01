@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `uVar2`, `local_b8`, `local_d0`. No semantic meaning is conveyed - the original had meaningful names like `a`, `b`, `count`, `sum`, `args`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `cdecl_func`, `varargs_func`, `func_no_args`, `param_by_value_int`, `ret_pointer`, etc. Only minor internal functions like `FUN_00101020` lack names. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0xf` (15), `0x32` (50), `0x2a` (42), `0xad` (173), `0x12345678`. No named constants recovered. The original source had clear values like `5`, `10`, `42` in return statements, but the decompiler obscures these with hex representations.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - mostly clean output. Uses `undefined8`/`undefined4` types which are unusual but not obstructive. Stack access patterns like `&stack0x00000008` are present but expected at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural, idiomatic control flow matching source. The `varargs_func` and `ret_large_struct` have complex loops but these are legitimate given the functionality. No spurious goto usage.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition matching the original source. Each small function is properly separated - the 665-line source became 1044 lines of decompiled code with appropriate granularity. No monolithic functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom. Early returns used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. Some forward jumps in varargs handling but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in `test_calling_conventions` loop structure, but overall code is clean. No obvious dead code. Loop unrolling is minimal and reasonable for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **CRITICAL FAILURES**: 
+- `func_mixed_args`: Parameters reordered and wrong types (double param_1 instead of int, long param_4 instead of long long)
+- `func_struct_byval`: Struct parameter completely missing - takes void!
+- `param_struct_byval`: Struct parameter missing - takes void!
+- `param_double_ptr`: `long*` instead of `int**`
+- `param_complex_cast`: `int*` instead of `void*`
+- `param_func_ptr`: `code*` instead of proper function pointer signature
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **No struct types recovered**. All structs accessed as raw stack values or pointers:
+- `LargeStruct` - accessed via stack offsets, no type
+- `SmallStruct` - accessed as `int*`
+- `struct BigStruct` - accessed via stack, no type
+- `struct SmallPoint` - returned as `ulong` (bit-packed)
+- `struct LargeData` - handled via hidden pointer parameter
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int)((double)param_4 + (double)(iVar1 + param_2) + param_1)` in func_mixed_args. Function pointer type uses `code*` which loses signature information. Some pointer arithmetic without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. Only auto-generated header "Decompiled by Ghidra 12.0" and some WARNING comments about unreachable blocks. No explanation of algorithms, parameter contracts, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some common patterns like varargs handling are present but not explicitly named or documented. No design patterns (State machine, Strategy, etc.) identified. The varargs pattern is recognizable but not highlighted.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments about unreachable blocks present, but inconsistent. No flags for the significant type errors (missing struct parameters, wrong parameter types). Silent about the major semantic issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The missing struct parameters in `func_struct_byval` and `param_struct_byval` should have been flagged as "parameter passed via hidden pointer" or similar.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. No indication of which functions call which. Callback relationships (like `param_func_ptr` taking a function pointer) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are reasonably grouped in a single file. Related functions (like all the calling convention functions) are near each other. However, no logical sections or headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: **Won't compile as-is**. Uses non-standard types: `undefined8`, `undefined4`, `undefined1`, `code*`. Missing standard library includes. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+1. **Missing struct parameters**: `func_struct_byval(void)` and `param_struct_byval(void)` should take struct parameters but show as taking nothing - the struct is passed via hidden stack layout
+2. **Wrong parameter types**: `func_mixed_args` has parameters in wrong order with wrong types (double instead of int, long instead of long long)
+3. **No struct type recovery**: All composite types lost - accessed as raw pointers/stack values with no type information
+4. **Magic numbers everywhere**: All return values are hex literals like `0xf`, `0x32`, `0x2a` with no meaningful constant names
+5. **Generic variable names**: All locals are `var_XXX` or `iVarX` style with no semantic meaning
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly every function name perfectly matches the original source, making it easy to locate specific functions
+
+**Most Needs Improvement:** Type System Fidelity (3.3/10)  
+- Multiple critical type errors: missing struct parameters, wrong parameter types, no composite type recovery. This fundamentally breaks semantic understanding of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct parameters**: When a function appears to take no parameters but accesses structured data on the stack, infer the struct type and show it as a parameter
+2. **Fix parameter type inference**: The `func_mixed_args` case shows parameters being misidentified - improve type analysis for mixed-type parameters
+3. **Add semantic variable naming**: Use usage patterns to infer names - e.g., loop counters should be `i`, accumulator variables should be `sum` or `total`

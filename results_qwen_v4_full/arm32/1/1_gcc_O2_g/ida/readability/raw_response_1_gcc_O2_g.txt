@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `v1`, `v2`, `v4`, `result` instead of semantic names (e.g., `sum`, `count`, `temp`). Function parameters retain original names (`a`, `b`, `c`, `x`, `n`), but temporaries obscure purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names preserved accurately from source (`sequential_ops`, `nested_if_deep`, `duffs_device`, `recursion_factorial`). Names clearly indicate purpose and match original intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `100`, `1000`, `0x12345678` appear without explanation. Some are contextually inferable (loop bounds), but constants like `0x200000001LL` in matrix initialization are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: register annotations (`// r0`, `// r3`), stack frame comments (`[sp+0h] [bp-28h] BYREF`), calling convention markers (`__fastcall`), and type prefixes (`__int64`, `_DWORD`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if-else, switch, do-while loops). Goto elimination successful for `goto_forward` and `goto_backward`. `duffs_device` retains awkward goto labels but preserves fallthrough semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source. No problematic inlining or fragmentation. Helper functions (`double_value`, `op_add`, etc.) remain separate and appropriately scoped.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. `duffs_device` has multiple goto labels (`LABEL_4`, `LABEL_5`, etc.) that disrupt linear reading but are necessary for the pattern.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Compiler optimizations visible but not decompiler redundancy (e.g., `loop_nested` optimized to `result += n` instead of inner loop, `if_elseif_long` simplified to `100 * (x + 1)`). These are expected at -O2.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types correct (int, void*), but uses architecture-specific types (`__int64`, `__int32`). Function pointer signatures mostly preserved. `__fastcall` annotations are noise rather than precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`int arr[5]`, `int matrix[3][4]`, `int ops[10]`). No complex structs in this codebase to evaluate. Stack arrays properly identified with `BYREF` annotation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Questionable casts in `call_func_ptr_array`: `((int (__fastcall *)(int))v4[idx - 4])` has offset confusion. `large_jump_table` has suspicious parameter passing: `ops[op])(a, b, v5 ^ _stack_chk_guard)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only auto-generated register/stack annotations present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns recognized (loops, switch, recursion) but not explicitly named. `duffs_device` pattern preserved but not identified as such. State machine pattern in `state_machine` not labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 10 functions marked "FAILED to decompile" at end. `computed_goto` shows inline assembly `__asm { LDR PC, [R1,#-0x14] }` indicating unresolved construct. No warnings for potentially unsafe patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions or invariants. Error conditions not documented (e.g., when functions return -1).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage (`jump_buffer`, `CSWTCH_56`) not clearly explained. Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions (`test_control_flow_l1/2/3`) mixed with implementation. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 10 functions failed to decompile (external imports). Would require stubs for `__imp_*` functions. Architecture-specific annotations (`__fastcall`, ARM registers) reduce portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.98/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects
+- **Variable `v1`, `v2`, `v4` should be named semantically** (e.g., `sum`, `count`, `index`) based on usage patterns in loops
+- **Zero comments** explaining algorithm intent, decompilation confidence, or non-obvious logic
+- **10 external functions failed to decompile** (`__imp_*`), requiring manual stub creation
+- **Type confusion in `call_func_ptr_array`**: array indexing with `idx - 4` offset is incorrect
+- **`computed_goto` reduced to inline assembly** instead of structured recovery
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - All original function names preserved accurately, making code immediately identifiable and searchable
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding algorithm intent require reverse engineering the logic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop accumulation should be named `sum`, `total`, `count`)
+2. **Add decompilation confidence annotations** for uncertain recoveries (e.g., `// DECOMPILE_UNCERTAIN: indirect call target unresolved`)
+3. **Generate API contract documentation** from observed preconditions (null checks, range validations) and postconditions (return value ranges)

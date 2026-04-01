@@ -1,0 +1,26 @@
+Lib Test Start
+
+Lib.101: strcpy: 8
+Lib.102: strcmp: 0
+Lib.103: strlen: 12
+Lib.104: memcpy: -4618614075553742838
+Lib.105: memcmp: -4618614071258775553
+Value: 42, Name: Test
+Lib.106: printf: 22
+Lib.107: scanf: 579
+Lib.108: fopen/fclose: 42
+Lib.109: fread/fwrite: 42
+Lib.110: malloc/free: 90
+Lib.111: memset: -4618614075553742848
+Lib.112: strchr/strstr: 15
+System Test Start
+
+Sys.301: linux_syscall: 42
+Sys.302: win32_api: 42
+Sys.303: fork_exec: 42
+Sys.304: pipe_communication: 42
+Sys.305: socket_create: 42
+Sys.306: shmget_shmat: 42
+Sys.307: signal_handling: 42
+Thread Test Start
+

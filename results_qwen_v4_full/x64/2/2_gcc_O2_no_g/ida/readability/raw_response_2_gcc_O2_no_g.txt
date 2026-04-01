@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. Original source had meaningful names like `char c`, `short a, b`, `int x` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`), but some are generic (`sub_1020`, `sub_1030`) and `main` failed to decompile entirely.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `32` (ASCII offset), `65` ('A'), `0x1Au` (26) are unexplained, but floating-point literals (`1.5`, `0.5`, `0.1`) are clear in context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__readfsqword(0x28u)` stack canaries, redundant casts (`(unsigned int)`, `(__int64)`), and excessive local variables (binary_tree_sum has 37+ locals).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions use natural if-else, but loops converted to do-while with pointer arithmetic. `binary_tree_sum` recursive structure completely lost to nested loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but test functions are monolithic. Helper functions like `complex_callback` not recovered as separate entities.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom, but complex functions like `binary_tree_sum` have deeply nested conditions disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No loop unrolling (appropriate for -O0), but redundant type casts throughout and excessive temporary variable assignments in complex functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `char`, `short`, `int`, `long` distinctions degraded to `__int64`, `_DWORD`, `_BYTE`. const/volatile qualifiers completely lost (`volatile_access` shows no volatile).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point3D`, `Rect`, `Widget`, `Node`, `UnionData` all accessed via pointer arithmetic. Bitfields converted to shift operations (`struct_bitfields` uses `>>` instead of field access).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(unsigned int)`, `(char*)`, `(__int64)`). Function pointer signatures degraded. Pointer arithmetic without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from original source. No decompiler-generated explanations for complex logic. Only metadata headers present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition - linked list traversal, tree recursion, and state machine patterns completely obscured. No algorithm identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some functions marked "FAILED to decompile" (main, libc functions), but no warnings about potential issues in successfully decompiled code or optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`), no postconditions inferred, no error condition documentation for functions like `array_complex_index`.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no call graph documentation. Callback relationships visible in function pointer calls but not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single output file with no logical grouping. No header file recovery. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions (`puts`, `__printf_chk`) referenced but not declared. Would require significant stubs and type fixes to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+6+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+5+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.39/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Complete struct/union type loss** - All composite types (`Point3D`, `Rect`, `Node`, `UnionData`) accessed via raw pointer arithmetic instead of field names
+- **Variable names completely generic** - `a1`, `a2`, `v1`, `v2` provide zero semantic information about purpose
+- **Recursive function destroyed** - `binary_tree_sum` original recursion converted to 37+ local variables with nested loops
+- **No comments recovered** - Zero documentation from original source comments preserved
+- **Type qualifiers lost** - `const` and `volatile` modifiers completely absent from decompiled output
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names accurately preserved from source (`process_char`, `array_1d_stack`, `ptr_single`), making basic navigation possible
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite access through opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union pattern recognition** - Detect consistent memory access patterns (e.g., `*(ptr+0)`, `*(ptr+4)`, `*(ptr+8)`) and propose named struct types with field names
+2. **Recover variable semantics from usage** - Analyze how variables are used (size checks, array indexing, pointer dereference) to suggest meaningful names like `array_size`, `element_count`
+3. **Preserve source comments in debug builds** - When `-g` flag is present, extract and embed DWARF debug info comments into decompiled output

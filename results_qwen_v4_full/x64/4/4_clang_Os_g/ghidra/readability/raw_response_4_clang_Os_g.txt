@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `uVar2`, `local_d8`, `local_d0` instead of semantic names. Many locals marked as "Unresolved local var" with no names at all (e.g., `sum`, `args`, `i` in varargs_func).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (cdecl_func, varargs_func, test_calling_conventions). However, some helpers use generic names (FUN_00101020) and calling convention warnings obscure purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Constants folded to hex (0xf, 0x32, 0x2a, 0x12345678) instead of decimal values from source. String literals replaced with DAT_001023ca references, losing readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention -- yet parameter storage is locked" on 30+ functions. "Unresolved local var" comments clutter code without providing useful information.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures recovered (if/else, do-while). However, many caller functions constant-folded to direct returns, losing call structure (call_cdecl returns 0xf instead of calling cdecl_func).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries preserved, but semantic structure lost. Caller functions like call_cdecl, call_stdcall reduced to constant returns, eliminating the test harness structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some functions have awkward stack variable handling (varargs_func with local_b8[46] array) that obscures the simple va_list pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: ret_large_struct shows loop unrolling (iVar3, iVar4, iVar5, iVar6 for 4 elements per iteration). Varargs handling code duplicated between varargs_func and param_varargs.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double, longlong). Function pointer type partially recovered as `_func_int_int*`. Some types degraded (void* for opaque handles).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs well recovered (LargeStruct, SmallStruct, BigStruct, SmallPoint, LargeData) with field names preserved. Field access uses proper syntax (s.data[i], p->x).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present (void* to int*, char* conversions in param_complex_cast). ret_large_struct has hidden return pointer parameter exposing ABI detail.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present. No semantic comments explaining algorithm purpose. "Unresolved local var" comments indicate decompiler uncertainty but don't help understanding.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern present but not identified as stdarg convention. Function pointer callback pattern not recognized. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with "WARNING: Unknown calling convention" and "Unresolved local var" markers. Clearly indicates decompiler uncertainty at call sites.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., p != NULL checks not documented as contracts). No postcondition inference. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many constant-folded away. Global references shown as DAT_001023ca without symbol names. Call graph relationships obscured by optimization.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by test category (calling conventions vs. parameter passing vs. return values). Runtime init functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined symbols (__gmon_start__, __libc_start_main, __cxa_finalize). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+7+5+5)/4 = 5.25
+Level 2 Average: (6+5+6+6)/4 = 5.75
+Level 3 Average: (7+8+6)/3 = 7.00
+Level 4 Average: (3+4+7+2)/4 = 4.00
+Level 5 Average: (5+5+4)/3 = 4.67
+
+Overall = (5.25 × 0.30) + (5.75 × 0.25) + (7.00 × 0.20) + (4.00 × 0.15) + (4.67 × 0.10)
+        = 1.575 + 1.4375 + 1.400 + 0.600 + 0.467
+        = 5.48/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Constant folding eliminated test structure**: Functions like `call_cdecl()` return `0xf` directly instead of showing the actual function call to `cdecl_func(5, 10)`, losing semantic meaning
+- **Generic variable naming**: Variables like `iVar1`, `uVar2`, `local_d8` obscure purpose; should be `sum`, `offset`, `stack_offset` based on usage
+- **Hex literals instead of decimal**: Values like `0xf`, `0x32`, `0x2a` instead of `15`, `50`, `42` make verification against expected values difficult
+- **String literals replaced with data references**: `DAT_001023ca` instead of actual printf format strings obscures output intent
+- **Calling convention warnings on every wrapper**: 30+ functions show "Unknown calling convention" warning despite simple signatures
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct definitions (LargeStruct, SmallStruct, BigStruct) recovered with accurate field names and proper access syntax, enabling clear understanding of data layouts.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No documentation of preconditions (NULL checks), postconditions, or error handling contracts that would help analysts understand function requirements.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call structure over constant folding**: Even when results are computable, show actual function calls to maintain semantic transparency for test harnesses
+2. **Infer variable names from usage patterns**: Variables used in accumulation should be named `sum`, loop counters should be `i`, pointer offsets should indicate purpose
+3. **Recover string literals inline**: Replace DAT_XXXX references with actual string content when recoverable, especially for printf format strings that document expected output

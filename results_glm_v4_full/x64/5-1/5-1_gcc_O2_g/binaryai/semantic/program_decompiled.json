@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-1/5-1_gcc_O2_g/binaryai/syntactic/bin/5-1_gcc_O2_g_fixed",
+  "stdout": "",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true
+}

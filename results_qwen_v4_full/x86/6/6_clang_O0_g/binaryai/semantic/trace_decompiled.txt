@@ -1,0 +1,8 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=-1208795136,Arg1=-1208795136,Arg2=0,Arg3=-1210626143|eax=0xb7f35dd8,ebx=0x0,ecx=0xe58b5764,edx=0xbfdcbf14,esi=0xb7f34000,edi=0x0
+TRACE_ENT|1|call_strcpy|1|Arg0=134533364,Arg1=-1076045328,Arg2=-1210530183,Arg3=-1208780792|eax=0x2b,ebx=0x0,ecx=0x0,edx=0xbfdc9894,esi=0xb7f34000,edi=0x0
+TRACE_ENT|2|param_strcpy|2|Arg0=-1076052380,Arg1=134525952,Arg2=-1210429397,Arg3=0|eax=0x804b400,ebx=0x0,ecx=0xbfdcbe64,edx=0xbfdc9894,esi=0xb7f34000,edi=0x0
+TRACE_EXT|2|param_strcpy|2|8
+TRACE_EXT|1|call_strcpy|1|8
+TRACE_ENT|3|call_strcmp|1|Arg0=134533408,Arg1=8,Arg2=-1210530183,Arg3=-1208780792|eax=0x11,ebx=0x0,ecx=0x0,edx=0xbfdc9894,esi=0xb7f34000,edi=0x0
+TRACE_ENT|4|param_strcmp|2|Arg0=134534069,Arg1=134534073,Arg2=-1076062060,Arg3=0|eax=0x804d3b5,ebx=0x0,ecx=0x804d3b9,edx=0xbfdc9894,esi=0xb7f34000,edi=0x0
+TRACE_EXT|4|param_strcmp|2|-1

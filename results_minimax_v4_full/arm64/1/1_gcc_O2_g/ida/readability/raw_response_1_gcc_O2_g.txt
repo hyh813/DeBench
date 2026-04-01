@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4` throughout (e.g., `loop_modify_var` uses `v1`, `v2`, `v3`). While parameter names like `a`, `b`, `c`, `x` are preserved, internal variables lose semantic meaning. The variable `result` is descriptive but insufficient to offset the many cryptic names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `double_value`, `triple_value`. Minor issues include internal functions like `sub_940` and some test functions with hardcoded values instead of calling the actual functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x140000000ALL` in `loop_break` (should represent {10, 20, 30, 40, 50}) are unexplained. Switch tables use generic names like `CSWTCH_55[op]`. However, some literals like `1001` in `infinite_loop` are clear. The decompiler fails to recover meaningful constants from data sections.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Register annotations like `// w2`, `// w0` are present but non-intrusive. No obvious debug instrumentation or frame pointer manipulation cluttering the code. The output is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural, but some transformations occurred: `loop_for_fixed` uses do-while instead of for loop; `switch_small` uses array lookup instead of switch-case; `goto_backward` uses do-while instead of goto loop. At -O0, these transformations are unnecessary and reduce readability.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function from the source is preserved as a separate function. Function granularity is appropriate - no 500-line monoliths. The decomposition matches the original source structure well, with static helper functions properly scoped.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some forward jumps in switch statements and computed goto (`__asm { BR X0 }`) interrupt flow slightly. The `while (2)` in `loop_multi_exit` is an anomaly but readable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain significant redundancy - they use hardcoded expected values (e.g., `__printf_chk(1, "CF-L1-01 (sequential_ops): %d\n", 21)`) instead of calling the actual functions and printing results. This is a major readability issue for the test code portion.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types are precise: `int` for parameters matches source, `volatile int *flag` properly typed, function pointers have correct signatures like `int (*f)(int)`. Minor issues include some `unsigned int` usage that could be more specific.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays are properly recovered: `int arr[5]` in `loop_break`, `int matrix[3][4]` in `loop_multi_exit`, `int (*funcs[3])(int)` in `call_func_ptr_array`. The decompiler correctly identifies array dimensions and element types.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code with proper function pointer typing. Minor issues include some pointer arithmetic in array indexing. No severe type safety violations observed that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only generic header comments from IDA ("Decompiled by IDA Pro 9.1 with Hex-Rays") are present. No useful comments explaining algorithm logic, non-obvious operations, or decompilation confidence. The code lacks documentation that would aid understanding.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized: switch statements (though sometimes converted to array lookups), loops (though sometimes transformed), ternary operator recovered as `if-else`. However, patterns like Duff's device are not identified as such, and no explicit pattern naming occurs.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly flags "FAILED to decompile" for 9 functions (_setjmp, __libc_start_main, etc.). However, anomalies like the `while (2)` infinite loop in `loop_multi_exit` and the computed goto `__asm { BR X0 }` are not flagged or explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation recovered. The implicit contracts in functions like `duffs_device` (n > 0 requirement) are not indicated. Error conditions from multi-return functions lack documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No cross-reference information present. The decompiled code shows no indication of which functions call which, global variable usage, or callback relationships. Functions appear isolated without relationship context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped (control flow L1, L2, L3 test functions together) but the organization is arbitrary. No clear separation into logical modules or indication of source file boundaries. Static functions are properly marked but not organized.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code references many external functions without declarations (puts, __printf_chk, __gmon_start__, etc.). The test functions use hardcoded values instead of function calls, making them non-functional. Would require moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic names (v1, v2, v3) throughout, obscuring variable purpose
+- Test functions use hardcoded expected values instead of calling actual functions, making them non-functional and unreadable
+- No comments explaining algorithm logic or decompilation confidence
+- Magic numbers like `0x140000000ALL` are unexplained
+- Cross-reference information completely absent
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.0/10)  
+Types are precise and match the original source well. Function signatures are correct, arrays have proper dimensions, and type safety is maintained throughout.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.0/10)  
+The decompiled code lacks comments, pattern identification, anomaly flags, and contract documentation. Combined with poor cross-reference clarity, the code provides minimal semantic context for understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v1` in `loop_modify_var` accumulating sum should be named `sum`
+2. Recover function call semantics in test functions - call actual functions instead of hardcoding expected values
+3. Add comments explaining non-obvious patterns like Duff's device, computed goto, and switch table transformations

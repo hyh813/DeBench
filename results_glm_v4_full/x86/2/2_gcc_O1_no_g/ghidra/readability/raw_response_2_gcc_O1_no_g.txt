@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `piVar1`, and `uVar1`, providing no semantic context (e.g., `sum`, `index`, `ptr` are lost).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `double_value`, `process_int`, `array_1d_stack`), matching the source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers derived from compiler optimizations, such as `0x6e` (110) and `0xb` (11) for array strides in `array_2d_stack`, and `0xbf`/`0x1a` for ASCII range checks in `process_char`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present, including `CONCAT44` macros for 64-bit math, `undefined4`/`undefined8` types, and injected `__x86.get_pc_thunk` warnings, which obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered as `do-while`, the logic is often obscured by compiler optimizations, such as the complex range check `(byte)((char)param_1 + 0xbfU) < 0x1a` in `process_char` instead of a simple `if` statement.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with standard loop structures; however, pointer arithmetic in array functions (e.g., `param_1 = param_1 + 0xb`) requires mental simulation to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized code without adding redundancy, though the compiler's own optimizations (like constant folding in `test_data_types_l1`) make the code look different from the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often imprecise; `process_float` returns `longdouble` instead of `float`, `process_ll` uses `undefined8` and splits 64-bit arguments into two 32-bit params (`param_1`, `param_2`), and structs are flattened to `int*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost; `struct_simple` accesses fields via array indexing (`param_1[1]`, `param_1[2]`) rather than member access (`->y`, `->z`), and `struct_bitfields` operates on a raw `ushort` with manual bit masking.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code is functionally correct, it relies on numerous casts like `(int)(char)*param_1` and `*(undefined4 *)`, which erases type safety and makes the code fragile.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to compiler warnings (e.g., "WARNING: Function: __x86.get_pc_thunk.bx replaced...") and provide no insight into the algorithm's purpose or logic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms like the uppercase check in `process_char` are obscured by optimized arithmetic, and array traversals use pointer offsets rather than idiomatic array indexing.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Standard Ghidra warnings for inlined functions and unreachable blocks are present, but the complex pointer arithmetic and magic numbers in array functions are not flagged as potential readability issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement for non-NULL pointers in `ptr_single` is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clearly resolved (e.g., `double_value` called in `test_pointer_types`), and the relationships between functions are preserved accurately.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure (Data Types -> Arrays -> Pointers -> Composites), which aids navigation.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types (`undefined4`, `undefined8`, `code *`) and macros (`CONCAT44`) that require Ghidra's specific headers to compile, preventing standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Composite types (structs) are not recovered; accessed as raw pointer arithmetic (e.g., `param_1[1]` instead of `p->y`).
+- Variable names are entirely generic (`param_1`, `iVar1`), losing all semantic meaning.
+- Magic numbers derived from optimization (e.g., `0x6e`, `0xb`) obscure array logic and bounds checking.
+- Type precision is poor, with `float` promoted to `longdouble` and 64-bit integers split into 32-bit parameters.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The binary symbols were preserved, allowing immediate identification of functionality matching the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover struct definitions forces the reader to interpret raw memory offsets, which is the single biggest barrier to understanding the data structures.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover and Apply Struct Definitions:** Automatically detect struct usage patterns (e.g., `base + offset`) and apply defined struct types to parameters instead of flattening to `int*`.
+2. **Variable Name Inference:** Infer variable names from context (e.g., accumulators named `sum`, loop counters `i`) to improve lexical clarity.
+3. **Demote Optimized Types:** Detect when FPU operations or register usage artificially promotes types (e.g., `float` to `longdouble`) and cast them back to the likely source signature for readability.

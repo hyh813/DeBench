@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some original names recovered (`param_strcpy`, `thread_compute`, `signal_handler`) but many functions have mechanical names (`sub_402020`, `sub_402784`). Approximately 40% of functions retain meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (unsigned -1) appears dozens of times without explanation. Error codes like `42`, `4294967293`, `4294967294` are unexplained. String literals preserved but numeric constants not recovered as named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from stub functions (`sub_40202d` just calls `sub_402030`), redundant variable assignments (`ptr = ptr`), and initialization thunks. Over 50 trivial wrapper functions add no semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `do-while` instead of `for` loops, goto labels (`LABEL_403987`) for simple conditionals. At `-O0` optimization, this restructuring is unexpected and reduces readability significantly.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Over-fragmented with many single-purpose wrapper functions. Original cohesive functions split into `.part.0`, `.constprop.0` variants without clear rationale. Function `param_thread_local_storage` is 100+ lines with poor cohesion.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but forward jumps and labels disrupt flow. Deep nesting in verification code (e.g., `param_fread_fwrite` string comparison) makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling artifacts visible in `thread_sum` and `param_memset` with repetitive conditional chains. Duplicate error return patterns (`4294967295`, `4294967294`, `4294967293`) not abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Excessive `unsigned long long` where `int`, `size_t`, or `pid_t` would be appropriate. `param_strcpy` returns `int` but decompiled as `int` cast from unsigned arithmetic. Lost const-correctness on string parameters.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `field_c`). `ThreadData` struct completely lost - fields accessed via pointer arithmetic. `FILE` struct empty definition provides no value.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(int)ptr[18446744073709551580]`). Pointer arithmetic on `char*` for struct access. No buffer overflow warnings despite `strcpy` usage. Some type confusion in thread return values.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only anomaly note is `[D] Unsupported jumpkind Ijk_SigTRAP` which is unhelpful.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`, `pthread_create`) but not annotated as such. Thread synchronization patterns (mutex, condition variable) not identified as concurrency idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). No warnings about potential issues like the signal handler race conditions, TLS access patterns, or the suspicious `atomic_counter` typed as `char`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc results). No postconditions inferred. Error return values not explained (what does `4294967293` mean vs `4294967294`?).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but callback relationships unclear. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used without usage documentation. Thread entry points not clearly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat namespace. No logical grouping of related functions (library tests, syscall tests, thread tests all intermixed). Original section organization completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread, libc) implicitly required but not documented. Some functions need stubs (`__printf_chk`, `__snprintf_chk`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+4+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+4+6)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.93/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `ptr` obscure semantic meaning (e.g., `dst`/`src` in `param_strcpy` lost)
+- **Magic error codes unexplained** - `4294967295`, `4294967294`, `4294967293` appear throughout without documentation
+- **Struct field names lost** - `ThreadData` struct fields accessed via pointer arithmetic instead of named fields
+- **50+ stub wrapper functions** - Functions like `sub_40202d` that just call another function add noise without value
+- **No comments or documentation** - Zero explanation of algorithm intent, error conditions, or decompilation confidence
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code compiles successfully with minimal stubs, indicating basic structural integrity preserved
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding decompiled logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in `strcpy` calls should be `dst`/`src`)
+2. **Recover and document error code semantics** - Map repeated magic numbers to named constants with explanations (e.g., `ERROR_OPEN_FAILED = 4294967295`)
+3. **Eliminate trivial wrapper functions** - Detect and inline single-call wrapper functions (`sub_40202d` → `sub_402030`) to reduce noise

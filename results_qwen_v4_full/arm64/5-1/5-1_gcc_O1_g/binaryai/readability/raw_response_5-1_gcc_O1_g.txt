@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `iVar1`, `pvVar2`, `local_8`, `acStack_2c` with zero semantic meaning. Original source had meaningful names like `value`, `name`, `data`, `size`, `capture_by_value` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use generic names (`FUN_00101470`, `template_max_int_`). Class methods partially recovered (`Base::virtual_func`, `Derived::getName`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x15`, `0x47`, `0x96`, `0xfa`. String literals referenced as `&DAT_00102148` instead of actual content. Some return values are pre-computed constants hiding actual logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks in every function (`local_8 = ___stack_chk_guard`, `__stack_chk_fail()`). External function stubs clutter output. Multiple destructor variants per class. Compiler initialization code (`register_tm_clones`, `_GLOBAL__sub_I_*`) mixed with application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Stack canary checks create artificial branching at function exits. Some functions return pre-computed constants (`test_cpp_multiple_inheritance` returns `0x47`) instead of showing computation. Exception handling incomplete—`test_cpp_exception` only shows throw without catch blocks.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions appropriately sized, but class methods fragmented. Multiple destructor variants for same class (`DiamondDerived::~DiamondDerived` appears 3 times). Template instantiations properly separated but external stubs add bloat.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks create exit jumps. Virtual function calls use confusing indirect syntax: `(***(code ***)param_1)(param_1,param_2)`. Exception flow not properly linearized.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor implementations per class with slight variations. Similar `MiddleA::func` and `MiddleB::func` patterns duplicated. External function stubs repeat unnecessarily. Some functions compute then discard results.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate: `undefined4`, `undefined8`, `undefined`, `long`. Some original types preserved (`int`, `double`, `size_t`). Pointer types lack specificity (`void *`, `long *`). Class types partially recovered (`Base *`, `Container_int_ *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—no struct/class layouts recovered. All member access via pointer arithmetic: `*(int *)(this + 8)`, `*(int *)(this + 0x28)`, `*(int *)(this + (long)iVar1 * 4)`. Virtual table structures not recovered. Inheritance relationships invisible in type system.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts: `(undefined4 *)`, `(long *)`, `(char **)`, `(Base *)`. Heavy pointer arithmetic throughout. Function pointer calls unsafe: `(***(code ***)param_1)`. No const-correctness preserved. No bounds checking on array access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only header comment exists (`// Decompiled by BinaryAI`). Zero inline comments explaining logic. No algorithm documentation. No decompilation confidence indicators. Original source had extensive comments explaining each C++ feature being tested.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized: RAII patterns invisible, virtual dispatch not explained, template instantiation not documented, lambda capture patterns lost, smart pointer semantics not indicated. Exception handling pattern incomplete.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about indirect calls that couldn't be resolved. No flags for stack canary artifacts. Some functions return constants without explanation (why does `test_cpp_lambda` return `0x55`?). No notes about incomplete exception recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions inferred. No invariants recognized for class members. Exception contracts not recovered (what exceptions can be thrown?). Array bounds checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch present but vtable structure not explained. Global variable usage opaque (`LifecycleClass::instance_count`). No call graph documentation. Callback relationships not indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. External function stubs mixed with application code. No namespace structure. Class methods not grouped with their classes. Template instantiations scattered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but many are stubs. Would require significant work to compile standalone. Dependencies not documented. Some type definitions missing (`Init`, `Container_int_`). C++ runtime dependencies implicit.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+2+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.90/10
+```
+
+### Overall Readability Score: **3.9/10**
+
+### Critical Defects:
+- **No composite type recovery**—all class/struct layouts lost, member access via raw pointer arithmetic (`*(int *)(this + 8)`)
+- **Zero semantic comments**—original source had extensive documentation, decompiled code has none
+- **Generic variable naming**—all variables named `iVar1`, `local_8`, `pvVar2` with no semantic meaning
+- **Magic numbers unexplained**—constants like `0x125c`, `0x96`, `0xfa` used without context
+- **Incomplete exception handling**—`test_cpp_exception` shows throw but catch blocks not recovered
+- **Stack canary noise**—every function has artificial branching for stack protection
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), making it possible to identify test purposes despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of documentation makes understanding C++ semantics (virtual dispatch, templates, inheritance) nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type layouts**—analyze vtable structures and member access patterns to reconstruct class definitions with field names instead of raw pointer arithmetic.
+2. **Add semantic comments for C++ idioms**—document virtual dispatch, template instantiation, exception handling, and RAII patterns with explanatory comments.
+3. **Infer variable names from usage context**—variables used in size calculations should be named `size`/`length`, pointers to objects should reflect class names, loop counters should be `i`/`idx`.

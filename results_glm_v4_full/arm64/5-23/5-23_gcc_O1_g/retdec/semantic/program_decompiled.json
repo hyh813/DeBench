@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_gcc_O1_g/retdec/syntactic/bin/5-23_gcc_O1_g_fixed",
+  "stdout": "�\u0017�&��x\u0017�&��X\u0017�&��8\u0017�&��\u0018\u0017�&���\u0016�&���\u0016�&���\u0016�&��LOG: Values: 10, 20, 30\n�\u0016�&��h\u0016�&��H\u0016�&��file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:27\n\u0018\u0016�&���\u0015�&���\u0015�&���\u0015�&���\u0015�&��h\u0015�&��",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

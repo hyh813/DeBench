@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`), offering no semantic insight into their purpose (e.g., `count`, `sum`, `ptr`), which significantly hampers quick comprehension.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `cdecl_func`, `test_calling_conventions`), making the high-level intent immediately clear and matching the source perfectly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are completely lost, replaced by opaque pointer arithmetic on global variables (e.g., `(char *)(v1 + (int32_t)&g8 - 0x1fc4)`), making print statements unreadable.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with Position Independent Code (PIC) setup artifacts like `__x86_get_pc_thunk_bx(v1)` and stack canary checks (`__readgsdword`) in almost every function, obscuring the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural for `-O0` code, with recognizable `for` and `while` loops, though some loop conditions are slightly verbose due to unoptimized variable handling.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging of logic blocks.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The frequent insertion of PIC setup code (`__x86_get_pc_thunk`) at the beginning of functions disrupts the top-to-bottom reading flow, though the core logic remains linear.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code or redundancy, but the repetitive nature of the PIC setup calls across functions adds unnecessary visual noise.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While basic types like `int32_t` are used correctly, the decompiler failed to recover struct parameters (e.g., `func_struct_byval` takes `void` instead of `LargeStruct`) and treats pointers as `int32_t` in arithmetic.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely unrecovered; `LargeStruct` and `SmallStruct` usage is reduced to raw pointer arithmetic and stack offsets (e.g., `*(int32_t *)((int32_t)&v1 + 8 + 8 * i)`), losing all semantic structure.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts, such as converting `int32_t` to pointers (`(int32_t *)a1`) and accessing memory via `void*`, which erases type safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; only address ranges are present, leaving complex operations like varargs handling undocumented.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `va_list` (varargs) are not recognized; instead, the decompiler shows raw stack walking (`*(int32_t *)(4 * v1 + (int32_t)&v2)`), failing to abstract the pattern.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler silently presents incorrect function signatures (e.g., missing struct parameters) without warning the user about potential recovery failures or anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for non-null pointers in `func_struct_byptr` is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable references are clearly preserved, allowing the user to trace the call graph effectively despite the naming issues.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and prototypes are listed at the top, maintaining a structure that mirrors the original source file organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to the use of compiler intrinsics (`__x86_get_pc_thunk_ax`, `__readgsdword`) and non-standard inline assembly (`__asm_rep_movsd_memcpy`).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- String literals are completely lost, replaced by pointer arithmetic on global offsets (e.g., `g8 - 0x1fc4`).
+- Composite types (structs) are not recovered; `func_struct_byval` is incorrectly defined as taking `void` arguments.
+- Varargs functions are not recognized; `va_list` logic is decompiled to raw stack memory access.
+- Excessive noise from Position Independent Code (PIC) thunks (`__x86_get_pc_thunk`) clutters every function.
+- Architecture mismatch: Source metadata claims ARM64, but decompiled code is clearly x86 (32-bit).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names, allowing for easy mapping between the binary and source logic.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover `LargeStruct` and `SmallStruct` reduces complex data manipulation to incomprehensible pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement string literal recovery by analyzing data section references and mapping them back to `printf`/`puts` arguments.
+2. Improve analysis of stack frames to identify and reconstruct composite types (structs) passed by value or returned.
+3. Abstract away Position Independent Code (PIC) setup patterns (like `__x86_get_pc_thunk`) into cleaner pseudo-variables or hide them by default.

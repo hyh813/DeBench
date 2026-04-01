@@ -1,0 +1,8 @@
+{
+  "binary_path": "build/x64/2/2_clang_Os_no_g",
+  "stdout": "=== 测试基础数据类型 ===\nDT-L1-01 (process_char): a\nDT-L1-01 (process_char): b\nDT-L1-02 (process_short): 300\nDT-L1-03 (process_int): 11\nDT-L1-04 (process_long): 200\nDT-L1-05 (process_ll): 10000\nDT-L1-06 (process_float): 3.50\nDT-L1-07 (process_double): 2.10\nDT-L1-08 (process_ld): 10.00\nDT-L1-09 (process_bool): 1\nDT-L1-09 (process_bool): 0\nDT-L1-09 (process_bool): 0\nDT-L1-10 (const_param): 15\nDT-L1-11 (volatile_access): 20\n=== 测试数组类型 ===\nARR-L1-01 (array_1d_stack): 15\nARR-L1-02 (array_string): 5\nARR-L1-03 (array_2d_stack): 45\nARR-L1-04 (array_3d): 125\nARR-L2-01 (array_vla): 60\nARR-L2-02 (array_pointer): 100\nARR-L2-03 (pointer_array): 60\nARR-L2-04 (array_complex_index): 17\n=== 测试指针类型 ===\nPTR-L2-01 (ptr_single): 15\nPTR-L2-02 (ptr_double): 15\nPTR-L2-03 (ptr_triple): 6\nPTR-L2-04 (ptr_increment): 15\nPTR-L2-05 (ptr_offset): 30\nPTR-L2-06 (ptr_diff): 4\nPTR-L2-07 (ptr_void): 42\nPTR-L2-07 (ptr_void): 65\nPTR-L2-08 (ptr_const): 20\nPTR-L2-09 (ptr_const_ptr): 15\nPTR-L2-10 (ptr_func_simple): 10\nPTR-L2-11 (ptr_func_complex): 1\nPTR-L2-12 (ptr_cast): 0x12345678\nPTR-L2-13 (opaque_handle_op): 20\n=== 测试复合类型 ===\nCMP-L2-01 (struct_simple): 6\nCMP-L2-02 (struct_array): 9\nCMP-L2-03 (struct_nested): 105\nCMP-L2-04 (struct_deep): 258\nCMP-L2-05 (struct_with_ptr): 30\nCMP-L2-06 (struct_bitfields): 106\nCMP-L2-07 (union_type): 305419896\nCMP-L2-08 (union_array): 60\nCMP-L2-09 (enum_type): 10\nCMP-L2-10 (enum_switch): 50\nCMP-L2-11 (struct_func_ptr): 21\nCMP-L2-12 (linked_list): 60\nCMP-L2-13 (doubly_linked_list): 30\nCMP-L2-14 (binary_tree): 100\nCMP-L2-15 (graph_traverse): 1\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

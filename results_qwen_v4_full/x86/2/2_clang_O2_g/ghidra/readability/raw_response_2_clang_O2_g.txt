@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `iVar1`, `uVar2`, `lVar1` instead of semantic names (e.g., `sum`, `index`). Many locals marked as "Unresolved local var: int sum@[???]" showing the decompiler couldn't recover names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved original names well (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, helper functions like `FUN_00011030` and architecture thunks (`__i686.get_pc_thunk.bx`) are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions show computed constants instead of function calls (e.g., `printf("DT-L1-01...",0x61)` instead of calling `process_char('A')`). Hex literals like `0x61`, `0xb` obscure original character/decimal intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple WARNING comments about inlined functions and unreachable blocks. Architecture-specific thunk functions (`__x86.get_pc_thunk.bx`) and runtime init functions (`_init`, `__do_global_dtors_aux`) add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop unrolling in `array_1d_stack`, `ptr_increment` creates 8-element unrolled loops instead of clean for-loops. `binary_tree_sum` incorrectly transformed from recursive to iterative-with-recursion hybrid. `enum_switch` uses lookup table instead of switch statement.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but test functions (`test_data_types_l1`, `test_array_types`) are heavily constant-folded losing original structure. Helper function `complex_callback` missing from decompilation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. However, `array_3d` has extensive pointer arithmetic in a single expression spanning 25+ lines. Loop unrolling creates long repetitive sequences disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling (e.g., `array_1d_stack` repeats `arr[uVar2 + N]` pattern 8 times). This is compiler optimization artifact that decompiler didn't re-abstract into loops.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types mostly correct (char, short, int, longlong). Critical error: `process_ld` has wrong signature `longdouble * process_ld(longdouble *__return_storage_ptr__,longdouble d)`. `volatile_access` loses volatile qualifier entirely.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs (`Point3D`, `Rect`, `Widget`, `Node`) recovered with correct field names and nesting. Unions (`UnionData`) and enums (`State`) preserved. However, `struct_bitfields` uses manual bit operations instead of clean field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `ptr_diff` uses unsafe cast `(int)p1 - (int)p2 >> 2` instead of proper pointer subtraction. `opaque_handle_create` casts int to void*. Multiple void* casts in `ptr_void`, `ptr_cast` without safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments about inlined functions and unreachable blocks. Zero semantic comments explaining algorithm purpose. All original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal pattern present in `linked_list` but not identified. Tree recursion in `binary_tree_sum` structurally present but incorrectly transformed. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" annotations indicate recovery issues. WARNING comments flag some problems. However, critical issues like `process_ld` signature error not flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). NULL checks exist in code but not documented as contracts. No error condition documentation or return value guarantees.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions show constant results instead of actual calls. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) present but not documented. No call graph summary.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 67 functions in single flat file. No logical grouping by category (data types, arrays, pointers, composites). Static functions not properly scoped. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing typedefs (`_func_int_int`, `Point3D`, etc.). Architecture-specific thunk functions present. Test functions constant-folded so original logic won't execute. External dependencies (`printf`, `puts`) undeclared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.01/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_data_types_l1`, `test_array_types` show computed results (e.g., `0x61`) instead of actual function calls, losing all computational logic
+- **`process_ld` signature corrupted**: Returns `longdouble *` with extra `__return_storage_ptr__` parameter instead of `longdouble`
+- **`volatile_access` loses volatile qualifier**: Critical semantic information lost, could lead to incorrect optimization assumptions
+- **Loop unrolling not re-abstracted**: Functions like `array_1d_stack` show 8-element unrolled loops instead of clean for-loops
+- **No semantic comments**: All original documentation lost; only auto-generated WARNING comments remain
+
+### Best Quality Aspect: **Composite Type Recovery (7/10)**
+- Struct definitions (`Point3D`, `Rect`, `Widget`, `Node`) preserved with accurate field names and nesting hierarchy
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero preconditions, postconditions, or error handling documentation recovered despite many functions having implicit contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and reverse loop unrolling patterns**: Identify repeated arithmetic sequences and re-abstract into clean for/while loops with iteration variables
+2. **Preserve test function call structure**: Avoid constant-folding test harnesses; maintain actual function calls to show computational flow
+3. **Recover contract annotations from usage patterns**: Analyze NULL checks, bounds checks, and type validations to generate precondition/postcondition comments

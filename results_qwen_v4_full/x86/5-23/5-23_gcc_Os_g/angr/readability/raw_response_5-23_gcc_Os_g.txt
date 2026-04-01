@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr`, `iter` with no semantic meaning. For example, `param_macro_constants(unsigned int a0)` should have `size` as the parameter name matching the source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_macro_constants`, `call_asm_basic`), but many helper functions are named `sub_401xxx` with no semantic meaning. Runtime functions like `__x86.get_pc_thunk.bx` are compiler artifacts.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x400` (should be MAX_SIZE=1024), `0x200` (512), `57072` (0xDF00 from conditional compilation). String literals like `"src/5-23.c"` are preserved but build-specific.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: `__x86.get_pc_thunk.*` functions, stack canary checks (`__stack_chk_fail_local`), nonsensical struct definitions with `padding_0[11863]`, and unresolved calls to `sub_401110` (printf).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and for loops recovered well (e.g., `param_asm_clobber` has clean for loop), but some functions use `goto` unnecessarily (e.g., `sub_401030` with `goto ptr[2]`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but aggressive constant folding destroyed semantic structure—`call_macro_constants()` returns literal `64` instead of calling `param_macro_constants(2048)`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but several use forward gotos that disrupt flow (`sub_4010b0`, `sub_4010c0` with `goto v1->field_2c`).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal redundant code in core logic, but compiler artifacts create duplication (multiple `get_pc_thunk` variants, repeated struct definitions with different padding).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are generic `unsigned int` or `int`—no `int32_t`, `size_t`, or `uint128_t` precision. Pointer types often degraded (e.g., `param_asm_clobber(unsigned int ptr, unsigned int a1)` loses array semantics).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Catastrophic failure—structs defined as `char padding_0[11863]; unsigned int field_2e57;` are clearly decompiler hallucinations, not real structures. No meaningful field names recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic present (`ptr + idx * 4`), but no egregious casts. Atomic operations recovered as `atomic_exchange_add` which is reasonable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of magic numbers, algorithm intent, or decompilation uncertainty. Original source had extensive documentation—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition—macro expansions, atomic operations, and SIMD patterns not identified. `AddV` for SIMD is a generic placeholder, not meaningful identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but most issues silently ignored. Unresolved calls to `sub_401110` not marked as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Stack canary checks present but not explained as security features.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call graph visible but many external references unresolved (`sub_401110` for printf, `g_40206e` for format strings). Global variables named by address.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Related functions (test/preprocessing/asm) not organized into sections matching source structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile—undefined symbols (`_ccall`, `AddV`, `atomic_exchange_add`), nonsensical struct definitions, missing headers. Requires extensive manual修复.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (6+5+6+7)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+2+6)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0`** should be named semantically (e.g., `size`, `x`, `result`) based on usage context
+- **Struct definitions with `padding_0[11863]`** are decompiler hallucinations that obscure real data structures
+- **Constant folding destroyed call chains**—`call_macro_constants()` returns literal `64` instead of showing the actual function call
+- **Zero comments** despite complex preprocessing and assembly semantics that require explanation
+- **Unresolved external calls** (`sub_401110`, `_ccall`, `AddV`) not flagged as uncertain or requiring manual analysis
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (6/10)** — Basic loop and conditional structures were recovered reasonably well for functions like `param_asm_clobber` and `param_asm_multi_insn`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** — Complete absence of documentation makes understanding macro semantics, assembly intent, and conditional compilation branches nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** — Analyze usage patterns to infer names (e.g., parameters used in size comparisons should be named `size` or `length`)
+2. **Detect and annotate constant-folded code** — When a function returns a literal, indicate the original computation that was folded (e.g., `// Originally: return BUFFER_COUNT * 4`)
+3. **Flag unresolved symbols with confidence indicators** — Mark calls like `sub_401110` as "LIKELY: printf" with uncertainty level rather than leaving as opaque addresses

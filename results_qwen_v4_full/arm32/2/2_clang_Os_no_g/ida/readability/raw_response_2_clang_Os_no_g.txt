@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with zero semantic meaning. Original source had meaningful names like `char c`, `short a, short b`, `int x` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), accurately reflecting functionality. However, helper functions use generic names (`sub_3F8`, `sub_1594`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout without explanation (`65`, `32`, `0x1Au`, `44`, `440`). Critically, test functions print pre-computed constants (e.g., `printf("DT-L1-01...: %c\n", 97)`) instead of calling actual functions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: register comments (`// r0`, `// r1`), stack annotations (`[sp-4h] [bp-4h]`), excessive casts (`(_DWORD *)`, `(__int16)`). Seven external functions failed to decompile entirely.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For-loops converted to do-while patterns. Most critically, test functions don't execute actual logic—they print constant values, completely obscuring the test flow and making verification impossible.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions properly separated with reasonable granularity. However, test functions are broken (constant-folded), and runtime library functions (`__muldf3`, `__subdf3`) appear inline instead of being external calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with do-while loops. Some forward jumps in complex functions (`array_3d`, `__muldf3`) disrupt flow but remain traceable with effort.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Type cast redundancy throughout. Test function constant-foldng is actually over-optimization that removes useful information. No dead code removal in main computational functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe degradation: `char`→`int` (`process_char` takes `int result`), `long`→`int` (`process_long` takes `int a1`), `long double`→`double`. All pointer qualifiers (`const`, `volatile`) lost—`const_param` takes `_DWORD *` instead of `const int *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—no struct definitions recovered. `Point3D` accessed as `a1[0]`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`. Unions, bitfields, and nested structures all reduced to pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(_DWORD *)`, `(int *)`, `(float *)`). Pointer arithmetic without bounds checking. Function pointer signatures degraded (`int (__fastcall *a1)(int, _DWORD *)` loses `char **` parameter type).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated stack variable annotations. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. Linked list traversal, array summation, tree recursion—all appear as raw loops without identification. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("FAILED to decompile: 7 functions", "positive sp value has been detected, the output may be wrong!"). However, no detailed explanation of implications or manual review suggestions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions. No error condition documentation. Null checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible in code, but test functions don't actually call the functions they're testing (constant-folded). Global variable usage unclear. Callback relationships obscured.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly logical order matching source. All code in single file with no module structure. No header file separation or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Seven external functions failed (`__imp___libc_start_main`, `__imp_printf`, etc.) requiring stubs. Compiler-specific constructs (`__asm { POP {R4-R6,PC} }`) present. Architecture-specific (ARM) throughout.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+3+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (2+2+5+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.10/10
+```
+
+### Overall Readability Score: **4.1/10**
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_data_types_l1()` prints `97` instead of calling `process_char('A')`—completely defeats testing purpose
+- **Zero struct recovery**: All composite types reduced to `_DWORD *` pointer arithmetic, losing field semantics
+- **Type qualifier loss**: `const`, `volatile` modifiers completely stripped from all pointer parameters
+- **Generic variable naming**: Every variable is `a1`, `a2`, `v1`, `v2` with no semantic meaning
+- **Seven failed decompilations**: External library functions not recovered, requiring manual stubs
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), allowing immediate identification of purpose despite other degradation.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any struct/union definitions—all composite types accessed via raw pointer arithmetic, making complex data structure code nearly unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns**: Detect consistent offset patterns (e.g., `[0]`, `[4]`, `[8]` for 3-int struct) and propose named struct types with field names.
+2. **Preserve test function call semantics**: Avoid aggressive constant folding in test harnesses—maintain actual function calls to preserve verification capability.
+3. **Recover type qualifiers from usage**: Analyze memory access patterns to infer `const` (read-only) and `volatile` (multiple reads without optimization) qualifiers on pointers.

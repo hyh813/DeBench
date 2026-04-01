@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `vars0`, `vars8`, `v19`) with no semantic meaning. Only simple functions preserve original parameter names (`a`, `b`, `count`, `x`). The varargs functions are particularly poor with `vars0` through `vars28` obscuring the va_list handling.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are perfectly preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only startup/runtime functions have generic names (`sub_710`, `init_proc`). This is excellent recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions are constant-folded showing raw values (15, 50, 6) instead of expressing the computation. Magic numbers like `0xFFFFFFFF` in `func_struct_byval` lack explanation. String literals are externalized (`asc_1598`, `aCallL206`) losing readability.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Excessive type casts (`(unsigned int)`, `(unsigned __int8)`, `(unsigned __int64)`) clutter simple expressions. Stack variables (`vars0`, `vars8`) from varargs handling create visual noise. However, no dead code or debug instrumentation present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses awkward while-loop with manual index tracking instead of clean for-loop. The condition `while (v3 < 0)` with `v3 = -56` initialization is confusing compared to original's clean `for (int i = 0; i < count; i++)`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate—no monolithic functions. However, constant folding collapsed test functions (`call_cdecl` returns 15 directly instead of calling `cdecl_func(5, 10)`), losing the call structure that demonstrates calling conventions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally. The varargs functions have complex nested conditionals with forward references that disrupt flow. Loop structures in `param_ptr_array` are reasonably linear with do-while pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts appear throughout (`(unsigned int)(int)((double)v4 + d + (double)ll)`). The varargs handling shows duplicated pointer arithmetic patterns. No dead code detected, but optimization artifacts remain visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (int, char*, double, __int64). Function pointer types recovered correctly (`int (*callback)(int)`). However, ARM-specific types (`int32x4_t`, `int64x2_t`) appear in `func_struct_byval` obscuring the original simple loop. Some returns use `__int64` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery—`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint` all reconstructed with field names preserved (`s->data[0]`, `p->x`, `p->y`). Field access uses proper member notation instead of pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Type casts match original source intent (void* conversions in `param_complex_cast`). No dangerous buffer operations introduced. The `ret_small_struct` has a warning comment about local variable allocation failure, indicating potential type reconstruction issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only auto-generated annotations exist ("local variable allocation has failed, the output may be wrong!", "attributes: thunk", "BYREF"). No algorithm explanations or parameter documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithm patterns identified. The varargs pattern (`va_start`, `va_arg`, `va_end`) is visible but not labeled as such. Callback pattern in `param_func_ptr` is clear from structure but not named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile: strlen", "local variable allocation has failed"). However, silent failures exist—constant folding of test functions loses semantic meaning without warning. The `ret_large_struct` has unusual `@<X0>` calling convention annotation without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` in `func_struct_byptr` is only visible in code, not commented). No postconditions or invariants recovered. Null checks exist in code but aren't highlighted as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but constant folding obscures relationships (test functions don't show actual calls to tested functions). External library functions marked "FAILED to decompile" without stub declarations. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order but don't match source file organization. Related functions somewhat grouped (calling convention tests together). No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed decompilation requiring stubs (`strlen`, `printf_chk`, `puts`, etc.). Global variables referenced (`handle1_1`, `handle2_0`, `asc_1598`) need external definitions. Cannot compile standalone without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.466
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.81/10
+```
+
+### Overall Readability Score: **5.8/10**
+
+### Critical Defects:
+- **Variable names are generic** (`v0`, `v1`, `vars0-28`) obscuring semantic meaning, especially in varargs handling
+- **Constant folding destroyed test structure**—functions like `call_cdecl()` return literal 15 instead of showing `cdecl_func(5, 10)` call
+- **No comments explaining logic**—zero documentation for non-trivial operations like varargs iteration
+- **String literals externalized** (`asc_1598`, `aCallL206`) making printf statements unreadable without cross-reference
+- **8 external functions failed decompilation** requiring manual stubs for compilation
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`) perfectly reconstructed with field names preserved and proper member access syntax.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero preconditions, postconditions, or invariants documented; null checks exist in code but aren't highlighted as API contracts for analysts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call structure over constant folding**—show `cdecl_func(5, 10)` instead of returning 15 directly to demonstrate calling convention behavior
+2. **Infer variable names from usage context**—`vars0-28` in varargs should be `arg0-arg5` or `va_arg_0` through `va_arg_5` based on `va_arg` pattern
+3. **Add contract annotations for null checks**—when code contains `if (!p) return -1`, add comment `// PRECONDITION: p != NULL` to document API expectations

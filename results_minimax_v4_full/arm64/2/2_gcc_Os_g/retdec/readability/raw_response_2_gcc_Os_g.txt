@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `v4` throughout the code. For example, in `double_value(int32_t x)`, the parameter should be `x` but is completely lost. The original source had meaningful names like `sum`, `i`, `c`, `p` but these are all replaced with `vN` patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `double_value`, `process_int`, `array_1d_stack`, `ptr_single` are correctly named matching the original source. However, some internal functions like `function_6f0`, `function_700`, `function_1008` have generic mechanical names. The test functions are properly named: `test_data_types_l1`, `test_array_types`, etc.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers and bit manipulation. For example, `2 * v1 & 0xfffffffe` (line 0x9ac), `v1 + 10 & 0xffffffff` (line 0x9a0), and complex expressions like `4 * v1 + (int64_t)arr` without explanation. No named constants replace magic numbers like `0x10000`, `256`, etc.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from numerous `__asm_` intrinsics (`__asm_ubfx`, `__asm_mrs`, `__asm_bfi`, `__asm_bfxil`, `__asm_movi`, `__asm_fmov`) that clutter the code. The floating-point helper functions `__addtf3` and `__multf3` contain massive amounts of assembly-level code (hundreds of lines each) that obscures the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow structures (if-else, while loops, switch) are preserved but often use awkward patterns. For example, array iteration uses manual index management (`v1++` in while loops) instead of natural for-loops. Some goto-like patterns exist. At -O0, more natural flow should be recoverable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User functions are correctly separated. However, `__addtf3` (lines 0x16f0-0x2284, ~600 lines) and `__multf3` (lines 0x2290-0x2a90, ~500 lines) are massive compiler-generated functions that should be handled differently. The original source had ~30 small test functions, all preserved.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in some functions (e.g., `array_1d_stack` returns 0 when n <= 0). However, nested loops in `array_3d` and `graph_traverse` create deep nesting that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some loop unrolling is present in array functions but not clearly marked. The `array_3d` function has obvious duplicated code patterns for iterating through the 5x5x5 cube. The floating-point functions have significant redundancy that could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Good use of `int32_t`, `uint32_t`, `int64_t` matching arm64 conventions. Function signatures are mostly accurate (e.g., `int32_t (*f)(int32_t)` for function pointers). However, some parameters lose their original types - for example, `process_char` should take `char c` but the parameter is unnamed.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are partially reconstructed but field names are lost. Looking at `struct_simple`, it uses raw pointer arithmetic (`*(int32_t *)(v2 + 4)`) instead of named fields like `p->x`, `p->y`, `p->z`. The original had `Point3D` with x, y, z fields - completely lost. Unions similarly show as raw memory access.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe operations throughout. The code has many casts like `(int64_t)*(int32_t *)`, `(int32_t *)v1`, and bit manipulation that could cause undefined behavior. For example, `ptr_const_ptr` does `*(int32_t *)v1 = result` which is highly unsafe. No `restrict` or safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some source line information is preserved (e.g., "Line range: 822 - 830" for main), and address ranges are provided. However, comments are sparse and don't explain the logic. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like switch statements and loops are recognized. However, no design patterns or algorithms are explicitly identified. The original source had clear patterns like "circular buffer", "linked list", "binary tree" - these are not named or highlighted in the decompiled output.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code or potential issues. The decompiled code confidently presents potentially incorrect code without warnings. For example, `array_oob` has the original bug (`i <= n` instead of `i < n`) but it's not flagged as a potential issue.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear semantics (e.g., "returns sum of array elements", "requires: n > 0") but these are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in the code, but relationships are not documented. The original had clear call chains (e.g., `main` calls `test_data_types_l1`, which calls `process_char`). These relationships aren't explicitly documented in the decompiled output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically by type (data types, arrays, pointers, composite types) in the output, which roughly matches the original source organization. However, it's a single monolithic file with no header/API separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code includes necessary headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`) and appears structurally compilable. However, it relies on external functions like `__printf_chk`, `__libc_start_main` without full definitions. The "Compilation Result: Yes" in metadata suggests it was tested.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`v1`, `v2`, `v3`) losing all semantic meaning from original source
+- Composite types (structs/unions) are not properly reconstructed - field names like `x`, `y`, `z` are lost, replaced with raw pointer arithmetic
+- Massive compiler-generated functions (`__addtf3`, `__multf3` - ~1100 lines combined) completely overwhelm the actual user code
+- No anomaly indication for potential bugs (e.g., the intentional `array_oob` bug with `i <= n`)
+- Type safety issues throughout with unsafe casts and pointer arithmetic
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The decompiler correctly preserved the names of user-defined functions from the original source, making it easy to identify which function performs which task.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of meaningful variable names is the most severe readability issue. Original names like `x`, `sum`, `i`, `c`, `p`, `arr`, `str` that clearly indicated purpose are all replaced with generic `vN` patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → `i` or `index`, accumulation → `sum` or `total`, pointer dereferencing → `ptr` or `node`) to assign meaningful names instead of `vN`
+2. **Properly reconstruct composite types**: Detect struct/union layouts and recover field names from access patterns (e.g., `*(int32_t *)(ptr + 8)` should become `ptr->y` if it's the second field)
+3. **Separate compiler-generated code from user code**: The `__addtf3` and `__multf3` functions (floating-point helpers) should be either abstracted away or clearly marked as compiler intrinsics, not presented as user-readable functions

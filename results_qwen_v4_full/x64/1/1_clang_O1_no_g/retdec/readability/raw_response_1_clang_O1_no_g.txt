@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original `sum`, `count`, `temp1` are lost. For example, `loop_for_fixed` uses `v1` instead of `i` for the loop counter.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved (`sequential_ops`, `if_else`, `nested_if_2`), but helper functions use mechanical names (`function_1030`, `function_1040`). Many signatures are corrupted (e.g., `single_if` takes 4 parameters instead of 1).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy magic numbers throughout (`0xffffffff`, `0x100000000`, `0x66666667`) from type conversion artifacts. String literals stored in globals (`g4`, `g5`, `g6`) with encoded UTF-8 content, not human-readable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bit masking (`& 0xffffffff`) on nearly every arithmetic operation. Type conversion patterns (`0x100000000 * x >> 32`) appear throughout, obscuring simple operations like division.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops transformed into complex bit math (e.g., `loop_while` uses multiplication by `0x66666667` instead of `/10`). Some gotos recovered as labels (`lab_0x1640`) instead of structured constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes reasonable, but parameter lists corrupted (e.g., `nested_if_2` takes 4 parameters instead of 2). Test functions monolithic with hardcoded expected values instead of actual function calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `loop_multi_exit` and `test_control_flow_l2` use goto labels (`lab_0x1640`, `lab_0x16be`) disrupting natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Bit masking operations repeated on every return statement. Test functions contain redundant printf calls with pre-computed values instead of calling actual functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` regardless of original type. Original `int` parameters become `int64_t`, losing 32-bit semantics. No const-correctness preserved. Function pointers become `int64_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buf` struct recovered but with generic field names (`e0`, `e1`, `e2`). No other structs present. Array handling poor (treated as raw pointers).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous implicit casts between `int64_t` and `int32_t` via bit masking. Function pointer calls use integer addresses instead of proper function pointer types (e.g., `conditional_func_ptr` returns address values).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from original source (which had extensive Chinese documentation). Only auto-generated file header present. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop idioms not recognized (division by 10 becomes multiply by magic constant). Switch fallthrough in `switch_fallthrough` partially broken. No design patterns identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about function signature mismatches. Type conversion artifacts not explained. Silent failures on uncertain decompilation (e.g., `computed_goto` behavior unclear).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented despite original comments specifying them.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but signatures wrong. Global variables (`g1`, `g2`, `g7`) referenced without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No header file separation. Static functions not properly scoped (e.g., `op_add`, `op_sub` should be static).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included (`stdio.h`, `stdlib.h`, `setjmp.h`). Some functions may not compile due to type mismatches. External dependencies declared but not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (3+5+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.296 ≈ 4.3/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `result`) losing all semantic meaning from original (`sum`, `count`, `temp1`)
+- **Type system degraded** - all `int` became `int64_t` with excessive bit masking (`& 0xffffffff`) on every operation
+- **Zero comments recovered** - original had extensive Chinese documentation explaining each function's purpose and test cases
+- **Function signatures corrupted** - `single_if` takes 4 parameters instead of 1, `loop_dowhile` takes 0 parameters instead of 1
+- **Test functions broken** - hardcoded expected values instead of actual function calls, defeating verification purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Original function names mostly preserved (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), providing some semantic anchor points despite signature corruption.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original documentation; no decompilation confidence indicators or algorithm explanations to help readers understand recovered code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze variable usage patterns to infer semantic names (e.g., accumulator variables → `sum`, loop counters → `i`, `j`)
+2. **Eliminate type conversion noise** - Recognize and remove redundant bit masking operations (`& 0xffffffff`) that result from 64-bit to 32-bit conversions
+3. **Recover and preserve function signatures** - Validate parameter counts against call sites to prevent signature corruption (e.g., `single_if` should have 1 parameter, not 4)

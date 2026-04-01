@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names (`v0`, `v1`, `v2`, `i`, `cur`, `result`) and parameters are `a0`, `a1`, `a2`. The original had meaningful names like `temp1`, `temp2`, `sum`, `count`, `target` - all lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions retain their original names: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`. Infrastructure functions like `_init`, `_start` are appropriately generic. Minor deduction for some helper functions being unnamed.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (representing -1 as unsigned) appears frequently without explanation. String literals shown as hex addresses (`0x12aa8`) without decoding. Loop bounds like `1000` and array sizes not explained. The decompiler doesn't recognize these as meaningful constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`GLIBC_2.4::__stack_chk_guard`) add noise but are manageable. Register location comments (`// r0`, `// r3`) are present but not obstructive. Some redundant code in tail recursion (calls function twice). Overall moderate noise level.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recovered as `for` and `while` constructs. Switch statements sometimes converted to ternary chains (e.g., `if_elseif_chain`). At -O0, control flow should be nearly identical to source, and mostly it is. Minor deduction for some awkward expression formatting.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: All 40+ functions from source are preserved as separate entities. No inlining or outlining artifacts. Function sizes are appropriate (not monolithic). Parameter counts match original. Good decomposition quality.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `loop_multi_exit` but manageable. No severe disruption to linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant issue in `tail_recursion`: function is called twice redundantly (`v0 = tail_recursion(...); return tail_recursion(...);`). Some duplicate expressions in other functions. At -O0, this redundancy should have been avoided.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: CRITICAL FAILURE - all parameters and return types are `unsigned int` when original used `int`. This loses critical sign information. Function pointers declared as `unsigned int *` instead of proper function signatures. No `const` correctness. At -O0, types should be nearly perfect.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. Arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` are flattened to individual variables (`v2=10, v3=20, v4=30, v5=40, v6=50`). Matrix in `loop_multi_exit` becomes complex pointer arithmetic. Original struct clarity completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointer type confusion in `call_func_ptr_array` and `large_jump_table`. Pointer arithmetic without type safety. The `unsigned int` vs `int` mismatch creates potential signed/unsigned comparison issues. Some unsafe casts present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only register location hints (`// r0`, `// [bp-0x10]`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive comments (CF-L1-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized but not named or documented. Duff's device partially recognized but incorrectly decompiled. State machines present but not identified as such. No explicit pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `switch_large` function returning constant `90` instead of implementing the switch logic is not flagged. Indirect calls not resolved are not indicated. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Preconditions like "n must be > 0" for Duff's device not recovered. Error conditions from original (e.g., division by zero checks) partially present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`printf`, `puts`, other function names visible). But relationships between functions (who calls whom, callback relationships) not documented. Global variable usage not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file, which is reasonable for decompilation output. Related functions (test groups) somewhat clustered. Static functions properly scoped. Minor deduction for arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external functions. Should compile with libc. Some issues: missing function prototypes, some undefined references. Moderate patching would be needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+8+4+6)/4 = 5.0
+L2_avg = (7+8+7+5)/4 = 6.75
+L3_avg = (3+3+4)/3 = 3.33
+L4_avg = (2+4+2+2)/4 = 2.5
+L5_avg = (5+6+6)/3 = 5.67
+
+Overall = (5.0 × 0.30) + (6.75 × 0.25) + (3.33 × 0.20) + 
+          (2.5 × 0.15) + (5.67 × 0.10)
+        = 1.5 + 1.6875 + 0.666 + 0.375 + 0.567
+        = 4.80/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects (Bullet List)
+- **Type Precision Failure**: All `int` types converted to `unsigned int`, losing critical sign semantics (e.g., `-5` becomes `4294967291`)
+- **Variable Naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`) - original names like `temp1`, `sum`, `count` completely lost
+- **No Comment Recovery**: Original source had extensive comments explaining each control flow pattern - none recovered
+- **Struct/Array Destruction**: Arrays like `{10,20,30,40,50}` flattened to individual variables `v2=10, v3=20...` losing original data structure
+- **Redundant Code**: `tail_recursion` calls function twice redundantly, showing poor decompilation quality at -O0
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming (scored 8/10)**: Most test functions correctly recovered with original names (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`). This is the strongest area.
+
+### Most Needs Improvement (Single Dimension)
+- **Type System Fidelity (scored 3.3/10)**: Type precision is catastrophically poor - all `int` become `unsigned int`, no struct recovery, no composite type handling. This fundamentally breaks semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Preserve signed integer types**: At -O0, the compiler preserves `int` exactly. The decompiler should infer `int` from sign-extending operations and parameter usage patterns, not default to `unsigned int`.
+2. **Recover variable names from usage**: Use data flow analysis to infer semantic names. `v0 = a0 + a1` followed by `v1 = v0 * 2` suggests `temp1` and `temp2`. Pattern-match against common naming conventions.
+3. **Add semantic comments**: At minimum, recover the original comment structure. For `switch_large` returning constant `90`, flag as "ANOMALY: likely switch-case not recovered, verify manually".

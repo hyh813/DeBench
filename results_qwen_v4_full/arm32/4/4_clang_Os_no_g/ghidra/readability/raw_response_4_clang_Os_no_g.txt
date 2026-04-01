@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `local_c`, `uVar6` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`, `param_by_value_int`). Action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xf`, `0x32`, `0x2a` replace simple constants (15, 50, 42). Floating-point literals become opaque hex (`0x51eb851f`, `0x40091eb8`) with no explanation of their meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization functions (`_init`, `__do_global_dtors_aux`) and floating-point helper functions (`__adddf3`, `__floatsidf`) are fully decompiled instead of recognized as library calls, adding ~500 lines of noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses do-while instead of for-loop. Floating-point functions have excessive branching that obscures the simple addition/subtraction semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Many caller functions are constant-folded to return literals instead of calling other functions (e.g., `call_cdecl()` returns `0xf` directly). This loses the call relationship structure from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but floating-point helpers have many labels (`LAB_00011200`, `LAB_000110a8`) and forward jumps that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point functions show massive redundancy with repeated bit manipulation patterns. Multiple "WARNING: Removing unreachable block" comments indicate dead code that wasn't eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `undefined4`, `double` operations use `undefined8`, `char*` becomes `byte*`, function pointers become `code*`. Original type information is largely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`LargeStruct` (128 bytes) becomes 4 `undefined4` parameters, `SmallStruct` becomes `int*`. No struct definitions appear in decompiled output; all composite types are flattened.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(int)uVar2`, `(ulonglong)uVar2 >> 0x20`). `func_mixed_args` signature is wrong (6 params instead of 4). Pointer arithmetic is raw without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler warnings exist ("WARNING: Removing unreachable block"). Zero semantic comments explaining function purpose, algorithm, or non-obvious logic. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (uses raw stack iteration). Floating-point operations not identified as such. No design patterns or algorithm patterns are named or explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with "WARNING:" for unreachable blocks. However, type mismatches, signature errors, and constant-folding artifacts are not indicated as decompilation uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist (`if (param_1 == (int *)0x0)`) but aren't documented as preconditions. No postconditions or invariants are recovered. Original source had clear test expectations documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. Global variables use cryptic names (`DAT_0001178b`, `ret_opaque_handle_handle1`). Call graph must be manually traced.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 86 functions in single file without logical grouping. No separation between test functions, implementation functions, and runtime support. Original source had clear section organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `strlen`, `puts`) not declared. Floating-point helpers would need linking. Won't compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.78/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct`, `SmallStruct`, `BigStruct` all flattened to raw parameters with no type definition recovery
+- **Variable names entirely generic**: `param_1`, `iVar1`, `local_c` provide zero semantic information about purpose
+- **Constant folding obscures call relationships**: `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Floating-point operations expanded to bit manipulation**: Simple `double` addition becomes 200+ lines of unintelligible bit operations
+- **Zero semantic documentation**: All original comments explaining calling conventions, test purposes, and expected values are lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names are perfectly preserved from source, maintaining semantic clarity about what each function does
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite types into raw parameter lists
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from stack layouts** - Analyze parameter access patterns to reconstruct `LargeStruct { long long data[16]; }` instead of 4 separate `undefined4` parameters
+2. **Recognize and preserve varargs patterns** - Detect `va_start`/`va_arg`/`va_end` sequences and annotate them as variable argument handling rather than raw stack iteration
+3. **Add semantic comments for constant-folded functions** - When a function returns a constant, add comment showing original call (e.g., `// Originally: return cdecl_func(5, 10)`)

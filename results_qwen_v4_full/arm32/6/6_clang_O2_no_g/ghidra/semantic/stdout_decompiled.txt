@@ -1,0 +1,20 @@
+Testing standard library functioTesting system calls...
+
+Length: 12
+Empty: 0
+Size: 12
+Result: 90
+Compare: -1
+Value: 42, Name: TestName
+Printf ret: 26
+Scanf result: 579
+File result: 42
+Fread result: 42
+Malloc result: 90
+Memset result: 0
+Strchr result: 15
+Testing system calls...
+
+Syscall result: 42
+Stat result: 42
+Fork result: 42

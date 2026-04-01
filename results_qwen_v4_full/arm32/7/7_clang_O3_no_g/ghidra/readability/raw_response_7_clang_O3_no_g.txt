@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `iVar1`, `param_1`, `uVar3`, `pbVar1` with zero semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved (`param_fake_branch`, `param_opaque_predicate`) but signatures are wrong—`param_fake_branch` shows as `void` with no parameters instead of `int param_fake_branch(int x)`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x14`, `0x23`, `0xe1`, `0x7a314`) replace computed values. Functions like `call_fake_branch` return constant `10` instead of calling `param_fake_branch(10)`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Runtime artifacts pollute output (`_init`, `__do_global_dtors_aux`, `register_tm_clones`). The `__divsi3` function has 35+ boolean variables for bit-by-bit division—extremely verbose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some functions use awkward do-while loops instead of for loops. Critical functions like `param_fake_branch` are reduced to empty `return;` losing all original logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Caller functions (`call_fake_branch`, `call_string_encryption`) return constants instead of calling param functions. `param_buffer_overflow_*` functions are completely empty.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most code reads top-to-bottom reasonably, but `__divsi3` has excessive branching with 35 sequential boolean checks that could be structured better.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `call_string_encryption` duplicates entire `param_string_encryption` logic. `test_obf_opt_edge` re-implements decryption instead of calling the function. Massive redundancy in division code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `int`, `uint`). `param_instruction_substitution` takes `uint` but original takes `int`. Signed/unsigned confusion throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost—function just returns `0x2c`. `__jmp_buf_tag` referenced but never defined. No struct definitions visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(byte *)`, `(char *)`, `(undefined4 *)`. `param_null_pointer_deref` takes `undefined4 *` which is unsafe. Signal handler casts `(__sighandler_t)0x0` are problematic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"). No algorithm explanations. Original source had extensive comments explaining obfuscation techniques—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in opaque predicate not identified. String decryption pattern not recognized. Division algorithm not labeled. Zero pattern recognition throughout.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call"). However, critical anomalies like empty functions and constant returns are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expectations ("期望：10")—all contract information lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`div_zero_caught`, `jmp_buffer`) referenced without context. Signal handler callbacks visible but unexplained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping. Runtime functions mixed with user code. Original had clear section organization (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases)—completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but requires many external dependencies (libc, signal handling). References undefined symbol `param_string_encryption_encrypted`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+4+5+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.67/10
+```
+
+**Overall Readability Score:** 3.67/10
+
+### Critical Defects
+- **Function `param_fake_branch` completely empty** - should contain fake branch logic with `x*x < 0` condition
+- **Caller functions return constants** - `call_fake_branch` returns `10` instead of calling `param_fake_branch(10)`
+- **Variable names entirely generic** - `iVar1`, `param_1`, `uVar3` provide zero semantic information
+- **Composite types completely lost** - bitfield struct in `param_implementation_defined` reduced to constant return
+- **Massive code duplication** - `call_string_encryption` duplicates entire `param_string_encryption` logic
+
+### Best Quality Aspect
+- **Build System Compatibility (6/10)** - Code compiles successfully per metadata, external dependencies are standard libc functions that can be linked
+
+### Most Needs Improvement
+- **Idiom Recognition (2/10)** - Zero algorithm or pattern recognition; GCD, string decryption, and division algorithms all unidentified despite being classic patterns
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function call relationships** - Instead of constant folding caller functions, preserve actual call sites to maintain code structure and reduce duplication
+2. **Implement semantic variable naming** - Use data flow analysis to infer variable purposes (e.g., variables used in size checks should be named `size`, `length`, `count`)
+3. **Add pattern recognition for common algorithms** - Detect GCD loops, string XOR decryption, and bit manipulation idioms to add explanatory comments and recover original intent

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_clang_Os_no_g/ida/syntactic/bin/7_clang_Os_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization options:\n\nFake branch: 10\nOpaque predicate: 20\nInstruction substitution: 225\nString encryption: 90\nTail call optimized: 500500\nNon-tail call optimized: 5050\nVectorized loop: 396\nLink time optimization: 20\nDivision by zero: 1\nNull pointer dereference: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation defined: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

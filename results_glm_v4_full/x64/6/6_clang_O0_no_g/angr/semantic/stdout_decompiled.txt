@@ -1,0 +1,3 @@
+call_strcpy: 8
+call_strcmp: 2
+call_strlen: 12

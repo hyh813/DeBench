@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `a`, `b`, `count`. Local variables are `v1`-`v10`, making it nearly impossible to track purpose. Only `result`, `count`, `len`, `i` are descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly recovered: `cdecl_func`, `call_cdecl`, `test_calling_conventions`. However, some helper functions remain as `function_1070`, `function_1080` (actually `puts` and `strlen`). Main function names match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40091eb851eb851f` (3.14), `0xfffffffe`, `0x100000000` appear without explanation. Some values like `42` are clear. Chinese strings encoded as `\xe6\xb5\x8b\xe8\xaf\x95` are unreadable.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Heavy compiler artifacts present: `__readfsqword(40)` for stack canaries, numerous `__asm_*` intrinsics for floating point (`__asm_movsd_1`, `__asm_cvttsd2si`, `__asm_addsd`). Redundant casts from type conversions clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops, conditionals). However, `varargs_func` and `param_varargs` have convoluted pointer arithmetic that obscures the simple loop logic. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition matching original - each test case is a separate function. Function sizes are reasonable (20-80 lines). No monolithic functions. Parameter lists are appropriate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in varargs functions but manageable. No severe disruption to flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal. Code is clean from a redundancy perspective.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` for most integers while original used `int` (32-bit). Mixed `int32_t`/`int64_t` creates confusion. Function pointers have proper signatures. `char*` correctly used for strings. Type widening is common but not ideal.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. Original has `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `TestIntPair`. Decompiled uses raw `int64_t a1, a2, a3` for struct parameters. `func_struct_byval` takes three int64s instead of struct. Complete loss of composite types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `*(int32_t *)a1` (lines 162b, 17dd), pointer arithmetic `a1 + 4`, `a1 + 8` without bounds. `param_func_ptr` returns uninitialized `v1`. No type safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only metadata comments present: "From module: /work/4.c", address ranges, line ranges. No explanatory comments about algorithm, purpose, or intent. Auto-generated noise only.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible (varargs using va_list, function pointers) but not explicitly named or documented. No recognition of calling convention patterns or design patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. Indirect calls like `param_func_ptr(callback_func, 5)` show raw addresses `0x11d9` without explanation. Unusual patterns silently presented as correct.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks like `if (a1 != 0)` not explained as requirements. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at top provide some relationship info. No documentation of call graph, global variable usage, or callback relationships. Functions isolated without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file with reasonable grouping. Helper functions (`function_1070`, etc.) at top, then main functions, then test functions. Static functions not distinguished. Matches source organization partially.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Function prototypes declared. Should compile with warnings. No build instructions provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Struct recovery completely failed**: All composite types (`LargeStruct`, `SmallStruct`, etc.) replaced with raw `int64_t` parameters, losing all semantic meaning
+- **Variable naming is unusable**: Parameters `a1-a6`, locals `v1-v10` provide no semantic information about purpose
+- **Type precision severely degraded**: Original `int` (32-bit) became `int64_t` throughout; no struct types recovered
+- **No comments explaining logic**: Only metadata comments present; algorithm intent completely undocumented
+- **Excessive compiler noise**: `__asm_*` intrinsics and stack canary checks clutter every function
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+The decompiler correctly preserved the function granularity from the original source - each test case remains a separate function with reasonable size and clear responsibility.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+The original source defines 5+ struct types with meaningful fields. The decompiled code has zero struct recovery - all are flattened to raw integers, making it impossible to understand data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types from stack layout analysis**: Analyze stack frame allocations to identify composite types. Original has clear struct definitions that should be recoverable from memory access patterns.
+2. **Infer parameter names from usage**: Parameters like `a1, a2` should be named based on how they're used (e.g., `param_by_value_ptr` uses `a1` as pointer - name it `p` or `ptr`).
+3. **Add semantic comments for complex patterns**: Varargs, calling conventions, and callback patterns need explanatory comments. Current code is semantically correct but opaque.

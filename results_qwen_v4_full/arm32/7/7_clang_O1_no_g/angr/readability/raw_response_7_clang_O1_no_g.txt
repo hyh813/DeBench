@@ -1,0 +1,102 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`) with register hints (`// r0`, `// lr`). Critical functions like `param_fake_branch` lost their parameter `x` entirely, and cryptic names like `vvar_23{r64|4b}` appear throughout.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved (`param_fake_branch`, `call_opaque_predicate`), but functionality is broken—`param_fake_branch` has no parameters despite source having `int x`. Helper functions use mechanical names (`sub_400498`, `sub_400574`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Signal numbers appear as raw integers (`signal(8, ...)` instead of `SIGFPE`, `signal(11, ...)` instead of `SIGSEGV`). Return value `4294967295` used instead of `-1`. XOR key `90` instead of `0x5A`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive register spilling artifacts (`v0 = v1`, `v1 = v2`). Angr-specific calls (`armg_calculate_condition`) pollute code. Goto labels (`LABEL_400598`) are compiler artifacts. Invalid syntax like `vvar_23{r64|4b}` appears.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured loops/conditionals. `param_fake_branch` lost all conditional logic entirely. `param_tail_call_optimized` calls itself twice instead of once (tail call not recognized).
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries preserved but semantics broken. `call_fake_branch` constant-folded to `return 10`. `call_string_encryption` incorrectly duplicates `param_string_encryption` logic instead of calling it.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Heavy goto label usage disrupts top-to-bottom reading. Forward jumps into loop bodies. Stack variable preservation code (`v4 = v5`, `v3 = v6`) interrupts logical flow throughout.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `call_tail_call_optimized` and `frame_dummy` call functions twice. Register save/restore patterns repeated unnecessarily. `param_non_tail_call` has duplicate return paths with identical logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned int` regardless of original (`int`, `size_t`, `char*`). `jmp_buf` becomes `unsigned int`. `decrypt_string` returns `char [2]` instead of `const char*`. Pointer types frequently lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (function just returns `44`). No struct definitions visible. `jmp_buf` should be struct but flattened to primitive. All composite types appear erased.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(unsigned int)v0`, `(char)result`). `param_null_pointer_deref` takes `unsigned int *` instead of `int *`. Buffer sizes incorrect (`char [2]` for 32-byte buffers) creating overflow risk.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only `/* do not return */` annotations for some functions. No explanation of what obfuscation techniques are being tested. No decompilation uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern unidentified. Signal handling pattern not documented. Tail call optimization not recognized (actually broken).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about `param_fake_branch` losing its parameter. No indication that `armg_calculate_condition` is angr-specific artifact. Silent failures in `param_buffer_overflow_stack` and `param_buffer_overflow_heap`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions. Signal handling contracts not explained. Error conditions (`return -1`) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables named generically (`g_412008`, `g_401170`). No call graph documentation. Callback relationships (signal handlers) not clear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Helper functions (`deregister_tm_clones`, `register_tm_clones`) mixed with main logic. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code won't compile as-is (`vvar_23{r64|4b}` is invalid C syntax). Missing includes. External dependencies not documented. Some functions reference undefined symbols (`.divsi3_skip_div0_test`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (2+5+4+3)/4 = 3.50
+L2 Average: (3+4+3+3)/4 = 3.25
+L3 Average: (3+2+3)/3 = 2.67
+L4 Average: (2+2+2+2)/4 = 2.00
+L5 Average: (4+4+3)/3 = 3.67
+
+Overall = (3.50 × 0.30) + (3.25 × 0.25) + (2.67 × 0.20) + (2.00 × 0.15) + (3.67 × 0.10)
+Overall = 1.05 + 0.81 + 0.53 + 0.30 + 0.37 = 3.06/10
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- `param_fake_branch` lost its parameter `int x` and all conditional logic—returns uninitialised `v0`
+- `param_buffer_overflow_stack` and `param_buffer_overflow_heap` completely broken—just return `v0`
+- Invalid C syntax (`vvar_23{r64|4b}`, `vvar_783{r68|4b}`) prevents compilation
+- Signal constants not recovered (`8` instead of `SIGFPE`, `11` instead of `SIGSEGV`)
+- Extensive angr-specific artifacts (`armg_calculate_condition`) pollute readable code
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Original function names were preserved, making it possible to identify which function corresponds to which source function despite broken semantics.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.0/10 average)** - No comments, no idiom recognition, no anomaly warnings, and no contract documentation make this decompilation practically unusable for understanding program intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions** - `param_fake_branch` must have its `int x` parameter recovered from ARM calling convention (r0 register usage)
+2. **Replace platform-specific artifacts with standard C** - `armg_calculate_condition` calls should be converted to equivalent C expressions or flagged as uncertain
+3. **Add decompilation confidence annotations** - Mark functions with broken logic (`param_fake_branch`, `param_buffer_overflow_*`) as LOW_CONFIDENCE to warn analysts

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `local_c`, `local_10`, `aSStack_2c`) with no semantic meaning. Class fields accessed via pointer arithmetic (`this + 4`, `this + 8`) instead of named members like `value` or `name`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`). Class methods properly named (`SimpleClass::getValue`), but lambda operators show `TEMPNAMEPLACEHOLDERVALUE` instead of meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation: `0x1234` (getClassID), `0x32` (50 decimal for shared_data), `0x96` (150 decimal), `0xfa` (250 decimal). Some match source but lack context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "WARNING: Unknown calling convention" comments. Compiler artifacts like `__aeabi_d2iz` for double-to-int conversion obscure simple operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is reasonably natural with standard if/for patterns. Some functions show removed unreachable blocks but core logic remains traceable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations explode into excessive helper functions (`__uniq_ptr_impl`, `_Tuple_impl`, `_Head_base` variants). Test functions appropriately sized but surrounded by template boilerplate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but some functions have awkward structure. Lambda test function has confusing variable assignments before actual lambda calls.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from template instantiations—nearly identical code for `unique_ptr<int>` vs `unique_ptr<int[]>`. Multiple `_M_head`, `_M_ptr`, `get<0u>`, `get<1u>` variants for each template combination.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Class types recovered (`SimpleClass`, `LifecycleClass`) but internal types generic (`undefined4`, `__2`, `__1`). Many `void*` casts and pointer arithmetic replace proper field access.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Classes recognized but fields unnamed—accessed as `*(int *)this` instead of `this->value`, `*(char *)(this + 4)` instead of `this->name`. Struct layouts visible but semantically opaque.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 **)param_1`, `(MultiDerived *)0x0` comparisons, `(__2 *)param_1` conversions. Pointer arithmetic on `this` bypasses type checking entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler warnings present ("WARNING: Unknown calling convention"). No semantic comments explaining what functions do, algorithm choices, or C++ feature implementations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (RAII in destructors, vtable calls via `**(undefined4 **)param_1`) but not identified. Virtual dispatch, multiple inheritance adjustments not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about calling conventions and unreachable blocks. However, critical anomalies like incomplete exception handling (`test_cpp_exception` doesn't show try-catch) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present (`if (this == 0x0)`) but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Inheritance chains visible through constructor calls but not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related class methods scattered (constructors, destructors, methods not grouped). No logical organization by class or feature.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—missing headers (`<iostream>`, `<memory>`), undefined symbols (`operator_new`, `__cxa_throw`), platform-specific ARM code (`__aeabi_d2iz`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+7+5+6)/4 = 5.25
+Level 2 Average: (7+5+6+4)/4 = 5.50
+Level 3 Average: (5+4+4)/3 = 4.33
+Level 4 Average: (3+4+5+2)/4 = 3.50
+Level 5 Average: (5+4+3)/3 = 4.00
+
+Overall = (5.25 × 0.30) + (5.50 × 0.25) + (4.33 × 0.20) + 
+          (3.50 × 0.15) + (4.00 × 0.10)
+        = 1.575 + 1.375 + 0.866 + 0.525 + 0.400
+        = 4.74/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Field access via pointer arithmetic**: `*(int *)this` instead of `this->value` loses all semantic meaning of class members
+- **Template explosion**: 214 functions for ~540 LOC source—template instantiations create massive redundancy obscuring core logic
+- **Generic variable names**: `iVar1`, `local_c`, `aSStack_2c` provide zero semantic information about purpose
+- **Missing exception structure**: `test_cpp_exception` shows throw but not try-catch recovery, losing critical control flow
+- **No contract documentation**: Null checks and bounds checks present but not documented as preconditions
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Test functions retain original meaningful names (`test_cpp_member_func`, `test_cpp_virtual_func`) making high-level test structure immediately recognizable
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)**—Zero documentation of preconditions, postconditions, or invariants despite numerous null checks and bounds validations in the code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/class field names** from debug symbols (-g flag present) instead of pointer arithmetic—`this->value` is infinitely more readable than `*(int *)this`
+2. **Collapse template instantiation redundancy** by recognizing identical patterns across type instantiations and adding comments like "// Same as template_max<int> but for double"
+3. **Recover C++ exception handling structure** by recognizing `__cxa_allocate_exception`/`__cxa_throw`/`__cxa_begin_catch` patterns and reconstructing try-catch blocks

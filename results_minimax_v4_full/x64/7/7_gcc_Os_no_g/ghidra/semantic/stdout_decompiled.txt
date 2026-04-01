@@ -1,0 +1,5 @@
+Obfuscation test:
+
+Opaque predicate: 10
+Instruction substitution: 20
+String encryption: 225

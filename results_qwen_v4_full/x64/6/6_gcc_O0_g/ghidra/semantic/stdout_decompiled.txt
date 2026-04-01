@@ -1,0 +1,5 @@
+=== Testing Standard Library Functions ===
+strcpy result: 8
+strcmp result: 0
+strlen result: 12
+memcpy result: 90

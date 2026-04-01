@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 14,
+  "source_file": "decompiled/retdec_out/x86/3/3_gcc_O1_no_g.c",
+  "fixed_file": "results_minimax_v4_full/x86/3/3_gcc_O1_no_g/retdec/syntactic/fix_3_gcc_O1_no_g.c"
+}

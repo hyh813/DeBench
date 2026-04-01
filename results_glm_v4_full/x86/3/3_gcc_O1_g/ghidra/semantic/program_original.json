@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/3/3_gcc_O1_g/ghidra/semantic/native_x86_bin/3_gcc_O1_g_native",
+  "stdout": "=== 测试栈内存操作 ===\nMEM-L1-01 (local_vars): 20\nMEM-L1-02 (local_array): 10\nMEM-L1-03 (local_struct): 15\nMEM-L1-04 (address_of_local): 42\nMEM-L1-05 (address_of_array): 2\nMEM-L2-01 (large_stack_frame): 0\nMEM-L2-02 (vla_stack): 10\nMEM-L2-03 (alloca_usage): 15\nMEM-L2-04 (stack_alias): 20\n=== 测试堆内存操作 ===\nHEAP-L2-01 (heap_basic): 10\nHEAP-L2-02 (heap_calloc): 0\nHEAP-L2-03 (heap_realloc): 50\nHEAP-L2-04 (heap_array): 15\nHEAP-L2-05 (heap_struct): 15\nHEAP-L2-06 (heap_nested): 0\nHEAP-L3-01 (linked_list_heap): 100\nHEAP-L3-02 (tree_heap_traversal): 60\nHEAP-L3-03 (memory_leak): 2\nHEAP-L3-04 (dangling_pointer): value before free: 42\n35308000 (子进程)\n✓ 子进程正常退出，code=0\n=== 测试静态与全局内存 ===\nSTM-L1-01 (global_var_access): 1\nSTM-L1-01 (global_var_read): 2\nSTM-L1-02 (global_array_access): 5\nSTM-L1-03 (static_local): 1\nSTM-L1-03 (static_local): 2\nSTM-L1-04 (call_static_func): 11\nSTM-L2-01 (access_extern_global): 123\nSTM-L2-02 (call_extern_func): 15\nSTM-L2-03 (read_const_data): 153\nSTM-L2-04 (access_bss_var): 0\nSTM-L2-04 (access_bss_buffer): 0\nSTM-L2-05 (global_struct_access): 30\nSTM-L2-06 (file_static): 50\nSTM-L2-07 (global_func_ptr): 10\nSTM-L2-08 (global_heap_store): 100\nSTM-L2-09 (static_complex_init): 15\nSTM-L3-01 (tls_access): 20\nSTM-L3-02 (init_order_test): 20\n=== 测试内存操作函数 ===\nMEMOP-L2-01: 65\nMEMOP-L2-02: 50\nMEMOP-L2-03: H\nMEMOP-L2-04: -1\nMEMOP-L2-05: 0\nMEMOP-L2-06: 1\nMEMOP-L3-01: 0x4030201\nMEMOP-L3-02: 10\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

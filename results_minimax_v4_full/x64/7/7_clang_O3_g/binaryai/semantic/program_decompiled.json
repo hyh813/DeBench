@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O3_g/binaryai/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "test_obf_opt_edge called\n\nopaque_predicate(10) = 10\ninstruction_substitution(10) = 20\ncall_instruction_substitution() = 225\nstring_encryption() = 0\ntail_call_optimized(10, 0) = 500500\nnon_tail_call(10) = 5050\nvectorized_loop(10) = 72\nlink_time_optimization returned\ndivision_by_zero handled\nnull_pointer_deref() = 41\nbuffer_overflow() = 30\ninteger_overflow() = 2000000000\nundefined_behavior() = 10\nimplementation_defined() = 47\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

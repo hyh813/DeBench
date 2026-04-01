@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters are generic (`ptr`, `a1` instead of `dst`, `src`), and local variables are mostly `v0`, `v1`. While `ptr` hints at a pointer, the lack of semantic names like `len` (assigned but unused in return) or `buffer` reduces clarity.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`param_strcpy`, `call_strcpy`, `main`) are perfectly preserved from the original source symbols, providing immediate context for the code's purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like "HelloLib" are intact, but error codes are represented as large unsigned integers (e.g., `4294967295` for `-1`), obscuring the semantic meaning of error checks.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant stack noise is present in every function (e.g., `v0 = &v1;`), and compiler-specific macros like `__ROL__` (rotate left) appear in arithmetic contexts (e.g., `__ROL__(a0, 2)` for `a0 * 4`), which hinders readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent for `-O0` code; `if/else` blocks and ternary operators (e.g., in `param_strcmp`) are recovered naturally without confusing jumps or gotos.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source exactly; there is no inlining or outlining that deviates from the original structure, maintaining a 1:1 mapping with the source logic.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom; execution flows naturally through the function bodies without disruptive forward jumps or computed branches.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Minor redundancy exists, such as `len = strlen(ptr)` followed immediately by `return strlen(ptr)`, but this is a minor artifact of register usage at `-O0` and does not significantly impede understanding.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate for ARM64 (e.g., `unsigned long long` for `size_t`), but signedness is occasionally lost (e.g., return types treated as `unsigned int` or `long long` when `int` was used), leading to magic numbers like `4294967295`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Standard library types like `FILE` are reduced to empty structs (`typedef struct FILE { } FILE;`), and `sockaddr` fields are generic (`sa_data`), losing the semantic field names found in standard headers.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `__ROL__` macros for pointer arithmetic (e.g., `__ROL__(a0, 2)` instead of `a0 * sizeof(int)`) is confusing and represents a type-safety abstraction failure, though it is technically correct at the bit level.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the logic must be inferred entirely from the code, which is a significant drop from the well-commented source.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: Standard library calls (`strcpy`, `strlen`, `printf`) are correctly identified and named, preserving the high-level semantic intent of the operations.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: Internal decompiler helpers like `arm64g_calculate_condition` appear in the code without explanation, acting as opaque placeholders for flag logic that confuse the reader.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement that `dst` must be a valid buffer in `param_strcpy` is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct recovered names, making the call graph easy to follow (e.g., `call_strcpy` calling `param_strcpy`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source file structure, grouping related tests together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific macros (`__ROL__`, `arm64g_calculate_condition`) and lacks necessary standard headers, preventing it from compiling without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.5
+L2_avg: 8.0
+L3_avg: 5.7
+L4_avg: 3.5
+L5_avg: 6.7
+
+Overall = (6.5 × 0.30) + (8.0 × 0.25) + (5.7 × 0.20) + 
+          (3.5 × 0.15) + (6.7 × 0.10)
+Overall = 1.95 + 2.00 + 1.14 + 0.525 + 0.67
+Overall = 6.285
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.3/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Parameters use generic names like `a1` instead of semantic names like `src`.
+- **Noise Artifacts**: Every function contains redundant stack initialization code (`v0 = &v1;`).
+- **Literal Representation**: Error codes are displayed as large unsigned integers (e.g., `4294967295`) instead of `-1`.
+- **Type Abstraction**: Pointer arithmetic is obscured by `__ROL__` macros (e.g., `__ROL__(a0, 2)` for multiplication by 4).
+- **Missing Documentation**: Complete absence of comments explaining logic or function contracts.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully preserved all original function symbols from the binary, making the high-level purpose of every block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (1/10)**
+- **Why?** The complete lack of comments removes all context regarding *why* the code is doing what it is doing, forcing the reader to reverse-engineer the intent from scratch.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Eliminate Stack Canaries**: Detect and hide standard stack frame setup patterns (like `v0 = &v1`) to reduce visual noise in `-O0` builds.
+2.  **Simplify Arithmetic Macros**: Replace `__ROL__` and other bitwise rotation macros with their semantic arithmetic equivalents (e.g., `* 4`) when the context clearly indicates pointer scaling.
+3.  **Recover Signedness**: Improve type inference to display negative integers (e.g., `-1`) instead of their unsigned equivalents (e.g., `4294967295`) in comparison and return contexts.

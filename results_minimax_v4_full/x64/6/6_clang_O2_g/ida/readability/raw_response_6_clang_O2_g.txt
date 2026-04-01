@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy` and Related Functions
+
+After analyzing both the original source code and the decompiled output, I observe that the decompiled code is for an x86-64 binary (evidenced by syscall numbers like 2 for SYS_open), while the original source was compiled for arm64. This is a significant metadata mismatch. However, I'll evaluate the decompilation quality based on what's present.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: While `param_strcpy` correctly uses `dst` and `src`, many other functions use cryptic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8` (e.g., in `param_malloc_free`, `param_memset`). The decompiler failed to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_strcpy`, `param_strcmp`, `param_memcpy`, `call_strcpy` exactly match the original source. Minor deduction for some helper functions being named generically (e.g., `sub_2020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The decompiled code contains numerous unexplained magic numbers: `0x2A` (42), `0xFFFFFFFFFFFFFFFFLL`, `0x3E8` (1000), `0x12` (18), `66` (O_CREAT|O_RDWR), `438` (0666). The value `42` appears frequently as a success indicator without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present: `HIDWORD` operations (e.g., `HIDWORD(v4)` in `param_scanf`), raw hex constants like `0xFFFFFFFFFFFFFFF8LL`, SSE intrinsics (`_mm_load_si128`, `_mm_add_epi32`) in what should be simple functions like `param_malloc_free` and `param_memset`. The output also shows "FAILED to decompile" for 59 functions.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, while loops), but some functions like `param_malloc_free` show highly unrolled loops with SIMD instructions that obscure the original loop structure. The `param_strcpy` itself is perfectly natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and match the original decomposition. Each test function (`call_strcpy`, `call_strcmp`, etc.) is properly separated from its implementation (`param_*`). No over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. However, `param_malloc_free` has complex branching with labels (`LABEL_11`, `LABEL_13`, `LABEL_15`, `LABEL_16`) that create non-linear flow. Early returns are used appropriately in many functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in `param_malloc_free` and `param_memset` where the decompiler expanded simple loops into unrolled SIMD code. For example, the original `for (size_t i = 0; i < size; i++) { ptr[i] = i * 10; }` became 50+ lines of SSE intrinsics.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `char *dst`, `const char *src`, `size_t n`. However, some parameters lost precision - e.g., `void *arg` in thread functions could be more specific. The return type `int` is correct.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The decompiler did not recover the `ThreadData` struct used in `param_pthread_join`. Instead, it uses raw memory with comments like `arg_8 = 0xB00000000LL` which obscures the struct layout. Global variables like `signal_received`, `signal_number` are correctly identified.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic like `v3[v4++]` in `param_malloc_free`, casting between `int*` and `void*` without explicit casts. The thread functions use `void*` for generic arguments which is acceptable but loses type information.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled output. The only comments are auto-generated headers like "Function: param_strcpy @ 0x24B0". No explanation of algorithm intent, preconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions are correctly recognized: `strcpy`, `strlen`, `strcmp`, `memcpy`, `memcmp`, `printf`, `fopen`, `pthread_create`, etc. The decompiler properly identified these libc functions.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The output shows "FAILED to decompile" for 59 functions but provides no explanation of why. No flags for indirect calls that couldn't be resolved or unusual stack patterns. The `param_fread_fwrite` uses complex SSE comparison (`_mm_movemask_epi8`) without any indication this is unusual.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_strcpy` implicitly requires `dst` to have sufficient space, but this is not indicated. Error handling (returning -1, -2, etc.) is present but undocumented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `strcpy(dst, src)`), but the relationships between functions are not documented. No indication that `call_strcpy` calls `param_strcpy`, or that `signal_handler` is used by `param_signal_handling`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (standard library, system calls, threads), matching the original source organization. However, the file is a single monolithic output with no separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile with minimal changes. Standard library functions are properly declared. However, the `HIDWORD` and SSE intrinsics would require `<intrin.h>` or equivalent. The "FAILED to decompile" functions mean the binary isn't fully recoverable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is highly inconsistent - `dst`/`src` in param_strcpy but `v1`-`v8` in param_malloc_free
+- 59 functions failed to decompile with no explanation
+- Magic numbers like `0x2A` (42) and `0x3E8` (1000) appear without explanation
+- Complex SIMD unrolling in param_malloc_free and param_memset obscures simple loop logic
+- No comments explaining algorithm intent or contracts
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names exactly match the original source (param_strcpy, call_strcpy, param_strcmp, etc.)
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- The decompiled output has almost no useful comments to explain algorithm intent, preconditions, or the meaning of magic numbers
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as loop counters, buffer pointers, or size values should be named accordingly (e.g., `i` for loop counter, `size` for size parameter)
+2. **Explain magic numbers**: Detect common patterns like `0x3E8` = 1000 (usleep), `0x2A` = 42 (success), and add comments explaining them
+3. **Document decompilation failures**: Instead of "FAILED to decompile", provide specific reasons (indirect call, obfuscated control flow, anti-debugging)

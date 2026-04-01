@@ -1,0 +1,9 @@
+TRACE_ENT|0|test_calling_conventions|0|Arg0=1,Arg1=-1075418204,Arg2=-1075418196,Arg3=4510801|eax=0x44d451,ebx=0x0,ecx=0xbfe66b10,edx=0xbfe66b34,esi=0xb7ef3000,edi=0x0
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|call_cdecl|1|Arg0=-1075418384,Arg1=0,Arg2=0,Arg3=0|eax=0x1,ebx=0x44ffc4,ecx=0x0,edx=0xb7ef4890,esi=0xb7ef3000,edi=0x0
+TRACE_EXT|1|call_cdecl|1|15
+TRACE_ENT|2|call_stdcall|1|Arg0=-1075418384,Arg1=0,Arg2=0,Arg3=0|eax=0x0,ebx=0x44ffc4,ecx=0x0,edx=0xbfe64494,esi=0xb7ef3000,edi=0x0
+TRACE_EXT|2|call_stdcall|1|50
+TRACE_ENT|3|call_fastcall|1|Arg0=-1075418384,Arg1=0,Arg2=0,Arg3=0|eax=0x0,ebx=0x44ffc4,ecx=0x0,edx=0xbfe64494,esi=0xb7ef3000,edi=0x0
+TRACE_EXT|3|call_fastcall|1|9043851
+TRACE_ENT|4|call_thiscall|1|Arg0=-1075418384,Arg1=0,Arg2=0,Arg3=0|eax=0x0,ebx=0x44ffc4,ecx=0x0,edx=0xbfe64494,esi=0xb7ef3000,edi=0x0

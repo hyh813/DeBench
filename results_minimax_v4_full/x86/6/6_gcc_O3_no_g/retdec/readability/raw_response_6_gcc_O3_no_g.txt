@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a1`, `v1`, `v2`, `str`, `str2`, `mem`, `result`. Original names like `dst`, `src`, `buffer`, `pathname` are completely lost. The naming provides no semantic value and makes tracking data flow extremely difficult.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Standard library functions are named generically (e.g., `function_13f0` for `setsockopt`, `function_14d0` for `signal`). Test wrapper functions preserve some naming (`param_strcpy`, `call_strcpy`), but core library functions use address-based names with no semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are encoded as offset calculations like `(v2 + (int32_t)&g6 - 0x2b68)`. Some paths like "/etc/passwd" are visible, but most magic numbers are unexplained and formatting strings are completely obfuscated through pointer arithmetic.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: PIC code thunk calls (`__x86_get_pc_thunk_bx`), stack canary checks (`__readgsdword(20)`, `__stack_chk_fail_local`), redundant `__asm_hlt()` blocks, dead code from register spilling, and spurious offset calculations throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Code uses excessive goto labels (`lab_0x1cf0`, `lab_0x1d63`, `lab_0x1ec0`) creating spaghetti control flow. Original simple if/else/while structures are broken into disconnected labeled blocks that are nearly impossible to follow. The decompiler introduced goto where the original had structured control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are correctly separated, but some are bloated (e.g., `param_thread_local_storage` is 300+ lines with goto statements). Parameter lists are reasonable but use generic types. The main issue is the goto-spaghetti within functions.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Code is highly non-linear with numerous forward jumps and goto labels. Reading top-to-bottom is impossible. Labels like `lab_0x1cf0`, `lab_0x1d63` interrupt flow constantly. Deep nesting compounds this.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some dead code from unreachable paths (e.g., after `_exit(127)`). Loop unrolling is minimal but present. The main redundancy is the repeated PIC setup code in every function and offset calculations that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything uses `int32_t` regardless of actual type. No distinction between `size_t`, `ssize_t`, `pid_t`, `pthread_t`, `uint32_t`. Pointers are cast to integers freely. Original `char*`, `const char*`, `void*` distinctions are lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Synthetic struct definitions created (e.g., `struct _IO_FILE`, `struct shmid_ds`) but they contain generic field names (`e0`, `e1`, etc.) and don't match actual libc structures. The recovery is minimal and not useful for analysis.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Significant type safety violations: many `int32_t*` to `char*` casts, pointer arithmetic performed on integers, function pointers cast to `int32_t*` and back. Examples: `(int32_t *)a1`, `(char *)str`, `(int32_t **)&g27`. No alignment or restrict annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive explanatory comments and section markers that are completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (fork logic, pthread operations) but not named or explained as patterns. Original idioms like "producer-consumer", "thread pool", "signal handler" are not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. Code presents incorrect logic as confident truth. For example, the `signal` handling uses wrong signal numbers and the logic is clearly wrong but not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Original preconditions (e.g., "ptr != NULL"), postconditions, and error handling semantics are completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: No cross-reference comments. Function call relationships, global usage, callback patterns are not documented. The original clearly showed which functions call which.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions dumped in single file. The original's logical organization (standard library, system calls, threading sections) is lost. No static vs. public distinction.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile as-is. Issues include: undefined `g27`, synthetic struct definitions, wrong types in function signatures, unreachable code marked but still present, missing standard includes for some used functions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- Variable names `a1`, `v1`, `v2`, `mem`, `result` provide zero semantic value vs original `dst`, `src`, `buffer`
+- Goto-spaghetti with labels like `lab_0x1cf0` makes control flow nearly impossible to follow
+- Type precision completely lost - everything is `int32_t` regardless of original `size_t`, `pid_t`, etc.
+- No comments explaining any logic, patterns, or anomalies
+- Function naming uses address-based names (`function_13e0`) for library functions
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+- Functions are at least separated correctly, though some are bloated with goto statements
+
+**Most Needs Improvement:** Lexical Clarity (scored 2.5/10)  
+- The decompiler failed to recover any meaningful names for variables and library functions, making the code nearly unusable for analysis
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: Track how variables are used (e.g., `strlen()` calls → name should be `str`, buffer for `fopen` → `filename`)
+2. **Recover structured control flow**: Convert goto labels back to while/for loops instead of presenting spaghetti code
+3. **Identify and name library functions**: Use signature matching to identify standard library functions rather than generic address-based names

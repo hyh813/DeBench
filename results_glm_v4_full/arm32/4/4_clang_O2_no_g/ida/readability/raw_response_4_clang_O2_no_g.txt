@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`a1`, `a2`, `a3`) and local variables lack semantic meaning (e.g., `v2` in `varargs_func` represents the `va_list` iterator). This obscures the logic compared to the source's descriptive names like `count`, `sum`, and `args`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `varargs_func`, and `test_calling_conventions` are perfectly preserved from the source symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: While string literals are preserved, magic numbers like `4` (used for pointer arithmetic in `varargs_func`) appear without explanation as `sizeof(int)`. Additionally, constant propagation (e.g., `return 15` in `call_cdecl`) removes the context of the original arguments `5` and `10`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with Hex-Rays specific artifacts like `__fastcall` applied to ARM functions (where it is irrelevant) and type coercion macros (`COERCE_DOUBLE`, `__PAIR64__`) which obscure the simple arithmetic logic of the source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Loop constructs are generally recovered, but `for` loops in the source (e.g., in `varargs_func`) are often represented as `do-while` loops with manual pointer manipulation, which is slightly less idiomatic than the original.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are respected and match the source granularity perfectly. The decompiler did not artificially merge or split functions, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps. Early returns are preserved correctly, contributing to a linear reading experience.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiled code is very clean with no dead code or register spilling artifacts. However, the aggressive constant propagation (e.g., inlining results in `test_calling_conventions`) removes the structural redundancy of function calls, making the code cleaner but structurally different from the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Basic types (`int`, `char*`, `double`) are recovered accurately. However, signedness is sometimes inferred strictly (e.g., `unsigned __int8 *` for `char *`), which is technically correct for the ABI but differs from the source's generic `char *`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: **Critical Failure.** Large structs passed by value (e.g., `LargeStruct` in `func_struct_byval`) are exploded into 31 separate integer arguments (`a1`...`a31`). Struct pointers (e.g., `SmallStruct *`) are treated as generic `_DWORD *` arrays accessed via index (`a1[1] * *a1`) rather than field names (`p->x * p->y`).
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of macros like `COERCE_DOUBLE(__PAIR64__(a4, a3))` to reconstruct a `double` from register pairs represents unsafe type-punning that was not present in the high-level source, confusing the logic of `func_mixed_args`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no meaningful comments explaining the logic. Only stack variable comments (`// [sp+8h] [bp-8h] BYREF`) are present, which offer little semantic value to a human reader.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The `va_list` pattern is recognized, but the implementation is reduced to low-level pointer arithmetic (`v2 += 4`) inside a `do-while` loop, failing to preserve the standard `va_arg` idiom used in the source.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags a potential stack issue in `_start` with `// positive sp value has been detected, the output may be wrong!`, which is a helpful warning for the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: Preconditions like `if (!p) return -1;` in `func_struct_byptr` are preserved as `if ( a1 ) ... else return -1;`, but they are not explicitly documented as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace. The relationship between `main`, `test_calling_conventions`, and the target functions is clear and preserved.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in address order rather than logical groupings found in the source (e.g., "Calling Conventions" vs "Parameter Passing"), though the names themselves allow for mental regrouping.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on compiler-specific intrinsics (`__PAIR64__`, `COERCE_DOUBLE`) and incorrect attributes (`__fastcall` on ARM), preventing it from compiling without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- **Struct Explosion:** `func_struct_byval` receives 31 integer arguments instead of a single `LargeStruct`, completely destroying the data structure's semantic meaning.
+- **Lost Struct Semantics:** Struct pointer fields are accessed via array offsets on `_DWORD*` (e.g., `a1[1]`) instead of field names (e.g., `p->y`), requiring manual offset calculation.
+- **Low-level Varargs:** The `varargs_func` implementation uses manual pointer arithmetic (`v2 += 4`) and `va_copy` instead of the standard `va_arg` macro, reducing readability.
+- **Irrelevant Attributes:** The application of `__fastcall` to ARM functions is confusing and technically incorrect for the target architecture.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function symbols, making it trivial to map the decompiled output back to the source logic at a high level.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover struct definitions for both pass-by-value (exploded arguments) and pass-by-pointer (array indexing) is the single biggest barrier to understanding the data manipulation in this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Struct Argument Recovery:** Implement analysis to group consecutive register/stack arguments back into struct definitions when the access pattern suggests a struct pass-by-value.
+2.  **Field Access Recovery:** Improve type propagation to convert array indexing on typed pointers (e.g., `(_DWORD *)ptr)[1]`) into struct field access (e.g., `ptr->field_b`) based on offset alignment.
+3.  **Architecture-Specific Attribute Filtering:** Suppress or correct calling convention attributes like `__fastcall` when decompiling architectures (like ARM) where they are not standard or applicable.

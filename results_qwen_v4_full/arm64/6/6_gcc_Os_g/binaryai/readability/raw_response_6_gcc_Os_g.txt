@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_8`, `uVar2`). In `param_strcpy`, parameters should be `dst` and `src` but are `param_1`/`param_2`. Thread function locals like `piVar4` in `thread_tls_test` obscure their purpose as result pointers.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_strcpy`, `call_strcmp`, `thread_compute`). However, some functions have generic names (`FUN_001013a0`, `FUN_001018fc`) and external stubs clutter the output.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12` (18 bytes). String literals preserved well ("HelloLib", "/etc/passwd"), but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) appear in nearly every function, adding 5-10 lines of boilerplate. External function stubs (40+ functions) clutter the output without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for`/`while`, but some use `do-while` awkwardly (e.g., `call_memset`). Conditional logic preserved but nested deeply in signal handling code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well. Thread functions properly separated (`thread_sum`, `thread_increment`). However, some functions have bloated parameter lists due to type degradation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack check epilogues disrupt flow. Some functions use goto-like patterns for error handling (`LAB_00102b30` label in `param_pthread_join`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated in every function. Type casts repeated unnecessarily (`(pthread_mutex_t *)`, `(void *)`). No common subexpression elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined8`, `undefined4`, `ulong` instead of proper types. `param_strcpy` returns `void` instead of `int`. `size_t` becomes `ulong`, losing semantic meaning.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. `ThreadData` accessed via array indexing (`param_1[2]`, `param_1[1]`). `sockaddr` fields accessed directly (`local_18.sa_data[6]`) without struct layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)`, `(void *)`, `(pthread_mutex_t *)`. Pointer arithmetic on generic types. Function pointers degraded to `void*` in thread creation calls.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic. Only file header present ("Decompiled by BinaryAI"). No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls identified (`strcpy`, `strlen`, `pthread_create`). Thread patterns visible but not named. No design pattern recognition (producer-consumer, mutex protection).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Indirect calls not flagged. Stack canary checks present but unexplained as compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: param_1 != NULL"). No postcondition inference. Error return values not documented (-1, -2, -3 meanings lost).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without explanation. No call graph.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (library functions, syscalls, threads). External stubs grouped at top. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone. External function signatures inconsistent. Missing type definitions. Requires significant stubbing and type corrections.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.68/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects
+- **Return type corruption**: `param_strcpy`, `param_strlen`, `param_printf` return `void` instead of `int`, losing critical semantic information
+- **Generic variable naming**: All locals named `param_N`, `iVarN`, `local_N` obscuring purpose (e.g., `param_1` should be `dst` in strcpy)
+- **No struct recovery**: `ThreadData`, `sockaddr_in` accessed via array indexing instead of named fields
+- **Zero documentation**: No comments explaining logic, error codes, or decompilation confidence
+- **Magic numbers**: `0x2a`, `0xffffffff`, `0x12` used without symbolic constants
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_strcpy`, `thread_compute`, `param_signal_handling`), maintaining semantic connection to source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding complex logic (signal handling, thread synchronization) extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover return types from usage patterns** - Analyze how return values are used (added, compared, returned) to infer correct types instead of defaulting to `void`/`undefined8`
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER: return type inferred from call site`
+3. **Recover struct layouts from access patterns** - Detect consistent field offsets across functions to reconstruct `ThreadData`, `sockaddr` structures with named fields

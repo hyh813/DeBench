@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `sVar1`, `local_28`, `__ptr`) with no semantic meaning. Original names like `buffer`, `ptr`, `sum`, `fd` are completely lost, replaced by "Unresolved local var" comments.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_strcpy`, `thread_compute`, `signal_handler`, `test_standard_library_functions`). Action-oriented names clearly reflect purpose and match source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xc` (12), `0x5a` (90), syscall numbers (5, 6), signal numbers (10, 0xe), socket constants (2, 1). Original constants completely lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from "Unresolved local var" comments throughout, "WARNING: Unknown calling convention" warnings, and "WARNING: Could not recover jumptable" messages clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `call_strcpy` oddly splits string into two `builtin_strncpy` calls instead of single `strcpy`. `param_signal_handling` has "UNRECOVERED_JUMPTABLE" issues. Loops recovered as do-while but sometimes awkward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions like `test_standard_library_functions` inline all calls into one massive function. `call_strcpy` no longer calls `param_strcpy` - logic completely transformed rather than preserved.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some backward jumps for loops are natural. `param_signal_handling` has complex branching but still traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `call_memcmp` duplicates comparison logic twice. Test functions repeat similar patterns. No severe dead code but some redundant expression patterns from optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: `size_t`, `FILE*`, `pthread_t` preserved in some places. However, many types degraded to generic `int`, `void*`, `char*`. `atomic_int` became plain `int` with `__atomic_*` intrinsics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct completely lost - accessed via pointer arithmetic (`*(int *)((int)arg + 8)`). `sockaddr` fields accessed as `sa_data[0]`, `sa_data[1]` instead of named fields. `stat` struct partially recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts throughout: `(int)buffer`, `(pthread_mutex_t *)&counter_mutex`. Pointer arithmetic on structs instead of field access. `__atomic_*` functions use generic int pointers without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: "Unresolved local var" comments are auto-generated noise, not helpful documentation. "WARNING" comments indicate decompilation issues (helpful). No algorithm explanations or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). pthread patterns partially recognized. Signal handling and atomic operation patterns not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging: "WARNING: Could not recover jumptable", "UNRECOVERED_JUMPTABLE_00", "WARNING: Subroutine does not return". Most decompilation uncertainties are communicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition inference. Error return values (-1, -2, -3) not documented. No invariant recognition for loops or shared state.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Global variables (`signal_received`, `atomic_counter`) referenced but not documented. No call graph documentation. Callback relationships (thread functions) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 70 functions in single output file. No file organization matching source sections (6.1, 6.2, 6.3). Related functions near each other but no logical grouping or header separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Platform-specific code (`__aeabi_read_tp` for ARM TLS) requires platform knowledge. External dependencies (pthread, libc) not documented. Would need significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+6+7+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (5+6+7+3)/4 = 5.25 × 0.15 = 0.79
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  5.41/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects
+- **Variable names completely lost**: `iVar1`, `sVar1`, `local_28` provide zero semantic information compared to original `buffer`, `ptr`, `sum`, `fd`
+- **Magic numbers everywhere**: `0x2a`, `0xc`, `0x5a`, syscall numbers (5, 6), signal numbers (10, 0xe) replace all named constants
+- **Struct layouts destroyed**: `ThreadData` accessed via pointer arithmetic `*(int *)((int)arg + 8)` instead of `data->result`
+- **String operations fragmented**: `call_strcpy` splits "HelloLib" into two `builtin_strncpy` calls instead of single `strcpy`
+- **No contract documentation**: Error codes (-1, -2, -3, 0x2a) have no explanation of meaning
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Function names are excellently preserved from source, maintaining semantic clarity for all 70 functions including `param_strcpy`, `thread_compute`, `signal_handler`
+
+### Most Needs Improvement
+- **Variable Naming Quality (3/10)** - Complete loss of semantic variable names makes code nearly unreadable; every local variable is `iVar#`, `sVar#`, or `local_#`
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement usage-based variable renaming**: Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop counter → `i`, holds file descriptor → `fd`)
+2. **Recover constant definitions**: Detect repeated magic numbers and suggest named constants (0x2a→SUCCESS_CODE, syscall 5→SYS_open, signal 10→SIGUSR1)
+3. **Improve struct field recovery**: Use access pattern analysis to recover struct layouts and field names instead of raw pointer arithmetic (`arg+8` → `data->result`)

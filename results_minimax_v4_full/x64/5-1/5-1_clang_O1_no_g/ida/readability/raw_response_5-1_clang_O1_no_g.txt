@@ -1,0 +1,160 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `a1`, `a2`, `s`, `result`, `exception`. The original source uses meaningful names like `obj`, `r1`, `r2`, `capture_by_value`, `capture_by_ref`. The decompiled code makes it nearly impossible to track variable purpose without extensive cross-referencing.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: Functions retain mangled C++ names like `_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`, `_ZN7Derived12virtual_funcEi`. While technically accurate symbol names, they should be demangled to `test_cpp_member_func`, `Base::virtual_func`, etc. The decompiler shows the raw mangled form instead of readable C++ names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Some literals are clear (e.g., `4700` in test_cpp_member_func corresponds to expected result minus strlen). However, magic numbers like `0x14` (20) for array size, `0x14u` for operator new, and various offsets like `24LL`, `32LL` appear without explanation. The original source's meaningful constant `0x1234` for class ID is lost.
+
+### 4. Noise Reduction
+**Score: 6/10**
+
+Justification: Minimal obvious compiler artifacts like register spilling. However, there are thunk functions (`` `non-virtual thunk to'MultiDerived::funcB ``), `__hidden` annotations, `__fastcall` specifiers, and 22 "FAILED to decompile" entries for standard library functions. These add noise but don't severely impede understanding.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Simple functions like `test_cpp_operator_overload` (returns 22 directly) have natural flow. However, virtual function dispatch uses complex indirect calls through vtable pointers (e.g., `(**(__int64 (__fastcall ***)(Base *))a1)(a1)`), and exception handling shows throw but no catch recovery. At -O0, control flow should be more straightforward.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: The decompiler maintains good function granularity - each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate. However, `test_cpp_oo_features` combines 12 test calls and inline code from original separate functions, making it 100+ lines. Member functions like `Container<int>::push` are properly extracted.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most functions read top-to-bottom with minimal forward jumps. The `test_cpp_oo_features` function has some out-of-order sections (prints results after computing), but overall the code has good linearity. No excessive goto usage or deeply nested structures.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: At -O0, there's minimal loop unrolling or common subexpression elimination. The `test_cpp_oo_features` function duplicates some constructor code from `test_cpp_constructor`, but this is because the original code inlined those operations. No severe redundancy that obscures logic.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Uses `_DWORD` (32-bit), `_QWORD` (64-bit), `_BYTE` for integer types, which is reasonably precise. However, function pointers often use generic `__int64` instead of proper signatures. The original `int`, `size_t`, `bool` are sometimes converted to generic types. Some return types use `unsigned int` where signed would be more accurate.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No struct/class definitions are reconstructed. Instead, the code uses raw pointer arithmetic: `*(_DWORD *)(a1 + 40)` for what should be `this->size`, `*(_QWORD *)v0` for vtable pointer. The original classes like `LifecycleClass`, `Container<T>`, `Base`, `Derived` are completely lost - only their member function implementations remain, accessing fields via computed offsets.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe operations present: extensive pointer arithmetic with computed offsets (e.g., `*(_DWORD *)((char *)this + *(_QWORD *)(*(_QWORD *)this - 24LL) + 8)`), casts between pointer types for vtable access, no bounds checking on array operations. The original C++ type safety (containers, smart pointers) is completely lost, replaced with unsafe C-style memory access.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: Only a header comment about IDA Pro decompilation exists. No comments explain algorithm logic, recovered intent, or recovered contracts. The original source has extensive comments explaining each test case's purpose. Zero useful comments for understanding the decompiled code.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: Some C++ patterns are present (virtual function dispatch through vtables, exception throw/catch, template instantiation) but none are explicitly identified or named. The decompiler doesn't recognize or label patterns like "virtual dispatch via vtable", "RAII with unique_ptr", or "template instantiation".
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: The decompiler marks some items with `__hidden` and shows "FAILED to decompile" for 22 functions. However, it doesn't flag suspicious code patterns, indirect calls that couldn't be resolved, or potential undefined behavior. The virtual thunk functions are shown but not explained as this-pointer adjustment mechanisms.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear expectations (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost. No error condition documentation either.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function calls are present in the code but relationships aren't documented. No indication of who calls which function, global variable usage, or callback relationships. The original source clearly shows `call_virtual_func(Base *obj, int x)` is called by `test_cpp_virtual_func`, but this relationship isn't explicitly documented.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Justification: Functions appear in address-order (starting from 0x2020), not logical grouping. Related test functions are scattered, and member functions of the same class are separated by other functions. The original groups tests by feature (CPP-L3-01, CPP-L3-02, etc.), but this organization is lost.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: The code uses undefined types like `std::ios_base::Init`, `std::__ioinit`, and has 22 "FAILED to decompile" entries for standard library functions. Would require significant patching to compile. No dependency documentation or standalone compilation hints provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 3 + 5 + 6) / 4 = 4.0
+L2_avg = (6 + 7 + 7 + 7) / 4 = 6.75
+L3_avg = (6 + 2 + 4) / 3 = 4.0
+L4_avg = (1 + 3 + 4 + 1) / 4 = 2.25
+L5_avg = (3 + 3 + 2) / 3 = 2.67
+
+Overall = (4.0 × 0.30) + (6.75 × 0.25) + (4.0 × 0.20) + (2.25 × 0.15) + (2.67 × 0.10)
+        = 1.20 + 1.69 + 0.80 + 0.34 + 0.27 = 4.30/10
+```
+
+### Overall Readability Score: 4.3/10
+
+---
+
+### Critical Defects
+
+1. **Variable names are unusable**: `v0`, `v1`, `v2`, `a1`, `a2` make tracking semantics nearly impossible
+2. **No class/struct recovery**: All composite types lost; raw pointer arithmetic like `*(_DWORD *)(a1 + 40)` replaces `obj.size`
+3. **Mangled function names**: `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`
+4. **Zero useful comments**: No explanation of algorithm intent, recovered contracts, or anomaly warnings
+5. **Type safety completely lost**: Original C++ type safety replaced with unsafe C-style pointer arithmetic
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (7/10)** - The decompiler maintains reasonable function granularity, keeping test functions separate and extracting member functions. Each function does one thing reasonably well.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - The decompiled code has essentially no comments explaining recovered intent, algorithm purpose, or recovered contracts. Combined with cryptic variable names, this makes the code nearly incomprehensible without constant reference to the original source.
+
+---
+
+### Top 3 Recommendations
+
+1. **Demangle C++ names and infer variable names from usage**: Convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func`. Analyze variable usage patterns to infer names like `size` for variables used in bounds checks, `count` for incrementing counters.
+
+2. **Recover class/struct definitions**: Instead of `*(_DWORD *)(a1 + 40)`, reconstruct `struct Container { T data[10]; int size; }` and use `this->size`. This is the single biggest readability improvement.
+
+3. **Add explanatory comments for complex patterns**: Document virtual dispatch ("vtable call at offset 0"), this-pointer adjustments ("thunk adjusts this by -16 bytes for BaseB subobject"), and recovered intent ("creates 5-element array with values 0,10,20,30,40").

@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compilation with `-g`, local variables are almost exclusively generic names like `v1`, `v2`, `result`, and `ptr`. For example, in `param_by_value_ptr`, the input parameter `p` is used, but intermediate values are `v1`, losing the semantic context of the calculation.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `cdecl_func`, `test_calling_conventions`), matching the original source exactly and clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are extracted to global variables (e.g., `g8`, `g9`), which fragments the reading experience. Magic numbers like `8` (pointer size) in `param_array_decay` are accurate but lack the context of the original `sizeof(arr)` expression.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is heavily polluted with stack canary checks (e.g., `if (*(int64_t *)g1 != *(int64_t *)g1)`) in almost every function. Additionally, redundant casts like `(int64_t)call_cdecl()` appear frequently, obscuring the simple logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Basic control flow is natural and linear (e.g., `cdecl_func`). However, `varargs_func` exposes complex pointer arithmetic (`v5 + 11 & -8`) for stack alignment, turning a simple loop into a confusing pointer traversal.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source perfectly. The decompiler did not artificially inline or outline code, maintaining the original granularity of the test functions.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, the stack canary checks at the end of functions (before return) interrupt the logical flow of the function's exit sequence.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no dead code, but the repetition of the stack guard check pattern in every function adds significant redundancy. The `va_list` implementation in `varargs_func` repeats the same pointer arithmetic block inside the loop.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Primitive types are generally accurate (`int32_t`, `int64_t`). However, `float128_t` is used incorrectly for stack buffers (e.g., in `test_calling_conventions`), and `LargeStruct` is demoted to `int64_t` (a pointer) rather than being recognized as a value type.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed significantly. `LargeStruct` and `SmallStruct` are not reconstructed; instead, functions like `func_struct_byval` accept `int64_t s` (a pointer) and access fields via raw offsets like `*(int64_t *)(8 * i + s)`.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code is technically safe, the decompiler inserts many explicit casts (e.g., `(int32_t *)(v5 + 11 & -8)`) that make the code look unsafe and cluttered, even if they are necessary to represent the lowered binary operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata like "Address range" and "Line range". There are no comments explaining the logic of complex functions like `varargs_func` or the purpose of the stack checks.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize the `va_list` idiom in `varargs_func`, presenting it as raw pointer manipulation rather than a variable argument list. Standard patterns like `sizeof` on array decay are replaced by magic constants.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler confidently presents incorrect logic for `ret_large_struct` (returning a global `g1` instead of the struct data) without any warning or "UNCERTAIN" marker, misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are recovered. For example, the null check in `func_struct_byptr` is present as code but not highlighted as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: String literals are moved to globals (`g4`, `g5`, etc.), making it hard to see what is being printed without cross-referencing the global variable section. Function calls are clear, but data flow is obscured by global string usage.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, matching the source file structure. Helper functions and test functions are grouped together well.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on a specific global variable `g1` for stack checking which is defined in the global section but used in a way that might not compile standalone without the specific runtime setup or linker script.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 3) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.0
+L3_avg = (7 + 2 + 6) / 3 = 5.0
+L4_avg = (2 + 3 + 3 + 2) / 4 = 2.5
+L5_avg = (5 + 8 + 4) / 3 = 5.67
+
+Overall = (5.0 * 0.30) + (7.0 * 0.25) + (5.0 * 0.20) + 
+          (2.5 * 0.15) + (5.67 * 0.10)
+Overall = 1.5 + 1.75 + 1.0 + 0.375 + 0.567
+Overall = 5.19
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- **Struct Type Loss:** `LargeStruct` and `SmallStruct` are not recovered; `func_struct_byval` takes `int64_t` (pointer) instead of the struct, and `ret_large_struct` returns a global variable `g1` instead of the struct data.
+- **Variable Naming:** Despite `-g` debug symbols, local variables are generic (`v1`, `v2`), severely impacting readability of complex logic.
+- **Stack Canary Noise:** The pattern `if (*(int64_t *)g1 != *(int64_t *)g1) __stack_chk_fail();` appears in almost every function, cluttering the output.
+- **Varargs Obfuscation:** The `va_list` logic in `varargs_func` is decompiled to raw pointer arithmetic and alignment checks (`v5 + 11 & -8`), completely hiding the variable argument idiom.
+- **Globalized Strings:** String literals are extracted to globals (`g8`, `g9`), making `printf` statements difficult to read inline.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully utilized debug symbols to preserve the original function names (e.g., `cdecl_func`, `test_calling_conventions`), making the high-level structure easy to navigate.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The complete failure to recover `LargeStruct` and `SmallStruct` definitions, replacing them with raw pointers and integer offsets, fundamentally breaks the semantic understanding of the data manipulation functions.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Struct Type Recovery:** Enhance the analysis of ARM64 ABI rules to identify structure passing (by value vs. hidden pointer) and reconstruct struct definitions from memory access patterns (e.g., consecutive `int64_t` accesses at offsets).
+2.  **Utilize Debug Info for Locals:** When `-g` is present, prioritize mapping local variables to their debug symbol names (e.g., `a`, `b`, `sum`) instead of generating generic `v1`, `v2` names.
+3.  **Recognize and Abstract Varargs:** Implement specific pattern matching for `va_list` usage to regenerate `va_start`, `va_arg`, and `va_end` idioms instead of exposing low-level stack pointer arithmetic.

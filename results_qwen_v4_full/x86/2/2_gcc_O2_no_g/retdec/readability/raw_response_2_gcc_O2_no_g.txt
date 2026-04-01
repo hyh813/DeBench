@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) losing semantic meaning. For example, in `process_char`, parameter `a1` should be `c` or `character`; in `array_1d_stack`, `a1`/`a2` should be `arr`/`n`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user function names preserved correctly (`process_char`, `array_1d_stack`, `binary_tree_sum`). However, helper functions use mechanical names (`function_1080`, `function_1090`) and some like `ptr_func_simple` lose parameter semantics.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `32`, `65`, `26` in `process_char` (ASCII conversion), `4`, `8`, `12`, `40`, `44` for struct offsets. No named constants recovered despite `-O0 -g` debug flags.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*` functions (6 variants), `__readgsdword(20)` stack canary checks, frame pointer manipulation (`v1 - 16`), and redundant `__printf_chk` wrappers instead of `printf`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions use reasonable loops, but `binary_tree_sum` catastrophically unrolls 5-line recursion into 2000+ lines of nested if-while chains. At `-O0`, this transformation is unacceptable.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Critical failure: `binary_tree_sum` expands from 5 LOC to ~2200 LOC. Original recursive pattern completely lost. `test_data_types_l1` becomes unreadable monolith instead of clear test sequence.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps and deep nesting (>20 levels in `binary_tree_sum`). Simple recursion converted to iterative mess with stack variable simulation (`v2 - 16` offsets).
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Identical code blocks repeated hundreds of times in `binary_tree_sum`. Same pointer arithmetic patterns (`*(int32_t *)(v2 + 4)`, `*(int32_t *)(v2 + 8)`) duplicated without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion: `float`/`double`/`long long` all become `int32_t` or `float80_t`. `process_ll` takes two `int32_t` instead of `long long`. Pointer types all degrade to `int32_t` losing distinction.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure: No struct/union definitions recovered. `Point3D`, `Rect`, `Widget`, `TreeNode`, `Graph` all become raw pointer arithmetic (`a1 + 4`, `a1 + 8`, `a1 + 12`). Field names completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout: `(int32_t)(uint16_t)`, `(float80_t)a1`. Pointer arithmetic without bounds checking. `array_oob` intentional overflow not flagged. Function pointers lose signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation (`// DT-L1-01`, `// 大写转小写`). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition: linked list traversal, tree recursion, graph adjacency lists all appear as raw pointer chasing. No identification of common C idioms (null-terminated strings, sentinel values).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for suspicious patterns. `array_oob` intentional overflow not flagged. Indirect calls (`ptr_func_simple`, `ptr_func_complex`) show no resolution uncertainty warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition/postcondition recovery. Null checks present but not documented. No invariant recognition for data structures (e.g., "tree must be acyclic").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `binary_tree` calls `binary_tree_sum` but no call graph documentation. Global variables (`g1`, `g2`, `g3`, `g4`) have no usage context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Test functions mixed with implementation. No logical grouping by category (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`). External dependencies declared (`__libc_start_main`, `__printf_chk`). Should compile with minor stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 7 + 5 + 4) / 4 = 4.75
+Level 2 (Structural):  (4 + 2 + 4 + 2) / 4 = 3.00
+Level 3 (Type):        (3 + 2 + 3) / 3     = 2.67
+Level 4 (Semantic):    (1 + 2 + 2 + 1) / 4 = 1.50
+Level 5 (Contextual):  (5 + 4 + 6) / 3     = 5.00
+
+Overall = (4.75 × 0.30) + (3.00 × 0.25) + (2.67 × 0.20) + (1.50 × 0.15) + (5.00 × 0.10)
+        = 1.425 + 0.75 + 0.534 + 0.225 + 0.500
+        = 3.43/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects
+- **`binary_tree_sum` catastrophic expansion**: 5-line recursive function became 2200+ lines of nested conditionals—completely unreadable
+- **Complete type erasure**: All struct/union definitions lost; `Point3D`, `TreeNode`, `Graph` became raw pointer arithmetic
+- **Zero documentation**: No comments despite original having extensive inline documentation
+- **Generic variable naming**: All parameters named `a1`, `a2`, `v1`, `v2` losing semantic meaning
+- **Compiler artifact pollution**: `__x86_get_pc_thunk_*`, `__readgsdword`, stack canary checks clutter output
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), making basic identification possible
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: Complete absence of any documentation, explanations, or decompilation confidence indicators despite debug symbols being available
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover recursive patterns**: Detect tail recursion and tree traversal patterns to preserve original recursive structure instead of unrolling into iterative mess
+2. **Reconstruct composite types**: Use debug symbols (`-g` flag) to recover struct/union definitions with field names instead of raw pointer arithmetic
+3. **Generate semantic documentation**: Add comments explaining magic numbers, algorithm intent, and decompilation confidence levels for each recovered construct

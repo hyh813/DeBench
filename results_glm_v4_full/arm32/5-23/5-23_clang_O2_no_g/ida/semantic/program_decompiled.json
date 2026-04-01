@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_clang_O2_no_g/ida/syntactic/bin/5-23_clang_O2_no_g_fixed",
+  "stdout": "Testing Preprocessing Features:\n\nParam Macro Constants: 64\nParam Macro Functions: 30\nParam Conditional Compile: 32\nParam Multi Branch Compile: 57122\nParam Macro Recursion: 116\nParam Stringize: 19\nParam Token Paste: 60\nLOG: Values: 10, 20, 30\nParam Variadic Macro: 60\nParam Macro Override: 16\nParam Include Guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19\nParam Builtin Macros: 382\nTesting ASM Features:\n\nParam ASM Basic: 15\nParam ASM Clobber: 15\nParam ASM Multi Insn: 42\nParam ASM SIMD: 36\nParam ASM Atomic: 30\nCall ASM Privileged: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

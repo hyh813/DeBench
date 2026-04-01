@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:2/10  
+Justification: Nearly all local variables are marked as "Unresolved local var" with only DW_OP stack location notation (e.g., `int sum@[???]`, `int i@[DW_OP_breg0(EAX): +2; DW_OP_stack_value]`). The decompiler failed to recover meaningful variable names for loop counters, accumulators, and temporary variables that are clearly present in the source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. All match the original source function names exactly. Minor deduction for some internal functions like `FUN_00011030` that weren't mapped.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Test functions show hardcoded expected values (e.g., `printf("DT-L1-01 (process_char): %c\n",0x61)` for 'a'), making the logic clear. However, some magic numbers like `0x28` in array_pointer and bit-shift values in struct_bitfields lack explanation. The enum switch uses a data table reference instead of named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: extensive loop unrolling in `array_1d_stack`, `array_vla`, `ptr_increment` (8-element chunks); unresolved local variable annotations throughout; "WARNING" comments about inlined functions and unreachable blocks; raw memory access patterns in `array_3d` using pointer arithmetic instead of array indexing.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, for loops, while loops) is recognizable. However, `array_string` uses an unusual do-while pattern instead of the original while loop. At -O3 (as the binary path suggests), loop unrolling is expected but the unrolled code in `array_1d_stack` with 8-element chunks is difficult to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function maintains appropriate granularity - single responsibility preserved. Functions like `binary_tree_sum` and `binary_tree` are properly separated. The decompiler didn't incorrectly inline or outline functions. Parameter counts match original.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom, but `array_3d` uses complex pointer arithmetic that disrupts linear reading: `*(int *)((int)(*arr)[0] + iVar2 + 0x10)`. The `graph_traverse` function has deeply nested loops that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling creates redundant code patterns. In `array_1d_stack`, the same 8-element addition pattern repeats: `arr[uVar2] + arr[uVar2 + 1] + ... + arr[uVar2 + 7]`. This should be commented or abstracted. No dead code elimination visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (char, short, int, long, float, double). However, `process_ll` shows mangled 64-bit multiplication using CONCAT44 and bit manipulation instead of clean `long long`. Function pointer types use generated names like `_func_int_int *`. Const correctness mostly lost (const_param signature shows `int *p` not `const int *p`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names recovered: `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Edge`, `Graph`, `Device`, `Flags`, `UnionData`. Field names mostly preserved (x, y, z, data, next). However, many struct instances in test functions show as "Unresolved local var" with type annotations. Union handling is partial.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns present: `array_3d` uses raw pointer arithmetic with `*(int *)((int)(*arr)[0] + iVar2 + 4)`; `ptr_diff` incorrectly computes `(int)p1 - (int)p2 >> 2` (operator precedence issue - should be `((int)p1 - (int)p2) >> 2`); `array_pointer` uses `*(int *)((int)arr[uVar3] + iVar4)` with hardcoded `0x28` offset. No restrict or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection". No explanation of algorithms, no recovery confidence indicators, no @param/@return documentation. The decompiled code is essentially裸的 (bare/naked).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicit but not named. The linked list traversal in `linked_list` and `doubly_linked_list` uses recognizable while loops but isn't labeled as "linked list traversal". Binary tree recursion is present but not identified as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No meaningful anomaly flags. The "WARNING" comments are about decompiler internals, not code anomalies. `volatile_access` shows two reads but no comment about why volatile is important. No indication of potential undefined behavior in `array_oob` (the out-of-bounds access).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. No documentation of error conditions or edge cases. The function signatures don't indicate what happens with NULL inputs or invalid parameters.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible in test functions but relationships aren't documented. No indication of which functions call `double_value` (it's used as a callback in `ptr_func_simple`). No global variable usage documentation. Static function relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a flat list ordered by address, not logically grouped. Related functions (test functions and tested functions) are separated. No header file structure recovered. The original source organization by category (data types, arrays, pointers, composites) is lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code will not compile standalone. Missing declarations for `puts`, `printf`, `main`. External dependencies (libc functions) not declared. The test functions have hardcoded expected values instead of actual computation. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming completely failed - almost all locals show as "Unresolved local var" with DW_OP notation instead of meaningful names like `sum`, `i`, `current`
+- Architecture mismatch: metadata says "arm64 -O0" but decompiled code shows x86 with -O3 optimization artifacts (heavy loop unrolling)
+- Type safety issues: `ptr_diff` has incorrect operator precedence `(int)p1 - (int)p2 >> 2`, and `array_3d` uses unsafe raw pointer arithmetic
+- No comments or semantic documentation - code is裸的 (bare) with only decompiler internal warnings
+- Composite type field recovery incomplete - many struct instances show as unresolved
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler failed to recover any meaningful local variable names. At -O0 (debug build), variables should have debug symbols enabling perfect name recovery. This is the most impactful failure for readability.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from DWARF debug info**: The decompiled code shows DW_OP stack value annotations, indicating debug info is available. The decompiler should use this to recover names like `sum`, `i`, `len`, `current` based on variable locations and usage patterns.
+2. **Add loop unrolling comments**: When loop unrolling is detected (repetitive similar statements), add a comment like "// Loop unrolled by compiler - 8 iterations per batch" to aid understanding.
+3. **Recover struct field names from debug info**: Many struct instances show as "Unresolved local var" with type annotations. Use the type information to populate struct fields with correct names from the source definitions.

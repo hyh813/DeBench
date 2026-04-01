@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 11,
+  "source_file": "decompiled/ida_out/x64/5-23/5-23_clang_O0_no_g.c",
+  "fixed_file": "results_glm_v4_full/x64/5-23/5-23_clang_O0_no_g/ida/syntactic/fix_5-23_clang_O0_no_g.c"
+}

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `iVar1`, `uVar2`, `iVar3` with no semantic meaning. Original source had meaningful names (`temp1`, `sum`, `count`, `result`) that are completely lost. Comments like "Unresolved local var: int sum@[???]" indicate the decompiler knows the variable exists but cannot name it.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names were successfully recovered from debug symbols (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`). However, some helper functions remain as `FUN_00100940`, `FUN_0010141c` indicating partial symbol recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x3e9`, `0x65`, `0xfffffffc`). Test functions have hardcoded expected values (`0x15`, `0x14`) instead of showing the actual computation, obscuring test intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: NEON vectorization code (`NEON_ext`, `auVar1 [16]`), loop unrolling remnants, and redundant variable assignments. The `recursion_factorial` function expanded from 5 lines to 80+ lines of optimized code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `sequential_ops` recovered well, but loops are heavily transformed. `loop_for_fixed` and `goto_backward` show aggressive unrolling that obscures the original loop structure. Some functions use goto labels (`LAB_001016f0`) instead of structured control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly. Each original function maps to one decompiled function. However, helper functions like `double_value`, `triple_value` remain separate when they could be inlined for clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but several use goto patterns (`loop_multi_exit` has `LAB_001016e0` labels). The `duffs_device` function has complex jump patterns that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling. `recursion_factorial` has 14+ nested if-statements checking `n != 3`, `n != 4`, etc. that represent unrolled iterations. This obscures the simple recursive pattern from the source.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (int, uint) are preserved, but there's type confusion. `switch_small` shows `*(int *)(&CSWTCH_55 + (ulong)(uint)op * 4)` instead of proper array access. Function pointer types use `_func_int_int *` which is non-standard.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays are often shown as "Unresolved local var: int[5] arr@[???]". The `state_handlers` array in `fsm_func_table` is byte-by-byte initialization instead of proper function pointer array. Struct recovery is minimal.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(ulong)(uint)op`, `ZEXT816(0)`). Function pointer calls show "WARNING: Treating indirect jump as call" indicating uncertainty. No buffer overflow protections visible in decompiled output.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated warnings like "WARNING: Could not recover jumptable" and "Unresolved local var". No algorithm explanations or purpose documentation. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not recognized. `loop_while` (digit counting) and `loop_dowhile` are not identified as such. The factorial computation pattern in `recursion_factorial` is obscured by unrolling. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra does flag issues: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable at 0x00101c48. Too many branches". These warnings help identify uncertain decompilation but don't explain the impact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `non_local_jump` that use setjmp/longjmp have no indication of the non-local control flow contract. Error conditions are not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible but relationships aren't documented. `call_func_ptr_array` shows the function pointer array but doesn't indicate which functions are valid targets beyond the initialization. No call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in a reasonable order (test functions grouped, helpers together). However, no file/module structure is preserved - everything is in one output. Static functions aren't clearly marked as such.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has external dependencies (`__printf_chk`, `__libc_start_main`, `___stack_chk_guard`) that aren't declared. Some functions reference undefined symbols (`jump_buffer`, `CSWTCH_55`). Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+4)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (6+5+6)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (3+4+7+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable names completely lost**: All `iVar1`, `uVar2` generics instead of `sum`, `count`, `result`
+- **Loop structures destroyed by unrolling**: `recursion_factorial` expanded from 5 lines to 80+ with nested conditionals
+- **Test functions show hardcoded values**: `test_control_flow_l1` prints constants instead of calling functions with variables
+- **No semantic comments preserved**: Original 200+ lines of documentation completely absent
+- **Array/struct access degraded to pointer arithmetic**: `switch_small` uses `*(int *)(&CSWTCH_55 + ...)` instead of array indexing
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Debug symbols preserved most function names accurately, allowing immediate identification of purpose
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero documentation of preconditions, error conditions, or behavioral contracts that would help understand function semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from debug info**: DWARF debug symbols contain original variable names that should be extracted and applied (e.g., `temp1`, `sum`, `count` are in DWARF but not used)
+2. **Recognize and collapse loop unrolling patterns**: Detect unrolled loops and present them as original loop constructs with a comment noting optimization
+3. **Preserve and display source comments from debug sections**: If compiled with `-g`, source line comments should be extracted and displayed alongside decompiled code

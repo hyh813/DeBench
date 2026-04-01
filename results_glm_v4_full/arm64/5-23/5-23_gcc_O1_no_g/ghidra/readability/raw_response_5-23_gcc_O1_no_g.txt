@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `uVar1`, `lVar2`, `local_20`) and lack semantic context found in the source (e.g., `size`, `result`, `counter`). This makes tracking data flow difficult without cross-referencing the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`param_macro_constants`, `param_asm_basic`, `call_variadic_macro`) match the original source exactly, providing excellent high-level context for the code's purpose.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers (e.g., `0x400`, `0x40`, `0xdef0`, `0x117`) resulting from macro expansion and constant folding. The original semantic meaning (e.g., `MAX_SIZE`, `PLATFORM` flags) is completely lost.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling artifacts, but the use of `undefined4`/`undefined8` types and stack canary checks (`___stack_chk_guard`) adds minor noise that distracts from the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural, using `do-while` loops for iterations and standard `if-else` constructs. The decompiler successfully reconstructed structured logic from the binary.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. Even small helper functions like `call_*` wrappers are preserved, maintaining the original modularity and granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or forward references, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized code cleanly (e.g., `call_macro_constants` returning `0x40`). While this hides the original call, it accurately reflects the binary's efficient state without redundant intermediate steps.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are recovered, but the decompiler often defaults to `undefined4` or `undefined8` for return values and parameters, losing the specific distinction between `int`, `uint32_t`, or `size_t`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Local arrays (e.g., in `call_asm_clobber`) are decomposed into individual stack variables (`local_20`, `uStack_18`) rather than being grouped into an array structure, obscuring the memory layout.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic is explicit (e.g., `*(int *)(param_1 + lVar2 * 4)`), which is safe but verbose. There are no obviously dangerous incorrect casts, though the reliance on `undefined` types reduces perceived safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually absent, consisting only of generic warnings (e.g., "Removing unreachable block"). There is no explanation of the complex macro logic or the purpose of specific hex constants.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Standard library calls (`memcpy`, `mmap`, `printf`) and compiler intrinsics (`__aarch64_ldadd4_acq_rel`) are correctly identified and named, aiding significantly in understanding the low-level operations.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra provides useful warnings like "Globals starting with '_' overlap smaller symbols" and "Subroutine does not return," which accurately flags potential confusion points in the binary.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the `mprotect` calls use magic numbers (`1`, `3`) without indicating they represent `PROT_READ` or `PROT_WRITE`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and references to global data segments (e.g., `DAT_00101320`) are explicit, making it easy to see how functions interact with data.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure. Related test functions are grouped together (e.g., `test_preprocessing_features`).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses non-standard types (`undefined4`) and compiler-specific intrinsics (`__aarch64_ldadd4_acq_rel`) that would require significant patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Macro constants replaced by magic numbers (e.g., `0x400` instead of `MAX_SIZE`), obscuring configuration logic.
+- Variable names are generic (`param_1`, `uVar1`), requiring constant mapping back to source to understand usage.
+- Use of `undefined` types (`undefined4`, `undefined8`) instead of concrete C types reduces type safety and readability.
+- Lack of comments explaining resolved preprocessor directives (e.g., `#ifdef` branches) makes it hard to know alternative code paths existed.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names, making high-level navigation and understanding of the code's intent trivial.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The pervasive use of magic numbers resulting from macro expansion and constant folding makes the code look like "obfuscated" logic rather than human-readable configuration.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement constant propagation analysis to suggest named constants for magic numbers found in comparisons or arithmetic (e.g., suggest `#define MAX_SIZE 1024` for `0x400`).
+2. Improve type inference to prefer standard C types (`int`, `uint32_t`) over generic `undefined` types when the usage pattern is unambiguous.
+3. Add comments or annotations indicating where code was likely generated by macros or inlined, especially when a function body is reduced to a constant return.

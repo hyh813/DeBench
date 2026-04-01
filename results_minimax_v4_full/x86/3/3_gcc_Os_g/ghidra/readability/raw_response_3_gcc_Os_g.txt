@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `puVar4`, `puVar5`, `uVar1`, `uVar2` throughout. Loop indices show as `/* Unresolved local var: int i@[???] */`. Only parameter names like `n`, `x`, and some heap pointers like `__ptr` are preserved.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions correctly named (`test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions`) and some utility functions recovered (`double_value`, `local_vars`, `local_array`). However, many internal functions use address-based naming or remain generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0xf` (15) appear without explanation. Some sizes are clear: `0x800` (2048), `0x28` (40). String literals are present but not always meaningful. Mixed clarity.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact noise: stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`), numerous "WARNING" comments about calling conventions and unreachable blocks, unresolved local variable markers, and injected `get_pc_thunk_bx` functions clutter the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use do-while constructs correctly. Conditionals are generally clear. Some goto patterns for error handling. At -O0, control flow should be more straightforward but some awkward patterns remain (e.g., VLA/alloca handling).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation between test harness functions and implementation functions. No obvious monoliths. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with early returns for error conditions. Some forward jumps in complex functions like `vla_stack` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling visible in `local_array` and `large_stack_frame` but at -O0 this is minimal. Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mostly uses generic `int`, `char`, `void*`. Some better types: `uint`, `size_t` in memory operations. Function pointers have partial typing (`_func_int_int`). Integer types lack width specification (int32_t vs int).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types `Node` and `TreeNode` recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct is not recovered in some places - fields computed directly. Some raw pointer arithmetic instead of struct access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible: `(int)__ptr`, `(int)buf + 1`. Pointer arithmetic without bounds checking. Some type-confused pointers (e.g., `int*` used for `Node*`). No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely auto-generated Ghidra warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No algorithm explanations, no decompilation confidence indicators, no API contracts. No useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible: linked list traversal (while loop with `next`), tree traversal, memory allocation patterns. Not explicitly named or documented as design patterns. Mixed recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "WARNING: Could not recover jumptable at 0x00011f55. Too many branches", "WARNING: Treating indirect jump as call". However, many anomalies are silent or use generic warnings without specific guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. Error handling is present in code but not explained. Missing function contracts entirely.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variables like `global_counter`, `global_array`, `file_scope_static` are properly named. Callback relationships partially visible (`global_func_ptr`). Some extern relationships unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: stack memory functions together, heap functions together, static/global functions together, memory operations together. Test functions form a clear harness. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C library functions (`malloc`, `free`, `memcpy`, `memmove`, `memcmp`, `printf`). Should compile with minimal stubs for extern variables. No obvious compiler-specific hacks that would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- Variable naming is severely degraded with generic names (`iVar1`, `puVar4`, `uVar2`) obscuring variable purpose throughout
+- Comments are entirely auto-generated Ghidra warnings with no useful semantic information
+- Type precision is poor - uses generic `int`/`void*` instead of sized types, losing signed/unsigned distinctions
+- No contract or assertion recovery - preconditions, postconditions, and invariants not documented
+- Excessive noise from stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) clutters every function
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are appropriately sized with good separation of concerns. Test harness functions are clearly distinguished from implementation, and function granularity is reasonable.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+Nearly all local variables use cryptic generic names that make tracking data flow extremely difficult. Loop indices are completely unresolved. This single dimension most severely impacts readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, function parameters) to suggest semantic names like `index`, `count`, `size`, `result`
+2. **Recover struct field names from access patterns**: When seeing `*(int*)((int)ptr + offset)`, recognize struct field access and name fields based on offset consistency
+3. **Generate meaningful comments**: Instead of auto-generated warnings, add comments explaining algorithm intent, preconditions, and any uncertainty in the decompilation

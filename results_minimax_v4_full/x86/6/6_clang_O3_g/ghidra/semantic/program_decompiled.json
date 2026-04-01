@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/6/6_clang_O3_g/ghidra/syntactic/bin/6_clang_O3_g_fixed",
+  "stdout": "=== Standard Library Function Tests ===\nString length: 8\nstrcmp result: 0\nstrlen result: 12\nmemcmp result: 0x5a\nTotal memcmp: 0xffffffff\nValue: 42, Name: test\nprintf result: 22\nscanf result: 579\nfopen/fileno result: 42\nfread/fwrite result: 42\nmalloc/free result: 0x5a\nmemset result: 0\nstrchr/strstr result: 15\n=== System Call Tests ===\nsyscall result: 42\nstat result: 42\nfork/waitpid result: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,15 @@
+=== Test Obf/Opt/Edge Cases ===
+Obf L4.02: 10
+Obf L4.03: 20
+Obf L4.04: 225
+Obf L4.05: 89
+Opt L4.01: 500500
+Opt L4.01: 5050
+Opt L4.02: 72
+Opt L5.01 LtoD: 20
+Edge L3.01: 2
+Edge L3.02: 41
+Edge L3.03: 30
+Edge L3.04: 2000000000
+Edge L4.01: 10
+Edge L4.02: 48

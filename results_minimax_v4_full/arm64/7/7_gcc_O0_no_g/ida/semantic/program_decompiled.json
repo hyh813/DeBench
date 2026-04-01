@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O0_no_g/ida/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "\nObfL402: 10\nObfL403: 20\nObfL404: 225\nObfL405: 70\nOptL401: 500500\nOptL401: 5050\nOptL402: 0\nOptL501:LtoD 20\nEdgeL301: 2\nEdgeL302: 41\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

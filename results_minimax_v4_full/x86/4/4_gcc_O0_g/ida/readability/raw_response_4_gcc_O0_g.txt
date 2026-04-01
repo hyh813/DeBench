@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `sum`, `i`, `a1`, `a2` throughout. In `mixed_conventions_test`, variables `v1`, `v2`, `sum`, `suma` obscure their roles. While function parameters like `a`, `b`, `c` are acceptable, most locals lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions match source exactly: `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `test_calling_conventions`. Some initialization stubs use generic names (`sub_1030`), but primary API functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0x14u` appears for stack canary checks (understandable pattern), and `305419896` (0x12345678) is used as test value without explanation. Array sizes like `10`, `3` are literal without context. Some literals are clear but many lack semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) add noise but are expected at -O0. Some redundant variable initializations present. The decompiler includes helpful annotations like "BYREF" which partially offsets noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if/else and loop constructs. The `ret_multi_branch` function uses if-else chain instead of switch, which is acceptable. No spurious goto statements. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - test wrapper functions separate from implementation functions. `test_calling_conventions` properly calls individual test cases. No monolithic functions; each function has single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns used appropriately in functions like `param_double_ptr`. No deep nesting (>4 levels) observed. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant patterns in test functions (repeated printf calls). Loop unrolling not excessive. No severe dead code. Minor redundancy from register spilling at -O0 is acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types accurate - `int` for integers, `char*` for strings, `int*` for pointers. `__int64` used for 64-bit returns. `va_list` properly typed. Some precision loss: `long long` becomes `__int64`, but overall type fidelity is good.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types recovered well: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`, `TestIntPair`. Field names like `data`, `x`, `y` preserved. Nested structures handled appropriately. Good reconstruction quality.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present: `*(_DWORD *)p` in `param_complex_cast`, `*(_DWORD *)ret_opaque_handle(0)`. Pointer arithmetic appears correct. Function pointer types properly preserved. Minor type safety issues but generally manageable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Decompiler header present with binary info. Some annotations like "BYREF", "BYREF" on parameters. No algorithm explanations or semantic documentation. Comments are structural rather than explanatory.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Calling conventions properly identified: `__cdecl`, `__stdcall`, `__userpurge`, `__usercall`. Return pointer handling recognized in struct return functions. AAPCS and fastcall conventions detected. Good ABI pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "FAILED to decompile" messages present for 7 functions including `call_fastcall` and `__libc_start_main`. Warning about "positive sp value has been detected" in `_start`. Some failures flagged but not all anomalies documented.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition comments recovered. No documentation of expected input constraints or return value guarantees. Function contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure. No documentation of who calls which functions or global variable usage. Caller/callee relationships visible but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions together, calling convention functions grouped, parameter passing functions grouped. Static functions properly scoped. Reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C library functions (printf, puts, strlen, memset). Should compile with minimal stubs. External dependencies documented in decompiler header. Generally compilation-ready with standard library linkage.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `v2`, `sum`, `i`) throughout, obscuring semantic purpose
+- `call_fastcall` failed to decompile completely, losing critical test case
+- No contract or assertion recovery - functions lack pre/postcondition documentation
+- Magic numbers like `305419896` used without explanation or named constant
+- Type safety issues with unsafe casts (`*(_DWORD *)p`) that could lead to undefined behavior
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Core test functions match source exactly with descriptive, action-oriented names. Calling convention annotations properly recovered.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+Generic single-letter and v-prefixed names dominate, making it difficult to track variable purpose across functions. Should infer names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as return value in printf calls should be named based on the function being called
+2. Recover function contracts - detect preconditions (null checks, range validation) and document as comments
+3. Explain magic numbers - flag unexplained numeric literals and suggest possible constant meanings based on context (e.g., `0x14u` = stack canary offset)

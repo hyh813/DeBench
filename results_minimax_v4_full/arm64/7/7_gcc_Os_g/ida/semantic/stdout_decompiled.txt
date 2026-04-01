@@ -1,0 +1,16 @@
+Opaque predicate test passed
+
+Fake branch result: 10
+Opaque predicate result: 20
+Instruction substitution result: 225
+String encryption result: 100
+Tail call optimization result: 500500
+Tail call optimization result: 5050
+Vectorized loop result: 20
+LTO result: 20
+Division by zero result: 2
+Null pointer deref result: 41
+Buffer overflow result: 30
+Integer overflow result: 2000000000
+Undefined behavior result: 10
+Implementation defined result: 48

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/6/6_clang_O3_no_g/angr/syntactic/bin/6_clang_O3_no_g_fixed",
+  "stdout": "=== Standard Library Tests ===\nstrcpy_len: 6\nstrcmp: 0\nstrlen: 12\nmemcpy: 90\nmemcmp: -1\nValue: 42, Name: Test\nprintf: 22\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names (`v0`, `v1`, `v2`, `a1`, `a2`) instead of semantic names like `result`, `encrypted`, `decrypted`, `canary` from source. Makes tracking data flow difficult without referring to original.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). Only startup/runtime helpers use generic names (`sub_1020`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x80000000`, `90` (should be `0x5A`), `-559038737` (should be `0xDEADBEEF`) lack explanation. String literals preserved but encryption key not documented.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts like `__fastcall`, `BYREF` annotations, register hints (`[rsp+8h] [rbp-8h]`). Failed decompilation notices for 12 library functions add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered well (for loops in buffer_overflow functions). However, `param_fake_branch` lost the second fake branch entirely (strlen check removed), altering semantic intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. `test_obf_opt_edge` is large (many printf calls) but this reflects original structure. No inappropriate inlining or fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with natural if-else patterns. Some functions have stack variable declarations at top which is C-style but readable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Type casts (`(unsigned int)`, `(__int64)`) are somewhat redundant but don't severely obscure logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `__int64`, `unsigned int` instead of precise types (`int32_t`, `size_t`). `param_fake_branch` takes `unsigned int` but source uses `int` - signed/unsigned mismatch affects semantics.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `param_implementation_defined` struct completely lost - returns constant `47` instead of computing bitfield operations. No struct/union reconstruction visible anywhere.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(unsigned int)(a1 - 1)`, pointer arithmetic with `__int64`). Signal handler type casting `(__sighandler_t)` is correct but verbose.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only auto-generated header ("Decompiled by IDA Pro 9.1"). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern not labeled. Encryption XOR pattern not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warning present ("positive sp value has been detected, the output may be wrong!"). Failed decompilation listed for library functions. But fake branch elimination not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). No postconditions inferred. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`jmp_buffer`, `div_zero_caught`) referenced without declaration context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Related `param_*` and `call_*` functions grouped together. No header file structure or API declarations. Startup code mixed with application logic.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 functions failed to decompile (printf, malloc, strlen, etc.). Would require extensive stubs and library linking. Dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable `v2`, `v3`, `v4`** should be named `result`, `gcd_temp`, `gcd_a` based on usage patterns in GCD computation
+- **`param_implementation_defined`** struct completely lost - returns constant `47` instead of computing bitfield operations
+- **Second fake branch eliminated** - `strlen(str) < 0` check removed entirely, losing obfuscation intent
+- **No comments** explaining magic numbers (`0x80000000`, `90`, `-559038737`)
+- **12 library functions failed** to decompile requiring external stubs for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names mostly preserved (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`), making navigation intuitive.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; decompiled code provides no explanation of algorithm intent, obfuscation purpose, or decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables in GCD loop should be `temp`, `a`, `b` not `v2`, `v3`, `v4`)
+2. **Preserve struct/composite type information** - Recover bitfield structures and document when type information is uncertain rather than simplifying to constants
+3. **Add decompilation confidence annotations** - Flag suspicious transformations (like eliminated fake branches) and document magic numbers with hex equivalents

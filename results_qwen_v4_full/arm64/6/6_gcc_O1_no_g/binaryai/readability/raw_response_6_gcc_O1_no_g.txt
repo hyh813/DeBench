@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_8`, `uVar2` throughout. Original source had semantic names (`dst`, `src`, `buffer`, `write_data`) that are completely lost, making it difficult to track variable purpose without referring to source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined function names preserved accurately (`param_strcpy`, `thread_compute`, `signal_handler`, `test_standard_library_functions`). Only internal helpers like `FUN_001013a0` use address-based naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: socket constants as `2,1` instead of `AF_INET,SOCK_STREAM`, signal numbers as `10,0xe` instead of `SIGUSR1,SIGALRM`, return codes as `0x2a,0xfffffffd`. String literals preserved well ("HelloLib", "/etc/passwd").
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`local_8 = ___stack_chk_guard`) appear in nearly every function. Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) add complexity. External function stubs for standard library calls create unnecessary wrappers.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures generally recovered as do-while patterns. However, critical semantic errors exist: `param_strcpy` calls `strlen` but doesn't return the value, `param_strlen` similarly loses its return—fundamental logic broken despite natural-looking control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). External function stubs create unnecessary fragmentation but don't impede understanding.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate early returns for error handling. Stack canary checks at function ends create minor flow disruption. Thread synchronization code has expected complexity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeats identically in every function. External function stubs duplicate standard library calls unnecessarily. No significant dead code or loop unrolling artifacts observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `FILE*`, `size_t`). Const correctness lost (`const char *src` becomes `char *param_2`). Thread functions return `undefined8` instead of `void*`. Some parameters use `ulong` where `size_t` would be appropriate.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs accessed via pointer arithmetic rather than field names. TLS access uses `*(int *)(lVar3 + 0x10)` instead of named fields. `sockaddr` partially recovered with `sa_family`, `sa_data`. No explicit struct definitions in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)malloc(4)`, `(pthread_mutex_t *)counter_mutex`, `(undefined4 *)malloc(4)`, `(undefined8 *)shmat(...)`. TLS offset access `(int *)(lVar3 + 0x10)` is particularly dangerous. Function pointer types lack proper signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comment present ("Decompiled by BinaryAI"). Zero comments explaining logic, algorithms, API contracts, or non-obvious patterns. No decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Producer-consumer pattern with condition variables not identified. Mutex-protected counter pattern unrecognized. Signal handling polling loop not documented. Atomic compare-and-swap operations lack pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Critical semantic errors unflagged: `param_strcpy` and `param_strlen` missing return statements. Architecture-specific intrinsics lack explanation. No warnings about potential undefined behavior or uncertain decompilation regions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (null pointer checks). Postconditions absent (return value ranges). Error codes (`0x2a`=42, `0xffffffff`=-1) unexplained. Invariants like `shared_counter == expected` not captured.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible through direct invocation. Global variables (`shared_counter`, `signal_received`, `atomic_counter`) identifiable. Thread callback relationships inferable from `pthread_create` calls but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (library tests vs. system calls vs. threads). External functions listed separately at top. No header file or namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata states "Compilation Result: Yes" but external function declarations missing. Architecture-specific intrinsics (`__aarch64_cas4_acq_rel`) require stubs. Global variables referenced without definitions. Would need moderate patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+4+4)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.12/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **`param_strcpy` missing return statement** - calls `strlen(param_1)` but doesn't return the value, breaking core functionality
+- **`param_strlen` missing return statement** - same issue, function returns `void` instead of `size_t`
+- **Variable names entirely generic** - `param_1`, `iVar1`, `local_8` provide zero semantic information
+- **Magic numbers unexplained** - `0x2a`, `0xfffffffd`, socket constants `2,1`, signal numbers `10,0xe`
+- **No struct definitions recovered** - TLS and ThreadData accessed via pointer arithmetic offsets
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most user-defined function names preserved accurately from source, making function identification straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no comments explaining logic, algorithms, or API behavior; only decompiler header present
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and flag semantic errors** - Identify when return values are computed but not returned (as in `param_strcpy`, `param_strlen`)
+2. **Infer variable names from usage patterns** - Analyze how variables are used to suggest semantic names (e.g., variables used in size checks → `buffer_size`)
+3. **Recover and document magic numbers** - Detect common constants (signal numbers, socket constants, error codes) and suggest named constant replacements with comments

@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Nearly all local variables are marked as "Unresolved local var" with cryptic DWARF expressions like `int a@[DW_OP_reg0(x0)]` or `int * arr@[???]`. The decompiler failed to recover meaningful variable names for most stack and heap variables. Only a few globals like `global_counter`, `global_array`, `file_scope_static` were properly named.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Justification: About 70% of functions retain their original names (e.g., `double_value`, `local_vars`, `heap_basic`, `malloc`, `free`). However, several functions remain as generic `FUN_0010xxxx` names (e.g., `FUN_001011cc` for `heap_calloc`, `FUN_0010132c` for `heap_array`). The inconsistency between properly named and unnamed functions reduces clarity.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x400` (1024). The decompiler uses hex literals extensively instead of named constants. For example, `*out = 0x2a` should be `*out = 42` with a comment explaining it's the value of `local`. The malloc size `0x28` (40 bytes) for 10 ints is also unexplained.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: Significant noise from "WARNING" blocks about unreachable code, unknown calling conventions, and debug info artifacts. The "Unresolved local var" comments with raw DWARF expressions (`@[DW_OP_reg0(x0)]`) pollute the output. However, core logic is readable without excessive compiler artifacts like register spills or inline assembly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most control flow is natural with proper loops and conditionals. However, `large_stack_frame` uses an unusual do-while with pointer comparison (`acStack_10 != pcVar6`) instead of the original for-loop. At -O0, this transformation is unnecessary. The `vla_stack` function has complex control flow from stack protection code that obscures the original logic.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions maintain appropriate granularity - none are excessively large. The original test wrapper functions (`test_stack_memory`, `test_heap_memory`) are correctly preserved. Static helper functions like `double_value` are properly separated. Minor issue: some test code got inlined into the test functions themselves.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns for error conditions (NULL checks) are used appropriately. The `vla_stack` and `alloca_usage` functions have some complex nesting from stack canary checks, but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Loop unrolling is present in many functions (e.g., `heap_basic`, `heap_array`) but not explicitly commented. The pattern `do { ... } while` with 4-element chunks is unrolled optimization that should be documented. Some redundant NULL checks exist. Dead code elimination is good - no obvious unreachable code paths remain.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Severe type degradation. The decompiler uses `undefined8`, `undefined4`, `undefined1` instead of proper types like `int`, `char`. Pointers are often `void*` or `undefined8*` rather than typed pointers. For example, `int *arr` becomes `undefined8 *__ptr`. The original `int` parameters become `int` in function signatures but local variables lose type info.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: Struct types `Point`, `Node`, `TreeNode` are partially recovered but field names are lost. The decompiler uses raw pointer arithmetic like `*(int *)((long)__ptr + (long)(n / 2) * 4)` instead of `arr[n/2]`. For `Node`, it uses `int` arrays with manual field offsets (`piVar3[2]`, `piVar3[3]` for `next` pointer) rather than proper struct access.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe operations: extensive raw pointer arithmetic (e.g., `(long)__ptr + (long)(n / 2) * 4`), casting through `undefined8*` types, and manual struct field access via offsets. The `heap_struct` function computes `x * 3` but the original was `p->x + p->y` (x + 2x = 3x), losing the semantic meaning. Function pointer types like `_func_int_int` are generic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Justification: Limited useful comments. The "Unresolved local var" comments are noise, not helpful documentation. Some warnings about "Unknown calling convention" are present but don't explain what the convention should be. No comments explaining algorithm intent, preconditions, or what couldn't be resolved. The DWARF debug info comments (e.g., `@[DW_OP_reg0(x0)]`) are meaningless to most users.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are partially visible but not explicitly named. Linked list traversal (`while(piVar4 != (int *)0x0)`) is recognizable but not labeled as such. The memory allocation/free pattern is consistent but not documented as a pattern. No explicit recognition of patterns like "linked list with sentinel," "binary tree," or "VLA."
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Generic warnings present ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention") but they don't explain what specifically couldn't be resolved or the impact. No indication that certain functions like `stack_alias` had their logic simplified (it just returns 0x14 instead of the actual aliasing logic). The "Could not recover jumptable" warning is helpful but rare.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source had safety checks (e.g., `if (n <= 0 || n > 1000) return -1` in `vla_stack`) that are partially preserved in decompiled code but not explained as preconditions. No documentation of what conditions must hold before/after function execution.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are clear (e.g., `test_stack_memory()` calls `large_stack_frame()`). Global variable usage is transparent (`global_counter`, `global_array`). However, callback relationships (like `set_global_callback` setting `global_func_ptr`) aren't documented. No indication of which functions call which others or the call graph.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped reasonably - stack functions together, heap functions together, static/global functions together. However, the original source's clear section comments (e.g., "=== 3.1 Stack Memory Operations ===") are lost. The test functions are mixed with implementation functions rather than clearly separated.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code would not compile as-is. Heavy use of `undefined8`, `undefined1`, `undefined4` types would cause compilation errors. External dependencies (`__stack_chk_guard`, `__gmon_start__`, `__libc_start_main`) aren't declared. The `_func_int_int` function pointer type is non-standard. Significant patching would be needed (replacing undefined types, adding headers).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 5) / 4 = 4.5
+L2_avg = (7 + 8 + 7 + 5) / 4 = 6.75
+L3_avg = (3 + 5 + 4) / 3 = 4.0
+L4_avg = (4 + 5 + 5 + 2) / 4 = 4.0
+L5_avg = (5 + 6 + 3) / 3 = 4.67
+
+Overall = (4.5 × 0.30) + (6.75 × 0.25) + (4.0 × 0.20) + (4.0 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.6875 + 0.8 + 0.6 + 0.467
+        = 4.90/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming failure**: Nearly all local variables are "Unresolved" with cryptic DWARF expressions instead of meaningful names like `arr`, `i`, `sum`
+
+2. **Type precision loss**: Uses `undefined8`, `undefined4`, `undefined1` instead of proper C types (`int`, `char*`, etc.), making code uncompilable
+
+3. **Composite type erasure**: Struct fields accessed via raw pointer arithmetic (`*(int*)((long)ptr + offset)`) instead of proper struct member access (`ptr->field`)
+
+4. **Magic numbers unexplained**: Constants like `0x2a`, `0x14`, `0x400` appear without comments explaining their meaning or origin
+
+5. **Function naming inconsistency**: Some functions correctly named (`heap_basic`), others remain as `FUN_0010xxxx` placeholders
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (8/10)**
+- **Why?** Functions maintain appropriate size and granularity. The test wrapper functions and helper functions are properly separated. No excessive inlining or fragmentation.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**
+- **Why?** The decompiler failed to recover meaningful variable names for almost all local variables. The "Unresolved local var" comments with raw DWARF debug info are completely unusable for analysis.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `i` or `index`. When used to accumulate sum, name it `sum` or `total`. Use the DWARF location expressions to understand variable liveness and derive semantic meaning.
+
+2. **Recover struct member access**: Instead of generating `(int*)((long)ptr + offset)`, generate `ptr->fieldname` when struct layout is known. The decompiler knows the struct size (e.g., `sizeof(Node) = 0x10`) - use that to infer field offsets.
+
+3. **Replace undefined types with concrete types**: Map `undefined8` → `long` or `void*`, `undefined4` → `int`, `undefined1` → `char` based on context. Add a "type inference" pass that looks at how variables are used (arithmetic vs. pointer operations) to choose appropriate types.

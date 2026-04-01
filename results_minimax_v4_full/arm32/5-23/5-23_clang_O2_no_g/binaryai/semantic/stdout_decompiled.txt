@@ -1,0 +1,23 @@
+Testing preprocessing features:
+
+param_macro_constants: expected 64, got 64
+call_macro_constants: expected 30, got 30
+call_conditional_compile: expected 32, got 32
+call_multi_branch_compile: expected 57122, got 57122
+call_macro_recursion: expected 116, got 116
+param_stringize: expected 19, got 19
+call_variadic_macro: expected 60, got 60
+LOG: Values: 10, 20, 30
+call_token_paste: expected 60, got 60
+call_macro_override: expected 16, got 16
+call_include_guard: expected 500, got 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19
+call_builtin_macros: expected 382, got 382
+Testing asm features:
+
+param_asm_basic: expected 15, got 15
+call_asm_basic: expected 15, got 15
+param_asm_clobber: expected 42, got 42
+call_asm_simd: expected 36, got 36
+call_asm_atomic: expected 20, got 30
+call_asm_privileged: expected 77, got 77

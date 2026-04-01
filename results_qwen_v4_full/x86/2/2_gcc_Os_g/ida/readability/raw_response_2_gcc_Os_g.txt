@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `result`) instead of semantic names like `sum`, `current`, `head` from original source. Example: `array_1d_stack` uses `v2`/`v3` instead of `sum`/`i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions preserved well (`double_value`, `process_char`, `struct_simple`), but helper functions use generic names (`sub_1030`, `sub_1040`) and 5 runtime functions failed to decompile.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present (`32`, `65`, `0x19u` in process_char), and critically, test functions have hardcoded expected values (e.g., `97` instead of calling `process_char('A')`), losing semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__readgsdword(0x14u)` stack canary, empty thunk functions (`_x86_get_pc_thunk_bx`), assembly blocks (`__asm { jmp dword ptr [ebx+8] }`), and stack annotations clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as while/for, but `binary_tree_sum` incorrectly converted from recursive to iterative (semantic change!), and `array_2d_stack` uses pointer arithmetic instead of 2D indexing.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable; helper functions preserved (`complex_callback`, `opaque_handle_create`), test functions match original size, no excessive inlining observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with standard C structure, loop constructs are clear, no excessive goto usage, though stack variables declared at function top.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions have problematic constant folding (actual calls replaced with constants), some redundant type casts visible, bitfield access uses repeated bit operations instead of field access.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant degradation: `process_long` returns `int` instead of `long`, `volatile` qualifier lost in `volatile_access` (single read instead of two), some pointers use `_DWORD *` instead of `int *`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs well-recovered (`Point3D`, `Rect`, `Widget`, `Node`) with field names preserved, unions recovered (`UnionData`), but bitfield struct `Flags` access degrades to bit operations instead of field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD)handle`, `*(_DWORD *)p`, void pointer casts common, `volatile` semantics lost, no bounds checking warnings despite `array_oob` existing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments; only auto-generated type annotations (`// eax`, `// [esp+0h]`), original source's extensive documentation completely lost, no algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (linked list traversal as loop) but not named, tree recursion incorrectly converted, no design pattern identification, standard library calls identified but not contextualized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present ("bad sp value at call has been detected"), failed decompilations listed at end, but architecture mismatch (arm64 source → x86 decompilation) not indicated, no inline anomaly flags.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented, NULL checks present but not documented as contracts, error conditions not explained, no invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation, test function to test case mapping lost (constants instead of actual calls), callback relationships visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file, no organization matching source structure, static functions not clearly marked, no header file generation, helper functions mixed with main functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 5 functions failed to decompile (`__libc_start_main`, `puts`, etc.), architecture mismatch prevents compilation, typedefs referenced but not all defined, would need significant stubs to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.30/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names are generic** (`v0`, `v1`, `v2`) instead of semantic (`sum`, `current`, `head`)
+- **Test functions optimized away** - actual function calls replaced with hardcoded constants (e.g., `97` instead of `process_char('A')`)
+- **Type degradation** - `process_long` returns `int` instead of `long`, `volatile` qualifier completely lost
+- **No comments preserved** - original source's extensive documentation completely absent
+- **Architecture mismatch** - arm64 source decompiled as x86 without indication
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core business logic functions preserved their original meaningful names (`double_value`, `process_char`, `struct_simple`), making function purposes immediately clear.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no meaningful comments survive decompilation; only auto-generated type annotations remain, losing all algorithm explanations and context from original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., accumulator variables in loops should be named `sum`, pointer iterators should be named `current`/`ptr`)
+2. **Preserve semantic type qualifiers** - `volatile`, `const`, and exact integer sizes (`long` vs `int`) must be maintained to preserve program semantics
+3. **Avoid aggressive constant folding in test code** - preserve actual function calls instead of replacing with expected values, as this destroys the ability to understand test intent

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_38`, `iVar1`, `puVar2` throughout. The original source had meaningful names like `x`, `arr`, `n`, `p1`, `p2` which were completely lost. The decompiler made no effort to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names closely match original source - `double_value`, `local_vars`, `local_array`, `heap_basic`, `memory_leak` all preserved correctly. The decompiler successfully recovered the intended function semantics through naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048), `0x400` (1024) appear without explanation. The original source had clear constants like `42`, `10`, `2048` which should have been preserved. Only `__stack_chk_fail` is appropriately recognized as a compiler intrinsic.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail`) are expected at -O0. Some unreachable block warnings noted but don't significantly impede reading. Overall clean output without excessive debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as while/do-while constructs. For example, `local_array` uses a clear do-while loop: `do { *(int *)plVar1 = iVar2; ... } while (plVar1 != local_10);`. Conditionals are idiomatic. At -O0, control flow should closely match source, and it does.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches original source - many small, focused functions preserved (e.g., `double_value`, `local_vars`, `heap_basic`). No monolithic functions observed. Each function has clear single responsibility as in the original.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., in `heap_basic`: `if (__ptr == (void *)0x0) { uVar3 = 0xffffffff; } else { ... }`). No forward jumps into loop bodies. Good flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal at -O0. Common subexpression elimination artifacts are not significant. The code is clean without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type erasure present. The decompiler uses `undefined4` (should be `int`), `undefined8` (should be `long` or `void*`), `undefined1` (should be `char`). For example, `int param_1` becomes `undefined4 param_1`. Function parameters lose their original types. However, some type information is preserved (e.g., `int*` in `address_of_array`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. The original source defines `Point`, `Node`, and `TreeNode` structs, but the decompiled code uses raw pointer arithmetic instead. In `heap_struct`, the code just does `param_1 * 3` without showing the Point struct fields. In `linked_list_heap`, nodes are accessed via `*(int **)(piVar3 + 2)` instead of `node->next`. All composite type semantics are lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present. Extensive use of `undefined4*` casts obscures type safety. Pointer arithmetic like `*(int *)((long)__ptr + uVar1 * 4)` is error-prone. No const correctness preserved. However, no obviously dangerous buffer overflow patterns like in the original `heap_overflow` (which intentionally writes past bounds).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only the standard Ghidra header (`/* Decompiled by Ghidra 12.0 */`) and some auto-generated warnings. No explanation of algorithm logic, no recovery confidence indicators, no API contracts. The original source had extensive comments explaining each test case which are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. The linked list creation in `linked_list_heap` is not labeled as such. The tree traversal in `tree_heap_traversal` has no pattern indication. Memory management patterns (malloc/free pairs) are not highlighted. Could benefit from comments like "// Linked list creation pattern".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present: "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", "WARNING: Could not recover jumptable". However, these are generic Ghidra warnings and don't specifically flag suspicious code patterns like the intentional bugs in the original (memory_leak, dangling_pointer, double_free, heap_overflow). The decompiler doesn't indicate these are intentional test cases for decompiler analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had safety checks like `if (n <= 0 || n > 1000) return -1;` in `vla_stack` but no contract documentation. Error return values are not explained. The decompiler doesn't infer that `param_1 != 0` is a precondition for many functions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through direct calls (e.g., `test_stack_memory()` calls `local_vars()`, `large_stack_frame()`). Global variable usage is visible (`global_counter`, `global_array`). However, callback relationships like `set_global_callback` → `call_global_callback` → `double_value` are not explicitly documented. External dependencies (extern functions) are not clearly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: The decompiled output is a single monolithic listing with 63 functions in arbitrary order. No logical grouping by functionality (stack, heap, static, memory ops). Static functions aren't distinguished from global functions. No header-like API declarations. The original source had clear section comments which are lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will NOT compile as-is. Uses `undefined4`, `undefined8`, `undefined1` types which don't exist. Missing struct definitions (Point, Node, TreeNode). Missing `#include` statements. Missing function prototypes. The architecture mismatch (metadata says arm64 but decompiled shows x86) is also concerning. Significant patching would be required to make this compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- **Struct/union recovery completely failed**: All composite types (Point, Node, TreeNode) lost; replaced with raw pointer arithmetic like `*(int **)(piVar3 + 2)` instead of `node->next`
+- **Type precision severely degraded**: Original `int`, `char*`, `size_t` replaced with `undefined4`, `undefined8`, `undefined1` throughout
+- **Variable naming is unusable**: Generic names like `param_1`, `local_38`, `iVar1` provide no semantic meaning
+- **No comments or documentation**: Original source's extensive test case explanations completely lost
+- **Won't compile**: Uses non-existent types requiring extensive manual修复
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names closely match the original source - `double_value`, `local_vars`, `heap_basic`, `memory_leak` are all correctly recovered. The decompiler preserved the intended semantic purpose in function names.
+
+### Most Needs Improvement: Composite Type Recovery (scored 3/10)
+The decompiler failed to recover any struct definitions from the original source. All struct usage is converted to raw pointer arithmetic, losing all semantic meaning of fields like `node->data`, `node->next`, `point.x`, `point.y`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union definitions**: Analyze allocation sites (malloc with sizeof(struct)) and field access patterns to reconstruct composite types with meaningful field names
+2. **Infer variable names from usage**: Use data flow analysis - a variable used as array index should be named `index` or `i`, a buffer for string operations should be named `buffer` or `str`
+3. **Preserve type information**: Instead of `undefined4`/`undefined8`, use `int`/`long` based on architecture analysis; recover `const` correctness from read-only memory sections

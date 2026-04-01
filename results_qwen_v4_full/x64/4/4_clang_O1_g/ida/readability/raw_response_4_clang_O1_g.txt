@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `overflow_arg_area`) instead of semantic names like `count`, `sum`, `args` from source. Only `result` and `retaddr` show meaningful naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined functions preserved original names (`cdecl_func`, `varargs_func`, `func_struct_byval`). Helper functions use generic names (`sub_1020`, `deregister_tm_clones`) but core logic is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers dominate test functions (15, 50, 6, 33) due to constant folding—original call expressions lost. String literals replaced with opaque references (`aCallL206`, `asc_236F`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler startup code present (`_init_proc`, `frame_dummy`). Redundant casts like `(__int64 (__fastcall *)(_QWORD))callback` and BYREF annotations add visual noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural constructs (if/else, do-while). However, test functions lost actual control flow due to constant folding—`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: test functions (`call_cdecl`, `call_stdcall`, etc.) were constant-folded, destroying the call relationship structure. Original source showed explicit function calls; decompiled version shows computed constants.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Loop structures recognizable (do-while patterns in `func_struct_byval`). Some forward references in varargs handling disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Varargs functions show redundant variable shuffling (`v10 = v3; v11 = v1;`). Constant folding created artificial redundancy where actual computation should appear.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types preserved correctly (`int`, `char*`, `double`). Some degradation to `__int64` instead of `size_t` or `intptr_t`. Function pointer types partially recovered (`int (*callback)(int)`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`). Field names preserved (`s.data[i]`, `p->x`, `p->y`). Array access patterns clear.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)p`, `(__int64 (__fastcall *)(_QWORD))callback`, `(unsigned int)(int)((double)v4 + ...)`. Pointer arithmetic visible without safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated warnings present ("local variable allocation has failed", "positive sp value has been detected"). No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C patterns (varargs, struct passing) not explicitly identified. No recognition of calling convention patterns despite being the test's core purpose.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some failures flagged ("FAILED to decompile: printf", "FAILED to decompile: strlen"). Warning about `_start` function stack issues. Inconsistent coverage across functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` in `func_struct_byptr`). NULL checks exist in code but not as explicit contracts. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage (`_bss_start`, `_gmon_start__`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Startup/teardown code mixed with user functions. No clear module boundaries or grouping comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six external functions failed decompilation (`printf`, `puts`, `strlen`, `__libc_start_main`, etc.). Would require stubs and type definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 8 + 5 + 6) / 4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7 + 5 + 7 + 6) / 4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (7 + 8 + 5) / 3   = 6.67 × 0.20 = 1.333
+Level 4 (Semantic):    (3 + 4 + 6 + 2) / 4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5 + 6 + 4) / 3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.68/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects
+- **Constant folding destroyed call relationships**: Test functions like `call_cdecl()` return literal `15` instead of showing `cdecl_func(5, 10)` call
+- **Generic variable naming**: `v0`, `v1`, `v2` obscure semantic meaning (should be `count`, `sum`, `index`)
+- **String literals obfuscated**: References like `aCallL206`, `asc_236F` instead of actual format strings
+- **Six external functions failed decompilation**: `printf`, `puts`, `strlen`, etc. marked as FAILED
+- **No contract documentation**: NULL checks exist but preconditions not documented as assertions
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately (`cdecl_func`, `varargs_func`, `func_struct_byval`), enabling immediate semantic understanding of purpose.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - Zero precondition/postcondition documentation despite NULL checks and validation logic present in code; critical for reverse engineering safety.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Disable aggressive constant folding for test/analysis binaries** - Preserve actual function call expressions even when arguments are literals to maintain call graph integrity
+2. **Implement usage-based variable renaming** - Infer semantic names from usage patterns (loop counters → `i`, accumulators → `sum`, sizes → `count`)
+3. **Add contract inference from null checks** - Automatically generate `// requires: p != NULL` comments where defensive checks exist in code

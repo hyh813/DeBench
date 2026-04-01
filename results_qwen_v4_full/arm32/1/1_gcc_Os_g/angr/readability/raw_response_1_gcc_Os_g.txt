@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1` with no semantic meaning. Original source had descriptive names like `temp1`, `temp2`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions retained original names (`sequential_ops`, `nested_if_2`, `recursion_factorial`), but helper functions use generic names (`sub_10454`, `sub_10530`). Some function names don't match their actual recovered logic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1), `1717986919` (division constant), and `0x23050` appear without explanation. Test functions print hardcoded expected values instead of computing them.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from `armg_calculate_condition()` calls, stack canary checks (`__stack_chk_guard`), and register spill variables (`v0`, `v1` on stack). Many functions have unnecessary local variables from register allocation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many functions use `goto` patterns instead of natural if/else/while structures. `loop_while` uses multiplication by `1717986919` instead of simple division by 10. `switch_fallthrough` has convoluted goto logic instead of clean fall-through.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are mostly preserved, but parameter counts are wrong in many cases (`nested_if_deep` has 4 params instead of 5, `if_elseif_long` has 4 params instead of 1). Some functions are fragmented with excessive local variables.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Excessive use of `goto LABEL_XXXX` patterns disrupts top-to-bottom reading. Functions like `if_else`, `switch_default` have multiple forward jumps that could be structured as if-else chains.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in many functions. `armg_calculate_condition` calls appear redundantly. Test functions print hardcoded values multiple times instead of computing once.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All integers are `unsigned int` regardless of original signedness. `sequential_ops` takes `int` in source but `unsigned int` in decompilation. Pointer types often degraded to `unsigned int` (e.g., `call_func_ptr` parameter `a0` should be function pointer).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Array `arr[] = {10, 20, 30, 40, 50}` in `loop_break` becomes individual stack variables `v0` through `v4`. No struct recovery attempted. Matrix in `loop_multi_exit` becomes scattered stack variables.
+
+**11. Type Safety:** Score: 3/10  
+Justification: `call_func_ptr` does `goto a0` on an integer parameter instead of proper function pointer call. `op_div` and `op_mod` call `__aeabi_idiv()` with wrong signatures. Multiple implicit casts between signed/unsigned without warnings.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated function headers exist. No explanation of `armg_calculate_condition` purpose or magic constants. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized as for/while/do-while consistently. `recursion_factorial` correctly converted to iterative form (tail-call optimization recognized), but `switch_fallthrough` pattern not identified. State machine logic in `state_machine` completely broken.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious patterns. `call_func_ptr` doing `goto a0` is semantically wrong but not flagged. `nested_if_deep` missing parameter not indicated. Test functions printing hardcoded values instead of calling functions not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). No postconditions or error condition documentation. Stack canary checks present but not explained as security features.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible but many calls are to `armg_calculate_condition` instead of direct comparisons. Global variables like `g_23008`, `g_23034` have no semantic names. Callback relationships in `process_with_callback` partially preserved.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Related functions not grouped (test functions scattered). Helper functions (`double_value`, `triple_value`) present but state machine handlers not logically grouped with `fsm_func_table`.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code references external symbols (`__libc_start_main`, `__aeabi_idiv`, `GLIBC_2.4::__stack_chk_guard`) that need stubs. Some functions like `.divsi3_skip_div0_test` have invalid C syntax (leading dot in name). Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 3.96/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Test functions print hardcoded values** instead of actually calling the functions being tested (e.g., `test_control_flow_l1` prints "21" instead of `sequential_ops(5,7,3)`)
+- **`armg_calculate_condition` calls** obscure simple comparisons that should be direct if/else statements
+- **Parameter count mismatches** in multiple functions (`nested_if_deep` has 4 params instead of 5, `if_elseif_long` has 4 instead of 1)
+- **`call_func_ptr` uses `goto a0`** instead of proper function pointer invocation, breaking semantics entirely
+- **Division replaced with multiplication** by magic constant `1717986919` in `loop_while` and `loop_dowhile` instead of simple `/10`
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Core function names from original source were preserved (`sequential_ops`, `recursion_factorial`, `ternary_op`), providing some anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments means readers must reverse-engineer the decompiler's decisions with no guidance on confidence or anomalies.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures** from goto patterns - detect loop back-jumps and convert to for/while/do-while, detect if-else chains from conditional jumps
+2. **Infer semantic variable names** from usage patterns - variables used in loop bounds should be named `i`, `count`, `index`; accumulators should be `sum`, `total`, `result`
+3. **Flag decompilation uncertainty** - add comments when indirect calls can't be resolved, when parameter counts are uncertain, or when optimization artifacts (like division constants) are present

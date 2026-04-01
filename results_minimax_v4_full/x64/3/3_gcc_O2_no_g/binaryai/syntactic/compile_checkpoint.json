@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 50,
+  "source_file": "decompiled/BinaryAI_out/x64/3/3_gcc_O2_no_g.c",
+  "fixed_file": "results_minimax_v4_full/x64/3/3_gcc_O2_no_g/binaryai/syntactic/fix_3_gcc_O2_no_g.c"
+}

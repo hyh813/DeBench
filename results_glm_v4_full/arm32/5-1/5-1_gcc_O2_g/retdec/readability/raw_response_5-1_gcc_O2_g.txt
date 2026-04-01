@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v5`, and globals are `g1` through `g20`, completely obscuring semantic meaning (e.g., `v1` in `test_cpp_rtti` is actually a `RTTIDerivedA` object).
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: Functions are identified by mangled C++ names (e.g., `_Z18test_cpp_exceptionv`), which are technically accurate but unreadable without the demangled comments provided by the decompiler.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Critical literals are incorrect or lost; `test_cpp_template_func` passes `0.0, 0.0` to `template_max` instead of the source's `2.5, 1.5`, and string literals are stored as hex-encoded bytes in globals (e.g., `\xe6\xb5\x8b...`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant compiler noise, particularly in exception handling where low-level `__cxa` calls and landing pad logic (`if ((int32_t)&g19 == 1)`) obscure the high-level `try/catch` structure.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is highly unnatural, especially in `test_cpp_exception` where exception handling is represented as complex conditional checks on global addresses and manual calls to `__cxa_begin_catch`, rather than structured blocks.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Template instantiations are correctly decomposed into separate functions (e.g., `_Z12template_maxIiET_S0_S0_`), and the overall granularity matches the source, though some functions are reduced to constants.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The linearization is disrupted by the exception handling logic, which introduces confusing conditional jumps and variable assignments that do not map cleanly to the source's top-down reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully eliminates redundant logic for functions that compile down to constant returns (e.g., `test_cpp_diamond_inheritance` returning `650`), though this removes the algorithmic context.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: There is a critical type error: pointers are defined as `int32_t *` on an ARM64 architecture (which uses 64-bit pointers), causing a fundamental mismatch in type precision and safety.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Vtables are recovered as structures (`vtable_1162c_type`), but the actual class definitions (e.g., `RTTIDerivedA`, `SimpleClass`) are missing; objects are treated as raw pointers to integers or voids.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains unsafe and confusing type operations, such as `strlen((char *)(v11 + (int32_t)(v12 == 42)))` in `test_cpp_rtti`, which adds a boolean result to a pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: Comments are limited to metadata (module, line range, demangled names) and do not explain the *logic* (e.g., no comment explaining that `__cxa_throw` represents a C++ `throw` statement).
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms are not recognized; `try/catch` blocks are presented as `__cxa` API calls, and `dynamic_cast` is shown as a call to `__dynamic_cast` rather than the native operator.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag anomalies, such as the suspicious pointer arithmetic or the incorrect literal arguments in `test_cpp_template_func`, presenting them confidently as correct code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants; for example, the null checks or size constraints implied by the source `Container` class are absent in the decompiled view.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Cross-references are visible through function calls and global variable access, but the lack of class structure makes understanding object relationships (like inheritance) difficult.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions; C++ namespaces and class groupings are not reconstructed, resulting in a disorganized file compared to the original structure.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would fail to compile correctly due to the pointer size mismatch (`int32_t *` on ARM64) and missing class definitions, despite the inclusion of standard headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Pointers are incorrectly typed as `int32_t *` on a 64-bit ARM64 architecture.
+- Function arguments are incorrectly recovered in `test_cpp_template_func` (passing `0.0, 0.0` instead of `2.5, 1.5`).
+- C++ exception handling is reduced to low-level `__cxa` calls, losing the `try/catch` structure.
+- Class structures are not recovered; objects are manipulated as raw integers/pointers.
+- Variable names are entirely generic (`v1`, `g1`), losing all semantic context.
+
+**Best Quality Aspect:** Redundancy Elimination (Score: 8/10)
+- The decompiler effectively simplifies functions that result in constant values, providing clean (if algorithmically empty) return statements.
+
+**Most Needs Improvement:** Type Precision (Score: 3/10)
+- The fundamental error of using 32-bit pointers for a 64-bit architecture renders the decompiled code semantically incorrect and confusing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Correctly identify and apply 64-bit pointer types (`uint64_t` or `void*`) for ARM64 architectures instead of `int32_t *`.
+2. Implement C++ specific idiom recovery to map `__cxa` calls back into `try/catch/throw` blocks.
+3. Improve constant propagation and argument recovery to ensure literals passed to functions match the source values (e.g., fixing the `0.0, 0.0` error).

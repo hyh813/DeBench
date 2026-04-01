@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use cryptic generic names like `param_1`, `iVar1`, `uVar2`, `puVar1`, `local_38`, `local_10`. The source uses meaningful names like `x`, `arr`, `n`, `p1`, `p2`, `leak`, `head`. This is the worst-scoring dimension - variable names provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names almost perfectly match the source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `memory_leak`, `dangling_pointer`, etc. This is likely due to debug symbols (-g flag). Only minor issues with some internal functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals are clear (10, 5, 100), but many use hex notation without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x400` (1024), `0xffffffff` (-1). String literals use raw addresses like `&DAT_00013008`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", `__stack_chk_fail_local()`, `__gmon_start__()`, frame_dummy(). These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with recognizable loops and conditionals. `local_vars` simplifies to `return param_1 * 2 + 10` which is clean. However, `vla_stack` and `alloca_usage` have complex loop structures due to stack canary checks. At -O0, some complexity is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain good granularity matching the source. Each test function (MEM-L1-01, HEAP-L2-01, etc.) is decompiled as a separate function. The decomposition is appropriate and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with only minor disruptions. Error checking uses early returns appropriately. The `__stack_chk_fail_local()` checks at the end of some functions are awkward but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Critical bug found in `heap_basic`: loop uses `iVar1 * 2` stride but source uses `i * 2`. Also, `heap_struct` computes `param_1 * 3` but source sets `p->x = x; p->y = x * 2` then returns `p->x + p->y` = `x + x*2 = x*3`. The decompilation produces correct result but loses the struct semantics.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are reasonable - `int` for integers, `void*` for pointers. However, `undefined4` is used instead of `int`, and many type distinctions are lost. Function pointers use `code*` or `undefined4` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery at all. `Point` struct is completely lost - `heap_struct` just does `malloc(8)` and arithmetic. `Node` struct for linked list uses raw `int*` with manual field offsets. `TreeNode` is similarly lost. All composite types are reduced to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety issues: `heap_basic` has incorrect pointer arithmetic (`iVar1 * 2` stride), unsafe casts throughout, and `dangling_pointer` accesses memory after free. The code contains potentially dangerous patterns without warnings.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings like "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection" and "WARNING: Removing unreachable block". These provide no insight into the actual algorithm or logic. No helpful documentation of what the functions do.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified. The linked list creation, tree building, and memory management patterns are not recognized or named. The code just presents raw operations.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: "WARNING: Could not recover jumptable at 0x000122b0. Too many branches", "WARNING: Treating indirect jump as call". However, the dangerous `dangling_pointer` access after `free()` is not flagged as a problem.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The error return values (-1, -2, etc.) are not explained. No contracts like "requires: ptr != NULL" or "ensures: return is heap-allocated".
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and global variables like `global_counter`, `global_array`, `file_scope_static` are used correctly. However, there's no explicit documentation of call relationships or usage patterns.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions are in a single monolithic output. The source had logical grouping with comments like "3.1 栈内存操作", "3.2 堆内存操作", "3.3 静态与全局内存". This organizational structure is completely lost in decompilation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references external symbols like `extern_global_var`, `extern_function` without definitions. Runtime functions like `__stack_chk_fail` need stubs. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 4) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 4) / 4 = 6.5
+L3_avg = (6 + 2 + 4) / 3 = 4.0
+L4_avg = (4 + 3 + 6 + 3) / 4 = 4.0
+L5_avg = (6 + 4 + 5) / 3 = 5.0
+
+Overall = (5.0 × 0.30) + (6.5 × 0.25) + (4.0 × 0.20) + (4.0 × 0.15) + (5.0 × 0.10)
+        = 1.5 + 1.625 + 0.8 + 0.6 + 0.5 = 5.025 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_38`) - provides zero semantic meaning
+- No struct/union recovery - all composite types reduced to raw pointer arithmetic with manual offsets
+- `heap_basic` has incorrect pointer arithmetic in loop (stride of 2 instead of 1), producing semantically different code
+- All module organization lost - single monolithic output instead of logical groupings
+- Excessive compiler noise (WARNING comments, stack canaries, get_pc_thunk) obscures actual logic
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names almost perfectly match the original source due to debug symbols being present. This is the clear strength of this decompilation.
+
+### Most Needs Improvement: Variable Naming Quality (2/10) and Composite Type Recovery (2/10)
+Variable names are completely generic and provide no semantic information. Composite types (structs) are entirely lost, reducing all structured data access to raw pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`; when used as size, name it `size` or `count`. The current `param_1`, `iVar1` pattern is unusable.
+2. **Recover struct types from allocation sizes and field offsets**: If `malloc(8)` is followed by writes to offsets 0 and 4, infer a struct with two int fields. This would dramatically improve readability.
+3. **Reduce compiler artifact noise**: Filter out or consolidate WARNING messages about get_pc_thunk, unreachable blocks, and stack canaries. Present clean code with optional verbose mode for debugging decompilation issues.

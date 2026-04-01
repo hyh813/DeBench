@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `result` instead of semantic names (e.g., `sum`, `count`, `temp`). Original `temp1`, `temp2`, `temp3` in `sequential_ops` were clearer than decompiled expression.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`). However, helper functions use cryptic names like `sub_1030`, `sub_10CC`, `sub_1D93`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x12`, `0x65`, `100`, `101` appear without explanation. Original code had clear test values; decompiled code obscures their purpose (e.g., `0x12` in loop condition).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__usercall`, `@<eax>`, `@<ebx>`, `BYREF` annotations. Assembly blocks like `__asm { jmp dword ptr [ebx+8] }` remain unprocessed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical issue - `single_if` transformed to `return x << (x > 0)` obscuring original if-branch. `loop_for_fixed` replaced with closed-form formula losing loop semantics. `switch_fallthrough` uses awkward `goto LABEL_5` pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity appropriate; no excessive inlining or fragmentation. Each original function maps to one decompiled function cleanly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `switch_fallthrough` uses goto labels (`LABEL_5`, `LABEL_3`) disrupting flow. `duffs_device` has complex nested goto structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive optimization artifacts: `loop_for_fixed` formula replaces clear iteration logic. `recursion_factorial` converted to loop losing recursive semantics.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `int` used generically where `int32_t` would be clearer. Unsigned conversions appear unexpectedly (`(unsigned int)x >= 3`). Function pointer types partially recovered (`int (__cdecl *)(int)`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled correctly (`int arr[]`). No complex structs in original to recover. Pointer arithmetic in `loop_break` uses `_DWORD *` which is acceptable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `((int (__cdecl *)(int))funcs_18EC[idx])`. Pointer arithmetic in `loop_break` (`_DWORD *i`) could cause alignment issues. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical failure** - Zero comments explaining logic. Original had extensive documentation per function. Decompiled code has no algorithm explanations, no parameter descriptions, no confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Original's "Duff's device", "state machine", "fall-through switch" patterns not identified. `recursion_factorial` → loop transformation not documented as optimization.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 6 functions marked "FAILED to decompile" but no warnings about potentially incorrect transformations. `test_control_flow_l1/2/3` print constants instead of calling functions - no anomaly flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions. Original test validation comments completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: **Critical defect** - Test functions print hardcoded constants instead of calling actual functions! `printf("CF-L1-01 (sequential_ops): %d\n", 21);` instead of `sequential_ops(5,7,3)`. Breaks verification capability.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No clear separation between test code and implementation. Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 6 external functions failed (`printf`, `longjmp`, `__libc_start_main`, etc.). Would require stubs. Architecture mismatch (original ARM64, decompiled x86).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (4+7+6+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (3+6+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                              5.21/10
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects:
+- **Test functions print constants instead of calling actual functions** - completely breaks verification capability
+- **Zero comments** - original had extensive documentation, decompiled has none
+- **Control flow obfuscation** - `single_if` uses bit-shift trick `x << (x > 0)` instead of clear if-branch
+- **Loop-to-formula transformation** - `loop_for_fixed` closed-form formula obscures original iteration semantics
+- **Architecture mismatch** - Original ARM64, decompiled shows x86 registers and calling conventions
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source, making identification straightforward
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation makes understanding non-trivial transformations impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve test function call semantics** - Do not constant-fold test outputs; maintain actual function calls for verification
+2. **Add confidence annotations** - Mark aggressively optimized code (loop→formula, recursion→loop) with comments explaining transformation
+3. **Recover semantic variable names** - Use data-flow analysis to infer names like `sum`, `count`, `result` from usage patterns instead of `v1`, `v2`, `v3`

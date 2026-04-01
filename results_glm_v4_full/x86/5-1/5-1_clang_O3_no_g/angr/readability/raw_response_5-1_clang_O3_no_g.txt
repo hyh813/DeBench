@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `arg_0`). In `test_cpp_member_func`, `v0` represents the result of a calculation but provides no semantic hint, whereas the source uses descriptive names like `r1`, `r2`.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: While C++ mangled names (e.g., `_Z20test_cpp_member_funcv`) are preserved—allowing identification of the original function—many functions are reduced to generic addresses like `sub_401030` or `sub_401130`, losing all semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are used without context, such as `4`, `20`, and `10` in `test_cpp_member_func` (which likely correspond to `sizeof(name)` or array sizes), whereas the source uses `sizeof(name)-1` or named constants.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with compiler runtime artifacts like `__x86.get_pc_thunk.bx` and `frame_dummy`. Furthermore, decompiler internal errors like `[D] Unsupported_<class 'pyvex.expr.GetI'>` appear directly in the code body.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Most functions are reduced to a simple `return;` statement, completely stripping away the logic (e.g., `test_cpp_constructor` is empty). In `Container<double>::push`, control flow is replaced by VEX IR statements (`PutI`), making it unreadable.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: While the function boundaries exist, the content is missing. For example, `test_cpp_virtual_func` is defined but contains no logic, failing to represent the source's 10-line implementation.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is linear but only because the logic is absent. Where logic exists (e.g., `__do_global_dtors_aux`), it involves pointer arithmetic and casts that obscure the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: It is difficult to assess redundancy when the core logic is missing. However, the runtime initialization code (`_init`, `_start`) is verbose and repetitive, which is expected but not simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: C++ classes are often reduced to `void*` or generic `int` types. In `call_virtual_func`, the `Base` class object is cast to `int*` to access the vtable, losing the type safety and clarity of the original `Base*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are recovered as generic `struct_0` with `padding_0` and anonymous fields (e.g., `field_4`). The rich class definitions like `SimpleClass` or `Container` are not reconstructed; instead, raw memory offsets are used.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts, such as `(*((int *)*((int *)arg_0)))` to perform virtual calls. This mimics the assembly but violates the type safety of the original C++ source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only "comments" are decompiler error messages like `[D] Unsupported...`, which indicate failure rather than explaining the code.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms like RAII, smart pointers, or lambda expressions are completely absent. The code does not recognize that `Container<double>::push` is a method acting on a class instance.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While the decompiler flags unsupported instructions with `[D] Unsupported`, it does not explain *why* the function bodies are empty or why the architecture seems to be X86 when the source is ARM64.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic is too sparse to infer any contracts (e.g., the `size` check in `Container::push` is lost in the IR noise).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Mangled names allow linking calls to definitions, but the generic `sub_...` wrappers break the call graph visibility. The relationship between `test_cpp_oo_features` and its sub-tests is obscured by the missing logic.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in address order. While related functions (like `Container<int>` methods) are somewhat grouped, the lack of class structure or namespaces makes the organization feel flat and arbitrary.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It contains VEX IR artifacts (`PutI`), non-standard types, and references to symbols that are likely specific to the lifting environment (e.g., `__x86.get_pc_thunk`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- **Architecture Mismatch**: Source metadata specifies `arm64`, but decompiled code is `X86` (evident from `__x86.get_pc_thunk`), leading to incorrect low-level representations.
+- **Logic Loss**: Most functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) are decompiled as empty `void` functions with `return;` statements, completely erasing the source logic.
+- ** Decompiler Artifacts**: The output contains internal representation errors like `[D] Unsupported_<class 'pyvex.expr.GetI'>` and `PutI`, which are not valid C code.
+- **Type Erasure**: C++ classes and objects are reduced to `void*` or `int*`, destroying the Object-Oriented structure of the source.
+
+**Best Quality Aspect:** Function Naming Quality (scored 4/10)
+- **Why?** The preservation of C++ mangled names (e.g., `_ZN9ContainerIiE4pushEi`) allows a human to at least identify what the function *was* supposed to be, even if the implementation is gone.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- **Why?** The decompiler failed to translate the binary operations back into high-level C++ semantics, resulting in a mix of empty stubs and low-level IR that conveys almost no meaning.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Architecture/Target Matching**: Ensure the decompiler is analyzing the correct binary architecture matching the source metadata (ARM64 vs X86) to avoid register/ABI mismatches.
+2.  **Logic Recovery Engine**: Investigate why function bodies are being reduced to `return;`. This suggests a failure in the control flow reconstruction or symbolic execution engine (Angr) used to lift the code.
+3.  **IR Filtering**: Implement a post-processing filter to strip out internal lifting errors (VEX IR like `PutI`) and replace them with "unknown" placeholders or pseudo-code rather than raw syntax errors.

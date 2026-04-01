@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`param_1`, `local_c`, `local_10`) and fail to recover semantic names like `sum`, `count`, or `result` used in the source, requiring manual tracking of purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `sequential_ops`, `duffs_device`), likely due to the presence of debug symbols (`-g`), providing perfect semantic context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure logic, such as `0x66666667` (compiler optimization for division by 10) and `0xffffffff` (representing -1), while decimal constants like `20` appear as hex `0x14`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Code contains compiler artifacts like `__aeabi_idiv` calls for division, `CONCAT44` macros for register merging, and stack canary checks (`__stack_chk_fail`) which clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally excellent with loops and conditionals clearly recovered, but `switch_fallthrough` is represented with explicit `goto` labels (`LAB_00010a64`) rather than implicit fallthrough, reducing readability.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging of logic blocks.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly top-to-bottom as expected from `-O0` compilation, with minimal forward jumps or confusing control flow disruptions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No loop unrolling or dead code artifacts are present; the decompiled code is clean and corresponds directly to the source logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are often generic (`undefined4`, `undefined8`) instead of standard C types (`int`), and `loop_while` incorrectly returns `undefined8` (64-bit) instead of `int` (32-bit) due to register usage artifacts.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays are handled correctly (e.g., `int local_20 [4]`), and while no complex structs were present in the source to test, the primitive composite types are accurate.
+
+**11. Type Safety:** Score: 8/10
+Justification: Code is generally type-safe with correct pointer usage; the main issue is the use of `undefined` types which represents a lack of analysis rather than unsafe operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms (like Duff's Device), or the purpose of complex operations like magic number multiplication.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize the division-by-10 idiom (showing magic multiplication) and did not identify the fallthrough switch pattern, instead rendering it as a goto graph.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings or flags are present for unusual artifacts like `CONCAT44` or the `0x66666667` multiplication, leaving the user to guess if these are bugs or optimizations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace; the relationship between callers and callees is clear, and standard library calls are correctly identified.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the original file's logical ordering and grouping of functions (L1, L2, L3 tests), preserving the module structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on Ghidra-specific types like `undefined4` and macros like `CONCAT44`, preventing compilation without significant modification or a compatibility header.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (5 + 10 + 4 + 6) / 4 = 6.25
+L2_avg: (8 + 9 + 8 + 9) / 4 = 8.50
+L3_avg: (6 + 8 + 8) / 3 = 7.33
+L4_avg: (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg: (8 + 9 + 5) / 3 = 7.33
+
+Overall = (6.25 × 0.30) + (8.50 × 0.25) + (7.33 × 0.20) + 
+          (1.75 × 0.15) + (7.33 × 0.10)
+Overall = 1.875 + 2.125 + 1.466 + 0.2625 + 0.733
+Overall = 6.46
+```
+
+**Overall Readability Score:** 6.5/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Generic names like `local_10` obscure semantic meaning (e.g., `sum`).
+- **Magic Numbers**: Compiler optimization artifacts like `0x66666667` (division by 10) are not explained or simplified.
+- **Type Precision**: Use of `undefined4` and `undefined8` instead of standard `int` types hinders understanding and compilation.
+- **Fallthrough Logic**: `switch_fallthrough` is decompiled into a `goto` label graph rather than preserving the structured fallthrough idiom.
+- **Lack of Comments**: Complex algorithms like Duff's Device or recursion lack any explanatory comments.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 10/10)**
+- **Why?** The debug symbols allowed perfect recovery of original function names, making the high-level purpose of every code block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (Score: 1.75/10)**
+- **Why?** The complete absence of comments, failure to recognize common compiler idioms (magic division), and lack of anomaly warnings make understanding the *intent* behind the code difficult despite the structure being correct.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Pattern Matching for Compiler Optimizations**: Implement detection of magic multiplication sequences (like `* 0x66666667`) and replace them with the original semantic operation (e.g., `/ 10`) or add a comment explaining the optimization.
+2.  **Type Inference Aggressiveness**: Default to standard C types (`int`, `uint32_t`) instead of `undefined4` when the usage context (register size, arithmetic operations) strongly suggests a standard type, especially with `-O0` debug builds.
+3.  **Fallthrough Switch Recovery**: Improve control flow analysis to reconstruct `switch` statements with fallthrough cases without resorting to explicit `goto` labels, or at least annotate the labels to indicate the fallthrough pattern.

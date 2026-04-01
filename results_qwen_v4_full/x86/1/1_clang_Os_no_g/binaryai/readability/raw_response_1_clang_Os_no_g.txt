@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `bVar3`) with zero semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions preserved original names (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), but helper functions like `FUN_00011030`, `FUN_000112bc` are cryptic. Good preservation overall for primary functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions contain hex literals (`0x15`, `0xfffffffb`, `0x3e9`) without explanation. Original had decimal values with comments explaining expected results. Magic numbers obscure test case intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_bx`, `deregister_tm_clones`, `register_tm_clones`). External function stubs (`printf`, `longjmp`) call themselves redundantly, adding clutter without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failures: `single_if` converts `if (x > 0) x = x * 2` to `return param_1 << (0 < param_1)`. `loop_for_fixed` becomes unreadable bit manipulation. `switch_fallthrough` uses nested ifs instead of switch. At -O0, these transformations are decompiler errors, not optimizations.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable sizes. However, `duffs_device` became a goto-heavy mess with switch-case labels. Test functions bloated with hardcoded values instead of function calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. `duffs_device` uses multiple goto labels (`switchD_00011761_caseD_1` through `caseD_7`) disrupting flow. Test functions have forward jumps to labels like `LAB_000119a2`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain hardcoded expected values duplicated from function logic instead of calling functions. `test_control_flow_l2` reimplements `loop_multi_exit` logic inline rather than calling the function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`. Parameters use generic `int`/`uint` without width specification. `call_func_ptr` returns `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Arrays decay to pointers without size information (`int *piVar2` for `arr[]`). Matrix in `loop_multi_exit` loses 2D structure, becoming pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `undefined4 *` types in `duffs_device`, function pointers with incorrect signatures (`code *` instead of proper function types). Pointer arithmetic without bounds checking visible throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, algorithms, or intent. Original source had extensive comments per function explaining test cases and expected behavior. Only header contains SHA256 hash.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. `duffs_device` switch-with-fallthrough not identified as Duff's Device optimization. Recursion converted to loops (`recursion_factorial`, `tail_recursion`) without noting the transformation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain recoveries or potential issues. Decompiled code presents incorrect transformations confidently (e.g., wrong return types) without flagging them for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Original test case documentation (input/output expectations) completely lost. No indication of valid input ranges.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and global variables referenced by name (`jump_buffer`, `DAT_00012038`). However, no call graph documentation or explanation of callback relationships. Function pointer arrays lack context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable sequence with test functions grouped. However, organization appears arbitrary rather than matching source file structure. No indication of static vs. external linkage.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone: missing `#include` directives, undefined globals (`jump_buffer`), external function stubs that call themselves recursively. Requires significant patching to build.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+5+6)/4 = 5.25
+Level 2 (Structural):   (4+6+6+5)/4 = 5.25
+Level 3 (Type):         (4+3+5)/3   = 4.00
+Level 4 (Semantic):     (2+4+3+2)/4 = 2.75
+Level 5 (Contextual):   (6+6+4)/3   = 5.33
+
+Overall = (5.25 × 0.30) + (5.25 × 0.25) + (4.00 × 0.20) + (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.575 + 1.3125 + 0.80 + 0.4125 + 0.533
+        = 4.63/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1` naming**: All variables use generic names losing semantic meaning (should be `a`, `b`, `sum`, `count` based on usage)
+- **Control flow corruption**: `single_if` transformed to bit shift `param_1 << (0 < param_1)` obscuring original `if (x > 0) x = x * 2` logic
+- **Type errors**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`
+- **Loop destruction**: `loop_for_fixed` converted to unreadable bit manipulation instead of recognizable for-loop
+- **Zero documentation**: No comments explaining function purpose, test cases, or expected behavior
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main test functions preserved original names (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), enabling identification despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent impossible; original source had extensive per-function comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols when available (`-g` flag should preserve parameter names)
+2. **Preserve control flow structures** at -O0 optimization level; avoid aggressive transformations like loop-to-bit-shift conversions
+3. **Add decompilation confidence annotations** flagging uncertain recoveries (wrong return types, transformed control flow) for manual review

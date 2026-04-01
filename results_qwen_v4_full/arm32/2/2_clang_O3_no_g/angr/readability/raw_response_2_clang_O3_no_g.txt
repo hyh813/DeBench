@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, a0, a1, ptr, result). The `test_data_types_l1` function has 124+ `flag` variables (flag1-flag124) that should have semantic names. No variable indicates purpose like `packet_size` or `user_count`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved for user code (process_char, array_1d_stack, struct_simple) but runtime functions use `sub_4003d8` naming. Test functions kept names but internal logic lost.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (65, 32, 255, 2047, 0x80000000, 0x100000) without explanation. Some inferable (65+32='A'→'a') but floating-point constants (0x3ff00000, 2576980378) are opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Compiler runtime functions included (__muldf3, __adddf3, __aeabi_*) that aren't original source. Test functions contain 124+ flag variables that appear to be decompiler artifacts from stack analysis.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive goto usage throughout. Simple loops converted to do-while with goto patterns. Floating-point functions use `armg_calculate_condition` calls creating deeply nested conditional chains instead of natural if-else.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Runtime functions excessively long (__muldf3 is 400+ lines). Test functions bloated with flag variables. Original simple functions (process_int: `return x * 2 + 1`) reasonably sized but logic sometimes obscured.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Frequent forward jumps disrupting flow. `LABEL_401xxx` patterns throughout. Functions like `__adddf3` have deeply nested gotos making top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `armg_calculate_condition` calls repeat extensively in floating-point functions. Test functions have duplicate printf statements. Loop unrolling not recognized or commented.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`unsigned int`, `short`→`unsigned short`, `float`/`double` operations use runtime calls instead of native types. `process_char(unsigned int a0)` should be `char`. Pointer types often `unsigned int*` instead of proper typed pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs use generic names (struct_0, struct_1, struct_2) with field_0, field_1, field_4 naming. Original `Point3D {x, y, z}` becomes `a0[0], a0[1], a0[2]`. Unions not properly distinguished from structs. Bitfield structure lost entirely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (void* to int*, char* conversions). `ptr_void` function has type confusion. Generic pointer arithmetic throughout. No const-correctness preserved despite original using `const int *p`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompiler confidence indicators. Original source had extensive comments (// DT-L1-01, // 大写转小写) all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: character case conversion, array summation, linked list traversal all appear as raw operations. No pattern naming or explanation provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `armg_calculate_condition` calls unexplained. Indirect function calls (`goto a0` for function pointers) not flagged. No warnings about potential issues or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. Error conditions not documented. Original bounds checks in `array_complex_index` preserved but not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but callback relationships unclear. `ptr_func_simple` uses `goto a0` obscuring function pointer semantics. Global variable usage (g_4024fb, g_413008) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. No logical grouping by category (data types, arrays, pointers, composites). Runtime functions mixed with user code. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (__libc_start_main, __gmon_start__, __cxa_finalize) present but undocumented. Would require significant stubbing to compile standalone. ARM-specific runtime calls not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (2+6+4+3)/4 = 3.75
+L2 Average: (3+4+3+4)/4 = 3.50
+L3 Average: (3+3+4)/3 = 3.33
+L4 Average: (1+2+2+1)/4 = 1.50
+L5 Average: (4+4+4)/3 = 4.00
+
+Overall = (3.75 × 0.30) + (3.50 × 0.25) + (3.33 × 0.20) + (1.50 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 0.875 + 0.666 + 0.225 + 0.400
+        = 3.29/10
+```
+
+**Overall Readability Score: 3.3/10**
+
+### Critical Defects:
+- **Variable `flag1`-`flag124`** should have semantic names based on test case purpose (e.g., `matrix_initialized`, `cube_populated`)
+- **Floating-point functions** (`process_float`, `process_double`, `process_ld`) degraded to complex `armg_calculate_condition` chains instead of simple arithmetic
+- **Struct field names** all generic (`field_0`, `field_4`) losing semantic meaning (should be `x`, `y`, `z`, `data`, `next`)
+- **Control flow** uses goto for simple loops instead of while/for constructs
+- **Test functions** optimized to print constants instead of calling actual functions, losing test logic
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Original user function names largely preserved (process_char, array_1d_stack, struct_simple) providing some semantic anchor points
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero comments despite original source having extensive documentation; no decompiler confidence indicators or algorithm explanations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and string references (e.g., variables used with printf format "%c" near 'A' should be named `char_input`)
+2. **Recover high-level control structures** from ARM branch patterns - convert `do-while` + `goto` back to `for/while` loops
+3. **Add decompiler confidence annotations** for uncertain reconstructions (e.g., "// DECOMPILER UNCERTAIN: floating-point operation")

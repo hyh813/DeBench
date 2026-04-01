@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+
+The decompiled code uses highly generic variable names throughout. Internal variables are named `v1`, `v2`, `v3`, `result`, `i`, `j` - all single letters or v-prefixed names. For example, in `sequential_ops`, the variables are completely inlined as `return 2 * (a + b) - c;` with no intermediate variables. In `loop_for_fixed`, variables `v1` and `v2` obscure their roles as loop counter and accumulator. Only top-level function names like `sequential_ops`, `loop_while`, `recursion_factorial` are well-named.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+The decompiler correctly recovered the original function names for all test functions: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. These match the source exactly. However, initialization and utility functions use generic names like `sub_1030`, `sub_1040`, `sub_1050` for startup code, and helper functions like `op_add`, `op_sub`, `state_idle` are named but lack context about their grouping.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Magic numbers appear without explanation. In `if_elseif_long`, the expression `100 * (x + 1)` works but obscures that 100 is the base multiplier. The switch jump table `CSWTCH_56[op]` is referenced but the table contents aren't shown. However, some literals like `1001` in `infinite_loop` are correctly preserved as the loop limit. The decompiler doesn't suggest named constants where they would improve readability.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+The decompiled code is relatively clean with minimal compiler artifacts. Only occasional stack protection checks appear: `__readgsdword(0x14u)` in functions like `call_func_ptr_array` and `large_jump_table`. No redundant casts, debug instrumentation, or frame pointer manipulation clutter the output. The code reads naturally without significant noise pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Control flow is mostly natural and idiomatic. Loops are correctly recovered as `while` and `do-while` constructs. Switch statements are recognized and rendered as such (e.g., `switch_small`, `switch_large`). The `goto_forward` function correctly uses conditional logic rather than literal goto. However, `loop_complex_cond` shows unusual nested if-else restructuring that doesn't match the simple `while` loop from source. At `-O0`, this transformation is unnecessary and reduces readability.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Functions are appropriately decomposed with clear boundaries. Each test function remains separate and focused on its specific task. No over-fragmentation or inlining artifacts are evident. Helper functions like the operator functions (`op_add`, `op_sub`, etc.) and state handlers (`state_idle`, `state_processing`) are properly extracted. Function sizes are reasonable and maintain single responsibility.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+The code generally reads top-to-bottom without excessive jumps. Forward jumps are minimal. Early returns in functions like `multi_return` and `conditional_return` are used appropriately. The `duffs_device` function has complex control flow due to the nature of the pattern, but it's presented as structured switch-do-while rather than spaghetti code.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant redundancy is present. Dead code is not observed. Loop unrolling in `duffs_device` is handled through the switch-case structure rather than explicit unrolling. Common subexpressions like `2 * x` in `single_if` are appropriately inlined. The code is clean without duplicate logic blocks.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+
+Types are generally correct: `int` for integers, `int*` for pointers, `volatile int*` for flags. Function pointer types are correctly preserved with proper signatures (e.g., `int (*f)(int)`). However, the decompiler uses generic `int` rather than more specific types like `int32_t` or `size_t`. No `const` correctness is preserved in parameter types. The type precision is adequate but not optimal.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+The source uses simple arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` and `int matrix[3][4]` in `loop_multi_exit`. The decompiler handles these as direct array accesses without reconstructing struct types. No complex composite types exist in the source that would require struct recovery, so this dimension is not severely tested. The decompiler correctly handles array indexing.
+
+### 11. Type Safety
+**Score: 8/10**
+
+The decompiled code is type-safe with no obvious unsafe casts or operations. Function pointers are called with correct argument types. Pointer arithmetic in `duffs_device` is correct. No type-confused function pointers or buffer-overflow-prone patterns are evident. The code can be reasoned about safely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Comments are nearly absent. Only generic decompiler warnings appear: "bad sp value at call has been detected, the output may be wrong!" in `test_control_flow_l2` and "positive sp value has been detected, the output may be wrong!" in `_start`. No explanation of algorithm logic, no recovery confidence indicators, no API contracts. The code is裸 (bare) without documentation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Some patterns are present but not explicitly identified. Duff's device in `duffs_device` is correctly structured as a switch-do-while but not labeled as such. The state machine in `state_machine` and `fsm_func_table` uses switch/function pointer patterns but isn't identified as a state machine pattern. The decompiler doesn't provide pattern names or explanations.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+The decompiler flags some issues with generic warnings: "bad sp value at call has been detected" and "positive sp value has been detected". However, these don't explain what caused the issue or provide guidance. Failed to decompile functions are listed at the end (`__libc_start_main`, `_setjmp`, etc.) but without explanation of why. The warnings are sparse and not actionable.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No precondition, postcondition, or invariant information is recovered. The decompiled code has no annotations about expected input ranges, return value guarantees, or error conditions. For example, `recursion_factorial` has no indication that it requires `n >= 0` or that it returns 1 for n <= 1 as a base case.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+No explicit cross-reference information is provided. There's no documentation of which functions call which, no indication of callback relationships, no global variable usage transparency. The code is presented in address order without relationship mapping.
+
+### 17. Module Organization
+**Score: 4/10**
+
+The decompiled output is a single monolithic block without logical grouping. Functions appear in address order rather than semantic grouping. Related functions (like all the `op_*` functions or `state_*` functions) are not visually grouped together. No header file or API boundary separation is indicated.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code should compile with minimal modifications. Function prototypes are implicit but correct. External functions like `__printf_chk`, `puts`, `_setjmp`, `__longjmp_chk` are properly referenced. The code uses standard library functions without explicit declarations but these would be resolved at link time. Stack protection (`__readgsdword`) is x86-specific but standard.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 7 + 5 + 8) / 4 = 6.0
+L2_avg = (7 + 8 + 8 + 8) / 4 = 7.75
+L3_avg = (7 + 5 + 8) / 3 = 6.67
+L4_avg = (3 + 5 + 5 + 2) / 4 = 3.75
+L5_avg = (3 + 4 + 7) / 3 = 4.67
+
+Overall = (6.0 × 0.30) + (7.75 × 0.25) + (6.67 × 0.20) + 
+          (3.75 × 0.15) + (4.67 × 0.10)
+        = 1.80 + 1.94 + 1.33 + 0.56 + 0.47
+        = 6.10/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects
+
+1. **Variable naming is uniformly generic**: All internal variables use `v1`, `v2`, `v3`, `result`, `i`, `j` - making it difficult to track data flow through functions
+
+2. **No comments or documentation**: The decompiled code has almost no explanatory comments, leaving algorithms unexplained and making reverse engineering assistance minimal
+
+3. **No cross-reference information**: Functions are presented in isolation without indicating callers, callees, or relationships to external code
+
+4. **No contract/precondition recovery**: Functions like `recursion_factorial` lack any indication of input constraints or expected behavior
+
+5. **Anomaly warnings are generic and unhelpful**: "bad sp value" warnings don't explain what went wrong or how to fix it
+
+### Best Quality Aspect: Structural Intelligibility (L2)
+**Why?** Control flow is naturally recovered - loops are loops, switches are switches, conditionals are clear. Function decomposition is appropriate with good granularity. At `-O0`, the structure closely matches the source.
+
+### Most Needs Improvement: Semantic Transparency (L4)
+**Why?** The code has almost no comments, no pattern identification, generic anomaly warnings, and no contract recovery. A reverse engineer gets裸 code without any interpretive assistance.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as a loop counter, name it `i` or `counter`. When it's an accumulator, name it `sum` or `acc`. Use data flow analysis to assign semantic names.
+
+2. **Add explanatory comments for non-trivial logic**: Document what algorithms do (e.g., "Duff's device: unrolled memory copy"), explain complex conditionals, and add recovery confidence notes for indirect calls.
+
+3. **Recover and document cross-references**: Show which functions call each function, document callback relationships, and indicate global variable usage. This would significantly aid reverse engineering workflow.

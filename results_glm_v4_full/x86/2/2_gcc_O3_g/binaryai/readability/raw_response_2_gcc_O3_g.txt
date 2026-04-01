@@ -1,0 +1,102 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_10`, and `uVar1`, providing no semantic hint about their purpose (e.g., `x`, `sum`, `arr`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `main`, and `test_data_types_l1` are perfectly preserved from the source, likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Logic is obscured by compiler-generated magic numbers, such as `0xbf` and `0x1a` in `process_char` (representing 'A' and range size), and `0xffffff9d` for the default case in `enum_switch`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant low-level noise, including the `CONCAT44` macro in `process_ll`, redundant casts like `(int *)param_1[1]`, and generic types like `undefined4`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily distorted by compiler optimizations; `array_3d` is a flat list of 125 additions, and `binary_tree_sum` is a complex iterative structure that obscures the original recursion.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Function boundaries match the source, but the internal logic is so heavily unrolled or transformed (e.g., `array_3d`) that the functions are effectively monolithic logic dumps.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While `array_3d` is linear, it is excessively long; `binary_tree_sum` contains deep nesting and confusing loop structures that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler fails to abstract compiler optimizations; loop unrolling in `array_3d` and `array_2d_stack` is presented as verbose repetitive addition statements instead of loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; `process_ll` splits a 64-bit integer into two 32-bit parameters (`uint`, `int`), and `process_float` returns `longdouble` instead of `float`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; `struct_simple` accesses fields using array arithmetic (`param_1[1]`, `param_1[2]`) rather than field names (`p->y`, `p->z`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe casts, such as casting `int*` to `char*` in `ptr_void` and treating struct pointers as integer arrays, which erases type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; only a header indicating the decompiler tool is present.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The switch statement in `enum_switch` is recognized as a jump table, but common idioms like the range check in `process_char` or the recursion in `binary_tree_sum` are not identified.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings or flags are provided to indicate that the code contains aggressive optimizations (like loop unrolling) or potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds) or postconditions; the logic is presented as-is without context.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but standard library calls like `printf` are obfuscated as `FUN_000110b0` or `FUN_000110c0`, losing context.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in memory address order rather than logical groupings, though this is a default behavior for many decompilers.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific macros (`CONCAT44`) and types (`undefined4`) and will not compile without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.25
+L2_avg: 3.75
+L3_avg: 3.00
+L4_avg: 1.50
+L5_avg: 4.00
+
+Overall = (5.25 × 0.30) + (3.75 × 0.25) + (3.00 × 0.20) + 
+          (1.50 × 0.15) + (4.00 × 0.10)
+Overall = 1.575 + 0.9375 + 0.6 + 0.225 + 0.4
+Overall = 3.7375
+```
+
+### Overall Readability Score: **3.7/10**
+
+### Critical Defects
+- **Loop Unrolling**: `array_3d` is decompiled into 125 explicit addition statements, making it unreadable.
+- **Type Splitting**: 64-bit integers in `process_ll` are split into two 32-bit parameters, losing the semantic type.
+- **Logic Obfuscation**: The range check in `process_char` is transformed into `(param_1 + 0xbfU) < 0x1a`, obscuring the "is uppercase" intent.
+- **Struct Loss**: Struct fields are accessed via array indices (e.g., `param_1[1]`) instead of member names.
+- **Recursion Flattening**: The recursive `binary_tree_sum` is turned into a complex iterative structure that is hard to follow.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully preserved the original function names from the debug symbols, which is the only strong link back to the source code's intent.
+
+### Most Needs Improvement
+- **Redundancy Elimination (2/10)**: The decompiler's failure to re-roll unrolled loops or abstract repetitive patterns makes the output excessively verbose and difficult to comprehend.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Loop Pattern Recognition**: Implement analysis to detect and re-roll fully or partially unrolled loops back into `for` or `while` constructs.
+2. **High-Level Type Recovery**: Improve type propagation to merge split 64-bit registers (common in 32-bit architectures) back into `long long` or `int64_t`.
+3. **Idiom Simplification**: Add pattern matching to simplify compiler-optimized range checks (e.g., `(x - 'A') <= ('Z' - 'A')`) back to logical comparisons (`x >= 'A' && x <= 'Z'`).

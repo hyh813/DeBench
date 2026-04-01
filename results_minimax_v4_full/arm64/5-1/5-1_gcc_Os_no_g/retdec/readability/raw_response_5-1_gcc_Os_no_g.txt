@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `result`). No meaningful names like `packet_size` or `user_count` are recovered. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Main test functions are properly demangled (e.g., `test_cpp_member_func`), but many utility functions use generic "function_XXXX" format. Some C++ name demangling is present in comments but not used as actual function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4`, `8`, `16`, `31`, `42` appear without explanation. Some strings are preserved ("Test", "Base", "Derived"), but no named constants are recovered for the numerous magic numbers used throughout.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: vtable structures with generic names (`vtable_138e0_type`), numerous thunk functions (`_ZThn16_*`, `_ZTv0_n24_*`), and assembly-related wrapper functions (`function_16a0`, `function_17b0`). These obscure the actual program logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Exception handling uses excessive goto statements (`goto lab_0x1840`, `goto lab_0x1848`) creating spaghetti-like flow. Some simple functions return constants cleanly. The stack protection checks appear as unusual conditionals. At -O0, this level of goto usage is unnecessary and indicates poor control flow recovery.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (not monolithic). Template instantiations are properly separated. However, some functions are trivially small (e.g., `test_cpp_multiple_inheritance` just returns 71). The decomposition is adequate but doesn't reflect the original class structure well.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The exception handling function has the most disruption with multiple goto targets. Overall, code is reasonably linear for most functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Template instantiations share similar patterns but aren't redundant per se. Some repeated vtable setup code but that's necessary for the class structure. Overall acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t`, `int32_t`, `uint32_t` appropriately in most places. Some mixed `int` usage. Function pointer types have proper signatures. The type precision is decent but not perfect.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtables are reconstructed as named structs (`vtable_138e0_type`), but class member data is not recovered as structs. Most class data is accessed via raw pointer arithmetic without struct definitions. The original class members (like `SimpleClass::value`, `name[32]`) are completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(int32_t *)v1`, `(int64_t *)result`, `(int64_t *)(v1 + 40)`. Pointer arithmetic like `v2 + 8 + *(int64_t *)(v2 - 24)` is complex and potentially unsafe. Many casts between integer and pointer types without validation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Demangled function names appear in comments (e.g., "// Demangled: test_cpp_member_func()"). Some "From class:" comments for member functions. However, no explanatory comments for algorithm logic, no recovery of original variable meanings, and no documentation of non-obvious operations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are recognized: vtables are identified, thunk functions are labeled, virtual inheritance patterns have some handling. However, no explicit pattern naming (e.g., "vtable dispatch pattern") or algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No explicit anomaly warnings or confidence indicators. The complex virtual function dispatch in `test_cpp_diamond_inheritance` with `*(int64_t *)(v2 - 24)` is presented without any indication of complexity or uncertainty. Unresolved indirect calls are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear semantics (e.g., "returns value * x + strlen(name)") but these are not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. Virtual dispatch relationships are implicit through vtable usage. However, no explicit documentation of call graphs, global variable usage, or callback relationships. The relationship between classes is not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in a single file with no logical grouping. The original source had clear class definitions and test functions, but the decompiled output is a flat list of functions. No namespace or class structure recovery.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes standard headers (`<stdint.h>`, `<stdio.h>`) and appears structurally compilable. Some stub functions may be needed. The output is marked as "Compilation Result: Yes" in metadata, confirming it compiles.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v1`, `v2`, `a1`) with no semantic recovery
+- Class member data not recovered as structs - all accessed via raw pointer arithmetic
+- Exception handling uses excessive goto creating spaghetti control flow
+- No comments explaining algorithm logic or variable purposes
+- Complex virtual inheritance code (`*(int64_t *)(v2 - 24)`) presented without explanation
+
+**Best Quality Aspect:** Type System Fidelity (scored 5/10)  
+- Type precision is decent with proper use of int32_t/int64_t, though this is the highest-scoring area by default due to equally poor performance elsewhere
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.5/10)  
+- Variable and function naming is almost entirely generic, making the code nearly incomprehensible without constant reference to the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `idx`; when used in arithmetic with string length, infer `length` or `size`
+2. **Recover class member layouts as structs**: Use type analysis to reconstruct class member fields with meaningful names based on access patterns
+3. **Add semantic comments for complex operations**: Document vtable dispatch, virtual inheritance adjustments, and exception handling patterns with explanatory notes

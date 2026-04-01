@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `idx`) with no semantic meaning. Only `iter`, `cur`, `result` in `param_asm_multi_insn` show minimal improvement. Original intent like `size`, `counter`, `increment` is completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions recovered well (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`), matching original source names. However, runtime functions use mechanical names (`sub_401030`, `sub_401040`) obscuring their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x400` (should be MAX_SIZE), `0x200` (MAX_SIZE/2), `57072` (0xDEF0), `282` (line+counter sum). No macro constants recovered despite original using `#define MAX_SIZE 1024`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: 20+ runtime functions (`_init`, `__do_global_ctors_aux`, `__x86.get_pc_thunk.*`), strange struct definitions with padding (`char padding_0[11895]`), and unsupported jumpkind warnings clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: User functions have natural if/else and for loops (e.g., `param_asm_clobber` recovered as for-loop). However, runtime functions use confusing goto patterns (`goto v1->field_2c`) that disrupt readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: User functions match original granularity well. However, many runtime functions are fragmented wrappers (e.g., `sub_40103c` just calls `sub_401040`), creating unnecessary call chains.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Early returns used appropriately in `param_macro_constants`. Only runtime initialization code has disruptive forward jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding means many functions just return constants (`call_macro_constants()` returns 64 directly). This is optimization artifact but obscures original computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mostly generic `unsigned int`, `int`, `char *` instead of `int32_t`, `size_t`. `uint128_t` appears for SIMD which is good. Signed/unsigned sometimes incorrect (`int` vs `unsigned int` for `size` parameter).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Strange struct definitions with arbitrary padding (`char padding_0[11895]`) that don't match any source structures. These appear to be decompiler artifacts from trying to model runtime data.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic visible (`ptr + idx * 4`). No major type confusion but `atomic_exchange_add` used without proper type annotations. No restrict or alignment annotations recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Complete loss of all original comments. Original had extensive documentation (section headers, macro explanations, expected values). Only one anomaly note: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C loops (good recognition). However, no algorithm patterns named, no design patterns identified. Macro expansion semantics completely lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind`). Most issues silent: constant folding not indicated, macro information loss not documented, architecture-specific code paths not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `size > 0`), no postconditions, no error condition documentation. Original comments about expected values (期望：64) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced (`g_402041`, `g_4021f4`) without context or names. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with runtime code mixed with user code. No logical grouping (preprocessing tests vs. assembly tests not separated). Original section organization lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone. External references to undefined symbols (`sub_401110`, `g_402041`, `_ccall`). Requires extensive stubbing and dependency resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Complete comment loss**: Original had 200+ lines of documentation; decompiled has 0 meaningful comments
+- **Magic numbers everywhere**: `0x400`, `57072`, `282` instead of recovered constants like `MAX_SIZE`, `0xDEF0`
+- **Generic variable names**: `v0`, `v1`, `a0`, `a1` obscure semantic meaning (should be `size`, `counter`, `increment`)
+- **Runtime noise pollution**: 20+ compiler runtime functions mixed with user code, strange padding structs
+- **Constant folding obscures logic**: `call_macro_constants()` returns 64 directly instead of showing `param_macro_constants(2048)` call
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test function names were successfully recovered from debug symbols, preserving semantic meaning for user-defined functions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation, making it impossible to understand macro semantics, expected values, or test purposes without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve debug symbol comments** - When `-g` flag is present, extract and embed original source comments into decompiled output
+2. **Detect and name magic numbers from debug info** - Use DWARF debug information to recover `#define` constants and replace literals with named constants
+3. **Filter runtime boilerplate** - Provide option to hide compiler runtime functions (`_init`, `__do_global_*`, `get_pc_thunk`) to focus on user code

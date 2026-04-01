@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_fake_branch`
+
+### Overview
+
+The original source implements "fake branches" (always-false conditionals) as an obfuscation technique. However, there's a **critical metadata mismatch**: the binary was compiled with `clang_O1` (as shown in the binary path: `7_clang_O1_g`), while the source metadata states `-O0`. This optimization level difference significantly impacts the evaluation, as O1 already eliminates the dead-code fake branches.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler marks variables as "Unresolved" with debug info annotations: `int result@[DW_OP_reg5(RDI)]` and `char * str@[???]`. No meaningful variable names were recovered. The original variables `result` and `str` are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` is perfectly preserved, exactly matching the source. This is the only element that retained full semantic fidelity.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in the simplified code (the fake branches were optimized away). The original magic numbers `0xDEADBEEF` and `1000` are not present because the dead code was eliminated.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The actual code is clean (`return x;`), but debug annotations create noise: `/* Unresolved local var: int result@[DW_OP_reg5(RDI)] */`. This is moderate noise from unresolved DWARF data.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is maximally natural - just a direct return statement. The fake branch obfuscation was eliminated by the optimizer, resulting in trivial control flow.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is 1 line - perfectly decomposed. No inlining or outlining issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfect linear top-to-bottom reading. No jumps, branches, or disruption.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundancy - the dead code from fake branches was completely eliminated by the optimizer.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Parameter type `int x` is correctly recovered. The original `int` is preserved accurately. Minor deduction for not recovering `unsigned` hints from potential optimizations.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: N/A - no composite types (structs/unions) in this function. The original code had only primitive types.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No type safety issues. The simple `return x;` is type-safe with no casts or dangerous operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are present but unhelpful: "Unresolved local var: int result@[DW_OP_reg5(RDI)]". These are auto-generated debug artifacts, not meaningful explanations. No indication that fake branch obfuscation existed in source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No patterns recognized. The fake branch idiom (always-false conditions) is completely lost. The decompiler shows no awareness that this was obfuscation code.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The "Unresolved local var" warnings are a form of anomaly indication, but they don't explain *why* variables are unresolved or what happened to the fake branch logic.
+
+**15. Assertion & Contract Recovery:** Score: 10/10  
+Justification: N/A - no explicit contracts in original source. The function simply returns its input.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch()` which is correctly identified. The call relationship is preserved.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically in the decompiled output. `param_fake_branch` and `call_fake_branch` appear near each other.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The code `int param_fake_branch(int x) { return x; }` compiles cleanly as standalone C code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 8.1/10
+
+**Critical Defects:**
+- **Variable names completely lost**: `result` and `str` are marked "Unresolved" with debug register annotations
+- **Fake branch obfuscation eliminated**: At O1 optimization, the always-false conditions were removed, losing the semantic intent of the obfuscation technique
+- **No semantic indication of lost code**: Comments don't explain that fake branches existed in original source
+- **Debug annotation noise**: DWARF register annotations (`@[DW_OP_reg5(RDI)]`) pollute the output
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The function name `param_fake_branch` is perfectly preserved, exactly matching the source.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Variables are completely unresolved, showing only debug register annotations instead of meaningful names like `result` and `str` from the original source.
+
+**Top 3 Recommendations:**
+1. **Recover variable names from debug info**: The DWARF data shows `result` and `str` existed - parse `@[DW_OP_reg5(RDI)]` annotations to recover parameter names
+2. **Detect and flag eliminated dead code**: When control flow is trivially simplified, add comments indicating "original had fake branches" or "dead code eliminated"
+3. **Clean up debug annotations**: Remove or hide DWARF register notations (`@[DW_OP_reg5(RDI)]`) that add noise without value
+
+---
+
+### Note on Evaluation Context
+
+This evaluation is complicated by the **compilation mismatch**: the binary was compiled with `clang_O1` (as shown in the binary path), but the source metadata states `-O0`. At O1, the fake branches are already eliminated by the compiler's dead code elimination pass. A fair comparison would require the binary to match the stated optimization level.

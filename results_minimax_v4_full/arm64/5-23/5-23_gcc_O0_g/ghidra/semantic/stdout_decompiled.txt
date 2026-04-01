@@ -1,0 +1,24 @@
+Testing macro constants:
+
+param_macro_constants(0x800) = 64
+param_macro_functions(5,3) = 30
+param_conditional_compile(10) = 32
+param_multi_branch_compile(10) = 57122
+param_macro_recursion(100) = 116
+param_stringize() = 19
+param_token_paste(5) = 60
+LOG: Values: 10, 20, 30
+param_variadic_macro() = 60
+param_macro_override(5) = 16
+param_include_guard() = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:25
+param_builtin_macros(100) = 382
+
+Testing asm features:
+
+call_asm_basic() = 15
+call_asm_clobber() = 15
+call_asm_multi_insn() = 42
+call_asm_simd() = 36
+call_asm_atomic() = 30
+call_asm_privileged() = 77

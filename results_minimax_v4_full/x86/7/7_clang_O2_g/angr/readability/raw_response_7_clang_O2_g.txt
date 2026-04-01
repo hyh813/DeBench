@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `flag1`, `flag2`, `v5`, `v8`, `v9`, `v10`, `v13`, `v14`. The original had meaningful names like `x`, `result`, `str`, `temp`, `a`, `b`. These single-letter names are uninterpretable without cross-referencing the source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, but many use mechanical naming like `sub_401030`, `sub_4010c0`, `sub_401241`. The pattern-based naming (sub_XXXXXX) provides no semantic meaning about function purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants like `4294967295` (0xFFFFFFFF for -1) and `90` (0x5A for XOR key) appear, but the original's `0xDEADBEEF` constant is completely absent. Magic numbers like `60`, `232`, `236` in struct offsets lack explanation. The decompiler computed constant results (500500, 225, 72) which is good, but didn't explain the obfuscation constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts present: goto-based control flow (`goto ptr[2]`, `goto (int)v1[16]`), weird struct definitions with `padding_0[11943]`, `field_2ea7`, complex pointer arithmetic in register_tm_clones. The decompilation shows obvious binary-level artifacts that obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The `param_opaque_predicate` function shows extremely convoluted control flow with computed goto patterns and `_ccall` constructs that are completely non-idiomatic. The original had clear if-else statements. At -O0, this level of obfuscation is unexpected. Loop constructs in `param_vectorized_loop` are somewhat recognizable but heavily transformed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable - each test function is separated. However, some functions like `register_tm_clones` and `__do_global_dtors_aux` are decompiled as monolithic blocks with complex internal logic that could be better decomposed. The parameter lists are mostly appropriate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read reasonably top-to-bottom. However, `param_opaque_predicate` has complex nested loops with computed jumps that disrupt linear reading. The `register_tm_clones` function has multiple return paths that make tracing difficult.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: The decompiler correctly computed constant results for call functions (e.g., `call_fake_branch()` returns 10, `call_tail_call_optimized()` returns 500500). This shows good constant folding. Loop unrolling in `param_vectorized_loop` is present but could be better abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Type information is significantly degraded. The original used `int`, `unsigned int`, `char*`, but the decompiled version often uses generic `unsigned int` for everything. Parameter types like `unsigned int a0` lose the original `int` signedness. Pointers are often just `unsigned int` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler created bizarre struct definitions like `struct_0 { char padding_0[11943]; struct struct_1 *field_2ea7; }` which are clearly artifacts. Original structs like the bitfield in `param_implementation_defined` are not recovered. The `jmp_buffer` is declared as `extern unsigned int` instead of `jmp_buf`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: pointer arithmetic like `ptr + idx * 4` without proper casts, treating integers as pointers in `goto (int)v1[16]`. However, the code doesn't have severe violations like buffer overflows. The `_ccall` constructs suggest uncertainty about call types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The only comments are auto-generated like `/* do not return */` for `longjmp` and `__libc_start_main`. No explanation of the obfuscation techniques (fake branches, opaque predicates, instruction substitution). The original source had extensive comments explaining each technique.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are partially recognizable - the gcd loop in `call_opaque_predicate` is present (though convoluted), the vectorized loop pattern exists. However, the fake branch (OBF-L4-02) is completely eliminated (the decompiled `param_fake_branch` just returns `a0`). The instruction substitution is reduced to a simple formula without recognizing the bit manipulation idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler shows `/* do not return */` for some functions which is good. However, it doesn't flag that `param_fake_branch` is missing its fake branch logic - it just returns the input. No warnings about the computed goto patterns or the `_ccall` constructs that indicate uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions are documented. The original had explicit behavior (e.g., "期望: 10" for call_fake_branch). The decompiled call functions compute these constants but don't document what they represent or the expected behavior.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are somewhat clear - you can see `call_fake_branch()` calls `param_fake_branch()`. However, the relationships to external libraries (signal, setjmp, strlen, strncpy) are not well-documented. The `extern` declarations for globals like `jmp_buffer` are present but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions are in a single file with no logical grouping. The original had clear sections: "7.1 混淆与保护", "7.2 编译器特有优化", "7.3 异常与边界情况". The decompiled code is just a flat list of functions in address order, losing all organizational structure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata states "Compilation Result: Yes" - the code compiles. Function signatures are mostly valid. However, the weird struct definitions and the `_ccall` constructs may cause compilation issues. External dependencies (libc functions) are properly declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v0`, `v1`, `a0`, `flag1`) making code uninterpretable without source
+- The fake branch (OBF-L4-02) is completely eliminated - `param_fake_branch` just returns input without the obfuscated branches
+- Type precision severely degraded - most parameters are `unsigned int` losing original `int` and pointer types
+- Complex control flow in `param_opaque_predicate` uses computed goto patterns that are non-idiomatic
+- No comments explaining the obfuscation techniques or their purposes
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+The decompiled code compiles successfully and most function signatures are valid, with external libc functions properly declared.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic single-letter variable names (`v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `flag1`, `flag2`) completely obscure the semantic purpose of each variable. At -O0 optimization, variables should retain their original names or be easily inferable from usage.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns** - Variables used as loop indices, accumulators, or holding specific values should be named accordingly (e.g., `idx`, `sum`, `result`)
+2. **Recover the fake branch logic** - The decompiled `param_fake_branch` should show the dead code branches even if they're never executed, as they were intentionally inserted
+3. **Add semantic comments** - Explain what each obfuscation technique does (fake branch, opaque predicate, instruction substitution) so analysts understand the code's intent

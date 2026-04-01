@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_10`, `local_c`, `iVar1`, `uVar2`. At -O0, the decompiler could infer more meaningful names from usage patterns (e.g., `param_1` used as `count` in varargs functions). The original source had clear names like `count`, `args`, `sum` that were lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are semantically accurate and match the original source exactly: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args`. External library functions properly identified as `<EXTERNAL>::printf`. Minor issue: some internal functions like `call_weak_fn` could be more descriptive.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21) appear without explanation. The decompiler correctly computes constant results but doesn't explain what they represent. Some literals like `0x12345678` retain their hex form appropriately.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or register spilling artifacts visible. The code is relatively clean for a decompilation. Some internal Ghidra constructs like `CONCAT44` appear in floating-point helper functions but are expected.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper loop constructs (do-while) and conditional expressions. At -O0, the decompiled code closely mirrors source structure. Example: `varargs_func` correctly shows the loop iterating through variadic arguments. Minor awkwardness in some complex functions like `func_mixed_args` with floating-point operations.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each test function (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) is properly separated. No over-fragmentation or monoliths observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `func_struct_byptr` and `param_string`. No excessive nesting or goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop constructs are properly formed, not manually unrolled. Common subexpression elimination artifacts are minimal. The code is clean and efficient.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered (int, char*, int*). However, many parameters use `undefined4` instead of `int`, and function pointers use `code *` instead of proper function signatures. At -O0, more precise types could be expected. The `param_func_ptr` uses `code *` which loses the signature `(int) -> int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Large structs passed by value (like `LargeStruct` with 128 bytes) are decomposed into multiple parameters (`param_1`, `param_2`, `param_3`, `param_4`) losing the composite type. The original source had `LargeStruct` and `SmallStruct` definitions that were not recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `func_mixed_args` function has incorrect parameter handling - it takes 6 parameters but the original only takes 4, with the extra two being float register parts. Pointer arithmetic in `func_struct_byval` uses raw offsets (`iVar2 + 8`) without safety guarantees. However, no obviously dangerous patterns like buffer overflows.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled code beyond the auto-generated header. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定", "场景: [SCENE-ALL]"). None of this semantic information was recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not explicitly named. Varargs handling is correctly identified as a loop over arguments. Function pointers are recognized as callable entities. However, no explicit labeling of patterns like "varargs", "callback", or "struct-by-value" that would aid understanding.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: External functions marked with `<EXTERNAL>` prefix, which is helpful. However, no flags for suspicious code patterns. The `func_mixed_args` has incorrect parameter count (6 vs 4 expected) but no warning. No indication of potential undefined behavior in the original source (like the parameter evaluation order test).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The original source had implicit contracts (e.g., "requires: ptr != NULL" for `func_struct_byptr`) that were not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. External dependencies (printf, strlen) properly identified. However, no documentation of caller/callee relationships. The test functions call many helper functions but there's no indication of the call graph.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: initialization functions first, then test functions, then helper functions. Static functions properly identified. However, all functions in one large file rather than logical sections matching the original source's conceptual groupings (calling conventions, parameter passing, return values).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code would compile with proper standard library headers. External function declarations needed (printf, strlen, etc.). Some type issues (undefined4) would need fixing. The floating-point helper functions are correctly separated as library code.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `local_10`, `iVar1`) losing semantic meaning from original source
+- No struct type recovery - `LargeStruct` and `SmallStruct` decomposed into raw parameters
+- No comments or documentation recovered from original source
+- Type precision issues: `undefined4` instead of `int`, `code *` instead of proper function signatures
+- Composite type by-value parameters incorrectly expanded (func_struct_byval has 4 int params instead of struct)
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names accurately reflect their purpose and match the original source exactly. The decompiler correctly identified all test functions with their proper names.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The original source had extensive comments explaining test scenarios, calling conventions, and expected values. None of this semantic information was recovered, making it difficult to understand the purpose of each function without comparing to source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (e.g., loop counters, accumulators, size parameters) to generate meaningful names like `count`, `sum`, `index` instead of `param_1`, `iVar1`
+2. **Recover struct types from parameter decomposition**: Detect when multiple consecutive int parameters likely represent a by-value struct and attempt to reconstruct the composite type with field names
+3. **Add semantic comments from pattern recognition**: When detecting varargs, callbacks, or known test patterns, add explanatory comments like "// Variadic function handling count arguments" to aid understanding

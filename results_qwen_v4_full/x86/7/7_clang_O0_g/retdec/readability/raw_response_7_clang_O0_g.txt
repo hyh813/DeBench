@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions preserved well (`param_fake_branch`, `call_opaque_predicate`), but helper/wrapper functions are generic (`function_1040`, `function_1050`, `function_1060`) obscuring their library call purposes.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x21524111` (should relate to `0xDEADBEEF`), `0x3ae4`, `0x3714` appear without explanation. Original constants like `0xDEADBEEF`, `SIGFPE` are partially preserved but many address literals are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` functions, redundant library wrappers (`function_1050` for printf), and architecture mismatch (ARM64 source but x86 decompilation output).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is broken in key functions - `param_tail_call_optimized` has incorrect condition (`acc >= 0 == (acc != 0)` vs original `n <= 0`). `param_fake_branch` inverts logic confusingly with ternary operator instead of clear if-statements.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with many single-purpose wrapper functions (each library call is separate). Main test functions are appropriately sized but helper functions add unnecessary complexity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex address calculations (`v1 + (int32_t)&g1 - 0x1ff3`) disrupt flow. Loop structures present but sometimes awkward with unnecessary variable reinitialization.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from wrapper functions for standard library calls. Loop variables sometimes reinitialized unnecessarily (`v5 = 0` in `param_vectorized_loop`). Duplicate struct definitions present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t`, `int64_t` appropriately in most cases. However, type mismatches exist: `param_instruction_substitution` takes `uint32_t` but original takes `int`. Some implicit conversions lose information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `jmp_buf_tag` struct recovered but with generic field names (`e0`, `e1`, `e2`). Array sizes lost (`decrypted[1]` instead of `decrypted[32]`). Original bitfield struct not properly reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)len`, `(int32_t)&g7`, `(int32_t)v4`. Pointer arithmetic without bounds checking. Signal handler type casting is problematic throughout exception handling functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Only auto-generated metadata (address ranges, line ranges). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. GCD calculation in opaque predicate not labeled. String decryption pattern not recognized. Tail call optimization not noted despite being a key test case.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about potentially incorrect decompilation. Architecture mismatch (ARM64→x86) not flagged. Broken logic in `param_tail_call_optimized` not indicated. No uncertainty markers anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions inferred. No error condition documentation. Original had clear expectations (e.g., "期望：10") that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variable usage is opaque (`g1`, `g2`, `g3`, `g4`, `g5`, `g6`, `g7`, `g8`). No call graph documentation. Callback relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear section headers (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) that are completely lost. Functions listed but not organized by purpose.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Claims to compile with all necessary includes present. However, architecture mismatch would cause runtime issues. Many global variables need proper initialization. External dependencies not clearly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00
+Level 3 (Type):        (6+4+4)/3   = 4.67
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25
+Level 5 (Contextual):  (4+5+6)/3   = 5.00
+
+Overall = (4.25 × 0.30) + (5.00 × 0.25) + (4.67 × 0.20) + (2.25 × 0.15) + (5.00 × 0.10)
+        = 1.275 + 1.25 + 0.934 + 0.338 + 0.500
+        = 4.297 ≈ 4.3/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable names completely generic** - `v1`, `v2`, `v3` throughout make tracking data flow nearly impossible
+- **Architecture mismatch** - ARM64 source decompiled as x86 (`__x86_get_pc_thunk_*` functions present)
+- **Broken control flow logic** - `param_tail_call_optimized` condition `acc >= 0 == (acc != 0)` doesn't match original `n <= 0`
+- **No semantic comments** - Zero documentation for obfuscation patterns, algorithm intent, or decompilation confidence
+- **Opaque global variables** - `g1` through `g8` with no indication of what data they represent
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Main test function names were preserved from source (`param_fake_branch`, `param_opaque_predicate`, etc.), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.25/10 average)** - Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes understanding the obfuscation intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., `v1` used in multiplication context should suggest `multiplier` or `operand`)
+2. **Add decompilation confidence markers** - Flag uncertain reconstructions with comments like `// UNCERTAIN: indirect call resolution` or `// WARNING: control flow may be incorrect`
+3. **Detect and label obfuscation patterns** - Recognize common patterns (opaque predicates, fake branches, instruction substitution) and add explanatory comments identifying the technique

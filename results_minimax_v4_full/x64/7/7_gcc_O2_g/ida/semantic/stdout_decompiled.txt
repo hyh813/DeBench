@@ -1,0 +1,8 @@
+Test
+
+Opaque predicate param: 10
+Opaque predicate call: 20
+Instruction substitution: 225
+String encryption: 84
+Tail call sum (1..1000): 500500
+Non-tail call sum (1..100): 5050

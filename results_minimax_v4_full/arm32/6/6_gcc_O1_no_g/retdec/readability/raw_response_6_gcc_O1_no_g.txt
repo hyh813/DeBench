@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10` throughout. For example, in `param_strcpy`, the source parameter should be named `src` but is `str2`. In `param_pthread_join`, variables like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8` are completely non-descriptive.
+
+**2. Function Naming Quality:** Score: 10/10Justification: Function names perfectly match the original source - `param_strcpy`, `call_strcpy`, `param_strcmp`, `call_strcmp`, `param_pthread_create`, `param_mutex_lock`, `param_condition_variable`, etc. All 50 functions have accurate, action-oriented names matching the source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `66` (O_CREAT|O_RDWR), `950` (IPC_CREAT|0666), `18` (string length), `31` (buffer size) appear without explanation. String literals are encoded as UTF-8 hex bytes (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`) making them unreadable. No named constants replace these values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Code contains numerous goto labels (e.g., `lab_0x12204`, `lab_0x12538`, `lab_0x12768`) that are decompilation artifacts. Unreachable code with `__stack_chk_fail()` calls creates visual noise. Compiler variants like `__printf_chk` and `__snprintf_chk` add noise. However, no debug artifacts or register spilling visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of goto statements throughout, especially in `param_pthread_join` (lines 0x1217c-0x12264), `param_atomic_ops` (0x12450-0x125b0), and `param_thread_local_storage` (0x125d4-0x127b0). These create spaghetti code that's very difficult to follow. At -O0, this is unexpected - control flow should be more natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is generally good - each test function is separate as in source. However, some functions are quite large (e.g., `param_thread_local_storage` is ~220 lines, `param_atomic_ops` ~150 lines). Parameter lists are reasonable but expose implementation details (e.g., passing raw pointers for thread arrays).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Code has numerous forward jumps and goto statements that disrupt top-to-bottom reading. In `param_pthread_join`, the code jumps between `lab_0x12204`, `lab_0x1222c` making linear reading impossible. Multiple while loops with gotos break natural flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling present in `param_malloc_free` (0x11770-0x117d8) where the compiler unrolled part of the initialization loop. No significant dead code. Loop unrolling is manageable but could be better commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently (appropriate for ARM64). However, loses `size_t` vs `int` distinction (e.g., `param_memcpy` takes `int32_t result` instead of `size_t`). Pointers are all `int32_t *` regardless of actual type. Function pointers cast to generic `int32_t * (*)(int32_t *)` losing signature information.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structures recovered (`struct _IO_FILE`, `struct sockaddr`, `struct stat`) but field names are generic (`e0`, `e1`, ..., `e19`). The `struct stat` has 20 generic fields instead of meaningful names like `st_mode`, `st_size`. No recovery of nested structures or unions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: uninitialized variable `str2` used in `param_strcpy` (line 0x11310), raw integer-to-pointer casts throughout, pointer arithmetic with raw integers (e.g., `v3 += 4`), function pointer type confusion. In `param_strcpy`, the source parameter is used uninitialized.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only address range comments like `// Address range: 0x11310 - 0x11328` appear. No explanation of what functions do, no parameter documentation, no return value descriptions. The decompiled code is essentially devoid of semantic comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The decompiler doesn't recognize this as a test suite, doesn't identify pthread patterns (mutex initialization, condition variables), doesn't recognize system call patterns. Each function is treated in isolation without pattern context.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of uncertain or anomalous code. The decompiler presents everything with equal confidence. Issues like the uninitialized `str2` in `param_strcpy` or the indirect function calls through `g1`, `g2`, etc. are not flagged. No "UNCERTAIN" or "ANOMALY" indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The decompiler doesn't infer that `param_fopen_fclose` requires a valid file path, or that `param_mutex_lock` requires `thread_count > 0`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of which functions call which. No indication of callback relationships (e.g., thread functions). Global variables like `g35`, `g36`, `g37` used for signal handling have no explanation of their roles or relationships to the functions that use them.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching the source: standard library functions first (param_strcpy, call_strcpy, etc.), then system calls (param_linux_syscall, param_fork_exec, etc.), then threading functions (param_pthread_create, param_mutex_lock, etc.). This matches the original source organization well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has many issues preventing compilation: missing function prototypes (e.g., `fileno`, `rewind`), undefined `IPPROTO_IP`, undefined `SIGBUS`, `SIGALARM`, `SIGALRM`. The code uses `int32_t` for everything but some system calls expect different types. No dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v1`-`v10`, `str2`) obscuring semantic purpose throughout
+- Heavy goto usage in `param_pthread_join`, `param_atomic_ops`, `param_thread_local_storage` makes control flow nearly impossible to follow
+- Magic numbers like `66`, `950`, `18` appear without explanation or named constants
+- No comments explaining function purpose, parameters, or return values
+- Type safety issues: uninitialized variable in `param_strcpy`, raw pointer arithmetic throughout
+- String literals encoded as UTF-8 hex bytes making them unreadable
+- No anomaly indication for uncertain decompilation decisions
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+Function names perfectly match the original source - every test function (`param_strcpy`, `call_strcmp`, `param_pthread_create`, etc.) has the exact correct name from the source code.
+
+**Most Needs Improvement:** Semantic Transparency (2.0/10)  
+The decompiled code has almost no comments, doesn't recognize any patterns, doesn't flag anomalies, and doesn't recover any contracts or assertions. This makes it very difficult to understand the purpose and behavior of the code without referring to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `str2` in `param_strcpy` should be `src` based on being passed to `strcpy()` and used in `strlen()`
+2. Recover natural control flow structures instead of emitting goto statements - the original code used while/for loops, not gotos
+3. Add semantic comments explaining function purpose, parameters, and identify patterns like "pthread mutex lock/unlock pattern" or "fork-exec-wait pattern"

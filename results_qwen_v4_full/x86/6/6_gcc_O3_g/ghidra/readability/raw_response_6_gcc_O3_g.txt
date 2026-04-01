@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `iVar1`, `iVar2`, `local_20`, `uStack_14` are generic and obscure purpose; some meaningful names exist (`thread_ret`, `pipefd`, `consumer_ret`) but most are compiler-generated temporaries.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`); only a few generic names like `FUN_00011030` for initialization code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex (`0x2a`=42, `0x5a`=90, `0xc`=12) without semantic meaning; syscall numbers (5, 6, 10, 0xe) not recovered as constants; string literals preserved but format strings become `&DAT_XXXX` references.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated `__x86.get_pc_thunk.bx` warnings, stack canary checks (`local_20 == *(int *)(in_GS_OFFSET + 0x14)`) in every function, `LOCK()/UNLOCK()` macros for atomics add significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while patterns reasonably well; some goto labels (`LAB_00011d63`) for error handling; at -O0 optimization, control flow should be cleaner but shows optimization artifacts.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Thread functions properly separated; test functions call parameterized versions appropriately; some functions lengthy (`param_thread_local_storage` ~100 lines) but cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom; stack canary checks at function ends create non-linear flow; goto labels for error paths disrupt reading but are limited.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code repeated in nearly every function; similar pthread_create/join patterns repeated; no obvious dead code but security checks add verbosity.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, void*); `size_t` sometimes becomes `int`; `atomic_int` becomes `int` with LOCK/UNLOCK; `FILE*` and `pthread_t` properly recovered.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (start, end, result); `sockaddr_in` partially recovered; TLS variables accessed via `in_GS_OFFSET[-9]` instead of proper `__thread` semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(int)arg`, `(void *)0x0`); pointer arithmetic on void* in places; atomic operations use LOCK/UNLOCK macros instead of proper `__atomic_*` intrinsics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var"); no semantic comments explaining algorithm purpose or API contracts.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: pthread patterns visible (create, join, mutex_lock); producer-consumer pattern in condition variable code; signal handling pattern recognizable; but no explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Unknown calling convention" flags issues; "Unresolved local var" indicates decompilation uncertainty; "WARNING: Subroutine does not return" for `_exit`; some anomalies flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; error return values (-1, -2, -3) visible but not documented; stack canary provides implicit contract only.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly visible; global variables referenced (`signal_received`, `shared_counter`); thread function relationships clear; no explicit call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output; test functions grouped logically; related functions near each other; no header file separation or proper scoping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses standard library functions but needs proper headers; Ghidra-specific constructs (LOCK/UNLOCK macros); stack canary code needs runtime support; architecture mismatch (x86 decompilation vs ARM64 source).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (25%): (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (20%): (6+6+5)/3  = 5.67 × 0.20 = 1.13
+Level 4 (15%): (4+6+6+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (10%): (6+6+5)/3  = 5.67 × 0.10 = 0.57
+
+Overall Score: 5.62/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects:
+- Variable names like `iVar1`, `local_20`, `uStack_14` obscure semantic meaning (should be `result`, `canary_value`, `return_address`)
+- Magic numbers in hex (`0x2a`, `0x5a`, `0xc`) not recovered as named constants (42, 90, 12)
+- TLS variables accessed via `in_GS_OFFSET[-9]` instead of proper `__thread` semantics
+- Stack canary checks repeated in every function adding significant noise
+- Atomic operations shown as `LOCK()/UNLOCK()` macros instead of `__atomic_*` intrinsics
+- Architecture mismatch: ARM64 source decompiled as x86 causing thunk function artifacts
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`), making code navigation straightforward.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation; error codes visible but undocumented; makes understanding function contracts difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Variables used in size calculations should be named `size`/`length`, loop counters should be `i`/`j`, return values should reflect purpose.
+2. **Recover named constants from repeated literals** - Detect `0x2a` (42) used as success code across functions and suggest `SUCCESS_CODE` or `TEST_PASS_VALUE` constant.
+3. **Preserve thread-local storage semantics** - Recognize `__thread` variables and generate proper TLS access instead of raw `GS_OFFSET` pointer arithmetic.

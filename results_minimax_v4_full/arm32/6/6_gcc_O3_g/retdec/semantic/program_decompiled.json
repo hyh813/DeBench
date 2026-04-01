@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/6/6_gcc_O3_g/retdec/syntactic/bin/6_gcc_O3_g_fixed",
+  "stdout": "",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

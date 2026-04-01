@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_14`, `uVar1`, `iVar2`, `pvVar1` with no semantic meaning. Original source had meaningful names like `arr`, `head`, `current`, `sum`, `new_node` that clearly indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`, `tree_heap_traversal`). This is rare and valuable for decompiled code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x2a` (42), `0x14` (20), `0x1e` (30), `0x800` (2048), `0x41` ('A'). Original used clear expressions like `x * 2`, `sizeof(int)`, and character literals.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) appear in multiple functions. External function wrappers add verbosity. However, no excessive register spilling artifacts visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For-loops mostly recovered correctly. `linked_list_heap` uses `while(true)` with break instead of clean for-loop. Conditionals are clear and match source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. Each test function remains separate. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Early returns used appropriately. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Some redundant type casts visible (`(undefined4 *)`, `(int *)`). Loop structures not excessively unrolled.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined`, `void*` replace specific types. Original had `int`, `char*`, `Point*`, `Node*`, `size_t`. Return types often wrong (`undefined4` vs `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure. `Point` struct accessed as `global_point._4_4_` (field offset notation). `Node` and `TreeNode` structs completely lost, accessed via pointer arithmetic like `local_28[1]` for `next` pointer.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int *)((int)__ptr + local_14 * 4)`, `(undefined4 *)`, `(void **)`. Pointer arithmetic on void pointers violates C standards.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each test case, expected values, and memory operation purposes.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation patterns) not identified or named. No algorithm explanations provided.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `stack_alias` function signature completely broken (lost both pointer parameters, shows `void` instead). No warnings about decompilation uncertainty or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 > 0` checks exist but aren't noted as contracts). No postconditions or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`global_counter`, `global_array`) referenced but relationships not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Related test functions grouped together. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant patching to compile. Type mismatches (`undefined4` vs `int`), missing struct definitions, and incorrect function signatures would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.01/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` accessed via raw offset notation (`global_point._4_4_`, `local_28[1]`)
+- **Variable names all generic**: `param_1`, `local_14`, `uVar1` provide zero semantic information
+- **`stack_alias` function signature broken**: Lost both pointer parameters, shows `void` instead of `(int *p1, int *p2)`
+- **Zero documentation**: No comments explaining test purposes, expected values, or memory operation semantics
+- **Type degradation pervasive**: `undefined4`, `undefined` replace specific C types throughout
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making it easy to identify what each function tests
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding test purposes and expected behaviors extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from memory access patterns** - Detect consistent field offsets and propose named struct definitions instead of `._4_4_` notation
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, loop indices should be `i`/`j`, pointers should indicate target type
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (like `stack_alias` parameter loss) and suggest manual review areas

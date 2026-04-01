@@ -1,0 +1,1603 @@
+#include <stdarg.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+#include <stdint.h>
+
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+
+/* Additional type definitions for decompiled code */
+typedef unsigned int uint;
+typedef unsigned char byte;
+#define NULL ((void *)0)
+typedef int __pid_t;
+typedef int pid_t;
+typedef int key_t;
+typedef unsigned int __useconds_t;
+typedef void (*__sighandler_t)(int);
+typedef unsigned long pthread_t;
+typedef struct _IO_FILE FILE;
+typedef struct _IO_FILE FILE;
+typedef unsigned short sa_family_t;
+typedef unsigned int socklen_t;
+typedef struct sockaddr {
+    sa_family_t sa_family;
+    char sa_data[14];
+} sockaddr;
+typedef unsigned char undefined3[3];
+typedef unsigned char undefined5[5];
+typedef void *(*__start_routine)(void *);
+extern FILE *stdout;
+
+/* Concatenation macros for decompiled code */
+#define CONCAT53(hi, lo) ((((unsigned long long)(hi)) << 40) | (unsigned long long)(lo))
+#define CONCAT44(hi, lo) ((((unsigned long long)(hi)) << 32) | (unsigned long long)(lo))
+#define CONCAT35(hi, lo) ((((unsigned int)(hi)) << 24) | (unsigned int)(lo))
+
+/* Include required system headers */
+#include <unistd.h>
+#include <signal.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/wait.h>
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/auxv.h>
+
+/* Function declarations for missing functions */
+int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+int vfprintf(FILE *stream, const char *format, va_list ap);
+int vsscanf(const char *str, const char *format, va_list ap);
+int __isoc99_sscanf(const char *str, const char *format, ...);
+unsigned long __getauxval(unsigned long type);
+void abort(void);
+void __attribute__((weak)) __gmon_start__(void);
+void __cxa_finalize(void *dso_handle);
+void _exit(int status);
+int fileno(FILE *stream);
+int unlink(const char *pathname);
+void rewind(FILE *stream);
+int *__errno_location(void);
+
+/* Global variable declarations */
+volatile char __aarch64_have_lse_atomics = 0;
+volatile int ready = 0;
+volatile int data = 0;
+volatile int atomic_counter = 0;
+volatile int shared_counter = 0;
+pthread_mutex_t counter_mutex = {0};
+pthread_mutex_t cond_mutex = {0};
+pthread_cond_t cond = {0};
+char completed_0 = 0;
+void *__dso_handle = 0;
+char DAT_00103366[] = "test";
+char DAT_001036ac[] = "=== Testing Standard Library Functions ===";
+char DAT_001033b4[] = "strlen result: %lu\n";
+char DAT_001033cf[] = "strcmp result: %d\n";
+char DAT_001033ea[] = "call_strlen result: %d\n";
+char DAT_00103406[] = "call_memcpy result: %d\n";
+char DAT_00103422[] = "call_memcmp result: %d\n";
+char DAT_0010343e[] = "printf result: %d\n";
+char DAT_0010345a[] = "sscanf result: %lu\n";
+char DAT_00103477[] = "fopen/fclose result: %lu\n";
+char DAT_00103493[] = "fread/fwrite result: %u\n";
+char DAT_001034af[] = "call_malloc_free result: %d\n";
+char DAT_001034cb[] = "call_memset result: %d\n";
+char DAT_001034e6[] = "call_strchr_strstr result: %d\n";
+char DAT_00103535[] = "syscall result: %lu\n";
+char DAT_00103551[] = "stat result: %lu\n";
+char DAT_0010356d[] = "fork/exec result: %lu\n";
+char DAT_00103589[] = "pipe result: %lu\n";
+char DAT_001035a5[] = "socket result: %lu\n";
+char DAT_001035c1[] = "shmget/shmat result: %lu\n";
+char DAT_001035dd[] = "signal result: %lu\n";
+char DAT_00103603[] = "pthread_create result: %lu\n";
+char DAT_0010361f[] = "pthread_join result: %lu\n";
+char DAT_0010363c[] = "mutex_lock result: %lu\n";
+char DAT_00103658[] = "condition_variable result: %lu\n";
+char DAT_00103674[] = "atomic_ops result: %lu\n";
+char DAT_00103690[] = "thread_local_storage result: %lu\n";
+char DAT_001036eb[] = "=== Testing Thread Concurrency ===";
+char DAT_001036d0[] = "=== Testing System Calls ===";
+int signal_received = 0;
+unsigned int signal_number = 0;
+void *stack0x00000008;
+
+/* Forward declarations */
+void call_weak_fn(void);
+int main(int argc, char **argv, char **envp);
+void signal_handler(int);
+int __aarch64_ldadd4_acq_rel(int, int *);
+int __aarch64_cas4_acq_rel(int, int, int *);
+bool ExclusiveMonitorPass(int *, int);
+char ExclusiveMonitorsStatus(void);
+void _init(void);
+void _fini(void);
+void init_have_lse_atomics(void);
+
+// Decompiled by BinaryAI
+// SHA256: 6709ed4bce9ff1a05d8f45a54ee55ba3e4ea5d58ff840a2a7325b8cdced9b55f
+
+// Function: _init @ 0x1012c8
+void _init(void)
+{
+  init_have_lse_atomics();
+  call_weak_fn();
+  return;
+}
+
+// Function: FUN_001012e0 @ 0x1012e0
+void FUN_001012e0(void)
+{
+ return;
+}
+
+
+
+// Function: <EXTERNAL>::__libc_start_main @ 0x101340
+// libc function - implementation not needed
+
+// Function: <EXTERNAL>::execl @ 0x101350
+// Handled by system header
+
+
+
+// Function: ExclusiveMonitorPass @ 0x101700
+bool ExclusiveMonitorPass(int *param_1, int param_2)
+{
+ return true;
+}
+
+// Function: ExclusiveMonitorsStatus @ 0x101710
+char ExclusiveMonitorsStatus(void)
+{
+ return 0;
+}
+
+// Function: LOAcquire @ 0x101720
+void LOAcquire(void)
+{
+ __sync_synchronize();
+}
+
+// Function: LORelease @ 0x101730
+void LORelease(void)
+{
+ __sync_synchronize();
+}
+
+// Function: init_have_lse_atomics @ 0x101740
+void init_have_lse_atomics(void)
+{
+ unsigned long extraout_var;
+ extraout_var = __getauxval(0x10);
+ __aarch64_have_lse_atomics = (char)(extraout_var & 1);
+ return;
+}
+
+// Function: _start @ 0x101740
+// System startup - handled by libc
+
+// Function: call_weak_fn @ 0x101774
+void call_weak_fn(void)
+{
+  if (__gmon_start__ != NULL) {
+    __gmon_start__();
+  }
+  return;
+}
+
+// Function: deregister_tm_clones @ 0x101790
+void deregister_tm_clones(void)
+{
+ return;
+}
+
+// Function: register_tm_clones @ 0x1017c0
+void register_tm_clones(void)
+{
+ return;
+}
+
+// Function: FUN_001017fc @ 0x1017fc
+void FUN_001017fc(void)
+{
+ if (completed_0 == '\0') {
+ __cxa_finalize(__dso_handle);
+ deregister_tm_clones();
+ completed_0 = '\x01';
+ }
+ return;
+}
+
+// Function: __do_global_dtors_aux @ 0x101800
+void __do_global_dtors_aux(void)
+{
+ if (completed_0 == '\0') {
+ __cxa_finalize((void *)__dso_handle);
+ deregister_tm_clones();
+ completed_0 = '\x01';
+ }
+ return;
+}
+
+// Function: param_strcpy @ 0x101854
+void param_strcpy(char *param_1,char *param_2)
+{
+ char *__s;
+ __s = strcpy(param_1,param_2);
+ strlen(__s);
+ return;
+}
+
+// Function: call_strcpy @ 0x10186c
+void call_strcpy(void)
+{
+ unsigned long long local_30;
+ char local_28;
+ local_28 = 0;
+ ((char *)&local_30)[0] = 'H';
+ ((char *)&local_30)[1] = 'e';
+ ((char *)&local_30)[2] = 'l';
+ ((char *)&local_30)[3] = 'l';
+ ((char *)&local_30)[4] = 'o';
+ ((char *)&local_30)[5] = 'L';
+ ((char *)&local_30)[6] = 'i';
+ ((char *)&local_30)[7] = 'b';
+ strlen((char *)&local_30);
+ return;
+}
+
+// Function: param_strcmp @ 0x1018a0
+int param_strcmp(char *param_1,char *param_2)
+{
+ int iVar1;
+ int iVar2;
+ iVar2 = strcmp(param_1,param_2);
+ iVar1 = -(uint)(iVar2 != 0);
+ if (0 < iVar2) {
+ iVar1 = 1;
+ }
+ return iVar1;
+}
+
+// Function: call_strcmp @ 0x1018c4
+unsigned long long call_strcmp(void)
+{
+ return 0;
+}
+
+// Function: param_strlen @ 0x1018cc
+void param_strlen(char *param_1)
+{
+ strlen(param_1);
+ return;
+}
+
+// Function: call_strlen @ 0x1018e0
+unsigned long long call_strlen(void)
+{
+ return 0xc;
+}
+
+// Function: param_memcpy @ 0x1018e8
+unsigned long param_memcpy(void *param_1,void *param_2,size_t param_3)
+{
+ memcpy(param_1,param_2,param_3);
+ return param_3 & 0xffffffff;
+}
+
+// Function: call_memcpy @ 0x10190c
+unsigned long long call_memcpy(void)
+{
+ return 0x5a;
+}
+
+// Function: param_memcmp @ 0x101914
+int param_memcmp(void *param_1,void *param_2,size_t param_3)
+{
+ int iVar1;
+ int iVar2;
+ iVar2 = memcmp(param_1,param_2,param_3);
+ iVar1 = -(uint)(iVar2 != 0);
+ if (0 < iVar2) {
+ iVar1 = 1;
+ }
+ return iVar1;
+}
+
+// Function: call_memcmp @ 0x101938
+unsigned long long call_memcmp(void)
+{
+ return 0xffffffff;
+}
+
+// Function: param_printf @ 0x101940
+int param_printf(unsigned long param_1,unsigned long long param_2)
+{
+ int iVar1;
+ iVar1 = printf("Value: %d, Name: %s\n",param_1 & 0xffffffff,param_2);
+ return iVar1;
+}
+
+// Function: call_printf @ 0x101954
+int call_printf(void)
+{
+ int iVar1;
+ iVar1 = printf("Value: %d, Name: %s\n",0x2a,&DAT_00103366);
+ return iVar1;
+}
+
+// Function: param_scanf @ 0x10196c
+int param_scanf(unsigned long long param_1)
+{
+ int iVar1;
+ int local_18;
+ int local_14;
+ iVar1 = __isoc99_sscanf((const char *)param_1,"%d,%d",&local_14,&local_18);
+ local_18 = local_18 + local_14;
+ if (iVar1 != 2) {
+ local_18 = -1;
+ }
+ return local_18;
+}
+
+// Function: call_scanf @ 0x1019ac
+int call_scanf(void)
+{
+ int iVar1;
+ int local_18;
+ int local_14;
+ iVar1 = __isoc99_sscanf("123,456","%d,%d",&local_14,&local_18);
+ local_18 = local_18 + local_14;
+ if (iVar1 != 2) {
+ local_18 = -1;
+ }
+ return local_18;
+}
+
+// Function: param_fopen_fclose @ 0x1019f4
+int param_fopen_fclose(char *param_1)
+{
+ int iVar1;
+ FILE *__stream;
+ __stream = fopen(param_1,"r");
+ if (__stream != (FILE *)0x0) {
+ iVar1 = fileno(__stream);
+ fclose(__stream);
+ return iVar1;
+ }
+ return -1;
+}
+
+// Function: call_fopen_fclose @ 0x101a44
+unsigned int call_fopen_fclose(void)
+{
+ int iVar1;
+ FILE *__stream;
+ unsigned int uVar2;
+ __stream = fopen("/etc/passwd","r");
+ if (__stream != (FILE *)0x0) {
+ iVar1 = fileno(__stream);
+ fclose(__stream);
+ uVar2 = 0x2a;
+ if (iVar1 < 0) {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+ }
+ return 0xffffffff;
+}
+
+// Function: param_fread_fwrite @ 0x101aa4
+unsigned int param_fread_fwrite(char *param_1)
+{
+ unsigned int uVar1;
+ FILE *__s;
+ size_t sVar2;
+ unsigned long local_50;
+ undefined3 uStack_48;
+ undefined5 local_45;
+ unsigned int uStack_40;
+ __s = fopen(param_1,"w+");
+ if (__s == (FILE *)0x0) {
+ return 0xffffffff;
+ }
+ sVar2 = fwrite("BinBench Test Data",1,0x12,__s);
+ if (sVar2 != 0x12) {
+ fclose(__s);
+ return 0xfffffffe;
+ }
+ rewind(__s);
+ sVar2 = fread(&local_50,1,0x12,__s);
+ *(char *)((long)&local_50 + sVar2) = 0;
+ fclose(__s);
+ unlink(param_1);
+	uVar1 = 0xfffffffd;
+	if (sVar2 == 0x12) {
+		uVar1 = 0x2a;
+		if ((local_50 ^ 0x68636e65426e6942 | CONCAT53(local_45,uStack_48) ^ 0x6144207473655420 |
+			 CONCAT35(uStack_40,local_45) ^ 0x61746144207473) != 0) {
+			uVar1 = 0xfffffffd;
+		}
+	}
+ return uVar1;
+}
+
+// Function: call_fread_fwrite @ 0x101bd8
+void call_fread_fwrite(void)
+{
+ param_fread_fwrite("/tmp/binbench_test.tmp");
+ return;
+}
+
+// Function: param_malloc_free @ 0x101be4
+int param_malloc_free(unsigned long param_1)
+{
+ int *__ptr;
+ int extraout_w8;
+ unsigned long uVar1;
+ int *piVar2;
+ unsigned long long *puVar3;
+ long lVar4;
+ unsigned long uVar5;
+ int iVar6;
+ int iVar7;
+ int iVar8;
+ int iVar9;
+ int iVar10;
+ int iVar11;
+ int iVar12;
+ int iVar13;
+ __ptr = (int *)malloc(param_1 << 2);
+ if (__ptr == (int *)0x0) {
+ return -1;
+ }
+ iVar6 = extraout_w8;
+ if (param_1 == 0) goto LAB_00101c94;
+ if (param_1 < 8) {
+ uVar1 = 0;
+LAB_00101c70:
+ lVar4 = param_1 - uVar1;
+ iVar6 = (int)uVar1 * 10;
+ piVar2 = __ptr + uVar1;
+ do {
+ *piVar2 = iVar6;
+ lVar4 = lVar4 + -1;
+ iVar6 = iVar6 + 10;
+ piVar2 = piVar2 + 1;
+ } while (lVar4 != 0);
+ }
+ else {
+ uVar1 = param_1 & 0xfffffffffffffff8;
+ iVar8 = 2;
+ iVar9 = 3;
+ iVar6 = 0;
+ iVar7 = 1;
+ puVar3 = (unsigned long long *)(__ptr + 4);
+ uVar5 = uVar1;
+ do {
+ iVar10 = iVar6 * 10;
+ iVar11 = iVar7 * 10;
+ iVar12 = iVar8 * 10;
+ iVar13 = iVar9 * 10;
+ uVar5 = uVar5 - 8;
+ iVar6 = iVar6 + 8;
+ iVar7 = iVar7 + 8;
+ iVar8 = iVar8 + 8;
+ iVar9 = iVar9 + 8;
+ puVar3[-1] = CONCAT44(iVar13,iVar12);
+ puVar3[-2] = CONCAT44(iVar11,iVar10);
+ puVar3[1] = CONCAT44(iVar13 + 0x28,iVar12 + 0x28);
+ *puVar3 = CONCAT44(iVar11 + 0x28,iVar10 + 0x28);
+ puVar3 = puVar3 + 4;
+ } while (uVar5 != 0);
+ if (uVar1 != param_1) goto LAB_00101c70;
+ }
+ iVar6 = *__ptr;
+LAB_00101c94:
+ iVar7 = __ptr[param_1 - 1];
+ free(__ptr);
+ return iVar7 + iVar6;
+}
+
+// Function: call_malloc_free @ 0x101cb4
+unsigned long long call_malloc_free(void)
+{
+ return 0x5a;
+}
+
+// Function: param_memset @ 0x101cbc
+int param_memset(void *param_1,unsigned long param_2)
+{
+ uint uVar1;
+ uint uVar2;
+ unsigned long uVar3;
+ byte *pbVar4;
+ uint *puVar5;
+ long lVar6;
+ unsigned long uVar7;
+ int iVar8;
+ int iVar9;
+ int iVar10;
+ int iVar11;
+ int iVar12;
+ int iVar13;
+ int iVar14;
+ int iVar15;
+ memset(param_1,0,param_2);
+ if (param_2 == 0) {
+ iVar8 = 0;
+ }
+ else {
+ if (param_2 < 8) {
+ uVar3 = 0;
+ iVar8 = 0;
+ }
+ else {
+ uVar3 = param_2 & 0xfffffffffffffff8;
+ puVar5 = (uint *)((long)param_1 + 4);
+ iVar8 = 0;
+ iVar9 = 0;
+ iVar10 = 0;
+ iVar11 = 0;
+ iVar12 = 0;
+ iVar13 = 0;
+ iVar14 = 0;
+ iVar15 = 0;
+ uVar7 = uVar3;
+ do {
+ uVar1 = puVar5[-1];
+ uVar2 = *puVar5;
+ puVar5 = puVar5 + 2;
+ uVar7 = uVar7 - 8;
+ iVar8 = iVar8 + (uVar1 & 0xff);
+ iVar9 = iVar9 + (uVar1 >> 8 & 0xff);
+ iVar10 = iVar10 + (uVar1 >> 0x10 & 0xff);
+ iVar11 = iVar11 + (uVar1 >> 0x18);
+ iVar12 = iVar12 + (uVar2 & 0xff);
+ iVar13 = iVar13 + (uVar2 >> 8 & 0xff);
+ iVar14 = iVar14 + (uVar2 >> 0x10 & 0xff);
+ iVar15 = iVar15 + (uVar2 >> 0x18);
+ } while (uVar7 != 0);
+ iVar8 = iVar12 + iVar8 + iVar13 + iVar9 + iVar14 + iVar10 + iVar15 + iVar11;
+ if (uVar3 == param_2) {
+ return iVar8;
+ }
+ }
+ lVar6 = param_2 - uVar3;
+ pbVar4 = (byte *)((long)param_1 + uVar3);
+ do {
+ lVar6 = lVar6 + -1;
+ iVar8 = iVar8 + (uint)*pbVar4;
+ pbVar4 = pbVar4 + 1;
+ } while (lVar6 != 0);
+ }
+ return iVar8;
+}
+
+// Function: call_memset @ 0x101d68
+unsigned long long call_memset(void)
+{
+ return 0;
+}
+
+// Function: param_strchr_strstr @ 0x101d70
+int param_strchr_strstr(char *param_1,uint param_2,char *param_3)
+{
+ int iVar1;
+ int iVar2;
+ char *pcVar3;
+ pcVar3 = strchr(param_1,param_2 & 0xff);
+ iVar1 = (int)pcVar3 - (int)param_1;
+ if (pcVar3 == (char *)0x0) {
+ iVar1 = -1;
+ }
+ pcVar3 = strstr(param_1,param_3);
+ iVar2 = (int)pcVar3 - (int)param_1;
+ if (pcVar3 == (char *)0x0) {
+ iVar2 = -1;
+ }
+ return iVar2 + iVar1;
+}
+
+// Function: call_strchr_strstr @ 0x101dc8
+unsigned long long call_strchr_strstr(void)
+{
+ return 0xf;
+}
+
+// Function: test_standard_library_functions @ 0x101dd0
+int test_standard_library_functions(void)
+{
+ uint uVar1;
+ int iVar2;
+ size_t sVar3;
+ FILE *__stream;
+ unsigned long uVar4;
+ uint uVar5;
+ unsigned long long local_50;
+ char local_48;
+ int local_14;
+ puts(DAT_001036ac);
+ local_48 = 0;
+ ((char *)&local_50)[0] = 'H';
+ ((char *)&local_50)[1] = 'e';
+ ((char *)&local_50)[2] = 'l';
+ ((char *)&local_50)[3] = 'l';
+ ((char *)&local_50)[4] = 'o';
+ ((char *)&local_50)[5] = 'L';
+ ((char *)&local_50)[6] = 'i';
+ ((char *)&local_50)[7] = 'b';
+ sVar3 = strlen((char *)&local_50);
+ printf(DAT_001033b4,sVar3);
+ printf(DAT_001033cf,0);
+ printf(DAT_001033ea,0xc);
+ printf(DAT_00103406,0x5a);
+ uVar5 = 0xffffffff;
+ printf(DAT_00103422,0xffffffff);
+ uVar1 = printf("Value: %d, Name: %s\n",0x2a,DAT_00103366);
+ printf(DAT_0010343e,(unsigned long)uVar1);
+ iVar2 = __isoc99_sscanf("123,456","%d,%d",(int *)&local_50,&local_14);
+ uVar1 = local_14 + (int)local_50;
+ if (iVar2 != 2) {
+ uVar1 = 0xffffffff;
+ }
+ printf(DAT_0010345a,(unsigned long)uVar1);
+ __stream = fopen("/etc/passwd","r");
+ if (__stream != (FILE *)0x0) {
+ iVar2 = fileno(__stream);
+ fclose(__stream);
+ uVar5 = 0x2a;
+ if (iVar2 < 0) {
+ uVar5 = 0xffffffff;
+ }
+ }
+ printf(DAT_00103477,(unsigned long)uVar5);
+ uVar4 = param_fread_fwrite("/tmp/binbench_test.tmp");
+ printf(DAT_00103493,uVar4 & 0xffffffff);
+ printf(DAT_001034af,0x5a);
+ printf(DAT_001034cb,0);
+ iVar2 = printf(DAT_001034e6,0xf);
+ return iVar2;
+}
+
+// Function: param_linux_syscall @ 0x101f6c
+unsigned long param_linux_syscall(unsigned long long param_1)
+{
+ unsigned long uVar1;
+ int *piVar2;
+ uVar1 = syscall(0x38,0xffffff9c,param_1,0);
+ if (-1 < (int)uVar1) {
+ syscall(0x39,uVar1 & 0xffffffff);
+ return uVar1 & 0xffffffff;
+ }
+ piVar2 = __errno_location();
+ return (unsigned long)(uint)-*piVar2;
+}
+
+// Function: call_linux_syscall @ 0x101fcc
+unsigned int call_linux_syscall(void)
+{
+ unsigned long uVar1;
+ int *piVar2;
+ unsigned int uVar3;
+ uVar1 = syscall(0x38,0xffffff9c,"/etc/passwd",0);
+ if (-1 < (int)uVar1) {
+ syscall(0x39,uVar1 & 0xffffffff);
+ uVar3 = 0x2a;
+ if ((int)uVar1 < 0) {
+ uVar3 = 0xffffffff;
+ }
+ return uVar3;
+ }
+ piVar2 = __errno_location();
+ uVar3 = 0x2a;
+ if (0 < *piVar2) {
+ uVar3 = 0xffffffff;
+ }
+ return uVar3;
+}
+
+// Function: param_win32_api @ 0x102040
+unsigned int param_win32_api(char *param_1)
+{
+ int iVar1;
+ unsigned int uVar2;
+ struct stat local_60;
+ iVar1 = stat(param_1,(struct stat *)&local_60);
+ uVar2 = 0x2a;
+ if (local_60.st_size < 1) {
+ uVar2 = 0xfffffffe;
+ }
+ if (iVar1 < 0) {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+}
+
+// Function: call_win32_api @ 0x10207c
+unsigned int call_win32_api(void)
+{
+ int iVar1;
+ unsigned int uVar2;
+ struct stat local_60;
+ iVar1 = stat("/etc/passwd",(struct stat *)&local_60);
+ uVar2 = 0x2a;
+ if (local_60.st_size < 1) {
+ uVar2 = 0xfffffffe;
+ }
+ if (iVar1 < 0) {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+}
+
+// Function: param_fork_exec @ 0x1020c0
+uint param_fork_exec(char *param_1,unsigned long long param_2)
+{
+ __pid_t _Var1;
+ uint local_24;
+ _Var1 = fork();
+ if (_Var1 < 0) {
+ return 0xffffffff;
+ }
+ if (_Var1 == 0) {
+ execl(param_1,param_1,param_2,0);
+ _exit(0x7f);
+ }
+ _Var1 = waitpid(_Var1,(int *)&local_24,0);
+ if (_Var1 < 0) {
+ return 0xfffffffe;
+ }
+ if ((local_24 & 0x7f) != 0) {
+ return 0xfffffffd;
+ }
+ return local_24 >> 8 & 0xff;
+}
+
+// Function: call_fork_exec @ 0x10216c
+unsigned int call_fork_exec(void)
+{
+ __pid_t _Var1;
+ unsigned int uVar2;
+ uint local_14;
+ _Var1 = fork();
+ if (-1 < _Var1) {
+ if (_Var1 == 0) {
+ execl("/bin/true","/bin/true",0,0);
+ _exit(0x7f);
+ }
+ _Var1 = waitpid(_Var1,(int *)&local_14,0);
+ if ((-1 < _Var1) && ((local_14 & 0x7f) == 0)) {
+ uVar2 = 0x2a;
+ if ((local_14 & 0xff00) != 0) {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+ }
+ }
+ return 0xffffffff;
+}
+
+// Function: param_pipe_communication @ 0x1021e8
+unsigned int param_pipe_communication(void)
+{
+ int iVar1;
+ __pid_t _Var2;
+ ssize_t sVar3;
+ unsigned int uVar4;
+ char auStack_48 [32];
+ int local_28;
+ int local_24;
+ iVar1 = pipe(&local_28);
+ if (iVar1 < 0) {
+ return 0xffffffff;
+ }
+ _Var2 = fork();
+ if (-1 < _Var2) {
+ if (_Var2 != 0) {
+ close(local_28);
+ sVar3 = read(local_24,auStack_48,0x1f);
+ auStack_48[sVar3] = 0;
+ close(local_24);
+ wait((void *)0x0);
+ uVar4 = 0x2a;
+ if (sVar3 < 1) {
+ uVar4 = 0xfffffffd;
+ }
+ return uVar4;
+ }
+ close(local_24);
+ write(local_28,"HelloPipe",9);
+ close(local_28);
+ _exit(0);
+ }
+ return 0xfffffffe;
+}
+
+// Function: param_socket_create @ 0x1022bc
+unsigned int param_socket_create(void)
+{
+ int __fd;
+ int iVar1;
+ unsigned int uVar2;
+ sockaddr local_38;
+ unsigned int local_24;
+ __fd = socket(2,1,0);
+ if (__fd < 0) {
+ return 0xffffffff;
+ }
+ local_24 = 1;
+ iVar1 = setsockopt(__fd,1,2,&local_24,4);
+ if (-1 < iVar1) {
+ local_38.sa_family = 2;
+ local_38.sa_data[0] = '\0';
+ local_38.sa_data[1] = '\0';
+ local_38.sa_data[2] = '\0';
+ local_38.sa_data[3] = '\0';
+ local_38.sa_data[4] = '\0';
+ local_38.sa_data[5] = '\0';
+ local_38.sa_data[6] = '\0';
+ local_38.sa_data[7] = '\0';
+ local_38.sa_data[8] = '\0';
+ local_38.sa_data[9] = '\0';
+ local_38.sa_data[10] = '\0';
+ local_38.sa_data[11] = '\0';
+ local_38.sa_data[12] = '\0';
+ local_38.sa_data[13] = '\0';
+ iVar1 = bind(__fd,(sockaddr *)&local_38,0x10);
+ if (-1 < iVar1) {
+ iVar1 = listen(__fd,5);
+ close(__fd);
+ uVar2 = 0xfffffffc;
+ if (-1 < iVar1) {
+ uVar2 = 0x2a;
+ }
+ return uVar2;
+ }
+ close(__fd);
+ return 0xfffffffd;
+ }
+ close(__fd);
+ return 0xfffffffe;
+}
+
+// Function: param_shmget_shmat @ 0x1023a8
+unsigned long param_shmget_shmat(void)
+{
+ int iVar1;
+ key_t __key;
+ unsigned long long *__s;
+ size_t sVar2;
+ iVar1 = open("/tmp/binbench_shm",0x42,0x1b6);
+ if (-1 < iVar1) {
+ close(iVar1);
+ __key = ftok("/tmp/binbench_shm",0x2a);
+ if (-1 < __key) {
+ iVar1 = shmget(__key,0x1000,0x3b6);
+ if (iVar1 < 0) {
+ return 0xfffffffe;
+ }
+ __s = (unsigned long long *)shmat(iVar1,(void *)0x0,0);
+ if (__s != (unsigned long long *)0xffffffffffffffff) {
+ *(unsigned long long *)((long)__s + 5) = 0x79726f6d654d64;
+ *__s = 0x654d646572616853;
+ sVar2 = strlen((char *)__s);
+ shmdt(__s);
+ shmctl(iVar1,0,NULL);
+ return sVar2 & 0xffffffff;
+ }
+ return 0xfffffffd;
+ }
+ }
+ return 0xffffffff;
+}
+
+// Function: call_shmget_shmat @ 0x1024a8
+unsigned int call_shmget_shmat(void)
+{
+ int iVar1;
+ unsigned int uVar2;
+ iVar1 = param_shmget_shmat();
+ uVar2 = 0x2a;
+ if (iVar1 < 1) {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+}
+
+// Function: param_signal_handling @ 0x1024c8
+unsigned long long param_signal_handling(void)
+{
+ bool bVar1;
+ bool bVar2;
+ __sighandler_t p_Var3;
+ int iVar4;
+ p_Var3 = signal(10,signal_handler);
+ if (p_Var3 == (__sighandler_t)0xffffffffffffffff) {
+ return 0xffffffff;
+ }
+ p_Var3 = signal(0xe,signal_handler);
+ if (p_Var3 == (__sighandler_t)0xffffffffffffffff) {
+ return 0xfffffffe;
+ }
+ signal_received = 0;
+ raise(10);
+ if (signal_received == 0) {
+ iVar4 = 1000;
+ do {
+ usleep(1000);
+ bVar2 = iVar4 != 0;
+ bVar1 = iVar4 != 1;
+ iVar4 = iVar4 + -1;
+ } while ((signal_received == 0 && bVar2) && (signal_received != 0 || bVar1));
+ }
+ if (signal_received == 0) {
+ return 0xfffffffd;
+ }
+ if (signal_number != 10) {
+ return 0xfffffffc;
+ }
+ signal_received = 0;
+ alarm(1);
+ if (signal_received == 0) {
+ iVar4 = 2000;
+ do {
+ usleep(1000);
+ bVar2 = iVar4 != 0;
+ bVar1 = iVar4 != 1;
+ iVar4 = iVar4 + -1;
+ } while ((signal_received == 0 && bVar2) && (signal_received != 0 || bVar1));
+ }
+ if ((signal_received != 0) && (signal_number == 0xe)) {
+ signal(10,(__sighandler_t)0x0);
+ signal(0xe,(__sighandler_t)0x0);
+ return 0x2a;
+ }
+ return 0xfffffffb;
+}
+
+// Function: signal_handler @ 0x102638
+void signal_handler(int param_1)
+{
+ signal_received = 1;
+ signal_number = param_1;
+ return;
+}
+
+// Function: test_system_calls @ 0x102654
+int test_system_calls(void)
+{
+ uint uVar1;
+ int iVar2;
+ __pid_t _Var3;
+ unsigned long uVar4;
+ int *piVar5;
+ uint uVar6;
+ uint local_a0 [12];
+ long local_70;
+ puts(DAT_001036d0);
+ uVar4 = syscall(0x38,0xffffff9c,"/etc/passwd",0);
+ iVar2 = (int)uVar4;
+ if (iVar2 < 0) {
+ piVar5 = __errno_location();
+ iVar2 = -*piVar5;
+ }
+ else {
+ syscall(0x39,uVar4 & 0xffffffff);
+ }
+ uVar6 = 0x2a;
+ uVar1 = uVar6;
+ if (iVar2 < 0) {
+ uVar1 = 0xffffffff;
+ }
+ printf(DAT_00103535,(unsigned long)uVar1);
+ iVar2 = stat("/etc/passwd",(struct stat *)local_a0);
+ if (((struct stat *)local_a0)->st_size < 1) {
+ uVar6 = 0xfffffffe;
+ }
+ if (iVar2 < 0) {
+ uVar6 = 0xffffffff;
+ }
+ printf(DAT_00103551,(unsigned long)uVar6);
+ _Var3 = fork();
+ if (-1 < _Var3) {
+ if (_Var3 == 0) {
+ execl("/bin/true","/bin/true",0,0);
+ _exit(0x7f);
+ }
+ _Var3 = waitpid(_Var3,(int *)local_a0,0);
+ if ((-1 < _Var3) && ((local_a0[0] & 0x7f) == 0)) {
+ uVar6 = 0x2a;
+ if ((local_a0[0] & 0xff00) != 0) {
+ uVar6 = 0xffffffff;
+ }
+ uVar4 = (unsigned long)uVar6;
+ goto LAB_00102724;
+ }
+ }
+ uVar4 = 0xffffffff;
+LAB_00102724:
+ iVar2 = printf(DAT_0010356d,uVar4);
+ uVar4 = param_pipe_communication();
+ iVar2 = printf(DAT_00103589,uVar4 & 0xffffffff);
+ uVar4 = param_socket_create();
+ iVar2 = printf(DAT_001035a5,uVar4 & 0xffffffff);
+ iVar2 = param_shmget_shmat();
+ uVar6 = 0x2a;
+ if (iVar2 < 1) {
+ uVar6 = 0xffffffff;
+ }
+ iVar2 = printf(DAT_001035c1,(unsigned long)uVar6);
+ uVar4 = param_signal_handling();
+ iVar2 = printf(DAT_001035dd,uVar4 & 0xffffffff);
+ return iVar2;
+}
+
+// Function: thread_compute @ 0x1027c4
+void *thread_compute(void *param_1)
+{
+ int iVar1;
+ int *piVar2;
+ iVar1 = *(int *)param_1;
+ piVar2 = (int *)malloc(4);
+ *piVar2 = iVar1 * iVar1;
+ return piVar2;
+}
+
+// Function: param_pthread_create @ 0x1027f0
+unsigned int param_pthread_create(unsigned int param_1)
+{
+ unsigned int uVar1;
+ int iVar2;
+ unsigned int *local_30;
+ unsigned int local_24;
+ pthread_t local_8;
+ local_24 = param_1;
+ iVar2 = pthread_create(&local_8,(pthread_attr_t *)0x0,thread_compute,&local_24);
+ if (iVar2 != 0) {
+ return 0xffffffff;
+ }
+ pthread_join(local_8,(void **)&local_30);
+ uVar1 = *local_30;
+ free(local_30);
+ return uVar1;
+}
+
+// Function: call_pthread_create @ 0x102864
+unsigned int call_pthread_create(void)
+{
+ unsigned int uVar1;
+ int iVar2;
+ unsigned int *local_30;
+ unsigned int local_24;
+ pthread_t local_8;
+ local_24 = 7;
+ iVar2 = pthread_create(&local_8,(pthread_attr_t *)0x0,(void *(*)(void *))thread_compute,&local_24);
+ if (iVar2 != 0) {
+ return 0xffffffff;
+ }
+ pthread_join(local_8,(void **)&local_30);
+ uVar1 = *local_30;
+ free(local_30);
+ return uVar1;
+}
+
+// Function: thread_sum @ 0x1028dc
+void *thread_sum(void *param_1)
+{
+ uint uVar1;
+ uint uVar2;
+ uint *puVar3 = (uint *)param_1;
+ uVar1 = puVar3[0];
+ uVar2 = puVar3[1];
+ puVar3[2] = 0;
+ if ((int)uVar1 <= (int)uVar2) {
+ puVar3[2] = uVar2 + (uVar2 - uVar1) * uVar1 +
+ (int)((unsigned long)(uVar2 + ~uVar1) * (unsigned long)(uVar2 - uVar1) >> 1);
+ }
+ return NULL;
+}
+
+// Function: param_pthread_join @ 0x102910
+int param_pthread_join(int dummy)
+{
+ int iVar1;
+ int iVar2;
+ int iVar3;
+ unsigned long long local_60;
+ int local_58;
+ unsigned int uStack_54;
+ unsigned int uStack_50;
+ int local_4c;
+ unsigned long long local_48;
+ int local_40;
+ pthread_t local_38;
+ pthread_t local_30;
+ pthread_t local_28;
+ local_58 = 0;
+ local_4c = 0;
+ local_40 = 0;
+ local_60 = 0xa00000001;
+ uStack_54 = 0xb;
+ uStack_50 = 0x14;
+ local_48 = 0x1e00000015;
+ iVar1 = pthread_create(&local_38,(pthread_attr_t *)0x0,(void *(*)(void *))thread_sum,&local_60);
+ if (iVar1 != 0) {
+ return -1;
+ }
+ iVar1 = pthread_create(&local_30,(pthread_attr_t *)0x0,(void *(*)(void *))thread_sum,&uStack_54);
+ if (iVar1 != 0) {
+ return -1;
+ }
+ iVar1 = pthread_create(&local_28,(pthread_attr_t *)0x0,(void *(*)(void *))thread_sum,&local_48);
+ if (iVar1 != 0) {
+ return -1;
+ }
+ iVar2 = pthread_join(local_38,(void **)0x0);
+ iVar1 = local_58;
+ if (iVar2 != 0) {
+ return -2;
+ }
+ iVar3 = pthread_join(local_30,(void **)0x0);
+ iVar2 = local_4c;
+ if (iVar3 != 0) {
+ return -2;
+ }
+ iVar3 = pthread_join(local_28,(void **)0x0);
+ if (iVar3 != 0) {
+ return -2;
+ }
+ return local_40 + iVar2 + iVar1;
+}
+
+// Function: thread_increment @ 0x102a80
+void *thread_increment(void *param_1)
+{
+ int iVar1;
+ iVar1 = *(int *)param_1;
+ if (0 < iVar1) {
+ do {
+ pthread_mutex_lock(&counter_mutex);
+ shared_counter = shared_counter + 1;
+ pthread_mutex_unlock(&counter_mutex);
+ usleep(1000);
+ iVar1 = iVar1 + -1;
+ } while (iVar1 != 0);
+ }
+ return NULL;
+}
+
+// Function: param_mutex_lock @ 0x102ae8
+unsigned int param_mutex_lock(unsigned long param_1,int param_2)
+{
+ int iVar1;
+ pthread_t *__ptr;
+ unsigned int uVar2;
+ int iVar3;
+ pthread_t *ppVar4;
+ long lVar5;
+ int local_34;
+ param_1 = param_1 & 0xffffffff;
+ local_34 = param_2;
+ __ptr = (pthread_t *)malloc(-(param_1 >> 0x1f) & 0xfffffff800000000 | param_1 << 3);
+ if (__ptr == (pthread_t *)0x0) {
+ return 0xffffffff;
+ }
+ iVar3 = (int)param_1;
+ shared_counter = 0;
+ if (0 < iVar3) {
+ lVar5 = 0;
+ do {
+ iVar1 = pthread_create((pthread_t *)((long)__ptr + lVar5),(pthread_attr_t *)0x0,
+ thread_increment,&local_34);
+ if (iVar1 != 0) {
+ free(__ptr);
+ return 0xfffffffe;
+ }
+ lVar5 = lVar5 + 8;
+ } while (param_1 * 8 - lVar5 != 0);
+ ppVar4 = __ptr;
+ if (0 < iVar3) {
+ do {
+ pthread_join(*ppVar4,NULL);
+ param_1 = param_1 - 1;
+ ppVar4 = ppVar4 + 1;
+ } while (param_1 != 0);
+ }
+ }
+ free(__ptr);
+ uVar2 = 0x2a;
+ if (shared_counter != local_34 * iVar3) {
+ uVar2 = 0xfffffffd;
+ }
+ return uVar2;
+}
+
+// Function: call_mutex_lock @ 0x102bfc
+void call_mutex_lock(void)
+{
+ param_mutex_lock(4,1000);
+ return;
+}
+
+// Function: consumer_thread @ 0x102c08
+void *consumer_thread(void *param_1)
+{
+ unsigned int *puVar1;
+ unsigned int uVar2;
+ pthread_mutex_lock(&cond_mutex);
+ if ((ready & 1) == 0) {
+ do {
+ pthread_cond_wait(&cond,&cond_mutex);
+ } while (ready != 1);
+ }
+ uVar2 = 0x2a;
+ if (data == '\0') {
+ uVar2 = 0;
+ }
+ pthread_mutex_unlock(&cond_mutex);
+ puVar1 = (unsigned int *)malloc(4);
+ *puVar1 = uVar2;
+ return puVar1;
+}
+
+// Function: producer_thread @ 0x102c7c
+void *producer_thread(void *param_1)
+{
+ sleep(1);
+ pthread_mutex_lock(&cond_mutex);
+ data = 1;
+ ready = 1;
+ pthread_cond_signal(&cond);
+ pthread_mutex_unlock(&cond_mutex);
+ return 0;
+}
+
+// Function: param_condition_variable @ 0x102cd8
+unsigned int param_condition_variable(int dummy)
+{
+ unsigned int uVar1;
+ int iVar2;
+ unsigned int *local_30;
+ pthread_t local_28;
+ pthread_t local_8;
+ ready = 0;
+ data = 0;
+ iVar2 = pthread_create(&local_28,(pthread_attr_t *)0x0,consumer_thread,(void *)0x0);
+ if (iVar2 != 0) {
+ return 0xffffffff;
+ }
+ iVar2 = pthread_create(&local_8,(pthread_attr_t *)0x0,producer_thread,(void *)0x0);
+ if (iVar2 != 0) {
+ pthread_cancel(local_28);
+ return 0xfffffffe;
+ }
+ pthread_join(local_28,(void **)&local_30);
+ pthread_join(local_8,(void **)0x0);
+ uVar1 = *local_30;
+ free(local_30);
+ return uVar1;
+}
+
+// Function: thread_atomic_increment @ 0x102da4
+void *thread_atomic_increment(void *param_1)
+{
+ int iVar1;
+ int iVar2;
+ iVar1 = *(int *)param_1;
+ if (0 < iVar1) {
+ iVar2 = 0;
+ do {
+ __aarch64_ldadd4_acq_rel(1,&atomic_counter);
+ __aarch64_cas4_acq_rel(iVar2,iVar2 + 1000,&atomic_counter);
+ iVar2 = iVar2 + 1;
+ } while (iVar2 != iVar1);
+ }
+ return NULL;
+}
+
+// Function: thread_atomic_load_store @ 0x102e08
+void *thread_atomic_load_store(void *param_1)
+{
+ atomic_counter = atomic_counter + 100;
+ return NULL;
+}
+
+// Function: param_atomic_ops @ 0x102e24
+unsigned int param_atomic_ops(unsigned long param_1,unsigned int param_2)
+{
+ int iVar1;
+ pthread_t *__ptr;
+ unsigned int uVar2;
+ pthread_t *ppVar3;
+ long lVar4;
+ pthread_t local_50;
+ unsigned int local_44;
+ param_1 = param_1 & 0xffffffff;
+ local_44 = param_2;
+ __ptr = (pthread_t *)malloc(-(param_1 >> 0x1f) & 0xfffffff800000000 | param_1 << 3);
+ if (__ptr == (pthread_t *)0x0) {
+ return 0xffffffff;
+ }
+ atomic_counter = 0;
+ if (0 < (int)param_1) {
+ lVar4 = 0;
+ do {
+ iVar1 = pthread_create((pthread_t *)((long)__ptr + lVar4),(pthread_attr_t *)0x0,
+ thread_atomic_increment,&local_44);
+ if (iVar1 != 0) {
+ free(__ptr);
+ return 0xfffffffe;
+ }
+ lVar4 = lVar4 + 8;
+ } while (param_1 * 8 - lVar4 != 0);
+ }
+ iVar1 = pthread_create(&local_50,(pthread_attr_t *)0x0,thread_atomic_load_store,(void *)0x0);
+ if (iVar1 == 0) {
+ pthread_join(local_50,NULL);
+ }
+ ppVar3 = __ptr;
+ if (0 < (int)param_1) {
+ do {
+ pthread_join(*ppVar3,NULL);
+ param_1 = param_1 - 1;
+ ppVar3 = ppVar3 + 1;
+ } while (param_1 != 0);
+ }
+ iVar1 = (int)atomic_counter;
+ free(__ptr);
+ uVar2 = 0x2a;
+ if (iVar1 < 1) {
+ uVar2 = 0xfffffffd;
+ }
+ return uVar2;
+}
+
+// Function: call_atomic_ops @ 0x102f60
+void call_atomic_ops(void)
+{
+ param_atomic_ops(4,500);
+ return;
+}
+
+// Function: thread_tls_test @ 0x102f6c
+void *thread_tls_test(void *param_1)
+{
+ int iVar1;
+ int iVar2;
+ long lVar3;
+ int *piVar4;
+ char *pcVar5;
+#ifdef __aarch64__
+ __asm__ volatile("mrs %0, tpidr_el0" : "=r"(lVar3));
+#else
+ /* Use compiler builtin for x86-64 */
+ lVar3 = (long)__builtin_thread_pointer();
+#endif
+ iVar2 = *(int *)(lVar3 + 0x10);
+ iVar1 = iVar2 + 0x32;
+ *(int *)(lVar3 + 0x10) = iVar1;
+ pcVar5 = (char *)param_1;
+ strncpy((char *)(lVar3 + 0x14),pcVar5,0x1f);
+ piVar4 = (int *)malloc(8);
+ *piVar4 = iVar2;
+ piVar4[1] = iVar1;
+ return piVar4;
+}
+
+// Function: param_thread_local_storage @ 0x102fbc
+unsigned int param_thread_local_storage(unsigned long param_1)
+{
+ int iVar1;
+ pthread_t *__ptr;
+ void **__ptr_00;
+ char *__s;
+ unsigned int uVar2;
+ int iVar3;
+ unsigned long uVar4;
+ unsigned long uVar5;
+ pthread_t *ppVar6;
+ int iVar7;
+ void **ppvVar8;
+ int *local_58;
+ param_1 = param_1 & 0xffffffff;
+ uVar5 = -(param_1 >> 0x1f) & 0xfffffff800000000 | param_1 << 3;
+ __ptr = (pthread_t *)malloc(uVar5);
+ __ptr_00 = (void **)malloc(uVar5);
+ if (__ptr == (pthread_t *)0x0) {
+ return 0xffffffff;
+ }
+ if (__ptr_00 == (void **)0x0) {
+ return 0xffffffff;
+ }
+ iVar3 = (int)param_1;
+ if (0 < iVar3) {
+ uVar5 = 0;
+ do {
+ __s = (char *)malloc(0x10);
+ __ptr_00[uVar5] = __s;
+ snprintf(__s,0x10,"Thread-%d",uVar5 & 0xffffffff);
+ uVar5 = uVar5 + 1;
+ } while (param_1 != uVar5);
+ if (0 < iVar3) {
+ uVar5 = 0;
+ ppVar6 = __ptr;
+ do {
+ iVar1 = pthread_create(ppVar6,(pthread_attr_t *)0x0,thread_tls_test,__ptr_00[uVar5]);
+ uVar5 = uVar5 + 1;
+ if (iVar1 != 0) {
+ uVar4 = 0;
+ do {
+ free(__ptr_00[uVar4]);
+ uVar4 = uVar4 + 1;
+ } while (uVar5 != uVar4);
+ free(__ptr_00);
+ free(__ptr);
+ return 0xfffffffe;
+ }
+ ppVar6 = ppVar6 + 1;
+ } while (param_1 != uVar5);
+ if (0 < iVar3) {
+ iVar7 = 0;
+ iVar1 = 0;
+ ppVar6 = __ptr;
+ ppvVar8 = __ptr_00;
+ do {
+ pthread_join(*ppVar6,(void **)&local_58);
+ iVar1 = *local_58 + iVar1;
+ iVar7 = local_58[1] + iVar7;
+ free(local_58);
+ free(*ppvVar8);
+ param_1 = param_1 - 1;
+ ppVar6 = ppVar6 + 1;
+ ppvVar8 = ppvVar8 + 1;
+ } while (param_1 != 0);
+ goto LAB_001030d8;
+ }
+ }
+ }
+ iVar1 = 0;
+ iVar7 = 0;
+LAB_001030d8:
+ free(__ptr_00);
+ free(__ptr);
+ uVar2 = 0x2a;
+ if (iVar7 != iVar3 * 0x96 || iVar1 != iVar3 * 100) {
+ uVar2 = 0xfffffffd;
+ }
+ return uVar2;
+}
+
+// Function: call_thread_local_storage @ 0x103158
+void call_thread_local_storage(void)
+{
+ param_thread_local_storage(4);
+ return;
+}
+
+// Function: test_thread_concurrency @ 0x103160
+int test_thread_concurrency(void)
+{
+ int iVar1;
+ unsigned long uVar2;
+ uint uVar3;
+ uint *local_30;
+ unsigned int local_24;
+ pthread_t local_8;
+ puts(DAT_001036eb);
+ local_24 = 7;
+ iVar1 = pthread_create(&local_8,(pthread_attr_t *)0x0,(void *(*)(void *))thread_compute,&local_24);
+ if (iVar1 == 0) {
+ pthread_join(local_8,(void **)&local_30);
+ uVar3 = *local_30;
+ free(local_30);
+ }
+ else {
+ uVar3 = 0xffffffff;
+ }
+ iVar1 = printf(DAT_00103603,(unsigned long)uVar3);
+ uVar2 = param_pthread_join(iVar1);
+ printf(DAT_0010361f,uVar2 & 0xffffffff);
+ uVar2 = param_mutex_lock(4,1000);
+ iVar1 = printf(DAT_0010363c,uVar2 & 0xffffffff);
+ uVar2 = param_condition_variable(iVar1);
+ printf(DAT_00103658,uVar2 & 0xffffffff);
+ uVar2 = param_atomic_ops(4,500);
+ printf(DAT_00103674,uVar2 & 0xffffffff);
+ uVar2 = param_thread_local_storage(4);
+ iVar1 = printf(DAT_00103690,uVar2 & 0xffffffff);
+ return iVar1;
+}
+
+// Function: main @ 0x103258
+int main(int argc, char **argv, char **envp)
+{
+ test_standard_library_functions();
+ test_system_calls();
+ test_thread_concurrency();
+ return 0;
+}
+
+// Function: __aarch64_cas4_acq_rel @ 0x103280
+int __aarch64_cas4_acq_rel(int param_1,int param_2,int *param_3)
+{
+ char cVar1;
+ bool bVar2;
+ int iVar3;
+ if (__aarch64_have_lse_atomics != '\0') {
+ iVar3 = *param_3;
+ if (iVar3 == param_1) {
+ *param_3 = param_2;
+ }
+ return iVar3;
+ }
+ do {
+ iVar3 = *param_3;
+ if (*param_3 != param_1) {
+ return iVar3;
+ }
+ cVar1 = '\x01';
+ bVar2 = (bool)ExclusiveMonitorPass(param_3,0x10);
+ if (bVar2) {
+ *param_3 = param_2;
+ cVar1 = ExclusiveMonitorsStatus();
+ }
+ } while (cVar1 != '\0');
+ return iVar3;
+}
+
+// Function: __aarch64_ldadd4_acq_rel @ 0x1032c0
+int __aarch64_ldadd4_acq_rel(int param_1,int *param_2)
+{
+ int iVar1;
+ char cVar2;
+ bool bVar3;
+ int tmp_ldWn;
+ int tmp_stWn;
+ if (__aarch64_have_lse_atomics == '\0') {
+ do {
+ iVar1 = *param_2;
+ cVar2 = '\x01';
+ bVar3 = (bool)ExclusiveMonitorPass(param_2,0x10);
+ if (bVar3) {
+ *param_2 = iVar1 + param_1;
+ cVar2 = ExclusiveMonitorsStatus();
+ }
+ } while (cVar2 != '\0');
+ return iVar1;
+ }
+ LOAcquire();
+ tmp_ldWn = *param_2;
+ iVar1 = tmp_ldWn;
+ tmp_stWn = iVar1 + param_1;
+ iVar1 = tmp_stWn;
+ *param_2 = iVar1;
+ iVar1 = tmp_ldWn;
+ LORelease();
+ return iVar1;
+}
+
+// Function: _fini @ 0x1032f0
+void _fini(void)
+{
+  __do_global_dtors_aux();
+  return;
+}
+

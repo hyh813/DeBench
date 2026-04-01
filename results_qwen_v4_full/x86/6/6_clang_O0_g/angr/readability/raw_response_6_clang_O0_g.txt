@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v0`, `v1`, `ptr`, `v2`) obscuring semantic meaning. Some better names exist (`dst`, `len`, `fp`, `pid`, `sock`, `count`, `idx`) but original names like `buffer`, `write_data`, `shared_counter` are lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but many unnecessary wrapper functions with generic names exist (`sub_401551`, `sub_4015a3`, `sub_402116`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (should be `-1`), `42`, `1000` appear without explanation. String literals preserved well ("HelloLib", "/etc/passwd"), but error codes shown as unsigned values obscure meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary wrapper functions (`sub_401551` just calls `param_strcpy`), repeated GOT loading (`v0 = &_GLOBAL_OFFSET_TABLE_`), and compiler initialization artifacts (`deregister_tm_clones`, `register_tm_clones`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow preserved (if-else, for loops), but signal handling uses awkward `while(true)` with break instead of natural conditions. Some nested conditionals could be flattened.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Core functions appropriately sized, but unnecessary wrapper fragmentation exists (every function has a `sub_XXXXXX` wrapper). Thread functions properly separated but wrapper pattern adds noise.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate loop structures. Signal handling code has complex nested while loops that disrupt flow. Some forward references present.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments common (`v0 = v1; v1 = v0` patterns). GOT loading repeated in nearly every function. No dead code removal from debug compilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `unsigned int` instead of `int32_t`, `size_t`, or `ssize_t`. `FILE*` recovered for file operations, but pointer types often lost. Signed/unsigned correctness frequently wrong (error codes as unsigned).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_0`, `struct_1`, `FILE`, `sockaddr`) but with generic field names (`field_0`, `padding_0`). `ThreadData` struct not recovered—shown as array access (`ptr[2]`, `ptr[1]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible, pointer arithmetic without proper typing, `void*` usage where specific types expected. Thread function signatures show type confusion (`unsigned int *` vs `char *`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments recovered from source code. No decompilation confidence indicators. Only one anomaly note: "[D] Unsupported jumpkind Ijk_SigTRAP". No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcmp`, `pthread_create`). Thread patterns partially identified but no design pattern naming. Atomic operations shown as `atomic_exchange_add` without context.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (Ijk_SigTRAP). Signal handling code has no warnings about async-signal-safety requirements. Indirect calls not flagged for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred. Error conditions not documented. Return value semantics unclear.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graphs. Global variable usage not clearly indicated (`signal_received`, `atomic_counter`). Callback relationships implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source sections (library, syscall, thread). Test functions grouped together. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External declarations present but would require significant stubs. Platform mismatch (source ARM64, decompilation X86). GOT references need resolution. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+5)/2     = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (4+3+5+6+4)/5 = 4.40 × 0.10 = 0.44
+
+Overall Score: 4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` should be named based on usage (e.g., `result`, `error_code`, `file_descriptor`)
+- Magic number `4294967295` should be displayed as `-1` for signed error codes
+- Unnecessary wrapper functions (`sub_401551`, `sub_4015a3`) add noise without value
+- No comments recovered despite `-g` debug symbols being available
+- `ThreadData` struct not recovered, shown as raw array access (`ptr[2]`, `ptr[1]`)
+- Platform mismatch (ARM64 source vs X86 decompilation) indicates configuration issue
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names preserved from source (`param_strcpy`, `param_mutex_lock`, `param_signal_handling`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments recovered despite debug symbols (`-g` flag). This is the most severe degradation as it eliminates all semantic documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol variable names** - With `-g` flag present, Ghidra should extract original variable names from DWARF debug info instead of generating `v0`, `v1`, etc.
+2. **Add semantic comments for standard library patterns** - Recognize `strcpy`+`strlen` pattern and add comment "Copies string and returns length" to aid understanding.
+3. **Eliminate wrapper function fragmentation** - Detect and merge trivial wrapper functions (`sub_401551` → `param_strcpy`) that add no semantic value.

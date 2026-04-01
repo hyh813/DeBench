@@ -1,0 +1,101 @@
+## EVALUATION REPORT: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3` instead of semantic names like `dst`, `src`, `buffer`, `filename`. For example, `param_strcpy(char *a1, const char *a2)` loses the meaningful `dst`/`src` distinction from source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_strcpy`, `call_strcmp`, `param_fork_exec`). Thread helper functions like `thread_compute` and `thread_sum` are also descriptive.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: signal numbers as `10`/`14` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2`/`1` instead of `AF_INET`/`SOCK_STREAM`, hex values like `0x3E8u` (1000) without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack annotations clutter code (`[sp+8h] [bp-20h] BYREF`), 64 `FAILED to decompile` markers at end, and metadata inconsistency (claims IDA Pro but metadata says Ghidra).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for/while constructs generally well. Signal handling uses awkward `while ( 1 ) { ... if ( !v4 ) break; }` pattern instead of cleaner `while (signal_received && attempts-- > 0)`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with single responsibility. Thread functions properly separated (`thread_compute`, `thread_sum`, `consumer_thread`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. `param_socket_create` has deep nested if-else chains that could be flattened. Most functions have reasonable nesting depth.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Pattern like `v2 = -3; if ( v4 ) return 42; return v2;` appears frequently. Some redundant variable assignments from compiler optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Lost const-correctness (`const char *a1` becomes `char *a1`). Generic `int` used where `size_t`, `ssize_t`, `pid_t` would be appropriate. `pthread_t` sometimes shown as array `[2]`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. `ThreadData` struct flattened to array access `s[3 * i]`. `sockaddr` and `stat` referenced but fields not properly named. Critical loss of semantic structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD *)`, `(char *)`, `(void *(*)(void *))`. Pointer arithmetic on generic types throughout. Function pointer casts lose type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except decompiler-generated headers. No algorithm explanations, no API contract documentation, no decompilation confidence indicators for ambiguous code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcpy`). Thread/concurrency patterns visible but not named (no "producer-consumer", "mutex-protected counter" identification).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 64 failed decompilations listed at end but no inline warnings. No indication of uncertain indirect calls or potential undefined behavior within function bodies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: a1 != NULL"). Error return values present but not explained. No postcondition or invariant recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) referenced without context or usage summary.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. Original section organization (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) not preserved. No logical grouping comments.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 64 functions failed to decompile with `__imp_*` markers. Would require extensive stubbing and library function declarations to compile. Architecture mismatch (arm32 vs arm64).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):   (7+8+7+6)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type System):  (5+3+4)/3 = 4.00    × 0.20 = 0.80
+Level 4 (Semantic):     (2+5+4+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):   (5+4+3)/3 = 4.00    × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  5.09/10
+```
+
+### Overall Readability Score: **5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`...) losing all semantic meaning from original (`dst`, `src`, `buffer`, `filename`)
+- **64 functions failed to decompile** with no inline context, requiring extensive manual recovery
+- **No struct type recovery** - `ThreadData` flattened to array access `s[3 * i]` losing field semantics
+- **Magic numbers everywhere** - signal numbers (10, 14), socket constants (2, 1), permissions (66, 438) without explanation
+- **Zero documentation** - no comments explaining algorithm intent, error conditions, or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names like `param_strcpy`, `call_fork_exec`, `param_mutex_lock` accurately preserved from source, maintaining semantic clarity at the function level.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Decompiled output contains virtually no explanatory comments, making it difficult to understand non-obvious logic or decompilation confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_ptr`, used in loop bound → `count`) to generate semantic names instead of `v1`, `v2`.
+2. **Recover and document struct types** - Instead of flattening structs to array access, reconstruct struct definitions with field names based on access patterns and type analysis.
+3. **Add decompilation confidence annotations** - Insert inline comments for uncertain reconstructions (e.g., `// UNCERTAIN: indirect call target`, `// Magic number 0x3E8 may be timeout value`) to guide manual review.

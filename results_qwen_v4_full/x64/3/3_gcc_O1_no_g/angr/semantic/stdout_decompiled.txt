@@ -1,0 +1,2 @@
+Stack Memory Test
+MEM-L1-01 (local_vars): 20

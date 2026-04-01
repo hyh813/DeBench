@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_clang_O0_no_g/binaryai/syntactic/bin/7_clang_O0_no_g_fixed",
+  "stdout": "call_fake_branch: 20\ncall_opaque_predicate: 225\ncall_instruction_substitution: 0\ncall_string_encryption: 500500\ncall_tail_call_optimized: 5050\ncall_non_tail_call: 2289427929\ncall_vectorized_loop: 20\ncall_link_time_optimization: 1\ncall_division_by_zero: 41\ncall_null_pointer_deref: 30\ncall_buffer_overflow: 2000000000\ncall_integer_overflow: 10\ncall_undefined_behavior: 47\ncall_implementation_defined: 2437864032\ndone\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

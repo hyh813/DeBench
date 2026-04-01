@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_gcc_O1_no_g/ghidra/syntactic/bin/7_gcc_O1_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization...\n\nopaque_predicate: 10\ncall_opaque_predicate: 20\ninstruction_substitution: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

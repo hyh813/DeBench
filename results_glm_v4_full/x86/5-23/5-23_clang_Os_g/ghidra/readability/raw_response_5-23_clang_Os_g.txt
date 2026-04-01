@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `iVar1`, `iVar2`, `local_3c`, and `uStack_38`, which obscure semantic meaning. While function parameters (`size`, `x`, `y`) are recovered correctly, local stack variables lack descriptive identifiers.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most user-defined functions retain their original names (e.g., `param_macro_constants`, `test_asm_features`), providing clear semantic context. Only a few utility functions like `FUN_00011030` lack meaningful names.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are consistently represented in hexadecimal (e.g., `0x200` instead of `512`, `0x40` instead of `64`), which requires mental conversion to understand the logic. String literals are recovered well, but numeric constants lack the clarity of the original source's named macros.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output is cluttered with compiler artifacts and Ghidra-specific annotations, such as `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and the pervasive use of `undefined4`/`undefined1` types, which significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally excellent; loops and conditionals are reconstructed into idiomatic C (e.g., `for` loops in `param_asm_clobber`). The logic is easy to follow, despite the underlying compiler optimizations.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are preserved with appropriate granularity matching the source. The decompiler did not artificially merge or fragment functions, maintaining a clean modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumps or goto statements. Early returns and loop structures are placed naturally, allowing for top-to-bottom comprehension.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations (e.g., constant propagation in `call_macro_constants`) without introducing redundant variables or dead code that would confuse the reader.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type information is severely degraded; standard types are replaced with `undefined4` (int) and `undefined1` (char). While pointer types (`void *`, `int *`) are often correct, the use of `undefined` types makes the code look like a raw memory dump.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Arrays are identified (e.g., `local_1c [6]`), but they lack semantic context or element type specificity (often `undefined`). No complex structs were present in the source to test, but the array handling is basic.
+
+**11. Type Safety:** Score: 5/10
+Justification: Pointer arithmetic is present but obscured by casts to `undefined1 *` (e.g., `*(undefined1 *)dst = *(undefined1 *)src;`). While functionally correct, these casts are unsafe and ugly compared to standard `char*` usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost exclusively Ghidra warnings (e.g., "WARNING: Removing unreachable block") rather than explanatory notes about the code's logic or purpose. There are no comments explaining the "why" of the code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Some idioms are recognized, such as representing atomic operations with `LOCK()` and `UNLOCK()` macros, though these are non-standard. SIMD operations are de-vectorized into scalar code, losing the original idiom.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra clearly flags potential issues like "Unknown calling convention" and "Unresolved local var", which is helpful for the analyst to know where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. The logic is presented flatly without any semantic contracts regarding inputs or outputs.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. The relationship between callers and callees is easy to trace, as seen in the `test_*` functions calling their respective `param_*` implementations.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, generally matching the source file structure. Related test functions are grouped together (e.g., `test_preprocessing_features`).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile standalone due to `undefined` types, `LOCK()`/`UNLOCK()` macro definitions, and injected function references (e.g., `get_pc_thunk_bx`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variables named `iVar1`, `local_3c`, and `uStack_38` obscure the semantic purpose of stack variables.
+- Pervasive use of `undefined4` and `undefined1` types instead of standard C types (`int`, `char`).
+- Magic numbers are displayed in hex (e.g., `0x200`) without comments indicating their decimal value or original macro name.
+- `param_variadic_macro` shows parameter confusion in the decompiled logic (`return y + 0x32` vs source `return x + 50`), indicating a register mapping error.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)
+- The decompiler successfully reconstructed complex loops and conditionals into readable C constructs, making the execution path easy to follow despite the optimization level.
+
+**Most Needs Improvement:** Type Precision (scored 3/10)
+- The reliance on `undefined` types makes the code difficult to read and impossible to compile without significant manual intervention to correct types.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive type propagation to replace `undefined` types with concrete types (e.g., `int`, `char`) based on register usage and function signatures.
+2. Add a post-processing pass to convert hex literals to decimal when they represent simple counts or sizes, or append the decimal value as a comment.
+3. Improve variable naming heuristics to infer names from context (e.g., naming a variable used in a loop `i` or `index` instead of `iVar2`).

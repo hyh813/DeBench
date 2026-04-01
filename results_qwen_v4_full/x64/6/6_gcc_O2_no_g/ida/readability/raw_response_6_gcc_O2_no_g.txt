@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `v3`) with no semantic meaning. For example, `param_strcpy` uses `a1` and `a2` instead of `dst` and `src`, and `thread_sum` uses `a1` instead of `data` or `thread_data`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `param_strcpy`, `thread_compute`, `signal_handler` retained original names, but 40+ helper functions are named `sub_2020`, `sub_2030`, etc. with no semantic meaning. Test functions like `call_strcpy` are preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `syscall(2, a1, 0)` instead of `SYS_open`, `signal(10, signal_handler)` instead of `SIGUSR1`, `0x3E8u` instead of `1000`. String literals preserved but numeric constants not recovered to named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) present throughout. Some redundant type casts (`(unsigned int)`, `(__int64)`). However, no excessive dead code or debug instrumentation visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` or `for` constructs. However, `param_strcmp` uses awkward conditional logic (`result = (unsigned int)-(v2 != 0)`) instead of clean ternary. Signal handling loops are readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Thread functions (`thread_compute`, `thread_sum`, `thread_increment`) properly separated. No monolithic functions observed; each has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error paths. Some functions like `param_fread_fwrite` have nested conditionals but remain traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding occurred (`call_strcpy` returns literal `8` instead of computing). `call_memcmp` inlines the entire comparison logic instead of calling `param_memcmp`. Some duplicate error handling patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`__int64`, `_DWORD`, `_QWORD`) instead of precise types (`size_t`, `int32_t`, `pid_t`). Pointer types often degraded to `void*`. Return types frequently `__int64` regardless of actual return type.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct lost - accessed as array (`a1[0]`, `a1[1]`, `a1[2]`). `sockaddr` partially recovered but fields accessed generically. `struct stat` recovered with `st_size` field visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(_DWORD)v5 - (_DWORD)haystack` in `param_strchr_strstr`. Thread function pointers cast as `(void *(*)(void *))`. No buffer overflow warnings despite `strcpy` usage.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only one header comment present ("Decompiled by IDA Pro 9.1"). No function-level comments explaining purpose. No parameter documentation. Zero algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `pthread_create`) recognized and named. Atomic operations converted to `_InterlockedAdd` (Windows intrinsics). Producer-consumer pattern in `param_condition_variable` not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 60 functions marked "FAILED to decompile" at end but no inline warnings. Stack canary warning present in `_start` ("positive sp value has been detected"). No indirect call resolution warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). No postconditions inferred. Error return values (`-1`, `0xFFFFFFFFLL`) not explained. No invariant documentation for shared state.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without declaration context. Callback relationships (thread functions) not explicitly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output. Related functions grouped (thread functions together, syscall functions together). No header file separation. Static variables not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 60 external functions marked "FAILED to decompile" requiring stubs. Platform-specific intrinsics (`_InterlockedAdd`) need Windows headers. Missing includes for pthread, syscall, socket APIs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall = 1.35 + 1.56 + 0.93 + 0.41 + 0.47 = 4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`) losing all semantic meaning from source (`dst`, `src`, `buffer`)
+- **60 functions failed decompilation** including critical libc functions (`malloc`, `free`, `pthread_create`) with no recovery strategy
+- **Magic numbers not recovered** (`syscall(2, ...)` instead of `SYS_open`, `signal(10, ...)` instead of `SIGUSR1`)
+- **Zero comments** explaining function purpose, algorithm, or decompilation confidence
+- **Type precision degraded** (`__int64` everywhere instead of `size_t`, `pid_t`, `ssize_t`)
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Function boundaries correctly identified with appropriate granularity matching source structure
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation makes understanding intent nearly impossible without source comparison
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** by analyzing usage patterns (e.g., variables passed to `strcpy` first parameter should be `dst`)
+2. **Recover symbolic constants** from syscall numbers, signal numbers, and socket constants using platform databases
+3. **Add decompilation confidence annotations** indicating which code paths are certain vs. inferred, especially for the 60 failed functions

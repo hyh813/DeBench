@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: While parameter names (`a`, `b`, `c`) are preserved, meaningful local variables like `sum`, `count`, and `result` are often replaced with generic names like `v1`, `v2`, or `result` (e.g., `loop_for_fixed` uses `v1` and `v2` instead of `i` and `sum`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `sequential_ops`, `duffs_device`, `opaque_predicate`), indicating excellent symbol recovery or precise naming logic.
+
+**3. Literal Clarity:** Score: 9/10
+Justification: Magic numbers from the source (e.g., `10`, `5`, `100`) are preserved accurately. Since the source lacked named constants for these values, the decompiler correctly reflects the original code's literal usage.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The decompiled code is polluted with stack canary checks (`__readgsdword(0x14u)`) in almost every function with local arrays (e.g., `loop_break`, `loop_multi_exit`), which significantly hinders readability by inserting compiler-specific security artifacts into the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural; `goto_forward` and `goto_backward` were successfully reconstructed into linear code and `do-while` loops respectively. However, `duffs_device` decompiles into a complex web of labels and gotos (`_L174`, `LABEL_7`), failing to recover the structured `switch`-inside-`do-while` idiom.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. There is no inlining of logic into `main` or `test` functions beyond constant propagation, maintaining the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. Some `for` loops are converted to `do-while` with pre-checks (e.g., `loop_for_fixed`), which is a standard decompilation pattern that remains easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler effectively removed dead code, such as the impossible branch in `obfuscated_cf` (returning `2*x` directly). It also folded simple arithmetic in `sequential_ops` (`2*(a+b)-c`), which is cleaner than the source's verbose intermediate steps.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are accurately recovered, including `int` and pointers. The `volatile` qualifier in `infinite_loop` and `loop_external_state` is correctly preserved, which is crucial for semantic correctness.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Arrays and multidimensional arrays are perfectly reconstructed (e.g., `int matrix[3][4]` in `loop_multi_exit` and `int arr[5]` in `loop_break`), maintaining the original structure without resorting to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 9/10
+Justification: The code is type-safe with no spurious casts. The use of `__readgsdword` is a compiler intrinsic for stack protection and is contextually appropriate, not a safety violation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic like `duffs_device` or `state_machine` lacks any explanatory text, leaving the user to deduce the algorithm purely from structure.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard patterns like recursion (`recursion_factorial`) and loops are recognized, but specific idioms like Duff's Device are not identified; they are presented as raw control flow spaghetti rather than the optimized memory copy pattern they represent.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The `computed_goto` function falls back to inline assembly (`__asm { jmp ... }`) without a warning explaining *why* (GCC labels-as-values extension), effectively hiding the logic behind an opaque block.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, `duffs_device` requires `n > 0`, but this contract is not mentioned in the decompiled output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. Function pointer arrays (e.g., in `large_jump_table`) are initialized with the correct function addresses, making the dispatch logic easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure. Helper functions like `double_value` are placed near their usage in `call_func_ptr_array`.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on compiler intrinsics like `__readgsdword` and inline `__asm` blocks, which are specific to x86/Windows environments and would not compile on a generic ARM or Linux system without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 7.75
+L2_avg: 8.50
+L3_avg: 9.33
+L4_avg: 2.75
+L5_avg: 7.33
+
+Overall = (7.75 × 0.30) + (8.50 × 0.25) + (9.33 × 0.20) + 
+          (2.75 × 0.15) + (7.33 × 0.10)
+Overall = 2.325 + 2.125 + 1.866 + 0.4125 + 0.733
+Overall = 7.46
+```
+
+**Overall Readability Score:** 7.5/10
+
+### Critical Defects
+- **Variable Name Loss**: Semantic variables like `sum` and `count` are replaced with generic names `v1`, `v2`, reducing code self-documentation.
+- **Stack Canary Noise**: `__readgsdword(0x14u)` checks are inserted into almost every function with local arrays, cluttering the logic.
+- **Duff's Device Failure**: The `duffs_device` function decompiles into unstructured goto-label spaghetti instead of the canonical `switch`-loop structure.
+- **Computed Goto Opaqueness**: The `computed_goto` function relies on inline assembly, completely obscuring the high-level jump table logic.
+- **Missing Documentation**: Zero comments or annotations for complex algorithms (state machines, recursion) or unusual constructs.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly recovered all original function names, providing immediate context for every code block.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: The complete absence of comments, especially for complex control flow like `duffs_device` or `state_machine`, significantly hampers quick understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Heuristic Variable Renaming**: Implement type-based and usage-based heuristics to rename generic variables (e.g., variables accumulating in a loop should be named `sum` or `acc`).
+2.  **Pattern Matching for Duff's Device**: Add specific detection for the `switch`-inside-`do-while` pattern to reconstruct the original C idiom rather than emitting a graph of labels.
+3.  **Noise Filtering Options**: Provide a toggle to suppress stack canary checks (e.g., `__readgsdword`) and other security instrumentation to clean up the control flow.

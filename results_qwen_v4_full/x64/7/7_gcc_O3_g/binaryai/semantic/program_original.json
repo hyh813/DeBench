@@ -1,0 +1,10 @@
+{
+  "binary_path": "build/x64/7/7_gcc_O3_g",
+  "stdout": "=== 测试混淆、优化与边界情况 ===\nOBF-L4-02: 10 (期望: 10)\nOBF-L4-03: 20 (期望: 20)\nOBF-L4-04: 225 (期望: 225)\nOBF-L4-05: 68 (期望: 68)\nOPT-L4-01 尾递归: 500500 (期望: 500500)\nOPT-L4-01 非尾: 5050 (期望: 5050)\nOPT-L4-02 向量化: 72 (期望: 72)\nOPT-L5-01 LTO: 20 (期望: 20)\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

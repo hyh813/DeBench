@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names: `param_1`, `param_2`, `iVar1`, `uVar1`, `piVar1`, etc. No semantic meaning is recovered; original variable names like `c`, `a`, `b`, `arr`, `str`, `p` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `process_char`, `process_short`, `array_1d_stack`, `ptr_double`, `struct_simple`, etc. Only `opaque_handle_create` returns void with no implementation, and floating-point library functions have generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xbfU`, `0x1a`, `0x3fc00000` (float 1.5) are used directly without explanation. The character literal ` ' '` (space) is converted to its numeric value. Some literals like `0` for NULL are clear. Original named constants like `STATE_RUNNING` are lost.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean output with minimal compiler artifacts. No debug instrumentation, frame pointer manipulation, or redundant casts. Library functions properly declared as external. Only minor noise from `UNRECOVERED_JUMPTABLE` placeholder.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures are properly recovered as while/do-while constructs. However, `array_3d` uses overly complex pointer arithmetic with negative indices (`iVar1 * -4`) that obscures the triple nested loop structure. Some expressions like `(param_2 + param_1) * 0x10000 >> 0x16` for `short` addition are awkward.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain reasonable granularity (10-50 lines). Each test function groups related operations. `main` properly calls four test functions. Some floating-point library functions are duplicated (`__adddf3`, `__subdf3`), but this is compiler/library artifact.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately (e.g., `if (param_1 == (int *)0x0) return 0;`). Some functions have deeper nesting (3-4 levels in `array_3d`, `binary_tree_sum`) which is acceptable for the algorithms.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal. Some repetitive logic in floating-point functions but that's expected library code. `ptr_void` could be cleaner but is acceptable.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation. Original `short` becomes `int` with weird arithmetic. `long` and `long long` become `undefined8` or `int`. `float` becomes `undefined4` or `uint`. `double` becomes `undefined4,undefined4` pairs. `char` preserved. Function pointers become `code *` or `undefined4 *`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct fields are accessible via array indexing (`param_1[0]`, `param_1[1]`, `param_1[2]`) losing semantic names. Nested structures like `Rect`, `Style`, `Widget` work but lose field names. Unions are treated as raw memory with no type discrimination. Bitfields work via masking but lose field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe patterns: `ptr_triple` uses `undefined4 *` for `int ***` requiring triple dereference. `ptr_offset` returns `undefined4` instead of `int*`. `ptr_diff` has `param_1 - param_2 >> 2` which is questionable pointer arithmetic. Multiple implicit casts in floating-point operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled output except `// Decompiled by BinaryAI` header and function declarations. Original Chinese comments in source completely lost. No algorithm explanations, no non-obvious logic documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Common patterns like linked list traversal (`while (current != NULL)`), array summation loops, and tree recursion are recognizable. Switch statement replaced with indexed lookup table (`&UNK_000124f8 + param_1 * 4`). Complex indexing patterns in `array_3d` hide the original idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` marks unresolvable function pointers. Library functions marked `<EXTERNAL>`. No indication of potential undefined behavior in `array_oob` (intentional bug in source). No warnings about unusual stack layouts or suspicious code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks are present in code but not annotated. Original error handling behavior is not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear from code structure (`main` calls test functions). External dependencies properly marked (`printf`, `memset`, `puts`). Callbacks like `ptr_func_simple(f)(x)` are resolvable. Global `jump_buffer` comment in source not recovered.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically matching source organization: data type functions, array functions, pointer functions, struct functions. Static functions properly scoped. Test functions grouped separately. External/library functions at top.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require extensive patching to compile. Missing `stdio.h`, `setjmp.h` declarations. `undefined4`, `undefined8`, `bool` types need definitions. Library stubs needed. Would not compile as-is.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names completely lost (`param_1`, `iVar1` instead of semantic names like `x`, `sum`, `arr`)
+- All struct/union field names lost (only array indexing like `param_1[2]` remains)
+- Type precision severely degraded (`short` → `int`, `float` → `undefined4`, `long long` → `undefined8`)
+- No comments explaining algorithms, magic numbers, or complex logic
+- Enum constants lost (e.g., `STATE_RUNNING` becomes raw integers)
+- Floating-point functions have no semantic recovery
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Functions maintain appropriate size and scope matching original
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10) and Comment Quality (scored 2/10)  
+- Generic variable names make code nearly impossible to follow without constant reference to source
+- Complete lack of comments leaves algorithm intent unexplained
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., loop counter, array index, sum accumulator)
+2. Recover struct/union field names based on type layouts and offsets
+3. Add basic comments explaining algorithm purpose and any recovered constants/enums

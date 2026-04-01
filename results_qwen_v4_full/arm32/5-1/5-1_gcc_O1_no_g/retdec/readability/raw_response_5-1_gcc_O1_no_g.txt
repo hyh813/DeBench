@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `str`) with no semantic meaning. Original code had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mangled names preserved (`_Z20test_cpp_member_funcv`) with demangling comments, but not converted to readable C identifiers. Some functions like `function_10a9c` have no semantic meaning at all.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout (`0x125c`, `0x112b4`, `0x40040000`) without explanation. String literals stored as globals (`g1`, `g2`) with UTF-8 encoded Chinese text that's unreadable in decompiled form.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some unnecessary casts present (`(int32_t)(float32_t)v2`), but not excessive compiler artifacts. Frame pointer manipulation is minimal due to -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Several functions completely simplified to return constants (`test_cpp_multiple_inheritance` returns 71 directly). Exception handling has confusing if-else chains that don't match original try-catch structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are incorrect or incomplete. Class methods merged incorrectly (constructor comments on wrong functions like `test_cpp_virtual_func`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but exception handling code has confusing conditional patterns that disrupt flow. Most test functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Vtable struct definitions are duplicated (`vtable_1187c_type` and `vtable_11894_type` are identical). Some redundant type conversions present but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `int32_t` where specific types should exist. Class types completely lost, everything becomes `int32_t*`. Original `std::unique_ptr`, `Container<T>` types are gone.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtables recovered as structs but class layouts completely lost. No proper class hierarchy recovery - `SimpleClass`, `LifecycleClass`, `Point` structures are missing entirely.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Many unsafe casts (`(int32_t)this`, `(int32_t)&g17`). No const-correctness preserved. Pointer arithmetic on class objects (`*(int32_t *)((int32_t)result + 4)`) is error-prone.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments ("From class:", "Type:", "Demangled:"). No explanation of complex logic like virtual dispatch or exception handling mechanisms.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized at all. RAII patterns, virtual dispatch, template instantiation, lambda captures are all lost. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain decompilation. Functions that return constants (`test_cpp_smart_ptr` returns 703) give no warning that logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original code's expected values (注释中的"期望: 4704") are not recovered as assertions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Vtable connections not explained. Virtual dispatch mechanism opaque (`_ZTv0_n12_N14DiamondDerived4funcEv` is a thunk with no explanation).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All in one file with some grouping (prototypes, globals, functions). Class methods scattered without logical grouping by class.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and function declarations but would need significant work to compile. Missing C++ standard library implementations, exception runtime dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+6)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+6+6)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (3+3+2)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (3+2+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              3.81/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **All class structures lost** - `SimpleClass`, `LifecycleClass`, `Point`, `Container<T>` completely missing from decompiled output
+- **Variable names are all generic** (`v1`, `v2`, `v3`) with zero semantic meaning
+- **Several functions return hardcoded constants** (`test_cpp_multiple_inheritance` = 71, `test_cpp_smart_ptr` = 703) indicating logic loss
+- **Template functions have incorrect signatures** - `template_max<double>` has wrong parameters (`this`, `result`, `a3`, `a4`)
+- **Exception handling logic is broken** - try-catch blocks converted to confusing if-else chains that don't match semantics
+- **Lambda expressions completely lost** - `test_cpp_lambda` function is missing entirely from decompiled output
+
+### Best Quality Aspect:
+- **Noise Reduction (6/10)** - At -O0 optimization level, the decompiler avoided excessive compiler artifacts and the code is relatively clean without spurious register spilling code.
+
+### Most Needs Improvement:
+- **Type System Fidelity (2.67/10 average)** - Complete loss of C++ class types, templates, and smart pointer semantics makes the code fundamentally different from the original object-oriented design.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable function pointers to reconstruct class hierarchies with proper field offsets and inheritance relationships.
+
+2. **Preserve demangled function names as C identifiers** - Convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func` instead of keeping mangled names with comments.
+
+3. **Detect and flag logic simplification** - When functions are reduced to constant returns, add warnings like `// WARNING: Function body simplified, original logic not recovered` to indicate decompilation uncertainty.

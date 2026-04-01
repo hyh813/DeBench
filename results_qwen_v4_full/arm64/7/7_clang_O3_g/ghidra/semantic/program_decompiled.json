@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_clang_O3_g/ghidra/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "Test Output:\n\ncall_fake_branch: 10\ncall_opaque_predicate: 20\ncall_instruction_substitution: 225\nparam_string_encryption: 0\ncall_tail_call_optimized: 500500\ncall_non_tail_call: 5050\ncall_vectorized_loop: 72\ncall_link_time_optimization: 20\ncall_division_by_zero: 2\ncall_null_pointer_deref: 41\ncall_buffer_overflow: 30\ncall_integer_overflow: 2000000000\ncall_undefined_behavior: 10\ncall_implementation_defined: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

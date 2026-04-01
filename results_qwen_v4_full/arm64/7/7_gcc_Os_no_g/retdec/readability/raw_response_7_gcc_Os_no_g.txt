@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original had meaningful names like `p1`, `p2`, `p3`, `str`, `encrypted`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_fake_branch`, `call_opaque_predicate`) matching source, but helper functions use generic names (`function_880`, `function_890`) and some signatures are wrong.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `2772`, `2804` for signal handlers unexplained; string literals stored as hex-encoded globals (`g1`, `g2`); original constants like `0xDEADBEEF` lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization code (`__do_global_dtors_aux`, `register_tm_clones`) included; excessive type casts (`& 0xffffffff`); wrapper functions for standard library calls add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_fake_branch` reduced to `return result;` losing all conditional logic; `param_opaque_predicate` has confusing chained comparisons (`== v5 * v5 == v3 == 1`); loops present but awkward.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but many lost parameters (`param_fake_branch(void)` should be `int x`); `decrypt_string` separated appropriately but signature broken.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but confusing conditional chains disrupt flow; while loops recognizable but variable tracking difficult due to generic names.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Excessive `& 0xffffffff` casts throughout; stack checking code duplicated in multiple functions; some functions appear to have lost logic entirely rather than being optimized.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—everything is `int64_t` or `int32_t`; original `int x` parameters lost; signed/unsigned distinctions erased; function signatures don't match usage.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Basic system structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) with generic field names (`e0`, `e1`, `e2`); no application-specific structures; bit fields from original lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int32_t)v1`, `(char *)str`); pointer arithmetic common; function call mismatches (`call_opaque_predicate(int64_t a1)` calls `param_opaque_predicate()` with no args).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments—only address markers (`// 0xb14`); original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios, all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (fake branches, opaque predicates) not identified; GCD algorithm in `param_opaque_predicate` not recognized; instruction substitution patterns not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainty; functions with lost logic (`param_fake_branch`) not flagged; missing parameters not highlighted as potential errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented; expected return values from original comments not recovered; error conditions not explained.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables use generic names (`g1`, `g2`...`g24`) without purpose explanation; call graph implicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping; original section comments (7.1, 7.2, 7.3) lost; related functions not grouped by category.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims "Compilation Result: Yes" but function signatures mismatch; undefined globals; requires significant patching to compile cleanly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):   (4+5+5+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):         (3+5+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):     (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):   (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────────
+Overall Score:                                  4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Parameter loss**: `param_fake_branch(void)` should be `param_fake_branch(int x)`—core logic completely lost
+- **Variable naming**: All variables are `v1`, `v2`, `v3` with no semantic meaning, making data flow impossible to trace
+- **Logic elimination**: `param_fake_branch` reduced to `return result;` losing the fake branch conditions entirely
+- **Type erosion**: Everything is `int64_t`/`int32_t`; original type distinctions (signed/unsigned, specific widths) lost
+- **No documentation**: Zero comments explaining obfuscation intent, expected values, or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)**—Core function names like `param_fake_branch`, `call_opaque_predicate` were preserved from debug symbols, providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Complete absence of explanatory comments; original had extensive documentation about obfuscation techniques, test scenarios, and expected values that would be invaluable for understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery from debug symbols**: When `-g` flag is present, extract and preserve function parameter names and types from DWARF debug information rather than inferring from usage.
+2. **Semantic variable naming**: Implement pattern-based variable naming (e.g., variables used in loop bounds → `count`, `limit`; variables in comparisons → `threshold`, `max_val`).
+3. **Decompilation confidence annotations**: Add comments indicating uncertainty levels (e.g., `// DECOMPILE_UNCERTAIN: parameter type inferred`) and flag functions where logic appears incomplete or eliminated.

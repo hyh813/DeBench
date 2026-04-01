@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. A few exceptions like `len`, `idx`, `result`, and `ptr` provide minimal clarity, but critical variables like `MAX_SIZE` comparisons become `0x400` with no context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`). However, initialization functions have generic names (`sub_4004ec`, `sub_4005c8`) and the architecture mismatch (ARMEL vs ARM64) is concerning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervade the code without explanation: `0x400` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `57072` (should be `0xDEF0`), `279` (line number), syscall numbers `30`, `7`, `34`, `3`, `1` for `sysconf`/`mmap`/`mprotect`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise artifacts present: duplicate function calls in return statements (`return param_macro_constants(0x800);` after already calling it), redundant variable assignments (`v0 = v1; v1 = v0;`), and unnecessary intermediate variables throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Main logic functions use natural if/else and loops, but initialization functions (`call_weak_fn`, `deregister_tm_clones`, `__do_global_dtors_aux`) use excessive `goto` statements that could be structured as proper conditionals.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are mostly preserved correctly with appropriate granularity. However, some functions have structural issues like `call_macro_constants` calling `param_macro_constants` twice in the return path, suggesting decompiler confusion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom in logic functions, but `goto` patterns in initialization code and some forward jumps disrupt linear reading. The `call_asm_multi_insn` function has particularly confusing control flow with nested conditionals.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy issues: `call_macro_constants` returns `param_macro_constants(0x800)` twice, `test_preprocessing_features` calls `printf(&g_40169c, v10)` twice in return, `frame_dummy` calls `register_tm_clones()` twice. These appear to be decompiler artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: everything is `unsigned int` or `int`. Original `size_t`, `const char*`, `void*`, function pointers all collapsed to generic integers. `param_asm_multi_insn` takes `void*` but returns `int` instead of `void`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union definitions recovered. Array accesses use raw pointer arithmetic (`*((int *)(ptr + idx * 4))`). The original code's structured data (like the `arr[]` arrays) are represented as raw memory operations without type information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without bounds checking, `void*` to `int*` casts implicit, `param_asm_simd` signature changed from 3 parameters to 2 parameters (missing `result` parameter). No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code despite original having extensive documentation explaining macros, conditionals, assembly intent, and expected values. No decompiler confidence indicators or uncertainty markers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Macro expansions (like `ADD_16` becoming `+16`) are computed but not identified as macro patterns. Assembly patterns converted to C loops but not labeled as such. No algorithm or design pattern identification.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical anomalies not flagged: duplicate return calls, `call_asm_simd` returns uninitialized variables (`v0+v1+v2+v3`), `param_stringize` has hardcoded `"155"` for `__LINE__` without explanation. No warnings about decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for array functions). No postconditions or error handling contracts. Original comments about expected values (期望: 64, 期望: 30) completely lost.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through direct calls, but global variables use opaque names (`g_401551`, `g_412008`, `g_412044`). String literals referenced via global addresses instead of inline. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order but no logical grouping. Related functions (test functions and their callees) are interspersed with initialization code. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `__atomic_fetch_add_4`, `printf`) referenced but not properly declared. Global variables need definition. Architecture mismatch (ARMEL decompilation of ARM64 binary) would cause compilation issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+3+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (25%): (6+7+6+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (20%): (3+2+5)/3 = 3.33 × 0.20 = 0.67
+Level 4 (15%): (1+2)/2 = 1.50 × 0.15 = 0.23
+Level 5 (10%): (2+2+5+6+4)/5 = 3.80 × 0.10 = 0.38
+
+Overall = 1.50 + 1.44 + 0.67 + 0.23 + 0.38 = 4.22/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Duplicate function calls in return statements**: `call_macro_constants` calls `param_macro_constants(0x800)` twice, `test_preprocessing_features` prints same value twice
+- **Magic numbers without semantic meaning**: `0x400`, `0x200`, `57072`, `279` should be named constants (`MAX_SIZE`, `MAX_SIZE/2`, `0xDEF0`, `__LINE__`)
+- **Complete absence of comments**: Original had extensive documentation; decompiled has zero explanatory content
+- **Severe type degradation**: All types collapsed to `unsigned int`/`int`, losing `size_t`, `const char*`, function pointer distinctions
+- **Uninitialized variable usage**: `call_asm_simd` returns `v0+v1+v2+v3` which are never properly initialized
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names were preserved accurately, making it possible to identify function purposes despite other readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or semantic explanations makes understanding decompiler intent impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and eliminate duplicate expression artifacts** - The pattern of calling functions twice in return statements suggests a decompiler bug that should be fixed in the IR simplification phase.
+2. **Recover and annotate magic numbers** - Implement constant propagation analysis to identify values like `0x400` as `MAX_SIZE` and add comments showing original macro semantics.
+3. **Add decompiler confidence annotations** - Insert comments indicating uncertainty (e.g., `// DECOMPILER: line number inferred`, `// WARNING: uninitialized variable access`) to help analysts understand reliability.

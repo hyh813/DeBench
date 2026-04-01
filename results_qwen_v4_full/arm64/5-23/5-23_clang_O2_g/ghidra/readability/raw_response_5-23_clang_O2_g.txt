@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names like `iVar1`, `uVar5`, `piVar4` instead of semantic names; many marked as "Unresolved local var: int result@[???]" losing all naming information.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `param_asm_clobber`, `test_preprocessing_features`); only a few runtime helpers use generic names (`FUN_001007a0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x40` (should be `BUFFER_COUNT*4`), `0x401` (should be `MAX_SIZE+1`), `0xdef0` (platform constant); no constant recovery from original `#define` statements.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present; "WARNING: Unknown calling convention" warnings add noise; optimization-induced complexity in `param_asm_clobber` with 8-way loop unrolling.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if-else structures; `param_asm_clobber` shows aggressive loop unrolling (8 elements at a time) that obscures the original simple loop logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved; appropriate granularity maintained; `my_func` kept separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; loop unrolling in `param_asm_clobber` creates non-linear reading with 8 parallel accumulation variables (`iVar9` through `iVar16`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling in `param_asm_clobber` (8 similar accumulation patterns); original simple `for` loop transformed into verbose unrolled code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`); some type erosion with `ulong` for size values; no const-correctness recovery from original source.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Array types preserved (`int[5]`, `char[32]`, `int[4]`); limited struct usage in this code sample but what exists is handled correctly.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts visible; pointer arithmetic appears correct; atomic operations use proper intrinsics (`__aarch64_ldadd4_acq_rel`); no type confusion detected.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("Unresolved local var", "WARNING: Unknown calling convention"); no recovery of original source comments explaining macro semantics or algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions recognized (`ADD_16` becomes `x + 0x10`); atomic operations identified as intrinsics; but no explicit pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: "Unresolved local var" comments properly indicate recovery limitations; assembly fallbacks noted; no false confidence in uncertain areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery; return values not documented; no error condition documentation; original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly; global variable usage visible (`global_var`, `__aarch64_have_lse_atomics`); but no call graph documentation or callback relationship indication.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source; related test functions grouped together; but no explicit namespace structure or static function scoping markers.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable; external dependencies visible (`printf`, `mmap`, `sysconf`); but no dependency documentation and platform-specific intrinsics not explained.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+7+8)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.7125
+Level 5 (Contextual):  (6+6+6)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                              = 5.99 ≈ 6.0/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects:
+- **Magic numbers replace all macro constants**: `0x401` should be `MAX_SIZE+1`, `0x200` should be `MAX_SIZE/2`, `0x40` should be `BUFFER_COUNT*4`
+- **Local variables use generic names**: `iVar1`, `uVar5`, `piVar4` instead of semantic names like `result`, `sum`, `page_size`
+- **No contract documentation**: Original comments about expected return values (e.g., "期望: 64") completely lost
+- **Loop unrolling obscures simple logic**: `param_asm_clobber` original 5-line loop becomes 50+ lines of unrolled code
+- **Unresolved local variables**: Many functions show "Unresolved local var: @[???]" losing variable tracking entirely
+
+### Best Quality Aspect:
+- **Type Safety (8/10)** - No unsafe casts detected; pointer operations and atomic intrinsics maintain type correctness throughout decompilation
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - Complete absence of precondition/postcondition documentation; original expected value comments entirely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro constant semantics**: Analyze comparison patterns to suggest named constants (e.g., `if (size < 0x401)` → suggest `MAX_SIZE + 1`)
+2. **Infer variable names from usage context**: Variables used in size checks should be named `size`/`length`; accumulation variables should be named `sum`/`total`
+3. **Add contract annotations from test call sites**: Analyze `call_*` functions to infer expected return values and add as comments to corresponding `param_*` functions

@@ -1,0 +1,81 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Parameters are named `a1` and `a2`, which are generic but standard for decompilers; they clearly map to the source's `a` and `b` without obscuring the simple addition logic.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The function name `cdecl_func` matches the original source exactly, preserving the semantic intent and calling convention information.
+
+**3. Literal Clarity:** Score: 10/10
+Justification: No magic numbers or literals are present in the function body; the logic relies solely on the input parameters.
+
+**4. Noise Reduction:** Score: 10/10
+Justification: The decompiled code is completely free of compiler artifacts, redundant casts, or frame pointer manipulations, resulting in clean output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: The control flow is perfectly linear with a single return statement, matching the idiomatic structure of the original source exactly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The function is a small, cohesive unit (leaf function) with appropriate granularity, exactly as designed in the source.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads strictly top-to-bottom with no jumps or non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: There is absolutely no redundancy, dead code, or loop unrolling artifacts; the logic is minimal and direct.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10
+Justification: The decompiler correctly identified the parameter types as `int32_t`, which accurately represents the `int` type on the target architecture (32-bit x86 evident in the full output).
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: N/A for this specific function (no composite types used), but the decompiler correctly avoided inventing unnecessary structures.
+
+**11. Type Safety:** Score: 10/10
+Justification: The code contains no unsafe casts or pointer arithmetic; it performs a strictly type-safe addition operation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: While there are no comments explaining the logic, the function is so trivial (`a + b`) that comments are arguably unnecessary; no misleading noise is present.
+
+**13. Idiom Recognition:** Score: 10/10
+Justification: The simple arithmetic operation is recognized and presented in its most natural C idiom.
+
+**14. Anomaly Indication:** Score: 10/10
+Justification: There are no anomalies, suspicious patterns, or undefined behaviors in this function that would require flagging.
+
+**15. Assertion & Contract Recovery:** Score: 8/10
+Justification: The function signature implicitly defines the contract (two ints in, one int out), which is clear, though explicit preconditions are not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: The function is clearly called by `call_cdecl` and `mixed_conventions_test` with constant arguments, making its usage context immediately obvious.
+
+**17. Module Organization:** Score: 9/10
+Justification: The function is grouped with other calling convention tests (`stdcall_func`, `fastcall_func`), maintaining the logical structure of the source file.
+
+**18. Build System Compatibility:** Score: 10/10
+Justification: The function uses standard types (`int32_t`) and syntax, making it fully compilable without modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 9.6/10
+
+**Critical Defects:**
+- None significant for this specific function; the decompilation is near-perfect.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 10/10)
+- The decompiler perfectly preserved the linear, single-return structure of the original source.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 8/10)
+- While `a1` and `a2` are acceptable, recovering the original names `a` and `b` (or more descriptive names) would have made it identical to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Attempt to recover original parameter names from debug symbols (if available in the binary, though metadata suggests `-g` was used, the output implies symbols might have been stripped or not fully utilized for variable names).
+2. (N/A for this function) Improve handling of register-passed parameters in other functions like `fastcall_func` which showed degradation in the full file context.
+3. Maintain the high standard of noise reduction achieved here across more complex functions.

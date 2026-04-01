@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "arm32",
+  "src_name": "1",
+  "source_path": "src/1.c",
+  "target_src_names": [
+    "1"
+  ],
+  "build_cmd": "arm-linux-gnueabi-gcc -O0 -g src/1.c -o build/arm32/1/1_gcc_O0_g",
+  "original_bin": "results_qwen_v4_full/arm32/1/1_gcc_O0_g/angr/semantic/native_arm32_bin/1_gcc_O0_g_native",
+  "decompiled_bin": "results_qwen_v4_full/arm32/1/1_gcc_O0_g/angr/syntactic/bin/1_gcc_O0_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "results_qwen_v4_full/arm32/1/1_gcc_O0_g/angr/semantic/native_arm32_bin/1_gcc_O0_g_native",
+      "src_name": "1",
+      "target_src_names": [
+        "1"
+      ],
+      "error": null,
+      "event_count": 235,
+      "entry_count": 86,
+      "exit_count": 86,
+      "print_count": 63
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_qwen_v4_full/arm32/1/1_gcc_O0_g/angr/syntactic/bin/1_gcc_O0_g_fixed",
+      "src_name": "1",
+      "target_src_names": [
+        "1"
+      ],
+      "error": null,
+      "event_count": 1,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 0
+    }
+  }
+}

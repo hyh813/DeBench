@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `a4`, `result`. The name `result` is particularly confusing as it shadows the return value concept. Compare to source where variables like `r1`, `r2`, `r3` clearly represent computed results.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed naming quality - some functions properly demangled (e.g., `_Z20test_cpp_member_funcv`, `_ZN11SimpleClass8setValueEi`) but many use address-based names like `function_10a94`, `function_10aa0`. The demangled names are good but inconsistent with the generic function_* pattern.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0x1234` used without explanation in `SimpleClass::getClassID()`. Float constants like `0x40040000` (representing 3.0f) and `0x51eb851f` (representing 3.14) are opaque. However, string literals like "Base", "Derived" are correctly recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from numerous stub functions (function_10a94, function_10aa0, etc.) that appear to be memory allocation stubs. Redundant casts throughout (e.g., `(int32_t)result`, `(int32_t *)v1`). Debug/trace functions like `function_10b30` (delete[]) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical semantic error in `call_virtual_func` - returns `(int32_t)a1` (the pointer itself) instead of calling the virtual function through vtable. Complex boolean expression `a2 > 0x1ffffffd == (a2 != 0x1ffffffe)` in LifecycleClass constructor is unreadable. Excessive goto usage disrupts flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions properly separated, but massive boilerplate from STL implementation (unique_ptr, tuple, etc.) creates 200+ functions. The actual test logic is buried in noise. Function granularity is reasonable for test functions but STL expansion is excessive.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent goto statements create non-linear flow. Forward jumps into loop bodies (lab_0x1237c). Deep nesting in exception handling and RTTI code. The `test_cpp_exception` function is particularly non-linear with multiple label jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from template instantiation - nearly identical code generated for `Container<int>` and `Container<double>` with only size differences. Multiple versions of STL helper functions (`_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE*` vs `*IA_i*`). Loop unrolling not commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic `int32_t` throughout, losing original type information. Pointers represented as `int32_t` (e.g., `int32_t *v2 = (int32_t *)v1`). `size_t` parameters become `uint32_t`. Const correctness mostly preserved but not complete.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: VTable structures properly recovered (`struct vtable_14464_type`) with function pointer fields. However, field names are generic (`e0`, `e1`, `e2`). Class member access uses raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)` for `name` field) losing struct semantics.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations - pointer arithmetic in `test_cpp_diamond_inheritance` using `*(int32_t *)(v1 + 4 + *(int32_t *)(v1 - 12))` for virtual base access. Unsafe integer-to-pointer casts throughout. No bounds checking visible in array operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments only indicate source file and line number (e.g., "// From module: /work/src/5-1.cpp // Line range: 41 - 50"). No explanation of algorithm logic, no decompilation confidence indicators, no recovery of original comments from source.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Virtual dispatch mechanism not explained. RAII patterns in smart pointers not documented. Exception handling mechanism not described.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The broken `call_virtual_func` that returns a pointer instead of calling virtual function is presented without warning. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions (e.g., "ensures: return is heap-allocated"). No invariant recognition. Error handling paths not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function relationships not documented. No indication of which functions call virtual methods. Global variable usage (g1-g34) not explained. Callback relationships not identified.
+
+**17. Module Organization:** Score: 2/10  
+Justification: All 220+ functions in single monolithic output. No logical grouping by feature (member functions, virtual functions, templates, etc.). No namespace structure recovery.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers (`<stdbool.h>`, `<stdint.h>`, `<stdlib.h>`). Has function prototypes. Would require significant patching for standalone compilation due to missing standard library stubs.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- `call_virtual_func` returns pointer address instead of calling virtual function - completely broken semantics
+- Variable naming uses generic `v1`, `v2`, `a1`, `a2` making code nearly incomprehensible
+- Virtual inheritance access pattern `*(int32_t *)(v1 + 4 + *(int32_t *)(v1 - 12))` is unreadable without explanation
+- 200+ STL boilerplate functions overwhelm the actual test logic
+- No comments explaining any algorithm or intent
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.0/10)  
+While types are degraded, the decompiler did recover vtable structures and some type information. This was the least broken area.
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.5/10)  
+Variable and function naming is the primary barrier to understanding. Generic names like `v1`, `function_10a94` make analysis extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - `v1` used as size check should be named `size`, `a2` used as multiplier should be named `multiplier`
+2. **Fix virtual function call resolution** - `call_virtual_func` must call through vtable, not return pointer address
+3. **Eliminate STL boilerplate** - Group or collapse standard library implementations to focus on user code

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions degraded to `function_1030`, `function_1040`. Core functionality names remain recognizable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (`65`, `32`, `26`, `0xffffffff`, `0x100000000`). String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`). Original constants like `'A'`, `'\0'` lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bitwise masking (`& 0xffffffff`, `& 0xfffffffe`), unnecessary type casts, assembly intrinsics (`__asm_movsd`, `__asm_mulss`), and compiler boilerplate (`_init`, `_fini`, `deregister_tm_clones`) pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to while-loops with manual increment (`v1++; while(...!=v1)`). Complex nested loops in `array_3d` become nearly unreadable with multiple while loops instead of clean for-loop nesting.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but signatures are wrong—`const_param()`, `volatile_access()`, `ptr_single()` missing parameters entirely. Parameter counts often incorrect (`array_1d_stack` has 3 params instead of 2).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but complex functions like `array_3d` and `test_array_types` have excessive forward references and variable reassignments that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bitwise masking on every return statement, redundant type conversions throughout, and loop unrolling artifacts in `array_3d` without any abstraction or comments.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type degradation—everything becomes `int64_t`. Original `char`, `short`, `float`, `double`, `long double` all lost. Float functions return `int128_t` (completely wrong). No `const`/`volatile` preservation.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure—all struct/union types lost. `Point3D`, `Rect`, `Widget`, `Node`, `UnionData`, `Flags` all reduced to pointer arithmetic (`*(int32_t *)(a1 + 8)`). No field names, no type definitions.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts, pointer arithmetic without type safety, function pointer signatures lost (`ptr_func_simple` returns `result` without calling), void* conversions everywhere without tracking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each function's purpose, test scenarios, and expected behavior. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), state machine (`enum_switch`) all appear as raw pointer arithmetic without any semantic identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions not flagged (`process_float`, `process_double` return wrong types, `process_ld` returns uninitialized `result`). Missing parameters not indicated. No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`), no postconditions, no error condition documentation. Original had clear test expectations that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships undocumented. Global variables (`g1`-`g12`) unexplained. No call graph information. Original test functions clearly showed which functions they tested.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Original had clear sections (Data Types, Arrays, Pointers, Composite Types) with section headers—completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has includes and prototypes, but assembly intrinsics (`__asm_movsd`, `__asm_cvttss2si`) may not compile portably. Many functions won't work correctly due to type/signature issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+7+4+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):   (5+5+6+5)/4 = 5.25  × 0.25 = 1.313
+Level 3 (Type System):  (2+1+2)/3   = 1.67  × 0.20 = 0.334
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50  × 0.15 = 0.225
+Level 5 (Contextual):   (4+5+5)/3   = 4.67  × 0.10 = 0.467
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 3.61/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Complete type system collapse**: All types degraded to `int64_t`; `float`/`double` functions return `int128_t`
+- **Zero composite type recovery**: All structs/unions/enums lost; access via raw pointer arithmetic only
+- **Missing function parameters**: `const_param()`, `volatile_access()`, `ptr_single()` have no parameters despite needing them
+- **No semantic documentation**: Zero comments despite original having extensive documentation for each test case
+- **Broken floating-point handling**: `process_float`, `process_double`, `process_ld` use assembly intrinsics incorrectly
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `process_char`, `array_1d_stack`, `struct_simple` were preserved from the original source, maintaining some semantic connection.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct, union, or enum definitions; all composite types reduced to opaque pointer arithmetic with no field names or type information.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union type inference** from access patterns (e.g., `*(a1+8)` + `*(a1+4)` + `*(a1)` suggests 3-field struct with 4-byte fields)
+2. **Preserve original function signatures** by analyzing calling conventions and parameter usage rather than defaulting to `int64_t`
+3. **Add decompilation confidence annotations** to flag uncertain reconstructions (broken float functions, missing parameters, type ambiguities)

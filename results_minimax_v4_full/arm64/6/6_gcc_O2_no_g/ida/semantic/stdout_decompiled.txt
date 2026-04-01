@@ -1,0 +1,11 @@
+=== Standard Library Function Tests ===
+
+strlen result: 8
+strcmp result: 0
+strlen result: 12
+memcpy result: 90
+memcmp result: 1
+Value: 42, Name: Test
+printf result: 22
+scanf result: 579
+fopen/fileno result: 42

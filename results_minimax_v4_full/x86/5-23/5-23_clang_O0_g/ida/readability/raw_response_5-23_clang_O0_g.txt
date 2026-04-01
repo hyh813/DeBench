@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 9/10  
+Justification: All parameter names match the original source exactly (`size`, `x`, `y`, `arr`, `n`, `dst`, `src`, `counter`, `increment`). Local variables like `v2`, `v3` in `param_stringize` are generic but don't significantly impede understanding since parameters carry the semantic load.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_asm_simd`, `param_dynamic_code`, etc. The decompiler recovered all function names with complete fidelity.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `57072` (should be `0xDEF0`), `30` (should be `_SC_PAGESIZE`), `7` (should be `PROT_READ|PROT_WRITE|PROT_EXEC`) lack semantic meaning. However, string literals like `"Hello World"` and `"1.2.3"` are correctly preserved from stringization macros.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: `param_simd_intrinsics` contains excessive redundant loads (`v3 = _mm_load_si128(&vec_b)` followed by `v11 = v3`). The `call_asm_clobber` uses `memcpy` from `unk_32EC` (data section) which is a compiler artifact. Overall moderate noise level.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with standard if-else constructs (`if (size <= 1024) return 512; else return 64;`). Loops use proper for/while syntax. No spurious goto statements. At -O0, the structure closely matches source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function has a clear single responsibility matching the original source granularity. Functions like `param_macro_constants` (20 LOC), `param_asm_basic` (3 LOC) are appropriately sized. The decomposition matches source organization perfectly.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without forward jumps or computed gotos. Early returns are used appropriately. No deep nesting (>4 levels). The flow is highly linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in `param_simd_intrinsics` where values are loaded multiple times unnecessarily (decompilation artifact). Loop unrolling is minimal. Overall acceptable but not perfectly clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Types are precise - `int` for integers, `size_t` for sizes, `void*` for generic pointers, `int*` for array pointers. The `param_asm_simd` correctly uses `int*` for array parameters. Minor issue: `page_size` uses `int` instead of `long` or `size_t` in some places.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in this source code. Simple arrays like `int a[4]`, `int b[4]` are correctly recovered. The code doesn't require struct reconstruction.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct. Function signatures are type-safe. The atomic operations use proper `_InterlockedExchangeAdd`. Minor: some implicit int-to-size_t conversions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present. No comments explaining macro semantics, inline assembly behavior, or preprocessor transformations. The source had rich comments about `#define` semantics that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. However, the code structure naturally exposes some idioms (conditional compilation results are visible as plain code, macro expansions are computable). The decompiler doesn't label these as patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The output shows "FAILED to decompile" for 10 library functions (`__libc_start_main`, `mprotect`, `printf`, etc.) but provides no explanation of why or what they do. No indication of indirect call resolution issues or assembly-level anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_dynamic_code` requires `x` to be valid but this isn't indicated. The memory protection sequence has implicit ordering requirements not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., `test_preprocessing_features` calls various `call_*` functions). However, there's no explicit documentation of call graphs, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions appear in a single flat listing. No logical grouping or separation between preprocessing tests and assembly tests beyond the order they appear. Static functions like `header_func` aren't explicitly marked as file-scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile as standalone C. However, it depends on standard library functions (`printf`, `mmap`, `sysconf`) without explicit includes. The binary metadata shows it was compiled but no build instructions or dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Variable naming for local variables is generic (`v2`, `v3`, `i`) losing semantic information
+- Magic numbers like `57072` (0xDEF0), `30` (sysconf page size), `7` (PROT flags) lack constant names
+- No comments explaining preprocessor transformations or inline assembly semantics
+- Failed to decompile functions listed without explanation or context
+- No contract/precondition documentation for functions requiring specific inputs
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name perfectly matches the original source, demonstrating excellent symbol recovery
+
+**Most Needs Improvement:** Comment Quality & Presence (3/10)  
+- The rich semantic information about macros, conditional compilation, and inline assembly is completely lost without explanatory comments
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Add semantic comments for preprocessor results (e.g., "// Original: #define MAX_SIZE 1024 → if (size > 1024)")
+2. Replace magic numbers with inferred constant names where possible (57072 → 0xDEF0, 30 → _SC_PAGESIZE)
+3. Provide context for failed decompilations and indicate what external dependencies are required

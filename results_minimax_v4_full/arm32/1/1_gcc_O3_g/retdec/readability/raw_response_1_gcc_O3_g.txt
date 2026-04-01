@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`-`v19`, `a1`, `a2` throughout. The original source had meaningful names like `temp1`, `temp2`, `result`, `count`, `i`, `j`. Only `dst`, `src`, `n`, `labels` retain some semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source accurately: `main`, `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`, `duffs_device`, `non_local_jump`, `computed_goto`. However, `non_local_jump_constprop_0` appears to be a spurious variant.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions have hardcoded expected values (21, 20, -5, etc.) which are clear. However, magic numbers like `(n + 7) >> 3` for loop unrolling and switch case values (-2, -3, -4, 3, 2, 1, -1) in duffs_device are unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present: complex struct initialization for `_setjmp`, strange `int3_t` typedef, multiple redundant variable assignments in duffs_device (`v4=v1`, `v5=v2`, `v6=v1` repeated), and `__stack_chk_fail` compiler artifact. The struct initialization for setjmp is particularly egregious.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Duff's device correctly uses switch with goto for fall-through. However, `computed_goto` has a completely broken return statement: `return idx >= 3 == (idx != 3) ? -1 : 0x116c8;` - this is nonsensical and doesn't implement the original switch-based computed goto at all.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Most functions from source are properly separated. However, `non_local_jump_constprop_0` appears to be a ghost function that shouldn't exist (constant-propagated variant), and `computed_goto` is severely broken.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Test functions read linearly as sequential printf calls. Duff's device uses goto appropriately for loop structure. However, computed_goto's broken logic disrupts overall coherence.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in duffs_device with 19 variables (v1-v19) many assigned identical values repeatedly: `int32_t v4 = v1; int32_t v5 = v2; int32_t v6 = v1;` etc. This is dead store elimination failure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently for integers, `uint32_t` for idx. The strange `int3_t` typedef (`typedef int8_t int3_t`) for switch variable is unusual but functional. Generally matches source types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The `_setjmp` is wrapped in an overly complex anonymous struct: `struct {int32_t e0[8]; int32_t e1; struct {int32_t e0[1];} e2;}` - this obscures the original `jmp_buf` type. No struct recovery for the original matrix arrays or function pointer arrays.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The setjmp struct initialization is type-unsafe. Pointer arithmetic in duffs_device uses raw int32_t casts instead of proper pointer types. The computed_goto return expression is type-confused. However, no buffer overflow patterns detected.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments contain only meta-information: "From module: /work/src/1.c", "Address range: 0x104e0 - 0x104f8", "Line range: 955 - 960". No semantic explanation of algorithms, contracts, or non-obvious logic. Auto-generated noise only.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device is correctly recognized and named. The setjmp/longjmp pattern is recognized but rendered overly complex. However, computed_goto is completely broken and not recognized as a state machine pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of problems with the completely broken `computed_goto` function or the spurious `non_local_jump_constprop_0`. The decompiler presents incorrect code confidently without any warnings.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. The original source had clear return value semantics (e.g., "返回5" comments) that are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Comments show "From module: /work/src/1.c" but no actual call graph relationships, global variable usage, or callback relationships are documented. Functions appear isolated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file, which is reasonable for decompiled output. Static functions properly scoped. Related test functions grouped together. Minor issue: spurious function `non_local_jump_constprop_0`.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Includes headers but has critical issues: `int3_t` typedef may not be standard, and invalid C syntax in test functions: `src = {1, 0, 0, 0, 0, 0, 0, 0};` and `labels = {0, 0, 0, 0};` are not valid C assignments. The code would not compile as-is.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- `computed_goto` function is completely broken: `return idx >= 3 == (idx != 3) ? -1 : 0x116c8;` doesn't implement the original switch-based computed goto
+- Invalid C syntax: array initialization assignments like `src = {1, 0, 0, 0, 0, 0, 0, 0};` won't compile
+- Excessive generic variable names (`v1`-`v19`, `a1`, `a2`) obscure all algorithmic logic
+- Spurious function `non_local_jump_constprop_0` appears to be a constant-propagation artifact
+- Complex struct initialization for setjmp obscures the original `jmp_buf` type
+- No anomaly indication for the completely broken computed_goto
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names accurately match the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Anomaly Indication (2/10)  
+The decompiler presents the completely broken `computed_goto` function without any warning or indication that the output is incorrect. This misleads analysts into trusting corrupted output.
+
+**Top 3 Recommendations:**
+1. Fix computed_goto recovery - the original uses a switch on idx to return 0/10/20/30, not a nonsensical boolean expression
+2. Replace array initialization syntax with proper memcpy or loop initialization
+3. Add anomaly warnings for functions where decompilation confidence is low or output appears semantically incorrect

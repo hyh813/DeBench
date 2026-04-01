@@ -1,0 +1,1299 @@
+// Angr Decompilation of 1_clang_O2_no_g
+// Platform: ARMEL
+
+
+/* CRT stub function _init removed by preprocessor */
+
+
+
+// Function: sub_4004dc at 0x4004dc
+
+int sub_4004dc(unsigned int a0)
+{
+ return a0;
+}
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+// Function: sub_400594 at 0x400594
+void sub_400594()
+{
+ abort(); /* do not return */
+}
+
+
+
+/* CRT stub function call_weak_fn removed by preprocessor */
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+// Added missing function: armg_calculate_condition
+// Simulates ARM condition code evaluation
+int armg_calculate_condition(unsigned int cond, unsigned int a0, unsigned int a1, unsigned int a2)
+{
+    // cond values:
+    // 2 = EQ (equal) - check a0 == a1
+    // 66 = VS (overflow set)
+    // 130 = HI (unsigned higher) - check a0 > a1 (unsigned)
+    // 178 = LT (less than) - check a0 < a1 (signed)
+    // 209 = GT (greater than) - check a0 > a1 (signed)
+    
+    switch(cond)
+    {
+        case 2:  // EQ - equal
+            return a0 == a1;
+        case 66: // VS - overflow set
+            return 0;
+        case 130: // HI - unsigned higher
+            return a0 > a1;
+        case 178: // LT - less than (signed)
+            return (int)a0 < (int)a1;
+        case 209: // GT - greater than (signed)
+            return (int)a0 > (int)a1;
+        default:
+            return 0;
+    }
+}
+
+
+
+// Function: sequential_ops at 0x4006c4
+int sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)
+{
+ return (a1 + a0) * 2 - a2;
+}
+
+
+// Function: single_if at 0x4006d0
+unsigned int single_if(unsigned int a0)
+{
+ return a0 << ((char)(a0 != 0 ? 1 : 0) & 31) & (a0 != 0 ? 1 : 0) - 32 >> 31;
+}
+
+
+// Data: switch_small jump table
+unsigned int g_401e2c = 0;
+unsigned int g_401e3c[4];
+unsigned int g_401e6c[4];
+
+// Data: String constants for test output
+char g_401dbd[] = "CF-L2";  // Test control flow level 2
+char g_401de1[] = "CF-L2";  // Test control flow level 2
+char g_401e05[] = "CF-L3";  // Test control flow level 3
+
+
+// Function: if_else at 0x4006e4
+unsigned int if_else(unsigned int a0)
+{
+ return (0 < a0 ? 1 : 0);
+}
+
+
+// Function: nested_if_2 at 0x4006f8
+unsigned int nested_if_2(unsigned int a0, unsigned int a1)
+{
+ unsigned int v0; // r2
+
+ v0 = a0;
+ if (0 < a1)
+ v0 += a1;
+ if (a0 > 0)
+ return v0;
+ return 0;
+}
+
+
+// Function: nested_if_deep at 0x400714
+unsigned int nested_if_deep(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+ unsigned int result; // r0
+ unsigned int v2; // r0
+ char v0; // [bp+0x0]
+
+ if (a0 < 1)
+ {
+ result = 0;
+ if (!((char)armg_calculate_condition(178, a0, 1, 0)))
+ goto LABEL_400720;
+ return 0;
+ v2 = result;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a0, 1, 0)))
+ goto LABEL_400720;
+ return a0;
+ v2 = a0;
+ }
+LABEL_400720:
+ if (a1 < 1)
+ {
+ v2 = 1;
+ if (!((char)armg_calculate_condition(178, a1, 1, 0)))
+ goto LABEL_40072c;
+ return 1;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a1, 1, 0)))
+ goto LABEL_40072c;
+ return v2;
+ }
+LABEL_40072c:
+ if (a2 < 1)
+ {
+ v2 = 2;
+ if (!((char)armg_calculate_condition(178, a2, 1, 0)))
+ goto LABEL_400738;
+ return 2;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a2, 1, 0)))
+ goto LABEL_400738;
+ return v2;
+ }
+LABEL_400738:
+ if (a3 < 1)
+ {
+ if (!((char)armg_calculate_condition(178, a3, 1, 0)))
+ goto LABEL_400744;
+ return 3;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a3, 1, 0)))
+ goto LABEL_400744;
+ return v2;
+ }
+LABEL_400744:
+ return (0 < *((int *)&v0) ? 5 : 4);
+}
+
+
+// Function: if_elseif_chain at 0x400758
+unsigned int if_elseif_chain(unsigned int a0)
+{
+ return (a0 < 3 ? 10 + a0 * 10 : 4294967295);
+}
+
+
+// Function: if_elseif_long at 0x400774
+unsigned int if_elseif_long(unsigned int a0)
+{
+ return (a0 < 5 ? a0 * 100 + 100 : 4294967295);
+}
+
+
+// Function: switch_small at 0x400790
+extern unsigned int g_401e2c;
+
+int switch_small(unsigned int a0)
+{
+ unsigned int v0; // r0
+
+ v0 = 5764;
+ if (a0 <= 3)
+ v0 = &g_401e2c;
+ return *((int *)(v0 + a0 * 4));
+}
+
+
+// Function: switch_large at 0x4007b0
+unsigned int switch_large(unsigned int a0)
+{
+ return (a0 < 10 ? a0 * 10 : 4294967295);
+}
+
+
+// Function: switch_default at 0x4007c8
+unsigned int switch_default(unsigned int a0)
+{
+ unsigned int v0; // r1
+
+ v0 = a0 - 1;
+ return (v0 < 3 ? v0 * 100 + 100 : 0);
+}
+
+
+// Function: switch_fallthrough at 0x4007e4
+unsigned int switch_fallthrough(unsigned int a0)
+{
+ unsigned int v0; // r1
+
+ v0 = 0;
+ if (a0 != 1)
+ {
+ if (a0 != 2)
+ {
+ if (a0 == 3)
+ v0 = 12;
+ else
+ return 4294967295;
+ }
+ v0 += a0 * 2;
+ }
+ return v0 + a0;
+}
+
+
+// Function: loop_for_fixed at 0x400818
+unsigned int loop_for_fixed(unsigned int a0)
+{
+ unsigned int result; // r0
+ unsigned int v1; // r0
+
+ if (a0 < 1)
+ {
+ result = 0;
+ if (!((char)armg_calculate_condition(178, a0, 1, 0)))
+ goto LABEL_400824;
+ return 0;
+ v1 = result;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a0, 1, 0)))
+ goto LABEL_400824;
+ return a0;
+ v1 = a0;
+ }
+LABEL_400824:
+ return (((v1 - 1) * (v1 - 2) >> 32 & 1) * 0x80000000 | (v1 - 1) * (v1 - 2) >> 1) + v1 - 1;
+}
+
+
+// Function: loop_while at 0x400848
+unsigned int loop_while(unsigned int a0)
+{
+ unsigned int result; // r0
+ unsigned int v1; // r0
+ unsigned int v2; // r0
+ unsigned int v3; // r0
+ unsigned int v4; // r0
+
+ if (!a0)
+ {
+ result = 1;
+ if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+ goto LABEL_400854;
+ return 1;
+ v1 = result;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+ goto LABEL_400854;
+ return a0;
+ v1 = a0;
+ }
+LABEL_400854:
+ v2 = 0;
+ do
+ {
+ v4 = v2 + 1;
+ v2 = v4;
+ v1 = (v1 * 1717986919 >> 34) + (v1 * 1717986919 >> 63);
+ } while (18 < v1 + 9);
+ return v3 + 1;
+}
+
+
+// Function: loop_dowhile at 0x400888
+unsigned int loop_dowhile(unsigned int a0)
+{
+ unsigned int v0; // r0
+ unsigned int v1; // r0
+ unsigned int v2; // r0
+
+ v0 = 0;
+ do
+ {
+ v2 = v0 + 1;
+ a0 = (a0 * 1717986919 >> 34) + (a0 * 1717986919 >> 63);
+ v0 = v2;
+ } while (18 < a0 + 9);
+ return v1 + 1;
+}
+
+
+// Function: loop_nested at 0x4008bc
+unsigned int loop_nested(unsigned int a0, unsigned int a1)
+{
+ return (0 < a0 ? (a1 & ~(a1 >> 31)) * a0 : 0);
+}
+
+
+// Function: loop_break at 0x4008d4
+
+unsigned int loop_break(unsigned int a0)
+{
+ unsigned int v0; // r0
+
+ switch (a0)
+ {
+ case 20:
+ return 1;
+ case 30:
+ return 2;
+ case 40:
+ return 3;
+ case 50:
+ v0 = 4;
+ case 10:
+ return v0;
+ default:
+ return 4294967295;
+ }
+}
+
+
+// Function: loop_continue at 0x4009bc
+unsigned int loop_continue(unsigned int i)
+{
+ unsigned int v0; // r2
+ unsigned int v1; // r1
+
+ if (i < 1)
+ return 0;
+ v0 = 0;
+ v1 = 0;
+ do
+ {
+ v0 += 1;
+ if (((char)v0 & 1))
+ v1 += v0;
+ } while (i != v0);
+ return v1;
+}
+
+
+// Function: goto_forward at 0x4009f4
+unsigned int goto_forward(unsigned int a0)
+{
+ unsigned int v1; // r1
+
+ if (a0 <= 1)
+ v1 = 1;
+ else
+ v1 = a0;
+ return a0 * v1 * 2;
+}
+
+
+// Function: goto_backward at 0x400a0c
+unsigned int goto_backward(unsigned int a0)
+{
+ unsigned int result; // r0
+ unsigned int i; // r0
+ unsigned int v2; // r3
+ unsigned int v3; // r2
+ unsigned int v4; // r3
+ unsigned int v5; // r1
+
+ if (a0 < 1)
+ {
+ result = 1;
+ if (!((char)armg_calculate_condition(178, a0, 1, 0)))
+ goto LABEL_400a18;
+ return 1;
+ i = result;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a0, 1, 0)))
+ goto LABEL_400a18;
+ return a0;
+ i = a0;
+ }
+LABEL_400a18:
+ v2 = 1;
+ v3 = 0;
+ do
+ {
+ v3 += 1;
+ v5 = v3 * v2;
+ v2 = v5;
+ } while (i != v3);
+ return v3 * v4;
+}
+
+
+// Function: ternary_op at 0x400a3c
+int ternary_op(unsigned int a0, unsigned int a1)
+{
+ if (a0 > a1)
+ return a0;
+ return a1;
+}
+
+
+// Function: test_control_flow_l1 at 0x400a48
+extern char g_401dbd[];
+
+int test_control_flow_l1()
+{
+ unsigned int v0; // r0
+
+ puts(&g_401dbd);
+ printf("CF-L1-01 (sequential_ops): %d\n", 21);
+ printf("CF-L1-02 (single_if): %d\n", 20);
+ printf("CF-L1-02 (single_if): %d\n", 4294967291);
+ printf("CF-L1-03 (if_else): %d\n", 1);
+ printf("CF-L1-03 (if_else): %d\n", 0);
+ printf("CF-L1-04 (nested_if_2): %d\n", 15);
+ printf("CF-L1-04 (nested_if_2): %d\n", 10);
+ printf("CF-L1-04 (nested_if_2): %d\n", 0);
+ printf("CF-L1-05 (nested_if_deep): %d\n", 5);
+ printf("CF-L1-06 (if_elseif_chain): %d\n", 20);
+ printf("CF-L1-07 (if_elseif_long): %d\n", 400);
+ printf("CF-L1-08 (switch_small): %d\n", 50);
+ printf("CF-L1-09 (switch_large): %d\n", 70);
+ printf("CF-L1-10 (switch_default): %d\n", 0);
+ printf("CF-L1-11 (switch_fallthrough): %d\n", 21);
+ printf("CF-L1-12 (loop_for_fixed): %d\n", 45);
+ printf("CF-L1-13 (loop_while): %d\n", 5);
+ printf("CF-L1-14 (loop_dowhile): %d\n", 4);
+ printf("CF-L1-15 (loop_nested): %d\n", 12);
+ printf("CF-L1-16 (loop_break): %d\n", 2);
+ printf("CF-L1-16 (loop_break): %d\n", 4294967295);
+ printf("CF-L1-17 (loop_continue): %d\n", 25);
+ printf("CF-L1-18 (goto_forward): %d\n", 50);
+ printf("CF-L1-18 (goto_forward): %d\n", 4294967290);
+ printf("CF-L1-19 (goto_backward): %d\n", 120);
+ printf("CF-L1-20 (ternary_op): %d\n", 10);
+ v0 = printf("CF-L1-20 (ternary_op): %d\n", 8);
+ return printf("CF-L1-20 (ternary_op): %d\n", 8);
+}
+
+
+// Function: loop_multi_exit at 0x400c5c
+extern unsigned int g_401e3c[4];
+extern unsigned int g_401e6c[4];
+
+unsigned int loop_multi_exit(unsigned int a0)
+{
+ if (11 >= a0 - 1)
+ goto LABEL_400c6c;
+ return 4294967295;
+LABEL_400c6c:
+ return g_401e6c[1 + a0] + g_401e3c[1 + a0];
+}
+
+
+unsigned int infinite_loop(unsigned int *ptr)
+{
+ unsigned int v0; // r2
+ unsigned int v1; // r0
+ unsigned int v2; // r0
+
+ v0 = 0;
+ v1 = 1001;
+ do
+ {
+ if (*(ptr) == 1)
+ {
+ return v0;
+ }
+ else
+ {
+ return v1;
+ }
+ } while ((v1 = v2, v0 += 1, v0 != v1));
+ *(ptr) = 1;
+ return v1;
+}
+
+
+// Function: multi_return at 0x400ccc
+unsigned int multi_return(unsigned int a0)
+{
+ unsigned int v0; // r0
+ unsigned int v1; // r0
+ unsigned int v2; // r1
+
+ if (armg_calculate_condition(66, a0, 0, 0))
+ {
+ v0 = 4294967295;
+ if (!((char)armg_calculate_condition(66, a0, 0, 0)))
+ goto LABEL_400cd8;
+ return 4294967295;
+ v1 = v0;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(66, a0, 0, 0)))
+ goto LABEL_400cd8;
+ return a0;
+ v1 = a0;
+ }
+LABEL_400cd8:
+ v2 = v1;
+ if (50 >= v2)
+ goto LABEL_400ce8;
+ return 4294967294;
+LABEL_400ce8:
+ if (((char)v2 & 1))
+ return v2 + 1;
+ return v2 * 2;
+}
+
+
+// Function: conditional_return at 0x400cf8
+unsigned int conditional_return(unsigned int a0)
+{
+ if (0 >= a0)
+ return -(a0);
+ return a0 * 2;
+}
+
+
+// Function: duffs_device at 0x400d0c
+
+unsigned int duffs_device(unsigned int a0, unsigned int a1, unsigned int a2)
+{
+ switch (a2)
+ {
+ case 0:
+ break;
+ default:
+ return 4294967295;
+ }
+}
+
+
+// Function: __dollar_a_14 at 0x400d54
+int __dollar_a_14(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d5c();
+ return sub_400d5c();
+}
+
+
+// Function: sub_400d5c at 0x400d5c
+int sub_400d5c(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d64();
+ return sub_400d64();
+}
+
+
+// Function: sub_400d64 at 0x400d64
+int sub_400d64(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d6c();
+ return sub_400d6c();
+}
+
+
+// Function: sub_400d6c at 0x400d6c
+int sub_400d6c(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d74();
+ return sub_400d74();
+}
+
+
+// Function: sub_400d74 at 0x400d74
+int sub_400d74(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d7c();
+ return sub_400d7c();
+}
+
+
+// Function: sub_400d7c at 0x400d7c
+int sub_400d7c(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d84();
+ return sub_400d84();
+}
+
+
+// Function: sub_400d84 at 0x400d84
+int sub_400d84(unsigned int *ptr, unsigned int *a1)
+{
+ unsigned int v0; // r0
+
+ *(ptr) = *(a1);
+ v0 = sub_400d8c();
+ return sub_400d8c();
+}
+
+
+// Function: sub_400d8c at 0x400d8c
+int sub_400d8c(unsigned int *ptr, unsigned int *a1, unsigned int a2)
+{
+ unsigned int v0; // r4
+ unsigned int v1; // r0
+
+ *(ptr) = *(a1);
+ if (1 < a2)
+ {
+ v1 = __dollar_a_14((char *)ptr + 1, (char *)a1 + 1);
+ return __dollar_a_14((char *)ptr + 1, (char *)a1 + 1);
+ }
+ return 0;
+}
+
+
+// Function: loop_complex_cond at 0x400dac
+int loop_complex_cond(unsigned int a0)
+{
+ unsigned int v0; // r3
+ unsigned int v1; // r1
+ unsigned int v2; // r3
+ unsigned int v3; // r12
+
+ if (a0 >= 1)
+ {
+ v0 = 0;
+ v1 = 0;
+ do
+ {
+ v1 += 2;
+ v3 = v0 + 1;
+ a0 -= 1;
+ } while (a0 >= 2 && a0 > v1 && (v0 = v3, a0 = a0, v2 < 9));
+ }
+ else
+ {
+ v1 = 0;
+ v3 = 0;
+ }
+ return a0 + v1 + v3;
+}
+
+
+// Function: loop_modify_var at 0x400e04
+unsigned int loop_modify_var(unsigned int a0)
+{
+ unsigned int v0; // r2
+ unsigned int v1; // r1
+ unsigned int v2; // r1
+ unsigned int v3; // r2
+ unsigned int v4; // r1
+ unsigned int v6; // r2
+ unsigned int v7; // r2
+
+ if (a0 < 1)
+ return 0;
+ v0 = 0;
+ v1 = 0;
+ do
+ {
+ v3 = v0;
+ v4 = v3 + v1;
+ if (5 < v3)
+ v6 = v3 + 2;
+ else
+ v6 = v3;
+ } while ((v7 = v6 + 1, v0 = v6 + 1, v1 = v4, v0 < a0));
+ return v3 + v2;
+}
+
+
+// Function: loop_external_state at 0x400e40
+unsigned int loop_external_state(unsigned int *a0)
+{
+ unsigned int v0; // r0
+
+ v0 = 0;
+ do
+ {
+ if (!*(a0))
+ {
+ return v0;
+ }
+ v0 += 1;
+ } while (v0 != 101);
+ return 101;
+}
+
+
+// Function: recursion_factorial at 0x400e68
+unsigned int recursion_factorial(unsigned int a0)
+{
+ unsigned int v0; // r2
+ unsigned int v1; // r0
+ unsigned int v2; // r2
+ unsigned int v3; // r1
+
+ if (a0 < 2)
+ return 1;
+ v0 = 1;
+ do
+ {
+ v1 = a0;
+ v3 = v1 * v0;
+ v0 = v3;
+ a0 = v1 - 1;
+ } while (2 < v1);
+ return v1 * v2;
+}
+
+
+// Function: tail_recursion at 0x400e98
+unsigned int tail_recursion(unsigned int a0, unsigned int a1)
+{
+ unsigned int v0; // r0
+ unsigned int v1; // r1
+ unsigned int v2; // r0
+ unsigned int v3; // r2
+
+ if (a0 < 2)
+ {
+ if (!((char)armg_calculate_condition(178, a0, 2, 0)))
+ goto LABEL_400ea4;
+ return a1;
+ v0 = a1;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(178, a0, 2, 0)))
+ goto LABEL_400ea4;
+ return a0;
+ v0 = a0;
+ }
+ do
+ {
+LABEL_400ea4:
+ v2 = v0;
+ v3 = a1 * v2;
+ v0 = v2 - 1;
+ a1 = v3;
+ } while (2 < v2);
+ return v1 * v2;
+}
+
+
+// Function: indirect_recursion_a at 0x400ec4
+unsigned int indirect_recursion_a(unsigned int a0, unsigned int a1)
+{
+ unsigned int v0; // r1
+
+ if (a1 < 1)
+ return a0;
+ v0 = a1 + 2;
+ while (1)
+ {
+ if (!((char)a0 & 1))
+ {
+ if (v0 != 3)
+ goto LABEL_400ee4;
+ return a0 + (a0 >> 31) >> 1;
+LABEL_400ee4:
+ a0 = (a0 + (a0 >> 31) >> 1) + 1;
+ }
+ else if (v0 != 3)
+ {
+ a0 = a0 * 3 + 2;
+ }
+ else
+ {
+ return a0 * 3 + 1;
+ }
+ v0 -= 2;
+ if (3 > v0)
+ return a0;
+ }
+}
+
+
+// Function: call_func_ptr at 0x400f1c
+int call_func_ptr(unsigned int (*a0)(unsigned int), unsigned int a1)
+{
+ return a0(a1);
+}
+
+
+// Function: call_func_ptr_array at 0x400f28
+
+unsigned int call_func_ptr_array(unsigned int (*a0)(unsigned int), unsigned int a1)
+{
+ unsigned int v0; // r0
+ unsigned int v1; // r0
+
+ if (2 < a0)
+ {
+ v0 = 4294967295;
+ if (!((char)armg_calculate_condition(130, a0, 2, 0)))
+ goto LABEL_0x400f34;
+ return 4294967295;
+ v1 = v0;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(130, a0, 2, 0)))
+ goto LABEL_0x400f34;
+ return a0;
+ v1 = a0;
+ }
+LABEL_0x400f34:
+ return v1;
+}
+
+
+// Function: __dollar_a_16 at 0x400f4c
+unsigned int __dollar_a_16(unsigned int a0)
+{
+ return a0 * 2;
+}
+
+
+// Function: triple_value at 0x400f54
+unsigned int triple_value(unsigned int a0)
+{
+ return a0 * 3;
+}
+
+
+// Function: call_virtual_func at 0x400f5c
+unsigned int call_virtual_func(unsigned int a0, unsigned int a1)
+{
+ return a1 * 2;
+}
+
+
+// Function: process_with_callback at 0x400f64
+unsigned int process_with_callback(unsigned int *a0, unsigned int a1, unsigned int (*a2)(unsigned int))
+{
+ unsigned int v0; // r6
+ unsigned int result; // r5
+ unsigned int *v2; // r7
+ unsigned int *v3; // r7
+ unsigned int v4; // r5
+
+ if (a1 < 1)
+ return 0;
+ v0 = 0;
+ do
+ {
+ result = a1;
+ v2 = a0;
+ v3 = v2 + 1;
+ v0 += a2(*v2);
+ v4 = result - 1;
+ a0 = v3;
+ a1 = v4;
+ } while (result != 1);
+ return v0;
+}
+
+
+// Function: test_control_flow_l2 at 0x400fac
+extern char g_401de1[];
+
+int test_control_flow_l2()
+{
+ unsigned int v2; // r0
+ unsigned int v3; // r1
+ unsigned int v4; // r1
+ unsigned int v5; // r5
+ unsigned int v6; // r6
+ unsigned int v7; // r0
+ unsigned int v8; // r6
+ unsigned int v9; // r6
+ unsigned int v10; // r1
+ unsigned int v11; // r0
+ unsigned int result; // [bp-0x18]
+ unsigned int v1; // [bp-0x14]
+
+ puts(&g_401de1);
+ printf("CF-L2-01 (loop_multi_exit): %d\n", 12);
+ v2 = 0;
+ v3 = 1001;
+ v1 = 0;
+ do
+ {
+ if (v1 == 1)
+ {
+ v4 = v2;
+ goto LABEL_401008;
+ }
+ } while ((v2 += 1, v2 != 1001));
+ v1 = 1;
+ v4 = v3;
+LABEL_401008:
+ printf("CF-L2-02 (infinite_loop): %d\n", v4);
+ v5 = 4294967295;
+ printf("CF-L2-03 (multi_return): %d\n", 4294967295);
+ printf("CF-L2-03 (multi_return): %d\n", 4294967294);
+ printf("CF-L2-03 (multi_return): %d\n", 4);
+ v6 = 10;
+ printf("CF-L2-04 (conditional_return): %d\n", 10);
+ printf("CF-L2-04 (conditional_return): %d\n", 5);
+ printf("CF-L2-05 (duffs_device): %d\n", 8);
+ v7 = 11;
+ do
+ {
+ v8 = v6;
+ } while (v7 - 2 > v8 - 8 && (v5 += 1, v7 -= 1, v9 = v8 + 2, v6 = v8 + 2, v5 < 9));
+ printf("CF-L2-06 (loop_complex_cond): %d\n", v8 + 2);
+ printf("CF-L2-07 (loop_modify_var): %d\n", 30);
+ v10 = 0;
+ result = 0;
+ while (result == 0)
+ {
+ if (v10 + 1 == 101)
+ {
+ v10 = 101;
+ break;
+ }
+ }
+ printf("CF-L2-08 (loop_external_state): %d\n", v10);
+ printf("CF-L2-09 (recursion_factorial): %d\n", 120);
+ printf("CF-L2-10 (tail_recursion): %d\n", 120);
+ printf("CF-L2-11 (indirect_recursion): %d\n", 3);
+ printf("CF-L2-12 (call_func_ptr): %d\n", 10);
+ printf("CF-L2-13 (call_func_ptr_array): %d\n", 10);
+ printf("CF-L2-13 (call_func_ptr_array): %d\n", 120);
+ v11 = printf("CF-L2-15 (process_with_callback): %d\n", 30);
+ return printf("CF-L2-15 (process_with_callback): %d\n", 30);
+}
+
+
+
+
+
+// Function: cpp_exception at 0x401218
+unsigned int cpp_exception(unsigned int a0)
+{
+ unsigned int v0; // r1
+
+ v0 = a0 * 2;
+ if (100 < a0)
+ v0 = 4294967294;
+ if (!armg_calculate_condition(209, a0, 1, 0))
+ return v0;
+ return 4294967295;
+}
+
+
+// Function: large_jump_table at 0x401234
+
+unsigned int large_jump_table(unsigned int a0, unsigned int a1, unsigned int a2)
+{
+ unsigned int v0; // r0
+ unsigned int v1; // r0
+
+ v0 = 4294967295;
+ if (!((char)armg_calculate_condition(130, a0, 9, 0)))
+ goto LABEL_0x401240;
+ return 4294967295;
+ v1 = v0;
+LABEL_0x401240:
+ return v1;
+}
+
+
+// Function: __dollar_a_22 at 0x40125c
+int __dollar_a_22(unsigned int a0, unsigned int a1)
+{
+ return a1 + a0;
+}
+
+
+// Function: op_sub at 0x401264
+int op_sub(unsigned int a0, unsigned int a1)
+{
+ return a0 - a1;
+}
+
+
+// Function: op_mul at 0x40126c
+int op_mul(unsigned int a0, unsigned int a1)
+{
+ return a1 * a0;
+}
+
+
+// Function: op_div at 0x401278
+unsigned int op_div(unsigned int a0, unsigned int a1)
+{
+ unsigned int v1; // r0
+ unsigned int v0; // [bp-0x4]
+
+ if (!a1)
+ {
+ a0 = 0;
+ if (!((char)armg_calculate_condition(2, a1, 0, 0)))
+ goto LABEL_401284;
+ return 0;
+ }
+ else
+ {
+ if (!((char)armg_calculate_condition(2, a1, 0, 0)))
+ goto LABEL_401284;
+ return a0;
+ }
+LABEL_401284:
+ return a0 / a1;
+}
+
+
+// Function: op_mod at 0x401294
+unsigned int op_mod(unsigned int a0, unsigned int a1)
+{
+ if (!a1)
+ return 0;
+ return a0 % a1;
+}
+
+
+// Function: op_and at 0x4012b4
+unsigned int op_and(unsigned int a0, unsigned int a1)
+{
+ return a1 & a0;
+}
+
+
+// Function: op_or at 0x4012bc
+unsigned int op_or(unsigned int a0, unsigned int a1)
+{
+ return a1 | a0;
+}
+
+
+// Function: op_xor at 0x4012c4
+int op_xor(unsigned int a0, unsigned int a1)
+{
+ return a1 ^ a0;
+}
+
+
+// Function: op_shl at 0x4012cc
+unsigned int op_shl(unsigned int a0, char a1)
+{
+ return a0 << (a1 & 31) & a1 - 32 >> 31;
+}
+
+
+// Function: op_shr at 0x4012d4
+unsigned int op_shr(unsigned int a0, char a1)
+{
+ return (a1 < 32 ? a0 >> a1 : a0 >> 31);
+}
+
+
+// Function: conditional_func_ptr at 0x4012dc
+int conditional_func_ptr(unsigned int a0, unsigned int a1)
+{
+ unsigned int (*v4)(unsigned int);
+
+ if (a0 == 1)
+ v4 = triple_value;
+ else
+ v4 = recursion_factorial;
+ return v4(a1);
+}
+
+
+// Function: state_machine at 0x401318
+
+unsigned int state_machine(unsigned int a0, unsigned int a1)
+{
+ switch (a1)
+ {
+ case 0:
+ return a0 - 1 + -(a0 - 1) + (a0 - 1 <= 0);
+ case 1:
+ if (a0 == 2)
+ return 2;
+ return (a0 == 99 ? 3 : 1);
+ case 2:
+ return a1;
+ case 3:
+ return (a0 ? 3 : 0);
+ default:
+ a1 = 3;
+ break;
+ }
+}
+
+
+// Function: fsm_func_table at 0x401380
+
+unsigned int fsm_func_table(unsigned int a0, unsigned int a1)
+{
+ if (!((char)armg_calculate_condition(130, a1, 3, 0)))
+ {
+ return a0;
+ }
+ return 3;
+}
+
+
+// Function: __dollar_a_28 at 0x4013a0
+int __dollar_a_28(unsigned int a0)
+{
+ return a0 - 1 + -(a0 - 1) + (a0 - 1 <= 0);
+}
+
+
+// Function: state_processing at 0x4013b0
+unsigned int state_processing(unsigned int a0)
+{
+ if (a0 == 2)
+ return 2;
+ return (a0 == 99 ? 3 : 1);
+}
+
+
+// Function: state_done at 0x4013c8
+unsigned int state_done()
+{
+ return 2;
+}
+
+
+// Function: state_error at 0x4013d0
+unsigned int state_error(unsigned int a0)
+{
+ return (a0 ? 3 : 0);
+}
+
+
+// Function: non_local_jump at 0x4011dc
+unsigned int non_local_jump(unsigned int a0)
+{
+ return a0;
+}
+
+
+// Function: computed_goto at 0x4013f4
+unsigned int computed_goto(unsigned int a0, unsigned int a1)
+{
+ return a0 + a1;
+}
+
+
+// Function: obfuscated_cf at 0x40141c
+unsigned int obfuscated_cf(unsigned int a0)
+{
+ return a0 * 2;
+}
+
+
+// Function: opaque_predicate at 0x401424
+unsigned int opaque_predicate(unsigned int a0)
+{
+ return a0 * 2;
+}
+
+
+// Function: overlapped_code at 0x40142c
+unsigned int overlapped_code(unsigned int a0)
+{
+ if (((char)a0 & 1))
+ return a0 * 3 + 1;
+ return a0 + (a0 >> 31) >> 1;
+}
+
+
+// Function: test_control_flow_l3 at 0x401448
+extern char g_401e05[];
+
+int test_control_flow_l3()
+{
+ unsigned int v3; // r0
+
+ puts(&g_401e05);
+ printf("CF-L3-01 (non_local_jump): %d\n", non_local_jump(5));
+ printf("CF-L3-01 (non_local_jump): %d\n", non_local_jump(4294967291));
+ printf("CF-L3-02 (cpp_exception): %d\n", 10);
+ printf("CF-L3-02 (cpp_exception): %d\n", 4294967295);
+ printf("CF-L3-03 (large_jump_table): %d\n", 15);
+ printf("CF-L3-04 (conditional_func_ptr): %d\n", 10);
+ printf("CF-L3-05 (state_machine): %d\n", 1);
+ printf("CF-L3-07 (computed_goto): %d\n", computed_goto(printf("CF-L3-06 (fsm_func_table): %d\n", 2), 2));
+ printf("CF-L3-08 (obfuscated_cf): %d\n", 10);
+ printf("CF-L3-09 (opaque_predicate): %d\n", 10);
+ v3 = printf("CF-L3-10 (overlapped_code): %d\n", 16);
+ return printf("CF-L3-10 (overlapped_code): %d\n", 16);
+}
+
+
+// Function: main at 0x401560
+unsigned int main()
+{
+ test_control_flow_l1();
+ test_control_flow_l2();
+ test_control_flow_l3();
+ return 0;
+}
+
+
+
+/* CRT stub function __divsi3 removed by preprocessor */
+
+
+
+
+/* CRT stub function _divsi3_skip_div0_test removed by preprocessor */
+
+
+
+
+/* CRT stub function __aeabi_idivmod removed by preprocessor */
+
+
+
+
+/* CRT stub function __aeabi_ldiv0 removed by preprocessor */
+
+
+
+
+/* CRT stub function _fini removed by preprocessor */
+
+
+
+// Function: sub_4017d0 at 0x4017d0
+int sub_4017d0(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3, unsigned int a4, unsigned int a5)
+{
+ return a0;
+}
+

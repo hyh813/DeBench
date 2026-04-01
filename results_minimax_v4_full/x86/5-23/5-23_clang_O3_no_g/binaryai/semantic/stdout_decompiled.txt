@@ -1,0 +1,23 @@
+Testing preprocessing features
+
+Macro result: 64
+Result: 30
+Value: 32
+Multi branch: 57122
+Recursion: 116
+Stringize: 19
+Token paste: 60
+LOG: Values: 10, 20, 30
+Variadic: 60
+Override: 16
+Include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:17
+Builtin: 382
+Testing ASM features
+
+ASM basic: 15
+ASM clobber: 15
+ASM multi: -1
+ASM SIMD: 36
+ASM atomic: 30
+ASM privileged: 77

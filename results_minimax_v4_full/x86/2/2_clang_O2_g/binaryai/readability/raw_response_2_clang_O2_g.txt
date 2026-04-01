@@ -1,0 +1,146 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables are almost entirely generic - `param_1`, `param_2`, `local_38c`, `unaff_EBX`, `unaff_retaddr`. The decompiler made no attempt to infer semantic meaning from usage patterns. For example, in `process_char`, `param_1` should be named `c` based on the source.
+
+### 2. Function Naming Quality  
+**Score: 6/10**
+Justification: Core functions like `process_char`, `process_int`, `ptr_single`, `struct_simple` correctly match source names. However, many helper functions use cryptic address-based names like `FUN_00011030`, `FUN_00011275`. Test functions are well-named, matching source exactly.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Test functions use hardcoded expected values (e.g., `0x61` for 'a') rather than computed results, losing the dynamic nature. Magic numbers like `0x20` (case conversion offset) and `0xfffffff8` (loop unrolling mask) appear without explanation. Some constants like `0x28` for array size are unexplained.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Moderate noise present including unnecessary casts like `(int)(unkuint10)lVar1 >> 0x40`. Some constructs like `SUB104(lVar1,0)` are decompiler artifacts. However, no debug instrumentation or frame pointer manipulation clutter is present.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is readable with proper loops and conditionals. However, `array_string` uses an unusual do-while that doesn't match the source's while loop. Loop unrolling in functions like `array_1d_stack` is present but at -O0 this is unexpected - the decompiler may be misinterpreting the code.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Functions are appropriately sized with clear single responsibilities. The test functions properly call sub-functions. No 500-line monoliths present. Parameter counts generally match source (e.g., `array_1d_stack(int param_1, uint param_2)` matches `int array_1d_stack(int *arr, int n)`).
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `array_complex_index`. Some forward jumps exist in complex functions like `array_3d` but don't severely disrupt readability.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Significant loop unrolling in `array_1d_stack`, `array_3d`, `ptr_increment` - these process 8 elements at a time with manual unrolling. At -O0, this is unexpected and appears to be a decompiler artifact rather than compiler optimization. No comments explain this transformation.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Most integers are generic `int` or `uint`. The source uses `short`, `long`, `long long`, `_Bool` but decompiler shows `short`, `int`, `undefined8`. Function pointers are `code *` or `undefined4` rather than proper signatures. `process_ll` returns `undefined8` instead of `long long`.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: **Critical failure** - No structs are recovered. Instead of `Point3D p; return p.x + p.y + p.z;`, we see `param_1[1] + *param_1 + param_1[2]`. Nested structures like `Rect` with `position` and `size` fields become `param_1[3] + *param_1`. Unions are not recovered - `union_type` treats it as `float*`. Bitfields are partially recovered but as raw `ushort` manipulation.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe operations present. `ptr_triple` uses `undefined4 *param_1` then does `**(int **)*param_1` - multiple unsafe casts. Pointer arithmetic like `param_1 + uVar2 * 4` appears without bounds checking. However, basic operations like `*param_1 + 10` are type-safe.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: **No comments whatsoever** in the entire decompiled output. The source has extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）⭐"). The decompiler provides zero documentation for algorithms, parameters, or return values.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Basic idioms like loops and conditionals are recognizable. However, design patterns (state machines, callbacks) are not identified. The linked list traversal in `linked_list` is recognizable but not named as such. No algorithm patterns identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No indication of suspicious code or uncertainties. The `array_oob` function has undefined behavior (off-by-one loop) but no warning. Indirect function calls in `ptr_func_simple` and `struct_func_ptr` are not flagged as potentially unresolvable. The architecture mismatch (metadata says arm64 but code is x86) is not noted.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: Zero contract information recovered. No preconditions (e.g., "requires: ptr != NULL"), postconditions, or invariants documented. The source has no explicit contracts either, but the decompiler could infer some (e.g., `array_string` requires null-terminated string).
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are clear (e.g., `test_data_types_l1()` calls `printf`, `puts`). However, no documentation of caller/callee relationships. The callback relationships in `ptr_func_simple` (calls `double_value`) and `struct_func_ptr` (calls `process_int`) are not documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are logically grouped matching source structure: data type functions, array functions, pointer functions, composite functions, test functions. Static functions like `double_value` are properly scoped. Minor issue: some utility functions (`FUN_00011f15`) are interleaved unexpectedly.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: External functions marked with `<EXTERNAL>` (printf, puts, __libc_start_main). Some functions have unusual signatures - `main` returns `undefined4` instead of `int`. The code would require moderate patching to compile (adding includes, fixing return types).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 5 + 5) / 4 = 4.50
+L2_avg = (6 + 7 + 6 + 5) / 4 = 6.00
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.00
+L5_avg = (4 + 7 + 5) / 3 = 5.33
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.50 + 0.73 + 0.30 + 0.53
+        = 4.41/10
+```
+
+### Overall Readability Score: 4.4/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **No struct/union recovery**: All composite types lost - `Point3D p` becomes `int *param_1` with field access via array indices (`param_1[1]`). This is the most severe readability issue.
+
+2. **No comments whatsoever**: Zero documentation for algorithms, parameters, or purpose. The source has extensive explanatory comments that are completely lost.
+
+3. **Generic variable naming**: Everything is `param_1`, `param_2`, `local_38c`, `unaff_EBX` with no semantic inference.
+
+4. **Loop unrolling at -O0**: Functions like `array_1d_stack` show 8-element unrolling that shouldn't exist at debug optimization level - appears to be decompiler misanalysis.
+
+5. **No type precision for long long**: `process_ll` returns `undefined8` instead of `long long`, losing the 64-bit integer semantic.
+
+---
+
+### Best Quality Aspect: Module Organization (7/10)
+Functions are logically grouped matching the source file structure - data types, arrays, pointers, composites, and tests are all properly separated. This makes navigation reasonable despite other issues.
+
+---
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The complete absence of any comments is devastating for readability. Even basic parameter documentation ("// param_1: input character") would significantly improve usability. Combined with the poor variable naming, the code is essentially opaque.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types**: Use layout analysis to reconstruct composite types. When seeing `param_1[0] + param_1[1] + param_1[2]` with consistent 12-byte stride, infer `struct { int x; int y; int z; }` and name fields based on usage context.
+
+2. **Add semantic comments**: Generate comments for function purpose, parameter meanings, and return value expectations. Even basic inference like "// param_1: array pointer, param_2: element count" would help significantly.
+
+3. **Infer variable names from usage**: Analyze how variables are used to suggest names. A parameter used in arithmetic with 32 (0x20) for character case conversion should suggest `c` or `character`. A loop index used with `*4` offset suggests array indexing.

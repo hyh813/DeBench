@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`). At -O0, variables should retain meaningful names from debug symbols. Only a few like `result`, `iter`, `cur` are descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The main functions correctly recovered names like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`. However, many spurious wrapper functions (`sub_401211`, `sub_40122f`) exist that just call the real functions, adding noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `1717986919` (magic constant for division), and `0xFFFFFFFF` appear without explanation. The decompiler doesn't annotate these as signed equivalents or explain the division trick.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without obvious compiler artifacts like frame pointer manipulation or debug instrumentation. Some noise from wrapper functions but manageable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Several functions have unnatural control flow: `single_if` uses `_ccall(15, 15, a0, 0, 0)` instead of clear conditional; `loop_for_fixed` uses complex formula instead of loop; `loop_while` has weird do-while with `(result * 1717986919 >> 34) + (result * 1717986919 >> 63)` for division. At -O0, these should be straightforward loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with reasonable decomposition. No obvious 500-line monoliths. The wrapper functions are minor issues but don't severely impact readability of main logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Some forward jumps in switch statements are appropriate. The `goto_backward` function has complex nested loops that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant expressions present, particularly in complex conditions. The loop unrolling in `loop_for_fixed` is not recognized as such - appears as a complex formula. Some dead code paths visible.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All parameters typed as `unsigned int` when original used `int`, `signed int`. No use of specific types like `int32_t`, `size_t`, or `bool`. The original `int` return types are preserved but parameter types are wrong.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex structs recovered. Simple types only. The original had arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` but decompiler shows switch on values directly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The mysterious `_ccall(15, 15, a0, 0, 0)` in `single_if` and `conditional_return` is suspicious - likely a sign extension or comparison operation that couldn't be resolved. Some pointer arithmetic present but generally safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithms, magic numbers, or non-obvious logic. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like switch statements are recognized. But design patterns (state machine, callback, etc.) are not explicitly identified. The `duffs_device` is partially recognized but appears as goto labels rather than the well-known pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `_ccall` function appearing in `single_if` and `conditional_return` should be flagged as uncertain. No indication of indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had test validation comments that are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (e.g., `call_func_ptr_array` calls through function pointer table). But no documentation of who calls whom, callback relationships, or global variable usage.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file, organized by address. Static functions like `double_value`, `triple_value` are properly scoped. But no logical grouping matching original source (test functions, control flow L1/L2/L3 sections).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears syntactically correct and would likely compile. External dependencies (libc functions like `puts`, `printf`) are referenced. Would need moderate patching for standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `a2` for parameters and `v0`-`v7` for locals instead of meaningful names from debug symbols
+- Type precision: all parameters are `unsigned int` when original used signed `int`
+- Control flow unnatural: `_ccall(15, 15, a0, 0, 0)` instead of clear conditional; complex division formulas instead of loops
+- No comments at all - original had extensive documentation completely lost
+- Anomaly indication missing: `_ccall` should be flagged as uncertain decompilation
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The main functions like `sequential_ops`, `loop_for_fixed`, `state_machine` correctly recovered their original names.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+Zero comments in output. At -O0 with debug symbols, the decompiler should preserve significant source documentation and explain non-obvious transformations.
+
+**Top 3 Recommendations:**
+1. **Variable Names**: At -O0, infer variable names from debug symbols - `a`, `b`, `c` should become `temp1`, `temp2` or better yet, semantic names like `sum`, `product`
+2. **Type Precision**: Recover signed/unsigned correctly - original used `int`, not `unsigned int`
+3. **Comments**: Add explanatory comments for magic numbers (4294967295 = -1), complex operations (1717986919 = division by 10 trick), and uncertain decompilation (_ccall)

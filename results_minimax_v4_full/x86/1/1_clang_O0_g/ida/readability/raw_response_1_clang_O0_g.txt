@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameters use generic single letters (a, b, c, x) which is acceptable, but local variables like `v3, v4, v5...` in `duffs_device` and `loop_complex_cond` are cryptic. However, loops correctly use `i, j, sum, count` which are descriptive. Mixed result - some functions well-named, others use meaningless single-letter variables.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`. The naming is semantically accurate and action-oriented.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Most literals are correct (e.g., `switch_small` returns 15, 5, 50, 2 matching a+b, a-b, a*b, a/b). However, magic numbers like `1000` in `infinite_loop` and `100` in `multi_return` lack explanatory comments. The ternary operator in `loop_while` (`count > 0 ? count : 1`) was decompiled to if-else, losing the idiomatic form.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: No compiler artifacts like redundant casts, frame pointer manipulations, or debug instrumentation observed. The `__usercall` and register annotations (@<eax>) are standard IDA output, not noise. Very clean decompilation with minimal artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. Loops use `for` and `while` appropriately. Switch statements correctly used for `if_elseif_chain` and `if_elseif_long`. The `goto_forward` uses straightforward if-else. At -O0, no loop unrolling or goto-for-loop transformations expected. Minor issue: `duffs_device` uses goto labels which is less natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function maintains appropriate granularity with single responsibility. No monolithic functions or over-fragmentation. Parameter lists are reasonable (no implementation details exposed). Functions like `recursive_factorial` and `tail_recursion` properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in `multi_return` and `single_if`. The `duffs_device` has goto labels (LABEL_6, LABEL_8, etc.) that create some non-linearity, but this is necessary to represent the Duff's device pattern correctly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `duffs_device` is a legitimate compiler optimization at any level and is appropriately represented (though could be commented). Common subexpressions not unnecessarily duplicated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Parameters correctly use `int` for integer types. Function pointer types are precise: `int (*f)(int)` and `int (*funcs[3])(int)`. The `volatile int *flag` in `infinite_loop` and `loop_external_state` correctly indicates volatile qualifier. Minor issue: some loop variables could be more specific (e.g., `size_t` for counts).
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Local arrays properly reconstructed: `int arr[5]` in `loop_break`, `int matrix[3][4]` in `loop_multi_exit`, `int dst[8]` and `int src[8]` in test functions. Array dimensions and element types are accurate. The `int (*funcs[3])(int)` function pointer array is correctly typed.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `src++`, `dst++` in `duffs_device`). Function pointers used correctly with proper signatures. No type-confused operations. Buffer operations use `memcpy` appropriately.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments are sparse. The decompilation includes function headers with metadata (e.g., "Decompiled by IDA Pro 9.1 with Hex-Rays"). No algorithm explanations or non-obvious logic documentation. Auto-generated headers present but no meaningful inline comments explaining complex logic.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: `duffs_device` is clearly identified and correctly reconstructed with switch-case and do-while goto pattern. State machine patterns in `state_machine` and `fsm_func_table` are recognized. Recursion patterns in `recursion_factorial` and `tail_recursion` properly identified. Callback pattern in `process_with_callback` recognized.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Failed to decompile functions are clearly marked at the end ("FAILED to decompile: __libc_start_main", "printf", "longjmp", etc.). The `computed_goto` uses inline assembly `__asm { jmp eax }` which is appropriately shown. However, no warnings about uncertain decompilations within functions.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: Basic preconditions present (e.g., `if (n <= 0) return -1` in `duffs_device`, `if (x <= 0) return 1` in `goto_backward`). However, no explicit @param/@return contracts or invariant documentation. Error conditions not explicitly documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear (e.g., `sequential_ops(5, 7, 3)`). Static helper functions like `double_value`, `triple_value` used by other functions. However, no explicit documentation of caller/callee relationships or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically: test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) grouped together, helper functions (`double_value`, `triple_value`) near their users, state handlers (`state_idle`, `state_processing`, `state_done`, `state_error`) grouped. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses `__cdecl` calling convention which is x86-specific. The code should compile with minor adjustments for standalone use. External dependencies (printf, memcpy, setjmp/longjmp) are standard C library functions. No compiler-specific hacks beyond calling conventions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.16/10
+
+**Critical Defects:**
+- Variable naming in complex functions uses cryptic single-letter names (`v3, v4, v5...` in `duffs_device`) obscuring their roles
+- Magic numbers like `1000` and `100` lack explanatory comments or constant names
+- Comments are sparse with no algorithm explanations or non-obvious logic documentation
+- The ternary operator idiom in `loop_while` was lost, converted to if-else form
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.67/10)  
+Types are precise with correct function pointer signatures, composite types (arrays) properly recovered with accurate dimensions, and no type safety violations observed.
+
+**Most Needs Improvement:** Lexical Clarity (scored 7.0/10)  
+While function names are excellent, variable naming is inconsistent with cryptic single-letter variables in complex functions, and literal clarity suffers from unexplained magic numbers.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - variables like `v3, v4, v5` in `duffs_device` should be named based on their role (e.g., `count`, `src_ptr`, `dst_ptr`)
+2. Detect magic numbers and suggest named constants - numbers like `1000` in loops should be flagged or named
+3. Preserve idiomatic expressions - ternary operators like `count > 0 ? count : 1` should be recovered as `?:` rather than if-else when semantically equivalent

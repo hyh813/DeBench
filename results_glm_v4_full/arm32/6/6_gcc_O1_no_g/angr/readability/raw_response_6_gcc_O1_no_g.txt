@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters are generic (`ptr`, `a1`) instead of semantic (`dst`, `src`). Struct fields are accessed as array offsets (`ptr[2]`) instead of field names (`data->result`), severely obscuring meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most high-level function names (`param_strcpy`, `call_strcpy`, `param_strcmp`) are preserved accurately from the source. However, some helpers are generic (`sub_112a4`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals ("HelloLib") are preserved. However, error codes are represented as large unsigned integers (e.g., `4294967295` for -1) instead of symbolic constants or signed values, reducing clarity.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from stack canary checks (`__stack_chk_guard`) in almost every function. The use of `armg_calculate_condition` and `armg_calculate_flag_c` exposes low-level IR lifting artifacts instead of high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple logic in `param_strcpy` is preserved, but complex logic like `param_strcmp` is destroyed. The ternary operator `ret > 0 ? 1 : ...` is decompiled into a mess of flag calculations (`armg_calculate_flag_c`) and obscure branches.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match the source well. The granularity is appropriate, with no monolithic functions or excessive fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but the insertion of `armg_` helper calls and stack checks disrupts the linear flow of logic in functions like `param_fork_exec`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_strcpy` contains a redundant `strlen` call (called twice, once stored, once returned). `param_strcmp` repeats `armg_calculate_condition` calls unnecessarily.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `const` qualifiers are stripped (`const char *src` becomes `char *a1`). `size_t` is demoted to `unsigned int`. `FILE*` is recovered as an empty struct typedef, losing standard library context.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are completely lost. `ThreadData` in `thread_sum` is treated as a raw pointer (`unsigned int *ptr`), with fields accessed via hardcoded offsets (`ptr[2]`, `ptr[1]`) rather than semantic names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Standard pointer casts are present. While not unsafe, the lack of struct typing forces the use of raw pointer arithmetic (e.g., `ptr + 1`), which is less safe than struct member access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments are present in the decompiled code. There is no explanation of the logic, especially for the complex flag manipulation sections.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common idioms are missed. The ternary comparison in `param_strcmp` is not recognized. The struct initialization in `call_memcpy` is flattened into individual assignments.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The presence of `armg_calculate_condition` and `armg_calculate_flag_v` indicates a failure to lift the IR, but these are not flagged as anomalies or uncertainties; they are presented as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions or postconditions are documented. For example, `param_strcpy` does not indicate that `dst` must be a valid buffer.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls to standard library (`strcpy`, `strlen`) and internal functions are clear. The relationship between `call_strcpy` and `param_strcpy` is obvious.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are ordered logically, matching the source flow (standard library tests, then system calls, then threads). Related functions are grouped together.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile. It relies on undefined intrinsic functions like `armg_calculate_condition` and `__aeabi_read_tp` which are not part of the standard C environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 6 + 3) / 4 = 5.0
+L2_avg = (3 + 8 + 6 + 5) / 4 = 5.5
+L3_avg = (4 + 2 + 6) / 3 = 4.0
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (7 + 8 + 2) / 3 = 5.67
+
+Overall = (5.0 × 0.30) + (5.5 × 0.25) + (4.0 × 0.20) + 
+          (1.25 × 0.15) + (5.67 × 0.10)
+Overall = 1.5 + 1.375 + 0.8 + 0.1875 + 0.567
+Overall = 4.43
+```
+
+### Overall Readability Score: 4.4/10
+
+### Critical Defects
+- **Struct Recovery Failure**: `ThreadData` structure is completely lost; accessed via raw pointer offsets (`ptr[2]`) instead of field names (`data->result`).
+- **Control Flow Obfuscation**: The ternary operator in `param_strcmp` is decompiled into low-level flag calculations (`armg_calculate_flag_c`), making logic unreadable.
+- **Missing Debug Info**: Despite `-g` flag in metadata, variable names are generic (`ptr`, `a1`) and `const` qualifiers are stripped.
+- **IR Artifacts**: Pseudocode contains non-compilable lifting artifacts (`armg_calculate_condition`) instead of high-level C logic.
+- **Type Erasure**: `FILE*` and `sockaddr` structures are not recovered as standard types, losing semantic context.
+
+### Best Quality Aspect
+- **Function Naming (Score: 8/10)**: The decompiler successfully preserved the original function names for most test cases (e.g., `param_strcpy`, `call_strcmp`), making the high-level purpose of the code blocks easy to identify despite the poor internal implementation.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**: The complete failure to recover `struct ThreadData` and other user-defined types, replacing them with raw pointer arithmetic and magic offsets, is the single biggest barrier to understanding the data manipulation logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Struct Recovery Heuristics**: Analyze access patterns (e.g., `ptr[2] = 0`, `ptr[0]`, `ptr[1]`) to reconstruct and define `struct` types with named fields instead of raw array access.
+2.  **Improve Control Flow Lifting**: Enhance the pattern matching for conditional moves and flag checks to reconstruct high-level ternary operators (`?:`) and simple `if/else` blocks, removing `armg_calculate_flag` intrinsics.
+3.  **Utilize Debug Symbols**: If available (as indicated by `-g`), prioritize loading debug information to recover original variable names (`dst`, `src`) and type qualifiers (`const`) instead of defaulting to generic names.

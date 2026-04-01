@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows `param_strcpy` is a wrapper function that:
+1. Calls `strcpy(dst, src)` to copy a string
+2. Returns `strlen(dst)` - the length of the copied string
+
+The decompiled version shows significant semantic loss:
+- **Return type is `void` instead of `int`** - the return value `strlen(__s)` is computed but discarded
+- **Parameter names are generic** (`param_1`, `param_2`)
+- **Unnecessary local variable** (`__s`) when `param_1` could be used directly
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) that don't indicate their semantic roles as destination and source buffers. The local variable `__s` is unnecessary and confusing. Compare to source: `dst` and `src` are clear, descriptive names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function name `param_strcpy` correctly matches the original source function name. The naming is action-oriented and semantically accurate, clearly indicating string copy operation.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like `"HelloLib"` and format strings are preserved correctly. Minor issue: the magic number `9` in `builtin_strncpy(local_30,"HelloLib",9)` should be `10` (including null terminator) or use `strlen("HelloLib")+1`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present. The `builtin_strncpy` is a compiler intrinsic showing up, and the unnecessary `__s` variable creates noise. However, no significant dead code or register spilling artifacts observed.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is straightforward - simple sequential execution with function calls. At `-O0` optimization, no loop unrolling or goto patterns expected. The flow matches the simple linear logic of the source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The `call_strcpy` function has been incorrectly inlined - it calls `builtin_strncpy` directly instead of calling `param_strcpy`. This loses the function abstraction and makes the code harder to understand. The original function call relationship is broken.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with no forward jumps or complex branching. Simple linear flow makes it easy to follow execution.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy in `param_strcpy` itself. However, the inlining in `call_strcpy` creates semantic redundancy - the logic is present but the function call is lost.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Critical type loss**: Return type is `void` instead of `int`. The original function returns `strlen(dst)` (an integer), but the decompiled version discards this value. Also, `param_2` should be `const char *` but is declared as `char *`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex composite types in this function. Simple pointers are handled adequately. The `char buffer[32]` in `call_strcpy` is correctly recovered as `char local_30 [32]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: (1) `param_2` lacks `const` qualifier when it should be `const char*`, (2) return value discarded (type mismatch), (3) potential buffer overflow in `builtin_strncpy` with hardcoded 9 vs actual string length.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments in the decompiled functions. The original source has clear documentation intent, but the decompiled code provides no explanation of what the function does or that it returns string length.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: The strcpy + strlen pattern is recognizable as a "get string length after copy" idiom, but not explicitly named or documented. The pattern could be recognized as a common utility pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No indication that the return value is being discarded. The decompiler should flag that `strlen(__s)` result is unused. Also, the inlining of `call_strcpy` should be flagged as a potential issue.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. The original has implicit preconditions (dst buffer must be large enough) and postconditions (returns copy length). None of this is documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: The relationship between `call_strcpy` and `param_strcpy` is broken due to inlining. No documentation of what functions call `param_strcpy` or what it calls.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the decompiled output. The standard library functions, test functions, and main are reasonably organized.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code has type errors (void return vs expected int) that would cause compilation failures. The `builtin_strncpy` is a compiler intrinsic that may not be portable. Would require fixes to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Return type is `void` instead of `int`** - the return value `strlen(__s)` is computed but discarded, completely losing the function's return semantics
+- **Parameter `param_2` should be `const char *`** - missing const qualifier loses important type information
+- **`call_strcpy` incorrectly inlines the logic** - loses the function call abstraction, breaking the relationship with `param_strcpy`
+- **No comments explaining the function** - the purpose (copy string and return length) is not documented
+- **Magic number `9` in strncpy** - should be `10` or use proper constant
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- The function name `param_strcpy` correctly matches the source and clearly indicates the function's purpose
+
+**Most Needs Improvement:** Type Precision (2/10)  
+- The return type being `void` instead of `int` is a critical semantic loss that fundamentally changes the function's behavior. The decompiler completely missed the return value.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Track return value usage**: The decompiler must detect when a function's return value is used (e.g., assigned to a variable, passed as argument) vs. discarded, and preserve the correct return type
+2. **Preserve const correctness**: Analyze parameter usage to determine if pointers should be `const` qualified
+3. **Avoid aggressive inlining in decompilation**: Even at -O0, maintain function call relationships rather than inlining, as this preserves the semantic structure of the original code

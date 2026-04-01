@@ -1,0 +1,5 @@
+Preprocessing features test
+643032571221161960LOG: Values: 10, 20, 30
+6016500file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:15
+382382ASM features test
+1515420307777

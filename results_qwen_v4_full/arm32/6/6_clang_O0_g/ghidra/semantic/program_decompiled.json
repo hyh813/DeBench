@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_clang_O0_g/ghidra/syntactic/bin/6_clang_O0_g_fixed",
+  "stdout": "Testing standard library functions\nstrcpy result: 8\nstrcmp result: 2\nstrlen result: 12\nmemcpy result: -1224848486\nmemcmp result: 2\nValue: 42, Name: Test\nprintf result: 22\nscanf result: 579\nfopen_fclose result: 42\nfread_fwrite result: 42\nmalloc_free result: 90\nmemset result: 0\nstrchr_strstr result: 15\nTesting system calls\nlinux_syscall result: 42\nwin32_api result: 42\nfork_exec result: -1\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_gcc_Os_g/ghidra/syntactic/bin/6_gcc_Os_g_fixed",
+  "stdout": "Testing standard library functions\n\nstrcpy result: 8\nstrcmp result: 0\nstrlen result: 12\nmemcpy result: 90\nmemcmp result: -1\nValue: 42, Name: Test\nprintf result: 22\nscanf result: 579\nfopen/fclose result: 42\nfread/fwrite result: 42\nmalloc/free result: 90\nmemset result: 0\nstrchr/strstr result: 15\nTesting system calls\n\nlinux syscall result: 42\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

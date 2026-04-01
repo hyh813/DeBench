@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are predominantly generic IR names like `v0`, `v1`, `v2`, and obscure internal artifacts like `vvar_120{r56|8b}`. Struct fields are generic (`field_0`, `field_8`), offering no semantic insight.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `local_vars`, `heap_basic`, `global_var_access`), which significantly aids in understanding the code's purpose compared to generic addresses.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers, such as the vector constant `0xf0e0d0c0b0a09080706050403020100` and error codes like `4294967295` (UINT_MAX), with no named constants to explain their meaning.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The output contains significant noise from the intermediate representation (IR), including pseudo-operations like `AddV`, `CONCAT`, and `vvar_120{r56|8b}`, which obscure the underlying C logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple loops are often unrolled into massive blocks or obscured by complex pointer arithmetic (e.g., `vla_stack`). Additionally, `global_var_access` contains a logic error, returning `global_counter + 1` instead of the incremented value.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are well-preserved, matching the original source's granularity. While there are some wrapper functions (e.g., `sub_401209`), the core logic functions are distinct.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code flow is frequently disrupted by unrolled loops and pointer arithmetic, making it difficult to read top-to-bottom. Forward jumps and complex conditional structures replace simple loop constructs.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: There is massive redundancy due to loop unrolling (e.g., in `large_stack_frame` and `heap_basic`), where repetitive blocks of `uint128_t` assignments obscure the simple iteration logic present in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Scalar integer operations are frequently misrepresented as vector operations using `uint128_t` (e.g., in `heap_basic`), and pointer types are often cast to `void*` or generic integers, losing type safety and intent.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structures are recovered but with generic field names (e.g., `struct_0` with `field_0`, `field_8`). The specific semantics of types like `Point` or `Node` are lost, though the memory layout is roughly preserved.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains numerous unsafe casts, such as `*((void*)&ptr->field_0)`, and relies on non-standard operations like `AddV`, making the code type-unsafe and prone to undefined behavior if compiled.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comments are decompiler artifacts like `[D] Unsupported jumpkind`, which do not aid in understanding the program's semantics.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common C idioms like `for` loops are not recognized; instead, they are represented as unrolled blocks or `do-while` loops with manual pointer manipulation. Standard memory patterns are obscured by vectorization artifacts.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Some anomalies are flagged with `[D]` markers (e.g., `[D] MBusEvent-Imbe_Fence()`), but many suspicious constructs, like the logic error in `global_var_access` or the invalid `AddV` usage, are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if (arr == NULL)` in the source is present but not explicitly documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear because the original function names were recovered. Global variable accesses (e.g., `global_counter`) are also explicit and easy to trace.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by memory address rather than logical grouping (e.g., all stack functions together), which scatters related functionality throughout the file.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not valid C. It uses pseudo-operations like `AddV`, `CONCAT`, and internal variables like `vvar_120{r56|8b}`, making it impossible to compile without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 2 + 1) / 4 = 3.5
+L2_avg = (3 + 8 + 4 + 2) / 4 = 4.25
+L3_avg = (2 + 4 + 2) / 3 = 2.67
+L4_avg = (1 + 2 + 5 + 1) / 4 = 2.25
+L5_avg = (8 + 5 + 1) / 3 = 4.67
+
+Overall = (3.5 × 0.30) + (4.25 × 0.25) + (2.67 × 0.20) + 
+          (2.25 × 0.15) + (4.67 × 0.10)
+Overall = 1.05 + 1.0625 + 0.534 + 0.3375 + 0.467
+Overall = 3.45 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.5/10
+
+### Critical Defects (Bullet List)
+- **Non-Standard Syntax:** Extensive use of IR pseudo-ops (`AddV`, `CONCAT`) and internal variables (`vvar_120{r56|8b}`) renders the output invalid C.
+- **Scalar-to-Vector Confusion:** Simple integer array operations are misrepresented as complex `uint128_t` vector operations (e.g., in `heap_basic`), destroying readability.
+- **Logic Error:** `global_var_access` returns `global_counter + 1` instead of `global_counter`, introducing a semantic bug not present in the source.
+- **Loop Unrolling:** Simple loops are aggressively unrolled into massive repetitive blocks (e.g., `large_stack_frame`), making the code extremely verbose and hard to follow.
+- **Generic Naming:** All struct fields are named `field_0`, `field_8`, etc., and local variables are `v0`, `v1`, stripping away semantic meaning.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully recovered the original function names from the binary symbols, which is the only feature that makes the code navigable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Build System Compatibility (1/10)**
+- **Why?** The output is not valid C code due to IR artifacts and pseudo-operations, making it unusable for any practical purpose like recompilation or static analysis without heavy post-processing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Lower IR Operations:** Replace pseudo-operations like `AddV` and `CONCAT` with standard C operators (`+`, `|`) to ensure valid C syntax.
+2. **Reconstruct Scalar Loops:** Detect and restructure unrolled vectorized code back into standard `for` or `while` loops to improve linearity and reduce verbosity.
+3. **Improve Variable Naming:** Map internal IR variables (e.g., `vvar_120`) to meaningful stack variable names based on context and usage patterns.

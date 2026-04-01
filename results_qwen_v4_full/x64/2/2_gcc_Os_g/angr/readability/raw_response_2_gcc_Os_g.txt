@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `idx`, `ptr`) with no semantic meaning. For example, `volatile_access` uses `a0` instead of `volatile_ptr`, and test functions use `v4`, `v5`, `v6` instead of meaningful names like `vol_value`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`double_value`, `process_int`, `process_char`) but many functions have mechanical names (`sub_401020`, `sub_40102d`). Test functions (`test_data_types_l1`, `test_array_types`) retained their names well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1` or `UINT_MAX`), `8589934593`, `17179869187`. Float constants appear as hex (`0x3fc00000`) instead of `1.5f`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `[D] Unsupported jumpkind` markers, VEX IR artifacts in `process_ld`, `process_float`, `process_double`. Redundant variables like `v1 = v3; v1 = v3` in `array_string`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some functions use `goto` instead of proper calls (`ptr_func_simple: goto a0;`, `struct_func_ptr: goto a0->field_8;`). Float functions contain broken VEX IR conditionals instead of clean arithmetic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but `binary_tree_sum` has 4 extra parameters (`a1, a2, a3`) that don't exist in source. Test functions are monolithic with hardcoded expected values.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by `[D]` conditional blocks in `test_data_types_l1` and `process_ld`. Some functions have unnecessary `while(true)` with breaks instead of clean `for` loops.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain hardcoded expected values instead of actual function calls (e.g., `__printf_chk(1, "DT-L1-01...: %c\n", 97)` instead of calling `process_char('A')`). Redundant variable assignments throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`unsigned int` (`process_char`), `short`→`unsigned int` (`process_short`), `float`/`double` functions return wrong types or fail entirely. `volatile_access` loses volatile semantics entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`) instead of original (`x`, `y`, `z`, `next`, `prev`). `Point3D` becomes `unsigned int *` with array indexing. Bitfields completely lost in `struct_bitfields`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(unsigned long long)(AddV(...))` in float functions, void pointer casts without proper handling. `ptr_void` returns `unsigned long long` instead of `int`, causing potential truncation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of `[D]` failure markers, no documentation of type uncertainties, no algorithm explanations. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion not annotated. Switch-on-enum (`enum_switch`) degrades to array lookup without explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `[D]` markers indicate failures but provide no actionable guidance. `process_ld` shows VEX IR but no explanation of why long double failed. No warnings about potential undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for pointer functions). No postconditions. No error condition documentation. `array_complex_index` bounds checking present but not annotated as safety checks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but callback relationships unclear (`ptr_func_simple` shows `goto a0` without indicating function pointer). Global variables use generic names (`g_402004`, `g_403fe8`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by test category (data types, arrays, pointers, composites). Original source's section comments and organization completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains `[D]` artifacts that prevent compilation. `process_ld`, `test_data_types_l1` have unresolvable VEX IR. External declarations present but some functions have mismatched signatures.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+5+4+3)/4 = 3.75
+Level 2 Average: (4+6+5+5)/4 = 5.00
+Level 3 Average: (3+4+4)/3 = 3.67
+Level 4 Average: (1+2+3+1)/4 = 1.75
+Level 5 Average: (4+5+3)/3 = 4.00
+
+Overall = (3.75 × 0.30) + (5.00 × 0.25) + (3.67 × 0.20) + 
+          (1.75 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 1.25 + 0.734 + 0.2625 + 0.400
+        = 3.77/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **VEX IR artifacts** in `process_float`, `process_double`, `process_ld` make floating-point functions completely unreadable
+- **Zero comments** despite complex type testing logic that requires explanation
+- **Generic struct field names** (`field_0`, `field_8`) lose all semantic meaning from original (`x`, `y`, `z`, `next`, `prev`)
+- **Type degradation** throughout: `char`→`unsigned int`, `volatile` semantics lost, function pointers become `goto`
+- **Test functions hardcoded** with expected values instead of actual function calls, defeating test purpose
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Original function boundaries mostly preserved with recognizable names for core functions like `double_value`, `process_int`, `array_1d_stack`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, annotations, or decompilation confidence indicators makes understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover floating-point operations** - Replace VEX IR artifacts with proper FPU instruction semantics; long double support is critical for completeness
+2. **Infer semantic variable names** - Use usage patterns to name variables (e.g., loop counters → `i`, `idx`; pointers → `ptr`, `arr`; sizes → `n`, `count`)
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments explaining limitations and suggesting manual review areas

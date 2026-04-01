@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_O1_g/angr/syntactic/bin/5-23_clang_O1_g_fixed",
+  "stdout": "Preprocessing features test:\ncall_macro_constants returned: -1076847052\ncall_macro_functions returned: -1076847052\ncall_conditional_compile returned: -1076847052\ncall_multi_branch_compile returned: -1076847052\ncall_macro_recursion returned: -1076847052\ncall_stringize returned: -1076847052\ncall_token_paste returned: -1076847052\nLOG: Values: 10, 20, 30\ncall_macro_override returned: 10\ncall_macro_override returned: 10\ncall_include_guard returned: 10\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

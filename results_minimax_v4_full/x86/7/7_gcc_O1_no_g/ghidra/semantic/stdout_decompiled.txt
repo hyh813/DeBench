@@ -1,0 +1,5 @@
+Test: opaque_predicate = %d
+
+Expected: 10
+opaque_predicate: 10
+instruction_substitution: 225

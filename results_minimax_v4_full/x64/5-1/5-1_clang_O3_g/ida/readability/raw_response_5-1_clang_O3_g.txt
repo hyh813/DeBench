@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic single letters (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `s[31]`, `exception`). The decompiler made no attempt to infer semantic meaning from usage patterns. For example, in `test_cpp_member_func`, the buffer `s` clearly holds a string but is named generically.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ name demangling works well - `test_cpp_member_func`, `call_virtual_func`, `template_max<int>`, `Container<int>::push` are all correctly recovered. However, runtime support functions like `sub_1020`, `init_proc` remain generic. The test function names match source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The decompiler inlined computed results (e.g., `4700`, `42`, `71`) which obscures the original logic. The magic number `0x1234` from `getClassID()` is completely lost - only the result `4700` remains. Allocation sizes like `8u`, `4u` lack context. Some literals are clear but original constants are not recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Unusual constructs like `*(_OWORD *)&s[15]` for string operations are present but manageable. No obvious register spill code or debug instrumentation. The output is relatively clean compared to typical -O3 decompilations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions are trivial returns of computed values due to aggressive inlining. The `call_virtual_func` correctly shows indirect vtable call: `((__int64 (__fastcall *)(Base *, int))*obj->_vptr$Base)(obj, x)`. Control flow is simple but some patterns like the string initialization in `test_cpp_member_func` are unusual.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition - template instantiations are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`), class methods are separate functions, and member functions like `Container<int>::push`, `Container<int>::get` are correctly extracted. Function granularity is appropriate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code is highly linear - most functions are single return statements. The complex `test_cpp_rtti` function has sequential operations but no confusing jumps. Template functions read top-to-bottom without forward references. Very clean linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling from -O3 is not excessive. Common subexpression elimination is not problematic. The code is clean with no duplicate logic blocks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int` for integers, `double` for floating point, `Base*` and `RTTIBase*` for class pointers. However, `__int64` is used for pointers when `uintptr_t` would be more precise. The `char s[31]` in `test_cpp_member_func` should be `char name[32]` based on source. Minor type precision issues.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class structures are well recovered - `Base` with vtable, `Container<int>` and `Container<double>` with `data` and `size` fields, `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB` all properly reconstructed. The `vptr$Base` naming indicates vtable recovery. Field names like `size`, `data` are correctly inferred.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with proper pointer types. Minor issues: the unusual cast `*(_OWORD *)&s[15]` for string operations, and the indirect vtable call uses a function pointer cast. No obvious buffer overflow patterns. The code is reasonably type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled output. The only comments are the header indicating it was decompiled by IDA Pro and some function descriptions. No explanation of algorithms, no recovery of original comments from debug info, no inline documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Virtual function calls are recognized through vtable access (`_vptr$Base`). Template instantiation is properly identified. Exception handling shows `__cxa_throw`, `__cxa_allocate_exception`. However, the exception test function is marked `__noreturn` which is correct but the rethrow logic isn't clearly documented. Some patterns recognized but not named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The "FAILED to decompile" messages for 19 functions (printf, strlen, __cxa_begin_catch, etc.) indicate failures, but these are external library functions that shouldn't be inlined. No flags for suspicious code patterns, unusual stack layouts, or potential undefined behavior. The indirect call in `call_virtual_func` isn't flagged as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The `Container<int>::get` function has a bounds check (`if (idx >= 0 && this->size > idx)`) but no comment explaining it. No recovery of original assertions or contracts from source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are partially clear - `main` calls `test_cpp_oo_features`, which calls all test functions. However, no documentation of who calls each function, no global variable usage documented (e.g., `LifecycleClass::instance_count`). Virtual dispatch relationships not explicitly marked.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - runtime initialization functions first, then test functions, then template instantiations, then class methods. Related functions like all `Container<int>` methods are grouped together. Somewhat matches source organization (test functions together, class methods together).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The output shows "FAILED to decompile" for 19 functions, indicating significant problems. Many external symbols aren't resolved. The code would require substantial patching to compile. Template instantiations and class methods might compile, but the overall binary would need significant work.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v0`, `v1`, `v2`, `s[31]`) with no semantic inference
+- Magic numbers from original source (e.g., `0x1234` from `getClassID()`) are completely lost - only computed results remain
+- Almost no comments explaining algorithms, contracts, or non-obvious logic
+- 19 functions "FAILED to decompile" - significant gaps in coverage
+- No recovery of original source comments from debug information
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Template instantiations and class member functions are properly separated into distinct functions with appropriate granularity, matching the original source structure well.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompiled output contains almost no useful comments. Original source had extensive documentation (540 LOC with Chinese explanations) but none was recovered. Even basic inline explanations of vtable calls, template instantiation, or exception handling are absent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - The buffer `s` in `test_cpp_member_func` is used with `strlen(s)` and initialized with string data; it should be named `name` or `buffer` based on this usage
+2. **Recover magic numbers as named constants** - Detect when a function computes a constant result and attempt to recover the original expressions (e.g., recognize `4700` as `10 + 34 + 0x1234`)
+3. **Extract comments from debug information** - The source was compiled with `-g`, so DWARF debug info should contain source comments; recover and preserve them in decompiled output

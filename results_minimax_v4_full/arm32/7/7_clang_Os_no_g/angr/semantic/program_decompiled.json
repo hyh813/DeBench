@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_Os_no_g/angr/syntactic/bin/7_clang_Os_no_g_fixed",
+  "stdout": "===== Start Obfuscation Tests =====\n\nTest: param_fake_branch = 10\nTest: call_fake_branch = 35\nTest: param_instruction_substitution = 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

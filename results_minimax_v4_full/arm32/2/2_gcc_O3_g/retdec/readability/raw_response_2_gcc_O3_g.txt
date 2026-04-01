@@ -1,0 +1,90 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are named `v1`, `v2`, `v3`, `v4`, `v5` throughout, completely obscuring their semantic roles (e.g., `sum`, `len`, `count` from source). Only `i` (loop variable) and `str` (string array) are descriptively named. This is a severe degradation from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Top-level test functions (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`, `main`) match source exactly. However, all helper functions like `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple` are not recovered as separate functions—they're inlined and lose their semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Chinese strings are preserved but escaped (`\xe6\xb5\x8b\xe8\xaf\x95` instead of readable text). Computed values like `300`, `11`, `200` are hardcoded instead of showing the computation (`100+200`, `5*2+1`, `100<<1`). Magic number `0x2710` (10000) used without explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Compiler-added functions `__printf_chk` and `__stack_chk_fail` present but expected at -O0 with stack protection. Some awkward pointer arithmetic in array tests (e.g., `v4 += 4; *(int32_t *)v4 = i;`). Overall minimal noise that doesn't significantly impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural—sequential printf calls in test functions. The while loop for string length calculation is readable but uses pointer arithmetic instead of array indexing. Linked list traversal uses while loops that are traceable. No spurious goto statements.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Only 5 functions recovered (4 test functions + main) versus 40+ functions in source. All individual test helper functions (`process_char`, `array_1d_stack`, `ptr_single`, etc.) are inlined into test functions. This loses the original function granularity and single-responsibility structure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns and breaks used appropriately. While loops for string/linked list traversal are straightforward. No forward jumps into loop bodies or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Values computed directly in printf arguments rather than stored in temporary variables first. Loop unrolling not present (expected at -O0). Clean, non-redundant code structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently for integers, which is precise for arm64. Character arrays use `char`. Pointers are properly typed. Minor issue: uses generic `int` in some places where `int32_t` would be consistent. Const correctness not an issue since no const parameters in test functions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical defect.** No struct, union, or enum types recovered. The linked list traversal in `test_composite_types` uses raw pointer arithmetic:
+```c
+int32_t v3 = &v1;
+int32_t v4 = *(int32_t *)(v3 + 4);
+```
+This should be `Node* current = head; Node* next = current->next;` with proper struct types. All 15+ composite types (Point3D, Node, TreeNode, Graph, UnionData, State enum, etc.) are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts observed: `*(int32_t *)(v3 + 4)` (accessing memory at offset without type safety), `*(char *)v2` (raw pointer casting). Pointer arithmetic `v4 += 4` assumes 4-byte int size. These patterns could lead to undefined behavior if decompiled code is modified.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present: `// From module: /work/src/2.c`, `// Address range: 0x105f4 - 0x10714`, `// Line range: 99 - 112`. No semantic comments explaining what the code does, algorithms used, or non-obvious logic. Chinese comments from source completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms explicitly identified. The linked list traversal is just raw pointer manipulation without naming it as "linked list traversal" or "single-linked list." String length calculation not identified as C-string strlen pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No anomalies flagged. The code silently presents raw pointer arithmetic without indicating uncertainty about struct layout assumptions or potential undefined behavior (e.g., the `array_oob` test from source that has intentional out-of-bounds access is not present).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that functions require non-null pointers or specific value ranges. The volatile access test semantics not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear: `main` calls the four test functions. However, no documentation of what each test function validates or the relationships between helper functions (which are inlined). No indication of callback relationships (e.g., `ptr_func_simple` uses function pointer).
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file, which is reasonable for decompiled output. Functions logically grouped by test type (data types, arrays, pointers, composites). However, the original source's modular organization (separate test functions for each category) is partially preserved but helper functions lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes `#include <stdint.h>` and `#include <stdio.h>`. Function prototypes declared. Uses glibc functions `__printf_chk` and `__stack_chk_fail` which are standard. Should compile with `gcc -std=c99` on Linux. Minor issue: Chinese strings encoded as escape sequences may cause warnings.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Composite type recovery completely failed**: All structs (Point3D, Node, TreeNode, Graph, etc.), unions (UnionData), and enums (State) are lost. Linked list traversal uses raw pointer arithmetic (`*(int32_t *)(v3 + 4)`) instead of `node->next`.
+- **Variable naming is unusable**: Generic names `v1`-`v5` make it difficult to track variable purpose without extensive cross-referencing.
+- **No semantic comments**: Only auto-generated metadata present; no explanation of what test cases validate or algorithms used.
+- **Chinese strings escaped**: Format strings like `"\xe6\xb5\x8b\xe8\xaf\x95"` are unreadable compared to source's `"=== 测试基础数据类型 ==="`.
+- **Function granularity lost**: 40+ functions in source reduced to 5; all helper functions inlined losing their semantic names.
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+- Uses `int32_t` consistently for integers, showing good type width awareness for arm64 architecture.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The decompiler completely failed to reconstruct any struct, union, or enum types. All composite data structures are represented as raw memory access with pointer arithmetic, losing all semantic meaning about field names, data structure relationships, and type safety.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types from memory access patterns**: Detect consistent field offsets and reconstruct struct layouts with meaningful field names (e.g., recognize `*(int32_t *)(v3 + 4)` as `node->next`).
+2. **Infer variable names from usage patterns**: Use data flow analysis to name variables semantically (e.g., variables used as loop counters → `i`/`index`; variables accumulating sums → `sum`/`total`).
+3. **Preserve string encoding**: Decode UTF-8 strings from binary to readable form rather than presenting escaped hex sequences.

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O1_g/ida/syntactic/bin/7_gcc_O1_g_fixed",
+  "stdout": "Testing obfuscation optimizations:\n\nOpaque predicate: 10\nInstruction substitution: 20\nString encryption: 225\nString encryption value: 86\nTail call optimization: 500500\nNon-tail call: 5050\nVectorized loop: -1073745905\nLTO: 20\nDivision by zero: 2\nNull pointer deref: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation-defined: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

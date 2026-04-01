@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `iVar1`, `piVar1`, `local_38`) with no semantic meaning. Original source had descriptive names like `sum`, `len`, `current`, `head`, `edge` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user function names preserved correctly (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions lost names (`FUN_00011030`, `FUN_000110b0`). Main test functions retained original names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0x6e`, `0xb`, `0x19`, `0x4e2b`) without explanation. String literals preserved but numeric constants like array strides (`0xb` for 11 elements) are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__stack_chk_fail_local`, `__x86_get_pc_thunk_*`, `in_GS_OFFSET` stack canary checks). Test functions contain unnecessary stack protection boilerplate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For-loops converted to do-while patterns throughout. Critical failure: `binary_tree_sum` recursion catastrophically converted to 10+ levels of nested loops instead of recursive calls.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but signatures corrupted (`ptr_func_simple` loses return value and parameters, becomes `void`). Test functions call `FUN_000110c0` instead of direct `printf`.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `binary_tree_sum` has extreme nesting (15+ levels). Test functions have forward stack canary checks disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `binary_tree_sum` has massive code duplication from failed recursion recovery. Similar loop patterns repeated across array functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe degradation: `long long` → `undefined8` with `CONCAT44`, `float`/`double` → `longdouble`, `struct` types → `int*`. `process_long` returns `int` instead of `long`. `volatile` qualifier lost entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - no struct/union/enum definitions recovered. All struct access via array indexing (`param_1[1]`, `param_1[2]`). `Point3D`, `Rect`, `Widget` completely lost. Bitfields partially recovered but as `ushort*`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`param_1 + 0x14`). Function pointer signatures wrong (`ptr_func_simple` takes `code*` with no parameters). Multiple implicit casts without warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original had extensive documentation explaining each test case, expected values, and scenarios. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal not identified. Tree recursion not recognized (catastrophic failure). State machine enum+switch not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues. Wrong function signatures not warned. Type mismatches silent. `array_oob` undefined behavior not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. Error conditions like `array_complex_index` returning `-1` not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Callback relationships lost (`ptr_func_simple` doesn't show it calls the function pointer with argument). No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Original section organization mostly preserved by function order. No header separation or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing includes, undefined types (`undefined4`, `undefined8`, `longdouble`), missing function declarations (`FUN_000110c0`). Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.75/10
+```
+
+**Overall Readability Score:** 3.75/10
+
+### Critical Defects:
+- **`binary_tree_sum` recursion completely destroyed** - converted to 15+ nested loops instead of recursive calls, making the function 10x longer and semantically wrong
+- **All struct/union/enum types lost** - accessed via raw pointer arithmetic (`param_1[1]`, `param_1[2]`) instead of named fields
+- **Type system severely degraded** - `long long` → `undefined8`, `float`/`double` → `longdouble`, `volatile` qualifier lost
+- **Zero comments recovered** - original had extensive documentation explaining each test case and expected behavior
+- **Test functions print pre-computed values** - don't actually call the functions being tested, defeating verification purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved correctly (`process_char`, `array_1d_stack`, `struct_simple`), allowing basic identification of functionality.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, making it impossible to understand test purposes, expected values, or decompiler confidence without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover recursion patterns** - Detect recursive call patterns in control flow graphs and restore recursive function structure instead of unrolling into nested loops
+2. **Reconstruct composite types from access patterns** - Analyze consistent offset access patterns (`+0`, `+4`, `+8`) to infer struct definitions with field names
+3. **Preserve type qualifiers and precision** - Maintain `volatile`, `const`, and exact integer widths (`int32_t` vs `int`) from debug symbols when available at `-O0`

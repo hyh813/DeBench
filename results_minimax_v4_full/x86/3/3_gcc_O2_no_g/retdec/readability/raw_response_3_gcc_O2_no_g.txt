@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v1, v2, v3, v4, mem, result) with no semantic meaning. For -O0 debug code, this is extremely poor - even basic variables like loop counters should be named (e.g., "i" or "counter"). In `heap_basic`, variables are just `v1`, `v2`, `mem` with no indication they represent allocation size, loop index, or memory pointer.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Core test functions are correctly named (double_value, local_vars, heap_basic, test_stack_memory), but many utility functions have cryptic names like `function_1140`, `function_1150`, `function_1160`. The __x86_get_pc_thunk_* family adds noise. Some functions like `call_static_func` are incorrectly recovered (shows `2 * a1 | 1` instead of calling static_helper).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (42 in address_of_local, 10 in stack_alias returning 20). However, global variables have bizarre initialized values (g1 = -0x1a6a5018) that don't match source. Magic numbers like 2048 in large_stack_frame are preserved but unexplained. Mixed result.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from __x86_get_pc_thunk_bx/dx/di/ax calls throughout every function. __stack_chk_fail_local appears in stack-using functions. The decompiled output includes 17+ global variables (g1-g17) that don't correspond to source. This is x86 code despite metadata stating arm64 - significant architecture mismatch.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - for/while loops are recognizable, conditionals are straightforward. However, some functions like `vla_stack` and `alloca_usage` have complex pointer arithmetic that obscures the loop logic. The `linked_list_heap` function uses goto-like patterns that are harder to follow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are reasonably sized (20-100 lines typically). However, some functions that should be separate in source are merged (e.g., test functions contain inline logic). The parameter lists expose implementation details (e.g., passing canary values for stack protection).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but some functions have complex nesting. The `vla_stack` function has multiple forward jumps and complex pointer arithmetic that disrupts linear reading. Some early returns present but appropriate.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy in memory operation functions (similar patterns in heap_basic, heap_array, memory_leak). Loop unrolling is present in local_array but not commented. Not severely redundant but could be cleaner.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses int32_t consistently, which is appropriate for 32-bit. Some pointer types are generic (int32_t* instead of specific struct pointers). Size calculations use 4 * a1 which is correct for int. Minor issues with unsigned/signed mixing in some functions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types are completely lost. The Point struct is never recovered - instead we see raw pointer arithmetic. The Node and TreeNode structures are similarly lost, with code using void* style access. In heap_struct, it allocates 8 bytes but doesn't recover the Point fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. In `memop_memcpy`, the return calculation `a1 - 4 + (a3 & -4)` is questionable. Multiple places cast between int32_t and pointers without proper type safety. The dangling_pointer function correctly shows the unsafe access after free but doesn't flag it.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only comments are address ranges (e.g., "// Address range: 0x1400 - 0x140b") which are auto-generated and useless. No explanation of algorithm logic, no decompilation confidence indicators, no @param/@return documentation. The code is essentially comment-free.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns like malloc/free pairs are visible. Memory leak pattern (memory_leak function) is recognizable but not flagged. The linked list creation/traversal pattern is somewhat visible but heavily obfuscated. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The dangling_pointer function shows clear undefined behavior (accessing after free) but no warning. The double_free is visible but not flagged. No indication of decompilation uncertainty anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. Null checks are present in code but not documented as contracts. No recovery of implicit invariants. The code simply shows what it does without explaining what it should do.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible (e.g., test functions call other functions). However, global variable relationships are obscure - the code uses complex expressions like `v1 + (int32_t)&g13 + 132` to access globals without clear naming. No documentation of who calls what.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, heap functions together). However, the file is a single monolithic output. Static functions aren't clearly distinguished from extern functions. The organization is adequate but not excellent.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Missing standard includes (stdio.h, stdlib.h shown but some declarations missing). Function prototypes are present but incomplete. The code references many undefined functions (__x86_get_pc_thunk_*, __stack_chk_fail). Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 5 + 2) / 4 = 3.25
+L2_avg = (6 + 5 + 5 + 5) / 4 = 5.25
+L3_avg = (7 + 2 + 5) / 3 = 4.67
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (3 + 5 + 3) / 3 = 3.67
+
+Overall = (3.25 × 0.30) + (5.25 × 0.25) + (4.67 × 0.20) + 
+          (2.25 × 0.15) + (3.67 × 0.10)
+        = 0.975 + 1.3125 + 0.934 + 0.3375 + 0.367
+        = 3.93/10
+```
+
+**Overall Readability Score:** 3.93/10
+
+### Critical Defects (Bullet List)
+- **Architecture mismatch**: Decompiled code is x86/x64 but metadata states arm64 - __x86_get_pc_thunk_* functions are inappropriate
+- **No struct recovery**: Point, Node, TreeNode structs completely lost; all composite types are raw pointer arithmetic
+- **Generic variable names**: All variables are v1, v2, v3, mem, result - zero semantic naming for -O0 debug code
+- **No comments**: Only auto-generated address range comments; no algorithm explanation or decompilation confidence
+- **No anomaly flags**: Dangerous patterns (dangling_pointer, double_free, heap_overflow) shown without warnings
+
+### Best Quality Aspect (Single Dimension)
+- **Type Precision (scored 7/10)**  
+- The decompiler consistently uses int32_t and correctly represents pointer types for most operations. Size calculations (4 * a1 for int arrays) are accurate.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (scored 2/10)**  
+- For -O0 debug code, variables should have meaningful names. The complete absence of semantic naming (even simple names like "i", "size", "ptr") severely impedes readability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union types**: Use field offset analysis and vtable patterns to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Add semantic variable naming**: For -O0 code, infer names from usage patterns (e.g., loop variables should be "i", "j"; allocation sizes should be "size", "nmemb")
+3. **Insert decompilation comments**: Add comments explaining algorithm intent, flagging suspicious patterns (dangling pointers, memory leaks), and indicating confidence levels for indirect calls

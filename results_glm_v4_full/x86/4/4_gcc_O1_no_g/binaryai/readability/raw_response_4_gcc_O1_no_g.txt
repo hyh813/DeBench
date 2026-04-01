@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`param_1`, `iVar1`, `uVar1`, `local_10`) and lack semantic context found in the source (e.g., `sum`, `count`, `seed`). While standard for decompilers, they obscure the logic compared to the original `a`, `b`, `sum`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent recovery of symbol names like `cdecl_func`, `stdcall_func`, `test_calling_conventions`, and `main`. The names accurately reflect the source functionality, significantly aiding comprehension.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Integer constants are presented in hexadecimal (e.g., `0xf` for 15, `0x2a` for 42) which is less intuitive than the decimal used in the source. String literals are recovered as pointers to data segments (e.g., `&DAT_00012008`) rather than inline strings, harming readability.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but contains runtime artifacts like `__x86_get_pc_thunk_bx` calls and stack canary checks (`__stack_chk_fail_local`) which clutter the control flow. The use of `undefined4` instead of `int` is also a form of type noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow matches the source well for `-O0` code. Loops are represented as `do-while` or `while` structures (e.g., in `varargs_func`), and `switch` statements are preserved. The flow is easy to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are perfectly recovered with 1:1 mapping to the source. There is no inlining or outlining, maintaining the original granularity and cohesion (e.g., `call_cdecl` remains a separate function).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or spaghetti logic; the structure is straightforward, typical of unoptimized code.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Most redundant loads/stores typical of `-O0` are abstracted away. However, some manual stack pointer arithmetic in `varargs_func` (`piVar1 = piVar1 + 1`) exposes low-level redundancy that could be hidden.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type degradation occurs. `long long` parameters in `func_mixed_args` are split into two `undefined4` types (`param_4`, `param_5`) and recombined using `CONCAT44`. `void` pointers are often rendered as `undefined *`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct definitions are completely lost. `func_struct_byval` is decompiled as taking `void` (no arguments) while accessing the stack directly (`stack0x00000004`), completely obscuring the `LargeStruct` parameter. `func_struct_byptr` uses `int *` instead of `SmallStruct*`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on `undefined` types and Ghidra-specific macros like `CONCAT44`. Pointer arithmetic is used to access struct fields (e.g., `param_1[1]` in `param_complex_cast`), which is unsafe compared to struct member access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled body. Complex logic, such as the varargs implementation or struct handling, is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Varargs functions are recognized but implemented as raw stack walking (`(int *)&stack0x00000008`) rather than using `va_list` idioms. Calling conventions are applied as attributes (e.g., `__regparm3`) but not explicitly explained.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: No anomalies are flagged. The decompiler confidently presents `func_struct_byval` as a void function taking no arguments, which is a significant deviation from the source without any warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented. For example, the requirement that `param_1` in `func_struct_byptr` is non-null is checked in code but not stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct names (e.g., calls to `cdecl_func` are clear). Global data access is visible, though data is referenced by address (e.g., `DAT_00012008`) rather than variable name.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in memory address order rather than logical grouping. While names help, the organization does not mirror the source's sectioning (e.g., "Calling Conventions" vs "Parameter Passing").
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile. It uses Ghidra-specific macros (`CONCAT44`), `undefined` types, and direct stack references (`stack0x00000004`), requiring significant manual intervention to become valid C.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Struct Parameter Loss**: `func_struct_byval` is decompiled as `void func_struct_byval(void)`, completely hiding the `LargeStruct` argument passed on the stack.
+- **Type Splitting**: 64-bit integers (`long long`) are split into two 32-bit parts (`param_4`, `param_5`) and reconstructed with `CONCAT44`, destroying type safety.
+- **Missing Struct Definitions**: No struct definitions (`SmallStruct`, `LargeStruct`) are recovered, forcing the reader to interpret raw pointer arithmetic.
+- **Varargs Implementation**: Variable arguments are accessed via raw stack pointer manipulation (`&stack0x00000008`) rather than standard `va_list` patterns.
+- **String Obfuscation**: String literals are replaced with pointers to data segments (e.g., `&DAT_00012008`), removing the immediate semantic value of the text.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- **Why?** The decompiler successfully recovered the original function names from the symbol table, making the high-level flow easy to trace despite low-level issues.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 3/10)
+- **Why?** The failure to recover struct definitions and handle struct-by-value parameters (rendering them as void functions with stack access) is the single biggest barrier to understanding the data manipulation in the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Stack-Based Struct Recovery**: Improve analysis of stack frames to identify struct parameters passed by value on x86, reconstructing the struct definition and function signature instead of defaulting to `void`.
+2.  **Unify Split Types**: Automatically detect register pairs or adjacent stack slots that form 64-bit integers (`long long`) and merge them into a single type rather than using `CONCAT44` macros.
+3.  **Inline String Literals**: Replace references to global data addresses with the actual string literal content in the decompiled view to improve semantic transparency.

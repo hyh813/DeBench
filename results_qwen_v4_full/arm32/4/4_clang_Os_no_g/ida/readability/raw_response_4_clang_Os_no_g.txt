@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `v3`) with no semantic meaning. For example, `varargs_func` uses `a1` for count and `a2` for first variadic argument instead of `count` and `first_arg`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). This is excellent recovery, though some helpers like `sub_3F0` remain generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x51EB851Fu` and `0x40091EB8u` in `func_mixed_args` are unexplained float representations. Many constants folded into returns (15, 50, 6) lose original computation context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register spill variables present (`v4`, `v5`, `v6` in `test_calling_conventions`), redundant type casts (`(_DWORD *)`, `__int64`), and compiler artifacts like `__CFADD__` macros clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures mostly recovered as do-while instead of for loops. Constant folding makes caller functions trivial (just return constants), which is optimization artifact not decompiler error.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly identified with appropriate granularity. Each source function maps to one decompiled function without inappropriate inlining or fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with clear basic blocks. Some forward jumps in complex functions like `__aeabi_dadd` but core test functions are well-linearized.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant variable assignments present (`v4 = 0; result = 0; v6 = 0` in `func_struct_byval`). No severe dead code but optimization artifacts create verbosity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `func_mixed_args` shows `double` as `unsigned int a3, unsigned int a4, __int64 a5` instead of proper double type. Pointers are `_DWORD*` instead of specific types like `SmallStruct*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` and `SmallStruct` completely lost. `func_struct_byval` takes 16 separate `int` parameters instead of struct. `func_struct_byptr` uses `_DWORD*` with array indexing `a1[1] * *a1` instead of `p->x * p->y`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(int*)`, `(_DWORD*)`, `(__int64)`). `func_mixed_args` has type confusion with `COERCE_DOUBLE(__PAIR64__(a4, a3))`. Pointer arithmetic on generic types risks undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only register annotations (`// r0`, `// [sp+8h]`). No algorithm explanations, no documentation of calling convention semantics, no decompiler confidence indicators for uncertain recoveries.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C idioms not recognized - `va_list` handling is awkward with manual pointer arithmetic. No recognition of printf-style patterns or common test harness structures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for 7 external functions, "positive sp value has been detected" warning). However, type confusion issues in `func_mixed_args` not indicated as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` null check not documented as contract). No postconditions inferred. Error conditions present but not explained.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code. No call graph documentation. Global variable usage (`_bss_start`, `__gmon_start__`) not well explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. Single output file with no logical grouping. Static functions not properly scoped (e.g., `callback_func` missing from decompilation).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile requiring stubs. Type mismatches would prevent clean compilation. Missing includes (`<stdio.h>`, `<stdarg.h>`, `<string.h>`) not recovered.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.19/10
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` converted to raw integer arrays/pointers, losing all field semantics
+- **Variable names entirely generic**: `a1`, `a2`, `v1`, `v2` convey no semantic meaning about purpose or type
+- **Type precision degraded**: `double` parameters represented as split `unsigned int` pairs requiring `COERCE_DOUBLE`
+- **Missing comments**: No documentation of calling convention semantics, variadic handling, or decompiler uncertainty
+- **External function failures**: 7 import functions failed to decompile, requiring manual stub creation
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), enabling immediate semantic understanding of purpose.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct definitions forces readers to infer field layouts from array indexing patterns, fundamentally obscuring data structure semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference**: Analyze consistent field access patterns to reconstruct struct definitions with named fields (e.g., detect `a1[0]` and `a1[1]` access as `x` and `y` fields)
+2. **Add semantic variable naming**: Use usage context to suggest names (e.g., first parameter of `varargs_func` used in loop bound → `count`)
+3. **Recover high-level type information**: Detect split double representations (`__PAIR64__`) and reconstruct as proper `double` types with appropriate comments

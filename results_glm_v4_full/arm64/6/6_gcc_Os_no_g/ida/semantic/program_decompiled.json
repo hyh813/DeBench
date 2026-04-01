@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/6/6_gcc_Os_no_g/ida/syntactic/bin/6_gcc_Os_no_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\n[LIB] strcpy test: 8\n[LIB] strcmp test: 0\n[LIB] strlen test: 12\n[LIB] memcpy test: 10\n[LIB] memcmp test: 1\nValue: 42, Name: Test\n[LIB] printf test: 22\n[LIB] scanf test: 579\n[LIB] fopen/fclose test: 42\n[LIB] fread/fwrite test: 42\n[LIB] malloc/free test: 90\n[LIB] memset test: 0\n[LIB] strchr/strstr test: 15\n=== Testing System Calls ===\n[SYS] linux_syscall test: 42\n[SYS] win32_api test: 42\n[SYS] fork/exec test: 42\n[SYS] pipe_communication test: 42\n[SYS] socket_create test: 42\n[SYS] shmget_shmat test: 42\n[SYS] signal_handling test: 42\n=== Testing Thread Concurrency ===\n[THR] pthread_create test: 49\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

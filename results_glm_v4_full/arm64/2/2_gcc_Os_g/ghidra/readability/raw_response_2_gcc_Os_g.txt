@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: While parameters like `x`, `arr`, and `n` are preserved, local variables are frequently lost or generic (e.g., `iVar1`, `lVar2` in `array_1d_stack` instead of `sum` and `i`). Comments like "Unresolved local var: int sum" indicate the decompiler detected the intent but failed to apply the name.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names from the original source (e.g., `process_char`, `array_2d_stack`, `binary_tree_sum`) are perfectly recovered, likely due to the presence of debug symbols (`-g`), providing immediate semantic context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Readability is significantly degraded by compiler optimizations not being simplified; for example, `process_char` uses `(byte)(c + 0xbfU) < 0x1a` instead of the original `c >= 'A' && c <= 'Z'`, and test functions show folded constants (e.g., `0x61` instead of `'a'`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output contains significant noise including stack canary checks (`___stack_chk_guard`), fortified function calls (`__printf_chk`), and "Unresolved local var" comments. Additionally, massive library functions for software floating point (`__addtf3`, `__multf3`) are included in the output, bloating the decompilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural; `array_2d_stack` replaces a simple `for` loop with complex pointer arithmetic (`piVar2 = piVar2 + 0xb`), and `binary_tree_sum` transforms a recursive traversal into an iterative loop, obscuring the original algorithmic intent.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no inlining of logic into `main` or test functions, maintaining a clean separation of concerns that mirrors the original structure.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Many loops are converted into `do-while` structures with pointer increments (e.g., `array_string`), which disrupts the top-to-bottom readability compared to the original `while` or `for` loops.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but the decompiler fails to abstract away the implementation details of complex operations, such as the manual bit-shifting in `struct_bitfields` which could be cleaner if mapped back to struct access.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While standard types are correct, `long double` is poorly handled, appearing as `undefined1 [16]` and accessed via helper functions (`__multf3`) rather than native operators, and `undefined8` appears in some contexts, indicating type information loss.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs and unions are recovered with high fidelity; `Point3D`, `Rect`, and `Widget` retain their field names (`x`, `y`, `z`, `position`), making data structure usage very clear despite other issues.
+
+**11. Type Safety:** Score: 5/10
+Justification: Bitfield access in `struct_bitfields` is degraded into unsafe manual masking and shifting (`(uVar1 & 1) + (uVar1 >> 1 & 3)`), and `long double` operations involve raw byte array manipulation, removing type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "WARNING: Unknown calling convention") and "Unresolved local var" markers; there are no semantic comments explaining the logic of algorithms or data structures.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are missed; the range check in `process_char` is not recognized as a bounds test, and the recursive tree traversal in `binary_tree_sum` is not identified as such, being presented as an unusual iterative loop.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags potential issues like "Unknown calling convention" and "Could not recover jumptable," which alerts the user to areas where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds check in `array_complex_index` is present as code but not documented as a contract ensuring safe access.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., `test_data_types_l1` calling `process_char`), providing good context for how functions interact.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's organization (data types, arrays, pointers, composites), though the inclusion of large library functions (`__addtf3`) disrupts the module's logical purity.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile without significant modification due to the use of `undefined` types, missing definitions for compiler intrinsics (`___stack_chk_guard`), and the inclusion of non-standard library helper functions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Array indexing in `array_2d_stack` and `array_3d_stack` is lost, replaced by obscure pointer arithmetic (e.g., `piVar2 + 0xb`), making the logic extremely hard to follow.
+- The `long double` type is not recovered, represented instead as raw byte arrays (`undefined1[16]`) and software library calls, obscuring the simple math operation.
+- Local variable names (e.g., `sum`, `i`) are frequently unresolved and replaced with generic names (`iVar1`, `lVar2`), despite debug info being present for function names.
+- Range check optimizations in `process_char` are not simplified back to readable comparison operators (`>=`, `<=`), leaving magic numbers (`0xbfU`, `0x1a`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the debug symbols, providing immediate semantic context for every operation.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 3/10)
+- The decompiler fails to reconstruct high-level control flow, particularly for loops and array accesses, often replacing them with low-level pointer manipulations that obscure the original logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance pattern matching to convert pointer arithmetic loops back into array indexing syntax (e.g., recognizing `ptr + row_size + col_size` as `arr[i][j]`).
+2. Implement simplification rules for common compiler idioms, such as transforming `(x + offset) < range` back into `x >= min && x <= max`.
+3. Improve local variable recovery from DWARF debug information to map "Unresolved local var" comments back to their actual source names.

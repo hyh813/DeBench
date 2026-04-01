@@ -1,0 +1,3 @@
+Running obfuscation tests...
+
+Opaque predicate result: 10

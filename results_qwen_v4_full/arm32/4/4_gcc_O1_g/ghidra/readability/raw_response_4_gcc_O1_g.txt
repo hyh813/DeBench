@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `uVar2`, `local_c`, `local_90` instead of semantic names. Many marked as "Unresolved local var" (e.g., `sum@[???]`, `i@[???]` in `varargs_func`), losing original intent completely.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`cdecl_func`, `varargs_func`, `func_struct_byptr`). Helper functions use standard ABI names (`__aeabi_dadd`, `__floatsidf`) which are recognizable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex (`0xf`, `0x32`, `0x2a`, `0x12345678`) replace clear decimal values. String literals replaced with `&DAT_00011594` references, losing readability of format strings like `"CALL-L1-01: %d\n"`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive warning comments ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") clutter output. "Unresolved local var" annotations appear throughout, adding visual noise without aiding understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions maintain natural flow, but complex functions like `func_mixed_args` and floating-point helpers use awkward patterns. Loop reconstruction in `varargs_func` uses `do-while` correctly but with unclear variable tracking.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved well. However, caller functions like `call_cdecl`, `call_stdcall` are constant-folded to return literals instead of showing actual calls, losing call relationship visibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. Floating-point helper functions (`__aeabi_dadd`, `__subdf3`) have excessive branching with `goto LAB_00011200` patterns that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy where `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)`. Floating-point operations show duplicated bit-manipulation logic across multiple helper functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char*`, `longlong`), but `va_list` degraded to `undefined1 local_c[12]`. Function pointers use generic `_func_int_int*` instead of proper typedef. Many `undefined4`, `undefined8` types indicate type erosion.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct names preserved (`LargeStruct`, `SmallStruct`, `BigStruct`) but field access corrupted. Example: `s.data[1]._4_4_ = local_10` in `func_struct_byval` shows broken struct field notation instead of clean `s.data[i]` access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int *)`, `(char *)`, `(SmallStruct *)`). Pointer arithmetic in `func_mixed_args` uses `in_stack_00000000` which indicates stack access without type safety. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Auto-generated warnings present but no semantic comments explaining algorithm purpose. "Unresolved local var" comments indicate lost information but don't help recovery. No API contracts or parameter documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern partially recognized but implementation obscure. No design pattern identification. Floating-point conversion idioms expanded into verbose bit-manipulation instead of recognized as `__floatsidf` helper calls.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with "WARNING: Unknown calling convention" and "Unresolved local var" markers. Clearly indicates decompilation uncertainty rather than presenting false confidence.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved in `func_struct_byptr` and `param_double_ptr`, but no precondition/postcondition documentation. No invariant recovery for loop bounds or array sizes.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible but caller functions constant-folded lose actual call sites. Global variables (`handle1_1`, `handle2_0`) named but type unclear. Callback relationship (`callback_func`) preserved.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure. No file-level organization or header declarations. Runtime helpers (`__aeabi_*`, `__printf_chk`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `strlen`, `memcpy`, `puts`) undeclared. ARM runtime helpers (`__aeabi_*`) require specific linking. Will not compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (5+4+7+4)/4 = 5.00 × 0.15 = 0.750
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.26/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Constant folding destroyed call relationships**: `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Struct field access corrupted**: `s.data[1]._4_4_` notation instead of clean array indexing
+- **Variable names lost**: `iVar1`, `uVar2`, `local_c` throughout; "Unresolved local var" for `sum`, `i`, `val`, `result`
+- **Magic hex literals**: `0xf`, `0x32`, `0x2a` replace clear decimal constants from source
+- **Type erosion**: `va_list` becomes `undefined1 local_c[12]`, function pointers become `_func_int_int*`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it possible to match decompiled code to source functions
+
+### Most Needs Improvement:
+- **Composite Type Recovery (4/10)** - Struct field access notation (`._4_4_`, `._0_4_`) is nearly unreadable and loses all semantic meaning of array indexing
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call relationships over constant folding** - Show actual function calls even when arguments are constants, as this preserves program structure understanding
+2. **Recover array/struct field access patterns** - Replace `._0_4_`, `._4_4_` notation with proper array indexing based on type analysis
+3. **Infer variable names from usage context** - Variables used in loops should be named `i`, `count`, `sum` based on their role, not `iVar1`, `iVar2`

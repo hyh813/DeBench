@@ -1,0 +1,21 @@
+Test preprocessing features
+Result: 64
+Result: 30
+Result: 32
+Result: 57122
+Result: 116
+Result: 19
+Result: 60
+LOG: Values: 10, 20, 30
+Result: 60
+Result: 16
+Result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:46
+Result: 382
+Testing ASM features
+Basic ASM result: 15
+Clobber result: 706758080
+Multi-insn result: 42
+SIMD result: 0
+Atomic result: 35
+Privileged result: 77

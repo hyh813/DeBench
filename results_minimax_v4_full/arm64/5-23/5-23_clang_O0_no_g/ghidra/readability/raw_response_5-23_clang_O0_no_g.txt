@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_4`, `local_10`, `iVar1`, `uVar2`, `sVar1`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Target functions like `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_asm_atomic` correctly match original source names. However, some internal functions like `FUN_001007a0` and `init_have_lse_atomics` remain generic. The main API functions are well-preserved.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some macro expansions are correctly computed: `0x200` (512 = MAX_SIZE/2), `0x40` (64 = BUFFER_COUNT*4), `0x10` (16 = ADD_16). However, `0xdef0` remains unexplained (default platform constant), and `0x117` (279) for `__LINE__` is hardcoded. String literals like "Hello World" are correctly preserved.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No debug instrumentation, redundant casts are minimal. The code is relatively clean. Some type annotations like `undefined4`, `undefined8` are present but don't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with clear if-else structures (e.g., `param_macro_constants` uses `if (param_1 < 0x401)`). Loops use standard for constructs (e.g., `param_asm_clobber`). No goto abuse. At -O0, the control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each function (e.g., `param_asm_basic`, `param_dynamic_code`) does one thing. The decomposition matches the original source granularity well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns used appropriately (e.g., in `param_dynamic_code` when mmap fails). No forward jumps into loop bodies. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (only in `param_asm_simd` where it's appropriate for the 4-element vector operation). No obvious common subexpression duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int` for most integers, `size_t` for sizes, `ulong` for strlen return. However, `undefined4` and `undefined8` are used for some return types and parameters. The original had specific types like `uint32_t`, `int*`, but these are genericized. Signed/unsigned is sometimes unclear.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. The original had no complex structs, but the decompiler shows raw pointer arithmetic (e.g., `*(int *)(param_1 + (long)local_14 * 4)` for array access). This is acceptable given the source had no structs, but the pointer arithmetic obscures the array semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic is explicit (`param_1 + (long)local_14 * 4`). Casts like `(void *)0x0`, `(undefined4 *)0xffffffffffffffff` are present. No bounds checking visible. However, at -O0, this matches what compiler generates.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: File header comment identifies Ghidra decompilation. Some warnings like "WARNING: Removing unreachable block" present. However, no explanation of macro semantics, no documentation of what `0xdef0` means, no indication that `0x117` is a line number. Comments are mostly auto-generated metadata.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. The atomic operation pattern (`__aarch64_ldadd4_acq_rel`) is recognized and presented as a function call, which is good. But there's no comment indicating this implements atomic fetch-add. No recognition of macro expansion patterns, include guards, or token pasting.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return". However, no indication of indirect call resolution failures, no flags for potential undefined behavior in inline assembly replacement, no warnings about hardcoded values that should be constants.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. No preconditions documented (e.g., "requires: ptr != NULL" for mmap results). No postconditions. No invariant recognition. The original source had no explicit contracts either, but the decompiler could infer some (e.g., mmap returns valid pointer or -1).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear through direct calls. However, no explicit documentation of who calls whom, no global variable usage transparency. The `global_var` is used in `param_memory_clobber_demo` but its origin isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions, then test functions. Static functions like `header_func` are properly scoped near their use. However, the file is a single monolithic output with no separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata indicates "Compilation Result: Yes" - the code compiles. External dependencies (printf, mmap, memcpy, sysconf) are implicitly available through standard library. No explicit dependency documentation. Some type issues might need fixing for clean compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`param_1`, `local_4`, `iVar1`) with no semantic inference from usage patterns
+- No macro semantic recovery - `0xdef0` should be documented as DEFAULT_PLATFORM_CONSTANT
+- No contract/precondition recovery (e.g., mmap failure check, atomic operation guarantees)
+- Type precision issues: `undefined4`/`undefined8` instead of specific types
+- No idiom recognition for atomic operations, macro expansions, or token pasting
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.0/10)  
+Control flow is natural, functions are well-decomposed, code linearizes well, and no significant redundancy exists. At -O0, the decompiled structure closely matches the original source structure.
+
+**Most Needs Improvement:** Lexical Clarity (scored 6.0/10)  
+Variable naming is the weakest area - the decompiler makes no attempt to infer meaningful names from usage patterns. Combined with poor literal documentation (magic numbers unexplained), this significantly impedes understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` used in `if (param_1 < 0x401)` should suggest `size` or `max_size`. `local_10` accumulating in a loop should suggest `sum` or `accumulator`.
+2. **Document macro expansions**: When magic numbers appear (like `0xdef0`, `0x117`), add comments explaining they represent macro-expanded values or compiler built-ins.
+3. **Recover function contracts**: Add preconditions/postconditions based on common patterns (e.g., "mmap returns MAP_FAILED on error", "atomic functions return old value").

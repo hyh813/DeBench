@@ -1,0 +1,16 @@
+Testing obfuscation and optimization edge cases:
+
+  param_fake_branch: 10
+  param_opaque_predicate: 20
+  param_instruction_substitution: 225
+  param_string_encryption: 64
+  param_tail_call_optimized: 500500
+  param_non_tail_call: 5050
+  param_vectorized_loop: 72
+  param_link_time_optimization: 20
+  param_division_by_zero: 1
+  param_null_pointer_deref: 41
+  param_buffer_overflow: 30
+  param_integer_overflow: 2000000000
+  param_undefined_behavior: 10
+  param_implementation_defined: 48

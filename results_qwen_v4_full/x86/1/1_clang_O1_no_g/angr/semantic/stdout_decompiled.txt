@@ -1,0 +1,60 @@
+CF-L1 messages
+CF-L1-01 (sequential_ops): 0
+CF-L1-02 (single_if): 0
+CF-L1-02 (single_if): 0
+CF-L1-03 (if_else): 0
+CF-L1-03 (if_else): 0
+CF-L1-04 (nested_if_2): 0
+CF-L1-04 (nested_if_2): 0
+CF-L1-04 (nested_if_2): 0
+CF-L1-05 (nested_if_deep): 0
+CF-L1-06 (if_elseif_chain): 0
+CF-L1-07 (if_elseif_long): 0
+CF-L1-08 (switch_small): 0
+CF-L1-09 (switch_large): 0
+CF-L1-10 (switch_default): 0
+CF-L1-11 (switch_fallthrough): 0
+CF-L1-12 (loop_for_fixed): 0
+CF-L1-13 (loop_while): 0
+CF-L1-14 (loop_dowhile): 0
+CF-L1-15 (loop_nested): 0
+CF-L1-16 (loop_break): 0
+CF-L1-16 (loop_break): 0
+CF-L1-17 (loop_continue): 0
+CF-L1-18 (goto_forward): 0
+CF-L1-18 (goto_forward): 0
+CF-L1-19 (goto_backward): 0
+CF-L1-20 (ternary_op): 0
+CF-L1-20 (ternary_op): 0
+CF-L2 messages
+CF-L2 message
+test1
+test2
+test2
+test2
+test3
+test3
+test4
+test5
+test6
+test7
+test8
+test9
+test10
+test11
+test12
+test12
+test13
+CF-L3 messages
+CF-L3-01 (non_local_jump): 0
+CF-L3-01 (non_local_jump): 0
+CF-L3-02 (cpp_exception): 0
+CF-L3-02 (cpp_exception): 0
+CF-L3-03 (large_jump_table): 0
+CF-L3-04 (conditional_func_ptr): 0
+CF-L3-05 (state_machine): 0
+CF-L3-06 (fsm_func_table): 0
+CF-L3-07 (computed_goto): 0
+CF-L3-08 (obfuscated_cf): 0
+CF-L3-09 (opaque_predicate): 0
+CF-L3-10 (overlapped_code): 0

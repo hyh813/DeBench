@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables are generic (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original names like `temp1`, `sum`, `count` are completely lost. For example, `sequential_ops` uses `v1` instead of preserving `a`, `b`, `c` parameters.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most original function names preserved (`loop_for_fixed`, `recursion_factorial`), but many helper functions are generic (`function_960`, `function_970`). Critical functions like `sequential_ops` exist but have broken signatures.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x66666667` for division, `0xffffffff` masks). String literals stored as globals (`g7`, `g8`, `g9`) with hex-encoded Chinese characters instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casting (`& 0xffffffff`), stack canary checks (`__stack_chk_fail()`), and global variable references (`g1`, `g12`) clutter every function. Compiler artifacts not eliminated.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Original `for`/`while` loops converted to `while` with complex conditions and `goto` labels (`lab_0x1348`, `lab_0x149c`). Switch statements often become if-else chains. Duff's device completely unrecognizable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many functions have incorrect signatures - `sequential_ops(void)` should be `sequential_ops(int a, int b, int c)`. Parameter information lost in ~40% of functions, breaking semantic understanding.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Excessive forward jumps (`goto lab_0x149c`) disrupt top-to-bottom reading. Loop bodies scattered across multiple labels. Original linear flow completely obscured.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated type masking operations throughout. Some dead code from optimization present but not severe. Loop unrolling not recognized or commented.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` becomes `int64_t` everywhere, even for 32-bit values. Signed/unsigned confusion (`uint32_t` vs `int32_t`). Function pointers degraded to generic types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buf` structure partially recovered but with generic fields (`e0[8]`, `e1`, `e2`). No field names indicating purpose. Matrix arrays lost in `loop_multi_exit`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. Pointer arithmetic obscured (`4 * v5 + v3`). Function pointer calls show incorrect signatures (`call_func_ptr` returns `x` instead of calling `f(x)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except address ranges and line numbers. Original extensive documentation (test cases, difficulty ratings, scene labels) completely lost. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop patterns not recognized as `for`/`while`. Switch fallthrough not indicated. Duff's device completely lost. State machine patterns not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Incorrect code presented confidently (e.g., `sequential_ops` logic is completely wrong). No indication of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented. Original test validation comments lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Global variables (`g1`, `g12`) referenced without context. No call graph documentation. Callback relationships lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some grouping by address range but no logical organization matching source structure. Test functions separated but not clearly.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains non-compilable assembly (`__asm_ld1`, `__asm_st1`). External dependencies not clearly documented. Some function signatures incompatible with original.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 Average: (2 + 6 + 4 + 4) / 4 = 4.0
+LEVEL 2 Average: (3 + 4 + 3 + 5) / 4 = 3.75
+LEVEL 3 Average: (4 + 5 + 4) / 3 = 4.33
+LEVEL 4 Average: (2 + 2 + 2 + 2) / 4 = 2.0
+LEVEL 5 Average: (4 + 5 + 3) / 3 = 4.0
+
+Overall = (4.0 × 0.30) + (3.75 × 0.25) + (4.33 × 0.20) + (2.0 × 0.15) + (4.0 × 0.10)
+        = 1.20 + 0.94 + 0.87 + 0.30 + 0.40
+        = 3.71/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Parameter loss**: `sequential_ops(void)` should be `sequential_ops(int a, int b, int c)` - completely breaks functionality
+- **Variable naming**: All variables are `v1`, `v2`, `v3` with no semantic meaning
+- **Control flow degradation**: Original `for` loops become `while` with `goto` labels
+- **Logic corruption**: `sequential_ops` returns `2 * 2 * v1 - v1` instead of `(a+b)*2-c`
+- **No comments**: All original documentation, test cases, and explanations lost
+
+### Best Quality Aspect: **Type System Fidelity (4.33/10)**
+- Some struct definitions recovered (jmp_buf) and function names mostly preserved despite type precision issues
+
+### Most Needs Improvement: **Semantic Transparency (2.0/10)**
+- Zero useful comments, no idiom recognition, no anomaly indication, no contract recovery - completely opaque semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery**: Implement data-flow analysis to recover function parameters from stack/register usage patterns
+2. **Control flow reconstruction**: Better pattern matching for loop constructs (for/while/do-while) from jump patterns
+3. **Semantic annotation**: Add confidence indicators and uncertainty warnings when decompilation is ambiguous or potentially incorrect

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are reduced to generic names like `param_1`, `param_2`, `local_28`, and `local_24`, completely losing semantic meaning from original names like `a`, `b`, `args`, or `sum`. While `param_` prefixes indicate arguments, they offer no insight into their specific role within the function logic.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the original source (e.g., `cdecl_func`, `varargs_func`, `test_calling_conventions`), allowing immediate identification of the code's purpose without needing to analyze the implementation.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are used directly, such as `0x2a` (decimal 42) in `func_no_args` and `0x51eb851f` (part of a double 3.14) in `func_mixed_args`, instead of the original decimal or floating-point representations, which hinders quick understanding of the values.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but includes compiler-generated artifacts like `__stack_chk_fail` calls for stack canaries and `undefined` type placeholders. While these are security features, they add minor noise to the logic flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally linear and readable, but `switch` statements (e.g., in `ret_multi_branch`) are decompiled into chained `if-else` blocks rather than a native switch construct, which slightly obscures the original control structure intent.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions; there is no artificial splitting or merging of functions, and the granularity matches the original source perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or forward references, making it easy to follow the execution path, especially given the `-O0` optimization level which preserves structure.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: Since the code was compiled with `-O0`, there is no optimization-related redundancy (like loop unrolling) to confuse the reader; the decompiled code accurately reflects the straightforward source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` are preserved, but floating-point and 64-bit types are often split into `undefined4` (32-bit) components (e.g., `param_3`, `param_4` for a `double` in `func_mixed_args`), losing the semantic type information.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structures passed by value are not reconstructed; instead, they are split into individual parameters (e.g., `func_struct_byval` takes four `int` params instead of a `LargeStruct`), and the function body manually reconstructs the struct into a local array, obscuring the high-level data structure.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, though it relies on `undefined` types and raw memory access for complex types. The use of `__aeabi` helper functions for soft-float operations is technically correct for the ABI but represents a lower-level view than the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "WARNING: Subroutine does not return") and lack semantic explanations of the code's purpose, such as the intent of `varargs_func` or the specific calling convention being tested.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms like `va_list` (varargs) are not recognized and are instead represented as raw pointer arithmetic iterating over a stack array (`local_c`), and `switch` statements are rendered as `if-else` ladders.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags unreachable blocks and non-returning subroutines with warnings, which helps identify compiler optimizations or dead code paths, but does not flag semantic anomalies like the undefined behavior in `param_order_dep`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement that `param_1` in `func_struct_byptr` should not be `NULL` is checked in code but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace, and references to global data (e.g., `DAT_00012400` for strings) are clearly marked, allowing the analyst to understand data dependencies.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are organized by memory address, which generally groups related logic, but the logical grouping of "test functions" vs "implementation functions" found in the source is flattened by the linker's address order.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses `undefined` types and references data segments by address (e.g., `DAT_...`), meaning it cannot be recompiled without significant manual intervention to define types and data.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `local_28`) instead of semantic names (`a`, `sum`).
+- Composite types (structs) passed by value are split into individual integer parameters, destroying the type abstraction.
+- Varargs functions are decompiled to raw stack pointer arithmetic instead of using `va_list` semantics.
+- Floating-point arguments are split into `undefined4` pairs rather than being recognized as `double`.
+- Switch statements are represented as chained `if-else` blocks.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names, making it trivial to locate specific logic blocks.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reassemble struct parameters passed by value (splitting them into registers) significantly obscures the data flow and function signatures.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Aggregate register-passed parameters back into struct types when the calling convention and usage pattern (e.g., memory copy to local array) indicate a struct-by-value argument.
+2. Recognize `va_list` implementation patterns (stack walking) and re-abstract them into standard varargs syntax or types.
+3. Promote pairs of `undefined4` parameters used in soft-float ABI calls (like `__aeabi_dadd`) into higher-level types like `double` or `long long`.

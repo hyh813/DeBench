@@ -1,0 +1,131 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`a0`, `a1`, `v0`, `v1`, `idx`, `iter`, `cur`). The original source used meaningful names like `size`, `x`, `y`, `result`, `counter`, but these are completely lost. Even loop indices like `idx` are rare; most are just `v0`, `v1`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some target functions like `param_macro_constants`, `param_asm_basic`, `call_asm_simd` correctly preserve semantic names. However, many helper functions are named with addresses (`sub_401030`, `sub_401040`) and internal functions like `deregister_tm_clones` are preserved but not explained. The original function names like `param_stringize`, `param_token_paste` are lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are preserved (e.g., `64`, `0x400`, `57122`), but the original macro names (`MAX_SIZE`, `BUFFER_COUNT`, `DEBUG_MODE`) are completely lost. The value `0x400` (1024) should be named `MAX_SIZE`. The magic number `57072` (0xDEF0) in `param_multi_branch_compile` is unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise artifacts present. Functions like `sub_401030` contain `goto ptr[2]` which is clearly a decompilation failure. The `call_asm_clobber` function has bizarre code with `_ccall` and stack canary checks that obscure the actual logic. Many spurious struct definitions with `padding_0` fields pollute the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Several functions have completely unnatural control flow. `sub_401030` uses `goto ptr[2]` which is nonsensical. Multiple functions like `sub_4010b0`, `sub_4010c0` use `goto v1->field_X` patterns that don't represent the original logic. Some legitimate control flow (if/else, loops) is preserved but heavily obscured.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries generally match the original source. The 18 test functions from the source are preserved as separate functions. However, many compiler-inserted functions (frame_dummy, register_tm_clones, __x86.get_pc_thunk) are included, and some functions like `call_asm_clobber` have extraneous stack protection code mixed in.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read reasonably top-to-bottom, but several have forward jumps that disrupt flow. The `param_asm_clobber` function has a simple loop that reads linearly, but `call_asm_clobber` has scattered code with stack canary checks interrupting the flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns exist, particularly in `call_asm_clobber` and `call_asm_simd` where stack canary checking code is duplicated. The SIMD functions show some redundant memory operations. However, no major dead code elimination failures.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers are typed as `unsigned int` or `int`, losing the original precision (the source used `size_t`, `int`, `uint32_t`). Pointers are generally correct (`char*`, `unsigned int*`) but the original's `int *arr` in `param_asm_clobber` becomes `unsigned int ptr`. Function signatures like `param_asm_simd(uint128_t *)` show good type recovery for SIMD.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. Generic names like `struct_0`, `struct_1` with fields like `field_0`, `field_2c`, `padding_0` provide no semantic meaning. The original source had no custom structs but the decompiler creates fake ones. The `uint128_t` type for SIMD is good, but overall composite type recovery fails to capture intent.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code with correct pointer usage in most places. The `param_asm_multi_insn` correctly uses `char*` for byte-level operations. Some minor issues: the `goto v1->field_X` patterns suggest type confusion. No major buffer overflow risks in the recovered code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量", "// 测试: 编译时宏替换"). None of this semantic information is preserved or reconstructed.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are implicitly present (loops, conditionals) but not named or explained. The original source's macro expansions, inline assembly blocks, and conditional compilation are not recognized as idioms. The atomic operations use `atomic_exchange_add` which shows some recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The bizarre `goto v1->field_2c` patterns, the `_ccall` invocations, and the `__stack_chk_fail_local` references are presented as normal code without any indication they represent decompilation difficulties or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 64", "期望: 30") but these are completely lost. No documentation of what the functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., `test_preprocessing_features` calls `call_macro_constants`). Some extern declarations are present (`extern unsigned int g_40206e`). However, the relationships between functions and the data they operate on are not clearly documented. The original's clear call relationships (call_macro_constants → param_macro_constants) are not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped (preprocessing functions at 0x4012xx, asm functions at 0x4015xx), but the organization is driven by address rather than semantic grouping. The original's clear separation into "5.2 预处理与条件编译" and "5.3 内联汇编与底层特性" sections is lost. Many compiler-inserted functions clutter the output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Many undefined references (`_ccall`, `__stack_chk_fail_local`, `frame_dummy`, `register_tm_clones`). The `uint128_t` type may not be standard. Function signatures like `sub_401110(1, "LOG: Values: %d, %d, %d\n", a0, a1, a2)` suggest variadic function misuse. Significant patching would be required.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 5 + 3) / 4 = 3.5
+L2_avg = (4 + 7 + 5 + 5) / 4 = 5.25
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (1 + 3 + 1 + 1) / 4 = 1.5
+L5_avg = (5 + 4 + 3) / 3 = 4.0
+
+Overall = (3.5 × 0.30) + (5.25 × 0.25) + (4.67 × 0.20) + (1.5 × 0.15) + (4.0 × 0.10)
+        = 1.05 + 1.3125 + 0.934 + 0.225 + 0.4
+        = 3.9215 / 10
+```
+
+**Overall Readability Score:** 3.9/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: All parameters are `a0`, `a1`, `a2`; all locals are `v0`, `v1`, `v2`. The original's meaningful names like `size`, `x`, `y`, `counter` are completely lost.
+
+- **Control flow corruption**: Multiple functions use `goto v1->field_X` patterns that are nonsensical and represent decompilation failures (e.g., `sub_401030`, `sub_4010b0`).
+
+- **No comments or documentation**: Zero comments in the entire output. The original's extensive documentation explaining test cases, expected values, and semantic purpose is entirely absent.
+
+- **Struct/union recovery failure**: Generic `struct_0` with meaningless fields like `field_0`, `padding_0` provide no semantic value. The decompiler appears to fabricate structures where none existed.
+
+- **Anomaly indication completely missing**: The bizarre `_ccall` patterns, stack canary checks, and `goto` statements are presented as normal code without any warnings about decompilation uncertainty.
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Type System Fidelity (scored 4.67/10)**  
+While not excellent, this dimension scored highest. The decompiler correctly identified SIMD types (`uint128_t`), preserved pointer types reasonably, and avoided major type safety violations. The atomic operations were recognized (`atomic_exchange_add`).
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Semantic Transparency (scored 1.5/10)**  
+This dimension scored abysmally. The decompiler provides zero comments, no idiom recognition, no anomaly warnings, and no contract recovery. Combined with the lowest-scoring dimension being Comment Quality (1/10), this represents the most severe degradation from the original source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a parameter `a0` is compared to `0x400` (1024) and used in `return 64` or `return 0x200` (512), infer it should be named `size` or `max_size`. When `a0 * a0 + v1` appears, recognize the SQUARE and MAX macro pattern.
+
+2. **Flag decompilation anomalies**: The `goto v1->field_X` patterns clearly indicate decompilation failures. Add warnings like "// DECOMPILATION UNCERTAIN: indirect jump pattern" rather than presenting broken code as fact.
+
+3. **Recover macro semantics**: The original uses meaningful macros (MAX_SIZE, BUFFER_COUNT, SQUARE, MAX). When literals like 1024, 16, 64 appear in context, suggest the original macro name. The value 57072 should prompt "Consider: 0xDEF0 (default platform value)".

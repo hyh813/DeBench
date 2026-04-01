@@ -1,0 +1,122 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `param_1`, `param_2`, `local_14`, `local_38`, `uStack_34` which completely obscure their semantic purpose. For example, in `param_strcpy`, `param_1` should be `dst` and `param_2` should be `src` based on usage. The decompiler makes no attempt to infer meaningful names from context.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+Justification: Function names like `param_strcpy`, `call_strcpy`, `param_memcpy` correctly match the original source function names. However, the "param_" and "call_" prefixes are mechanical and don't add semantic value. The core function names are accurate.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x2a` (42), `0xc` (12), `0xffffffff` (-1) appear without explanation. However, some literals like `0x1f` (31) for buffer sizes are somewhat inferable from context. The decompiler doesn't suggest named constants for these values.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise present including stack canary checks (`__stack_chk_fail`), unreachable block warnings, and type propagation algorithm messages. Many functions have spurious `local_c` variables used only for stack protection checks that add clutter. The code includes numerous "WARNING" comments about unreachable blocks.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Control flow is generally preserved and readable. Loops use proper while/do-while constructs. However, some awkward patterns exist like the conditional in `param_strcmp` that could be more idiomatic. At -O0, the control flow should be nearly identical to source but some restructuring occurred.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Functions are appropriately decomposed - each test function (`call_strcpy`, `call_strcmp`, etc.) is separate from its implementation (`param_strcpy`, `param_strcmp`). Some functions like `test_standard_library_functions` are large (80+ lines) but maintain cohesion. No severe fragmentation or monolith issues.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling paths. Some nested conditionals create moderate depth (3-4 levels) but remain traceable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Some redundancy present - for example, `call_memcmp` duplicates the comparison logic inline rather than calling `param_memcmp`. The decompiled code also includes some dead code paths that are never executed. Loop unrolling is minimal at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Heavy use of generic types: `undefined4` instead of `int`, `undefined1` for bytes, `void*` for pointers. The `param_strcpy` uses `char*` for both parameters but loses the `const` qualifier on `src`. Function return types vary between `int`, `undefined4`, and `void` inconsistently.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct or union recovery visible. Complex data structures like `ThreadData` in the original source are completely lost - the decompiled code uses raw pointer arithmetic and separate variables (`local_48`, `uStack_44`, `local_40`, etc.) instead of reconstructing the struct. The `sockaddr` structure is partially reconstructed with individual field assignments.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several unsafe patterns present. In `param_strcpy`, the return calculation `(int)pcVar1 - (int)param_1` uses raw pointer arithmetic. Many casts between `int` and pointers (e.g., `(pthread_t *)0x0`). Stack canary checks add safety annotations but the underlying code has potential issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only auto-generated comments present: "WARNING: Subroutine does not return", "WARNING: Type propagation algorithm not settling", "WARNING: Removing unreachable block". No meaningful comments explaining algorithm intent, parameter purposes, or return value semantics. The decompiled code lacks any documentation that would help understand the original code's purpose.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: Standard library functions are correctly identified: `strcpy`, `strcmp`, `strlen`, `memcpy`, `memcmp`, `fopen`, `fclose`, `pthread_create`, `pthread_join`, etc. Threading idioms like mutex lock/unlock pairs are recognized. However, the decompiler used `stpcpy` instead of `strcpy` in `param_strcpy` - while semantically equivalent, it's a different idiom than the source.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some anomalies are flagged: "WARNING: Removing unreachable block", "WARNING: Type propagation algorithm not settling". However, these are generic warnings without specific explanations. The decompiler doesn't indicate uncertainty about indirect function calls or unusual stack layouts.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. Error return values (like returning -1 for failure) are not explained. The contracts implicit in the original code (e.g., "dst must be large enough to hold src") are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are visible in the code - `test_standard_library_functions` calls `call_strcpy`, `call_strcmp`, etc. However, there's no documentation of who calls whom or global variable usage. The relationships are inferable but not explicit.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: Functions are grouped logically (test functions, param functions, thread functions) but the organization is flat - all 113 functions appear in one large listing. No file boundaries or namespace structure is represented. Related functions are near each other but not formally grouped.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: The code would not compile as-is. Issues include: undefined types (`undefined4`, `undefined1`), missing includes, `__stack_chk_fail` references without definition, and `pthread_mutex_t` used without proper types. The decompiled code requires significant patching to compile.
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+6+5+4)/4 = 4.5
+L2_avg = (6+6+6+5)/4 = 5.75
+L3_avg = (4+2+5)/3 = 3.67
+L4_avg = (3+7+5+2)/4 = 4.25
+L5_avg = (5+5+4)/3 = 4.67
+
+Overall = (4.5 × 0.30) + (5.75 × 0.25) + (3.67 × 0.20) + 
+          (4.25 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.44 + 0.73 + 0.64 + 0.47
+        = 4.63/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects
+- **Variable naming**: All parameters use generic names (`param_1`, `param_2`) losing semantic meaning - `param_1` should be `dst` and `param_2` should be `src` in `param_strcpy`
+- **Type precision**: Heavy use of `undefined4`, `undefined1`, `undefined` types instead of proper C types like `int`, `char`, `size_t`
+- **No struct recovery**: Complex structures like `ThreadData` are completely lost, replaced with scattered individual variables
+- **No comments**: Complete absence of meaningful comments explaining algorithm intent or contracts
+- **Const correctness lost**: `param_strcpy` uses `char*` for both parameters instead of `const char*` for source
+
+### Best Quality Aspect
+**Idiom Recognition (7/10)** - Standard library functions are correctly identified and named. The decompiler recognizes `strcpy`, `strcmp`, `pthread_create`, `mutex` operations, and other common patterns accurately.
+
+### Most Needs Improvement
+**Type System Fidelity (3.7/10)** - The decompiler fails to recover proper types. Using `undefined4` instead of `int`, losing struct definitions, and failing to preserve `const` qualifiers significantly degrades the usefulness of the decompiled code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a parameter is used as a destination for string copy operations, name it `dst` or `dest`; when used as source, name it `src`. Analyze pointer dereferences and function call patterns to infer semantic names.
+
+2. **Recover composite types**: When multiple related variables are passed together or accessed via pointer arithmetic, attempt to reconstruct the original struct. The `ThreadData` structure with fields `start`, `end`, `result` should be recoverable from the code patterns.
+
+3. **Add semantic comments**: Include comments explaining function purpose, parameter contracts, and return value meanings. For example, `param_strcpy` should have a comment like "Copies src to dst and returns string length" rather than having no documentation.

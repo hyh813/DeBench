@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_8`, `uVar1`, `iVar2`, `piVar3` that obscure semantic meaning. The original source used meaningful names like `count`, `args`, `sum`, `x`, `y` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions are correctly named (`cdecl_func`, `varargs_func`, `test_calling_conventions`), matching source. However, some utility functions have auto-generated names like `FUN_00100640`, `FUN_001007bc` with no semantic value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear without explanation. String literals are referenced as `&DAT_001014d2` rather than actual strings. Constants like `0xfffffff9`, `0xffffffc8` in varargs handling are unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some noise from register-related names like `register0x00000008` and stack frame references like `&stack0xffffffffffffffe0`, but these don't significantly impede understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with do-while loops correctly reconstructed. The varargs handling uses appropriate conditional logic. At -O0, the flow closely matches the original source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility (e.g., `cdecl_func` adds two ints, `varargs_func` sums variadic arguments). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The varargs functions have some complex index calculations (`local_8 = local_8 + 8`) that disrupt linear flow slightly, but overall traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in varargs functions is a legitimate compiler artifact at this level. No significant redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (int, char*, long). However, generic `int` is used instead of more specific types. Function pointers use `code *` which is non-standard. The original had `int (*callback)(int)` but decompiled shows `code *param_1`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. `LargeStruct` (128 bytes) is reduced to `int *param_1` with raw array indexing (`param_1[0x1e]`). `SmallStruct` similarly lost, becoming `int *param_1` with `param_1[1] * *param_1`. Original struct field names completely absent.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer usage. Minor issues: some pointer arithmetic is implicit (e.g., `param_1 + 1` for pointer increment). No major undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments present. Only auto-generated function headers like `// Function: cdecl_func @ 0x100814`. No explanation of algorithm logic, parameter purposes, or return value semantics.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C idioms are recognizable (varargs handling, function pointers) but not explicitly named or documented. The original source's calling convention tests (cdecl, stdcall, fastcall) are not annotated as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: External functions marked with `<EXTERNAL>::` prefix, which is helpful. However, no warnings about indirect calls, unusual stack layouts, or potential undefined behavior (e.g., the `param_order_dep` function with unsequenced modifications).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition documentation. Contracts like "requires: ptr != NULL" are not recovered. The `func_struct_byptr` null-check is present but not documented as a precondition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure (e.g., `main` calls the three test functions). However, no explicit documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped matching source organization (calling convention tests, parameter passing tests, return value tests). Static functions properly scoped. Minor misplacement of some utility functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has compilation issues - external dependencies (printf, puts, strlen) not properly declared. Type mismatches exist (e.g., `undefined8` vs actual return types). Requires moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `param_2`, `local_8`, `uVar1` instead of semantic names like `count`, `args`, `sum`
+- Composite types completely lost - `LargeStruct` and `SmallStruct` reduced to raw `int*` with array indexing
+- No comments explaining algorithm logic, parameter purposes, or return value semantics
+- Magic numbers like `0xf`, `0x32`, `0x2a` appear without explanation (should be 15, 50, 42)
+- String literals replaced with `&DAT_001014d2` references, losing actual content
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, the decompiler correctly recovers loop constructs and conditional logic matching the original source structure
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic parameter names (`param_1`, `param_2`) and local variable names (`local_8`, `uVar1`, `piVar3`) completely obscure semantic meaning and make the code difficult to follow
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used as loop counter should be named `count` or `i`
+2. Recover struct types from stack layout analysis - `int *param_1` with `param_1[0x1e]` access indicates a 16-element array struct
+3. Add comments explaining magic numbers - annotate `0xf` as "// Expected: 15" based on call site analysis
+4. Recover string literal content - `&DAT_001014d2` should show the actual string "=== 测试基础调用约定 ==="
+5. Document calling convention attributes - mark functions with `__attribute__((cdecl))` or similar based on platform analysis

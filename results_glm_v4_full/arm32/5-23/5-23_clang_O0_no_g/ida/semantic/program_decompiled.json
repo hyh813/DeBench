@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_clang_O0_no_g/ida/syntactic/bin/5-23_clang_O0_no_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\nPPL2.01: 64\nPPL2.02: 30\nPPL2.03: 32\nPPL2.04: 57122\nPPL3.01: 116\nPPL3.02: 19\nPPL3.03: 60\nLOG: Values: 10, 20, 30\nPPL3.04: 60\nPPL3.05: 16\nPPL3.06: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:14\nPPL3.07: 382\n=== ASM Features Test ===\nAsmL4.01: 15\nAsmL4.02: 15\nAsmL4.03: -1\nAsmL4.04: 36\nAsmL4.05: 30\nAsmL4.06: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `addr`, `result`) losing semantic meaning from original names like `large_buf`, `head`, `current`, `sum`. Loop counters sometimes use `i` but most lack purpose-indicating names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names preserved (`local_vars`, `heap_basic`, `linked_list_heap`, `double_value`) but many functions have mechanical names (`sub_401030`, `sub_401130`). Wrapper functions duplicate functionality with generic naming.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive: `4294967295` (unsigned -1), `4294967294`, `0xfffffff0` appear without explanation. Original constants like `2048`, `10`, `100` lost context. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: redundant assignments (`v0 = v1`), unnecessary struct padding definitions, wrapper functions that just call real functions. Some cleanup achieved but significant noise remains.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`local_vars`, `double_value`) have natural flow, but complex functions show obscured logic with expressions like `(&v3->padding_0[92] - &v3->padding_0[92] >> 31)`. Loop unrolling present but not clearly indicated.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions created (`sub_4012b1` calls `local_vars`). Function sizes reasonable but some fragmentation from optimization artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom with reasonable linearity. Some functions have complex jump patterns but loop structures generally recovered as do-while constructs.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible without explanation (e.g., `vla_stack` unrolls 4-8 iterations). Redundant calculations in complex expressions. Dead code not fully eliminated from optimization passes.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: everything is `unsigned int` or `void*`. Lost distinction between `int`, `size_t`, `char*`, `int*`. Function pointers degraded to `unsigned int`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_4`). Original `Point` struct lost; `Node` becomes `struct_0`. Complex padding structs appear that don't match original source structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(char *)ptr`, `(int *)&ptr`). Pointer arithmetic without type safety. Function pointers treated as integers. No restrict or alignment annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`) but no other documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list and tree structures not named. Memory allocation patterns (malloc/free pairs) not documented. Algorithm patterns completely obscured.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`Unsupported jumpkind`) but undefined behavior not indicated (dangling pointer in `dangling_pointer`, double free in `double_free`). Silent failures on critical issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions or invariants. Error return values (`4294967295`) not documented as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage declared with `extern` but relationships not explained. Callback relationships (`global_func_ptr`) not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. Original section organization (stack/heap/static tests) lost in output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared but missing includes. Some type definitions incomplete. Would require moderate patching to compile standalone (missing struct definitions, external symbols).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Type erosion**: All variables degraded to `unsigned int`, losing `int`, `size_t`, `char*` distinctions
+- **Magic numbers**: `4294967295` used throughout without explanation (should be `-1` or `ERROR`)
+- **Struct field names**: All fields named `field_0`, `field_4` losing semantic meaning (should be `data`, `next`, `x`, `y`)
+- **Missing comments**: Zero documentation for complex logic like loop unrolling in `vla_stack` and `alloca_usage`
+- **Platform mismatch**: Original was arm64 with `-O0`, decompiled shows X86 with optimization artifacts
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names like `local_vars`, `heap_basic`, `linked_list_heap`, `double_value` were successfully recovered from symbols
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes complex decompiled logic nearly impossible to understand without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size` or `count`)
+2. **Replace magic numbers with named constants** - detect repeated values like `4294967295` and suggest `#define ERROR_RETURN -1`
+3. **Add decompilation confidence annotations** - flag uncertain reconstructions (indirect calls, complex expressions) with comments like `// DECOMPILER UNCERTAINTY`

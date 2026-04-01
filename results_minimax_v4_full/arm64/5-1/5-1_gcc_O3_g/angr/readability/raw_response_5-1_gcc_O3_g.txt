@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0-v9, ptr, result, addr). The original source had meaningful names like `value`, `name`, `size`, `data`, `multiplier` but these are completely lost, replaced with cryptic single-letter variables that require extensive cross-referencing to understand.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some C++ mangled names preserved correctly (`_Z20test_cpp_member_funcv`, `test_cpp_exception`), but most functions use generic `sub_XXXXX` pattern. The original had clear names like `getValue`, `compute`, `call_virtual_func` but these are lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `42` thrown as exception, "Test" string), but many magic numbers lack explanation. Buffer size `31` appears without constant name, and computed values like `0x4004000000000000` are unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution - excessive spurious `goto` statements throughout, stack protector checks (`__stack_chk_fail`) cluttering logic, and many "do not return" comments. The decompiled code is 1308 LOC vs 540 LOC original - 2.4x bloat indicates significant artifact pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is severely degraded with pervasive `goto` statements replacing natural loops and conditionals. For example, `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0));` which is completely unreadable. At -O0, this level of goto usage is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized and some decomposition is present. Template functions like `template_max<int>` and `template_swap<int>` are properly separated. However, some functions like `test_cpp_oo_features` are bloated with all logic inline.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Code is highly non-linear due to pervasive goto statements and computed jumps. The `test_cpp_rtti` function has extremely convoluted flow with multiple labels and conditional jumps that make linear reading impossible.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy present - duplicate function calls like `v0 = frame_dummy(); return frame_dummy();` appear twice. However, no major dead code elimination failures that would severely impact readability.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - original `int`, `size_t`, `bool` often become `unsigned long`, `char*`, or `int`. The `this` pointer is frequently `void*` instead of proper class types. Const correctness is largely lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery with generic names (`struct_2`, `struct_3`, `struct_4`, `struct_5`). Original classes like `Base`, `Derived`, `RTTIDerivedA` are partially recovered but with broken field access patterns. Virtual inheritance thunks are present but poorly explained.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns - pointer arithmetic like `v4[8]`, `a0 - 16`, `(char *)a0 + (*(a0))[32]` without bounds checking. The RTTI code has complex pointer casting that could cause undefined behavior. No `restrict` or safety annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like "do not return" and "/* WARNING: Function in */" appear. No explanation of algorithms, vtable mechanics, or this pointer adjustments. Original source had extensive Chinese comments explaining each feature - none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns hinted at but not named - virtual function tables appear as `goto *` patterns, thunks for multiple inheritance are present but not documented. Template instantiation is recognized but not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No comprehensive anomaly flagging. Indirect calls that couldn't be resolved (like virtual function calls through vtables) are presented as goto statements without warning. The complexity of multiple inheritance thunks is not flagged as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original source had clear expectations (e.g., "requires: ptr != NULL", bounds checking) but none of this semantic information is preserved.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships clear through mangled names - `_ZN4Base12virtual_funcEi` shows it's `Base::virtual_func`. However, virtual dispatch relationships, callback patterns, and inheritance hierarchies are not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by class (Base, Derived, MultiDerived functions appear near each other) but no clear namespace or module structure. Single monolithic output file with no organization hints from original headers.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has extern declarations for standard library functions. Some dependencies documented (`__cxa_throw`, `operator new`, `puts`). However, many runtime functions are missing prototypes and would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful names lost - `value`, `size`, `data` become `v0`, `v1`, `ptr`
+- **Control flow**: Pervasive `goto` statements replace natural loops/conditionals, making execution flow nearly impossible to trace
+- **Type precision**: Class types replaced with `void*`, `char*`, losing all type safety
+- **Comments**: Zero useful comments explaining C++ features (vtables, multiple inheritance thunks, RTTI)
+- **Struct recovery**: Composite types use generic `struct_N` names with no semantic meaning
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- Template functions are properly separated (`template_max<int>`, `template_swap<int>`)
+- Class methods have reasonable granularity
+- Some cohesion maintained
+
+### Most Needs Improvement: Variable Naming & Comments (both 2/10)
+- Variable names are completely generic (v0-v9) losing all semantic meaning
+- No comments explaining C++ mechanics (vtables, thunks, RTTI)
+- At -O0, this level of degradation is unacceptable
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `v0` used as `strlen()` result should be named `len` or `str_len`; `ptr` used in loop bounds should be `size` or `count`
+2. **Recover natural control flow**: Convert `goto *ptr` patterns to virtual function calls with proper syntax; replace spurious gotos with while/for loops
+3. **Add explanatory comments**: Document vtable mechanics, this pointer adjustments for multiple inheritance, and RTTI patterns - these are complex C++ features that require explanation even in source-equivalent code

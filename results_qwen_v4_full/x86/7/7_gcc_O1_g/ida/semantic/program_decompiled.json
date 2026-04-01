@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_gcc_O1_g/ida/syntactic/bin/7_gcc_O1_g_fixed",
+  "stdout": "test\n//O//O//O//O//O//O//O//O//O//O//O//O//O//O",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

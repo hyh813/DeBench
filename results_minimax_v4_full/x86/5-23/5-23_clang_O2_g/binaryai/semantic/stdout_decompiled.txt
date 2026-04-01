@@ -1,0 +1,21 @@
+Testing preprocessing features...
+
+Value: 64
+Result: 30
+Result2: 32
+Multi: 57122
+Recursion: 116
+Stringize: 19
+Token: 60
+LOG: Values: 10, 20, 30
+Variadic: 60
+Override: 16
+Include: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:11
+Builtin: 382
+Testing ASM features...
+
+ASM Basic: 15
+ASM Clobber: 15
+ASM SIMD: 4294967295
+SIMD: 36

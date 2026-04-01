@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_O3_g/ida/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "ObfL401:\nObfL402: 10\nObfL403: 20\nObfL404: 225\nObfL405: 158\nOptL401: 500500\nOptL401_0: 5050\nOptL402: 72\nOptL501Lto: 20\nEdgeL301: 1\nEdgeL302: 41\nEdgeL303: 30\nEdgeL304: 2000000000\nEdgeL401: 10\nEdgeL402: 44\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

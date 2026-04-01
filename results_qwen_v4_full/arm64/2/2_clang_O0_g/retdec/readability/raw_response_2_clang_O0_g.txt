@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v142`, etc.) with no semantic meaning. Original source had meaningful names like `arr`, `sum`, `current`, but decompiled code uses `v1 = 0`, `result = 0` patterns throughout.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained names (`process_char`, `array_1d_stack`, `test_data_types_l1`), but helper functions are generic (`function_6a0`, `function_15bc`). Some function logic doesn't match names (e.g., `ptr_single` has broken logic).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`c - 65`, `> 25`, `4 * (int64_t)v1`). String literals stored as hex-encoded globals (`g7 = "=== \xe6\xb5\x8b..."`). Array offsets like `44 * i` obscure the 10×4 byte stride.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive type casts (`(int64_t)`, `(int32_t)`, `(char *)`) throughout. Compiler runtime functions (`__addtf3`, `__multf3`) span hundreds of lines with assembly intrinsics (`__asm_mrs`, `__asm_ubfx`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops converted to while with manual increment instead of for loops. Complex functions use goto labels (`lab_0x2694`, `lab_0x23e0`). `process_bool` shows awkward transformation: `2 * x / 2 == x` instead of `x % 2 == 0`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Most functions have reasonable size, but floating point helpers (`__addtf3`, `__multf3`) are 500+ lines each. Some functions lost proper structure (`ptr_single`, `ptr_double` show incorrect logic with uninitialized `v1`).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Extensive label-based control flow in complex functions. Forward jumps disrupt reading flow. Simple functions read top-to-bottom but complex ones have 50+ labels creating spaghetti structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated patterns like `v3 = result; v2++;` in loops. Redundant casts throughout. No dead code removal in simple functions, but complex functions show optimization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types mostly preserved (int32_t, int64_t), but `volatile` qualifier completely lost in `volatile_access`. `const` qualifier lost in `const_param`. Pointer types degraded to generic `char *` in many places.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types lost (Point3D, Rect, Widget, Node, etc.). No struct definitions recovered. All access via pointer arithmetic: `*(int32_t *)(v1 + 8)`. Union and enum types completely absent.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int32_t)v1`, `(char *)p`). `ptr_void` shows type confusion with `v1` uninitialized. Function pointer signatures sometimes incorrect. Pointer arithmetic without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated line range comments (`// Line range: 16 - 21`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments add no semantic value.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list, tree, and graph traversal patterns present in source but not recognized. Data structure patterns completely obscured by pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical issue** - Incorrect code presented confidently. `ptr_single`, `ptr_double`, `ptr_triple` all show broken logic with uninitialized variables. No warnings about unresolved calls or stack issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. NULL checks present but not documented as contracts. No postconditions or invariants. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`g7`, `g8`, etc.) not explained. Callback relationships unclear. No call graph information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. No header file structure. Function order appears arbitrary.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but has custom typedefs (`float128_t`, `int128_t`). Assembly intrinsics may not port. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+5+4+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):        (5+2+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (3+3+2+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (4+4+5)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  3.93/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Struct/union/enum types completely lost** - All composite types accessed via raw pointer arithmetic (`*(int32_t *)(v1 + 8)`)
+- **Multiple functions have incorrect logic** - `ptr_single`, `ptr_double`, `ptr_triple`, `ptr_const` all use uninitialized `v1` variable
+- **Floating point functions severely degraded** - `process_float`, `process_double` return input unchanged; `process_ld` has broken logic
+- **Excessive compiler noise** - `__addtf3`, `__multf3` functions are 500+ lines of assembly intrinsics
+- **No anomaly warnings** - Incorrect code presented confidently without any decompilation uncertainty indicators
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names were preserved from source (`process_char`, `array_1d_stack`, `test_data_types_l1`), providing some semantic anchors.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any struct, union, or enum definitions despite -O0 debug compilation; all composite access reduced to pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions from debug symbols** - At -O0 with `-g` flag, DWARF debug info should enable full struct/union/enum recovery with field names.
+2. **Add anomaly detection for uninitialized variable usage** - Flag functions like `ptr_single` where `v1` is used without initialization as potentially incorrect.
+3. **Simplify floating point runtime function output** - Either inline common operations or add comments explaining that `__addtf3`/`__multf3` are compiler runtime helpers, not user code.

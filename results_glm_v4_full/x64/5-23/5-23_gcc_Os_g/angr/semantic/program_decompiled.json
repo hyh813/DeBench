@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_Os_g/angr/syntactic/bin/5-23_gcc_Os_g_fixed",
+  "stdout": "Testing macro constants: 1626702104\nResult: 64\nResult: 30\nResult: 32\nResult: 57122\nResult: 116\nResult: 19\nResult: 60\nLOG: Values: 10, 20, 30\nResult: 60\nResult: 16\nResult: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:39\nResult: 382\nTesting ASM features:\nResult: 191860772\nResult: -1\nResult: 6\nResult: 35\nResult: 15\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

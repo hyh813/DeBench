@@ -1,0 +1,107 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `v3`, `ptr`, `a1`). Struct fields are lost, replaced by array indices (e.g., `ptr[1]` instead of `p->y`), and meaningful local names like `local` or `arr` are not recovered.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `double_value`, `heap_basic`, `linked_list_heap`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; `sizeof(int)` and `sizeof(struct)` are replaced with literals like `4`, `8`, and `0x14` (e.g., `malloc(4 * a1)`), obscuring the intent of memory allocation sizes.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean with minimal compiler artifacts, though some redundant casts like `(_DWORD *)` appear frequently. The `JUMPOUT(0)` in `sub_105B4` is a minor artifact.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; loops and conditionals match the source structure perfectly (e.g., `for` loops in `local_array`), making execution paths easy to follow.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source exactly. There is no inlining or outlining, maintaining the original modular structure (e.g., `create_tree_node` remains separate).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or goto statements, closely resembling the original source flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Some redundancy exists, such as the expanded initialization in `test_stack_memory` (`memset` followed by individual assignments), which reflects the `-O0` compilation but adds verbosity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are significantly degraded; `size_t` is lost (becoming `int`), and specific types like `Point` or `Node` are replaced by generic `_DWORD*`. The `tls_access` function is particularly mangled, treating an int argument as a function pointer `void (*)(void *)`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: **Critical Failure**. Structs (`Point`, `Node`, `TreeNode`) are completely lost. Accesses like `p->x` and `p->y` are flattened to pointer arithmetic or array indexing (e.g., `*ptr` and `ptr[1]`), destroying the semantic data model.
+
+**11. Type Safety:** Score: 5/10
+Justification: While most casts are technically correct, the loss of struct types leads to unsafe-looking pointer arithmetic (e.g., `*(_DWORD *)&v3[4 * i - 4]`). The `tls_access` function incorrectly assigns to a symbol named `free`, creating confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic, algorithms, or data structures. The output relies entirely on the code itself, which is insufficient for complex sections like the linked list traversal.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like `malloc`/`free` pairs are visible, but higher-level patterns like the linked list or tree traversal are not explicitly identified or commented, leaving the reader to infer the data structure from pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The `JUMPOUT(0)` in `sub_105B4` indicates an anomaly, but the severe type confusion in `tls_access` (assignment to `free`) is presented confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement `n > 0` in `alloca_usage` is implicit in the code but not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses are clear and resolved correctly (e.g., calls to `malloc` are standard). The relationship between `create_tree_node` and its usage is preserved.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure. Helper functions like `static_helper` are correctly placed.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code would likely compile with some fixes to types and variable names (e.g., removing the collision with `free`), but the reliance on generic types and magic numbers makes it fragile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Overall = (6.75 × 0.30) + (8.75 × 0.25) + (3.67 × 0.20) + 
+          (3.25 × 0.15) + (8.0 × 0.10)
+Overall = 2.025 + 2.1875 + 0.734 + 0.4875 + 0.8
+Overall ≈ 6.2/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.2/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: Structs (`Point`, `Node`, `TreeNode`) are completely lost; `p->next` becomes `ptr[1]`, destroying semantic understanding.
+- **Generic Variable Naming**: Local variables use generic names (`v1`, `v2`, `ptr`) instead of source names (`arr`, `head`, `local`).
+- **Magic Numbers**: `sizeof` operators are replaced with literals (e.g., `4`, `8`, `0x14`), obscuring allocation sizes.
+- **Type Confusion in TLS**: The `tls_access` function is severely mangled, treating an integer argument as a function pointer and assigning to a symbol named `free`.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly recovered all function names from the source symbols, making the high-level purpose of each code block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The complete failure to recover `struct` definitions turns high-level data manipulation into low-level pointer arithmetic, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover and Apply Struct Types**: Utilize debug information (DWARF/PEP) to reconstruct struct definitions and apply them to variable declarations and member access (e.g., convert `ptr[1]` to `ptr->next`).
+2.  **Recover Local Variable Names**: Map local variable symbols from debug info to decompiled output to replace generic names like `v1` and `v2` with meaningful names like `i` or `buffer`.
+3.  **Symbolize Magic Numbers**: Replace literal sizes in memory allocation functions (`malloc`, `calloc`) with `sizeof(Type)` expressions or named constants based on the context of the pointer being assigned.

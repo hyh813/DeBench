@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `str`, and `mem`. For example, in `param_string_encryption`, the decryption loop index and buffer pointers are named `v2` and `v3`, completely obscuring the XOR decryption logic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The function names present (`param_string_encryption`, `call_vectorized_loop`, `param_division_by_zero`) match the original source exactly, providing clear semantic intent for the high-level blocks.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered but stored as hex-encoded global variables (e.g., `g2` contains `\xe6\xb5\x8b...`), making them unreadable without decoding. Magic numbers like the XOR key `90` (0x5A) are present but not named as constants.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The representation of the `jmp_buf` in `param_division_by_zero` and `param_null_pointer_deref` as a massive struct literal with nested fields (e.g., `.e0 = {(int32_t)&g19, 0...}`) creates severe visual noise that obscures the control flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Loop constructs are generally recovered as `while` loops, which is natural. However, the `if (str % 256 != 0)` check in `param_string_encryption` is a redundant artifact of the compiler's loop setup that disrupts the natural reading of the decryption loop.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The function `test_obf_opt_edge` contains inlined logic (specifically the GCD calculation from `param_opaque_predicate`) mixed with direct calls, blurring the boundaries of responsibilities. Additionally, `call_vectorized_loop` appears to merge the caller's data setup with the callee's logic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom without excessive backward jumps. The use of `goto` is minimal, and the flow within functions like `param_string_encryption` is mostly linear.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no obvious dead code, but the inlining of the GCD algorithm into `test_obf_opt_edge` introduces redundancy that should have been encapsulated in a separate function call.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, with `int32_t`, `char *`, and `void *` used correctly according to the original signatures. The decompiler correctly identifies signedness and pointer types.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The `jmp_buf` structure is expanded into a raw struct literal rather than being abstracted behind the standard type name. In `call_vectorized_loop`, the arrays `a` and `b` are completely lost; the decompiler treats them as scattered scalars (`v2`, `v3`) rather than composite arrays.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are unsafe casts present, such as `(void (*)(int32_t))-0x1c5fefff` for the signal handler, which reflects the binary reality but makes the code look dangerous and non-portable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic like the XOR decryption or the GCD algorithm is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler fails to recognize standard idioms. The XOR decryption loop is presented as generic pointer arithmetic, and the GCD algorithm in `test_obf_opt_edge` is not identified as such.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The missing function `param_fake_branch` (referenced in the metadata but absent in the output) is not noted, nor is the weird `str % 256` check highlighted as a potential compiler artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer requirements) or postconditions. The error handling logic in `param_division_by_zero` is implicit in the control flow rather than explicit contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to `printf` and `malloc` are clear. However, the relationship between the global variables `g1` through `g16` and their usage as format strings is not explicitly documented (e.g., "Format string for OBF-L4-02").
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions are grouped in the output, but the lack of the original `param_fake_branch` function breaks the logical flow of the "Obfuscation & Protection" module defined in the source.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The massive struct literals used for `_setjmp` are likely valid C99 designated initializers but are so verbose and specific to the decompiler's internal representation that they might not compile cleanly or match standard system headers for `jmp_buf`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- The target function `param_fake_branch` is completely missing from the decompiled output.
+- Variable naming is entirely generic (`v1`, `v2`), requiring significant mental effort to track data flow.
+- Stack array recovery failed in `call_vectorized_loop`; arrays `a` and `b` are lost, replaced by scattered scalar variables.
+- The `jmp_buf` argument for `_setjmp` is represented as a massive, unreadable struct literal instead of a standard type.
+- No semantic comments or idiom recognition (e.g., identifying the XOR decryption loop).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The names that *are* present (e.g., `param_string_encryption`) match the source exactly, providing clear entry points.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The lack of comments, idiom recognition, and anomaly indication makes the code very difficult to understand semantically, especially for a -O0 build where clarity should be high.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve stack variable analysis to recover array types and initialization lists (crucial for `call_vectorized_loop`).
+2. Implement heuristics to rename variables based on context (e.g., loop counters, buffer pointers) to replace generic `v1`/`v2` names.
+3. Abstract standard library structures (like `jmp_buf`) or use standard type names instead of expanding them into raw struct literals.
+4. Add idiom detection for common patterns (XOR loops, GCD) and insert comments explaining them.

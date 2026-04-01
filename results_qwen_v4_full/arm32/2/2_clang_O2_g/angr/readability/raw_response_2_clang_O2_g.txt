@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, a0, a1, ptr, result) with zero semantic meaning. Original variables like `sum`, `len`, `current` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: User functions retained names (process_char, array_1d_stack) but helper/runtime functions use mechanical names (sub_4003d8, sub_4015c4). Function names don't indicate parameter types.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (65, 255, 32, 0x3f000000) without explanation. Floating-point constants shown as raw bit patterns instead of decimal values.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifacts: armg_calculate_condition calls, __muldf3/__adddf3 runtime functions, excessive temporary variables (v0-v100+), register spilling noise throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive goto usage instead of for/while loops. Complex nested conditionals with armg_calculate_condition replace simple if statements. Do-while patterns where for-loops existed.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but test functions inlined with constant values. Runtime helper functions (__muldf3) are 400+ lines of incomprehensible code.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Frequent forward jumps (LABEL_400490, LABEL_401084) disrupt reading flow. Deep nesting with goto makes top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in floating-point functions with repeated armg_calculate_condition patterns. Duplicate code blocks in conditional branches.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Complete type erosion—char, short, float, double all become unsigned int. No const/volatile preservation (volatile_access loses volatile semantics entirely).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs named generically (struct_0, struct_1) with field_0, field_1, field_4 naming. Original field names (x, y, z, width, height) completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (void* to int*, char* conversions). Pointer arithmetic uses raw integer math. No type safety annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop idioms not recognized (for→do-while+goto). Array access patterns become pointer arithmetic. No pattern naming or identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Floating-point expansion not flagged as compiler runtime. Indirect calls not marked as unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., ptr != NULL). No postconditions. No error condition documentation. Array bounds checks lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships undocumented. No call graph information. Global variables named generically (g_402483, g_413008).
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. No logical grouping by category. Runtime functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—missing external function declarations (__libc_start_main, __gmon_start__). Runtime library dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+2)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):  (3+5+3+3)/4 = 3.50  × 0.25 = 0.875
+Level 3 (Type):        (2+3+4)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.225
+Level 5 (Contextual):  (4+4+3)/3   = 3.67  × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 2.97/10
+```
+
+**Overall Readability Score: 3.0/10**
+
+### Critical Defects:
+- **Complete type erosion**: All types collapsed to `unsigned int`, losing char/short/float/double distinctions
+- **Zero semantic variable names**: Variables named v0, v1, a0, a1 instead of sum, len, current, packet_size
+- **Goto-based control flow**: Natural for/while loops converted to do-while+goto patterns
+- **No comments or documentation**: Zero explanation of complex floating-point expansion or algorithm intent
+- **Struct field names lost**: All struct fields named field_0, field_1, field_4 instead of x, y, z, width, height
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- User-defined function names were mostly preserved (process_char, array_1d_stack, struct_simple), providing some semantic anchors in otherwise degraded code.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any comments makes understanding the heavily transformed floating-point operations and complex control flow practically impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns**: Detect char operations (c >= 'A' && c <= 'Z') and recover original types instead of defaulting to unsigned int
+2. **Recover loop constructs from backward jumps**: Pattern-match do-while+i-- patterns back to for(i=0; i<n; i++) structures
+3. **Add decompilation confidence annotations**: Flag uncertain regions (floating-point expansion, indirect calls) with comments indicating manual review needed

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `lVar2`. The original source used meaningful names like `temp1`, `temp2`, `temp3`, `sum`, `count`. Only `local_10` (stack canary) hints at purpose. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, etc. Some internal functions like `FUN_00101020` are unnamed, but core test functions are well-recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some constants like `0x14` (20), `0x1e` (30) are recognizable as hex values, but `0x3039` (12345) and `0x2694` (9876) are unexplained magic numbers. The decompiler shows decimal in some printf calls but hex in code, creating inconsistency.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present: stack canary checks (`__stack_chk_fail`), "WARNING" comments about unreachable blocks and unrecovered jumptables. However, no debug instrumentation or register spilling clutter. The noise is manageable but noticeable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is mostly natural. Loops use `for` constructs correctly, conditionals are readable. Some minor awkwardness in `duffs_device` where switch cases use goto labels (`switchD_001018c1_caseD_7`), but overall flow is traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are monolithic. The original 20+ functions are preserved as separate entities with reasonable parameter counts. Static helper functions (`double_value`, `triple_value`) correctly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `single_if`, `if_else`. Some forward jumps in `loop_break` (goto to exit), but these are legitimate control flow, not spaghetti code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal at -O0. The decompilation is clean without redundant computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation. Original `int` parameters become `undefined4`, `undefined8`. Function pointers use generic `code *` type. The original used plain `int` throughout, but decompiler produces `uint`, `byte`, `undefined4`, `undefined8` - losing semantic consistency.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays like `local_24 [5]` and `local_48 [14]` are recovered as raw arrays but lose semantic meaning. The original had `int arr[] = {10, 20, 30, 40, 50}` with clear values; decompiler shows `local_24[4] = 0x32; local_24[0] = 10;` etc. - values present but context lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Extensive use of `undefined4`, `undefined8` casts. Pointer arithmetic present but relatively safe. Function pointer calls use `(*local_28[(int)param_1])(param_2)` pattern with explicit casts. No buffer-overflow-prone patterns at -O0.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal useful comments. File header is auto-generated ("Decompiled by Ghidra 12.0"). No algorithm explanations, no @param/@return documentation. Some "WARNING" comments about decompilation limitations, but no guidance on what the code actually does.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized - loops identified as `for`, conditionals as `if`. However, no explicit naming of patterns like "Duff's device" for `duffs_device`, no "state machine" label for `state_machine`, no "tail recursion" identification for `tail_recursion`.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged with generic warnings: "WARNING: Could not recover jumptable at 0x00101a3a. Too many branches", "WARNING: Treating indirect jump as call". However, these are generic and don't explain the actual pattern (function pointer array dispatch).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The original had no explicit contracts either, but decompiler could infer: "requires: n >= 0" for factorial, "ensures: return >= 0" for loop functions. None present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in test functions, but relationships aren't documented. No comments explaining which functions call which, no callback relationships identified. The `call_func_ptr_array` function uses function pointer array but no indication of the dispatch pattern.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file (expected for decompilation). Some logical grouping visible (test functions grouped together, helper functions like `op_add`, `op_sub` grouped). However, doesn't match original's clear section comments (CF-L1, CF-L2, CF-L3).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes headers (`<stdio.h>`, `<setjmp.h>` implicitly via `__jmp_buf_tag`), uses standard functions (`puts`, `__printf_chk`). Some issues: `EVP_PKEY_CTX` in `_init` is wrong (appears to be OpenSSL artifact), some function signatures mismatched. Generally compilable with fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 6) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (4 + 5 + 6 + 2) / 4 = 4.25
+L5_avg = (4 + 5 + 6) / 3 = 5.00
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (4.67 × 0.20) + 
+          (4.25 × 0.15) + (5.00 × 0.10)
+        = 1.575 + 1.875 + 0.934 + 0.638 + 0.500
+        = 5.522 / 10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use `param_N` and locals use `iVarN`/`uVarN` pattern - completely loses semantic meaning from source (e.g., `temp1`, `temp2`, `sum`, `count`)
+- **Type precision**: Original `int` parameters become `undefined4`/`undefined8`, losing the fact they were all the same type
+- **No contract recovery**: Zero precondition/postcondition documentation despite clear semantic contracts (e.g., factorial requires n >= 0)
+- **Literal confusion**: Magic numbers like `0x3039` (12345) appear without explanation; original had clear decimal values
+- **Comment absence**: No algorithm explanations, no pattern naming (Duff's device, state machine, tail recursion all unrecognized)
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Function boundaries match the original source well. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) is correctly separated, and helper functions like `double_value`, `triple_value` are properly extracted as static functions.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The generic `param_1`, `param_2`, `iVar1`, `iVar2` naming makes it extremely difficult to track variable purpose. At -O0 with debug symbols, the decompiler should be able to infer meaningful names from usage patterns (e.g., `param_1` used in `param_1 * 2` could be `factor` or `multiplier`).
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: At -O0 with debug info, analyze how variables are used to suggest semantic names. `param_1 + param_2` suggests "operands"; `param_1 * 2` suggests "doubled value"
+2. **Recover type contracts**: Add inferred preconditions/postconditions as comments (e.g., "/* requires: n >= 0 */" for recursive functions)
+3. **Name common patterns**: Automatically label recognized idioms like Duff's device, state machines, tail recursion with comments explaining the pattern

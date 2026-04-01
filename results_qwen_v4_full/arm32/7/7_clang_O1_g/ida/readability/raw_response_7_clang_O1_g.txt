@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, temp_1) with no semantic meaning. For example, `param_opaque_predicate` uses v1-v5 instead of meaningful names like `predicate_result` or `gcd_temp`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (param_fake_branch, call_opaque_predicate), but helper functions use generic names (sub_498, loc_ED4). Function names accurately reflect purpose where preserved.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like 0x5A (XOR key), 0x20u (buffer size), and signal numbers (8, 11) appear without explanation. Some literals are contextually clear (1000, 100 for test values).
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal register spilling artifacts. Some unnecessary type casts remain (unsigned __int8, LOBYTE/HIBYTE macros) that obscure simple operations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs instead of for-loops. The GCD algorithm in `param_opaque_predicate` uses awkward variable swapping (v4=v5, v5=x%v5) instead of clean while(b!=0) pattern.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. `decrypt_string` properly separated from `param_string_encryption`. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns. Some functions like `divsi3_skip_div0_test` have excessive nesting (30+ levels of if-statements) from division algorithm unrolling.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_string_encryption` duplicates entire `param_string_encryption` logic instead of calling it. `test_obf_opt_edge` re-implements decryption logic already in separate function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered correctly (int, char*, size_t). However, `param_string_encryption` return type changed from int to size_t. Some unsigned/signed distinctions lost (unsigned __int8 casts).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely optimized away (function returns constant 44). Array parameters recovered as pointers correctly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (unsigned __int8 to int, void* arithmetic). `param_null_pointer_deref` passes 0 directly as pointer without explicit NULL, obscuring intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated annotations like "BYREF" and "UNCERTAIN" warnings. No algorithm explanations for GCD or XOR decryption.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm not identified as such. XOR decryption pattern not recognized. Loop patterns recovered but not labeled as vectorization candidates or tail-recursion.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" messages for 12 external functions. Warning about "positive sp value has been detected" in _start. No indication that fake branches were optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., x!=0 for division). No postconditions or return value guarantees. Signal handler contracts completely missing.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variables (jmp_buffer, div_zero_caught) referenced without declaration context. External library functions listed as "FAILED".
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat namespace. No grouping by category (obfuscation vs. optimization vs. edge cases). Static functions not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions failed to decompile (printf, signal, strlen, etc.). Requires significant stubbing to compile. Architecture mismatch (ARM32 vs ARM64 metadata).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+6+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+6+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.605/10 ≈ 5.6/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Dead code elimination not indicated**: `param_fake_branch` returns just `x` with no indication the fake branches were optimized away
+- **Generic variable naming**: All local variables use v0, v1, v2 pattern losing all semantic meaning
+- **Function duplication**: `call_string_encryption` contains full decryption logic instead of calling `param_string_encryption`
+- **No comments on algorithms**: GCD computation, XOR decryption, and opaque predicates lack any explanatory comments
+- **12 external functions failed**: printf, signal, strlen, etc. cannot be resolved without manual intervention
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Functions maintain appropriate granularity and single-responsibility, matching source structure well
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no explanatory comments; decompiler provides zero semantic guidance for complex algorithms
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimized-away code**: When dead branches are eliminated, add comments like "// Original: if(x*x<0) - optimized away (always false)"
+2. **Infer variable names from usage patterns**: Variables used in GCD loops should be named `temp`, `gcd_result`; XOR key variables should be named `key`
+3. **Recognize common algorithm patterns**: Identify GCD, XOR decryption, and tail-recursion patterns and add algorithm identification comments

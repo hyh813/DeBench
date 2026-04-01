@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `a1`, `ptr`), providing no semantic hint about their purpose (e.g., `count`, `sum`, `args` are lost).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level logic functions like `cdecl_func`, `test_calling_conventions`, and `main` retain their original names, but low-level runtime functions are reduced to generic addresses (e.g., `sub_401030`, `sub_401080`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with global address references (e.g., `&g_402352`), and magic numbers like `4294967295` (representing `-1`) are used without symbolic constants.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output includes significant compiler runtime artifacts (e.g., `_init`, `frame_dummy`, `__x86.get_pc_thunk.bx`) and decompiler error markers (`[D] Unsupported...`), which clutter the listing.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The `varargs_func` decompilation is a prime example of unreadable control flow, presenting a manually unrolled loop with bitwise masking (`a0 & 3`, `a0 & 0xfffffffc`) instead of a simple `for` loop.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While functions are generally separated, `func_struct_byval` is artificially bloated into a function taking 32 arguments (`a0` through `a30`) due to failure to reaggregate the stack-passed struct.
+
+**7. Code Linearization:** Score: 7/10
+Justification: High-level test functions like `test_calling_conventions` read linearly from top to bottom, though the logic is obscured by constant propagation (e.g., `v3 = 15; printf(...)`).
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The compiler's constant folding (e.g., `call_cdecl` returning `15`) is accurately reflected, which removes redundancy but also obscures the original source logic; however, no obvious dead code remains.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical type information is lost; `double` parameters in `func_mixed_args` are missing or corrupted, and signed integers are frequently rendered as `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite types are completely destroyed; `LargeStruct` passed by value is flattened into 32 separate integer arguments, and `SmallStruct` return values are handled as raw pointer writes rather than struct returns.
+
+**11. Type Safety:** Score: 3/10
+Justification: Pointers are frequently cast to `unsigned int` or `void*`, and the decompiler emits VEX lifting errors (`[D] unsupported_<class 'pyvex.expr.GetI'>`) indicating unsafe or unresolved type operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments; the only text present are decompiler error markers like `[D] Unsupported jumpkind Ijk_SigTRAP`, which are not helpful for understanding logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like the `va_list` iteration in `varargs_func` are not recognized, resulting in complex pointer arithmetic instead of a clear loop pattern.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler explicitly flags areas where it failed with `[D] Unsupported...` markers, clearly indicating that the code in `func_mixed_args` and `sub_4010bb` is unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement for `ptr` to be non-null in `func_struct_byptr` is checked but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: String references are shown as global memory addresses (`&g_402352`) rather than the string content, making it difficult to understand what is being printed without cross-referencing memory.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are ordered by memory address, mixing high-level test logic with low-level runtime thunks (e.g., `__do_global_ctors_aux` appears between user functions), losing the logical grouping of the source.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile; it relies on undefined global variables (e.g., `g_403ff4`), inline assembly thunks (`__x86.get_pc_thunk.bx`), and invalid syntax (`[D] ...`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- **Struct Flattening**: `func_struct_byval` accepts 32 separate integer arguments (`a0`-`a30`) instead of a single `LargeStruct` parameter, destroying the function's interface.
+- **Type Loss**: The `double` parameter in `func_mixed_args` is completely missing, replaced by VEX lifting errors and invalid operations.
+- **Loop Obfuscation**: The `varargs_func` logic is presented as an unrolled, bitwise-manipulated mess rather than a readable summation loop.
+- **String Opacity**: String literals are replaced with pointers to global data segments (e.g., `&g_402352`), hiding the actual output text.
+
+**Best Quality Aspect:** Anomaly Indication (Score: 7/10)
+- The decompiler clearly marks sections where it failed to lift instructions (e.g., `[D] Unsupported...`), preventing the user from trusting incorrect code in `func_mixed_args`.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- The failure to aggregate stack arguments into structures renders functions accepting structs virtually unusable and unrecognizable compared to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Aggregate Stack Arguments**: Implement analysis to detect sequential stack arguments corresponding to struct fields and recombine them into a composite type parameter.
+2.  **Loop Pattern Recognition**: Identify unrolled loop bodies (specifically the 4-step unrolling in `varargs_func`) and reconstruct them into higher-level `for` or `while` loops.
+3.  **Floating Point Support**: Improve the VEX lifting backend or fallback logic to correctly handle floating-point operations and types, preventing the emission of `unsupported` errors in standard C code.

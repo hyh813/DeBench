@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Overview
+
+This is a comprehensive evaluation of Ghidra's decompilation of an ARM64 binary containing C++ object-oriented features. The original source was compiled with `-O0 -g` (debug mode), which should yield highly readable decompiled code. However, the results show significant quality issues.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic auto-generated names like `acStack_2c`, `local_d`, `local_c`, `sVar1`, `puVar1`, `iVar1`. The decompiler makes no attempt to infer semantic meaning from usage patterns. For example, `acStack_2c` clearly holds "Test" string but is not named accordingly.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some C++ methods are correctly named (e.g., `Base::virtual_func`, `Derived::virtual_func`), many functions use generic patterns like `FUN_0001092c`. The test functions are correctly named but lack clarity about what they test.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x125c`, `0x2a`, `0x47`, `0x28a`). The string "Test" is correctly embedded but not named. Constants like `0x3e9` (1000) and `0x14` (20) are unexplained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution from compiler-generated code including `_init`, `register_tm_clones`, `deregister_tm_clones`, `__do_global_dtors_aux`, `_start`, `call_weak_fn`. These 20+ functions clutter the output and obscure the actual user code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is relatively natural (if/else, returns). However, `call_virtual_func` has a broken indirect call: `(*(code *)**(undefined4 **)param_1)()` is missing the parameter `param_2`, making it semantically incorrect. The WARNING about "Could not recover jumptable" indicates control flow issues.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably decomposed. However, many functions are completely inlined or constant-folded (e.g., `test_cpp_virtual_func` returns constant `0x2a` instead of showing the computation). This loses the ability to see the original logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. The main disruption is the `__stack_chk_fail` calls which are compiler inserted.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious redundant code duplication. Dead code elimination appears to have been applied appropriately. The main issue is over-aggressive constant folding rather than redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Uses `undefined4`, `undefined1`, `undefined8` extensively instead of proper types (int, char, size_t). The `this` pointer handling shows raw pointer arithmetic without proper type information. Function parameters like `param_1`, `param_2` lack type names.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery is present (e.g., `Container<int>` and `Container<double>` with proper offsets like `0x28` for size). However, class hierarchies are not clearly reconstructed, and virtual base pointer adjustments use raw offsets (e.g., `*(int *)(*(int *)this + -0xc)`) instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic in virtual function thunks, missing parameter in virtual call (`call_virtual_func`), unsafe casts from `undefined4**` to `code*`. The virtual thunk functions show complex pointer manipulation without safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some useful comments present (e.g., "WARNING: Unknown calling convention", "WARNING: Subroutine does not return"). However, many are auto-generated warnings rather than explanatory comments. No comments explaining the C++ semantics or algorithm intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms are not recognized. The decompiler shows raw vtable access (`**(undefined4 **)param_1`) instead of recognizing virtual dispatch. Template instantiation is shown but not identified as such. No recognition of RAII patterns, smart pointers, or lambda expressions.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does provide warnings for unrecoverable items ("WARNING: Could not recover jumptable", "WARNING: Unknown calling convention"). However, the critical bug in `call_virtual_func` (missing parameter) is not flagged as an anomaly - it simply produces incorrect code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The decompiled code provides no insight into what the functions expect or guarantee. For example, no indication that `getData` requires `idx < size`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships are not documented. No indication of which functions call which, or the callback relationships in virtual function dispatch. The vtable mechanism is shown but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but not logically organized. The compiler-generated functions are interspersed with user code. No namespace or class structure is recovered in the organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is. Many undefined symbols: `operator_new`, `operator_delete`, `__dynamic_cast`, `std::type_info::operator==`, etc. External dependencies are not documented. The `undefined1` and `undefined4` types would cause compilation failures.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+1. **`call_virtual_func` is semantically incorrect** - the virtual call `(*(code *)**(undefined4 **)param_1)()` is missing the second parameter `param_2`, producing broken code
+2. **All variables use generic names** (`local_c`, `acStack_2c`, `sVar1`) with no semantic inference from usage
+3. **Heavy constant folding** - functions like `test_cpp_virtual_func` returning just `0x2a` lose all original logic
+4. **Type information severely degraded** - extensive use of `undefined4`, `undefined1`, `undefined8` instead of proper types
+5. **Excessive compiler noise** - 20+ compiler-generated functions clutter the output
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 5/10)  
+- Basic control structures (if/else, returns) are readable, though this is a low bar
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The complete lack of semantic variable names makes tracking data flow nearly impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - e.g., `acStack_2c` used with `strncpy("Test")` and `strlen()` should be named `test_string` or similar
+2. **Fix the virtual call parameter passing** - `call_virtual_func` must pass both `param_1` and `param_2` to the virtual function
+3. **Recover C++ type information** - replace `undefined4` with `int`, `undefined1` with `char`, and properly reconstruct class hierarchies and vtable structures

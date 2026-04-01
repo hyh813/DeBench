@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `iVar1`, `uVar2`, `puVar3`, `param_1`, `local_28`, `lVar4`. None of the semantic variable names from the source (like `size`, `result`, `x`, `y`) are recovered. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `param_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `test_preprocessing_features`, `test_asm_features`. Only internal functions like `FUN_00101020` are generic. The decompiler correctly preserved the meaningful function names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple magic numbers appear without explanation: `0x200` (should be MAX_SIZE/2), `0x40` (BUFFER_COUNT*4), `0xdef0` (default platform value), `0xb` (11 for token paste calculation), `0x32` (50 for local variable), `0x22` (MAP_ANONYMOUS|MAP_PRIVATE). The decompiler made no effort to identify these as constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`), `__stack_chk_fail` calls, Ghidra-specific types (`undefined8`, `undefined4`, `undefined`), and redundant equality checks for stack protection. These obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if-else and for loops. At -O0, the structure closely matches source. Minor issues include some awkward boolean expressions in stack canary checks, but the core logic flows naturally.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler correctly separated all functions that were separate in source. Function granularity is appropriate - each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly decomposed. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (`if (__addr == ...)`) are used appropriately. No excessive goto patterns or confusing jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundant code. The stack canary pattern is repeated but that's compiler-generated, not decompilation redundancy. Loop constructs are properly formed without obvious dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `int` is used generically for most integers, while `size_t` is preserved for sysconf/mmap. `long` is used for pointer-sized values. Ghidra's `undefined8`/`undefined4` types add noise. Signed/unsigned distinction is mostly lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Not many complex structs in this code. Arrays are accessed via pointer arithmetic (`param_1 + uVar2 * 4`). The `undefined (*param_3) [16]` for SIMD result is a creative reconstruction but not ideal.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns - pointer arithmetic (`param_1 + uVar2 * 4`), casting to `undefined*` types. No severe violations like type-confused function pointers. The atomic operations use `LOCK()`/`UNLOCK()` macros which are reasonable reconstructions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (PP-L2-01, ASM-L4-01, etc.) which are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No patterns identified. The decompiler doesn't recognize the include guard pattern, variadic macro expansion, token pasting, or the various preprocessor idioms. It just shows the post-preprocessed result.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The dynamic code generation in `param_dynamic_code` (writing machine code to memory) is presented as normal code without any warning about its unusual nature.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions like "requires: page_size > 0" or postconditions like "ensures: return is valid pointer or -1" are not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `test_preprocessing_features()` calls other functions). However, relationships to external code (system calls, library functions) are only indicated via `<EXTERNAL>` markers without documentation of the call graph.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions. Static functions like `my_func` are properly scoped. However, it's a single flat listing without clear section organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions are marked with `<EXTERNAL>::` prefix (e.g., `<EXTERNAL>::mmap`). The code would require linking against libc and would need the `global_var` declared. Basic compilation would work with minor stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- All variable names are generic auto-generated names (`param_1`, `iVar1`, `local_28`) - the semantic names from source are completely lost
+- No comments explaining the preprocessor test cases, assembly patterns, or expected values
+- Magic numbers like `0xdef0`, `0x22`, `0xb` appear without explanation of their origin
+- Stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`) add significant noise
+- No indication of anomalies like dynamic code generation or the unusual patterns in the source
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler preserved nearly all function names exactly as they appeared in the source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every local variable uses generic names that provide no semantic information. Combined with the lack of comments, this makes understanding the code's logic extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests it's a size check, `param_1 * param_1` suggests it's being squared) to generate semantically meaningful names like `size` or `value`.
+2. **Detect and explain magic numbers**: When the same constant appears multiple times or matches known values (MAX_SIZE=1024, BUFFER_COUNT=16), suggest or create named constants.
+3. **Add semantic comments for complex patterns**: For preprocessor results, assembly blocks, and unusual constructs like dynamic code generation, add explanatory comments about what the original source likely contained.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `p`, `arg_0`). In `test_cpp_member_func`, `v0` is used for an integer but passed to `strlen`, indicating a failure to distinguish types or purpose.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Ghidra successfully demangled C++ symbols (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`), which is helpful. However, some functions remain generic (e.g., `sub_400d74`, `sub_400efc`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are referenced by global address pointers (e.g., `&g_401547`) rather than displaying the string content. Magic numbers like `4700`, `1001`, and `4294967295` appear in `test_cpp_oo_features` without explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts and pseudo-code intrusions are present, such as `arm64g_calculate_condition`, `__ROL__`, and `goto g_411ff8`, which obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Many functions with complex logic in the source (e.g., `test_cpp_constructor`) are decompiled as empty `void` functions with just a `return` statement. `test_cpp_oo_features` contains linear arithmetic expressions instead of the function calls present in the source.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: While functions are separated, the decompiler failed to recover the bodies of many test functions (e.g., `test_cpp_virtual_func`, `test_cpp_lambda`), rendering them useless stubs.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code reads linearly where logic exists, but the logic is often incorrect or missing. The use of `goto` in `$x` and `call_virtual_func` disrupts the natural flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompilation shows signs of constant propagation (e.g., `_ZN14LifecycleClass14instance_countE * 1001 + 21`) that contradicts the `-O0` optimization level, making the code harder to map back to the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10
+Justification: Critical type information is lost. `Container<int>::get` and `getSize` return `void` in the decompilation but `int` in the source. `template_max<double>` parameters are treated as `unsigned long` rather than `double`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class definitions like `SimpleClass`, `Base`, and `Container` are not reconstructed. Instead, generic structs like `struct_0` and `struct_1` are used in `test_cpp_rtti`, and class members are accessed as raw stack offsets.
+
+**11. Type Safety:** Score: 2/10
+Justification: Dangerous type confusion is evident, such as `strlen(&v0 | 4)` in `test_cpp_member_func`, where an integer stack variable is treated as a pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The output is purely raw pseudo-code.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: C++ idioms like RAII, smart pointers, and virtual dispatch are not recognized. `std::unique_ptr` usage in `test_cpp_smart_ptr` is invisible (function is empty).
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents empty functions and nonsensical arithmetic with high confidence, providing no warnings that the decompilation might be flawed or incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic of the test cases is completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Function calls to `printf` and global variable accesses are visible, but the relationship between class methods and their definitions is broken due to the missing class structures.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat list of functions. There is no reconstruction of the namespaces or class groupings present in the source.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable. It contains references to non-existent functions like `arm64g_calculate_condition` and invalid syntax like `goto g_411ff8`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.8/10
+
+**Critical Defects:**
+- **Return Type Failure**: `Container<int>::get` and `getSize` return `void` instead of `int`, breaking the API contract.
+- **Missing Function Bodies**: Critical logic in functions like `test_cpp_constructor` and `test_cpp_virtual_func` is missing, leaving only `return;`.
+- **Type Confusion**: `template_max<double>` treats floating-point values as `unsigned long` and uses intrinsics instead of comparison operators.
+- **Lost Class Structure**: No C++ classes (e.g., `SimpleClass`, `Base`) are reconstructed; logic is reduced to raw stack manipulation.
+- **Constant Propagation Artifacts**: `test_cpp_oo_features` contains hardcoded math (`* 1001 + 21`) instead of the function calls present in the source, obscuring the program's intent.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully demangled C++ mangled names, making it easy to identify which function corresponds to which source definition.
+
+**Most Needs Improvement:** Type Precision (scored 1/10)
+- The failure to recover basic return types (int vs void) and parameter types (double vs unsigned long) renders the decompiled code functionally useless for understanding the data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve C++ Method Return Type Analysis**: The decompiler must correctly identify return types for class methods; returning `void` for `int` getters is a critical failure.
+2. **Recover Class Hierarchies**: Instead of flattening logic into stack variables, reconstruct `class` and `struct` definitions to group data members and methods logically.
+3. **Handle Floating-Point Operations Correctly**: Replace low-level condition register intrinsics (like `arm64g_calculate_condition`) with standard high-level comparison operators for floating-point types.

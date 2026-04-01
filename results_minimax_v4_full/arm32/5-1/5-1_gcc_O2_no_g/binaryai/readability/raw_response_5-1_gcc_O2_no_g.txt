@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `puVar1`, `param_1`, `local_c`, `local_d`, `acStack_2c` throughout. The original source had meaningful names like `value`, `name`, `data`, `size`, `x`, `y` which are completely lost. These cryptic names make tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) match source names exactly. However, internal functions use mechanical naming like `FUN_0001092c`, `template_max_int_`, `template_swap_int_` which lacks semantic clarity. Template instantiation names are partially recovered but lack proper naming conventions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x125c` (4704), `0x3e9` (1000), `0x47` (71), `0x28a` (650), `0x2bf` (703), `0x55` (85). These represent expected test results but are never named as constants. The value `0x1f` (31) for buffer size is used but not identified as `sizeof(name)-1`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail`) are legitimate -O0 artifacts. Some duplicate function entries exist (e.g., `MultiDerived::funcB` appears twice, `MiddleA::func` appears twice) which may be thunks or vtable entries. Overall relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is readable, but several functions return hardcoded values instead of computing results (e.g., `test_cpp_virtual_func` returns `0x2a` directly). The `call_virtual_func` uses unusual indirect call syntax `(***(code ***)param_1)();` which is confusing. Some exception handling code is incomplete.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions are appropriately sized. Member functions are properly separated. However, many functions return constant values rather than implementing logic (e.g., `test_cpp_exception` only shows the throw, not the catch blocks). This suggests incomplete decompilation or aggressive dead code elimination by compiler.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately. Some indirect calls and computed jumps exist but don't severely disrupt flow. The code is reasonably linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some duplicate function entries (likely vtable thunks or multiple entry points for same function) but these appear to be binary artifacts rather than decompilation issues. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined1` types instead of proper types. Parameters use generic types like `int` instead of `size_t` where appropriate. Function parameters like `param_1`, `param_2` lack type information. Some attempt at type recovery (e.g., `int*` for pointers) but imprecise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Template classes partially recovered as `Container_int_`, `Container_double_` with reasonable structure. Field names are generic (e.g., offset `0x28` for size, offset `0x50` for double container size). Vtable handling shows some understanding of object layout. However, most struct fields are accessed via raw offsets without meaningful names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: pointer arithmetic in virtual function implementations (e.g., `*(int *)(this + 4)`), indirect calls without type safety (`(***(code ***)param_1)()`), raw memory access via offsets. No bounds checking visible. Casts between incompatible types common. The code is potentially dangerous to use as-is.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only header comment present: "Decompiled by BinaryAI" with SHA256 hash. No comments explaining algorithm logic, purpose, or non-obvious operations. No decompilation confidence indicators. No API contracts. The code is essentially devoid of useful comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns visible (virtual function calls via vtable, template instantiation) but not explicitly identified or named. No recognition of design patterns (RAII, factory, etc.). No indication that exception handling, smart pointers, or lambda expressions were detected as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code. Indirect calls that couldn't be resolved are not indicated. Unusual stack layouts not documented. Potential undefined behavior (like the unusual virtual call syntax) not flagged. The decompiler presents everything with equal confidence regardless of reliability.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanation. The contracts implicit in the original C++ code (e.g., `unique_ptr` ownership semantics, non-null pointers) are completely lost. No documentation of what the functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present in the code but relationships aren't documented. No indication of who calls whom. Virtual dispatch relationships not clearly explained. Global variable usage (`instance_count`) visible but not documented in terms of access patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by class which is reasonable. Related member functions are together. However, no namespace structure recovered. No clear separation between test functions and implementation. The organization is basic but functional.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is. Uses undefined types (`undefined4`, `undefined8`). Missing includes. External dependencies not declared (e.g., `operator_new`, `operator_delete` are declared but not defined). Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`iVar1`, `puVar1`, `param_1`, `local_c`, `local_d`) losing all semantic meaning from original source
+- Multiple functions return hardcoded values instead of implementing logic (e.g., `test_cpp_virtual_func` returns `0x2a` directly, `test_cpp_constructor` returns `LifecycleClass::instance_count * 0x3e9 + 0x15`)
+- Type precision is severely degraded with heavy use of `undefined4`/`undefined8` instead of proper types
+- No comments explaining algorithm purpose, decompilation confidence, or contracts
+- Magic numbers throughout without named constants (e.g., `0x125c` for 4704, `0x2a` for 42)
+- Unsafe type operations including raw pointer arithmetic and indirect calls without type safety
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+Test functions are named exactly as in the source code, making it easy to identify which function is being analyzed. The decompiler correctly preserved the public API names.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The decompiler uses entirely generic variable names that provide no semantic information. Combined with the lack of comments, this makes understanding code logic extremely difficult. Variables should be inferred from usage patterns (e.g., `local_c` used as return value accumulator should be named `result`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, return values) to suggest semantically meaningful names. For example, `local_c` accumulating a return value should be named `result` or `return_value`.
+2. **Recover constant definitions**: Detect magic numbers that appear multiple times or represent meaningful values (buffer sizes, test expectations) and suggest named constants with explanations.
+3. **Add decompilation confidence comments**: Flag indirect calls, uncertain type reconstructions, and potential undefined behavior with comments like "UNCERTAIN: indirect call could not be resolved" to help analysts prioritize manual review.

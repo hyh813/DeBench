@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_28`, `iVar1` instead of semantic names like `dst`, `src`, `buffer`, `thread_count`. Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from debug symbols (`param_strcpy`, `thread_compute`, `signal_handler`) accurately reflect purpose. This is a strength due to `-g` flag compilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x5a` (90), `0x1b6`/`0x3b6` (file flags), syscall numbers `5`/`6`. Original constants like `O_RDONLY`, `IPC_CREAT` not recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `SCARRY4()` macros, `undefined4`/`undefined8` types, `__aeabi_read_tp()` for TLS. These obscure logic but don't prevent understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Standard if-else and loop structures recovered well. Some awkward patterns like `param_strcmp` normalization could be cleaner, but execution flow is traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match original source. Thread functions (`thread_compute`, `consumer_thread`) properly separated. Some test functions became more complex than source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions like `param_thread_local_storage` have deep nesting but remain followable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant condition checks appear (e.g., `iVar1 != -1 && iVar1 + 1 < 0 == SCARRY4(iVar1,1)` repeated in multiple functions). No dead code removal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `undefined4` types replace specific types. Some inference works (`FILE*`, `pthread_t`, `size_t`) but parameters lose type specificity (`param_1` instead of `int thread_count`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered but fields accessed via array indexing (`local_24.sa_data[0]`). TLS access via `__aeabi_read_tp` indicates incomplete struct recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(pthread_mutex_t *)counter_mutex`, `(int *)0x0`). Pointer arithmetic visible but generally safe. No buffer overflow warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code beyond BinaryAI header. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected values.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library patterns (`strcpy`, `strcmp`, `memcpy`) correctly identified. Higher-level patterns (producer-consumer, mutex protection) not explicitly documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No uncertainty markers for problematic areas. TLS access, atomic operations, and syscall number mappings proceed without warnings about potential inaccuracies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error handling exists but return value semantics (e.g., `0x2a` = success) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. No call graph comments indicating which functions call which (e.g., `test_standard_library_functions` calls).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Original source's logical sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) not preserved in organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Ghidra-specific types (`undefined4`, `undefined8`, `__aeabi_read_tp`) require modification. External function declarations present but not standard C headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (5+5+6)/3   = 5.33  × 0.20 = 1.07
+Level 4 (Semantic):    (2+6+4+3)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):  (6+5+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.32/10
+```
+
+### Overall Readability Score: **5.3/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `local_28`, `iVar1` instead of `dst`, `buffer`, `return_value`
+- **Magic numbers unexplained**: `0x2a`, `0x5a`, `0x1b6` replace meaningful constants like `42`, `90`, `O_CREAT|O_RDWR`
+- **Zero documentation**: No comments explaining function purpose, test scenarios, or expected values
+- **Ghidra-specific artifacts**: `undefined4`, `SCARRY4()`, `__aeabi_read_tp()` prevent direct compilation
+- **Struct field names lost**: `sa_data[0]` instead of `sin_family`, losing socket address semantics
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Debug symbols (`-g` flag) preserved original function names, making purpose immediately clear
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation makes understanding test intent and expected behavior extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` passed to `malloc` → `size`; `local_28` holds string → `buffer`)
+2. **Recover named constants from magic numbers**: Map common values (`0x2a`→`TEST_SUCCESS`, `0x1b6`→`O_CREAT|O_RDWR`) and add `#define` suggestions
+3. **Generate semantic comments from function context**: Add comments like `// Returns: 42 on success, negative on error` based on return value patterns and comparison logic

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_1c`, `local_18` with no semantic meaning. Original source used meaningful names like `x`, `arr`, `n`, `sum` that indicated purpose clearly.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`process_char`, `array_1d_stack`, `test_data_types_l1`), but some like `FUN_00101020` remain unnamed and `double_value` appears only in decompiled output without proper context.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x41`, `0x62`, `0x28` (struct offsets), `0xc` appear without explanation. Original used character literals `'A'`, `'b'` and named struct field access instead of raw offsets.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts `(ulong)(uint)(int)` throughout, meaningless stack variables (`local_568`, `local_560`), and external function stubs (`printf`, `memset`) add significant noise not present in original.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For-loops recovered correctly in most functions (`array_1d_stack`, `ptr_increment`), but `process_bool` uses awkward local variable pattern instead of direct return expression.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well, appropriate granularity maintained, no problematic inlining or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally, minimal forward jumps, nesting depth stays reasonable (max 3-4 levels in array functions).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casting patterns present, but no significant dead code; loop structures not excessively unrolled.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type loss: `process_ll` returns `long` instead of `long long`, `process_ld` is completely empty (void), pointer types degraded to `undefined8`/`long`, function pointers become `code *` without signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all struct definitions lost, replaced with pointer arithmetic (`param_1 + 8`, `param_1[1]`, `param_1[2]`). Unions, bitfields, and nested structures completely unrecoverable.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Pervasive unsafe casts (`(undefined4 *)`, `(int **)`), untyped pointer arithmetic throughout, function pointer calls lack proper signatures creating undefined behavior risk.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: All original comments completely lost (test scenarios, purpose explanations). No decompilation confidence indicators or algorithm explanations present anywhere.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns unrecognized - linked list traversal (`linked_list`), binary tree recursion (`binary_tree_sum`), and state machine patterns (`enum_switch`) not identified or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical issues unflagged: `process_ld` empty body, printf calls with missing arguments in `test_data_types_l1`, type mismatches throughout with no warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (null pointer checks), no postcondition information, error conditions like array bounds not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships preserved (`main` → test functions, callbacks like `double_value`), but no call graph documentation or global variable relationship clarity.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order, but no logical grouping, namespace structure, or header file organization recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but type mismatches may prevent compilation, printf calls have incorrect argument counts, `process_ld` empty, dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+8+8+7)/4 = 7.50  × 0.25 = 1.875
+Level 3 (Type System): (3+2+4)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (6+5+5)/3   = 5.33  × 0.10 = 0.533
+
+Overall Score: 4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, etc.) reduced to raw pointer arithmetic with offsets like `param_1 + 8` and `param_1[1]`
+- **`process_ld` function completely empty**: Returns void with no parameters instead of `long double process_ld(long double d)`
+- **Type precision degradation**: `long long` functions return `long`, function pointers become `code *` without signatures
+- **No comments recovered**: All original documentation explaining test scenarios and purposes lost
+- **Printf argument mismatches**: Several test functions have printf calls with missing format arguments (e.g., `printf("DT-L1-07 (process_double): %.2f\n");`)
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function boundaries and granularity match original source well with appropriate single-responsibility functions preserved
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all original documentation with no decompilation confidence indicators or explanations added
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** from consistent memory access patterns (e.g., `param_1 + 0`, `param_1 + 4`, `param_1 + 8` suggests 3-int struct)
+2. **Add decompilation confidence annotations** for uncertain recoveries (empty functions, type mismatches, missing printf arguments)
+3. **Infer variable names from usage context** (loop counters → `i`, accumulators → `sum`, size parameters → `n`)

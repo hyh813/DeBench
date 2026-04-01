@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 20,
+  "source_file": "decompiled/BinaryAI_out/x64/3/3_gcc_O3_no_g.c",
+  "fixed_file": "results_qwen_v4_full/x64/3/3_gcc_O3_no_g/binaryai/syntactic/fix_3_gcc_O3_no_g.c"
+}

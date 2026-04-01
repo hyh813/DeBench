@@ -1,0 +1,123 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `result`, `a1`, `a2`) with zero semantic meaning. For example, `str = 0x74736554` should be `test_string` based on the original `"Test"` literal.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) with demangling comments, but wrapper functions like `function_1040`, `function_1050` are completely meaningless.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere without explanation: `0x74736554` (string "Test"), `0x125c`, `0x2ce7`, `0x2980` (vtable addresses). No constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive compiler artifacts: `__x86_get_pc_thunk_*` functions, `deregister_tm_clones`, `register_tm_clones`, and 20+ wrapper functions for standard library calls that add no value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical functions reduced to constant returns (`test_cpp_virtual_func` returns `42` directly, losing all virtual dispatch logic). Exception handling uses manual `__cxa_*` calls instead of try/catch.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation with wrapper functions (`function_1070` just calls `strlen`), while actual class methods lose all structure and become flat procedures.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom but contain unnecessary indirection through wrapper functions and pointer arithmetic that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple wrapper functions for identical operations (e.g., separate functions for `strlen`, `puts`, `printf`), and dead code paths in exception handling.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int32_t`, `int32_t*`, `float64_t`. No C++ class types, no `const` correctness, no distinction between object pointers and values.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Complete failure** - zero struct/class definitions recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container`, `Point` all lost. Only `_Unwind_Exception` struct exists (runtime artifact).
+
+**11. Type Safety:** Score: 2/10  
+Justification: Unsafe casts everywhere: `(int32_t *)v1`, `(void*)pa == (void*)pb` patterns, arbitrary pointer arithmetic (`v1 + 0x28c0`), no type checking for virtual dispatch.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address ranges and demangling comments exist. No explanation of logic, algorithms, or decompilation uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: **All C++ idioms lost** - vtables, exceptions, smart pointers (`unique_ptr`), templates, lambdas, RTTI all reduced to raw operations without pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about decompilation uncertainty. Functions returning constants (`return 42`) should flag that logic was optimized away or not recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts completely lost (no indication of what exceptions functions may throw).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships visible through direct calls, but class hierarchies, virtual dispatch chains, and inheritance relationships completely opaque.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in one file with no logical grouping by class or feature. Related methods (e.g., `Container::push`, `Container::get`) not grouped together.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and function declarations but would need extensive modification to compile (missing class definitions, improper types, runtime dependencies).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+2+3)/4 = 2.75 × 0.30 = 0.825
+Level 2 (Structural):  (3+4+5+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+1+2)/3   = 2.00 × 0.20 = 0.400
+Level 4 (Semantic):    (2+1+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+3+4)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                              = 2.86/10
+```
+
+**Overall Readability Score: 2.9/10**
+
+---
+
+### Critical Defects
+
+- **Complete class/struct loss**: Zero C++ class definitions recovered (`SimpleClass`, `Base`, `Derived`, `Container`, etc. all missing)
+- **Logic optimization to constants**: Functions like `test_cpp_virtual_func` return `42` directly instead of showing actual virtual dispatch
+- **Generic variable naming**: All variables are `v1`, `v2`, `result`, `a1` with no semantic meaning
+- **C++ idiom destruction**: Exceptions, smart pointers, lambdas, templates, RTTI all reduced to raw C operations
+- **Excessive wrapper functions**: 20+ unnecessary wrapper functions for standard library calls (`function_1070` → `strlen`)
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (4/10)** - Demangling comments provide some semantic hints about original function names, though actual names remain mangled
+
+---
+
+### Most Needs Improvement
+
+- **Composite Type Recovery (1/10)** - Complete failure to recover any C++ class/struct definitions, making object-oriented code impossible to understand
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement C++ class recovery**: Analyze vtable structures and object layouts to reconstruct class definitions with field names and inheritance relationships
+
+2. **Preserve control flow semantics**: Instead of constant-folding optimized code, show the actual logic paths with comments indicating compiler optimizations
+
+3. **Recognize C++ standard library patterns**: Detect `unique_ptr`, `std::string`, exception handling, and template instantiations to restore high-level abstractions rather than raw operations

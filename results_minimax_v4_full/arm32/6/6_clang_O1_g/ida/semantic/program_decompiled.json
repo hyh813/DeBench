@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/6/6_clang_O1_g/ida/syntactic/bin/6_clang_O1_g_fixed",
+  "stdout": "Library functions test:\nstrlen(\"HelloLib\") = 8\nstrcmp(\"HelloLib\", \"HelloLib\") = 0\nstrcmp(\"HelloLib\", \"HelloWorld\") = 12\nmemcmp result = 90\nmemcmp total = 1\nValue: 42, Name: Test\nprintf return = 22\nsscanf result = 579\nfopen/fileno result = 42\nfread/fwrite result = 42\nmalloc/free result = 90\nmemset result = 0\nstrchr+strstr result = 15\nSystem calls test:\nopen/close syscall = 42\nstat result = 42\nfork/exec/waitpid = 42\npipe communication = 42\nsocket create = 42\nshmget/shmat = -1\nsignal handling = 42\nThread concurrency test:\npthread_create/compute = 49\npthread_join/sum = -2\nmutex lock = 42\ncondition variable = 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

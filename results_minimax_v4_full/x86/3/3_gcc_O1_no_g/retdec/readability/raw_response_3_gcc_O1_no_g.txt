@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3`; local variables use `v1`, `v2`, `v3`. Only `mem` and `result` are descriptive. The original had meaningful names like `arr`, `p`, `n`, `x` but these are lost. At -O0, this degradation is unacceptable.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User functions like `double_value`, `local_vars`, `heap_basic` are correctly named. However, many utility functions use address-based names like `function_1140`, `function_1150`. Standard library functions (`malloc`, `memcpy`, `free`) are correctly identified.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Strings are completely broken - reconstructed as `(int32_t)"A\v"` arithmetic. Magic numbers like `0x4740b0f`, `136`, `104` appear without explanation. The original had clear string literals and meaningful constants that are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: `__x86_get_pc_thunk_bx` calls, `__readgsdword(20)` for stack canaries, `__stack_chk_fail_local()`, and unreachable code blocks. These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use while constructs correctly; conditionals are if-else. However, `linked_list_heap` uses goto labels (`lab_0x19ff`) making flow hard to follow. At -O0, control flow should be nearly perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is preserved - each test function remains separate. Parameter counts are correct. Minor issue: some inlined logic in `test_*` functions could be cleaner.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `linked_list_heap` has multiple goto jumps disrupting flow. Early returns present but appropriate. Forward jumps into loops in `local_array` and `vla_stack` reduce linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling present in `local_array`, `heap_basic`, `vla_stack` - these are optimization artifacts that should be commented. Some duplicate calculations in `linked_list_heap`. Dead code not present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is reasonable. Pointers are `int32_t*`. Minor issue: `size_t` parameters like `n` in `memcpy` are `int32_t`. Const correctness mostly preserved in function signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point` struct completely lost, replaced with raw arithmetic (`3 * a1` instead of `p.x + p.y`). `Node` and `TreeNode` structs lost - handled as `int32_t*` with manual field offsets. The original had clear struct definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t *)a1` casts everywhere, pointer arithmetic like `v3 + 4` without bounds, dereferencing after `free()` in `dangling_pointer()`. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (`// Address range: 0x1000 - 0x102e`). No algorithm explanations, no recovery confidence indicators, no API contracts. Original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. Could have labeled "linked list traversal", "binary tree", "VLA allocation" but none present.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function has clear undefined behavior (use after free) but no warning. The `double_free` bug not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original had none to recover, but the decompiler could have added basic ones like "requires: n > 0" for allocation functions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call `double_value` (via callback). Global variable relationships through `&g17` offsets are opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Related functions grouped but no logical sections. Original had clear comment headers separating test categories (MEM-L1, HEAP-L2, etc.).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes headers (`<stdint.h>`, `<stdio.h>`, etc.). Function prototypes declared. Should compile with minor fixes. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`, `v2`, `a1`, `a2` instead of semantic names like `arr`, `n`, `ptr`
+- Composite types (`Point`, `Node`, `TreeNode`) completely lost - all struct access is raw pointer arithmetic
+- String literals broken - reconstructed as `(int32_t)"A\v"` arithmetic operations
+- Heavy compiler noise (`__x86_get_pc_thunk_*`, stack canary checks) obscures logic
+- No comments explaining algorithm intent or recovery confidence
+
+**Best Quality Aspect:** Type Precision (scored 7/10)  
+- Uses `int32_t` consistently; pointer types generally correct
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- Struct/union reconstruction completely failed; all composite types reduced to raw memory operations
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types** from allocation sizes and field access patterns - `malloc(8)` with field offsets should reconstruct `Point {int x, y}`
+2. **Infer variable names from usage** - `a1` used as array index in loop should be named `i` or `index`
+3. **Fix string literal reconstruction** - the `(int32_t)"A\v"` pattern is completely unreadable; should extract actual strings from rodata

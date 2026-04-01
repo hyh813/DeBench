@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `param_1`, `param_2` instead of descriptive names like `dst`, `src`. Local variables use cryptic names like `pcVar1`, `iVar1`, `uVar2` which obscure their semantic purpose (e.g., `pcVar1` should be named `result` based on usage in `param_strcpy`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions like `param_strcpy`, `call_strcmp`, `param_memcpy` correctly match source names. However, some utility functions have auto-generated names like `FUN_00102020`. The main API functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib" and "/etc/passwd" are preserved correctly. However, magic numbers appear without explanation: `0x2a` (42), `0xffffffff` (-1), `0x12` (18). The value 42 appears repeatedly as return success code but is never named.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack protector checks (`__stack_chk_fail`) add significant noise. Multiple "WARNING: Removing unreachable block" comments clutter output. However, no register spilling artifacts or debug instrumentation observed. The noise is moderate and manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else, loops, function calls are recognizable. At -O0, the control flow should be nearly identical to source. Some awkwardness in condition variable handling but generally follows source patterns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - `param_strcpy` is 6 lines, `call_strcpy` is 2 lines. No over-fragmentation or monoliths. Parameter lists are reasonable (not exposing implementation details).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `param_fopen_fclose`). No excessive forward jumps or goto-like constructs disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: `call_strcpy` shows constant folding - returns 8 directly instead of calling `param_strcpy`. This is appropriate for -O0 where the compiler should have inlined but the decompiler correctly identified the constant result. No dead code observed.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` instead of `size_t` for sizes (e.g., `param_memcpy` return). `char*` used instead of `const char*` for string parameters - loses const-correctness. `void*` used appropriately for `memcpy` parameters. Mixed precision degrades type safety.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery visible in these simple functions. Basic types only. For this simple code, struct recovery isn't critical, but `ThreadData` struct in pthread functions could have been recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: `(int)pcVar1 - (int)param_1` in `param_strcpy` relies on pointer arithmetic. Cast from `ulong` to `int` in syscall returns. No bounds checking visible. Moderate risk of undefined behavior.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: File-level header comment identifies Ghidra and binary info. No function-level comments explaining algorithm or intent. WARNING comments are auto-generated noise. No documentation of what functions do or return values mean.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions correctly identified (`strcmp`, `strlen`, `memcpy`, `strcpy`). pthread API calls recognized. However, no explicit naming of patterns (e.g., "producer-consumer pattern" for condition variables).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: WARNING comments flag unreachable blocks and stack_chk_fail. However, no indication of uncertainty in logic reconstruction. The `param_strcpy` using `stpcpy` instead of `strcpy` is a semantic difference not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No indication that `param_strcpy` requires `dst` to be large enough to hold `src`. No error handling documentation.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and traceable. No documentation of which functions call `param_strcpy` or its role in the larger test suite. Relationships are implicit through naming rather than explicit documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - standard library tests, system call tests, thread tests. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc. External functions properly declared (printf, malloc, pthread_create). No obvious compilation barriers. Dependencies are standard system libraries.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`param_1`, `param_2`, `pcVar1`, `iVar1`) obscuring semantic purpose
+- `param_strcpy` uses `stpcpy` instead of `strcpy` - semantic difference from source not flagged as anomaly
+- No function-level comments explaining purpose, parameters, or return values
+- Magic numbers like `0x2a` (42) appear without named constant explanation
+- Type precision lost - uses `int` instead of `size_t`, loses `const` correctness
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions maintain appropriate size and granularity. Core API functions like `param_strcpy` are properly isolated with reasonable parameter counts.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Generic parameter names (`param_1`, `param_2`) and local variables (`pcVar1`, `iVar1`) make it difficult to understand code purpose without cross-referencing source. Should infer names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used as destination in string copy should be named `dst`; `pcVar1` holding stpcpy result should be `copy_result`
+2. Add function-level comments documenting parameters, return values, and semantic purpose
+3. Detect and flag semantic differences from expected patterns (e.g., `stpcpy` vs `strcpy` in string copy functions)

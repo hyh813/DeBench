@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) losing semantic meaning from original source (e.g., `x`, `str`, `encrypted`, `decrypted`). Only `result` occasionally preserves intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved excellently (`param_fake_branch`, `call_opaque_predicate`, `param_instruction_substitution`). However, helper functions use generic names (`function_10f0`, `function_1100`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2bff`, `0xe430283` for globals lack explanation. Signal constants (SIGFPE, SIGSEGV) are clear, but encrypted string bytes `{0x1A, 0x2B, 0x3C, 0x4D}` have no decryption key documentation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_bx()` calls, `__readgsdword(20)` stack canary checks, and wrapper functions for standard library calls (`function_1150` for malloc) add significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/while constructs, but `param_opaque_predicate` has awkward conditional chains. Critically, `param_fake_branch` is completely optimized away (returns immediately), losing the fake branch logic entirely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved well with appropriate granularity. However, standard library wrappers are fragmented into separate functions (`function_1160` for puts, `function_1170` for strlen).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate loop structures. Some forward references in signal handler setup disrupt flow slightly but remain traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks repeated across multiple functions (`if (v2 != __readgsdword(20))`). No obvious dead code, but compiler boilerplate is duplicated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is good, but some type mismatches exist (e.g., `param_division_by_zero` takes `uint32_t` instead of original `int`). Pointer types generally correct but some casts obscure intent.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `struct __jmp_buf_tag` recovered with generic fields (`e0[8]`, `e1`, `e2`). The bitfield struct from `param_implementation_defined` is completely lost. Field names are mechanical, not semantic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t)str`, `(char *)str2`, `(int64_t)(v4 >> 31)`. Pointer arithmetic visible but generally correct. No buffer overflow warnings despite original code containing intentional overflows.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. No algorithm explanations, no confidence indicators, no documentation of the obfuscation techniques being tested. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. The opaque predicate logic, instruction substitution patterns, and string encryption are not recognized or named. Signal handler pattern is visible but not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Critical anomaly not flagged: `param_fake_branch` returns immediately (dead code elimination) without noting the fake branches were removed. Stack canary checks present but unexplained. No warning about optimization effects.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `a1 != 0` for normal path). No postconditions inferred. Error conditions (-1 returns) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph is clear through preserved names. However, global variables (`g1`, `g2`, `g3`, `g4`, `g5`) are opaque with no semantic meaning. Signal handler relationships visible but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized (helper functions scattered). No header file structure. Static functions from original not properly scoped. All functions appear at same visibility level.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes necessary headers but has discrepancies (metadata says Ghidra, code says RetDec). Would require significant patching: missing implementations, wrong function signatures, undefined globals. External dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (6+6+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  5.39/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **`param_fake_branch` completely optimized**: Returns `result` directly, losing both fake branch conditions (`x*x < 0` and `strlen(str) < 0`) without any indication
+- **Variable names are generic**: `v1`, `v2`, `a1`, `a2` throughout instead of semantic names like `x`, `str`, `encrypted`
+- **No comments preserved**: Original source had extensive documentation about obfuscation techniques; decompiled code has zero semantic comments
+- **Global variables opaque**: `g1`, `g2`, `g3`, `g4`, `g5` with hex addresses but no semantic meaning
+- **Metadata discrepancy**: Claims Ghidra but code header says RetDec - indicates potential toolchain confusion
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved accurately (`param_fake_branch`, `call_opaque_predicate`, `param_instruction_substitution`), making navigation and identification straightforward.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero semantic comments recovered despite original source having extensive documentation about obfuscation techniques, test scenarios, and expected behaviors.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve or infer semantic comments**: Detect original comment patterns and recover them, or generate explanatory comments for obfuscation patterns (e.g., "Dead code: condition always false")
+2. **Flag optimization artifacts**: When code is eliminated by compiler optimization (like `param_fake_branch`), explicitly note what was removed and why
+3. **Improve variable name inference**: Use usage patterns to infer semantic names (e.g., variables used in string operations should be named `str`, `buffer`, `encrypted`)

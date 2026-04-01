@@ -1,0 +1,104 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `result`) obscuring semantic meaning; global variables named `g1`, `g2`, `g3` provide zero context about their purpose (e.g., `g3` holds encrypted string data).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved original names (`param_fake_branch`, `param_opaque_predicate`) but helper functions use mechanical names (`function_4d8`, `function_4e4`, `function_4f0`) losing semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x21524111` appear without explanation (transformed from `0xDEADBEEF`); string literals stored as hex bytes (`g3 = "\x1a+<M"`) without indicating encryption; some constants like `SIGFPE` preserved.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: 60 functions detected including compiler runtime artifacts (`__aeabi_idiv`, `register_tm_clones`, `__do_global_dtors_aux`); output LOC (858) nearly doubles source LOC (464) with boilerplate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `param_fake_branch` inverts condition logic (`x * x > -1` vs original `x * x < 0`); `param_opaque_predicate` has awkward nested conditionals; loops generally recovered but with extra variables.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Main test functions appropriately sized but helper functions fragmented (`function_4f0` just wraps `printf`); `param_vectorized_loop` overly complex at 30+ lines for simple array addition.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom but `param_opaque_predicate` has confusing early-return pattern; `decrypt_string` uses while loop appropriately but with verbose pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `__aeabi_idiv` contains 200+ lines of redundant division logic; `param_vectorized_loop` has duplicate loop initialization (`v2 = 0` appears twice); some dead code from optimization not eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `uint32_t` appropriately; however `param_instruction_substitution` takes `uint32_t` but source uses `int`; pointer types generally correct with explicit casts.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic field names (`e0[8]`, `e1`, `e2`); bit-field struct in `param_implementation_defined` completely lost (function returns constant 44); no field semantic recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int32_t)buffer`, `(char *)((int32_t)v2 + 1)`); pointer arithmetic explicit but verbose; no major type confusion but casts reduce safety confidence.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output; no explanation of obfuscation techniques (fake branches, opaque predicates); no decompilation confidence indicators for uncertain recovery.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns not identified (fake branches appear as normal conditionals); string encryption not labeled as such; GCD algorithm in opaque predicate not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `param_implementation_defined` returns constant 44 (all logic lost) without warning; no indication of uncertain indirect calls; silent failures on complex transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division); no postconditions; error conditions like signal handlers not explained; no API contract recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear through preserved names; global variable usage opaque (`g5`, `g6`, `g7` for signal handling state); no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping; helper functions mixed with main logic; no header file separation; static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdio.h`, `stdlib.h`, `string.h`); function prototypes present; should compile with minor adjustments; external dependencies documented through includes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 5 + 4) / 4 = 5.00
+Level 2 (Structural):  (6 + 6 + 6 + 5) / 4 = 5.75
+Level 3 (Type):        (7 + 5 + 6) / 3     = 6.00
+Level 4 (Semantic):    (2 + 3 + 3 + 2) / 4 = 2.50
+Level 5 (Contextual):  (5 + 5 + 7) / 3     = 5.67
+
+Overall = (5.00 × 0.30) + (5.75 × 0.25) + (6.00 × 0.20) + 
+          (2.50 × 0.15) + (5.67 × 0.10)
+        = 1.50 + 1.44 + 1.20 + 0.38 + 0.57
+        = 5.09/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `g1`-`g26`** should have semantic names (e.g., `div_zero_caught`, `encrypted_string`, `jmp_buffer`)
+- **`param_implementation_defined`** returns constant 44, losing all bit-field and implementation-defined behavior logic without warning
+- **No comments** explaining obfuscation techniques (fake branches, opaque predicates, string encryption)
+- **200+ lines of `__aeabi_idiv`** bloat output with compiler runtime that should be external library calls
+- **Condition inversion** in `param_fake_branch` (`x * x > -1` vs original `x * x < 0`) changes semantic clarity
+
+### Best Quality Aspect:
+- **Type Precision (7/10)** - Integer types (`int32_t`, `uint32_t`) are mostly accurate and function signatures preserve parameter types reasonably well
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation; obfuscation patterns completely unexplained making reverse engineering purpose nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic comments for obfuscation patterns** - Detect and label fake branches, opaque predicates, and encryption with explanatory comments
+2. **Recover meaningful global variable names** - Analyze usage patterns to name `g1`-`g26` based on context (signal flags, buffers, jump targets)
+3. **Flag uncertain decompilations** - Add warnings when logic is simplified/lost (e.g., `param_implementation_defined` returning constant) to indicate confidence level

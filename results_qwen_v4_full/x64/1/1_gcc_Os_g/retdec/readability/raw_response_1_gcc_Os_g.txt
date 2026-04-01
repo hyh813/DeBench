@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `a3`) losing all semantic meaning from original names like `temp1`, `sum`, `count`. No variable indicates its purpose (e.g., `loop_break` uses `v4` instead of `index`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `recursion_factorial`), but helper functions have mechanical names (`function_1080`, `function_1090`). Good recovery of semantic function names overall.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers (`0xffffffff`, `0x100000000`, `0xfffffffe`) from type widening with no explanation. String literals stored as hex-encoded globals (`g1`, `g3`, `g4`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bit masking (`& 0xffffffff`) on nearly every arithmetic operation. Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) clutter function epilogues. Type conversion noise throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions recovered well (`sequential_ops` is clean), but `loop_break` and `loop_multi_exit` use explicit `goto` labels instead of structured breaks. `recursion_factorial` converted to iterative loop with complex bit manipulation obscuring the factorial logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some functions bloated with stack checking code. Helper functions (`function_1080`-`function_10d0`) properly separated for library calls.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jump labels (`lab_0x1499`, `lab_0x1805`, `lab_0x1823`) disrupt reading flow. `loop_multi_exit` has nested gotos that obscure the nested loop structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bit masking patterns in loops (`v1 & 0xffffffff` appears in every iteration). Type widening operations duplicated throughout loop bodies instead of being hoisted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` parameters became `int64_t` in many functions (`sequential_ops(int64_t a1, int64_t a2, int64_t a3)`). Mixed signed/unsigned usage (`uint32_t` vs `int32_t`) creates confusion. Excessive casting throughout.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` struct recovered but with generic field names (`e0[8]`, `e1`, `e2`). No complex structs in this codebase to fully evaluate, but basic struct recovery is acceptable.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `call_func_ptr` returns function pointer address instead of calling it (`return (int64_t)f;`). Multiple implicit casts between 32-bit and 64-bit types. Pointer arithmetic with generic types throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompiler confidence indicators or uncertainty markers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition whatsoever. `recursion_factorial` not identified as factorial algorithm. Duff's device not recognized. State machine patterns not labeled. All idioms lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical failures silent: `call_func_ptr` returns wrong value without warning, `computed_goto` completely fails without indication, test functions have hardcoded values instead of actual calls. No anomaly flags.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented. Complete absence of contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Global variables have generic names (`g1`, `g2`, `g7`) losing semantic meaning. No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with address-range comments. No header file separation. Some logical grouping by function type but arbitrary overall organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Assembly intrinsics (`__asm_hlt`, `__asm_rep_movsd_memcpy`) won't compile with standard gcc. Missing standard library declarations. Requires significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+3+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+4+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+6+4)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.15/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`call_func_ptr` returns function pointer address instead of calling it** - Semantic failure that breaks functionality
+- **Test functions (`test_control_flow_l1/2/3`) have hardcoded expected values** instead of actual function call results
+- **`computed_goto` completely fails to recover** the computed goto mechanism, returns -1 always
+- **Pervasive bit masking (`& 0xffffffff`)** on every arithmetic operation obscures simple math
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved correctly, maintaining semantic identification of purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or explanatory notes makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (loop counters, accumulators, indices) to infer meaningful names instead of `v1`, `v2`, `v3`
+2. **Add decompiler confidence annotations** - Flag uncertain recoveries (indirect calls, computed gotos) with comments like `// UNCERTAIN: indirect call target not resolved`
+3. **Eliminate redundant type-widening artifacts** - Remove unnecessary `& 0xffffffff` masks and consolidate repeated type conversions to improve readability

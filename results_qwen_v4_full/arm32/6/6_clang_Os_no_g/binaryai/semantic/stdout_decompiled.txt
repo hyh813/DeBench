@@ -1,0 +1,24 @@
+=== Testing Standard Library Functions ===
+strlen result: 12
+call_strlen: 0
+call_memcpy: 12
+call_memcmp: 90
+memcmp result: -1
+Value: 42, Name: TestName
+printf result: 26
+sscanf result: 579
+fopen result: 42
+fread result: 42
+malloc result: 90
+memset result: 0
+strstr result: 15
+=== Testing System Calls ===
+linux_syscall result: 42
+stat result: 42
+fork_exec result: 42
+pipe result: 42
+socket result: 42
+shm result: -1
+signal result: 42
+=== Testing Thread Concurrency ===
+pthread_create result: 49

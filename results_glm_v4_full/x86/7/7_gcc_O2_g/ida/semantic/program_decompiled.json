@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_gcc_O2_g/ida/syntactic/bin/7_gcc_O2_g_fixed",
+  "stdout": "Starting optimization tests...\nOpaque predicate: 10\nInstruction substitution: 20\nVectorized loop: 225\nString encryption: 55\nTail call optimized: 500500\nNon-tail call: 5050\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

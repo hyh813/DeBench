@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related test functions)
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and locals use addresses (`local_24`, `local_c`). The original `dst` and `src` are completely lost. In `call_strcpy`, the buffer should be named `buffer` but is `local_24`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names like `param_strcpy`, `call_strcpy` are preserved correctly. However, some helper functions have cryptic names like `FUN_00011030`. The test function names (`test_standard_library_functions`) are preserved.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` are correctly preserved. However, magic number `0x2a` (42) appears without explanation, and return codes like `-1`, `-2` are unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Warnings about unreachable blocks and inlined functions are present but don't impede reading. Some `__gmon_start__` artifacts but minimal.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control flow is preserved - if/else, loops, function calls. At -O0, the flow should be nearly identical to source. Some minor restructuring in `call_strcpy` using strncpy instead of strcpy.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. Each test function (`call_strcpy`, `param_strcpy`) is correctly isolated. No over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling are appropriate. No excessive goto or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: In `param_strcpy`, `strlen(param_1)` is called but the result is discarded - this is a critical semantic loss. Similarly in `call_strcpy`. This represents severe redundancy/optimization artifact.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` instead of `int`. The original returns `strlen(dst)` but decompiled version discards it. `const char*` becomes `char*` throughout, losing const correctness. `size_t` return in `param_memcpy` is correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Basic types handled adequately. `FILE*`, `pthread_t` are correctly identified. No complex structs in this function to evaluate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns - in `param_strlen`, return value of `strlen` is discarded. In `call_strcpy`, using `builtin_strncpy` instead of `strcpy` changes semantics. No buffer overflow protection annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 2/10  
+Justification: Only auto-generated warnings like "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection". No meaningful comments explaining the logic, the missing return value, or the strncpy vs strcpy discrepancy.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (`strcpy`, `strlen`, `strcmp`) are correctly recognized. No explicit pattern naming (e.g., "implements strcpy wrapper").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Warnings about indirect calls and unreachable blocks present. However, the critical anomaly - return value discarded in `param_strcpy` - is not flagged. No indication that function signature is incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/post conditions documented. The contract "returns strlen(dst)" is completely lost. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (`strcpy`, `strlen`). However, the relationship between `param_strcpy` and `call_strcpy` is not documented. No indication that return value should flow to caller.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically by category (standard library, system calls, threads). Static functions properly scoped. But file organization is flat.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many functions have wrong return types causing compilation issues. `param_strcpy` returning void when it should return int will cause caller mismatch. Some undefined types.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- **param_strcpy returns void instead of int** - The return value `strlen(dst)` is completely discarded, fundamentally changing function semantics
+- **Variable naming is entirely generic** - `param_1`, `param_2`, `local_24` provide no semantic meaning
+- **call_strcpy uses builtin_strncpy instead of strcpy** - Changes the string concatenation semantics from original
+- **const correctness lost** - All `const char*` parameters become `char*`
+- **Architecture mismatch** - Original specifies ARM64, but decompiled binary is x86
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Functions are properly separated with appropriate granularity matching the original source structure
+
+**Most Needs Improvement:** Type Precision (scored 3/10)  
+- Return types are frequently wrong (void vs int), const qualifiers are lost, and the critical return value semantics are discarded
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve return value semantics** - When a function calls another function and uses its return value (like `strlen` after `strcpy`), don't discard it; this is the most critical semantic loss in `param_strcpy`
+2. **Infer parameter names from usage** - `param_1` used as destination in `strcpy` should be named `dst`; `param_2` should be `src`
+3. **Detect and warn about signature changes** - Flag when decompiled function signature differs from expected libc patterns (e.g., strcpy wrapper should return int, not void)

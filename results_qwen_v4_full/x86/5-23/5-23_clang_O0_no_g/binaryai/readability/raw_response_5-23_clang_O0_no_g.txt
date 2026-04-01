@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names like `param_1`, `local_8`, `iVar1`, `sVar1` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names (`exec_mem`, `page_size`, `old_value`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`). Some helper functions have generic names (`FUN_00011030`, `FUN_000110d0`) but core functionality is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x401` (1025), `0x200` (512), `0x40` (64), `0x800` (2048), `0xdef0` without explanation. Original source used named constants (`MAX_SIZE`, `BUFFER_COUNT`) that are lost in decompilation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs (`mprotect`, `printf` wrappers) and runtime initialization code (`_init`, `_start`, `__do_global_dtors_aux`) add noise. PIC thunks (`__i686.get_pc_thunk.bx`) present but user functions are relatively clean.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures recovered well - `param_asm_clobber` and `param_asm_multi_insn` show proper for loops. No goto usage in user functions. At `-O0`, this natural flow is expected and well-preserved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Each function maintains single responsibility. Trivial wrappers like `call_macro_constants` are acceptable for test harness functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with no forward jumps disrupting flow. Early returns used appropriately. Loop structures are properly linearized without backward jump artifacts.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code in user functions. No duplicate expressions observed. Compiled at `-O0` so minimal optimization artifacts present in decompiled output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`, `size_t`. `undefined4` and `undefined *` appear for return types and pointers. `param_stringize` incorrectly shows no parameters when source had `int value`. Significant type erasure present.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs/unions in source code to recover. Arrays handled as pointer arithmetic in some cases (`param_asm_clobber`). What composite types exist are handled reasonably given the simple nature of the code.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(undefined4 *)`, `(void *)0x0`). `LOCK()`/`UNLOCK()` macros for atomic operations appear without proper definition. Pointer arithmetic without clear bounds checking in several functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive comments explaining macros, conditional compilation, and assembly semantics. No decompilation confidence indicators or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition for macro expansions, atomic operations, or assembly patterns. `LOCK()`/`UNLOCK()` macros appear but aren't identified as atomic operation idioms. No algorithm identification present.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls or unusual patterns. Assembly code silently converted to C without indication of transformation. `LOCK()`/`UNLOCK()` macros appear without explanation of their decompilation origin.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Error conditions not documented. Original source had clear expectations (e.g., "期望: 64") that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable `global_var` used without context in `param_memory_clobber_demo`. No call graph documentation or callback relationship identification.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping comments. External functions marked but not organized by category. Original source's section organization (5.2, 5.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but `LOCK()`/`UNLOCK()` macros undefined. Some type mismatches may prevent compilation (`undefined4` returns). Requires moderate patching and stub definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+8+8+8)/4 = 8.00 × 0.25 = 2.000
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.81/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects
+- **Variable names completely generic**: `param_1`, `local_8`, `iVar1` instead of `size`, `result`, `counter` - requires manual inference for every variable
+- **Zero comments recovered**: Original source had extensive documentation explaining macro behavior, assembly semantics, and expected values - all lost
+- **Magic numbers without context**: `0x401`, `0x200`, `0xdef0` replace named constants like `MAX_SIZE`, `BUFFER_COUNT`
+- **Type precision degraded**: `undefined4`, `undefined *` instead of proper C types; `param_stringize` loses its parameter entirely
+- **Undefined macros in output**: `LOCK()`/`UNLOCK()` appear without definition, preventing standalone compilation
+
+### Best Quality Aspect
+- **Structural Intelligibility (Level 2)** scored 8.0/10 - Control flow, function decomposition, linearization, and redundancy elimination are all well-preserved, making the code's execution logic followable despite other issues.
+
+### Most Needs Improvement
+- **Semantic Transparency (Level 4)** scored 2.75/10 - Complete absence of comments, no idiom recognition, no anomaly indication, and no contract recovery makes understanding the *why* behind the code nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., compared against constants, used in memory operations) to suggest semantic names like `packet_size` instead of `param_1`
+2. **Preserve and generate documentation**: Extract comments from debug symbols when available (`-g` flag), and auto-generate comments explaining magic numbers and recovered control structures
+3. **Define recovery macros**: When emitting constructs like `LOCK()`/`UNLOCK()`, include their definitions or replace with standard C11 atomics (`atomic_fetch_add`) for compilable output

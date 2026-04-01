@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`, `v5`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. No semantic meaning was recovered for parameters or local variables.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions are correctly named: `param_macro_constants`, `call_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection` all match the original. Some helper functions like `function_10d0` are generic but these are compiler-generated, not user code.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are correctly recovered (e.g., `64` in param_macro_constants, `0xdef0` in param_multi_branch_compile, `16` in param_macro_recursion). However, magic numbers like `7` (PROT_READ|WRITE|EXEC), `34` (MAP_PRIVATE|ANONYMOUS), and `1` (PROT_READ) lack explanations. The original had named constants like MAX_SIZE, BUFFER_COUNT.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_ax/bx/cx/dx` calls injected throughout (PIC helper functions), stack canary checks with `__readgsdword(20)` and `__stack_chk_fail_local`, and fake `__asm_movaps`, `__asm_paddd` intrinsics that don't actually exist. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - `param_asm_clobber` uses a proper while loop, `param_asm_multi_insn` uses a while loop for copying, `param_conditional_compile` is a simple expression. At -O0, the flow should be close to source and it generally is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with single responsibilities - each test function (macro, asm, etc.) is separate. The original had 700+ lines split into logical test functions, and the decompilation maintains this granularity. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. `param_asm_clobber` has a simple loop structure. `param_asm_multi_insn` has a while loop that is readable. Early returns are used appropriately in error handling (e.g., param_dynamic_code).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. The decompiled code is clean - no duplicate expressions, no dead code. Loop unrolling from the original inline assembly is correctly represented as loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently for most integers, `uint32_t` for `a2` in param_asm_clobber, and `int128_t` for SIMD operations. However, all pointers are generic `int32_t*` without more specific types like `size_t` for lengths. The original used `int`, `int*`, `size_t` - some precision lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The original source had no complex structs or unions - only basic types and arrays. The decompilation correctly uses raw pointers and arithmetic. This is appropriate given the source. No struct recovery needed.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some explicit casts present (e.g., `(int32_t)a1`, `(char*)v4`). Pointer arithmetic is explicit. The fake `__asm_*` functions are concerning as they don't exist in real compilers - this could mislead analysts. Minor issues but nothing dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量", "// 测试: 编译时宏替换", "// ASM-L4-01: x86_64基础内联汇编"). All this semantic information is lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops, conditionals, function calls are recognized. However, no explicit naming of patterns like "macro expansion", "inline assembly", "atomic operation", "self-modifying code". The decompiler doesn't identify these as special constructs.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. The fake `__asm_*` intrinsics that don't exist should be flagged as suspicious. The `__x86_get_pc_thunk_*` functions are compiler-generated but not indicated as such. No indication that inline assembly was present in original source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postconditions or invariants documented. The original had implicit contracts (e.g., "requires: ptr != NULL" for mmap, "ensures: return is valid" for dynamic code). None of this is recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., test functions call param functions). However, there's no documentation of the call graph, global variable usage, or relationships between functions. The original had clear `call_*` wrapper functions calling `param_*` functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing tests together, asm tests together. Static functions like `header_func`, `my_func` are properly scoped. The organization generally matches the original's logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has proper includes and looks mostly compilable. However, the fake `__asm_movaps`, `__asm_paddd` etc. intrinsics don't exist in real compilers - they would cause compilation failures. The code would need significant patching to compile (replacing fake intrinsics with actual inline assembly or removing them).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`a1`, `a2`, `v1`, `v2`) - no semantic meaning recovered
+- No comments at all - all original documentation explaining test cases is lost
+- Fake `__asm_*` intrinsics invented by decompiler that don't exist in real compilers (e.g., `__asm_movaps`, `__asm_paddd`) would cause compilation failures
+- No indication that inline assembly was present in original source - should be flagged as anomaly
+- Extensive compiler artifacts (`__x86_get_pc_thunk_*`, stack canary checks) obscure actual logic
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+The main test functions are correctly named matching the original source exactly (param_macro_constants, call_asm_basic, param_dynamic_code, etc.).
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The original had extensive comments explaining each test case, macro semantics, and expected values. All this semantic information is completely lost in the decompilation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns**: Variables like `a1` used in comparisons with 1024 should be named `size`; variables used as loop counters should be named `i` or `index`
+2. **Flag invented intrinsics as anomalies**: The `__asm_*` functions don't exist in real compilers - this should be clearly indicated as a decompilation artifact requiring manual修复
+3. **Add semantic comments for preprocessing**: When macros are expanded, add comments indicating which macro was expanded (e.g., "// MAX_SIZE = 1024", "// BUFFER_COUNT * 4 = 64")

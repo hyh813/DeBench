@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `result`, `buffer`, `heap_buffer` are descriptive, but `test_obf_opt_edge` uses generic `v0` through `v13` instead of meaningful names like `fake_branch_result` or `opaque_predicate_result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but initialization functions use generic names (`sub_1030`, `sub_112C`) and metadata incorrectly claims Ghidra when output shows IDA Pro.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `-559038737` (0xDEADBEEF), signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`, and hex values `0x20u`, `0x10u` lack symbolic names or explanations.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack annotations like `[esp+10h] [ebp-8h]` add visual noise, and 12 runtime functions failed to decompile, but core logic remains relatively clean without excessive compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered as natural `for`/`while` constructs, conditionals are clear, and the fake branch `x * x < 0` preserved correctly despite being always false at -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well, `decrypt_string` properly separated, no excessive inlining or fragmentation observed in test functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally, no goto statements in user code, early returns used appropriately in signal handlers.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `param_instruction_substitution` simplified bit shifts to `15 * x + 6 * x` losing optimization intent, but no dead code or duplicate expressions remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (`int`, `char*`, `size_t`) preserved correctly with some signed/unsigned distinctions, but lacks specific types like `int32_t` and const-correctness is inconsistent.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `param_implementation_defined` bitfield struct completely optimized away (returns constant `43`), arrays handled correctly but no complex struct reconstruction visible.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Appropriate casts for signal handlers `(__sighandler_t)`, but `param_null_pointer_deref(0)` passes literal `0` instead of `NULL`, minor type clarity issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, algorithm intent, or decompilation confidence; no documentation of why fake branches exist or what opaque predicates test.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm, XOR decryption, and tail recursion patterns present but completely unrecognized; no pattern identification or naming provided.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 12 failed decompilations listed at end, but suspicious code (fake branches, opaque predicates, potential UB) not flagged; one stack warning present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division), no postconditions, error handling contracts completely absent from signal handler functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and globals like `jmp_buffer` referenced, but no call graph documentation or explicit callback relationship mapping provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by memory address rather than logical grouping, initialization code mixed with test functions, no static scoping indication.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions (`printf`, `malloc`, `signal`, etc.) failed to decompile requiring stubs, no dependency documentation, won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (6+8+5+7)/4 = 6.50  × 0.30 = 1.95
+Level 2 (Structural):   (8+8+8+7)/4 = 7.75  × 0.25 = 1.94
+Level 3 (Type):         (7+5+7)/3 = 6.33    × 0.20 = 1.27
+Level 4 (Semantic):     (2+3+4+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):   (6+5+4)/3 = 5.00    × 0.10 = 0.50
+---------------------------------------------------------
+Overall Score:                                  = 6.07/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **Zero semantic comments** - No explanation of obfuscation techniques, fake branches, or why certain conditions are always false
+- **Magic numbers unexplained** - `-559038737` (0xDEADBEEF), signal numbers `8`/`11` instead of symbolic constants
+- **Generic variable names in test function** - `v0` through `v13` in `test_obf_opt_edge` instead of descriptive names
+- **12 external functions failed** - `printf`, `malloc`, `signal`, etc. require manual stub implementation
+- **Architecture mismatch** - Original ARM64 metadata but decompiled as x86, tool metadata inconsistency (Ghidra vs IDA)
+
+### Best Quality Aspect:
+- **Structural Intelligibility (7.75/10)** - Control flow, function decomposition, and code linearization all recovered well with natural loop/conditional constructs matching -O0 expectations
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.75/10)** - Complete absence of comments, no idiom recognition, and no contract documentation makes understanding the obfuscation intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic annotation pass** - Detect and comment on obfuscation patterns (fake branches, opaque predicates, instruction substitution) with confidence indicators
+2. **Recover symbolic constants** - Replace magic numbers with named constants when patterns match known values (0xDEADBEEF, signal numbers, buffer sizes)
+3. **Generate call graph documentation** - Add header comments showing function relationships, callers/callees, and global variable usage for better contextual understanding

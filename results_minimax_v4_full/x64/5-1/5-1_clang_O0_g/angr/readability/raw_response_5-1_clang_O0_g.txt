@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2` through `v12`, `ptr`, `ptr3`, `ptr4`, `ptr5`, `ptr6`. The original source had meaningful names like `value`, `name`, `data`, `size`, `result`, `capture_by_value`, `capture_by_ref`. The decompiler provides no semantic mapping from these generic names to their actual purposes.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some C++ mangled names were recovered (e.g., `SimpleClass::SimpleClass`, `LifecycleClass::getData`, `test_cpp_member_func`), but the majority of functions use generic `sub_XXXXX` naming (e.g., `sub_402020`, `sub_40202c`, `sub_4021ac`). The original source had 12 clearly named test functions plus main, but the decompiler obscures many with mechanical addresses.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `0x1234` (expected 4660) appears without explanation in `getClassID`. The value `50` used for `shared_data` in diamond inheritance has no constant name. The decompiler uses raw numeric values throughout (e.g., `31` for buffer size, `5` for array bounds) without recovering the original named constants like `sizeof(name)-1`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The output is bloated with 4368 LOC vs 540 original. Significant noise includes: unused register parameters (`v4`, `v5`, `v6`, `v7`, `v8`, `v9` in `test_cpp_member_func`), redundant casts, and numerous internal STL implementation functions that should be abstracted. The `__clang_call_terminate` appears repeatedly as noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is readable in simple functions but becomes convoluted in complex cases. The exception handling code (`test_cpp_exception`) uses confusing `if (result == 1)` patterns that don't reflect the original try-catch structure. The virtual function call in `call_virtual_func` uses indirect dispatch `(*((long long *)*((long long *)&arg_0)))(arg_0, arg_1)` which is technically correct but obscures the vtable mechanism.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The decompiler over-fragmented the code into hundreds of tiny functions. The original had ~12 test functions, but the decompiled version has many more including internal STL implementation details (e.g., `std::__uniq_ptr_impl<int, test_cpp_smart_ptr()::$_2>::_M_ptr()`, `std::_Tuple_impl<0ul, int*, std::default_delete<int>>::_Tuple_impl()`). These 50+ line internal functions should be abstracted away.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom without excessive jumps. However, some forward jumps exist (e.g., in `test_cpp_multiple_inheritance` with the `if (&v9) v3 = &v11;` pattern). The diamond inheritance test has complex pointer arithmetic that disrupts linear reading: `*((unsigned int *)&(&v8)[ptr[24]]) = 50;`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists but is not excessive. The main issue is the massive amount of template/STL infrastructure code that clutters the output - this is somewhat unavoidable given C++ templates but makes the code harder to navigate.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are often generic - `unsigned long long` used where `int` or `size_t` would be more precise. The decompiler uses `char*` for many pointers without distinguishing string data from generic buffers. The original had `int`, `size_t`, `bool` but the decompiler frequently uses wider types like `unsigned long long` for simple counters.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery exists (e.g., `struct_0 { unsigned int field_0; char padding_4[31]; char field_23; }` for SimpleClass), but field names are generic (`field_0`, `field_23`) rather than meaningful (`value`, `name`). The decompiler did recognize the 32-byte char array as `padding_4[31]` but couldn't recover the original `name[32]` naming.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe patterns exist: raw pointer arithmetic in diamond inheritance (`ptr[24]`), indirect function calls without type information (`*((long long *)*((long long *)&arg_0))`), and void* usage throughout. The code doesn't indicate potential buffer overflows or null-dereference risks.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments exist in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// 测试: 类成员函数调用，隐含this指针传递"). The decompiler provides zero explanatory text for complex patterns like virtual function dispatch, multiple inheritance, or exception handling.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly recognized (constructors, destructors, virtual functions appear as method calls), but they're not explicitly labeled. The original used patterns like RAII (smart pointers), lambda expressions, and template instantiation - these are technically present but not highlighted as idioms.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of uncertain or anomalous code. The decompiler silently produces potentially incorrect code (e.g., the exception handling logic appears broken with `if (result == 1)` repeated twice). There's no indication of indirect calls that couldn't be resolved or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had implicit contracts (e.g., "requires: ptr != NULL" for getData, "ensures: return is heap-allocated" for operator new). None of this is recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are visible through the code (e.g., `test_cpp_member_func()` calls `SimpleClass::getValue()`), but there's no explicit documentation of the call graph. The original showed clear relationships in the test driver (`test_cpp_oo_features` calling all test functions).
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions are organized by memory address (sub_402000, sub_402020, etc.) rather than logically grouped. The original had clear sections: member functions, constructors, virtual functions, multiple inheritance, templates, etc. The decompiled output is essentially a flat list sorted by address.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code has numerous `extern` declarations and would not compile standalone. Many functions have incomplete signatures (e.g., `void sub_402020()` with no parameters but uses `g_409008`, `g_409010`). The "Failed to decompile" message for one function indicates partial failure.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`-`v12`, `ptr`, `ptr3`) with no semantic mapping to original names like `value`, `name`, `capture_by_ref`
+- Function names are mostly mechanical (`sub_XXXXX`) rather than descriptive
+- No comments explaining complex C++ patterns (vtable dispatch, multiple inheritance, exception handling)
+- Over-fragmentation into STL internal functions obscures the actual test logic
+- No anomaly indication for potentially incorrect exception handling code
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.0/10)  
+While not excellent, this was the highest-scoring area. The decompiler did recover some struct layouts and recognized C++ class methods, even if field names are generic.
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.0/10)  
+Variable and function naming is the primary readability blocker. Without meaningful names, the code is nearly impossible to analyze semantically.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `v2` used as size_t in loop bounds → rename to `size` or `count`)
+2. **Recover constant expressions**: Detect magic numbers that appear in multiple locations and suggest named constants (e.g., `0x1234` → `CLASS_ID`)
+3. **Abstract STL/template infrastructure**: Collapse internal implementation details like `std::__uniq_ptr_impl` into higher-level representations or collapse them with comments indicating "STL implementation details omitted"

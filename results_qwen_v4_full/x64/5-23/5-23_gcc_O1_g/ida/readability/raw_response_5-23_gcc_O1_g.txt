@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3`, `v4`, `v5` are generic and obscure purpose (e.g., `test_preprocessing_features` uses `v0`, `v1` for function return values). Some variables like `result`, `counter`, `arr` are meaningful, but most are mechanically generated.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_macro_constants`, `call_asm_basic`, `param_dynamic_code`). Action-oriented naming clearly indicates purpose and matches original intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers without explanation: `57072` (should be `0xDEF0`), `282` (line number + counters), `19` (string length sum), `30` (sysconf _SC_PAGESIZE). String literals like `"src/5-23.c"` and `"Jan 15 2026"` are clear but build-specific.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts in most functions. Stack canary checks (`__readfsqword(0x28u)`) present in some functions. No excessive register spilling visible, but some functions show unnecessary type casts (`(__int64)(__fastcall *)`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if/for constructs. `param_asm_clobber` correctly recovers loop from assembly. Some functions are over-optimized (constant returns) which hides original logic structure.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches source exactly. Each original function is preserved as separate decompiled function. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (e.g., `param_macro_constants`). No excessive goto usage except in assembly-recovered functions where appropriate.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding eliminates original computation logic (e.g., `call_macro_constants` returns `64` directly instead of showing `param_macro_constants(2048)` call). This loses semantic information about the computation path.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type recovery (`int`, `size_t`, `__int64`, `void*`). However, some types are generic (`__int64` instead of `intptr_t`). SIMD types recovered as `__m128i` which is accurate. Pointer arithmetic uses proper types.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Array types correctly identified (`int arr[6]`, `char src[10]`). Stack structures shown with `BYREF` annotation. No complex struct recovery needed for this code, but arrays are well-handled.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(_DWORD *)-1LL`, `(func_t)exec_mem`). Function pointer casts are necessary for dynamic code execution but not annotated as unsafe. No buffer overflow warnings despite `strcpy` usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only header shows decompiler info. No explanation of magic numbers, algorithm intent, or decompilation confidence. Critical for understanding constant-folded functions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns recognized and converted to C (e.g., `param_asm_clobber` loop, `param_asm_multi_insn` → `qmemcpy`). However, no indication that these were originally inline assembly vs. native C code.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end but not flagged at call sites. No warnings about constant folding losing original semantics. Stack warning in `_start` function but no other anomaly indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Functions like `param_dynamic_code` return `-1` on failure but no indication of what conditions trigger this. No null pointer checks documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through direct calls. Global variable `global_var` referenced correctly. However, no call graph documentation or indication of which functions are test helpers vs. core logic.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order matching source file. Test functions grouped together. External dependencies listed at end. Could benefit from section comments separating preprocessing vs. assembly tests.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions failed to decompile (`__libc_start_main`, `mmap`, `printf_chk`, etc.). Requires stub implementations. Build-specific values embedded (`"src/5-23.c"`, `"Jan 15 2026"`). Cannot compile standalone without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+4+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (8+9+8+6)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.467
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (7+8+4)/3   = 6.33 × 0.10 = 0.633
+
+Overall Score: 6.36/10
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects:
+- **Magic numbers without explanation**: `57072`, `282`, `19`, `57122` should be annotated with original macro values or hex equivalents
+- **Aggressive constant folding hides semantics**: `call_macro_constants()` returns `64` directly instead of showing the computation path through `param_macro_constants(2048)`
+- **No comments explaining decompilation decisions**: Critical for understanding why assembly became C loops
+- **Failed external functions not stubbed**: 9 functions listed as "FAILED" but no stub implementations provided
+- **Build-specific literals embedded**: `"src/5-23.c"`, `"Jan 15 2026"` make code non-portable
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names are perfectly preserved from source, making navigation and understanding trivial despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Near-total absence of comments makes it impossible to understand why certain optimizations occurred or what the original intent was.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic annotations for constant-folded code**: When a function returns a constant, add a comment showing the original computation (e.g., `// Original: param_macro_constants(2048) → 64`)
+2. **Recover and display macro definitions**: When magic numbers correspond to preprocessor macros, annotate them (e.g., `// MAX_SIZE = 1024, BUFFER_COUNT = 16`)
+3. **Generate stub declarations for failed external functions**: Instead of just listing failures, provide callable stub signatures with `// EXTERNAL: requires implementation` comments

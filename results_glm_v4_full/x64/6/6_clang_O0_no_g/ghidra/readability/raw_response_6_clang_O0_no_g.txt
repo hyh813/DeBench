@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_28`, and `uVar1`, providing no semantic hint about their purpose (e.g., `dst`, `src`, `len` are lost).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `param_strcpy`, `call_strcpy`, `param_linux_syscall`), matching the source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are used extensively instead of named constants, such as `socket(2,1,0)` instead of `socket(AF_INET, SOCK_STREAM, 0)` and `signal(10, ...)` instead of `SIGUSR1`.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean due to `-O0`, but the presence of `undefined` types (e.g., `undefined4`, `undefined8`) and raw segment access (`in_FS_OFFSET`) adds significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent and matches the source perfectly because of the `-O0` optimization level; loops and conditionals are preserved naturally.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are recovered 1:1 with the source; there is no inlining or outlining, maintaining the original granularity perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or confusing branches, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code; the decompiled code is concise and mirrors the source logic without redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often degraded to generic `undefined` types (e.g., `undefined4` for `int`), though `char*` and `size_t` are occasionally recovered correctly.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs like `ThreadData` are completely flattened into raw arrays (e.g., `local_58`), and `sockaddr` fields are accessed via generic offsets (`sa_data._0_2_`), losing semantic structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of `undefined` types implies the decompiler is unsure of the data, leading to potential type confusion, though no obviously dangerous casts are invented.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining logic; only standard Ghidra headers are present.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard library calls are recognized, but complex idioms fail: atomic operations (`__atomic_fetch_add`) become `LOCK()/UNLOCK()` macros, and Thread Local Storage (`__thread`) becomes raw segment access.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies or potential issues are flagged; the decompiler presents the code confidently even when semantics are obscured (e.g., the `LOCK/UNLOCK` pattern).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants (e.g., the requirement for `param_strcpy` that `dst` must be valid).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand despite the poor variable naming.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure, which helps in navigating the code.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile standalone due to `undefined` types and missing headers, requiring significant manual patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Atomic operations (`__atomic_fetch_add`) decompiled to `LOCK()`/`UNLOCK()` macros, losing the atomic semantic and making it look like mutex usage.
+- Thread Local Storage (`__thread int tls_counter`) decompiled to raw segment access `*(int *)(in_FS_OFFSET + -6)`, completely obscuring the high-level variable.
+- System call constants (e.g., `SYS_open`, `SIGUSR1`) replaced with magic numbers (2, 10), reducing readability.
+- Return type of `param_strcpy` is `void` in decompilation but `int` in source (returning length), causing a semantic mismatch.
+- Struct `ThreadData` flattened into a raw array `local_58`, destroying the data structure abstraction.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Ghidra perfectly recovered all function symbols from the binary, making the high-level flow easy to trace.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to recognize atomic operations and TLS patterns turns high-level concurrency primitives into low-level assembly-like code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for C11 atomic builtins to replace `LOCK/UNLOCK` blocks with `__atomic_fetch_add` syntax.
+2. Detect Thread Local Storage access patterns (e.g., `fs/gs` segment offsets on x86) and recover `__thread` variables.
+3. Map system call numbers and signal numbers to their standard constant names (e.g., `SYS_open`, `SIGUSR1`) using a lookup table.

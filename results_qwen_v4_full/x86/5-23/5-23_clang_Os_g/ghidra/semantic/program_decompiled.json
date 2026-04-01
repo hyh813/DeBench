@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_Os_g/ghidra/syntactic/bin/5-23_clang_Os_g_fixed",
+  "stdout": "Testing preprocessing features...\nMacro constants (param): 64\nMacro functions (param): 30\nConditional compile (param): 32\nMulti-branch compile (param): 57122\nMacro recursion (param): 116\nStringize (param): 19\nToken paste (param): 60\nLOG: Values: 10, 20, 30\nMacro override (param): 60\nInclude guard (param): 16\nBuiltin macros (param): 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:19\nBuiltin macros (call): 382\nTesting ASM features...\nASM basic (call): 15\nASM clobber (call): 5\nASM multi-instruction (call): -1\nASM SIMD (call): 36\nASM atomic (call): 30\nASM privileged (call): 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

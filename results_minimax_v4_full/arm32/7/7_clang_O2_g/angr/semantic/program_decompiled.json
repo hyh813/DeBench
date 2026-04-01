@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_O2_g/angr/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "Test 1: Opaque Predicate\n\nTest 0: Fake Branch\nTest 2: Instruction Substitution: 35\nTest 3: String Encryption: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables use generic stack-position names like `local_8`, `local_c`, `iVar1` instead of semantic names. For example, in `if_else`, the variable `local_8` holds the return value but obscures its purpose as a boolean indicator. Only a few functions like `loop_for_fixed` have proper names (`i`, `sum`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. Helper functions like `double_value`, `triple_value`, `op_add`, `op_sub` are also correctly named. Minor issue: some internal labels like `switchD_000120c9_caseD_1` are auto-generated.**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x3e9` (1001) in `infinite_loop`, `0x65` (101) in `multi_return` and `loop_external_state`, `0x14` (20) in `if_elseif_chain`. The decompiler uses hex notation without explaining what these values represent (e.g., timeout values, thresholds).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise present. Many functions have "WARNING: Unknown calling convention" comments. The `switch_fallthrough` function has auto-generated labels like `switchD_000120c9_caseD_7`. However, no register spilling artifacts or redundant casts observed. Some unreachable block warnings but these don't affect readability much.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is mostly natural and matches source. Loops are correctly recovered as `for`/`while`/`do-while`. The `goto_forward` and `goto_backward` are properly converted to structured code. Minor issue: `switch_fallthrough` uses goto labels instead of explicit fallthrough comments, but this is acceptable at O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - most are under 30 lines with clear single responsibilities. The test harness functions (`test_control_flow_l1`, etc.) properly call individual test cases. No over-fragmentation or monoliths observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `loop_break` and `infinite_loop` are appropriate. Some forward jumps in `switch_fallthrough` using goto labels, but these are manageable. No excessive nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or common subexpression duplication observed. The `duffs_device` shows loop unrolling but this is the original code pattern, not a decompilation artifact. Clean code overall.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `int` for parameters and return values. However, many locals use `undefined4` instead of `int` (e.g., `nested_if_2`, `if_elseif_chain`). Function pointer types are properly typed as `_func_int_int` rather than generic `void*`. Some signed/unsigned mixing in comparisons (e.g., `(uint)(0 < x)` in `if_else`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Simple types work well for this code. Arrays are properly declared: `int matrix[3][4]` in `loop_multi_exit`, `int arr[5]` in test functions. The `duffs_device` correctly shows pointer parameters. No complex structs needed in this control-flow-focused benchmark.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. Minor issues: some unsafe pointer arithmetic in `duffs_device` (pointer increments without bounds), but this matches the original dangerous C code. Function pointer calls use proper signatures. No major type confusion issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. The only comments are decompiler warnings ("WARNING: Unknown calling convention") and binary data references (`&DAT_00014070`). No explanation of algorithm logic, no recovery confidence indicators, no API contracts. The source had extensive Chinese comments explaining test scenarios - none of this is recovered.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized but not named. The `duffs_device` is correctly identified as a switch-do-while pattern but labeled with auto-generated goto labels. State machines in `state_machine` and `fsm_func_table` are recognized as such. However, no explicit pattern naming (e.g., "Duff's device", "State pattern").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present but inconsistent. "WARNING: Unknown calling convention" appears frequently. However, the `computed_goto` function has a warning "WARNING: Could not recover jumptable" which is good. No warnings for potential issues like the volatile flag usage in `infinite_loop`.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No explicit contract recovery. Preconditions like "n must be > 0" in `duffs_device` are not documented. Postconditions not inferred. Error conditions from `longjmp` in `non_local_jump` are not explained. Some implicit contracts could be recovered (e.g., "requires: n > 0" for factorial).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from the test harness functions. The `call_func_ptr_array` correctly shows function pointer array initialization. However, no explicit documentation of who calls whom. Global variables like `jump_buffer` used by `non_local_jump` are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions separate from implementation, helper functions (op_add, op_sub, etc.) grouped together. Static functions properly scoped. However, all 78 functions in one file with no logical section markers.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minor stubs needed. External references like `printf`, `memcpy`, `memset` are properly linked. No compiler-specific hacks. The `volatile` keyword is preserved in function signatures. Would need standard library linkage.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming uses generic stack positions (`local_8`, `local_c`, `iVar1`) instead of semantic names, making it hard to track variable purpose
+- Magic numbers like `0x3e9`, `0x65` appear without explanation of their semantic meaning
+- No comments explaining algorithm logic or recovery confidence - the extensive source comments are completely lost
+- Type precision issues: `undefined4` used instead of `int` in many places
+- Some control flow (switch fall-through) uses goto labels instead of explicit fallthrough notation
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify each function's purpose.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Most local variables use generic stack-position names rather than semantic names derived from usage patterns. At O0 optimization, the decompiler should be able to infer meaningful names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `local_8` used as return value in `if_else` should be named `result` or `return_val`
+2. Detect magic numbers and suggest named constants - `0x3e9` is clearly a timeout threshold (1001), `0x65` is 101
+3. Recover comments from debug symbols - the source had extensive explanatory comments that could be partially recovered from DWARF debug info
+4. Add semantic comments for complex patterns - explain Duff's device, state machine patterns, and recovery confidence for indirect calls

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v1`, `v2`, `v3`, `v4`). No semantic meaning is recovered - e.g., `ptr_single` function has `int64_t v1` instead of a meaningful parameter name like `ptr` or `value`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `test_data_types_l1`, `array_1d_stack`, `process_char` correctly match source names. However, some helper functions have mechanical names like `function_1060`, `function_1070` that lack semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x3fc00000` (float 1.5), `0x3fe0000000000000` (double 0.5) appear without explanation. The mask `0xfffffffe` is unexplained. Chinese strings are displayed as hex escape sequences (`\xe6\xb5\x8b\xe8\xaf\x95`) rather than decoded text.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some redundant operations like `(int32_t)a2 < 1` could be simplified. No debug instrumentation visible. The `__asm_` prefixed functions for float operations are necessary artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: While loops are properly recovered from jump instructions. Some complex conditions in `array_complex_index` and `pointer_array` are convoluted but traceable. At -O0, control flow should be nearly 1:1 with source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each test function is separate. The `complex_callback` is properly extracted. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in complex array functions like `array_3d` create non-linear flow. The nested while loops in `graph_traverse` are difficult to follow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant calculations visible, particularly in `array_3d` where the same offset calculations repeat. Loop unrolling is minimal at -O0. Could be cleaner but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` and `int64_t` appropriately. However, pointers are often generic `int64_t` instead of typed pointers (e.g., `int32_t*`). Function pointers like `ptr_func_simple` use `int64_t` instead of proper function signatures. `uint64_t` used for `process_bool` parameter when `int` would be more accurate.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union types recovered. All composite types are accessed via raw pointer arithmetic: `*(int32_t *)(a1 + 8)` instead of `p->z`. The `Point3D`, `Node`, `Rect`, `Widget` structures are completely lost - just integer offsets. This is the worst aspect of the decompilation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(int32_t *)a1`, `(int64_t *)v2`, `(char *)v1`. Pointer arithmetic is sometimes incorrect (e.g., `ptr_offset` uses complex formula instead of simple `*(p + offset)`). Function pointer type confusion in `ptr_func_simple`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. Zero explanation of algorithm intent, parameter purposes, or return value meanings. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal (`while (v1 != 0)`) are visible but not named or highlighted. The binary tree recursion is recognizable but not identified as such. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or anomalous code. The `complex_callback` with indirect call resolution is presented as straightforward. No flags for potential undefined behavior in `array_oob` (which intentionally accesses out of bounds).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The `const_param` function doesn't indicate it requires non-null pointer. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in test functions. However, no documentation of which functions call `double_value`, what `complex_callback` is used for, or the callback relationship in `ptr_func_simple`. Relationships are implicit, not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Related functions grouped (test functions together, helper functions at top). Static functions not distinguished from extern. Could match source organization better.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers. Has function prototypes. Some stub functions needed (`__gmon_start__`, `__libc_start_main`). The code would compile with minor patching. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (1 + 7 + 4 + 7) / 4 = 4.75
+L2_avg = (7 + 8 + 6 + 6) / 4 = 6.75
+L3_avg = (6 + 2 + 5) / 3 = 4.33
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.00
+L5_avg = (4 + 6 + 6) / 3 = 5.33
+
+Overall = (4.75 × 0.30) + (6.75 × 0.25) + (4.33 × 0.20) + 
+          (2.00 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.6875 + 0.866 + 0.3 + 0.533
+        = 4.81/10
+```
+
+**Overall Readability Score:** 4.81/10
+
+### Critical Defects (Bullet List)
+- **Struct/union recovery completely failed**: All composite types accessed via raw pointer arithmetic (`*(int32_t *)(a1 + 8)`) instead of named fields (`p->z`), losing all semantic meaning
+- **No variable names recovered**: All parameters use generic `a1, a2, a3` and locals use `v1, v2, v3` - completely opaque
+- **No comments at all**: Zero explanation of algorithm intent, parameter purposes, or return value meanings
+- **Type precision issues**: Function pointers use `int64_t` instead of proper function signatures; pointers often generic instead of typed
+- **No anomaly indication**: Undefined behavior in `array_oob` presented without warning; indirect calls not flagged
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions maintain appropriate granularity matching source. Each test function is properly separated, and helper functions like `complex_callback` are correctly extracted as separate static functions.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+The decompiler completely failed to recover any struct or union types. All composite types from the original source (Point3D, Node, Rect, Widget, UnionData, etc.) are reduced to raw pointer arithmetic with integer offsets, losing all semantic information about field names and data structure layouts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types**: Analyze memory access patterns to identify field offsets and reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Infer variable names from usage**: Use data flow analysis to determine semantic purpose (e.g., `a1` used in length check → `length` or `size`)
+3. **Add semantic comments**: Document function purpose, parameter meanings, return values, and flag uncertain/ambiguous code sections

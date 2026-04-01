@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: While function arguments (`a`, `b`, `count`) retain their original names, local variables in optimized functions are generic (e.g., `local_8`, `piVar3`, `uVar1`), and pseudo-variables like `register0x00000008` obscure the logic in `varargs_func`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `cdecl_func`, `test_calling_conventions`), matching the source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Integer constants are displayed in hex (e.g., `0xf` instead of `15`, `0x32` instead of `50`), and magic numbers like `0xffffffc8` (stack offset) appear in varargs handling without explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with compiler warnings like "Unknown calling convention," "Unresolved local var," and "Removing unreachable block," which significantly distract from the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive optimization transformed simple loops into complex pointer arithmetic and nested conditions (e.g., `param_ptr_array` processes two items per iteration with `ppcVar8 = ppcVar8 + 2`), making the flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are respected and match the source structure; there is no artificial splitting or merging of functions, even though internal logic is heavily optimized.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code reads non-linearly due to loop unrolling and pointer manipulation; for example, `varargs_func` uses nested `do-while` loops and stack pointer math that disrupts top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: Loop unrolling created massive redundancy, such as `func_struct_byval` explicitly summing 16 struct fields (`s->data[0]` to `s->data[0xf]`) instead of using a loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, correctly distinguishing `int`, `char*`, and `longlong`, and properly identifying the hidden pointer parameter for large structs (`LargeStruct *s`).
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs are recovered with correct names and field access patterns (e.g., `s->data[0xf]`, `p->x * p->y`), perfectly matching the source definitions.
+
+**11. Type Safety:** Score: 7/10
+Justification: Mostly safe, but varargs handling relies on raw casts to registers (`(int *)register0x00000008`), and `ret_opaque_handle` casts an `int*` to `double*`, which are unsafe practices exposed by the decompilation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to decompiler warnings and errors (e.g., "WARNING: Unknown calling convention"); there are no explanatory comments for the complex optimized logic or unrolled loops.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `va_list` are lost; `varargs_func` is decompiled into raw stack walking and register access rather than the abstracted `va_start`/`va_arg` pattern.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler consistently flags its own uncertainty regarding calling conventions and local variables, which is helpful, though it doesn't explain the optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are inferred or documented (e.g., the requirement for `p` to be non-null in `func_struct_byptr` is not explicitly stated as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and readable where not inlined; the relationship between callers and callees is clear, and global data access is straightforward.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled file maintains the exact logical grouping and order of functions as found in the source file.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses Ghidra-specific macros like `CONCAT44` and pseudo-variables like `register0x00000008`, preventing direct compilation without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable arguments (`varargs_func`) are decompiled into raw stack/register manipulation instead of the `va_list` idiom.
+- Loop unrolling creates massive redundancy (e.g., summing 16 struct fields individually in `func_struct_byval`).
+- Excessive noise from decompiler warnings ("Unknown calling convention", "Unresolved local var") obscures the code.
+- Use of non-standard constructs like `CONCAT44` and `register0x00000008` reduces portability.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Structs are recovered with accurate field names and access patterns, perfectly matching the source definitions.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The complex logic resulting from optimization lacks explanatory comments, leaving the user to decipher raw assembly artifacts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Abstract varargs handling (`va_list`, `va_start`) even at high optimization levels to avoid raw stack pointer math.
+2. Detect and annotate loop unrolling (e.g., "/* Loop unrolled */") to reduce the visual shock of massive redundant expressions.
+3. Replace pseudo-variables (e.g., `register0x00000008`) with meaningful ABI-specific names (e.g., `varargs_save_area`) or standard C equivalents.

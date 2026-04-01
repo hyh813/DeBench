@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables are marked as "Unresolved local var" with no semantic names. The comments show `int result@[???]` and `char * str@[???]` but provide no actual recoverable names.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` is exactly preserved from source, clearly indicating its purpose as a parameter function testing fake branch obfuscation.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this simple function - the decompiled return `x` is clean and accurate.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal noise - only the "Unresolved local var" comments add slight clutter, but no compiler artifacts or redundant casts are present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The function is reduced to a simple `return x;` statement - highly natural and idiomatic. The original fake branch logic was correctly optimized away.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately small (3 lines including comments). Proper granularity for a simple parameter wrapper.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfect linear flow - reads top-to-bottom with no jumps, branches, or disruption to execution flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. The dead code from the fake branches was correctly eliminated by the compiler (note: binary was compiled with -O2 despite source metadata suggesting -O0).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10  
+Justification: Parameter type `int x` is correctly recovered. Return type `int` is precise. No type erasure or generic types used.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) used in this function, so none need recovery. N/A scores as 10.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No unsafe casts, no pointer arithmetic, no type-confused operations. The simplified output is completely type-safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments only state "Unresolved local var" without explaining the function's actual purpose. No mention of the fake branch obfuscation technique or why variables disappeared.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The OBF-L4-02 "永假分支" (always-false branch) idiom is not recognized or documented. The decompiler should note that dead code elimination occurred.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warning about the significant transformation (removal of both fake branches). The "Unresolved local var" comments hint at something but don't explain the anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. Could note that function always returns input value unchanged.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of callers (e.g., `call_fake_branch`) or the relationship to other obfuscation test functions in the file.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Function appears in a large 46-function decompiled output. Grouped with other param_* functions but no logical section markers.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The simplified function `int param_fake_branch(int x) { return x; }` would compile cleanly as standalone code with no dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.6/10
+
+**Critical Defects:**
+- Variable names completely lost - only "Unresolved local var" comments remain
+- No semantic explanation of the fake branch obfuscation technique (OBF-L4-02)
+- Missing documentation about why the original fake branch code was eliminated
+- Cross-reference relationships not documented (caller `call_fake_branch` not mentioned)
+
+**Best Quality Aspect:** Structural Intelligibility (scored 10/10)  
+The control flow is perfectly natural - reduced to a simple, linear return statement that accurately reflects the optimized behavior.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.8/10)  
+The decompiler provides no meaningful comments about the function's purpose, the obfuscation technique being tested, or the transformation that occurred (dead code elimination).
+
+**Top 3 Recommendations:**
+1. Recover variable names from debug symbols or usage patterns - `result` and `str` could have been inferred
+2. Add comments explaining optimization transformations - note that fake branch code was eliminated as dead code
+3. Document the obfuscation idiom being tested - recognize OBF-L4-02 "always-false condition" pattern and explain its purpose

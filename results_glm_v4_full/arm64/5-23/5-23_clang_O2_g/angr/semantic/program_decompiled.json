@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_clang_O2_g/angr/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "=== Preprocessing Features ===\n\nparam_macro_constants: 64\nparam_macro_functions: 30\nparam_conditional_compile: 32\nparam_multi_branch_compile: 57122\nparam_macro_recursion: 116\nparam_stringize: 19\nparam_token_paste: 60\nLOG: Values: 10, 20, 30\nparam_variadic_macro: 60\nparam_macro_override: 16\nparam_include_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:41\ncall_builtin_macros: 382\n=== ASM Features ===\n\nparam_asm_basic: 15\ncall_asm_clobber: 15\ncall_asm_multi_insn: 42\nparam_asm_simd: 36\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 7\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

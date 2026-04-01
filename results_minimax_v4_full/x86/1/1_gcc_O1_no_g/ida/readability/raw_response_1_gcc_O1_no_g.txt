@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use `v1`, `v2`, `v3`, `result`. This is extremely poor compared to source which uses meaningful names like `a`, `b`, `c` for sequential_ops. The original source had clear variable names like `temp1`, `temp2`, `sum`, `count` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly preserved - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `loop_for_fixed`, `loop_while`, `duffs_device`, etc. all match the original source exactly. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear from context (e.g., `a1 != v1` in loop_for_fixed is understandable). Array initializations like `v2[0] = 10; v2[1] = 20;` are inferable. Minor magic numbers like `__readgsdword(0x14u)` for stack canaries are compiler artifacts but don't impede understanding.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Stack canary references (`__readgsdword(0x14u)`) appear but don't significantly impede readability. No redundant casts or debug instrumentation cluttering the code. The decompilation is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source patterns well. Loops are properly recognized as for/while/do-while constructs. The `goto_forward` and `goto_backward` functions correctly use goto as in source. Some switch statements converted to if-else chains (e.g., switch_small) but this is acceptable decompilation behavior.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is properly separated with appropriate granularity. Functions like `duffs_device` maintain their complex structure but remain cohesive. No monolithic functions or over-fragmentation. The decomposition matches the original source organization.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal disruption. Early returns and breaks used appropriately. The `goto_forward` function has a forward jump but it's the legitimate source pattern. No excessive nesting or confusing jumps.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No significant redundancy observed. Loop unrolling in `duffs_device` is present but represents the actual compiled structure. No dead code or duplicate expressions. The code is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses generic `int` for most integers (appropriate for x86 32-bit). Function pointers are properly typed with `int (__cdecl *a1)(int)`. Some type precision loss compared to original but acceptable. The `_BOOL4` type for boolean returns is interesting but functional.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery visible. Arrays are used directly (e.g., `_DWORD v2[9]` for loop_break's array). The original source had `int arr[] = {10, 20, 30, 40, 50}` which is recovered as `v2[0] = 10; v2[1] = 20;` etc. - usable but loses the original array declaration clarity.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The code appears type-safe with appropriate casts. No obvious unsafe pointer operations or type-confused function pointers. The `duffs_device` uses pointer arithmetic correctly. Minor issues like implicit int-to-boolean conversions don't create safety problems.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are minimal - mostly just function signatures with `@<eax>` style annotations. No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The original source had extensive comments explaining each function's purpose - completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are implicitly recognized but not explicitly named or documented. The state machine functions (`state_idle`, `state_processing`, etc.) exist but aren't labeled as a state machine pattern. Duff's device is correctly structured but not identified as such. Some pattern hints present but unclear.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code or potential issues. The `computed_goto` function uses inline assembly (`__asm { jmp [esp+edx*4+2Ch+var_20] }`) which is unusual but not flagged. No warnings about indirect calls or unusual patterns. The decompiler silently fails to highlight anything unusual.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had explicit test cases with expected values - not recovered. No documentation of error conditions or validation requirements. The code provides no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within each function (e.g., `call_func_ptr_array` calls `double_value`, `triple_value`, `recursion_factorial`). However, relationships with external code aren't documented. No indication of which functions call which, or the callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are separate from implementation functions. Control flow L1, L2, L3 functions are grouped together. Matches source organization reasonably well, though all in one file.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has external dependencies on library functions (`puts`, `__printf_chk`, `_setjmp`, `__longjmp_chk`) that aren't declared. Would require header includes and stubs to compile standalone. The metadata shows "Compilation Result: Yes" suggesting it was analyzed for compilation but dependencies aren't clearly documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `a3`, `v1`, `v2`, `result` instead of meaningful names like `a`, `b`, `c`, `sum`, `count` from source
+- No comments explaining algorithms, patterns, or non-obvious logic - original source had extensive documentation completely lost
+- No anomaly indication for unusual code patterns like the computed goto assembly or potential issues
+- No contract recovery (preconditions, postconditions, invariants) - original test cases with expected values not documented
+- Composite type recovery poor - arrays declared inline in source become scattered individual assignments
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names match the original source exactly - `sequential_ops`, `single_if`, `recursion_factorial`, `duffs_device`, etc. This is exceptional recovery that preserves the original API.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic parameter names (`a1`, `a2`, `a3`) and local variables (`v1`, `v2`, `v3`, `result`) make it extremely difficult to track variable purpose and understand code logic. This is the most severe readability issue.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, comparisons, array indices) to suggest meaningful names. For example, `a1 + a2` in `sequential_ops` suggests parameters should be named `a` and `b`.
+2. **Add semantic comments for complex patterns**: Flag and document patterns like Duff's device, state machines, computed gotos, and opaque predicates with explanations of what they do.
+3. **Recover preconditions from validation patterns**: Detect parameter validation (e.g., `if (a1 < 0) return -1`) and generate comments like "requires: a1 >= 0" or "ensures: return -1 if a1 is negative".

@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2` in `sequential_ops`), obscuring the original intent (`temp1`, `temp2`). While loop counters like `i` are preserved, most local variables lose semantic meaning.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Debug symbols were successfully recovered, preserving exact original names like `sequential_ops`, `nested_if_deep`, and `duffs_device`. This makes identifying the purpose of each function trivial.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; for example, `-1` is represented as `4294967295`, and simple arithmetic is obscured by complex bit-masking expressions like `(v0 * 2 | v0 >> 31) & 4294967294` instead of `v0 * 2`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise from stack canary setup (e.g., `char *v0; v0 = &v1;`) and lifter-specific macros like `__ROL__` clutters the code, distracting from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally well-recovered with `for` and `while` loops intact. However, `switch` statements (e.g., `switch_large`) are often decompiled into deep nested `if-else` trees, which reduces readability compared to the original structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining, maintaining the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with minimal forward jumps. The structure is linear and easy to follow, consistent with the `-O0` compilation.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code. The logic is direct, though some expressions are overly complex due to lifter artifacts (e.g., bit-twiddling for multiplication).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Signedness information is frequently lost; `int` parameters and return values are often typed as `unsigned int` or `unsigned long long` (e.g., `if_else` returns `unsigned long long` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Array literals are not recovered; in `loop_break`, the array `arr[]` is flattened into stack variables initialized with large integers (`v3 = 85899345930`), completely obscuring the data structure.
+
+**11. Type Safety:** Score: 7/10
+Justification: While the types are often imprecise (wrong signedness), the operations performed are generally safe and consistent with the decompiler's inferred types, avoiding dangerous pointer arithmetic errors.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The rich documentation and explanations present in the original source are entirely absent.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard control flow idioms like loops and conditionals are recognized. However, specific patterns like Duff's Device are decompiled into a generic `while` loop with a `switch` inside, losing the specific "computed goto" idiom structure.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: Lifter artifacts like `arm64g_calculate_condition` in `obfuscated_cf` are inserted as opaque function calls without warning or explanation, confusing the reader rather than flagging them as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls use the correct recovered names, making the call graph easy to understand. The relationship between callers and callees is clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are presented in a logical order that roughly follows the source, though the lack of section separators (like the comments in the source) makes it harder to distinguish between test levels (L1, L2, L3).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile standalone due to non-standard macros like `__ROL__` and undefined functions like `arm64g_calculate_condition`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+*   **L1 Average**: (4 + 10 + 5 + 5) / 4 = 6.0
+*   **L2 Average**: (8 + 9 + 8 + 8) / 4 = 8.25
+*   **L3 Average**: (5 + 3 + 7) / 3 = 5.0
+*   **L4 Average**: (1 + 7 + 3 + 1) / 4 = 3.0
+*   **L5 Average**: (9 + 7 + 2) / 3 = 6.0
+
+**Overall** = (6.0 × 0.30) + (8.25 × 0.25) + (5.0 × 0.20) + (3.0 × 0.15) + (6.0 × 0.10)
+**Overall** = 1.8 + 2.0625 + 1.0 + 0.45 + 0.6 = **5.91 / 10**
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.9/10
+
+### Critical Defects (Bullet Points)
+- **Array Literal Loss**: In `loop_break`, the array `{10, 20, 30, 40, 50}` is replaced by obscure stack variable assignments (`v3 = 85899345930`), destroying data visibility.
+- **Signedness Erasure**: Function parameters and return values are consistently typed as `unsigned` (e.g., `if_else`), contradicting the original `int` types and potentially misleading logic analysis.
+- **Lifter Artifacts**: Intrinsics like `__ROL__` and `arm64g_calculate_condition` are injected into the C code, making it look like non-standard, unportable C rather than clean decompiled logic.
+- **Switch Degradation**: `switch` statements are decompiled into deeply nested `if-else` chains (e.g., `switch_large`), which significantly harms readability compared to the original `switch` structure.
+- **Expression Obfuscation**: Simple arithmetic like `x * 2` is expanded into complex bit-masking expressions `(x * 2 | x >> 31) & 4294967294`, adding unnecessary cognitive load.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** The presence of debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, providing immediate semantic context for every operation.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (1/10)
+- **Why?** The complete absence of comments removes all high-level context, algorithm explanations, and developer intent that were present in the source, forcing the reader to reverse-engineer the "why" from the "how."
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Array Literals**: Implement pattern matching to recognize stack-initialized arrays and convert them back into C-style array initializers (e.g., `int arr[] = {10, 20, ...}`) instead of raw integer assignments.
+2.  **Simplify Arithmetic Expressions**: Aggressively simplify bit-masking patterns that result from compiler instruction selection (like the `* 2` expansion) back to standard arithmetic operators to improve readability.
+3.  **Preserve Switch Statements**: Improve control flow analysis to reconstruct `switch` statements from jump tables or conditional branches rather than defaulting to nested `if-else` trees, which are harder to read.

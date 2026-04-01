@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `v4` with no semantic meaning. Compare original `sum`, `i`, `n` to decompiled `v3`, `v2`, `v1`. The decompiler provides no way to infer variable purpose from names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match original source exactly: `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree`. However, some helper functions have generic names like `function_6a0`, `function_15bc`. Overall good preservation of user-defined function names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers: `0xfffffffe`, `0xffffffff`, `0x100000000`, `44`, `20`, `40`. The bit manipulation masks like `& 0xfffffffe` (used to force even result) obscure the original `x * 2` operation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: (1) runtime library functions `__addtf3`, `__multf3` (lines 21d0-3570) taking 1200+ lines, (2) redundant type masks `& 0xffffffff` on every return, (3) unnecessary casts throughout. The decompilation includes compiler-generated code that should be filtered.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops preserved as while constructs, but some expressions are convoluted. Example: `2 * v2 / 2 == v2` instead of `v2 % 2 == 0` for even number check. Some goto-like patterns from optimization at -O0 are present but manageable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original functions preserved as separate entities (good), but the decompiler created many spurious helper functions (`function_6a0` through `function_15fc`) that are compiler artifacts. Function granularity is acceptable but polluted with runtime stubs.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with while loops. Some forward jumps exist in complex functions like `array_3d` with nested loops. Not terrible but not optimal.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some redundant patterns: repeated `& 0xffffffff` masks on every function call in test functions, duplicate loop structures in `graph_traverse`. The decompiler didn't clean up these artifacts from the binary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: original `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double` all become `int64_t` or `int32_t`. The original `char` return type for `process_char` becomes `int64_t`. Const/volatile qualifiers lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is nearly absent. Original `Point3D p = {1, 2, 3}` becomes raw pointer arithmetic: `*(int32_t *)(v2 + 8)`, `*(int32_t *)(v2 + 4)`. No struct field names recovered. Union types completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe operations: `(int64_t)*(int32_t *)` casts throughout, pointer arithmetic without type information, e.g., `*(int32_t *)(4 * (int64_t)v3 + v1)` instead of `arr[i]`. No bounds checking possible with void* usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address range comments present (e.g., `// Address range: 0x660 - 0x678`). No algorithm explanations, no recovery confidence indicators, no documentation of what the original code did.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithms recognized. The original test cases for data types, arrays, pointers, and composite structures are not identified. No recognition of common patterns like linked list traversal or tree recursion.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The decompiler silently produces incorrect-looking code (e.g., `ptr_diff` returns 0 instead of pointer difference) without any warning about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of expected input ranges or return value guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function prototypes at top provide some call relationship info, but no comments indicating which functions call which. Global variables like `g1-g16` have no clear purpose or usage documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions loosely grouped by type (data types, arrays, pointers, composites) but mixed with runtime helper functions. No clear separation between user code and compiler artifacts.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Missing definitions for `__libc_start_main`, `memcpy`, `memset`, `printf`. Many undefined references. The runtime functions `__addtf3`, `__multf3` are included but not properly isolated.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- Variable names are all generic (`v1`, `v2`, `v3`) with no semantic meaning - original `sum`, `i`, `n` lost
+- Composite types (structs/unions) completely lost - replaced with raw pointer arithmetic like `*(int32_t *)(v2 + 8)`
+- Type precision severely degraded - all types become `int64_t`/`int32_t`, losing `char`, `short`, `float`, `double`
+- Massive noise from runtime library functions (`__addtf3`, `__multf3`) taking 1200+ lines
+- No comments or documentation explaining the code's purpose
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The decompiler preserved most original function names accurately (`process_char`, `array_1d_stack`, `linked_list`), which provides the strongest anchor for understanding the code's organization.
+
+**Most Needs Improvement:** Idiom Recognition (1/10)  
+The decompiler failed to recognize any high-level patterns - no identification of data type test suites, no recognition of algorithm patterns (loops, recursion), no structural pattern recovery (structs, unions, linked lists).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types** from memory access patterns - when seeing `*(int32_t *)(ptr + 0)`, `*(int32_t *)(ptr + 4)`, `*(int32_t *)(ptr + 8)`, recognize as struct with 3 int fields
+2. **Infer variable names from usage** - if a variable is used as loop counter (`i < n`), named array index, or accumulator (`sum +=`), derive appropriate names
+3. **Filter compiler runtime functions** - the `__addtf3`, `__multf3` and similar library functions should be recognized and either removed or clearly marked as external dependencies, not decompiled inline

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `i`, `j`. Parameters are `a0`, `a1`, `a2`. No semantic meaning recovered - completely obscures variable purposes like `size`, `result`, `counter`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names preserved from source (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`), but many use address-based naming (`sub_4009d4`, `sub_400a08`) and some internal functions have cryptic names like `$x`. Mixed recovery quality.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants recovered (64, 30, 32, 57122, 116) match expected values, but magic numbers like `0x400` (1024), `0x200` (512), `57072` (0xDEF0) remain unexplained. The decompiler correctly computed some macro expansions but didn't name them.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some stack frame comments like `// [bp-0x10]` are present but not intrusive. No redundant casts or debug instrumentation. Relatively clean output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source well. Simple if-else structures, loops, and return statements are properly recovered. At -O0 optimization, the flow closely mirrors the original source code structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`param_*`, `call_*`) is separate. The decomposition matches the original source organization well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns used appropriately. No goto abuse or confusing forward jumps. The code flows naturally.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant patterns exist (e.g., duplicate `memcpy` calls in `param_asm_multi_insn`). Minor dead code from optimization but generally manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `long long` appropriately for ARM64. However, some mixing of signed/unsigned (e.g., `int` vs `unsigned int` in comparisons). The decompiler correctly identified 32-bit vs 64-bit types for ARM64.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. All structures are flattened to basic types with pointer arithmetic. The original source had no complex structs anyway, but the decompiler didn't recover any meaningful composite types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `param_asm_clobber` function has complex pointer arithmetic (`ptr += 1`, `ptr[1]`) that could be safer. Some implicit conversions between pointer and integer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only mechanical comments like `// x0`, `// [bp-0x10]` present. No explanation of algorithm intent, macro semantics, or inline assembly purpose. The source had rich comments explaining preprocessing behavior - none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like atomic operations (`__aarch64_ldadd4_acq_rel`) recognized but not named as such. The inline assembly patterns are not identified as "atomic fetch-add" or "SIMD vector addition". Limited pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged like "unsupported_Iop_ZeroHI96ofV128()" in `param_asm_clobber`, but many issues silently handled. No indication of indirect call resolution failures or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., "requires: ptr != NULL" for mmap results) completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some external function references documented (e.g., `extern unsigned long long g_411ff8`). However, call relationships between functions not explicitly documented. Global variable usage partially shown.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - preprocessing test functions together, asm test functions together. Matches source organization reasonably well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for external symbols but many are unresolved (e.g., `g_401213`). Would require stubs to compile. Some undefined references would prevent standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`) - completely obscures semantic purpose
+- **No comment recovery**: Source had extensive preprocessing/assembly explanations - none recovered
+- **Magic numbers unexplained**: Constants like `0x400`, `57072` not named despite clear origin from macros
+- **Type safety issues**: Unsafe pointer arithmetic in `param_asm_clobber` without explanation
+- **No contract recovery**: Preconditions/postconditions for syscalls (mmap, mprotect) not documented
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly recovered natural if-else and loop structures. At -O0, the control flow closely matches the original source, making execution easy to trace.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+Every local variable uses generic names (`v0`-`v5`, `ptr`, `i`, `j`) with no semantic recovery. Even simple cases like `result`, `size`, `counter` are not inferred from usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `if (a0 > 1024)` → `size > MAX_SIZE`) to recover names like `size`, `result`, `counter`
+2. **Recover macro semantics**: Detect constant expressions that match macro definitions and replace with named constants (e.g., `0x400` → `MAX_SIZE`)
+3. **Add semantic comments**: Document inline assembly purpose, syscall preconditions, and algorithm intent rather than just mechanical stack frame annotations

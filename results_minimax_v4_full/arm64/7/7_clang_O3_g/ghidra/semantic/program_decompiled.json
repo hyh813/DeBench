@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_clang_O3_g/ghidra/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "Running obfuscated optimizations test:\n\nOpaque predicate test: 10\nInstruction substitution result: 20\nInstruction substitution x=100 result: 225\nString encryption test: length=139, first_byte=24\nTail call optimization result: 500500\nNon-tail call result: 5050\nVectorized loop result: 72\nLTO result: 20\nDivision by zero test: 2\nNull pointer deref test: 41\nBuffer overflow result: 30\nInteger overflow result: 2000000000\nUndefined behavior result: 10\nImplementation-defined result: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

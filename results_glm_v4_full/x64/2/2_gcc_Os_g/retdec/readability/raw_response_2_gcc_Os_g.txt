@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Despite compilation with `-g` (debug symbols), local variables are renamed generically (e.g., `v1`, `v2`, `a1`) instead of preserving original names like `x`, `arr`, or `str`. This forces the reader to manually track semantics.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Global function names are successfully recovered from the symbol table (e.g., `double_value`, `process_int`). However, signatures are severely degraded; for example, `process_float` is listed as taking `void` instead of `float`, and `process_int` takes `int64_t` instead of `int`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are preserved and readable, but floating-point constants are represented as raw hex integers (e.g., `0x3fc00000` for 1.5f) rather than their floating-point values, obscuring the mathematical logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with compiler intrinsics and inline assembly markers like `__asm_addss`, `__asm_mulss`, and `__asm_rep_stosd_memset`, which replace standard C operators and library calls, significantly degrading readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally logical, using `while` loops for iteration. However, the original `for` loops are expanded into manual counter increments (e.g., `v1++` inside a loop), which is slightly less idiomatic but still traceable.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decomposition matches the source file's structure, with no inlining or outlining errors. However, the incorrect function signatures (missing parameters) make the decomposition feel fragmented and incorrect.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal confusing jumps. The linearization is effective for the `-O0` optimization level.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Due to `-O0`, there is significant verbosity in stack variable handling (e.g., `v1 = v2 + 1 & 0xffffffff`). While this reflects the binary, it adds clutter that a cleaner decompilation could simplify.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical type information is lost. Floating-point functions return `int128_t` instead of `float`/`double`, and parameters are often missing (e.g., `process_float(void)`). Integers are widened to `int64_t` regardless of source `int`/`short` types.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct definitions are completely absent. Functions like `struct_simple` take a generic `int64_t a1` (pointer) and access fields via raw offsets (e.g., `*(int32_t *)(a1 + 8)`), completely losing the semantic context of `Point3D`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on explicit casts (e.g., `(int64_t)arr`, `(int32_t *)v1`) to manage types, indicating the decompiler's lack of confidence in the underlying type system.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata (e.g., "Address range", "From module") and provide no semantic explanation of the code's logic or purpose.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls like `puts` and `printf` (as `__printf_chk`) are recognized, but higher-level idioms like struct initialization or array traversals are not highlighted or simplified.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about the missing function parameters or the suspicious `int128_t` return types for floating-point functions, leaving the user to discover these errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clearly visible and reference the correct (though poorly typed) targets. The call graph is easy to follow.
+
+**17. Module Organization:** Score: 6/10
+Justification: The code is presented as a single flat file. While the order roughly follows the source, there is no logical grouping or separation of concerns (e.g., headers vs. implementation).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would fail to compile as-is due to missing struct definitions, incorrect function signatures (missing arguments), and non-standard intrinsic types (`int128_t` used for floats).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Floating-point functions (e.g., `process_float`) are missing their parameters in the signature and return `int128_t` instead of `float`.
+- Composite types (structs) are not recovered; all struct access is replaced by raw pointer arithmetic (e.g., `a1 + 8`).
+- Debug symbols (`-g`) were ignored for local variables, resulting in generic names (`v1`, `a1`) instead of original names (`x`, `arr`).
+- Floating-point arithmetic is obscured by inline assembly intrinsics (`__asm_addss`) and hex literals.
+
+**Best Quality Aspect:** Function Naming (Score: 7/10)
+- The decompiler successfully recovered the global function names from the binary, allowing the reader to map the decompiled code back to the source functions.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- The complete failure to reconstruct `struct` definitions turns high-level data manipulation into low-level pointer math, which is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement Floating-Point Type Recovery**: Map ARM64 floating-point registers/operations back to C `float` and `double` types and standard operators (`+`, `*`) instead of `int128_t` and `__asm_` intrinsics.
+2.  **Leverage Debug Information for Locals**: Use DWARF debug symbols (present in `-O0` builds) to restore original parameter and local variable names and types.
+3.  **Reconstruct Struct Definitions**: Analyze pointer access patterns (constant offsets like `+8`, `+12`) to synthesize struct definitions, replacing raw offset arithmetic with field access (e.g., `p->y`).

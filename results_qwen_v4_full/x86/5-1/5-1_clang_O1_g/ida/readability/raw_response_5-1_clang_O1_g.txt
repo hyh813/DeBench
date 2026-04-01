@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `s`, `v15`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions preserved (`test_cpp_member_func`, `test_cpp_constructor`) but many helpers use mangled names (`_Z20test_cpp_member_funcv`) or generic labels (`sub_1030`, `sub_1160`). Class methods have recoverable but unreadable mangled names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers everywhere (`4700`, `21`, `31`, `0x14u`) without explanation. Some can be deduced (4700 + strlen = 4704 expected) but no named constants recovered from original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__usercall`, `__cdecl`, `BYREF` annotations, stack offsets (`[esp+14h] [ebp-28h]`), empty thunk functions (`sub_11DC()`, `_x86_get_pc_thunk_bx()`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have straightforward flow, but many test functions constant-folded to single returns losing original logic. Loop structures recovered in some cases (`test_cpp_constructor` has do-while) but exception handling not properly recovered.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and class methods separated correctly. Template instantiations created as separate functions. Some functions too small (just return constants due to optimization).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. No excessive goto usage in recovered code. Some forward references to vtables and offsets but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding created redundancy (same value computed multiple ways in `test_cpp_oo_features`). Some duplicate vtable setup code across functions. No obvious dead code removed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `size_t`, `char*`, `double`) but pointer types often generic (`_DWORD*`, `void*`). Class types partially recovered (`Base*`, `Derived*`) but const-correctness mostly lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially visible through vtable pointers (`_vptr$Base`). Field access shown but with generic names (`dataA`, `dataB`, `size`). Multiple inheritance visible through multiple vptrs but virtual inheritance not clearly recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(_DWORD*)`, `(int (**)(void))`. Pointer arithmetic visible: `(char *)v2 + (_DWORD)*(&off_5DB0 - 3)`. Function pointer casts throughout with no safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code beyond function headers with basic metadata. No algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns visible (vtables, constructors, destructors) but not explicitly identified. RAII patterns not recognized. Template instantiation recognized as separate functions but no design pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 21 failed decompilations listed at end but no inline anomaly flags. One warning present ("positive sp value has been detected"). Thunk functions present but not explained within code context.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented, no postconditions inferred. Exception contracts not recovered (test_cpp_exception just throws without catch recovery). No invariant recognition for class states.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible through vtable calls but no call graph provided. Global variable usage (`LifecycleClass::instance_count`) not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization recovered from original source.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 21 functions failed to decompile (external library functions like `operator new`, `printf`, `__cxa_throw`). Would require significant stubs to compile. Compiler-specific annotations (`__usercall`, `__cdecl`) reduce portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 6 + 5 + 5) / 4 = 4.75
+Level 2 Average: (6 + 7 + 7 + 6) / 4 = 6.50
+Level 3 Average: (5 + 5 + 4) / 3 = 4.67
+Level 4 Average: (2 + 5 + 4 + 2) / 4 = 3.25
+Level 5 Average: (5 + 4 + 3) / 3 = 4.00
+
+Overall = (4.75 × 0.30) + (6.50 × 0.25) + (4.67 × 0.20) + (3.25 × 0.15) + (4.00 × 0.10)
+        = 1.425 + 1.625 + 0.934 + 0.488 + 0.400
+        = 4.87/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source (`capture_by_value`, `instance_count`, `multiplier`)
+- **21 functions failed to decompile** including critical runtime functions (`operator new`, `__cxa_throw`, `printf`) making code non-compilable
+- **No comments or documentation** recovered despite original source having extensive Chinese comments explaining each test case
+- **Constant folding destroyed logic** - many test functions return pre-computed constants (22, 39, 85, 703) instead of showing actual computation
+- **Type safety violations** throughout with unsafe casts (`_DWORD*`, function pointer casts) and pointer arithmetic without bounds checking
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Functions are appropriately sized with class methods correctly separated and template instantiations created as distinct functions, showing good structural recovery despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Almost zero documentation recovered despite original source having extensive comments explaining each C++ feature being tested, making semantic understanding extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Recover and preserve source comments** - When debug symbols (-g) are available, extract and embed original source comments into decompiled output
+3. **Flag constant-folded functions** - When a function returns a pre-computed constant, add annotation showing the original computation was optimized away and provide the expected logic

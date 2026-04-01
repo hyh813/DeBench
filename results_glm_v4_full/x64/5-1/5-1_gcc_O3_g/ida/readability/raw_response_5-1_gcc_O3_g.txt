@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: While some variables like `obj`, `a`, and `b` are preserved, complex functions like `test_cpp_rtti` rely heavily on generic names (`v0` through `v9`), obscuring the flow of RTTI checks and dynamic casts.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; functions like `_Z20test_cpp_member_funcv` are clearly presented as `test_cpp_member_func`, and class methods like `Base::virtual_func` are accurately recovered.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `1953719636` (representing "Test") and `4700` (optimized result) appear without explanation, and format strings are referenced as `unk_203C`, losing semantic context.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Standard stack canary checks (`__readfsqword(0x28u)`) are present but manageable; however, functions like `sub_1020` containing only `JUMPOUT(0)` represent compiler artifacts that clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive optimization (likely -O3 based on filename and constant folding) has destroyed the original control flow; `test_cpp_exception` is reduced to a `noreturn` throw, and `test_cpp_oo_features` is a mix of inlined logic and direct constant printing, making the source structure unrecognizable.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler correctly separates class methods, thunks (e.g., `non-virtual thunk to`), and template instantiations (`template_max<int>`) into distinct functions, maintaining good granularity despite the optimization.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most functions read linearly, but `test_cpp_rtti` involves complex pointer arithmetic for virtual inheritance offsets that disrupt the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly without introducing redundant variables or dead code, accurately reflecting the compiler's constant folding (e.g., `return 42`).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Strong type recovery including C++ specific types like `SimpleClass`, `Container<int>`, and `type_info` pointers; signed/unsigned distinctions are mostly preserved.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Class layouts are well-recovered; `SimpleClass` correctly exposes the `name` array, and `Container` exposes `data` and `size`, though some optimized-away members (like `SimpleClass::value`) are naturally missing.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic for virtual inheritance (e.g., `(char *)&this->dataA + ...`) is technically unsafe but accurately represents the necessary low-level adjustments; no incorrect casts that would mislead the user.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the heavy optimization, or the purpose of complex thunks and RTTI checks.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies and names complex C++ idioms like `virtual thunk to`, `non-virtual thunk to`, and `dynamic_cast`, which is crucial for understanding multiple inheritance.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While `test_cpp_exception` is marked `__noreturn`, there is no warning that the `try/catch` logic from the source is missing or that the function bodies have been optimized into constants.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or invariants are documented; for example, the lack of null checks in `test_cpp_rtti` (which were likely optimized out) is not noted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Virtual table calls are clearly represented (e.g., `(*obj->_vptr_Base)(obj, x)`), and calls to standard library functions like `__cxa_throw` are explicit.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class and test case, with thunks placed near their targets, providing a coherent structure of the binary's layout.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `__int64` and Windows-specific intrinsics like `__readfsqword` (despite the likely Linux/GCC origin), requiring significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- **Optimization Obfuscation**: The logic of test functions (e.g., `test_cpp_virtual_func` returning `42`) is completely replaced by constants due to `-O3` optimization, making the source logic unrecoverable.
+- **Variable Naming**: Complex functions like `test_cpp_rtti` use generic names (`v0`-`v9`), hiding the intent of RTTI and dynamic cast operations.
+- **Missing Context**: `test_cpp_exception` is shown as merely throwing an exception, with the `try/catch` blocks and stack unwinding logic completely absent from the decompiled view.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 10/10)
+- **Why?** The decompiler perfectly demangles C++ symbols, accurately recovering class names, method names, and template instantiations, which is essential for navigating object-oriented code.
+
+**Most Needs Improvement:** Comment Quality & Presence (Score: 1/10)
+- **Why?** The complete absence of comments leaves the user to interpret complex optimized logic and low-level thunks without any guidance, significantly hindering understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Optimization Annotation**: Add comments or warnings when a function body has been reduced to a constant return value due to compiler optimization, indicating that source logic is lost.
+2. **Variable Name Inference**: Improve heuristic naming for variables involved in standard library patterns (e.g., RTTI checks) to replace generic `v0`...`v9` sequences.
+3. **Exception Handling Recovery**: Attempt to reconstruct `try/catch` blocks from LSDA (Language-Specific Data Area) tables even at higher optimization levels, rather than just showing the throw.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names (`param_1`, `local_c`, `uVar1`, `iVar1`) instead of semantic names from source (`temp1`, `sum`, `count`, `result`). For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`, making data flow harder to trace.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names preserved perfectly from source (`sequential_ops`, `nested_if_deep`, `duffs_device`). Debug symbols (-g flag) enabled excellent name recovery, matching original intent exactly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Mix of hex literals (`0x66666667` for division optimization, `0xffffffff` for -1) and unclear values (`0x14`, `0x1e`, `0x32` instead of 20, 30, 50). Some return values (0-5 in `nested_if_deep`) are contextually clear.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__aeabi_idiv` calls, `CONCAT44` return type artifacts, `__stack_chk_fail` canary checks, and "WARNING: Removing unreachable block" comments clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as proper `for/while/do-while` constructs. However, `switch_fallthrough` uses goto labels (`LAB_00010a64`), and `duffs_device` has complex switch-with-goto pattern that obscures the original fallthrough intent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function maps to one decompiled function with appropriate granularity. No inappropriate inlining or fragmentation. Helper functions (`op_add`, `double_value`) properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Forward jumps in `switch_fallthrough` and `duffs_device` disrupt flow. `loop_break` uses `while(true)` with break instead of cleaner `for` loop with early return.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Some optimization artifacts create verbosity (division-by-multiplication in `loop_while`). Variable assignments like `local_c = param_1` followed by immediate modification add noise.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `int` becomes `undefined4`/`undefined8`, `if_else` returns `bool` instead of `int`, `loop_while` returns `undefined8` instead of `int`. Function pointers use generic `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered reasonably (`local_20[6]`, `local_3c[13]`). Function pointer arrays present but with generic element types. No complex structs in this code to fully evaluate struct recovery capability.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(code *)0xffffffff`, `(code *)(*apcStack_34[param_1])(param_2,param_3)`. `CONCAT44` indicates type confusion. Implicit int-to-uint conversions in `multi_return` and `loop_continue`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra headers present. No algorithm explanations, no parameter documentation, no API contracts. "WARNING" comments indicate decompiler uncertainty but don't explain semantics.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop and switch patterns recovered structurally but not identified by name. Duff's device partially recognized but goto artifacts obscure the optimization pattern. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call". `computed_goto` and `opaque_predicate` appropriately flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained (e.g., when `duffs_device` returns -1). No parameter validation hints recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variable `jump_buffer` usage not explained. Callback relationships visible through `code *` parameters but not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output (expected for decompilation). Static helper functions properly identified (`op_add`, `state_idle`). No header file separation or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone: undefined types (`undefined4`, `undefined8`, `CONCAT44`), external dependencies undocumented (`__aeabi_idiv`, `__libc_start_main`, `_setjmp`). Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (4+9+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural): (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):       (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):   (3+5+7+2)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Context):    (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────
+Overall Score:                                  5.93/10
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects
+- **Variable names completely generic** (`param_1`, `local_c`, `uVar1`) losing all semantic meaning from source (`a`, `b`, `temp1`, `sum`)
+- **Type degradation severe**: `undefined4`/`undefined8` instead of `int`, `bool` return type wrong for `if_else` (should be `int`)
+- **CONCAT44 artifact** in `loop_while` and `loop_dowhile` creates incorrect return type (`undefined8` instead of `int`)
+- **Switch fallthrough not recovered** properly—uses goto labels (`LAB_00010a64`) instead of recognizing intentional fallthrough pattern
+- **No compilation readiness**: undefined types and external dependencies require extensive manual patching
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** — Debug symbols (-g flag) preserved all original function names perfectly, enabling immediate semantic understanding of each function's purpose.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** — Zero precondition/postcondition documentation recovered; a reader cannot determine valid input ranges or expected output guarantees without examining source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference from usage patterns** — Analyze how variables are used (e.g., `local_c` accumulates values in loops → suggest `sum` or `count`)
+2. **Recover proper C types from debug information** — Use DWARF debug data to restore `int` instead of `undefined4`, and fix return type mismatches like `if_else`
+3. **Add semantic comments for recovered patterns** — When detecting Duff's device or switch fallthrough, add explanatory comments like `// Duff's device: loop unrolling optimization`

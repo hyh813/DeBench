@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic (e.g., `iVar1`, `sVar1`, `local_28`), and struct fields are accessed via raw offsets (e.g., `*(int *)((long)arg + 4)`), obscuring the original `ThreadData` structure. Thread-local storage is accessed as `in_FS_OFFSET[-6]` instead of the variable name `tls_counter`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_strcpy`, `param_linux_syscall`, and `thread_sum` are perfectly recovered, matching the original source exactly. This provides excellent high-level context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; system calls use raw integers (e.g., `syscall(2, ...)` instead of `SYS_open`), and constants like `AF_INET` appear as `2`. While some values like `0x2a` (42) are recognizable, the lack of named constants hinders understanding.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts such as `undefined8`, `undefined1`, and `builtin_strncpy`. While the control flow is generally clean, the presence of these generic types and verbose casts adds noise to the reading experience.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is mostly natural, but aggressive optimizations have transformed loops into complex mathematical formulas (e.g., the Gauss sum in `thread_sum`) and unrolled string comparisons, which deviates significantly from the source's iterative logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are well-preserved and match the source structure. Although some small functions like `param_strcpy` were inlined into their callers (e.g., `call_strcpy`), the overall modularity remains intact and logical.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with appropriate early returns. While there are some complex conditional blocks resulting from optimizations, there are no confusing "spaghetti" jumps or goto chains.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Loop unrolling in functions like `param_malloc_free` and `param_memset` creates massive blocks of repetitive code. The `strcmp` operation in `param_fread_fwrite` is unrolled into verbose byte comparisons, significantly bloating the decompiled output.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Standard types like `int` and `size_t` are mostly correct, but specific types are lost; `sockaddr_in` is recovered as the generic `sockaddr`, and `atomic_int` is handled but sometimes obscured by `LOCK`/`UNLOCK` macros.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: User-defined structures are poorly recovered. The `ThreadData` struct is completely missing, accessed instead via pointer arithmetic on `void*`. `sockaddr_in` fields are accessed via array indices on `sa_data` rather than named members like `sin_port`.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, but the reliance on raw pointer arithmetic for struct access (e.g., `arg + 8`) mimics type-unsafe behavior. There are no obviously dangerous casts that would lead to undefined behavior, but the precision is low.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and mostly limited to warnings like "Unknown calling convention" or "Unresolved local var". There are no comments explaining the optimized logic (e.g., the Gauss sum) or the purpose of complex pointer manipulations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Atomic operations are marked with `LOCK`/`UNLOCK`, which is good. However, common idioms like the summation loop are not recognized as such, and the string comparison loop is not identified as a `strcmp` equivalent.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags "Unknown calling convention" and "Unresolved local var", which accurately reflect uncertainties in the decompilation. However, it does not flag the semantic shift from a loop to a mathematical formula as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, the requirement that `ptr` in `param_malloc_free` be non-null is not documented, nor is the contract of the `ThreadData` structure.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between callers (e.g., `call_strcpy`) and callees (e.g., `param_strcpy`) is easy to trace, despite the inlining.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically, matching the source file's organization (Standard Library, System Calls, Threads). The separation of concerns is maintained well in the decompiled view.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would not compile without significant modification due to `undefined` types, missing struct definitions, and the use of pseudo-ops like `LOCK`/`UNLOCK`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: The `ThreadData` structure is completely lost; fields are accessed via raw pointer arithmetic (`arg + 8`), forcing the reader to reverse-engineer the layout.
+- **Loop Optimization Obscuring Logic**: The summation loop in `thread_sum` is replaced by a complex mathematical formula (Gauss sum), making the original iterative logic hard to discern.
+- **Magic Numbers**: System call numbers (e.g., `2` for `SYS_open`) and socket constants (e.g., `2` for `AF_INET`) are not replaced with named constants.
+- **TLS Representation**: Thread-local storage `tls_counter` is represented as `in_FS_OFFSET[-6]`, losing the variable's semantic name.
+- **Loop Unrolling**: The `strcmp` logic in `param_fread_fwrite` is unrolled into verbose byte comparisons, significantly bloating the code.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** Ghidra successfully recovered the original function names (e.g., `param_strcpy`, `param_linux_syscall`), likely due to symbol presence, providing immediate high-level context.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- **Why?** User-defined structures like `ThreadData` and `sockaddr_in` are not reconstructed; instead, the code uses raw pointer offsets and generic types, severely hindering understanding of data manipulation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhanced Struct Recovery**: Implement algorithms to detect and reconstruct user-defined structures from access patterns (e.g., consecutive accesses to `arg`, `arg+4`, `arg+8` should suggest a struct definition).
+2.  **Optimization Annotation**: Detect and annotate loop optimizations (like mathematical induction or unrolling) with comments indicating the likely original source structure (e.g., "Optimized loop: sum of range").
+3.  **Constant Mapping**: Integrate standard header databases to map known system call numbers, socket constants, and error codes to their symbolic names (e.g., replace `2` with `SYS_open`).

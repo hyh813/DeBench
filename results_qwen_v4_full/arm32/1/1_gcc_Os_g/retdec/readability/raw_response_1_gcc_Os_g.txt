@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3` through `v11` in `loop_multi_exit`); original names like `sum`, `count`, `temp1` are lost, making data flow tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`loop_for_fixed`, `recursion_factorial`, `duffs_device`), accurately reflecting intended purpose, though semantics are often broken despite correct names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Array initialization shows partial data (`arr = {10, 0, 0, 0, 0}` instead of `{10, 20, 30, 40, 50}`); test functions print hardcoded expected values instead of computing results, obscuring actual logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(int32_t)`, `(int33_t)`) throughout; artificial typedefs (`int3_t`, `int33_t`) add confusion; global variables `g1`, `g2`, `g3`, `g4`, `g5` have no semantic meaning.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `loop_dowhile` has `while(true)` with no exit condition (completely broken); `loop_multi_exit` uses goto labels (`lab_0x10c78`, `lab_0x10c80`) instead of structured loops; `recursion_factorial` converted to iteration losing recursive semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable, but helper functions (`double_value`, `triple_value`) weren't recovered as separate entities; test functions became monolithic blocks with hardcoded values.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive goto usage in `loop_multi_exit` disrupts reading flow; `loop_dowhile` contains infinite loop with no break; forward jumps fragment logical execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `loop_multi_exit` has significant redundant variable assignments (`v3 = v1; v5 = v1; v8 = v2`); repeated pointer arithmetic obscures actual array traversal logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Overuse of explicit casts throughout; signed/unsigned mismatches (`uint32_t idx` vs `int32_t x`); custom typedefs (`int3_t`, `int33_t`) add confusion rather than clarity.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Array initialization incomplete (`matrix = {{1, 0, 0, 0}, {0}, {0}}` loses 11 of 12 values); 2D array structure partially preserved but data lost; no struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer casts throughout (`(int32_t)&arr`, `(int32_t *)v2`); function pointers cast without validation (`(int32_t (*)(int32_t))0x1060c`); potential type confusion in multiple locations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only metadata comments exist (address range, line range); zero comments explain actual logic, algorithm purpose, or decompilation confidence; original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop patterns not recognized (do-while became `while(true)`); recursion not preserved (factorial converted to iteration); Duff's device completely lost (empty switch statement).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions like `loop_dowhile` have no warnings; empty switch in `duffs_device` not flagged; no indication of decompilation uncertainty despite obvious semantic failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial); no postconditions or error conditions explained; original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls exist but relationships aren't documented; global variables (`g1`, `g2`, `g3`, `g4`, `g5`) lack usage explanation; callback relationships unclear in `process_with_callback`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file matching source structure; no logical grouping beyond original; no header file separation but function prototypes declared at top.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata indicates compilation success, but many functions are semantically broken; external dependencies declared (`__printf_chk`, `__longjmp_chk`); may compile but functionality incorrect.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):   (3+6+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type System):  (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):     (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):   (5+6+5)/3   = 5.33 × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  = 4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`loop_dowhile` has infinite loop** - `while(true)` with no exit condition makes function unusable
+- **Array data loss** - `arr = {10, 0, 0, 0, 0}` loses 4 of 5 original values (`20, 30, 40, 50`)
+- **Generic variable naming** - `v1` through `v11` in `loop_multi_exit` obscures loop counter and result tracking
+- **No semantic warnings** - Broken functions produce no decompilation uncertainty indicators
+- **Control flow degradation** - Goto labels (`lab_0x10c78`) instead of structured loops despite `-O0` compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names preserved accurately, allowing identification of intended purpose despite broken semantics
+
+### Most Needs Improvement:
+- **Semantic Transparency (2/10 average)** - Zero comments, no idiom recognition, no anomaly warnings, and no contract recovery make understanding decompiler limitations impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover loop constructs from backward jump patterns** - `do-while` should never become `while(true)` without break; analyze loop exit conditions properly
+2. **Preserve array initialization data** - Static array contents should be fully recovered from binary data sections, not partially zeroed
+3. **Add decompilation confidence annotations** - Flag functions with broken semantics (e.g., `// DECOMPILATION UNCERTAIN: infinite loop detected`) to warn analysts

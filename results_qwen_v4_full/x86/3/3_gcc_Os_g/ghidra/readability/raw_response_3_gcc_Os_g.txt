@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `iVar2`, `puVar4`, `__ptr` instead of semantic names like `arr`, `large_buf`, `new_node` from source. Loop counters are `iVar2`/`iVar3` instead of `i`, making tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `linked_list_heap`) likely from debug symbols. Some helpers have generic names (`FUN_00011030`) but core functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex obscure meaning: `0x2a` (42), `0x14` (20), `0xf` (15), `0x1e` (30). Original source used clear decimal constants. Some recoverable but requires mental conversion.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `in_GS_OFFSET` stack canary checks in every function, `__x86.get_pc_thunk.*` warnings, `WARNING: Unknown calling convention` comments clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs but VLA/alloca functions have complex pointer arithmetic obscuring original for-loop logic. Some functions constant-folded (`stack_alias` returns `0x14` directly).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with appropriate granularity. Helper `create_tree_node` preserved. Some functions too small due to optimization but decomposition quality is good.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks at function ends disrupt flow. VLA handling has forward pointer adjustments that break linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated in every function. VLA/alloca functions have nearly identical pointer adjustment code. Some redundancy from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types degraded to generic `int`, `void*`, `undefined1*`. Function pointers shown as `_func_int_int*`. Original `size_t`, specific struct types often lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct recovered with `data`/`next` fields. `TreeNode` struct preserved with `left`/`right`/`data`. `Point` struct optimized away in many cases but struct concept maintained.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts: `(int*)((int)__ptr + iVar1 * 4)`, `(undefined1*)`, `(char*)`. Pointer arithmetic with int casts throughout. Reflects original but decompilation adds noise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments about calling conventions and unresolved vars. No semantic documentation explaining what code does. "Unresolved local var: int i@[???]" unhelpful.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list traversal, tree creation, memory allocation patterns not named or documented. Decompiler treats all code uniformly.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "WARNING: Could not recover jumptable", "Subroutine does not return". Stack canary checks noted. Inconsistent coverage of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. NULL checks present but not documented as contracts. No @param/@return annotations. Original assertions lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear by name. Global variables referenced (`global_counter`, `file_scope_static`). No explicit call graph or relationship documentation between functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 71 functions in single output file. No file organization matching source sections (stack/heap/static/memory-op). Static functions preserved but no logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies present (`malloc`, `free`, `printf`). Undefined symbols (`extern_global_var`, `extern_function`) need stubs. Would require moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+4+5)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- Variable `iVar1`, `iVar2`, `puVar4` should be named based on usage (e.g., `loop_counter`, `buffer_ptr`, `array_base`)
+- Magic numbers in hex (`0x2a`, `0x14`, `0xf`) obscure original decimal constants from source
+- Stack canary checks (`in_GS_OFFSET`) repeated in every function add significant noise
+- No semantic comments explaining algorithm purpose or non-obvious logic
+- VLA/alloca functions have complex pointer arithmetic that obscures original simple loop structure
+- `stack_alias` function completely optimized to `return 0x14;` losing original aliasing logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved from debug symbols, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No higher-level patterns (linked list, tree, memory allocation) identified or documented, treating all code uniformly without semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (loop counters, pointers, sizes) to generate semantic names instead of `iVar1`/`puVar4`
+2. **Convert hex literals to decimal when appropriate** - Detect when hex values represent simple decimal constants and display in more readable form
+3. **Add semantic comments for common patterns** - Recognize linked list traversal, tree operations, memory allocation patterns and add explanatory comments

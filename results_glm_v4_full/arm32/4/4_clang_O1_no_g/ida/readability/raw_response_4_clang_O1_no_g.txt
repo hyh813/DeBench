@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `a1`, `a2`, `v4`, `v6`), providing no semantic context about their purpose, such as `count` or `sum` found in the source.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most user-defined function names like `cdecl_func` and `test_calling_conventions` are perfectly preserved; only a few runtime/internal functions like `sub_3F0` use generic names.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `15`, `50`, and `6` appear directly in `test_calling_conventions` due to constant folding, obscuring the fact that these are results of function calls like `cdecl_func(5, 10)`.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler/decompiler artifacts like `__PAIR64__`, `COERCE_DOUBLE`, `LODWORD`, and `HIDWORD`, which are used to handle 64-bit types on a 32-bit architecture but significantly hinder readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow for user functions is natural and idiomatic (e.g., the `do-while` loop in `varargs_func`), though the floating-point library functions (`__aeabi_dadd`) are inevitably complex and spaghetti-like.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions maintain appropriate granularity matching the source; there is no artificial fragmentation or monolithic bloating, aside from the unavoidable complexity of soft-float library routines.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow disruptions in the user-defined sections.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While the compiler successfully eliminated redundant logic (e.g., inlining `call_cdecl`), this results in "magic number" returns that hide the original program structure, making it harder to map back to the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While basic types are correct, the decompiler struggles with 64-bit types on ARM32, splitting `long long` and `double` arguments into register pairs (e.g., `unsigned int a3, unsigned int a4`) instead of presenting them as single high-level types.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct types are poorly recovered; `LargeStruct` in `func_struct_byval` is decompiled as four separate integer arguments (`a1`-`a4`) and a local array, completely losing the struct abstraction.
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of macros like `COERCE_DOUBLE` and `__PAIR64__` indicates unsafe type punning and manual register pair reconstruction, which is technically accurate for the ABI but represents unsafe type handling in the high-level view.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually absent, with only minor warnings like "positive sp value has been detected"; there is no explanation of the complex logic or the ABI-specific transformations.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard idioms like `va_list` usage for varargs and the Struct Return (sret) pattern for `ret_small_struct` are correctly identified and represented.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags potential issues like stack pointer anomalies and failed decompilation attempts (`JUMPOUT`), but it does not explicitly warn about the aggressive constant folding that obscures source logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement that `count` in `varargs_func` matches the number of arguments is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: String references are visible (e.g., `asc_175E`), and function calls are clear, but the reliance on constant folded values in `test_calling_conventions` breaks the logical link to the implementation functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure, with related test cases grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Hex-Rays specific macros (`__PAIR64__`, `__fastcall` on ARM) and would not compile without significant modification or a specific runtime environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite type recovery failed for `LargeStruct`, which is decompiled as scattered integers (`a1`-`a4`) instead of a struct parameter.
+- Variable naming is entirely generic (`a1`, `v4`), stripping away semantic meaning like `seed` or `sum`.
+- Heavy use of low-level macros (`__PAIR64__`, `COERCE_DOUBLE`) obscures the high-level logic for 64-bit and floating-point operations.
+- Constant folding in `test_calling_conventions` replaces function calls with magic numbers (e.g., `15`), hiding the program's control flow.
+
+**Best Quality Aspect:** Function Naming (scored 8/10)
+- The decompiler successfully preserved the original names for almost all user-defined functions, making it easy to locate specific logic.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct `LargeStruct` and `SmallStruct` parameters, instead exposing raw register/stack layouts, significantly damages the abstraction level.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve aggregate type recovery for ARM32 to reassemble scattered register/stack arguments into struct parameters.
+2. Implement variable name inference based on context (e.g., naming a variable `sum` if it is used in an accumulation loop).
+3. Abstract 64-bit register pair operations into native `int64` or `double` types more cleanly, avoiding macro expansions in the output.

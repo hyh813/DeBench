@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `pbVar4`) despite `-g` debug symbols being available. Original semantic names like `result`, `encrypted`, `decrypted` are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly preserved from source (`param_fake_branch`, `call_opaque_predicate`, `param_instruction_substitution`). This is excellent recovery matching original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x5a`, `0x14`, `0x23`, `0xe1`, `0x7a314`). Some are recoverable (0x14=20, 0xe1=225) but lack semantic context from original constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs (`strncpy`, `puts`, `strlen`) add clutter. Initialization functions (`_init`, `_start`, `deregister_tm_clones`) present but don't impede core logic reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural constructs, but `param_opaque_predicate` uses complex `do-while` instead of original `while`. Some conditionals are inverted from source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. No monolithic functions; each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. `test_obf_opt_edge` has repetitive printf patterns but maintains linear flow without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `test_obf_opt_edge` has redundant printf call patterns. Core logic functions are clean without dead code from register spilling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of `int`, `uint`, `undefined4`, `undefined8` degrades precision. Original `size_t`, `char*` distinctions often lost to generic types despite debug info.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely lost—function just returns `0x2f`. No struct/union reconstruction visible anywhere.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(long)param_1`, `(undefined4*)`). Pointer arithmetic uses generic types. No const-correctness preserved from original.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Opaque predicates not identified as such. Instruction substitution patterns not labeled. XOR decryption not documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for suspicious code (division by zero in `param_division_by_zero`, null pointer in `param_null_pointer_deref`). Signal handlers present but not flagged as exception handling.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions or expected return values. Original comments with "期望" (expected) values completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships unclear. Global variables (`jmp_buffer`, `div_zero_caught`) referenced without declaration context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original had clear section headers (7.1, 7.2, 7.3) organizing obfuscation, optimization, and edge cases—completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies declared. However, some undefined references (`param_string_encryption_encrypted`, `UNK_00102034`) would need resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+8+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+2+5)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.07/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should recover semantic names from debug symbols (`result`, `encrypted`, `sum`)
+- **Zero comments** despite original having extensive documentation explaining obfuscation techniques and expected values
+- **Bitfield struct completely lost** in `param_implementation_defined`—returns constant instead of reconstructing structure
+- **Fake branches eliminated** in `param_fake_branch`—should preserve dead code at -O0 for analysis purposes
+- **No anomaly flags** for dangerous operations (division by zero, null pointer dereference, buffer overflow)
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making it easy to identify test purposes and correlate with original documentation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation loses all context about obfuscation techniques, expected values, and test scenarios that were extensively documented in source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols (-g flag)** to recover original variable names from DWARF debug information instead of generating generic `param_1`, `iVar1` names
+2. **Extract and preserve source comments** from debug sections, especially for obfuscation test cases where understanding the intended behavior is critical
+3. **Flag anomalous patterns** automatically (division by variable, null pointer access, signal handlers) with warnings to alert analysts to potentially dangerous or intentional edge-case code

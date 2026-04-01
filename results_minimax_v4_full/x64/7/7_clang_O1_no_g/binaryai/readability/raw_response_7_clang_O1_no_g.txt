@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic names like `uVar1`, `uVar2`, `uVar3`, `uVar4`, `uVar5`, `iVar1`, `iVar3`, `iVar4`, `iVar5`. Parameters are generic `param_1`, `param_2`. The original source used meaningful names like `x`, `result`, `str`, `p1`, `p2`, `p3` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions correctly recovered: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_string_encryption`, `param_tail_call_optimized` all match source exactly. However, internal utility like `FUN_00101020` is generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0xe1` (225), `0x1e` (30) appear without explanation. String data referenced as `&DAT_00102221`, `&DAT_00102050` etc. are opaque. Some values like `0x5A` in XOR decryption are recoverable from context but not documented.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. External functions properly declared (`strncpy`, `puts`, `printf`, `strlen`). No debug instrumentation or register spilling artifacts visible. Minor noise from `ZEXT816` and `CONCAT44` for stack initialization.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: While loops correctly recovered (e.g., gcd computation in `param_opaque_predicate`). Tail recursion in `param_tail_call_optimized` properly shown as recursive call. Some awkwardness in `call_opaque_predicate` where the gcd loop is duplicated inline. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: All 18 functions from source are recovered as separate entities. Function granularity matches source - small, focused functions like `param_fake_branch` (2 lines), `div_zero_handler` (2 lines). No over-fragmentation or inlining issues at -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in `param_division_by_zero` and `param_null_pointer_deref`. Some forward jumps in complex functions like `test_obf_opt_edge` but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The fake branch in `param_fake_branch` was correctly eliminated by the compiler (since it's always-false), and the decompiled code simply returns the input - this is correct behavior. No redundant expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision. Uses `undefined4` for 32-bit, `undefined8` for 64-bit, `uint` for unsigned, `int` for signed. Original source used `int` consistently which is partially recovered. Pointer types are `long` or `undefined4*` rather than proper pointer types. Size_t used for `strlen` return.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex structs in this source file. The bitfield in `param_implementation_defined` is not recovered - the function just returns a constant. Buffer arrays like `local_28[31]` are correctly sized but typed as `byte`/`undefined` rather than `char`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `call_null_pointer_deref`: `CONCAT44(0x2a,in_EAX)` creates a value on stack then passes address - this is low-level and error-prone. Multiple implicit casts between `int` and `uint` in arithmetic operations. No `restrict` or safety annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), test scenarios, and expected values. All this context is completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: the gcd algorithm (Euclidean algorithm) in `param_opaque_predicate` is visible as a while loop. String decryption XOR loop is recognizable. But no explicit naming or documentation of these patterns. The "fake branch" concept is not indicated.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiled code presents everything as confident. There's no warning about the eliminated fake branches, no indication of potential undefined behavior in `param_integer_overflow`, no flags for the signal handler patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had explicit expectations (e.g., "期望: 10", "期望: 20") which are completely absent. No documentation of error handling behavior.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and traceable. `call_fake_branch` calls `param_fake_branch(10)` is clear. But no documentation of call relationships, no indication of which functions are internal vs external, no global variable usage documentation (like `jmp_buffer`, `segv_buffer`, `div_zero_caught`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. The decompilation follows the binary's function order which roughly corresponds to source organization. Static functions (those only used internally) are not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External dependencies properly declared (libc functions). The code would require linking against libc to compile. No header declarations provided. Some types like `EVP_PKEY_CTX` in `_init` suggest OpenSSL but not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable naming is unusable**: Cryptic names like `uVar1`-`uVar5`, `iVar1`-`iVar5` completely obscure variable purpose. Original names like `result`, `p1`, `p2`, `p3`, `a`, `b`, `temp` are lost.
+- **No comments or documentation**: Extensive source comments explaining obfuscation techniques, test scenarios, and expected values are completely absent.
+- **No semantic context**: The "fake branch" (always-false condition) concept is not indicated - the decompiled code just shows a simple return, hiding the obfuscation intent.
+- **No anomaly detection**: Eliminated fake branches, potential integer overflow, signal handler patterns all presented without warnings.
+- **Type precision issues**: Using `undefined4`/`undefined8` instead of proper int types loses semantic information.
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names for the main test functions exactly match the source: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, etc. This makes it easy to locate specific functions.
+
+### Most Needs Improvement: Semantic Transparency (2/10)
+The decompiled code has zero comments, no pattern recognition, no anomaly indication, and no contract recovery. This makes it impossible to understand the intent behind the code without referring to the original source.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` used in multiplication → `x`; `uVar3` storing gcd result → `gcd_result`; variables in string decryption → `encrypted_char`, `decrypted_char`.
+2. **Add comments for compiler optimizations**: Document when code paths were eliminated (e.g., "Fake branch eliminated: x*x < 0 is always false").
+3. **Recover semantic intent**: Add comments explaining obfuscation techniques (e.g., "Opaque predicate: gcd(x,x+1)=1 is always true"). Document expected return values where recoverable from call sites.

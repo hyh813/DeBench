@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, `volatile_access` uses `a0` instead of `volatile_ptr`, and test functions use `v0`-`v42` sequences that obscure data purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Mixed results—original names preserved for core functions (`double_value`, `process_int`, `array_1d_stack`) but many runtime functions degraded to `sub_401020`, `sub_40102d`. Test functions retain descriptive names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (UINT_MAX) appears repeatedly without explanation. Float constants like `0x3fc00000` in `process_float` are raw hex instead of `1.5f`. Some string literals preserved in printf calls.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `[D] Unsupported jumpkind`, `[D] unsupported_<class 'pyvex.expr.GetI'>`, and VEX IR artifacts (`PutI(904:F64x8)[t4,0] = t7()`). Functions like `process_ld` are essentially unreadable due to these artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to awkward `do-while` patterns (e.g., `array_1d_stack`). Condition `ptr != &a0[1 + a0 + 1]` is convoluted compared to simple `i < n`. Some functions use `goto` patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions are monolithic with excessive local variables (`v0`-`v42` in `test_array_types`). Helper functions like `complex_callback` properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but disrupted by `[D]` conditional blocks in `test_data_types_l1`. Deep nesting in test functions with 50+ stack variables breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop bounds calculations are redundant (`&a0[1 + a0 + 1]` vs `&a0[a0]`). Test functions hardcode expected values instead of calling actual functions, creating duplication between computation and verification.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—`char` becomes `unsigned int` (`process_char`), `short` becomes `unsigned int` (`process_short`), `float`/`double` functions lose parameters entirely. `volatile` qualifier completely lost in `volatile_access`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). Nested structs like `Widget` flattened to pointer arithmetic (`a0[2] + a0[5]`). Unions not distinguished from structs (`union_type` treats all as `void*`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned long long)(AddV(...))`), void pointer abuse (`ptr_void`), and incorrect pointer arithmetic (`ptr_diff` uses `>> 2` instead of proper subtraction). `ptr_const_ptr` incorrectly returns `*(ptr) + 5` twice.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated `[D]` error markers present. No algorithm explanations, no parameter documentation, no recovery of original Chinese comments explaining test purposes.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard C idioms not recognized—linked list traversal, binary tree recursion, and enum+switch patterns all decompiled to generic code without pattern identification. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers indicate unsupported operations but lack actionable guidance. `process_ld` and `test_data_types_l1` have extensive `[D]` blocks but no explanation of what manual analysis is needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not explained). No postconditions, no null-pointer contract documentation for pointer functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear (`ptr_func_simple` calls `a0(a1)` without signature clarity). Global variables named `g_405fe8` instead of semantic names.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization functions (`_init`, `_start`, `deregister_tm_clones`) mixed with application logic. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code does NOT compile due to `[D]` markers containing invalid syntax. Functions like `process_ld` contain VEX IR that cannot be compiled. External dependencies (`__printf_chk`, `__libc_start_main`) undeclared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (4+6+5+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural): (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):       (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):   (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Context):    (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                              4.54/10
+```
+
+### Overall Readability Score: **4.5/10**
+
+### Critical Defects:
+- **`[D]` markers prevent compilation** — Functions `process_ld`, `test_data_types_l1` contain invalid VEX IR syntax that cannot compile
+- **Type information severely degraded** — `char`, `short`, `float` all become `unsigned int` or `double`, losing original semantics
+- **Struct field names lost** — All fields named `field_0`, `field_8`, `padding_4` instead of `x`, `y`, `next`, `data`
+- **Test functions hardcoded** — Expected values hardcoded instead of actual function calls, defeating test purpose
+- **`volatile` qualifier completely lost** — `volatile_access` shows `*(a0) * 2` instead of two separate volatile reads
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core application functions (`double_value`, `process_int`, `array_1d_stack`) retained original semantic names, providing anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments recovered; original Chinese documentation explaining test purposes completely lost, making intent inference difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate `[D]` VEX IR artifacts** — Replace unsupported operation markers with best-effort C code or clear manual-analysis annotations that don't break compilation
+2. **Recover type information from debug symbols** — Since compiled with `-O0 -g`, leverage DWARF info to restore `char`, `short`, `float`, `volatile` types accurately
+3. **Infer struct field names from usage patterns** — Analyze field access patterns across functions to suggest semantic names (e.g., `field_8` used as `next` pointer should be named `next`)

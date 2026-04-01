@@ -1,0 +1,122 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `ptr`, `p`) with no semantic meaning. Compare to source where variables like `value`, `name`, `size`, `data` are descriptive. The decompiler makes no attempt to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions properly demangled (`test_cpp_member_func`, `template_max<int>`, `Base::virtual_func`) but many use mechanical addresses (`sub_401484`, `sub_401670`) or mangled names. The source function `getValue()` is completely missing from decompilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `31` in `strncpy(&v1, "Test", 31)` should be `sizeof(name)-1`. Constants like `50`, `100` used without explanation. Some literals like array sizes are recoverable but not named. The source has clear constants like `0x1234` for `getClassID()`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__stack_chk_guard` checks, redundant operations (`v0 = frame_dummy(); return frame_dummy();`), and weak function stubs. However, basic noise is manageable. At -O0, these should be minimal but some are expected.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many functions have broken control flow - `test_cpp_member_func` does strncpy but returns void instead of computing `r1 + r2 + r3`. `test_cpp_constructor` allocates and frees but doesn't compute result. The source expects return values; decompiled version returns nothing.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template functions properly extracted as separate entities (`template_max<int>`, `template_max<double>`). Class methods separated. However, many functions are empty stubs with no implementation, making decomposition assessment difficult. The source has 12 test functions; all are present but broken.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom without excessive jumps. Some forward jumps in exception handling code. The main issue is not non-linearity but missing computation - the code doesn't do what the source intends.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant calls (`return frame_dummy();` called twice in `frame_dummy`). Template instantiations generate separate functions as expected. Not severe but some cleanup possible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses appropriate types like `unsigned long long`, `unsigned int`, `int`. However, many pointers are `char*` or `void*` without more specific typing. The source uses `size_t` for sizes; decompiled uses `unsigned long long` or `unsigned int` inconsistently.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery for RTTI (`struct_2`, `struct_3` with padding fields). Class definitions like `class Base {}` are empty shells. The source has full class definitions with data members; decompiled shows only vtable pointers.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present - pointer arithmetic like `ptr[40]`, `ptr[80]` for array offsets. The virtual function call `(*((long long *)*((long long *)&arg_0)))()` is a type-unsafe indirect call. No bounds checking on array accesses.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only auto-generated ones like "do not return" on `abort()` calls. No explanation of algorithm intent, no recovery confidence indicators, no documentation of what functions should return. The source has extensive comments explaining each test.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms recognized - virtual function thunks with `this` pointer adjustment (`_ZThn16_N12MultiDerived5funcBEv`), template instantiation. However, the patterns are not explicitly named or documented. The source demonstrates 12 different C++ patterns; decompiled shows them but doesn't identify them.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. Functions returning wrong types (void instead of int) are presented without warning. The indirect virtual call in `call_virtual_func` could not be resolved but isn't flagged. Many functions have empty implementations but no indication this is abnormal.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts, preconditions, or postconditions recovered. The source has clear expectations (e.g., "期望: 4704") but decompiled code doesn't indicate what return values should be. No documentation of error conditions or invariants.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through extern declarations and function calls. `test_cpp_oo_features` calls all test functions. However, virtual dispatch relationships and callback patterns not clearly documented. The source shows clear call relationships in comments.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions grouped by address rather than by feature. The source organizes by C++ feature (member functions, constructors, virtual functions, etc.); decompiled groups arbitrarily. Related functions scattered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses extern declarations for external functions (`extern char __stack_chk_guard`). Template functions have proper signatures. Should compile with linking to libc++. However, missing implementations mean it won't produce correct output.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+4+4+5)/4 = 3.75
+L2_avg = (3+5+6+5)/4 = 4.75
+L3_avg = (6+4+5)/3 = 5.0
+L4_avg = (3+5+2+1)/4 = 2.75
+L5_avg = (4+3+5)/3 = 4.0
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (5.0 × 0.20) + 
+          (2.75 × 0.15) + (4.0 × 0.10)
+        = 1.125 + 1.1875 + 1.0 + 0.4125 + 0.4
+        = 4.125/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+
+- **Function return values missing**: `test_cpp_member_func()` returns void but source returns `r1 + r2 + r3` (expected 4704). Same for `test_cpp_constructor()`, `test_cpp_virtual_func()`, and others - all return void instead of computed values.
+
+- **`getValue()` method completely missing**: The source has `SimpleClass::getValue()` which returns the private `value` member. This function is not present in decompiled output at all.
+
+- **Variable names are entirely generic**: All variables use `v0`-`v6`, `ptr`, `p` naming with no semantic inference. The source has meaningful names like `value`, `name`, `size`, `data` that could be recovered from usage.
+
+- **No anomaly indication for broken functions**: Functions that should return values but return void are presented without any warning or flag. The decompiler should indicate "WARNING: return type mismatch" or similar.
+
+- **Class data members not recovered**: `SimpleClass` shows as empty `class Base {}` with no `value` or `name` fields. `LifecycleClass` has no `data` or `size` members recovered. All struct fields are generic.
+
+### Best Quality Aspect (Single Dimension)
+
+- **Type Precision (score 6/10)** - While not perfect, the decompiler does use appropriate primitive types (`unsigned long long`, `int`, `double`) rather than everything being `int` or `void*`. Template function signatures are correctly typed.
+
+### Most Needs Improvement (Single Dimension)
+
+- **Assertion & Contract Recovery (score 1/10)** - The decompiler provides zero information about what functions should return, what preconditions exist, or what invariants hold. Combined with the many functions returning wrong types, this makes understanding intended behavior nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover return values from calling context**: When `test_cpp_oo_features` calls `test_cpp_member_func()` and uses the result in printf with `%d`, the decompiler should infer that `test_cpp_member_func` returns `int`, not `void`.
+
+2. **Infer variable names from usage patterns**: Variables used as array indices should be named `index` or `idx`. Variables used in string operations should be named after the string purpose. `strncpy(&v1, "Test", 31)` suggests `v1` is a buffer and `31` is its size.
+
+3. **Flag anomalous function implementations**: Functions that call `__cxa_throw` but have non-void return type, or functions that allocate memory without using the result, should be flagged as potentially incomplete or incorrectly typed.

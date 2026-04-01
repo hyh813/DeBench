@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `index`) with no semantic meaning. Original variables like `size`, `result`, `counter` are lost, making it difficult to understand data flow (e.g., `param_macro_constants` uses `a0` instead of `size`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), which is excellent. However, some helper functions use mechanical names (`sub_10438`, `sub_104fc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x400` (should be `MAX_SIZE`), `57072` (should be `0xDEF0`), `4294905792` in atomic loops. String literals in test functions are replaced with addresses (`0x11d6c`) instead of actual text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from `armg_calculate_condition` calls, stack canary checks (`__stack_chk_guard`), and nonsensical infinite loops (`do { } while (4294905792())`). These compiler/decompiler artifacts obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Unnatural `armg_calculate_condition` calls replace simple comparisons. Functions like `param_macro_constants` use `goto` instead of clean if-else. The `call_asm_privileged` function has extremely convoluted conditional logic with multiple `armg_calculate_condition` calls.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are mostly preserved correctly. However, some functions are over-complicated (`call_asm_clobber` at 30+ lines for a simple test) and atomic helper functions are fragmented into 20+ nearly identical variants.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps (`goto LABEL_10520`, `LABEL_10c7d`) disrupt reading flow. The `call_asm_multi_insn` function has nested conditionals with goto that could be simplified to a single return statement.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls in `call_variadic_macro` and `call_builtin_macros` (calls function twice, returns second call). `test_preprocessing_features` has redundant `__printf_chk` calls at the end.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Nearly everything is `unsigned int` or `void*`. Original types like `int`, `size_t`, `const char*`, `atomic_int` are lost. Function `param_asm_clobber` uses `unsigned int *` instead of preserving `int *arr`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery whatsoever. Arrays are represented as individual variables (`v1`, `v2`, `v3`...) instead of array access. The `result[1]` pattern in `call_asm_clobber` shows poor array handling.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without bounds checking, `memcpy` return value used as integer (`dst = memcpy(a0, a1, a2)`), and atomic operations with completely broken type signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source. No explanation of what `armg_calculate_condition` does, no documentation of magic numbers, no indication of decompilation uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Macro expansions not identified (e.g., `ADD_16(x)` became `x + 16` without comment). Atomic operations not recognized as such. Inline assembly completely lost with no indication it existed.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Nonsensical code like `do { } while (4294905792())` presented without warning. `armg_calculate_condition` calls not flagged as decompiler artifacts. No indication that conditional compilation branches were lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` should note `n > 0`). No postconditions. Error returns like `-1`, `-2`, `-3` in `param_memory_protection` have no explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships unclear. Global variables shown as `g_11d6c`, `g_11d94` without semantic names. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related functions not grouped (e.g., `param_asm_basic` and `call_asm_basic` separated by other code). No file-level organization matching source sections.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile: `armg_calculate_condition` is undefined, `__printf_chk` needs specific headers, atomic functions have broken signatures, string literals are addresses not strings.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+2)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.76/10
+```
+
+### Overall Readability Score: **3.8/10**
+
+### Critical Defects:
+- **Atomic operation functions are completely broken** - `__sync_fetch_and_add_4` contains infinite loops with magic number `4294905792()` that makes no semantic sense
+- **String literals replaced with addresses** - Test functions use `0x11d6c` instead of `"=== 测试预处理与条件编译 ==="`, making output incomprehensible
+- **Conditional compilation branches lost** - `param_conditional_compile` only shows release path (`x * 3 + 2`), debug branch completely missing
+- **`armg_calculate_condition` artifacts** - These decompiler-specific calls obscure simple comparisons throughout the code
+- **Duplicate function calls** - `call_variadic_macro` and `call_builtin_macros` call their functions twice unnecessarily
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names were preserved accurately, allowing identification of test purposes despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero comments recovered from original source; no explanation of decompiler artifacts, magic numbers, or lost semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate decompiler-specific artifacts** - Flag `armg_calculate_condition` calls as analysis artifacts and suggest simplified equivalents
+2. **Recover string literals from data sections** - Map address references (`0x11d6c`) back to actual string content in the binary
+3. **Recognize atomic operation patterns** - Identify `__sync_*` and `__atomic_*` builtin patterns and restore proper function signatures instead of generating infinite loops

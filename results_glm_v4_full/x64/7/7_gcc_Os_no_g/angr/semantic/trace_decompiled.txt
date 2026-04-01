@@ -1,0 +1,8 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=-1829571432,Arg2=-1829571416,Arg3=1221287288|rax=0x0,rbx=0x7ffe92f2f498,rcx=0x5b8d48cb5d78,rdx=0x7ffe92f2f4a8,rsi=0x7ffe92f2f498,rdi=0x1,r8=0x0,r9=0x7d2e9948f380
+TRACE_PRINT|0|%54%65%73%74%20%6F%75%74%70%75%74%0A
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%63%61%6C%6C%5F%66%61%6B%65%5F%62%72%61%6E%63%68%3A%20%31%30%0A
+TRACE_ENT|1|call_opaque_predicate|1|Arg0=-1829572272,Arg1=-1829572192,Arg2=0,Arg3=0|rax=0x0,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x7ffe92f2f1a0,rdi=0x7ffe92f2f150,r8=0x15,r9=0x0
+TRACE_ENT|2|param_opaque_predicate|2|Arg0=5,Arg1=-1829572192,Arg2=0,Arg3=0|rax=0x0,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x7ffe92f2f1a0,rdi=0x5,r8=0x15,r9=0x0
+TRACE_EXT|2|param_opaque_predicate|2|35
+TRACE_EXT|1|call_opaque_predicate|1|35

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `param_1`, `param_2`, `iVar1`, `uVar1`, `puVar1`, `puVar2`, `local_10`, `local_810`, `auStack_1c`. Only a few globals like `global_counter`, `global_array` are properly named. The vast majority of variable names provide no semantic meaning about their purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - many test functions correctly recovered: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `memop_memset`. However, runtime support functions remain generic: `FUN_00011140`, `FUN_00011150`, `FUN_000111f0` (likely printf), `FUN_000111e0` (likely malloc). The test functions are good but infrastructure functions are opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x28` (40), `0x1b` (27). While some like `0xffffffff` (error return) are inferable, most lack explanation. The decompiler doesn't suggest constants like `MAX_BUFFER_SIZE` or explain the purpose of these values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler/runtime artifacts present: `__stack_chk_fail_local()` calls, GS_OFFSET references for stack canaries, unresolved function calls to `FUN_*` addresses, undefined data references like `DAT_00013008`, `UNK_00011583`. These artifacts clutter the code and obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Generally readable control flow - loops use do-while constructs (inverted from source for-loos), conditionals are clear. Some awkward patterns in complex functions like `vla_stack` and `alloca_usage` with their manual stack management. At -O0, the flow should be more natural - some decompilation artifacts remain.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - most are under 50 lines. Test wrapper functions properly call individual test cases. Some inlining occurred (e.g., `alloca_usage.constprop.0` is a constant-propagated variant). Parameter lists exist but are generic (`param_1`, `param_2`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling. Some goto-like patterns in complex functions but overall flow is traceable. The nested loops in `linked_list_heap` are readable despite some complexity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling present (e.g., `heap_basic` uses stride-2 access pattern `iVar2 * 2`) but not excessive. The code is reasonably clean without obvious redundant computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `undefined4` for integers, `undefined` for bytes, `int` mixed with `undefined4`. No distinction between signed/unsigned. Pointers are generic `undefined4*` rather than type-specific. Function pointers like `global_func_ptr` shown as `(code *)0x0` rather than proper function signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `global_array` correctly recovered as 10-element int array. Most struct information lost - `Point` and `Node` types not recovered, replaced with raw pointer arithmetic. The linked list code uses `piVar3[1]` for `next` pointer without struct context. Nested structures like `TreeNode` completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic without bounds (`*(int *)(iVar1 + iVar2 * 2)`), function pointers stored as generic `code*`, casting between incompatible pointer types. The `vla_stack` and `alloca_usage` functions have complex manual stack management that could easily lead to undefined behavior. No `restrict` or bounds annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "MEM-L1-01: 局部变量（基础类型）"). Zero effort to explain algorithms, document preconditions, or annotate non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicit but not named: linked list creation/traversal is visible in `linked_list_heap`, tree operations in `tree_heap_traversal`, memory allocation patterns in heap functions. However, no explicit pattern naming (e.g., "// Implements: linked list with sentinel node") or algorithm identification.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about suspicious code. The `dangling_pointer` function contains clear undefined behavior (access after free) but no annotation. Indirect calls through function pointers not flagged. No indication of potential issues in the test code that intentionally triggers undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0"), no postconditions (e.g., "ensures: return is heap-allocated and must be freed"), no invariant documentation. The original source had explicit parameter validation that is not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships unclear. It's not documented which functions call which, or the callback relationships (e.g., `set_global_callback` sets `global_func_ptr` which is later invoked). Global variable usage is somewhat visible but not explicitly cross-referenced.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably - test functions together, heap functions together, static/global functions together. This likely reflects binary section organization (.text, .data, .bss) rather than logical source organization. Static functions like `static_local` properly scoped.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile as-is. Multiple undefined references: `FUN_*` functions (runtime support), `DAT_*` and `UNK_*` data, external declarations like `extern_global_var`, `extern_function`. Would require significant patching with stubs to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: Nearly all variables use generic names (`param_1`, `iVar1`, `local_10`) providing zero semantic meaning
+- **No comments**: Complete absence of explanatory comments for algorithms, contracts, or anomalies
+- **Type loss**: Struct types `Point`, `Node`, `TreeNode` completely lost; replaced with raw pointer arithmetic
+- **Unresolved symbols**: `FUN_*`, `DAT_*`, `UNK_*` references make code non-compilable and opaque
+- **No anomaly detection**: Dangerous patterns like dangling pointers, double-free, and memory leaks not flagged
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions maintain appropriate size and granularity. Test functions are well-separated, and the core logic is reasonably decomposed. At -O0, the function boundaries match the source well.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiled output has zero comments. Combined with generic variable names, this makes the code extremely difficult to understand. Even simple things like "// Linked list creation" or "// Returns: middle element" would dramatically improve readability.
+
+### Top 3 Recommendations:
+1. **Add semantic comments**: Document algorithm intent (e.g., "// Creates 5-node linked list with values 0,10,20,30,40"), preconditions, and return value meanings
+2. **Recover struct types**: Use pointer analysis to reconstruct `Point`, `Node`, `TreeNode` with field names rather than raw offsets
+3. **Resolve runtime functions**: Identify and label standard library functions (`printf`, `malloc`, `free`, `memcpy`, etc.) instead of showing as `FUN_*` addresses

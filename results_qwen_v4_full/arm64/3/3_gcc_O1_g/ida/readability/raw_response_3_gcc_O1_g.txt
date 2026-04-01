@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`) obscuring their semantic purpose. Original source had meaningful names like `large_buf`, `arr`, `local`, `p` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Action-oriented names clearly indicate purpose, though runtime functions like `sub_9B0` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0xFFF0`, `0x3E7`, `0x10000`, `0xFFFFFFFFFFFF0000LL`. Some constants are clear (42, 10, 2048) but stack alignment constants obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `__fastcall`, `__cdecl` calling conventions, excessive type casts (`(_DWORD *)`, `(__int64 *)`, `(_QWORD *)`), BYREF annotations, and 19 failed library function decompilations clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops generally recovered as do-while constructs, but `vla_stack` and `alloca_usage` show complex stack manipulation obscuring original for-loop structure. `stack_alias` completely optimized to `return 20;` losing all conditional logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. Helper functions like `create_tree_node` properly separated. However, test functions show excessive constant folding replacing actual function calls with literals.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom reasonably, but VLA functions have complex stack setup (`v6[0] = 0; if (v2 >= 0x400uLL) STACK[0x10000] = 0;`) that disrupts flow and obscures original simple array declaration.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. However, redundant type casts appear throughout (`(unsigned __int8)`, `(__int64)`), and null checks are duplicated in some functions without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types inconsistently represented (`int`, `_DWORD`, `__int64`, `_QWORD`). Pointer types often generic (`void *`, `_QWORD *`). Const correctness completely lost. Size types vary between `size_t` and `__int64`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct not explicitly defined, and stack arrays shown with BYREF annotations rather than proper array types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD *)v4`, `(__int64 *)((char *)v4 + 4)`, `*(_DWORD *)(buf + 1)`. Pointer arithmetic without bounds checking. `dangling_pointer` returns dereferenced freed memory without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no useful comments. Only auto-generated function headers and "FAILED to decompile" notices. No algorithm explanations, no API contracts, no documentation of non-obvious logic like VLA stack manipulation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns (malloc/free pairs) recognizable. Linked list creation/traversal partially visible. Tree structure patterns recovered. However, no explicit pattern naming and VLA/alloca patterns obscured by low-level stack operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilation notices for 19 library functions (good). However, no warnings for undefined behavior in `dangling_pointer` (use-after-free), `double_free`, or `heap_overflow` (buffer overflow). Critical safety issues silently presented as valid code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: n > 0"). No postcondition inference. Null checks present but not documented as contracts. Error return values (-1, -2, -3) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls generally clear. Global variables visible (`global_counter`, `file_scope_static`, `global_func_ptr`). Callback relationships somewhat clear. However, no explicit call graph documentation or relationship annotations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Static functions properly marked with `static`. Test functions grouped together logically. No header file separation or namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 19 library functions failed to decompile requiring external stubs. Platform-specific code (`#ifdef _WIN32`) lost. Cannot compile standalone without significant modification and dependency resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):   (5+7+6+7)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type System):  (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):     (3+5+4+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):   (6+6+4)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 5.30/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source (`large_buf`, `arr`, `local`)
+- **Critical undefined behavior not flagged** - `dangling_pointer`, `double_free`, and `heap_overflow` presented without safety warnings
+- **VLA/alloca logic obscured** by complex stack manipulation code that doesn't resemble original simple array declarations
+- **19 library functions failed decompilation** requiring external stubs for compilation
+- **Test functions over-optimized** with constant folding replacing actual function calls (e.g., `local_vars(5)` becomes literal `20`)
+
+### Best Quality Aspect: Function Naming Quality (scored 8/10)
+- Most original function names preserved accurately, maintaining semantic clarity about purpose
+
+### Most Needs Improvement: Comment Quality & Presence (scored 3/10)
+- Virtually no documentation explaining non-obvious logic, algorithms, or safety concerns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** from usage patterns (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Add anomaly detection for undefined behavior** - flag use-after-free, double-free, and buffer overflow patterns with explicit warnings
+3. **Recover high-level constructs from low-level patterns** - VLA and alloca should produce array declarations, not raw stack pointer manipulation code

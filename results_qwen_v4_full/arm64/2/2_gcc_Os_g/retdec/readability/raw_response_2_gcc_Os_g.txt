@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables are generic (`v1`, `v2`, `v3`... up to `v100+` in float functions). Only a few functions like `array_1d_stack` preserve parameter names (`arr`, `n`). Most local variables are completely uninformative.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: User function names preserved (`double_value`, `process_char`, `array_1d_stack`), but many show incorrect signatures (e.g., `process_int(void)` should be `process_int(int x)`). Helper functions use generic names (`function_6f0`, `function_710`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x7ffe`, `0x8000000000001`, `0x4000000000000`) without explanation. String literals stored as hex-encoded globals (`g5`, `g6`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive `__asm_*` intrinsics (`__asm_ubfx`, `__asm_mrs`, `__asm_bfi`), stack canary checks (`__stack_chk_fail`), and hundreds of temporary variables clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy use of goto labels (`lab_0x1bb4`, `lab_0x1900`, `lab_0x26e8`) instead of structured loops/conditionals. Simple for-loops converted to complex goto chains even at -O0.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but floating-point helpers (`__addtf3`, `__multf3`) are 500+ line monoliths. Many functions incorrectly show void parameters.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Goto labels scattered throughout create non-linear execution paths that are hard to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated variable assignments (`v1 = v2; v2 = v1`), duplicate expressions across branches, and unnecessary intermediate variables throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: `int64_t` used universally instead of specific types. Critical parameter loss: `process_int(void)`, `process_char(void)`, `process_short(void)` all missing their input parameters. Pointer types often degraded to `int64_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all struct definitions lost (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`). All struct access converted to raw pointer arithmetic (`*(int32_t *)(v2 + 8)`). Unions and bitfields not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic on `void*` converted to `int64_t` arithmetic. Function pointer signatures sometimes preserved but often degraded to generic types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only address ranges and line metadata present. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common C idioms not recognized (string length calculation, array summation, linked list traversal all appear as raw pointer arithmetic). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uninitialized variables being used (e.g., `int64_t v1; return 2 * v1`). Silent failures on parameter loss and type degradation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (NULL checks not explained). No postconditions inferred. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g11`) used without explanation of purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. No header file separation. Function prototypes present but disorganized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile correctly due to parameter mismatches (functions showing `void` parameters when they need arguments). Missing struct definitions would cause compilation failures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+5+4+5)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  3.71/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Parameter loss**: Functions like `process_int(void)`, `process_char(void)`, `volatile_access(void)` lost all input parameters despite -O0 compilation
+- **Complete struct/union loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`, `UnionData`) converted to raw pointer arithmetic
+- **Goto-heavy control flow**: Simple loops converted to complex goto label chains (`lab_0x1bb4`, `lab_0x26e8`, etc.)
+- **Uninitialized variable usage**: Variables declared but used without initialization (`int64_t v1; return 2 * v1`)
+- **Type erosion**: `int64_t` used universally, losing distinction between `char`, `short`, `int`, `float`, `double`
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - User-defined function names were preserved (`double_value`, `array_1d_stack`, `linked_list`), providing some semantic anchors despite other failures.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct, union, or bitfield definitions, converting all structured data access to opaque pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions** - Analyze register/stack usage at function entry to reconstruct lost parameters (critical at -O0 where parameters should be preserved)
+2. **Implement struct pattern recognition** - Detect repeated offset patterns (`+0`, `+4`, `+8`) to reconstruct struct definitions with field names based on access patterns
+3. **Add anomaly warnings for uninitialized variables** - Flag cases where variables are declared but used before assignment, indicating decompilation uncertainty

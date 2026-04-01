@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/6/6_clang_O1_g/ghidra/syntactic/bin/6_clang_O1_g_fixed",
+  "stdout": "Standard Library Tests:\n\nString length: 8\nstrcmp(result): 0\nmemcmp(result): 12\nprintf(result): 90\nCombined cmp: 1\nValue: 42, Name: Benchmark\nprintf return: 27\nscanf result: 579\nFile descriptor: 42\nfread/fwrite: 42\nmalloc sum: 90\nmemset result: 0\nstrchr/strstr: 15\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

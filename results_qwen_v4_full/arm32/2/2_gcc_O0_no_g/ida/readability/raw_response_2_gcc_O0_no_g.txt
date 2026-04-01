@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v0`, `v1`, `v2`) with no semantic meaning. Loop counters (`i`, `j`, `k`) are the only exceptions. Original source had meaningful names like `char c`, `short a, b`, `int x` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions preserved well (`double_value`, `process_char`, `array_1d_stack`, `ptr_single`). However, internal functions use generic names (`sub_103C0`, `sub_12434`) and runtime helpers are verbose (`__mulsf3`, `__subdf3`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals converted to hex (`0x41u` instead of `'A'`, `0x5Au` for `'Z'`). Array offsets use raw calculations (`40 * i + 4 * i`) without explaining they represent struct field access. Magic numbers like `6429` in bitfield test lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `__fastcall` calling conventions, register comments (`// r0`, `// [sp+8h] [bp-Ch]`), excessive type casts (`(_DWORD *)`), and 7 functions marked "FAILED to decompile" clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals mostly reconstructed correctly (for/while patterns visible). Switch statement recovered in `enum_switch`. However, `JUMPOUT()` calls in several functions indicate incomplete decompilation, and some complex functions have awkward branching.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved for user code. Test functions remain intact. However, runtime helpers appear as separate functions (expected), and some like `sub_12434` are excessively complex with 36+ local variables, suggesting failed inlining recovery.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with proper loop structures. No excessive goto usage in user functions. However, complex variable declarations at function starts (e.g., `test_array_types` has 27 local variables) disrupt initial readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (`(_DWORD *)`, `(unsigned __int8 *)`). Runtime functions contain repetitive bit manipulation patterns. No obvious dead code in user functions, but compiler helper functions show significant redundancy from optimization.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (int, char, short, float, double) but qualifiers lost (`volatile` in `volatile_access`, `const` in `const_param`). Pointer types degraded to `_DWORD *`. `long` becomes `int` on ARM32 (architecture-appropriate but loses original intent).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs accessed via pointer arithmetic (`*a1 + a1[1] + a1[2]` instead of `p->x + p->y + p->z`). No struct definitions recovered. Bitfields expanded to manual operations (`(*a1 & 1) + ((*a1 >> 1) & 3)`). Unions treated as raw memory.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(_DWORD *)`, `(unsigned __int8 *)`). Pointer arithmetic without type safety. `void*` parameters lose all type information. Function pointer signatures partially preserved but with generic parameter types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated function headers present. Original source's extensive documentation (test case descriptions, expected values, scenario tags) completely lost. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Data structure patterns (linked list, binary tree, graph) not recognized despite clear traversal patterns. Algorithm patterns unnamed. Switch-on-enum recovered but not identified as state machine pattern.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some functions marked "FAILED to decompile" (7 total). Warning about "positive sp value has been detected" in `_start`. However, no indication of potential undefined behavior (e.g., `array_oob` intentional overflow not flagged). No suspicious pattern warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions inferred. No invariants recognized. Error conditions not documented. Original source's test expectations completely absent.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved and visible. However, no call graph documentation. Callback relationships not explicitly documented (e.g., `ptr_func_complex` callback signature unclear). Global variable usage not transparent.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by test category (data types, arrays, pointers, composites). Static functions not properly scoped. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 7 external functions failed to decompile (`__imp_puts`, `__imp_printf`, etc.) requiring stubs. Runtime helper functions included but would need linking. Would not compile standalone without significant modification and external dependencies.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+2+4+3)/4 = 3.50 × 0.10 = 0.35
+
+Overall Score: 4.62/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **Complete struct type loss**: All composite types reduced to pointer arithmetic (`a1[1]`, `a1[2]`) instead of field names (`p->x`, `p->y`)
+- **Generic variable naming**: Parameters `a1`, `a2` and locals `v0`, `v1` obscure semantic meaning throughout
+- **Missing type qualifiers**: `volatile` and `const` modifiers completely lost, affecting semantic understanding
+- **No documentation recovery**: Original source comments, test expectations, and scenario descriptions entirely absent
+- **Character literals as hex**: `'A'` becomes `0x41u`, reducing immediate readability
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names preserved accurately (`double_value`, `process_char`, `array_1d_stack`), maintaining semantic connection to original source
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all composite types accessed via raw pointer arithmetic, making code significantly harder to understand than original
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from consistent field access patterns (e.g., `a1[0]`, `a1[1]`, `a1[2]` should suggest 3-field struct)
+2. **Recover type qualifiers** by analyzing memory access patterns (repeated reads suggest `volatile`, read-only suggests `const`)
+3. **Preserve literal semantics** by converting hex values back to character literals when in character context (`0x41u` → `'A'`)

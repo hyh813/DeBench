@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters are generic (`a1`, `a2`), and local variables in `test_calling_conventions` are sequentially named (`v0`-`v9`, `v11`-`v21`). While `va` is used for the va_list, the exposure of internal fields like `__gr_offs` reduces readability compared to the abstracted source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`) perfectly match the original source, likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 9/10
+Justification: String literals are fully recovered and readable (e.g., `"=== 测试基础调用约定 ==="`). Magic numbers used in the source (like `5`, `10`, `42`) are preserved accurately.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with redundant casts like `(unsigned int)` and `(unsigned __int8)`. The `__fastcall` attribute is applied to almost every function, which is noise on ARM64 where calling conventions are standard.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with `for` loops and `if/else` blocks. The `switch` statement in `ret_multi_branch` is converted to a chain of `if/else`, which is acceptable and readable.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. There is no inlining or outlining of code blocks, maintaining the original structure perfectly, which is expected for `-O0`.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The lack of optimization (`-O0`) helps preserve the original execution order.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling. The decompiler successfully removed the stack setup/telemetry noise, leaving only the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type degradation occurs. `int` return types are often widened to `__int64`. Most critically, structs passed or returned by value are converted to pointers or integers (e.g., `func_struct_byval` takes `__int64` instead of `LargeStruct`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are largely lost. `LargeStruct` usage in `test_calling_conventions` is decompiled as a raw `_QWORD src[16]` array, and `SmallStruct` returns are packed into `unsigned __int64` using `__PAIR64__`, losing all semantic type information.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the logic is sound, the code relies on many unsafe casts (e.g., `*(_QWORD *)(a1 + 8LL * i)`) to access struct fields that were not recovered, making the code look fragile and type-unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are standard headers indicating the decompiler version and binary path.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: High-level idioms are missed. The `varargs_func` exposes the raw ARM64 `va_list` implementation (checking `__gr_offs`, accessing `__gr_top`) instead of using the standard `va_arg` idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not flag the unusual struct passing or the `va_list` implementation details as anomalies; it presents them as standard code, which might mislead a user expecting high-level C.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the non-null check in `func_struct_byptr` is present but not explicitly annotated as a contract).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationships between functions (e.g., `call_cdecl` calling `cdecl_func`) are easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: The order of functions matches the source file well. Related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types (`__int64`), macros (`__PAIR64__`), and calling convention attributes (`__fastcall`, `__usercall`) that prevent it from compiling with a standard compiler without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 7.5
+L2_avg: 8.5
+L3_avg: 4.0
+L4_avg: 2.75
+L5_avg: 6.33
+
+Overall = (7.5 × 0.30) + (8.5 × 0.25) + (4.0 × 0.20) + 
+          (2.75 × 0.15) + (6.33 × 0.10)
+        = 2.25 + 2.125 + 0.8 + 0.4125 + 0.633
+        = 6.22
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects
+- **Struct Type Loss**: `LargeStruct` and `SmallStruct` are completely lost; `func_struct_byval` takes a raw `__int64` pointer instead of a struct value, and `ret_small_struct` returns a packed integer.
+- **Varargs Expansion**: `varargs_func` exposes low-level ARM64 ABI details (`__gr_offs`, `__gr_top`) instead of abstracting them with `va_arg`.
+- **Type Widening**: `int` parameters and returns are consistently typed as `__int64` or `unsigned __int64`, obscuring the original 32-bit intent.
+- **Array vs Struct**: In `test_calling_conventions`, the `LargeStruct` variable is decompiled as `_QWORD src[16]`, losing the semantic boundary of the struct.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly preserved all original function names, making navigation and understanding of the high-level flow trivial.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The failure to recover struct definitions for both pass-by-value and return-by-value scenarios significantly degrades the semantic accuracy of the decompilation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Struct Recovery on ARM64**: Improve heuristics to detect hidden pointer parameters used for large struct passing and reconstruct the original struct-by-value signature.
+2.  **Abstract Variadic ABI**: Detect the standard `va_list` prologue/epilogue patterns on ARM64 and re-abstract them into high-level `va_start`/`va_arg` operations.
+3.  **Refine Integer Types**: Utilize debug information (`-g`) more effectively to distinguish between 32-bit `int` and 64-bit `long`/pointer types, avoiding the default `__int64` widening.

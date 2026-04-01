@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. Class members accessed via pointer arithmetic (`*(int32_t *)(v1 + 4)`) instead of named fields like `value` or `name`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) with demangled comments provided but not as actual names. STL helpers have extremely long mangled names (`_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvE3_24__2E6_M_ptrEv`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234`, `0x40000000`, `0x14d58` appear without explanation. String literals ("Test", "Base", "Derived") are preserved but global variables (`g1` through `g42`) obscure vtable references.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including 50+ stub functions (`function_14008`, `function_e08f2002`), runtime initialization (`__do_global_dtors_aux`, `register_tm_clones`), and excessive STL template instantiation bloat.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic test functions preserve sequential flow, but C++ features are degraded—exception handling becomes opaque function calls (`function_e48`), and virtual calls lose polymorphic semantics.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Test functions are reasonably sized, but STL implementation explodes into 100+ helper functions. Multiple destructor variants (`D0Ev`, `D1Ev`, `D2Ev`) and thunk functions fragment the code excessively.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Test functions read mostly top-to-bottom, but complex features (virtual inheritance, smart pointers) introduce forward references and non-linear access patterns through pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from template instantiations—`unique_ptr<int>` and `unique_ptr<int[]>` generate nearly identical code. Virtual thunks (`_ZThn8_`, `_ZTv0_n12_`) duplicate destructor logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Primitive types use `int32_t`/`uint32_t` correctly, but all class types degrade to `int32_t *`. Template type information is lost (`Container<int>` becomes opaque pointer operations).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—no struct/class definitions recovered. `SimpleClass` members accessed as `*result` (value) and `*(int32_t *)(v1 + 4)` (name array). Inheritance layouts completely opaque.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts—`this` pointers as `int32_t *`, vtable calls through integer arithmetic, no const-correctness. Example: `*(int32_t *)(v1 - 12)` for vtable offset with no type checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Demangled function names provided in comments ("Demangled: test_cpp_member_func()") and line ranges, but zero algorithm explanations or logic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **Critical failure**—C++ idioms completely unrecognized. Lambdas become anonymous functions (`$_0`, `$_1`), smart pointers become raw pointer operations, virtual dispatch becomes integer lookups.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation, unresolved indirect calls, or potential issues. Code presents incorrect semantics confidently (e.g., virtual calls as direct function calls).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost. No null checks or bounds validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch not indicated. Global variables (`g1`-`g42`) used for vtables with no documentation of their purpose.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All 2909 lines in single file with no logical grouping. STL implementation, user code, and compiler runtime mixed together without separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Includes present (`stdint.h`, `stdlib.h`) but many external dependencies unresolved. Would not compile standalone—missing C++ runtime, vtable structures, and exception handling support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+4+5+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+4+6+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (4+2+2+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.62/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **No class/struct recovery**—all C++ classes represented as `int32_t *` with pointer arithmetic instead of named fields
+- **C++ semantics lost**—virtual functions, inheritance, templates, and lambdas not recognized as language constructs
+- **Mangled function names**—2909 lines with C++ mangled names instead of readable identifiers
+- **42 opaque global variables** (`g1`-`g42`) used for vtables and constants without documentation
+- **50+ stub functions** that return uninitialized values, adding noise without functionality
+
+### Best Quality Aspect: **Code Linearization (6/10)**
+- Test functions maintain reasonable top-to-bottom flow despite C++ complexity, making basic execution paths traceable.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover class structures—this is the fundamental issue that cascades into all other readability problems for C++ code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class structure recovery**—analyze vtable layouts and object memory patterns to reconstruct struct definitions with named fields
+2. **Add C++ idiom recognition**—detect and annotate virtual calls, smart pointers, lambdas, and template instantiations with semantic labels
+3. **Provide demangled names as actual identifiers**—use Itanium C++ ABI demangling to replace `_Z20test_cpp_member_funcv` with `test_cpp_member_func` in the output

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_c`, `acStack_2c`, `pvVar1`, and `iVar1`, which provide no semantic context about the original C++ objects (e.g., `SimpleClass`, `LifecycleClass`).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Ghidra successfully recovered mangled C++ symbols for test functions and class methods (e.g., `test_cpp_member_func`, `Base::virtual_func`), but some runtime/internal functions remain unnamed (e.g., `FUN_000109bc`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers resulting from constant propagation, such as `0x125c` (4704), `0x47` (71), and `0x16` (22), which completely obscure the original arithmetic logic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While the code is mostly free of debug instrumentation, it contains compiler artifacts like `__stack_chk_fail` checks inserted into the control flow and `undefined` types that reduce clarity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted by optimization; for example, `test_cpp_exception` is reduced to a single throw, and `test_cpp_template_func` has a confusing structure where the return logic appears inside a failure path.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Class methods are correctly separated into individual functions (e.g., `Container<int>::push`), but the high-level test functions are often reduced to trivial `return constant` statements, losing their internal structure.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but complex pointer arithmetic in virtual inheritance thunks (e.g., `MiddleA::func`) disrupts the linear flow with nested dereferences.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler presents the optimized code cleanly without obvious dead code, though the "redundancy" here is actually the removal of necessary source-level logic by the compiler, which the decompiler accurately reflects.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: High-level types are frequently lost; C++ objects are often represented as `void*` or `undefined4` arrays, and pointers are cast to `int` for arithmetic, losing type safety and context.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Some types like `Container<int>` are partially recovered in their methods, but key classes like `SimpleClass` and `LifecycleClass` in the test functions are flattened into raw stack variables and offsets.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as `(int)pvVar1 + 4` to access struct fields, and manual pointer arithmetic which mimics the compiler's output but violates high-level type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to generic warnings like "WARNING: Unknown calling convention" and provide no insight into the algorithmic purpose or C++ semantics (e.g., vtable usage).
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms like virtual calls are exposed as low-level implementation details (`(*(code *)**(undefined4 **)param_1)();`) rather than being abstracted into recognizable patterns.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags potential issues like unknown calling conventions and unreachable blocks, which helps identify areas where the reconstruction might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the exception handling contracts in `test_cpp_exception` are completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are readable due to the recovered names, allowing the reader to trace the flow between test functions and class methods, but data references (globals/members) are obscure.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are organized by memory address rather than logical grouping (e.g., by class), scattering related methods like constructors and destructors throughout the listing.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types (`undefined4`), macros (`SUB84`), and relies on specific compiler runtime symbols (`__cxa_throw`), making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- **Constant Folding**: Most test functions (e.g., `test_cpp_multiple_inheritance`) are reduced to `return <constant>`, completely erasing the source logic.
+- **Type Erasure**: Class structures are not recovered in test functions; objects are manipulated as raw memory offsets (e.g., `*(undefined4 *)((int)pvVar1 + 4)`).
+- **Exception Handling Loss**: The `try/catch` blocks in `test_cpp_exception` are missing; only the low-level `__cxa_throw` call is visible.
+- **Semantic Obfuscation**: Virtual function calls are shown as raw vtable dereferences rather than semantic method invocations.
+
+**Best Quality Aspect:** Function Naming (Score: 7/10)
+- Ghidra successfully demangled C++ symbols, preserving the original names for test functions and class methods, which provides essential anchors for understanding the code.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 3.0/10)
+- The decompiler fails to reconstruct high-level semantics; it presents the optimized binary literally, losing the intent of the source code (e.g., logic replaced by constants, exceptions replaced by ABI calls).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Value Set Analysis & Annotation**: Detect when a function returns a compile-time constant and annotate it with the likely original expression or flag it as "optimized away" to avoid confusion.
+2.  **C++ Exception Recovery**: Enhance parsing of the LSDA (Language-Specific Data Area) to reconstruct `try/catch` blocks and control flow, rather than just showing `__cxa_throw`.
+3.  **Stack Object Type Recovery**: Improve analysis of stack-allocated objects to identify class layouts and member accesses based on constructor/destructor calls, rather than defaulting to raw byte arrays.

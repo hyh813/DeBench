@@ -1,0 +1,12 @@
+Testing obfuscation optimizations:
+
+Fake branch: 0
+Opaque predicate: 0
+Instruction substitution: 0
+String encryption: (null)
+Tail call: 0
+Non-tail call: 0
+Vectorized loop: 0
+LTO: 0
+Division by zero: 1
+Null pointer: 41

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler extensively uses "Unresolved local var" markers (e.g., `int a@[???]`, `int b@[???]`, `int c@[???]` in local_vars; `int * arr@[???]` in heap functions). Variables that are resolved have generic names like `iVar1`, `iVar2`, `uVar1` which provide no semantic meaning. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (e.g., `local_vars`, `heap_basic`, `linked_list_heap`, `memop_memset`). The decompiler correctly preserved action-oriented names that reflect each function's purpose. Minor issue: some internal functions like `FUN_00011030` are not meaningful.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many numeric literals use hexadecimal notation where decimal would be clearer (e.g., `0x2a` for 42, `0x14` for 20, `0xf` for 15). The decompiler also uses magic numbers like `0x800` for 2048 (buffer size) without explanation. However, string literals in printf statements are preserved correctly.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise pollution from 50+ "WARNING" comments about unknown calling conventions, unreachable blocks, and inlined functions. The "Unresolved local var" comments appear repeatedly (dozens of times) and clutter every function. However, the actual code logic is relatively clean without excessive register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are natural - if-else statements, for loops, while loops are all properly recognized. The `large_stack_frame` function shows a proper do-while loop. At -O0, there's minimal control flow distortion. The only minor issue is some complex index calculations in loop unrolling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function maintains single responsibility as in the original source. Functions are appropriately sized (not monolithic). The parameter lists are reasonable and don't expose excessive implementation details. Helper functions like `create_tree_node` are properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately for error handling (e.g., null checks before proceeding). Some forward jumps exist in complex functions like `vla_stack` but are manageable. No excessive nesting beyond 3-4 levels.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling is present in several functions (e.g., `large_stack_frame` fills 8 bytes per iteration, `heap_basic` initializes 4 elements per iteration). This is expected at higher optimization but the unrolling is not commented. No dead code detected. The redundancy is manageable but could be better documented.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (int, char, void*). However, there's significant type erasure - most integers are generic `int` rather than more specific types. Function pointers have type annotations like `_func_int_int *` which is a Ghidra convention. Some `undefined4` types appear which are decompiler artifacts. The `size_t` parameter in memory operations is correctly identified.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types are recovered with field names: `Node` has `data` and `next` fields, `TreeNode` has `data`, `left`, `right`. The `Point` typedef is preserved. However, some struct details are lost - the decompiler shows `undefined1 *` for some pointers where more specific types could be inferred. The composite types are usable but not perfect.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No severe type safety violations. Pointer arithmetic is present but within bounds (e.g., `(int)__ptr + iVar3 * 2`). Function pointer calls check for null before invocation in `call_global_callback`. Minor issues include some unsafe casts in memory operation functions. Overall, the code is reasonably type-safe for decompiled output.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely auto-generated noise. The "Unresolved local var" comments appear in every function and provide no useful information. "WARNING" comments about calling conventions are generic. There are no comments explaining algorithm logic, non-obvious operations, or decompilation confidence. This dimension severely lacks meaningful content.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic memory allocation patterns (malloc/calloc/realloc) are recognized and use the correct standard library functions. Linked list traversal patterns are somewhat recognizable in `linked_list_heap`. However, no design patterns or algorithms are explicitly named or documented. The decompiler doesn't identify that this is a comprehensive memory operations test suite.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some anomalies: "WARNING: Unknown calling convention" appears frequently, "WARNING: Removing unreachable block" is noted, and "Unresolved local var" indicates variables that couldn't be recovered. However, there's no flagging of potential undefined behavior (e.g., the dangling_pointer function accesses memory after free). The coverage is inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. There's no indication of what functions expect (e.g., "requires: n > 0") or guarantee (e.g., "ensures: return is heap-allocated and must be freed"). Error conditions are handled but not explained. This is a major gap in semantic recovery.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls to standard library functions (printf, malloc, free, memcpy) are clear. Global variables like `global_counter`, `global_array` are accessed directly. However, there's no explicit documentation of call relationships, callback setups, or data flow between functions. The relationships are implicit through code inspection but not stated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: The decompiled output is a single monolithic listing with no logical grouping. The original source had clear sections (stack memory operations, heap memory operations, static/global memory, memory operation functions) but these organizational boundaries are lost. Functions are listed in address order rather than semantic grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The decompiled code lacks #include statements and would require significant patching to compile. Some types like `EVP_PKEY_CTX` in `_init` are undefined. External function declarations are not provided. The code references undefined globals like `extern_global_var` and `extern_function` without context. A human would need substantial work to make this compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is catastrophic**: "Unresolved local var" markers appear in nearly every function, making it impossible to track data flow
+- **No meaningful comments**: Auto-generated "WARNING" and "Unresolved" comments provide no value; algorithm logic is undocumented
+- **No contract recovery**: Preconditions, postconditions, and invariants are completely absent
+- **Hexadecimal literals obscure values**: `0x2a` for 42, `0x14` for 20 - readers must mentally convert
+- **Module organization lost**: Single monolithic output loses the logical structure of the original test suite
+
+### Best Quality Aspect: Function Naming (Score: 9/10)
+Function names are almost perfectly preserved from the original source, making it easy to identify each function's purpose at a glance.
+
+### Most Needs Improvement: Variable Naming (Score: 2/10)
+The decompiler failed to recover meaningful variable names for local variables. Combined with the lack of comments, this makes understanding data flow within functions extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop index, size parameter, result accumulator) to generate semantic names like `loop_idx`, `array_size`, `sum`
+2. **Add meaningful comments**: Instead of "Unresolved local var", provide context like "loop counter" or "allocated buffer pointer" based on usage analysis
+3. **Recover preconditions from validation checks**: When functions check parameters (null checks, bounds checks), generate comments like "requires: ptr != NULL" or "ensures: return value is valid"

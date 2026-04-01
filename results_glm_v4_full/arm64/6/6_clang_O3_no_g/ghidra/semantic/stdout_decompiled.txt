@@ -1,0 +1,10 @@
+Testing standard library functions...
+strlen: 14
+strcmp: 0
+strlen test: 12
+memcpy test: 90
+memcmp test: -1
+Value: 42, Name: TestString
+printf returned: 28
+scanf test: 579
+fopen test: 42

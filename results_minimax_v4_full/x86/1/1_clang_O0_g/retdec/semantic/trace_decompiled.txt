@@ -1,0 +1,7 @@
+TRACE_ENT|0|test_control_flow_l1|0|Arg0=-1208717312,Arg1=0,Arg2=0,Arg3=-1210548319|eax=0xb7f48dd8,ebx=0x0,ecx=0x99a407e5,edx=0xbf813c14,esi=0xb7f47000,edi=0x0
+TRACE_ENT|1|sequential_ops|1|Arg0=5,Arg1=7,Arg2=3,Arg3=-1208526979|eax=0x0,ebx=0x0,ecx=0x5,edx=0x7,esi=0x3,edi=0x0
+TRACE_EXT|1|sequential_ops|1|21
+TRACE_ENT|2|single_if|1|Arg0=10,Arg1=7,Arg2=3,Arg3=-1208526979|eax=0x0,ebx=0x0,ecx=0xa,edx=0xbf811434,esi=0x3,edi=0x0
+TRACE_EXT|2|single_if|1|20
+TRACE_ENT|3|single_if|1|Arg0=-5,Arg1=7,Arg2=3,Arg3=-1208526979|eax=0x0,ebx=0x0,ecx=0xfffffffb,edx=0xbf811434,esi=0x3,edi=0x0
+TRACE_EXT|3|single_if|1|-5

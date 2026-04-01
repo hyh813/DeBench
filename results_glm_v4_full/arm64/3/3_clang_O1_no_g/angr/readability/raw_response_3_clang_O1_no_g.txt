@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`), obscuring the semantic meaning found in the original source (e.g., `local`, `arr`, `p`). While loop counters (`i`, `j`) and some pointers (`ptr`, `cur`) are acceptable, the pervasive use of `v0` and `v1` for stack frames makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the original source (e.g., `local_vars`, `heap_basic`, `test_stack_memory`). The names accurately reflect the functionality and use appropriate action verbs or descriptive nouns, matching the source exactly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Meaningful constants from the source (e.g., `-1`, `10`, `42`) are replaced by magic numbers or raw hex values (e.g., `4294967295` for `-1`, `4294967294`, `0x80000000`). Complex bitwise literals like `17179869180` and `18446744073709551612` appear without explanation, significantly obscuring the logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant compiler and decompiler artifacts. Almost every function includes redundant stack setup code like `v0 = &v1;` and `v1 = &v2;`. Non-standard macros like `__ROL__` and `arm64g_calculate_condition` pollute the logic, making it hard to distinguish actual program logic from lifting artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While loops are generally recovered, they often appear as `do-while` structures with complex conditions involving bitwise operations (e.g., in `heap_basic`), rather than the simple `for` loops from the source. The use of `goto` in `_start` and `register_tm_clones` is acceptable for system code, but the overall flow feels mechanical.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully maintains the original function boundaries and granularity. Functions like `linked_list_heap` and `test_heap_memory` are kept intact rather than being inlined or fragmented, which preserves the high-level structure of the program effectively.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but complex pointer arithmetic expressions (especially in `vla_stack` and `alloca_usage`) disrupt the flow. Forward jumps are minimal, but the density of the logic within single lines hinders linear scanning.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There are instances of redundant assignments such as `ptr = ptr;` in `heap_basic`. The stack variable initialization `v0 = &v1;` is repeated in every function, adding clutter without contributing to the understanding of the algorithm.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `unsigned int` and `char *` are used, but signedness is often lost or flipped (e.g., parameters are `unsigned int` while source used `int`). The distinction between `int` and `size_t` is blurred, and the decompiler defaults to generic types where specific ones would be clearer.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are recovered but with completely generic names (`struct_0`, `struct_1`, `struct_2`) and fields (`field_0`, `field_8`, `padding_4`). The semantic meaning of `Point`, `Node`, or `TreeNode` is completely lost, forcing the reader to reverse-engineer the struct layouts from raw offsets.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code generally respects pointer types, though there is heavy use of `char*` casts for pointer arithmetic. The `__ROL__` macros and bit masking operations suggest type-punning or register-level manipulation that reduces the perceived safety, though it likely reflects the underlying binary accurately.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the bit-twiddling in `local_vars` or the VLA allocation in `vla_stack`, is left unexplained, offering no assistance to the reader.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard patterns like `malloc`/`free` are visible, but higher-level idioms are missed. For example, the simple arithmetic `x * 2` is obfuscated into a complex bitwise expression, and the linked list traversal is buried in pointer arithmetic rather than being clearly expressed as a node traversal.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents complex, non-standard expressions (like `arm64g_calculate_condition`) without any warning or annotation that these might be artifacts or difficult to interpret. It confidently outputs confusing code as if it were standard C.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions like `if (arr == NULL)` are preserved in the code, but they are not explicitly documented as contracts. The return of `4294967295` for error cases is not annotated as an error code (e.g., `-1`), obscuring the function's contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and `extern` declarations are present for global variables and functions. The relationships between functions (e.g., `test_stack_memory` calling `local_vars`) are easy to follow due to the preserved naming.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are organized in a logical order that roughly follows the source file's structure (stack tests, then heap tests, etc.). Related functions are grouped together, aiding navigation.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to the use of non-standard macros (`__ROL__`, `arm64g_calculate_condition`) and undefined global symbols (e.g., `g_412ff8`). It requires significant patching to be valid C code.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is excessively generic (`v0`, `v1`), losing all semantic context of stack variables.
+- Composite types are reduced to `struct_0`/`field_0`, completely erasing the meaning of `Point`, `Node`, etc.
+- Magic numbers like `4294967295` replace readable constants like `-1`, making error handling obscure.
+- Non-standard macros (`__ROL__`, `arm64g_calculate_condition`) pollute the output, rendering it non-compilable and hard to read.
+- Simple arithmetic is obfuscated into complex bitwise operations (e.g., in `local_vars`), destroying semantic clarity.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names, which is the only anchor allowing a reader to map the decompiled code back to the source intent.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The complete absence of comments, combined with the obfuscated logic and magic numbers, makes understanding the "why" behind the code nearly impossible without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Signed Constants**: Map unsigned magic numbers like `4294967295` back to their signed equivalents (`-1`) based on context and type usage.
+2.  **Improve Struct Recovery**: Utilize debug information (if available) or heuristic analysis to recover struct field names (`x`, `y`, `next`) instead of generic offsets (`field_0`, `field_8`).
+3.  **Simplify Arithmetic Expressions**: Detect and simplify complex bitwise emulation patterns (like the `x*2` expansion) back into standard arithmetic operators to improve semantic transparency.

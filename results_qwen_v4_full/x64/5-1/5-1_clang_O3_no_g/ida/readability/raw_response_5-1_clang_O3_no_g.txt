@@ -1,0 +1,102 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had descriptive names like `capture_by_value`, `multiplier`, `instance_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions recovered mangled names that decode to originals (`_Z20test_cpp_member_funcv` = `test_cpp_member_func`), but others are generic (`sub_1020`, `init_proc`). Class methods use unreadable mangled names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`4700`, `1001`, `130`, `200`, `14`). Original source had clear expected values in comments (e.g., `// 期望：10 + 34 + 4660 = 4704`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: register names (`rax`, `rsi`, `rbp`), stack annotations (`[rsp+4h] [rbp-24h]`), and excessive type casting (`__int64`, `_DWORD`, `_BYTE`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions collapsed to single `return` statements from constant folding. Exception handling uses raw `__cxa_throw` instead of try-catch blocks, losing semantic structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but many test functions are over-optimized to constants. Class methods (`Container::push`, `Container::get`) are properly separated and coherent.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom reasonably well without excessive jumps. Container methods show clean if-else structures that follow natural flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. However, aggressive optimization removed much original logic, making it impossible to verify redundancy vs. legitimate transformation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`__int64`, `_DWORD`, `_BYTE`, `_QWORD`) instead of proper C++ types. Some class types recovered (`Container<int>`, `RTTIDerivedA`) but with poor field typing.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures partially recovered with offset-based field access (`a1 + 40` for size), but no struct definitions with field names. Original had clear member variables (`value`, `name[32]`, `data`, `size`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts and pointer arithmetic on class objects (`a1 + 40`, `a1 + 80`). Generic `void*` usage for `operator new/delete` results creates safety concerns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Minimal comments, mostly auto-generated type annotations. No algorithm explanations, decompilation confidence indicators, or API contracts. Original had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (RAII, virtual dispatch, templates, lambdas) not identified. Exception handling appears as raw `__cxa_throw` calls. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged ("positive sp value has been detected"), but 19 failed decompilations listed without proper explanation of why or how to work around them.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions unexplained. Original had clear expected return values documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch partially recovered through `__dynamic_cast`, but vtable relationships not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed sequentially without logical grouping. No namespace or class organization visible. Original had clear section headers and grouping.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 19 external functions failed to decompile (`printf`, `strlen`, `__cxa_throw`, etc.), preventing standalone compilation. Dependencies undocumented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+5)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+6+7+7)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.21/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2` should be named** based on usage (e.g., `obj1`, `obj2`, `result` in RTTI test)
+- **Test functions constant-folded** to return statements, losing all original logic visibility
+- **No struct/class definitions** with field names—only offset-based pointer arithmetic (`a1 + 40`)
+- **19 external functions failed** to decompile with no recovery strategy provided
+- **Exception handling lost**—try-catch blocks replaced with raw `__cxa_throw` calls
+- **Optimization level mismatch**—source claims -O0 but binary shows -O3 characteristics
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)**—Code reads top-to-bottom reasonably well without excessive jumps or goto statements disrupting flow.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Virtually no semantic documentation; auto-generated type annotations provide no insight into original intent or algorithm purpose.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**—Analyze how variables are used (e.g., `v0` passed to `operator new` should be `obj1` or `allocated_ptr`)
+2. **Recover C++ semantic structures**—Transform `__cxa_throw` sequences back to try-catch blocks and recover class definitions with field names from offset patterns
+3. **Document failed decompilations with recovery hints**—Instead of just listing "FAILED to decompile: printf", suggest stub implementations or link to known signatures

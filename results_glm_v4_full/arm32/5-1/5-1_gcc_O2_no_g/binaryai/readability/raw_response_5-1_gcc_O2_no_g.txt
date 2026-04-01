@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `local_c`, `local_d`, `acStack_2c`, `piVar1`, `iVar3`). In `test_cpp_rtti`, `piVar1` represents a C++ object instance, but the name provides no semantic hint about it being an `RTTIDerivedA` object.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent and match the source exactly (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Derived::getName`), likely due to preserved debug symbols. This is the strongest aspect of the decompilation.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers that obscure the original logic. For example, `0x1f` (31) is used instead of `sizeof(name)-1`, and `0x125c` appears as a constant return value component instead of the calculated sum `4704`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Compiler artifacts like stack canary checks are interwoven with logic (e.g., `if (local_c == 0) ... __stack_chk_fail()`), disrupting the natural reading flow. Additionally, `undefined` types appear frequently, adding syntactic noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While some functions like `test_cpp_rtti` have traceable logic, the control flow is frequently interrupted by stack integrity checks. Furthermore, functions like `test_cpp_virtual_func` are reduced to a single `return 0x2a;`, completely hiding the control flow logic present in the source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods are correctly separated into their own functions (e.g., `Base::virtual_func`, `Container<int>::push`). However, the logic within test functions is often flattened or inlined into constant returns, reducing the granularity of visible operations.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the insertion of stack check logic (`__stack_chk_fail`) creates artificial branches that break the linear narrative of the algorithm.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the compiler's optimizations (like constant folding) without redundant intermediate code, though this comes at the cost of hiding the original algorithmic steps in functions like `test_cpp_constructor`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type information is severely degraded. Primitive types are often replaced with `undefined4` or `undefined8`. While `type_info*` is recovered in `test_cpp_rtti`, standard integers and class instances often lose their specific type definitions.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: C++ class structures are not recovered; member access is performed via raw pointer arithmetic. For example, in `Derived::virtual_func`, the member `multiplier` is accessed as `*(int *)(this + 4)` instead of `this->multiplier`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts indicative of low-level C++ implementation details being exposed, such as casting `int` to pointers (`*piVar1 = (int)&PTR__RTTIDerivedA_0001162c;`) to manually construct vtables.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex C++ mechanisms like vtable setup or RTTI checks are left unexplained, requiring the reader to reverse-engineer the compiler's output.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While the decompiler identifies `type_info` and `dynamic_cast` calls in `test_cpp_rtti`, it fails to recognize higher-level C++ idioms like object construction or RAII, presenting them as raw memory allocations and pointer assignments.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents suspicious code, such as `return 0x2a;` for a complex function, without any warning that this might be a constant-folded result or that the source logic is absent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For instance, the contract that `operator_new` returns a valid pointer is implicit and undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and the relationship between classes and methods is preserved via naming conventions (e.g., `Container<int>::push`). The vtable references (`PTR__RTTIDerivedA_0001162c`) provide some context, though they are raw addresses.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and class methods are generally located near their usage or related functions. The separation of constructors, destructors, and member functions is maintained.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile as-is due to `undefined` types, missing struct definitions, and the use of external symbols like `__aeabi_dcmpgt` without proper headers or context.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Class member access reduced to raw pointer arithmetic (e.g., `*(int *)(this + 4)` instead of `this->multiplier`).
+- Use of generic `undefined` types (`undefined4`, `undefined8`) instead of concrete C++ types.
+- Logic completely lost in optimized functions (e.g., `test_cpp_virtual_func` returns `0x2a` with no logic shown).
+- Magic numbers used for offsets and sizes without explanation (e.g., `0x1f`, `0x125c`).
+- Stack canary checks (`__stack_chk_fail`) interwoven with logic, disrupting readability.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully preserved the original function names from the debug symbols, making it easy to identify the purpose of most functions.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct C++ class structures forces the reader to interpret raw pointer arithmetic, which is the single biggest barrier to understanding the object-oriented logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class structure recovery to map member offsets to named fields (e.g., convert `*(int *)(this + 4)` to `this->multiplier`).
+2. Improve type propagation algorithms to eliminate `undefined` types and recover concrete primitive types.
+3. Detect and isolate compiler-inserted stack canary checks into separate blocks or macros to preserve the linear flow of application logic.

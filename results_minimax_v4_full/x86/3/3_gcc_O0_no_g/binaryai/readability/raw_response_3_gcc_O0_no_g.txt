@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `local_10`, `iVar1`, `uVar2`, `puVar1`. The original source had meaningful names like `x`, `arr`, `n`, `p`, `head`, `temp` - all completely lost in decompilation. Even stack arrays like `aiStack_38` are minimally descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions preserve original names (`local_vars`, `local_array`, `heap_basic`, `linked_list_heap`). However, many internal helpers use cryptic `FUN_00011030` pattern, and library functions like malloc/free are shown as `FUN_000111f0`/`FUN_00011180` without identification.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x1e` (30) remain unexplained. String literals from printf are preserved but not converted to named constants. The value `0x800` for loop bound in `large_stack_frame` could be named `BUFFER_SIZE`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`) and GS_OFFSET references add noise but are expected at -O0. Some redundant variable declarations exist. Overall manageable but not clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recovered as `for (local_3c = 0; local_3c < 10; local_3c = local_3c + 1)`. Conditionals are natural. At -O0, control flow should be nearly identical to source, and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function maps to one decompiled function. No inlining at -O0. Function sizes are reasonable (20-80 lines). Parameter lists match original signatures.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No goto abuse. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. At -O0, loop unrolling is minimal. Code is clean without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined4*`, `byte*` instead of specific types. Original `int*` becomes `undefined4*`. Function pointers shown as `(code *)0x0` instead of proper signatures. Only `int` and `char` are reasonably precise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct (used in `local_struct`, `heap_struct`, `global_struct_access`) is completely lost - decompiled as `int*` with manual offset arithmetic (`*piVar1`, `piVar1[1]`). The `Node` struct for linked lists is similarly lost, represented as `int*` with `local_1c[1]` for next pointer. No struct recovery whatsoever.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic is present but correct. However, the `undefined4*` type allows unsafe operations. No bounds checking annotations. Some unsafe casts from generic types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in entire decompiled output. No explanation of algorithms, no decompilation confidence indicators, no @param/@return documentation. The original source had extensive comments (MEM-L1-01, HEAP-L2-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (linked list traversal `while(local_1c != 0x0)`, tree traversal) but not named or explicitly identified. Memory allocation/deallocation pattern visible but not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `stack_alias` function has completely broken logic (`&stack0x00000000 == 0x14` is nonsensical) but no warning. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear return value semantics (e.g., "期望: 20") completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but library functions not identified (malloc= FUN_000111f0, free=FUN_00011180). Global variable usage is clear (`global_counter`, `global_array`). No documentation of call graph or relationships.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped by category (stack, heap, static, memory ops). Static functions properly scoped. Single file matches original structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code uses Ghidra-specific types (`undefined4`, `undefined4*`, `byte`) that won't compile with standard GCC. External functions like `FUN_000111f0` (malloc) not declared. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Struct type loss**: `Point` and `Node` structs completely lost, replaced with `int*` and manual offset arithmetic (`piVar1[1]`)
+- **No variable naming**: All variables use generic names (`param_1`, `local_10`, `iVar1`) making code flow extremely difficult to trace
+- **No comments**: Zero documentation explaining algorithms, intent, or decompilation confidence
+- **Broken logic in stack_alias**: The function shows nonsensical comparison (`&stack0x00000000 == 0x14`) with no anomaly warning
+- **Type imprecision**: Heavy use of `undefined4` instead of `int32_t` or `size_t`
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+At -O0, loops and conditionals are correctly recovered matching source structure. The decompiler preserved the original control flow patterns well.
+
+### Most Needs Improvement: Comment Quality (1/10)
+The decompiled code has zero comments. Given the complexity (struct loss, type issues, potential anomalies), comments are essential for usability.
+
+### Top 3 Recommendations:
+1. **Recover struct types**: Use pattern recognition to identify struct allocations (malloc of consistent sizes) and reconstruct with field names based on access patterns
+2. **Add basic comments**: At minimum, document function purpose, parameter meanings, and return value semantics
+3. **Identify library functions**: Map common functions (malloc, free, memcpy, memset) to their standard library names instead of FUN_ addresses

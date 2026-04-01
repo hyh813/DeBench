@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `index`) with no semantic meaning. For example, `test_cpp_member_func` uses `result`, `flag1`, `v0` instead of meaningful names like `obj_value`, `computed_result`, `class_id`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some C++ mangled names recovered (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`), but many functions remain as `sub_401030`, `sub_401130`. Template functions partially recovered (`template_max<int>`) but most test functions are empty stubs.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation (`42` in exception, `100`, `200` in RTTI). String literals reference opaque globals (`&g_402081`, `&g_40209f`) instead of showing actual content like `"=== 测试 C++ 面向对象特性 ==="`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Significant compiler artifacts present: `__x86.get_pc_thunk.*` functions, padding structures (`padding_0[11763]`), and numerous `[D] Unsupported` error markers throughout the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple functions use `goto` instead of structured control flow (`sub_401030`: `goto ptr[2]`). Some functions like `template_max<int>` show natural if-else, but many are empty stubs with no logic.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe fragmentation with wrapper functions (`sub_4012f1` calls `test_cpp_member_func`). Most test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) are completely empty `return;` stubs losing all original logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Goto statements disrupt linear reading (`sub_401130`: `goto (int)v1[24]`). Some functions read top-to-bottom but many have forward jumps and unsupported operations breaking flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Padding structures create massive redundancy (`padding_0[11763]`, `padding_2d8f[96]`). Duplicate wrapper functions exist for each recovered function without clear purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned int`, `void*`, `char*`. C++ class types lost (`class Base {}` empty). Some template recovery (`Container<int>::push`) but `Container<double>` has unsupported operations.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are mostly padding with generic fields (`field_0`, `padding_0[11763]`). C++ class structures (`SimpleClass`, `LifecycleClass`, `Derived`) completely lost. No vtable or inheritance structure recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int *)*((int *)arg_0)`), void* usage throughout, pointer arithmetic without bounds checking. `Container<double>::push` has unsupported vector operations that could cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. Only `[D] Unsupported` error markers present. No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost: virtual dispatch shown as raw pointer dereference, RAII patterns not recognized, template instantiation partially recovered but lambdas/exceptions not properly identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `[D] Unsupported` markers indicate problems but lack explanation. Many functions silently empty without warning (e.g., `test_cpp_constructor` just `return;`). No indication of confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling shows `__cxa_throw` calls but no contract information about when exceptions occur or what they mean.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch partially shown (`(*(p)->field_4(p))`) but vtable structure not documented. No call graph or dependency information.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions listed sequentially without logical grouping. No namespace structure, no header declarations, no separation between test functions and class implementations.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains `[D] Unsupported` syntax errors that won't compile. Missing external declarations incomplete. Platform mismatch (original arm64, decompiled X86) indicates fundamental incompatibility.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+2)/4 = 2.75 × 0.30 = 0.825
+Level 2 (Structural):  (4+3+4+4)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (3+3+2)/3   = 2.67 × 0.10 = 0.267
+─────────────────────────────────────────────────────────
+Overall Score:                              2.83/10
+```
+
+### Overall Readability Score: **2.8/10**
+
+### Critical Defects:
+- **12 test functions completely empty** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, etc. contain only `return;` losing all original logic
+- **C++ class structures not recovered** - `SimpleClass`, `LifecycleClass`, `Base`, `Derived` classes reduced to empty structs or lost entirely
+- **Platform mismatch** - Original compiled for arm64, decompiled shows X86, indicating wrong binary or fundamental decompilation failure
+- **Unsupported operations throughout** - `[D] Unsupported` markers in `Container<double>::push`, `test_cpp_rtti` make code non-compilable
+- **Zero semantic comments** - No explanation of C++ features (vtables, RTTI, templates) that would help understanding
+
+### Best Quality Aspect: **Structural Intelligibility (3.75/10)**
+- Some function boundaries correctly identified and template instantiations partially recovered (`template_max<int>`, `Container<int>::push`)
+
+### Most Needs Improvement: **Semantic Transparency (1.75/10)**
+- Complete absence of comments, no C++ idiom recognition, and silent failures without anomaly indication make the code practically unusable for understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures** - Implement vtable analysis to reconstruct class hierarchies, virtual methods, and inheritance relationships instead of reducing to empty structs
+2. **Add decompilation confidence annotations** - Mark uncertain recoveries with comments explaining what couldn't be resolved (e.g., "// VTABLE CALL: target unresolved")
+3. **Preserve test function logic** - Ensure test functions retain their original computation logic rather than becoming empty stubs; at -O0 debug builds should preserve nearly all source structure

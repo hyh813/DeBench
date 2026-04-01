@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic auto-generated names like `v0`, `v1`, `v2`, `a1`, `a2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`. These provide no semantic meaning - compare to source's meaningful names like `x`, `arr`, `n`, `p`, `head`, `counter`, `buffer`. The decompiler made no attempt to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`. Internal functions like `sub_9B0` are generic but acceptable. The primary functions are well-recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u`, `0x18u`, `0x28u` for malloc sizes are unexplained. However, some literals like `42` in `address_of_local` are self-evident. The decompiler didn't recover the named constants from source (e.g., `sizeof(Point)` = 8).
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some unnecessary casts exist (e.g., `(unsigned int)` wrappers). The code is relatively clean without debug instrumentation. Some type punning through unions is present but expected from low-level code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while` constructs, conditionals are clear. However, some functions like `vla_stack` and `alloca_usage` have convoluted stack frame setup code that obscures the actual logic. At -O0, this is unexpectedly complex.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility. The test wrapper functions (`test_stack_memory`, `test_heap_memory`) are properly separated. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but some like `linked_list_heap` have complex nested structures with early returns. The `vla_stack` function has confusing pointer arithmetic that disrupts linear reading. Some forward jumps present.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal. Some repeated patterns in test functions but these match source structure. Overall clean without obvious redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - `int` is preserved for most integers, but pointers use generic types like `_DWORD *`, `_QWORD *`. Function pointers like `global_func_ptr` lose their signature, becoming `__int64 (*)`. The source's `Point` struct is not recovered - just `malloc(8u)` for heap_struct.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. The `Point` struct from source is completely lost - `heap_struct` just does `malloc(8u)` without struct reconstruction. The `Node` and `TreeNode` structures are partially visible through field offsets but not named. No struct definitions provided.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `dangling_pointer` function correctly shows the use-after-free pattern. Pointer arithmetic is generally correct but verbose. Some implicit conversions between signed/unsigned. No alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. The source had extensive comments (MEM-L1-01, MEM-L2-01, etc.) explaining test scenarios. Zero effort to document algorithm intent, preconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible but not named. The linked list creation pattern is recognizable but not labeled. Memory leak pattern in `memory_leak` is visible but not flagged. No explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code. The dangling pointer access in `dangling_pointer` is presented as normal code without warning. The double-free in `double_free` is shown but not flagged as dangerous. No annotations for undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions or postconditions documented. The source had error handling (NULL checks) but these are shown as raw code without explaining the contract. For example, `heap_basic` returns -1 on failure but no comment explains this.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. The callback pattern in `set_global_callback` / `call_global_callback` is visible but not explained. No indication of which functions call which. External dependencies (extern functions) not clearly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by category (stack, heap, static, memory ops) but this appears to be decompiler output order rather than intentional organization. No static function scoping indicated. Related functions not explicitly grouped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require significant patching to compile. External functions like `extern_global_var`, `extern_function` are referenced but not declared. Standard library functions (malloc, free, printf) are used but not #included. Would need substantial manual intervention.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 7) / 4 = 5.5
+L2_avg = (7 + 8 + 6 + 7) / 4 = 7.0
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (1 + 4 + 2 + 2) / 4 = 2.25
+L5_avg = (4 + 6 + 5) / 3 = 5.0
+
+Overall = (5.5 × 0.30) + (7.0 × 0.25) + (4.67 × 0.20) + (2.25 × 0.15) + (5.0 × 0.10)
+        = 1.65 + 1.75 + 0.934 + 0.3375 + 0.5
+        = 5.17/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a1`, `v2`, etc.) providing zero semantic meaning - should infer from usage like `n` used as loop bound → `array_size`
+- **No struct recovery**: The `Point`, `Node`, `TreeNode` structs from source are completely lost - shown only as raw malloc sizes (8, 16, 24 bytes)
+- **No comments**: Zero explanatory comments despite complex algorithms (linked list creation, tree traversal, memory patterns)
+- **No anomaly flagging**: Dangerous patterns (dangling pointer, double-free, memory leak) shown as normal code without warnings
+- **Type precision loss**: Function pointers like `global_func_ptr` become generic `__int64 (*)()` losing the `int (*)(int)` signature
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (8/10)**: Functions maintain proper granularity matching source. Each function has clear single responsibility - test wrappers properly separated, memory functions cohesive.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality (1/10)**: Zero comments present. The source had extensive documentation (MEM-L1-01, MEM-L2-01 patterns) explaining test scenarios, algorithm intent, and expected outputs. Decompiler made no effort to recover any semantic documentation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `a1` is used as loop bound for `i < a1`, infer `array_size` or `count`. When `v2` is multiplied by 2, consider `doubled_value`.
+2. **Recover struct definitions**: Detect repeated field access patterns (e.g., `*(_DWORD *)v0`, `v0[1]`) and reconstruct struct layouts with field names where possible.
+3. **Add semantic comments for patterns**: Flag dangerous patterns (use-after-free, double-free, memory leak) with warnings. Document algorithm intent where recognizable (e.g., "// Linked list creation pattern").

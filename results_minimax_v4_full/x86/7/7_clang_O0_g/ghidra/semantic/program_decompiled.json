@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_O0_g/ghidra/syntactic/bin/7_clang_O0_g_fixed",
+  "stdout": "=== Testing Obfuscation Optimizations ===\\n\\0Fake branch result: 10\\n\\0Opaque predicate result: 20\\n\\0Instruction substitution result: 225\\n\\0String encryption result: 0\\n\\0Tail call optimized result: 500500\\n\\0Non-tail call result: 5050\\n\\0Vectorized loop result: -340356986\\n\\0Link time optimization result: 20\\n\\0Division by zero handled: 1\\n\\0Null pointer deref handled: 41\\n\\0Buffer overflow detected: 30\\n\\0Integer overflow handled: 2000000000\\n\\0Undefined behavior result: 10\\n\\0Implementation defined result: 43\\n\\0",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

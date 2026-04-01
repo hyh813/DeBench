@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters retain some original names (`c`, `x`, `p`, `arr`), but local variables are generic (`v0`, `v1`, `v2`, `result`). Test functions are particularly poor with variables like `v32`, `v33`, `v34` that obscure their purpose as array elements or loop counters.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most meaningful function names preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `binary_tree_sum`). Only helper functions like `sub_1020` and `init_proc` have generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear without explanation (32 for ASCII conversion, 0x1A for bounds check). Test functions show constant-folded results (printf displays `97` instead of `'a'`), losing semantic meaning of character literals.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: register variables (`v2`, `v3`), BYREF annotations, explicit type casts (`(__int64)`). Test functions have excessive temporary variables (`v36[2]`, `__int128 v37`) from SIMD optimization.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Original `for` loops converted to `do-while` patterns (e.g., `array_1d_stack`). Switch statements transformed to array lookups (`enum_switch` uses `dword_20D0[s]`). Logic is traceable but not idiomatic C.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries well-preserved with reasonable sizes. Helper functions maintained (`binary_tree_sum` separate from `binary_tree`). No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear loop structures. No excessive `goto` usage. Some forward references in test functions but flow remains comprehensible.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant type casts present (`(unsigned __int8)`, `(__int64)`). Test functions show SIMD optimization artifacts that obscure original simple array initialization logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, short, long) but `long long` becomes `__int64`. Pointer types generally accurate. Const correctness partially preserved (`const int *p` maintained in `const_param`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names and fields well-recovered (`Point3D`, `Rect`, `Widget`, `Node`). Union types preserved (`UnionData`). Bitfield struct (`struct_bitfields`) degraded to raw bit manipulation instead of field access.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`void*` to `int*` in `ptr_cast`). Pointer arithmetic correct. Function pointer signatures mostly maintained. No new buffer overflow patterns introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Original source had extensive documentation explaining each function's purpose. Only auto-generated function headers present with no algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, array summation) not explicitly identified. Loop patterns recognized but not named. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations marked at end (`FAILED to decompile: __libc_start_main`). However, `volatile_access` simplified to `2 * *p` without warning about volatile semantics loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions inferred. Error conditions not documented. Original source had no explicit contracts either, but decompiler added none.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. Callback relationships maintained (`ptr_func_simple`, `struct_func_ptr`). No explicit call graph documentation but relationships inferable from code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical groups matching source organization. Test functions grouped together. No explicit module boundaries but static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External library functions marked as failed decompilation. Would require stubs for `printf`, `puts`, `__libc_start_main`. Compilation metadata present but dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5+8+6+5)/4 = 6.0  →  6.0 × 0.30 = 1.80
+Level 2 (25%): (6+7+7+6)/4 = 6.5  →  6.5 × 0.25 = 1.625
+Level 3 (20%): (7+7+7)/3 = 7.0    →  7.0 × 0.20 = 1.40
+Level 4 (15%): (2+4+4+2)/4 = 3.0  →  3.0 × 0.15 = 0.45
+Level 5 (10%): (6+6+5)/3 = 5.67   →  5.67 × 0.10 = 0.567
+
+Overall Score: 1.80 + 1.625 + 1.40 + 0.45 + 0.567 = 5.84 ≈ 5.8/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects
+- **Complete loss of source comments** - Original had extensive documentation explaining each function's purpose and test scenarios; decompiled code has zero meaningful comments
+- **Generic variable names in test functions** - Variables like `v32`, `v33`, `v34`, `v36[2]` obscure their roles as array elements, loop counters, and struct fields
+- **Magic numbers without context** - Literal `32` for ASCII conversion, `0x1A` for bounds, constant-folded printf values (`97` instead of `'a'`)
+- **Volatile semantics lost without warning** - `volatile_access` simplified from two reads to `2 * *p` without indicating volatile behavior was optimized away
+- **Bitfield struct degraded to raw access** - `struct_bitfields` shows bit manipulation (`(*(_WORD *)f >> 3) & 7`) instead of named field access
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `binary_tree_sum`), making code navigation straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; decompiler should recover or generate comments explaining function purpose, especially for test functions that lost all context.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement comment recovery/generation** - Extract comments from debug symbols when available, or generate semantic comments based on function analysis (e.g., "// Converts uppercase to lowercase" for `process_char`)
+2. **Improve variable name inference for test functions** - Use usage patterns to name variables (e.g., `v32` initialized to `10` in pointer array test should be `val_a` or similar)
+3. **Flag optimization-induced semantic changes** - Add warnings when volatile semantics, memory ordering, or undefined behavior patterns are simplified during decompilation

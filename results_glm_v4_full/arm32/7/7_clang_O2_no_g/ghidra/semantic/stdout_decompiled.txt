@@ -1,0 +1,2 @@
+obf_opt_edge
+opaque_predicate: 10

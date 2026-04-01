@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v2` in test functions obscure their purpose (should be `cdecl_result`, `stdcall_result`). Some meaningful names exist (`sum`, `large`, `test_str`) but generic temporaries dominate.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `param_by_value_int`). Some compiler-generated names remain (`sub_1020`, `init_proc`) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xA00000005LL` for struct initialization and `0x28` for offset checks are unexplained. Format strings referenced as variables (`aCallL206`, `format`) lose clarity.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack annotations (`[rsp+Ch] [rbp-4h]`) and calling convention markers (`__cdecl`, `__fastcall`) add visual noise. Type casts like `(__int64 (__fastcall *)(_QWORD))` are verbose but necessary.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals recovered well (for loops in `func_struct_byval`, switch in `ret_multi_branch`). However, `call_order_dep` loses the `++i, ++i` undefined behavior pattern, returning constants instead.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each test function remains separate, no inappropriate inlining. Helper functions like `callback_func` properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Test functions use temporary variables (`v0`, `v1`) creating minor indirection but not disrupting flow significantly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in `mixed_conventions_test` with `sum` and `suma` variables for accumulation. No significant dead code, but variable reuse could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degraded (`__int64` vs `long long`, `_DWORD` vs `int`). Function pointer in `param_func_ptr` uses generic `(_QWORD)` casting losing signature information.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types referenced (`LargeStruct`, `SmallStruct`) but initialization shows problems (`s = (SmallStruct)0xA00000005LL`). Field names preserved (`data`, `x`, `y`) but struct definitions not in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)p`, `(__int64 (__fastcall *)(_QWORD))callback`. Void pointer usage in `param_complex_cast` loses type information. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only decompiler metadata headers present. No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms present (va_list handling, struct access) but not explicitly recognized. No design pattern identification. Varargs pattern recovered but not labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("FAILED to decompile" for library functions, "positive sp value has been detected" warning). However, undefined behavior in `call_order_dep` silently changed without warning.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `p != NULL` in `func_struct_byptr`). Null checks present but not labeled as contracts. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. No explicit call graph documentation. Global variable usage (`_bss_start`, `_gmon_start__`) not well explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source-order grouping. Related functions adjacent (calling convention tests together). Static functions properly identified (`callback_func`).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Six external functions failed to decompile (`printf`, `strlen`, `memset`, etc.). Struct type definitions missing from output. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5×0.10 + 8×0.10 + 5×0.05 + 7×0.05) = 1.90
+Level 2 (25%): (7×0.08 + 8×0.07 + 7×0.05 + 7×0.05) = 1.82
+Level 3 (20%): (6×0.08 + 6×0.07 + 5×0.05) = 1.15
+Level 4 (15%): (3×0.05 + 5×0.03 + 5×0.03 + 3×0.04) = 0.57
+Level 5 (10%): (6×0.04 + 7×0.03 + 5×0.03) = 0.60
+
+Overall = 1.90 + 1.82 + 1.15 + 0.57 + 0.60 = 6.04/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` in test functions should be named after their semantic purpose (e.g., `cdecl_result`)
+- Magic number `0xA00000005LL` for SmallStruct initialization obscures the `{5, 10}` intent
+- Struct type definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) missing from decompiled output
+- Undefined behavior in `call_order_dep` silently transformed from `++i, ++i` to constants `(1, 2)` without warning
+- No comments explaining varargs internal mechanics (`gp_offset`, `overflow_arg_area` handling)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making semantic purpose immediately clear for most functions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no documentation recovered; complex patterns like varargs handling and calling conventions lack any explanatory comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct type definitions** - Include complete struct/union definitions in output rather than just references, preserving field names and layouts.
+2. **Add semantic variable naming** - Infer variable purposes from usage patterns (e.g., loop counters, accumulators, result holders) instead of generic `v0`, `v1` naming.
+3. **Flag semantic transformations** - When decompilation changes behavior (like `++i, ++i` → constants), add explicit warnings indicating potential undefined behavior was simplified.

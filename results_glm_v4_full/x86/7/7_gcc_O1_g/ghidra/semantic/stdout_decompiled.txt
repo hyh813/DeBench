@@ -1,0 +1,5 @@
+Testing obfuscation and optimization techniques:
+
+  param_opaque_predicate(10) = 5070827
+  call_opaque_predicate() = 20
+  call_instruction_substitution() = 225

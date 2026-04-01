@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `ptr`, `index`, `j`, `i` throughout. While some globals like `global_counter`, `global_array`, `file_scope_static` are well-named, the vast majority of local variables are uninformative. Struct fields are named `field_0`, `field_1`, `field_8` losing all semantic meaning.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions are correctly named matching the source (e.g., `local_vars`, `heap_basic`, `memory_leak`, `double_value`), but wrapper functions use generic names like `sub_401020`, `sub_40102c`. The mix of recovered names and address-based names creates inconsistency.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. Large constants like `21351050473470648687898014583954083856` are unexplained. Some constants like `NULL` are clear, but most numeric literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including wrapper functions (e.g., `sub_401209` just calls `local_vars()`), decompiler artifacts like `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] MBusEvent-Imbe_Fence()`, and unnecessary type definitions. The code is cluttered with compiler-generated artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper loops and conditionals. However, some goto statements are used (e.g., `goto LABEL_40142b`, `goto global_func_ptr`) that could be better expressed as structured control flow. At -O0, these goto patterns are unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and focused. Some wrapper functions exist but the main logic functions like `heap_basic`, `linked_list_heap` have appropriate granularity. Minor issue with small wrapper functions that just call other functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with manageable forward jumps. Early returns are used appropriately in error handling paths. Some complex nested conditions in functions like `vla_stack` but overall traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Loop unrolling is present in functions like `large_stack_frame` and `heap_basic` but this is expected at the assembly level. No major redundant expressions that would impede understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int`, `unsigned long long`, `void*`, `char*` but with inconsistencies. Function pointers are typed as `unsigned long long` instead of proper function signatures. Some signed/unsigned mixing occurs. Integer types are generic rather than specific (int32_t vs int64_t).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered but with generic names (`struct_0`, `struct_1`, `struct_2`) and generic field names (`field_0`, `field_1`, `field_8`). The original `Point` struct is not recovered - fields are just computed as `a0 * 3`. Nested structures like `Node` have some recovery but lose semantic field names like `data` and `next`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: extensive pointer arithmetic (e.g., `ptr + idx * 4`), unsafe casts like `*((void*)((char *)ptr + 4 * idx))`, and no bounds checking. The dangling_pointer function returns `*(ptr)` after free - correctly showing the bug but without safety warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like `/* do not return */` present. No explanation of algorithms, no documentation of preconditions/postconditions, no indication of decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some common patterns are recognizable (malloc/free pairs, linked list traversal) but not explicitly named or documented. No recognition of design patterns, algorithms, or data structure patterns. The code shows what happens but not why.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged: `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] MBusEvent-Imbe_Fence()`. However, many suspicious patterns are not flagged - the dangling pointer dereference after free, potential buffer overflows, and undefined behavior are silently presented as normal code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error conditions (like NULL checks returning -1) are present but not explained as contracts. No documentation of what functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships are clear through extern declarations (e.g., `extern unsigned int global_counter`). Function calls are traceable. However, callback relationships and virtual dispatch are not documented. No indication of call graph or which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically by functionality (stack functions, heap functions, static functions, memory operations). However, the organization is not as clean as the original source with its clear section comments. Some arbitrary ordering exists.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Many extern declarations present. Some functions would require stubs to compile standalone (e.g., `extern_function`). The metadata states "Compiles: Yes" but the code has unresolved external references that would need linking.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`, `a0`, `ptr`, `index`) making code flow extremely difficult to track
+- Struct field names are all generic (`field_0`, `field_1`, `field_8`) losing all semantic meaning of data structures like `Node`, `Point`, `TreeNode`
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Type safety issues: unsafe pointer arithmetic, no bounds checking, dangling pointer shown without warning
+- Magic numbers like `4294967295` used everywhere without explanation
+
+**Best Quality Aspect:** Structural Intelligibility (scored 7.0/10)  
+Control flow is mostly natural with proper loops and conditionals. Functions are reasonably decomposed and code generally reads top-to-bottom without excessive spaghetti code.
+
+**Most Needs Improvement:** Lexical Clarity (scored 4.25/10)  
+Variable and function naming is highly inconsistent with generic address-based names mixed with recovered names. Literal values are unexplained magic numbers. Significant decompiler noise pollutes the output.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `ptr` used in malloc contexts should be `buffer` or `array`, indices like `index` used in array access should reflect the data structure
+2. Recover struct field names from context - `field_0` used as `data` in Node structures, `field_8` used as `next` pointer
+3. Add semantic comments for magic numbers - flag `4294967295` as error return indicator, explain large constants as compiler-generated values

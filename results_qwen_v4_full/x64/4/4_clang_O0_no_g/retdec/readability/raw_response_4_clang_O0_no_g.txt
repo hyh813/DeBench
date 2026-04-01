@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `sum`, `args`, `len`, `large` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some helper functions degraded to `function_1030`, `function_1040` but core logic names intact.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) making them unreadable. Magic numbers like `0xffffffff`, `0x100000000` appear without explanation throughout arithmetic operations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive assembly intrinsics (`__asm_movaps`, `__asm_movups`, `__asm_movsd`) clutter the code. Unnecessary casts and `& 0xffffffff` operations appear repeatedly without semantic purpose.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures mostly preserved but `for` loops converted to `while` loops (e.g., `func_struct_byval`). Switch statement in `ret_multi_branch` has unusual fall-through that differs from original source logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Several functions have incorrect parameter counts (`call_double_ptr` shows 4 params, original has 0). `varargs_func` and `param_varargs` have 6 parameters instead of variadic signature, breaking semantic clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but variable declarations scattered mid-function (e.g., `int64_t v1; // 0x1430` declared but used later). Some forward references disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated `& 0xffffffff` masking throughout (nearly every return statement). Varargs handling code duplicated between `varargs_func` and `param_varargs` with identical complex logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type erosion - `int` becomes `int64_t` everywhere. Original `int32_t` parameters inconsistently typed. Pointer types degraded to `int64_t` (e.g., `func_mixed_args(int64_t str)` instead of `char*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct`, `SmallStruct`, `TestIntPair`, `BigStruct` all lost. Access via pointer arithmetic only (`*(int64_t *)(8 * i + (int64_t)&v2)`). No struct definitions in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`(int64_t *)`, `(int32_t *)`, `(char *)`). `func_struct_byptr` has uninitialized variable `v2` used in multiplication. Function pointer calls use raw addresses (`0x21d0`, `0x21c0`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source's extensive documentation. No decompiler-generated comments explaining uncertain regions or assembly intrinsics. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (shows as 6 fixed parameters). No recognition of calling convention patterns, structure passing patterns, or callback patterns that were explicit in source.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation regions. Assembly intrinsics present without explanation. Incorrect function signatures not flagged (e.g., `ret_void` shows 4 params, original has 2).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` null check not explained). No postconditions inferred. Error conditions completely undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`g1` through `g24`) not explained. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with functions roughly grouped. No header file structure. Original test organization (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) preserved but not documented.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard headers included but assembly intrinsics (`__asm_movaps`, `__asm_hlt`) may not compile on all platforms. Some function signatures incorrect preventing clean compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.21/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Complete struct type loss**: `LargeStruct`, `SmallStruct`, `TestIntPair` all accessed via raw pointer arithmetic instead of proper struct definitions
+- **Varargs signature corruption**: `varargs_func` shows 6 fixed parameters instead of variadic `(...)` signature, breaking semantic understanding
+- **Zero comment recovery**: Original source had extensive documentation (CALL-L1-01, PARAM-L1-01, etc.) - none preserved
+- **Assembly intrinsic pollution**: `__asm_movaps`, `__asm_movups`, `__asm_movsd` clutter readable C code without explanation
+- **String literal obfuscation**: All strings stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) instead of readable text
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` preserved accurately from source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete failure to recover any of the extensive source documentation, making semantic understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze memory access patterns to reconstruct struct layouts with field names based on usage context
+2. **Preserve variadic function signatures** - Detect `va_list` patterns and restore `(...)` syntax instead of expanding to fixed parameters
+3. **Extract and decode string literals** - Convert hex-encoded global strings back to readable text and preserve original comments from debug symbols when available (`-g` flag was used)

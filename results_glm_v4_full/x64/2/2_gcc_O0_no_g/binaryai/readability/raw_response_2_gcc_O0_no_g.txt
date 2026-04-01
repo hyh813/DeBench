@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_10`, and `uVar1`. While `local_c` hints at a loop counter, meaningful names like `sum`, `len`, or `width` from the source are lost, requiring manual tracking of variable usage.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`double_value`, `process_char`, `array_1d_stack`, etc.) are perfectly recovered from the debug symbols, matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are recovered intact, but character constants like `'A'` and integer constants like `32` are often converted to hex (e.g., `0x41`, `0x20`) or raw integers, which reduces immediate readability compared to the source's character literals.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but includes compiler-generated stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) which, while accurate to the binary, add visual noise that wasn't in the original source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; loops are correctly reconstructed as `for` loops, and `if/else` blocks are natural. The inversion of conditions in `process_char` (using OR instead of AND) is a standard compiler transformation that remains readable.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining, preserving the original architectural boundaries perfectly, which is expected for `-O0` compilation.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The flow is easy to follow, closely resembling the original source structure.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent loop unrolling or dead code. The logic is concise and matches the source operations without unnecessary duplication or compiler artifacts cluttering the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `float` are correct, but signedness is often wrong (e.g., `process_char` uses `uint`/`byte` instead of `char`). Critically, `process_ld` is decompiled as an empty `void` function, completely failing to recover the `long double` logic.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are not reconstructed; they are flattened into raw pointer arithmetic. For example, `struct_nested` accesses `r->size.width` as `param_1[3]`, and `struct_simple` uses `param_1[0]`, `param_1[1]`, etc., instead of field names, severely obscuring the data layout.
+
+**11. Type Safety:** Score: 5/10
+Justification: The loss of struct definitions forces the use of unsafe pointer arithmetic and casts like `*(int *)(param_1 + (long)local_c * 4)`. While accurate to the machine code, it removes the type safety boundaries provided by the original structs.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic, algorithms, or data structures. The only comments are metadata headers ("Decompiled by BinaryAI"), offering no assistance in understanding the code's purpose.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Common idioms like pointer subtraction in `ptr_diff` (dividing by 4) are visible, and string loops are clear. However, higher-level patterns like the "State Machine" in `enum_switch` are presented as nested `if` statements without explicit recognition of the switch idiom.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler silently fails on `process_ld`, outputting an empty function without any warning or error message indicating that the analysis failed or that the code contains unsupported instructions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds), postconditions, or invariants. For instance, the bounds check in `array_complex_index` is present but not explicitly documented as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct symbol names (e.g., calls to `printf` and user-defined functions), making the call graph and dependencies very clear to the reader.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order (roughly address order which matches source order here), and related test functions are grouped together, maintaining the original module structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types like `undefined8`, `undefined4`, and `code` which are not valid standard C. It would require significant patching (replacing types with `uint64_t`, `uint32_t`, `void(*)()`) to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.5
+L2_avg: 9.25
+L3_avg: 4.33
+L4_avg: 2.5
+L5_avg: 6.67
+
+Overall = (6.5 × 0.30) + (9.25 × 0.25) + (4.33 × 0.20) + 
+          (2.5 × 0.15) + (6.67 × 0.10)
+Overall = 1.95 + 2.31 + 0.87 + 0.375 + 0.667
+Overall ≈ 6.17/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.2/10
+
+### Critical Defects (Bullet List)
+- **Function `process_ld` is decompiled as empty**: The `long double` logic is completely lost, representing a critical failure in type recovery for this specific ABI/type.
+- **Structs flattened to pointer arithmetic**: Accesses like `param_1[3]` instead of `r->size.width` destroy the semantic context of composite types.
+- **Generic variable naming**: Variables like `local_10` and `uVar1` force the reader to reverse-engineer variable purposes from usage.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The presence of debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, making the high-level flow easy to follow.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (3/10)**
+- **Why?** The failure to reconstruct `struct` definitions and the subsequent flattening of all struct accesses into raw array indexing is the single biggest barrier to understanding the data manipulation logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Floating Point Support**: specifically for `long double` on ARM64, to prevent functions like `process_ld` from being decompiled as empty.
+2.  **Reconstruct and Apply Struct Types**: Automatically identify struct layouts and replace raw pointer arithmetic (e.g., `*(int *)(param_1 + 12)`) with field access syntax (e.g., `param_1->field`).
+3.  **Infer Variable Names**: Use data flow analysis to infer names for accumulator variables (e.g., suggest `sum` for variables initialized to 0 and added to in a loop).

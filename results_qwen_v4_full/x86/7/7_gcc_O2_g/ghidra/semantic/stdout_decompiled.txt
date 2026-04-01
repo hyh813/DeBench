@@ -1,0 +1,8 @@
+Test output:
+
+call_opaque_predicate: 10
+call_opaque_predicate result: 20
+call_instruction_substitution: 225
+call_string_encryption: 89
+call_tail_call_optimized: 500500
+call_non_tail_call: 5050

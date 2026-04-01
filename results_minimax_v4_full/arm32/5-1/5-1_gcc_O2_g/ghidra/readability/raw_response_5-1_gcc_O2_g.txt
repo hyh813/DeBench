@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Nearly all local variables are marked as "Unresolved local var" with `???` (e.g., `int result@[???]`, `LifecycleClass obj@[???]`, `Base base@[???]`). The decompiler completely failed to recover any variable names, making it impossible to track variable purposes without significant manual analysis.
+
+### 2. Function Naming Quality
+**Score:9/10**
+Justification: Function names are almost perfectly recovered. Template instantiations like `template_max<int>`, `template_max<double>`, `template_swap<int>` are correctly named. Member functions like `Container<int>::push`, `Derived::virtual_func`, `DiamondDerived::func` match source exactly. Minor issue: some internal functions like `_init` and `FUN_0001092c` are generic.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: The code is riddled with unexplained magic numbers: `0x2a` (42), `0x125c` (4704), `0x3e9` (1000), `0x47` (71), `0x28a` (650), `0x2bf` (703), `0x96` (150), `0xfa` (250). No named constants or enums are recovered. The literal `0x1f` for buffer size is unexplained. These should be `MAX_NAME_LEN`, `CLASS_ID`, etc.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Extensive compiler artifacts pollute the output: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return", "WARNING: Struct ignoring overlapping field". These 50+ warnings make reading difficult and indicate low confidence in the decompilation.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural and readable. The `call_virtual_func` has a warning about indirect jump resolution, but the basic if-else structures in template functions and Container methods are clear. At -O0, control flow should be nearly identical to source, and mostly it is.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized and decomposed. Template functions are separate (`template_max<int>`, `template_max<double>`). Container methods for int and double are properly separated. Member functions are correctly extracted. The decomposition matches the source organization well.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns in template functions are used appropriately. Some complex virtual function thunks have non-linear flow, but this is expected for virtual inheritance scenarios.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy observed. Dead code warnings are present but the actual code is clean. Loop unrolling is minimal at -O0. The code is straightforward without duplicate expressions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Most types are correctly recovered: `int`, `double`, `size_t`, `char*`, `bool`. Template types `Container<int>`, `Container<double>` are properly instantiated. However, some type info is generic like `undefined4`, `undefined1`. The `this` pointer types are correctly marked with `__thiscall`.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: Class structures are mostly recovered: `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Container<int>`, `RTTIBase`. Field names like `obj.name`, `this->size`, `this->multiplier`, `this->data` are correct. The virtual inheritance structure is recognized with warnings about overlapping fields.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. The virtual function calls use proper vtable access patterns. Template functions use correct types. Some unsafe patterns exist in the complex virtual inheritance code with pointer arithmetic, but these are accurate representations of the compiled binary.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: The many "WARNING" comments are not helpful for understanding the code - they're decompiler diagnostics. DWARF original prototypes are preserved (e.g., `/* DWARF original prototype: int virtual_func(Base * this, int x) */`), which is valuable. However, there's no explanation of what the functions do or how they relate to each other.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Some C++ idioms are recognized: virtual function calls through vtables (`obj->_vptr_Base`), thiscall calling convention, template instantiation. However, the lambda expressions are completely unresolved (marked as `anon_struct_8_2_35feab7f lambda1@[???]`), and smart pointer patterns aren't explicitly identified as RAII patterns.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+Justification: The warnings do flag anomalies: "Could not recover jumptable", "Unknown calling convention", "Subroutine does not return". However, these are generic warnings without specific guidance on how to resolve or interpret them. The "Unresolved local var" annotations clearly indicate missing information.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants are documented. The code doesn't indicate that `Container::get` returns `T()` (default constructed) when index is out of bounds, or that `template_swap` requires valid pointers. These implicit contracts from the source are lost.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Virtual function calls are properly linked to vtables. Template instantiations are clearly related to their definitions. However, the caller-callee relationships aren't explicitly documented. The `test_cpp_oo_features` function calls many test functions but doesn't document what each returns or expects.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are logically grouped - test functions together, template functions together, class methods grouped by class. The order roughly matches the source file structure. Static functions are properly scoped. The organization is clear and navigable.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: The code references many unresolved external symbols: `operator_new`, `operator_delete`, `__cxa_throw`, `__cxa_allocate_exception`, `std::type_info::operator==`, `__dynamic_cast`, `__aeabi_d2iz`, `__stack_chk_fail`. These are C++ runtime functions that would need stubs or linking against libstdc++.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 3) / 4 = 4.25
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (7 + 8 + 7) / 3 = 7.33
+L4_avg = (4 + 6 + 7 + 3) / 4 = 5.00
+L5_avg = (5 + 8 + 4) / 3 = 5.67
+
+Overall = (4.25 × 0.30) + (7.50 × 0.25) + (7.33 × 0.20) + (5.00 × 0.15) + (5.67 × 0.10)
+        = 1.275 + 1.875 + 1.466 + 0.75 + 0.567
+        = 5.93/10
+```
+
+### Overall Readability Score: 5.93/10
+
+### Critical Defects
+- **Variable names completely unresolved**: All local variables show `???` instead of meaningful names like `result`, `obj`, `r1`, making code flow extremely difficult to trace
+- **Magic numbers everywhere**: Values like `0x125c`, `0x3e9`, `0x2bf` lack any constant names; should be `EXPECTED_SUM`, `INSTANCE_COUNT_MULTIPLIER`, etc.
+- **Excessive warning noise**: 50+ WARNING comments about unreachable blocks, unknown calling conventions, and unresolved jump tables clutter the output
+- **Lambda expressions completely lost**: Marked as `anon_struct_8_2_35feab7f lambda1@[???]` with no recognition of capture semantics or closure types
+- **Missing C++ runtime dependencies**: References to `operator_new`, `__cxa_throw`, `__dynamic_cast` without declarations make compilation impossible
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names are almost perfectly recovered, including template instantiations (`template_max<int>`), member functions (`Container<int>::push`), and class methods. This is the decompiler's strongest area.
+
+### Most Needs Improvement: Variable Naming (scored 2/10)
+The complete failure to recover any local variable names is the most severe readability issue. Every local variable shows `???` instead of semantic names like `result`, `obj`, `capture_by_value`, `ptr1`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `result +=` suggests accumulator, `obj.getData(2)` suggests object instance) to generate meaningful names
+2. **Recognize and name magic numbers**: Detect constant expressions (e.g., `0x1234` appears in `getClassID()`) and suggest or create named constants based on context
+3. **Recover lambda closure types**: Identify C++14 generic lambdas and lambda capture patterns; name the closure types with their capture semantics rather than anonymous structs

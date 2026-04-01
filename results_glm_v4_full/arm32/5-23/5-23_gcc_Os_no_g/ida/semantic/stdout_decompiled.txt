@@ -1,0 +1,19 @@
+=== Testing Preprocessing Features ===
+PpL201: 64
+PpL202: 30
+PpL203: 32
+PpL204: 57122
+PpL301: 116
+PpL302: 19
+PpL303: 60
+LOG: Values: 10, 20, 30
+PpL304: 60
+PpL305: 16
+PpL306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:11
+PpL307: 382
+=== Testing Assembly Features ===
+AsmL401: 15
+AsmL402: 12
+AsmL403: 42
+AsmL404: 36

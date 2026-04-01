@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (a1, a2) and local variables use v1, v2, result, len, len2. The original source used meaningful names like `size`, `x`, `y`, `result`. No inference from usage patterns (e.g., `a1 > 1024` should suggest `size` parameter).**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `param_macro_constants`, `call_asm_basic`, `param_conditional_compile`. Some libc wrapper functions have generic names (function_518 for printf), but this is expected for stripped binaries.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Critical failure - macro constants are replaced with global variable addresses: `MAX_SIZE` (1024) becomes `(int32_t)&g18` (address of global), `BUFFER_COUNT` (16) becomes `(int32_t)&g17`. The expression `64` is correctly preserved but the logic is inverted and confusing: `a1 > (int32_t)&g18 ? 64 : (int32_t)&g17`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Clean decompilation with minimal compiler artifacts. Some unusual pointer arithmetic in string handling (e.g., `strlen((char *)((int32_t)&g19 + (int32_t)&g22))`) but overall manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow matches source well. Loops are properly recovered as while/for constructs. The conditional in param_macro_constants is inverted due to constant misidentification but structure is clear.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions match source granularity. Each test function (call_macro_*, param_*) is separate. The inline assembly functions are properly decompiled to C equivalents where possible.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns used appropriately. The test_preprocessing_features function has sequential calls but this matches the original structure.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop unrolling in param_asm_clobber is appropriately recognized as a loop structure. Some redundant calculations in string handling but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good use of int32_t for arm64. Some parameters could be more specific (e.g., size_t for array indices). The pointer types are mostly correct (int32_t* for arrays).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No struct recovery needed for this code (mostly primitives). The array handling is correct with proper pointer arithmetic. Global variables are identified but with generic names (g1, g2, g3).
+
+**11. Type Safety:** Score: 8/10  
+Justification: Mostly type-safe code. Some unnecessary casts (e.g., `(int32_t)` throughout) but no dangerous operations. The pointer arithmetic in string functions is safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining macro semantics, assembly behavior, or algorithm intent. The original source had extensive comments about preprocessing behavior that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized (printf calls, memcpy, mmap/mprotect). The macro expansion logic is not recognized - SQUARE(x) + MAX(x,y) is correctly computed but not identified as macro expansion.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of the constant misidentification problem in param_macro_constants. The inverted logic (`a1 > &g18`) should be flagged as suspicious but isn't.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. The original had clear expectations (e.g., "期望: 64") that are not reflected in the decompiled code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from code structure. Global variable usage is visible but not documented. No indication of which functions call which.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (preprocessing functions together, asm functions together). Static functions properly scoped. Some libc wrapper functions mixed in.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with minor fixes. Missing includes (stdbool.h, stdint.h are present). Some unusual constructs (string pointer arithmetic) would need adjustment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (a1, a2, v1, v2) - no semantic inference from usage
+- Macro constants completely lost: MAX_SIZE (1024) replaced with address-of-global `&g18`, breaking the logic
+- No comments explaining preprocessing behavior, inline assembly, or algorithm intent
+- param_macro_constants has inverted logic: `a1 > &g18 ? 64 : &g17` should be `a1 > 1024 ? 64 : 512`
+- String literal handling is broken: `strlen((char *)((int32_t)&g19 + (int32_t)&g22))` is nonsensical
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.0/10)  
+Control flow is natural and matches source, functions are properly decomposed, and code reads linearly without spaghetti jumps.
+
+**Most Needs Improvement:** Lexical Clarity (scored 5.0/10)  
+Variable naming is completely generic and macro constants are lost, making it impossible to understand the original macro semantics from the decompiled code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `a1 > 1024` suggests `size` parameter, `a1 * a1` suggests `SQUARE` macro expansion
+2. Recover macro constants by detecting compile-time constant expressions and matching against known patterns (e.g., 1024+16=1040 appearing in multiple functions)
+3. Add semantic comments explaining preprocessing behavior, especially for macro-expanded code and conditional compilation branches

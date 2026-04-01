@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses exclusively generic variable names (v0, v1, v2, ptr, i, v3, v4) that convey no semantic meaning. For example, in `local_vars`: source has `int a = x; int b = a * 2; int c = b + 10;` but decompiled shows `v1 = a0 * 2; v0 = v1 + 10;`. The parameter `a0` is also uninformative compared to source's `x`. This makes tracking variable purpose across functions extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Mixed results: some functions have recovered names (local_vars, local_array, heap_basic, malloc, free) but many still use the auto-generated sub_XXXXX pattern (sub_401020, sub_40102c). The recovered names are accurate but inconsistent throughout the codebase. Functions like `double_value` were properly recovered while wrapper functions remain unnamed.
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Most numeric literals are interpretable (10, 5, 20, 100), but the decompiler uses 4294967295 (0xFFFFFFFF) extensively for error returns without explaining these represent -1 in signed int context. The magic number `0x800` (2048) in large_stack_frame is unexplained. Some literals like array sizes are correctly preserved.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Minimal compiler artifacts present. The code contains some unusual constructs like `CONCAT` operations in VLA calculations and `[D]` markers for unsupported features, but these don't significantly impede readability. No excessive register spilling artifacts or debug instrumentation clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+At -O0 optimization level, control flow is natural and idiomatic. Loops use for(;;) constructs correctly, conditionals are straightforward, and no goto abuse exists. Example: `for (i = 0; i < 10; i += 1)` in local_array matches source structure. Early returns are used appropriately for error handling.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Function granularity is appropriate - each test function (local_vars, heap_basic, etc.) is properly separated. However, many wrapper functions like `sub_401209` that just call `local_vars()` add unnecessary indirection. The core logic functions are reasonably sized (20-50 lines) with clear single responsibilities.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Code generally reads top-to-bottom without excessive jumps. The VLA and alloca functions have complex stack calculations but these are localized. No deep nesting (>4 levels) observed. Forward jumps are minimal and mostly related to error handling paths.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+No significant dead code. Some repetitive patterns exist in similar functions (heap_basic, heap_array, heap_calloc) but these reflect the source code structure. Loop unrolling is not present at -O0. The code is reasonably clean without obvious redundant computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Significant type degradation: all `int` became `unsigned int`, losing sign information critical for understanding error return values. Pointers are often `void*` or `unsigned long long` instead of proper typed pointers. The parameter `a0` in functions like `local_vars(unsigned int a0)` should be `int` based on source. Function pointers are poorly typed.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Structures are partially reconstructed with generic names (struct_0, struct_1, struct_2). The Node structure in linked_list_heap shows: `struct_0 { unsigned int field_0; char padding_4[4]; struct_0 *field_8; }` - padding is detected but field names are lost. The Point struct was not recovered at all in global_struct_access.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Several unsafe patterns: extensive pointer arithmetic with `*((unsigned int *)((char *)ptr + 4 * i))` instead of array indexing; function pointer type confusion in call_global_callback using `struct_0 *global_func_ptr`; potential signed/unsigned issues with the 4294967295 magic numbers. No alignment annotations or restrict keywords recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no useful comments exist. The only annotations are `[D]` markers indicating "Unsupported jumpkind" or "MBusEvent-Imbe_Fence()" which are decompiler internal artifacts, not helpful explanations. No algorithm documentation, parameter descriptions, or recovery confidence indicators. The code provides no guidance for understanding complex operations.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Basic C idioms (loops, conditionals, malloc/free pairs) are recognizable but not explicitly named or highlighted. Memory management patterns (allocate-then-initialize-then-free) could be documented. No mention of specific algorithms or design patterns. The linked list creation and tree traversal could benefit from pattern naming.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Some anomalies are flagged: `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] MBusEvent-Imbe_Fence()` appear, but these are cryptic decompiler internals rather than helpful warnings. No indication of uncertain indirect calls, potential undefined behavior (like the dangling_pointer function), or unusual stack layouts. The dangerous memory operations are presented without warning.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No precondition/postcondition documentation. The implicit contracts from source (e.g., "requires: n > 0" for vla_stack, "ensures: returns heap-allocated or -1") are not recovered. Error handling is present in code but not explained. The safety checks (NULL checks before dereference) are present but not documented as defensive programming.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function call relationships are implicit in the code (test functions call tested functions) but not documented. The extern declarations show external dependencies (extern_global_var, extern_function) but no comments explain these relationships. Callback usage in set_global_callback/call_global_callback lacks documentation of the contract.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are logically grouped: stack memory functions together, heap functions together, static/global functions together. The test functions appropriately call their corresponding tested functions. Static vs extern distinctions are preserved. However, the file is monolithic with no header separation.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code includes extern declarations for external symbols and should compile with standard libc. Some issues: the CONCAT operations in VLA calculations may not compile, and the TLS access using `fs` segment register is architecture-specific. The code declares external functions properly but doesn't document dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 6 + 7) / 4 = 5.0
+L2_avg = (8 + 7 + 8 + 7) / 4 = 7.5
+L3_avg = (4 + 5 + 5) / 3 = 4.67
+L4_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L5_avg = (4 + 7 + 7) / 3 = 6.0
+
+Overall = (5.0 × 0.30) + (7.5 × 0.25) + (4.67 × 0.20) + (3.25 × 0.15) + (6.0 × 0.10)
+        = 1.5 + 1.875 + 0.934 + 0.4875 + 0.6
+        = 5.40/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming is completely generic** - All variables use v0, v1, v2, ptr, i patterns with no semantic meaning, making code comprehension extremely difficult
+
+2. **Type information severely degraded** - All `int` became `unsigned int`, losing sign semantics for error returns; function pointers poorly typed
+
+3. **No struct field recovery** - Structures use generic field_0, field_1, field_2 names; Point struct not recovered at all
+
+4. **No comments or documentation** - Zero useful comments explaining algorithms, contracts, or intent
+
+5. **Anomaly detection is cryptic** - [D] markers show decompiler internals rather than helpful warnings about undefined behavior
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (8/10)** - At -O0, the decompiler correctly recovered idiomatic loop and conditional structures that match the source code's logical flow. No goto abuse or spaghetti code.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The complete lack of semantic variable names is the most severe readability issue. Even basic inference from usage patterns (e.g., `a0 * 2` suggests multiplication by 2) could yield better names than generic v0/v1.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze expressions like `a0 * 2` to suggest `double_value`, track array indices like `arr[i]` to name loop variables `i`, detect pointer roles from malloc/free pairs
+
+2. **Recover struct field names from context**: Use field access patterns (e.g., `field_0 + field_1` suggests Point.x + Point.y) and initialization values to infer semantic names
+
+3. **Add meaningful comments for contracts and anomalies**: Document preconditions (e.g., "requires: n > 0"), flag undefined behavior (dangling_pointer accesses freed memory), and explain complex operations (VLA stack allocation)

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `uVar2`, `uVar3`, `local_14` which completely obscure their semantic purpose. The original had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`. Only `local_c` provides minimal context.
+
+**2. Function Naming Quality:** Score: 8/10Justification: Function names like `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_dynamic_code` accurately match the original source function names. The decompiler preserved the semantic naming intent well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: While computed values like `0x200` (512) and `0x40` (64) are correct, many system constants remain unexplained magic numbers: `0x1e` for `_SC_PAGESIZE`, `7`/`3`/`1` for memory protection flags (`PROT_READ|PROT_WRITE|PROT_EXEC`, etc.). These should be named constants for clarity.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled code is clean with no obvious compiler artifacts like redundant casts, dead code from register spilling, or debug instrumentation. The output is straightforward without unnecessary clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with simple if-else structures and do-while loops (appropriate for decompiled code). No goto abuse or spaghetti code. The loop in `param_asm_clobber` uses a do-while pattern which is standard for decompiled loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each function handles one task (e.g., `param_macro_constants`, `param_asm_basic`). Parameter lists are reasonable and not exposing unnecessary implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `param_dynamic_code`. The flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. The code doesn't have duplicate expressions or dead code. Loop unrolling in `param_asm_simd` is appropriately represented as element-wise operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` and `undefined4` types throughout. Original had `size_t` for page sizes, `int*` for arrays, but these are lost. The `int*` for array parameters is preserved but `size_t` became `size_t` (shown as `size_t` in some places). Mixed precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types were recovered. The code uses raw pointer arithmetic throughout (e.g., `*param_1`, `param_1 + 1` for array access). Original had no complex structs either, but the decompiler made no attempt to create meaningful composite types.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate pointer usage. Minor issues: `undefined4` used for pointers in `param_asm_atomic` when it should be `int*`. No major unsafe casts that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining preprocessing behavior, macro expansions, and assembly semantics. None of this semantic information was recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are implicitly recognizable (atomic operations via `__atomic_fetch_add_4`, memory protection via `mprotect`), but no explicit pattern naming or documentation. The decompiler doesn't identify the "self-modifying code" pattern in `param_dynamic_code`.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings or flags for suspicious code. The indirect function call through generated code in `param_dynamic_code` could warrant an anomaly note. No indication of potential issues with the inline assembly replacement.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had no explicit assertions, but the decompiler could note implicit contracts like "requires: param_1 != NULL" for functions taking pointers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call which, or the callback relationships. The test functions call the param_* functions but this isn't explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably in the output. The decompiler maintains logical ordering (preprocessing functions first, then asm functions, then test functions, then main). Somewhat arbitrary but functional.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: According to metadata, compilation succeeded. External functions like `printf`, `mmap`, `sysconf` are properly declared. Minimal patching needed - the code is essentially standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`param_1`, `iVar1`, `local_14`) that completely obscure semantic purpose
+- No comments recovered despite extensive documentation in original source about macro behavior and assembly semantics
+- Magic numbers like `0x1e` (page size), `7`/`3`/`1` (protection flags) lack constant names
+- No anomaly indication for complex patterns like self-modifying code or atomic operations
+- Type precision lost - `size_t` and specific pointer types become generic `int`/`undefined4`
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names accurately reflect the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Semantic Transparency (1.5/10 avg across 4 dimensions)  
+The decompiled code lacks all semantic context - no comments, no pattern recognition, no anomaly warnings, no contract documentation. This is the most severe degradation compared to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests `size` or `max_size`) to generate semantically meaningful names instead of generic `param_1`
+2. **Recover constant semantics**: Detect magic numbers that correspond to system constants (e.g., `0x1e` → `_SC_PAGESIZE`, `7` → `PROT_READ|PROT_WRITE|PROT_EXEC`) and replace with named constants
+3. **Add semantic annotations**: Include comments explaining recovered patterns (atomic operations, memory protection, self-modifying code) and flag anomalies where analysis was uncertain

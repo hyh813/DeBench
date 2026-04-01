@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: The decompiled code uses extremely generic variable names like `v0`, `v1`, `v2`, `a0`, `ptr`, `i`, `cur` throughout. For example, in `local_array`, the parameter `a0` should be named `n` based on the source, and variables like `v0`, `v1`, `v3` provide no semantic meaning. The decompiler makes no attempt to infer meaningful names from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Justification: While some functions like `double_value`, `local_vars`, `local_array`, `heap_basic` are correctly named, many functions retain generic address-based names like `sub_400b24`, `sub_400c48`, `sub_401008`. The function `call_static_func` is correctly identified, but helper functions that should be named based on their purpose (e.g., `static_helper`) remain unnamed.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: The code is littered with unexplained magic numbers. For example, `4294967295` (0xFFFFFFFF) appears frequently as error return values, `17179869180` is used in complex bit manipulation expressions, and `0x80000000` in shift operations. The decompiler does not replace these with meaningful constants like `UINT_MAX` or explain the bit manipulation patterns like `(x * 2 | x >> 31) & 0xFFFFFFFE` which implements signed multiplication by 2 with overflow handling.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant noise artifacts include: complex condition calculations using `arm64g_calculate_condition`, redundant `memcpy` calls in `sub_4009c4`, stack chk guard references (`__stack_chk_guard`) that clutter logic, and spurious goto statements. The code contains numerous compiler-specific artifacts like `__ROL__` operations that obscure the actual intent.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Justification: Control flow uses goto statements inappropriately (e.g., `goto global_func_ptr` in `call_global_callback`). Complex conditional expressions like `(unsigned int)idx < (unsigned int)a0` are harder to read than simple comparisons. Some loops are correctly identified, but the overall flow is disrupted by computed jumps and complex boolean expressions.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Functions are extracted appropriately from the binary, and most original functions are preserved. However, some functions like `test_heap_memory` are very large (1963 LOC total) with complex nested logic. The parameter lists expose implementation details (e.g., passing addresses rather than values in some cases).
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Justification: The code generally reads top-to-bottom but has several disruptions: forward jumps in error handling paths, complex nested conditions in functions like `vla_stack` and `alloca_usage`, and goto statements that break linear flow. Early returns are used but buried in complex conditional logic.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Justification: Redundant patterns exist throughout. In `sub_4009c4`, `memcpy` is called twice with identical arguments. In `heap_realloc`, there are duplicate calls to `malloc` with the same size. Loop unrolling is present but not commented. Dead code from register spilling adds noise.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Basic types are somewhat preserved (unsigned int, unsigned long, char*), but there's significant type erosion. The decompiler uses generic types like `char*` for many pointers where more specific types exist. Function parameters like `unsigned long a0` should be `int` or `size_t` in many cases. Const correctness is not preserved (e.g., `const_string` is treated as a pointer to struct rather than const char*).
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some structs are reconstructed but with meaningless field names. For example, in `heap_nested`, the Node structure becomes `struct struct_3` with fields `field_0`, `field_8` instead of `data`, `next`. The Point struct in `local_struct` is not recovered at all - the function just returns `a0 * 3`. Nested structures like the linked list Node are partially reconstructed but lose all semantic field names.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Several type safety issues exist: unsafe pointer arithmetic in array access like `ptr + idx * 4`, casts between incompatible types (e.g., `*(int*)((char*)ptr + 4 * idx)`), and function pointer type confusion (e.g., `goto global_func_ptr` treats function pointer as goto target). The dangling pointer access in `dangling_pointer` is preserved as-is without warning.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments exist. The only comments are auto-generated ones like "/* do not return */" for functions like `abort()`, `_start()`, and `exit()`. No explanation of algorithm intent, no documentation of preconditions/postconditions, and no indication of decompilation confidence levels.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: Some patterns are hinted at but not named or explained. The memory allocation/free pattern (malloc + check + use + free) is present but not identified as a pattern. Error handling with sentinel return values (0xFFFFFFFF) is not flagged as a convention. The VLA and alloca patterns are partially recognized but not explained.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomalies are flagged. The code silently presents dangerous patterns: dangling pointer dereference in `dangling_pointer()` returns `*(ptr)` after free, double-free in `double_free` is not warned about, and heap overflow in `heap_overflow` is not indicated. Indirect calls that couldn't be resolved are not marked.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contracts are recovered. Preconditions like "n > 0" for allocation functions, postconditions like "returns heap-allocated pointer", and invariants are not documented. Error conditions are not explained (e.g., why 0xFFFFFFFF is returned).
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Some relationships are clear through function names (e.g., `call_static_func` calls `static_helper`), but the call graph is not documented. Global variable usage is partially clear (e.g., `extern unsigned int global_counter`), but callback relationships like `set_global_callback` → `global_func_ptr` → `double_value` are not explained.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are roughly grouped by type (stack, heap, static, memory ops) but the organization is arbitrary. Static functions are not properly scoped (all functions appear at file scope). No header file structure is recovered. The test functions are mixed with implementation functions.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: The code would not compile as-is. Issues include: undefined types like `struct struct_0`, `struct struct_1`, missing `extern` declarations for standard functions, goto statements to function pointers (`goto global_func_ptr`), and use of undefined identifiers like `arm64g_calculate_condition`, `__ROL__`. The code requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 3 + 3) / 4 = 3.0
+L2_avg = (4 + 6 + 5 + 4) / 4 = 4.75
+L3_avg = (5 + 4 + 4) / 3 = 4.33
+L4_avg = (2 + 3 + 2 + 1) / 4 = 2.0
+L5_avg = (3 + 5 + 2) / 3 = 3.33
+
+Overall = (3.0 × 0.30) + (4.75 × 0.25) + (4.33 × 0.20) + (2.0 × 0.15) + (3.33 × 0.10)
+        = 0.90 + 1.1875 + 0.866 + 0.30 + 0.333
+        = 3.59/10
+```
+
+### Overall Readability Score: 3.6/10
+
+### Critical Defects
+- Variable names are completely generic (`v0`, `v1`, `a0`, `ptr`) with no semantic meaning - should infer names from usage patterns
+- Struct field names are all generic (`field_0`, `field_1`, `field_8`) losing all semantic meaning of original structures like Node.data, Node.next
+- Dangerous patterns (dangling pointer, double-free, heap overflow) are presented without any warnings or anomaly flags
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Complex bit manipulation expressions like `(a0 * 2 | a0 >> 31) & 4294967294` are not simplified to recognizable patterns
+
+### Best Quality Aspect: Function Decomposition (6/10)
+Functions are appropriately extracted from the binary and most original functions are preserved as separate entities. The basic function boundaries match the source.
+
+### Most Needs Improvement: Lexical Clarity (3/10)
+Variable and function naming is severely degraded. Generic names like `sub_400b24`, `v0`, `a0` provide no semantic value, making the code extremely difficult to understand and analyze.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array index → `i`/`index`, size parameter → `size`/`n`, pointer to result → `result`/`out`) to assign meaningful names
+2. **Recover struct field names from context**: Use field access patterns (e.g., `->data`, `->next`) to infer semantic field names rather than generic `field_0`, `field_1`
+3. **Flag dangerous patterns**: Add warnings for dangling pointers, double-frees, buffer overflows, and other undefined behavior that could harm analysts

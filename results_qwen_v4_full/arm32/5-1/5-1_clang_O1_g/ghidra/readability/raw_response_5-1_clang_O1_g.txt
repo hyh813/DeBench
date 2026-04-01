@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code Readability
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`local_28`, `uStack_24`, `iVar1`, `pvVar1`) with 40+ "Unresolved local var" comments. Original names like `obj`, `r1`, `capture_by_value` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use mangled names (`_ZThn8_N12MultiDerived5funcBEv`). Class methods correctly identified with `__thiscall` convention.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x14`, `0x32`, `0x2bf`) without explanation. String "Test" appears as hex `0x74736554`. Expected return values hardcoded instead of computed.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Unknown calling convention" and "Removing unreachable block" warnings. Stack variable declarations (`undefined4 local_28`) add clutter without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some loops recovered (`test_cpp_constructor` has do-while), but 6 test functions return constants instead of executing logic. Exception handling completely lost (only throw, no catch blocks).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions properly separated but many are trivial constant returns. Class methods correctly extracted but lambda closures completely missing implementation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads top-to-bottom where present, but forward references to unresolved variables disrupt flow. Virtual calls use indirect patterns that obscure execution.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but constant-folding optimization replaced actual computation with pre-calculated results, losing semantic transparency.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined**`, `void*` instead of specific types. Class types partially recovered but member types often generic. `size_t` correctly identified in some places.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct fields partially named (`super_BaseA`, `super_BaseB`, `dataA`, `dataB`, `_vptr_Base`). Virtual table pointers identified. But many fields remain generic and diamond inheritance structure unclear.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4*)`, `(int)pvVar1`, `(char **)`). Pointer arithmetic common (`pvVar1 + iVar3 * -4`). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF prototype comments helpful (`/* DWARF original prototype: int virtual_func(Base * this, int x) */`). "Unresolved local var" warnings useful but indicate failure. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Virtual function dispatch partially recognized via `_vptr` patterns. But lambdas, smart pointers, templates, and exception handling not identified as C++ idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system ("WARNING: Unknown calling convention", "Unresolved local var", "Struct ignoring overlapping field"). Clearly indicates decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception contracts completely lost. No documentation of expected return values or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch obscured through pointer indirection. Class inheritance relationships partially visible through `super_` prefixes. Global `instance_count` correctly identified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. Class methods grouped near each other but not organized by class. No namespace or header separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing type definitions, undefined symbols (`operator_new__`, `__cxa_throw`), platform-specific ARM code, and mangled function names.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (5+3+6+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.35/10
+```
+
+### Overall Readability Score: **4.35/10**
+
+### Critical Defects:
+- **6 test functions return pre-computed constants** instead of actual logic (`test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`, `test_cpp_exception`)
+- **Variable names completely generic** (`local_28`, `iVar1`) with 40+ "Unresolved local var" annotations
+- **Exception handling completely lost** - only throw visible, no catch blocks recovered
+- **Lambda closures not decompiled** - function body replaced with constant return
+- **String literals as hex values** - "Test" appears as `0x74736554` instead of readable string
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- Ghidra clearly flags uncertainty with "WARNING" and "Unresolved" comments, preventing false confidence in incorrect decompilation.
+
+### Most Needs Improvement: **Variable Naming Quality (2/10)**
+- Complete failure to recover semantic variable names makes understanding data flow nearly impossible without cross-referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic analysis** to recover lambda closures, exception handlers, and smart pointer patterns instead of constant-folding them away
+2. **Add usage-based variable naming** - analyze how variables are used (e.g., `local_28` initialized with "Test" should be named `name_buffer`)
+3. **Recover string literals from hex constants** - detect ASCII patterns in immediate values and display as readable strings with hex comment

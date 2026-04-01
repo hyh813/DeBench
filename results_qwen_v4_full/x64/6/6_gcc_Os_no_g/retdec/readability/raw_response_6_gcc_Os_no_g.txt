@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, `temp`, etc. with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `pid`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions preserved (`param_strcpy`, `call_strcpy`, `thread_compute`), but helper functions are generic (`function_23a0`, `function_2400`). Better than address-based naming but loses semantic clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0x100000000`, `0xffffffff`, `0x7020`). String literals stored as hex-encoded globals (`g5`, `g6`) instead of readable strings. No constant recovery for values like `AT_FDCWD` (-100).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) repeated in nearly every function. Assembly intrinsics (`__asm_rep_movsb_memcpy`) present. Redundant casts throughout obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive use of `goto` labels (`lab_0x3770`, `lab_0x3856`) instead of structured loops. While `-O0` should preserve original structure, decompiler produces awkward while-loops with manual increments instead of for-loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity reasonable, but parameter lists corrupted (e.g., `param_strcpy(void)` should take 2 parameters, `param_mutex_lock(int64_t a1, int64_t *a2)` has wrong signature). Library wrappers created but with generic names.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt reading flow. Functions like `param_pthread_join` have complex label-based branching that obscures the simple loop structure from source. Deep nesting in thread functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across functions. Some redundant type casts present. No obvious dead code, but compiler artifacts not cleaned up.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything is `int64_t`, `int32_t`, or `char*`. Lost `size_t`, `FILE*`, `pthread_t`, `pid_t`, `socklen_t`. Original `const char*` becomes `char*`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined but fields named `e0`, `e1`, `e2`... with no semantic meaning. `ThreadData` struct not recovered (fields accessed via offset arithmetic). `struct stat` has 20 generic fields instead of named members like `st_size`, `st_mode`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int64_t *)-1`, `(int32_t *)thread`). Pointer arithmetic on generic `int64_t*` types. Function pointer signatures degraded to `int64_t * (*)(int64_t *)`. No bounds checking visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining purpose, expected values, and test scenarios. No decompiler confidence indicators or uncertainty markers.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`) but higher-level patterns not identified. Producer-consumer pattern in `param_condition_variable` not labeled. No algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical signature errors not flagged (e.g., `param_strcpy` has no parameters). Wrong syscall numbers used (`SYS_fork` instead of `SYS_open` in `param_linux_syscall`). No warnings about uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions. Error return values not explained. Original comments about expected values (期望: 8, 期望: 42) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g35`, `g36`, `g42`) used without explanation of purpose. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without section markers. Original had clear divisions (6.1 标准库函数，6.2 系统调用，6.3 线程与并发). No logical grouping comments preserved.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. Necessary headers included. Some function prototypes may need adjustment but generally compilable with minor fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00
+Level 3 (Type):        (3+3+4)/3   = 3.33
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25
+Level 5 (Contextual):  (5+5+7)/3   = 5.67
+
+Overall = (4.50 × 0.30) + (5.00 × 0.25) + (3.33 × 0.20) + (2.25 × 0.15) + (5.67 × 0.10)
+        = 1.35 + 1.25 + 0.67 + 0.34 + 0.57
+        = 4.18/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_strcpy(void)` loses both parameters (`char *dst, const char *src`)
+- **Variable naming**: All locals named `v1`, `v2`, `v3` with no semantic meaning
+- **Type erosion**: Everything is `int64_t`/`int32_t`; lost `FILE*`, `pthread_t`, `size_t`, `pid_t`
+- **Zero documentation**: No comments explaining logic, expected values, or function purpose
+- **Struct field anonymization**: All struct fields named `e0`, `e1`, `e2` instead of semantic names
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - The decompiled code compiles with minimal modifications, indicating basic structural integrity despite semantic losses.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding the decompiled code's intent extremely difficult, especially compared to the well-commented original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function signatures from debug symbols** - At `-O0 -g`, DWARF debug info should preserve parameter names and types; use this to restore `param_strcpy(char *dst, const char *src)` correctly.
+
+2. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in `malloc` calls should be named `ptr` or `buffer`, loop counters should be `i`, `j`, `count`).
+
+3. **Preserve and translate source comments** - Debug sections often contain source line mappings; extract and include original comments or generate equivalent documentation for recovered logic.

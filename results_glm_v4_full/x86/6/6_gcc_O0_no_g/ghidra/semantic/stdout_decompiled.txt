@@ -1,0 +1,10 @@
+=== Testing Standard Library Functions ===
+call_strcpy: 42
+call_strcmp: 0
+call_strlen: 12
+call_memcpy: -1210642349
+call_memcmp: 2
+Value: 42, Name: name
+call_printf: 22
+call_scanf: 42
+call_fopen_fclose: 42

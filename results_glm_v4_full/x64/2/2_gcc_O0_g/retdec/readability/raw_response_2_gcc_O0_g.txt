@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: While parameters like `arr`, `n`, and `x` are correctly named (likely from debug symbols), local variables are overwhelmingly generic (`v1`, `v2`, `result`). In `struct_simple`, the uninitialized variable `v2` is used instead of the struct's first field, causing confusion.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `linked_list`), likely due to the presence of debug symbols (`-g` flag), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and raw pointer arithmetic offsets (e.g., `4 * v1`, `v1 + 8`, `0x3fc00000`). String literals are sometimes represented as hex-encoded global pointers, obscuring their content.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise pollution exists, particularly with non-standard `__asm_` intrinsics (e.g., `__asm_movss`, `__asm_addss`) replacing standard floating-point arithmetic, and stack canary checks (`__readfsqword`) cluttering the function prologues/epilogues.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally recognizable, but loops are often awkwardly implemented (e.g., `do-while` logic split into an initial operation followed by a `while` loop). `process_char` uses a complex ternary operator instead of the original `if` statement.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Function boundaries match the source well. However, the `test_...` functions are massive monoliths containing inlined logic and stack variable declarations, making them difficult to navigate.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code reads linearly in parts, but flow is frequently disrupted by pointer arithmetic casts and `__asm_` blocks. Forward jumps are minimal, but the density of low-level operations hinders top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler failed to preserve the redundancy required by the `volatile` keyword in `volatile_access` (merging two reads into one), which is a semantic error. It also failed to recover the logic in `process_ld`, reducing `d * d + 1.0L` to just `return d`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Basic types (`int`, `char`) are mostly correct, but composite types are completely lost. Structs are demoted to `int32_t*` or `void*`, and `long double` operations are incorrectly simplified or dropped.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Complete failure to recover structs, unions, or bitfields. `struct_simple` treats a `Point3D*` as `int32_t*` and accesses fields via raw offsets (`+4`, `+8`). `struct_bitfields` replaces bit-field access with complex division/modulo math.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code is rife with unsafe casts (e.g., `(int64_t)arr`, `(int32_t)v1`). In `struct_simple`, an uninitialized variable `v2` is used in an arithmetic operation, introducing undefined behavior not present in the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata (e.g., "Address range", "From module") and provide no explanation of the algorithm or logic. There are no comments explaining the `__asm_` intrinsics or the pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: No design patterns or standard idioms are recognized. Linked list traversal and tree recursion are present but not identified as such; they appear as generic loops and conditional jumps.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect code (e.g., `ptr_func_simple` returning `x` instead of calling `f(x)`) with high confidence. There are no warnings about the dropped function calls or the missing logic in `process_ld`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The `volatile` contract (read twice) is silently violated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible and named correctly. However, the relationship between struct fields is lost, and calls via function pointers are often missing or incorrect.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by address rather than logical grouping. While all functions are present, the lack of struct definitions at the top level makes the module organization feel fragmented.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is due to the use of non-standard `__asm_` intrinsics and missing type definitions for the composite types used in the original source.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Floating point operations replaced by non-standard `__asm_` intrinsics (e.g., `__asm_movss`), rendering code unreadable.
+- Complete failure to recover composite types (structs/unions), replacing them with raw pointer arithmetic and magic offsets.
+- Semantic error in `volatile_access`: merged two distinct memory reads into one, violating the `volatile` contract.
+- Function pointer calls are dropped (e.g., `ptr_func_simple` ignores the function pointer and returns the argument).
+- Logic completely lost in `process_ld` (returns input instead of squaring and adding).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols allowed the decompiler to perfectly preserve the original function names, which is the only thing making this output navigable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The inability to reconstruct basic structs, unions, or bitfields reduces complex data structure manipulation to unintelligible pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a lifting pass to convert architecture-specific SIMD/FP instructions into standard C arithmetic operators (`+`, `*`, `/`) instead of emitting `__asm_` intrinsics.
+2. Develop heuristics to reconstruct struct definitions from access patterns (e.g., consecutive accesses at offsets 0, 4, 8 suggest a struct with three 32-bit integers).
+3. Enhance the analysis engine to respect `volatile` memory qualifiers to prevent incorrect optimization of memory loads.

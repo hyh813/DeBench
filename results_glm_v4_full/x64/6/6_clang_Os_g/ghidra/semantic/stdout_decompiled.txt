@@ -1,0 +1,18 @@
+=== Standard Library Tests ===
+strlen: 14
+strcmp: 0
+strlen: 12
+memcmp: 90
+memcmp: 4294967295
+Value: 42, Name: N
+printf: 19
+scanf: 579
+fopen/fclose: 42
+fread/fwrite: 42
+malloc/free: 90
+memset: 0
+strchr/strstr: 15
+=== System Call Tests ===
+syscall: 42
+stat: size check
+fork/exec: 42

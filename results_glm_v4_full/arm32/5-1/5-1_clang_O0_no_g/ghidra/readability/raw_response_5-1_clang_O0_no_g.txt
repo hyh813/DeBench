@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `local_c`, `param_1`). Stack objects use auto-generated names like `aSStack_2c` instead of semantic names like `obj`, obscuring the code's intent.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from C++ mangled symbols (e.g., `SimpleClass::getValue`, `test_cpp_virtual_func`), accurately reflecting the original source structure and purpose.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals (e.g., `"Test"`, `"Derived"`) and integer constants (e.g., `0x1234`) are preserved accurately. Magic numbers from the source remain unexplained, which is expected behavior.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with compiler artifacts such as `undefined4` types, `extraout_r0` register variables, and `WARNING` comments about calling conventions, which significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While standard loops and conditionals are natural, exception handling is completely flattened; `try/catch` blocks in the source are reduced to direct calls to `__cxa_throw` without showing the control flow of the catch handlers.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are decomposed excellently, matching the source granularity. Template instantiations are correctly separated into distinct functions (e.g., `template_max<int>` vs `template_max<double>`).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumps. Logic flows top-to-bottom effectively, aside from the flattened exception handling which disrupts the expected flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no significant redundancy or dead code. The verbosity present is inherent to the `-O0` optimization level rather than decompiler artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While class types are recovered, primitive types are frequently generic (`undefined4`, `undefined *`) instead of specific types like `int` or `char*`, requiring manual inference.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Class structures (`SimpleClass`, `Base`, `Derived`) and their inheritance relationships are recovered well. Standard library types like `unique_ptr` are expanded into their internal struct components.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer casts (e.g., `this` pointer adjustments for multiple inheritance) are explicit, preserving type safety visibility, though the prevalence of `undefined*` reduces confidence.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely limited to technical warnings (e.g., "Unknown calling convention") and provide no semantic explanation of the logic or algorithms.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: C++ idioms like virtual function calls are decompiled into raw vtable dereferences (e.g., `(*(code *)**(undefined4 **)param_1)`) without explicit annotations identifying them as virtual dispatch.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Technical anomalies such as unreachable blocks and calling convention issues are flagged, but semantic anomalies like the missing exception handling structure are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, null checks in `test_cpp_rtti` are present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and vtable pointer references (e.g., `PTR_virtual_func_00024c48`) are explicit, making the relationships between classes and functions clear.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order rather than logical grouping. While names help navigation, related class methods are scattered throughout the output.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to undefined types (`undefined4`), fake variables (`extraout_r0`), and missing headers, requiring significant manual modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Primitive types are frequently undefined (`undefined4` instead of `int`), obscuring data flow.
+- Exception handling (`try/catch`) is flattened into library calls (`__cxa_throw`), completely removing the control flow structure of error handling.
+- Virtual function calls are represented as raw pointer dereferences rather than high-level virtual method invocations.
+- Variable names are generic (`iVar1`, `local_c`), losing the semantic context present in the source.
+- Fake variables (`extraout_r0`) and compiler warnings clutter the output.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Ghidra's C++ demangler successfully recovered the exact function names from the binary, including namespaces, class membership, and template parameters.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The lack of semantic comments leaves complex logic (like RTTI checks or smart pointer mechanics) unexplained, forcing the user to reverse-engineer the intent from raw assembly artifacts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve type inference for primitives to replace `undefined4` with `int` or `uint32_t` based on usage context (e.g., arithmetic operations).
+2. Implement exception handling recovery to reconstruct `try/catch` blocks from `__cxa_throw` and landing pads, restoring the original control flow.
+3. Detect and annotate C++ idioms (e.g., virtual calls via vtable) with high-level comments to improve semantic transparency.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar1`) with zero semantic meaning recovered. Original names like `temp1`, `sum`, `count`, `result` were completely lost, making it difficult to understand variable purposes without tracing usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user-defined functions retained original names (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`), but helper functions use generic names (`FUN_00011030`, `FUN_000110a0`). Good recovery of action-oriented names where possible.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x14` (20) appear without explanation. Original test values are present but not labeled, requiring manual conversion to understand their purpose.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`), GOT references, and thunk functions (`__x86_get_pc_thunk_*`) clutter the output. These compiler artifacts appear in nearly every function, obscuring core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered well (`sequential_ops` is clean, loops use do-while), but complex patterns degraded—`switch_fallthrough` became nested if-else, `duffs_device` uses confusing goto labels (`_L179`, `_L181`). At -O0, better structure recovery was expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly preserved with appropriate granularity. However, `test_control_flow_l1` and `test_control_flow_l2` are bloated with inlined test data, and some helper functions are fragmented.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` and `loop_multi_exit` use goto labels that disrupt flow. Forward jumps into loop bodies make tracing execution paths harder than necessary.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeat in every function with local variable setup. Test functions duplicate array initialization code. No dead code removal from compiler padding.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters use generic `int` instead of specific types (`int32_t`, `size_t`). Pointer types often show as `undefined4 *` or `code *`. Inconsistent return types (`bool` vs `char` vs `int` for similar state functions).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Stack arrays represented awkwardly as `aiStack_24[5]`, `local_3c[7]` with individual element initialization. Matrix data in `loop_multi_exit` lost 2D structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(undefined4)((ulonglong)uVar4 >> 0x20)`). Function pointer calls use `code *` without proper signatures. `non_local_jump` has particularly problematic type handling with stack manipulation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. All semantic context completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: State machine pattern (`state_machine`, `fsm_func_table`) not identified. Duff's device not recognized as such. Recursion patterns present but not labeled. No algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. `non_local_jump` setjmp/longjmp handling is complex but not flagged. Indirect calls through function pointers lack resolution confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original test cases documenting expected behavior (e.g., "输入5,7,3应返回21") completely absent from decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Callback patterns (`process_with_callback`, `call_func_ptr`) lack parameter purpose explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file or API separation. Compiler runtime functions interspersed with user code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`FUN_000110e0`, `FUN_000110f0` for printf) undeclared. Stack canary functions need linking. Won't compile standalone without significant stubbing and modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (5+4+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects
+- **Variable names completely generic** - `param_1`, `iVar1` provide zero semantic information; original `temp1`, `sum`, `count` lost
+- **Zero comments recovered** - All documentation explaining function purpose, test cases, and difficulty levels absent
+- **Magic numbers unexplained** - Values like `0x3e9`, `0x65` appear without context or named constants
+- **Type precision degraded** - `undefined4 *`, `code *` instead of proper pointer types; inconsistent return types
+- **Stack canary noise** - Every function contains `__stack_chk_fail_local` checks obscuring core logic
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most user-defined functions retained meaningful original names like `sequential_ops`, `recursion_factorial`, `loop_for_fixed`, making function identification straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation; the decompiler should at minimum recover original source comments or generate explanatory comments for non-trivial logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** - Analyze usage patterns to suggest semantic names (e.g., variables used in loop bounds → `count`, `limit`; accumulators → `sum`, `total`)
+2. **Preserve and recover source comments** - When debug symbols (-g) are available, extract and embed original comments; generate explanatory comments for complex patterns
+3. **Reduce compiler artifact noise** - Filter or collapse stack canary checks, thunk functions, and GOT references into cleaner abstractions or hide them in non-essential sections

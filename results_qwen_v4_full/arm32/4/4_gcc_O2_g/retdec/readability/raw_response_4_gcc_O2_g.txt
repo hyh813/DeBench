@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `large`) with no semantic meaning. For example, in `varargs_func`, `v2` should be `args_ptr` and `v3` should be `counter` based on their usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some function names preserved (`varargs_func`, `test_calling_conventions`, `main`) but 40+ original functions are completely missing (e.g., `cdecl_func`, `func_no_args`, `call_ret_basic`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) making them unreadable. Magic numbers like `128`, `116`, `100` appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Pointer arithmetic noise present (`v2 += 4`, `v1 += 8`), stack check failures (`__stack_chk_fail()`), and awkward manual pointer manipulation instead of array indexing.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Loops reconstructed as while loops with manual pointer arithmetic instead of for loops. Pattern `while ((v2 || v3 - 16) != 0)` is unnatural compared to original `for (int i = 0; i < 16; i++)`.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Only 7 functions detected vs 50+ in source. Critical test functions like `call_cdecl`, `call_stdcall`, `func_many_args` are completely absent from decompilation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but awkward pointer arithmetic in loops (`v5 + 8 != (int32_t)&v6`) disrupts natural reading flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Critical issue: function calls replaced with hardcoded constants (e.g., `__printf_chk(1, "CALL-L1-01: %d\n", 15)` instead of calling `call_cdecl()`), losing actual computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything is `int32_t` - no distinction between int, char*, struct pointers. The `LargeStruct` is treated as raw `int32_t` memory with no type differentiation.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct recovery at all. `LargeStruct` and `SmallStruct` completely lost - treated as raw memory with pointer arithmetic (`*(int32_t *)v1`, `v1 += 8`) instead of field access.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`*(int32_t *)v2`), pointer arithmetic on typed data, varargs uses raw pointer manipulation instead of proper `va_list` handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments ("From module", "Address range"). No semantic comments explaining logic. Original source comments (665 LOC with extensive documentation) completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. The varargs pattern, struct initialization loops, and test patterns are not identified or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of missing functions, constant-folded values, or decompilation uncertainty. Code presents incorrect information confidently (hardcoded return values instead of actual calls).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original null checks (e.g., `if (!p) return -1` in `func_struct_byptr`) are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships unclear since most functions missing. Global variable usage (`g1`-`g19`) not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped but organization doesn't match source structure. Test functions present but the functions they test are missing.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears to compile (has includes, prototypes) but missing functions would cause link errors. External dependencies (`__printf_chk`, `__stack_chk_fail`) are non-standard.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+4)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (3+2+5+3)/4 = 3.25 × 0.25 = 0.813
+Level 3 (Type):        (3+1+3)/3   = 2.33 × 0.20 = 0.466
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (3+4+5)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                              = 2.95/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **40+ functions completely missing** from decompilation (e.g., `cdecl_func`, `func_no_args`, `call_ret_basic`)
+- **No struct type recovery** - `LargeStruct` and `SmallStruct` treated as raw memory with pointer arithmetic
+- **Function calls replaced with constants** - actual computation logic lost (e.g., `call_cdecl()` → hardcoded `15`)
+- **Variable names all generic** (`v1`, `v2`, `v3`) with no semantic meaning recoverable
+- **String literals hex-encoded** in globals (`g1`, `g2`...) making them unreadable
+
+### Best Quality Aspect: Contextual Coherence (scored 4.0/10)
+- Basic module structure preserved with test functions grouped, though most called functions are missing
+
+### Most Needs Improvement: Type System Fidelity (scored 2.3/10)
+- Complete failure to recover struct/union types; all composite types lost to raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from memory access patterns** - detect consistent offset patterns (`v1`, `v1+4`, `v1+8`) as struct fields
+2. **Preserve function call relationships** - avoid constant-folding actual function calls that represent test logic
+3. **Infer variable names from usage context** - variables used in loop counters should be named `i`, `counter`; pointer arithmetic variables should indicate their purpose

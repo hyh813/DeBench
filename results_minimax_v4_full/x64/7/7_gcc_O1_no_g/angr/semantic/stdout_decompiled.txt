@@ -1,0 +1,8 @@
+Function pointer: %p
+
+Opaque predicate: 10
+Opaque call: 35
+Instruction sub: 225
+String encryption: 200344922
+Tail call: 500500
+Non-tail call: 5050

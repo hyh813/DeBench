@@ -1,0 +1,8 @@
+Test started
+
+Opaque predicate result: 10
+Call opaque predicate: 20
+Instruction substitution: 225
+String encryption length: 0
+Tail call optimized: 500500
+Non tail call: 5050

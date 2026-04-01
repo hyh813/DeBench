@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`sequential_ops`, `single_if`, `nested_if_2`). This is excellent recovery, though helper functions like `call_weak_fn` remain generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions contain magic numbers (`0x15`, `0x14`, `0xfffffffb`) without explanation. Original constants and expected values are hardcoded rather than computed.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs present but marked `<EXTERNAL>`. Some redundant type casts and frame manipulation artifacts visible in complex functions like `__divsi3`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `loop_for_fixed` converted to complex bit manipulation instead of simple for loop. `switch_fallthrough` uses nested if instead of switch fall-through. Basic if/else recovered well.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. Test functions are monolithic but that reflects original structure. No problematic inlining observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom. `duffs_device` uses goto labels (`switchD_00010ca0_caseD_1`). Test function `test_control_flow_l2` has goto label `LAB_00010f78` disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `loop_for_fixed` has extremely complex bit operations that could be simplified to arithmetic. No obvious dead code, but optimization artifacts remain visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic `int`, `uint`, `undefined4`. Function pointers degraded to `code *`. Signed/unsigned confusion present (`param_1` as int vs uint inconsistently).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays referenced as pointer arithmetic (`(&DAT_00011848)[iVar1]`). `jmp_buf` treated as opaque `__jmp_buf_tag *`. No struct reconstruction needed for this code sample.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts between signed/unsigned. Function pointer calls use `code *` without proper signatures. Some pointer arithmetic without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized as such (e.g., `loop_for_fixed` not identified as sum formula). State machine in `state_machine` not identified. No pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies marked (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`). No systematic flagging of optimization artifacts or uncertain recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite being present in source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variables (`jump_buffer`, `DAT_00011848`) referenced but not well documented. No call graph provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3). Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies marked but would need stubs to compile. `__divsi3`, `__aeabi_idivmod` require ARM runtime. Test functions have hardcoded values preventing actual execution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+8+4+6)/4 = 5.25
+Level 2 Average: (5+7+6+6)/4 = 6.00
+Level 3 Average: (5+6+5)/3 = 5.33
+Level 4 Average: (2+3+5+2)/4 = 3.00
+Level 5 Average: (6+5+6)/3 = 5.67
+
+Overall = (5.25 × 0.30) + (6.00 × 0.25) + (5.33 × 0.20) + (3.00 × 0.15) + (5.67 × 0.10)
+        = 1.575 + 1.500 + 1.066 + 0.450 + 0.567
+        = 5.158
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original source having extensive documentation for each function
+- **`loop_for_fixed` optimization artifact** - complex bit manipulation instead of recognizable `(n-1)*n/2` formula
+- **Test functions hardcoded** with expected values instead of actual function calls, preventing verification
+- **No contract documentation** - preconditions like `n > 0` for factorial not indicated
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments means no algorithm explanations, no confidence indicators, and no recovery of the extensive original documentation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in accumulation should be named `sum`, loop counters should be `i`, `j`, `count`)
+2. **Add decompilation confidence annotations** to mark uncertain recoveries, optimization artifacts, and unresolvable constructs (like `UNRECOVERED_JUMPTABLE`)
+3. **Recover high-level patterns** from optimization artifacts (e.g., recognize `(n-1)*n/2` bit manipulation as sum formula, identify state machine patterns in switch statements)

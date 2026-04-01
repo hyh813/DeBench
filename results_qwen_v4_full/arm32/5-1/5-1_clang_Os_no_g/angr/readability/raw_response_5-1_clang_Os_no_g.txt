@@ -1,0 +1,103 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`...`v9`) with no semantic meaning. Only a few like `result`, `flag1`, `index`, `ptr` provide minimal context. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Most functions retain mangled C++ names (`_Z20test_cpp_member_funcv`, `_ZN9ContainerIiEC2Ev`) rather than readable names. Some like `test_cpp_oo_features` and `main` are preserved, but helper functions are cryptic (`sub_400854`, `$a.27`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation (4700, 1001, 42, 71, 650, 22, 39, 16, 85, 703). Expected test results are hardcoded in printf calls rather than computed. String literals are replaced with opaque globals (`&g_401294`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler/emulator artifacts present: `armg_calculate_condition()` calls throughout, excessive register variables (`v0`-`v9`), unnecessary `goto LABEL_` patterns, and redundant function calls (`register_tm_clones()` called twice in `frame_dummy`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Extensive `goto` usage replaces natural loop/conditional constructs. `test_cpp_exception()` has deeply nested, confusing conditional chains with `armg_calculate_condition`. Many functions that should have logic just `return` immediately.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Critical failure - most test functions are empty shells (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, etc. all just `return`). Only `test_cpp_member_func` and `test_cpp_oo_features` have partial logic recovered.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Forward jumps (`goto LABEL_400aac`, `goto LABEL_400f90`) disrupt top-to-bottom reading. Exception handling code is particularly non-linear with multiple jump targets interrupting flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repeated `armg_calculate_condition()` calls with identical parameters. `frame_dummy()` calls `register_tm_clones()` twice consecutively. Register save/restore patterns (`v4 = v5; v3 = v6;...`) appear in multiple functions unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation - class methods use `void* this` instead of proper `this` pointers. Everything defaults to `unsigned int` or `void*`. Template instantiations lose type information (`Container<int>::push(void* ptr, int arg_0)`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes reduced to empty structs (`class Base {} Base;`). Generic struct definitions (`struct_0`, `struct_1`) with meaningless field names (`field_4`, `field_0`). Array layouts and object structures not properly reconstructed.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Unsafe casts throughout: `(char *)ptr`, `(int)ptr[40]`, `*((unsigned int *)&ptr[40])`. Pointer arithmetic on `void*` without type guarantees. Function signatures don't match actual parameter usage patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only a header comment identifying decompiler and platform. Zero comments explaining logic, algorithms, or non-obvious code. No decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No C++ patterns recognized - constructors, destructors, virtual calls, exception handling, RAII, smart pointers all appear as raw operations. Template instantiation patterns completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about decompilation uncertainty. Empty function bodies not flagged as failures. `armg_calculate_condition()` calls appear without explanation of what they represent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception guarantees not captured. Object lifecycle contracts (construction/destruction) not expressed.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some external references declared but globals have opaque names (`g_412008`, `g_40113d`). Virtual dispatch not clearly represented. Function call relationships mostly implicit without documentation.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions appear in arbitrary order. Related class methods scattered throughout file. No header file structure or logical grouping of related functionality.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile without significant modification. External dependencies declared but undefined (`operatornew`, `operatordelete`, `__cxa_throw`). Missing standard library implementations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.0
+Level 2 (Structural):  (2+2+3+3)/4 = 2.5
+Level 3 (Type):        (2+2+2)/3   = 2.0
+Level 4 (Semantic):    (1+1+1+1)/4 = 1.0
+Level 5 (Contextual):  (3+2+2)/3   = 2.3
+
+Overall = (3.0 × 0.30) + (2.5 × 0.25) + (2.0 × 0.20) + (1.0 × 0.15) + (2.3 × 0.10)
+        = 0.90 + 0.625 + 0.40 + 0.15 + 0.23
+        = 2.305
+```
+
+**Overall Readability Score: 2.3/10**
+
+### Critical Defects:
+- **11 of 13 test functions are empty** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` all just `return` with no logic
+- **Variable names are entirely generic** (`v0`-`v9`) with no semantic meaning recoverable
+- **C++ semantics completely lost** - constructors, destructors, virtual calls, exceptions, templates not recognized as language constructs
+- **Control flow uses goto instead of structured constructs** - loops and conditionals degraded to jump tables
+- **Type system collapsed** - all class methods use `void* this`, composite types reduced to generic structs
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - Some original function names preserved (`test_cpp_oo_features`, `main`, `template_max<int>`) providing minimal orientation despite mangled C++ names elsewhere
+
+### Most Needs Improvement:
+- **Semantic Transparency (1.0/10 average)** - Zero comments, no idiom recognition, no anomaly indication, no contract recovery. The decompiler presents broken code with complete confidence and no warnings about uncertainty.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ language semantics** - Implement recognition of constructors, destructors, virtual method calls, exception handling, and template instantiations as distinct patterns rather than raw operations
+2. **Flag decompilation failures explicitly** - When functions cannot be recovered (like the 11 empty test functions), add comments indicating "DECOMPILATION FAILED: logic not recovered" rather than presenting empty functions
+3. **Infer variable names from usage context** - Analyze how variables are used (e.g., `v0 = 10` followed by arithmetic) to suggest semantic names like `expected_result` instead of generic `v0`

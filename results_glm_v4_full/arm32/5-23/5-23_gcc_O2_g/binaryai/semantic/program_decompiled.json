@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_gcc_O2_g/binaryai/syntactic/bin/5-23_gcc_O2_g_fixed",
+  "stdout": "macro_constants: -1095219284\nparam_macro_constants: 64\nmacro_functions: 30\nconditional_compile: 32\nmulti_branch_compile: 57122\nmacro_recursion: 116\nstringize: 19\ntoken_paste: 60\nLOG: Values: 10, 20, 30\nvariadic_macro: 60\nmacro_override: 16\ninclude_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:04\nbuiltin_macros: 382\nasm_basic: 0\nparam_asm_basic: 15\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

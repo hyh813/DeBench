@@ -1,0 +1,19 @@
+Preprocessing Test
+MACRO_CONST = 64
+MACRO_FUNC(30) = 30
+CONDITIONAL_COMP = 32
+MULTI_BRANCH = 57122
+MACRO_RECURSION = 116
+STRINGIZE = 19
+TOKEN_PASTE = 60
+LOG: Values: 10, 20, 30
+VARIADIC: 50
+MACRO_OVERRIDE = 16
+INCLUDE_GUARD = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:03
+BUILTIN_MACROS = 266
+
+=== ASM Features Test ===
+param_asm_basic returned: 15
+param_asm_clobber returned: 0
+param_asm_multi_insn returned: 0

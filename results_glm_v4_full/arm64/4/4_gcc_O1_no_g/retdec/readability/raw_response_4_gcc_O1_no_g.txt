@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `v3`, and `result`, providing zero semantic context (e.g., `cdecl_func` uses `v1` instead of `a` and `b`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source, likely due to debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals containing Chinese characters are represented as hex escape sequences (e.g., `\xe6\xb5\x8b`), making them unreadable, and magic numbers like `120` (struct size) are unexplained.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with redundant bitwise masks (e.g., `& 0xffffffff`, `& 0xfffffffe`) resulting from 32-to-64 bit sign extensions, which obscures the simple arithmetic logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops and conditionals are generally recovered as `while` and `if`, the logic inside is often convoluted (e.g., complex pointer arithmetic in `varargs_func` instead of `va_arg`).
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully maps the binary to distinct functions matching the source structure, maintaining appropriate granularity and cohesion.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns, though some functions contain unnecessary forward jumps or redundant variable assignments.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is significant redundancy, such as the repeated masking operations and the manual implementation of `va_list` traversal which could be abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical failure: function signatures are incorrect (e.g., `cdecl_func(void)` instead of `cdecl_func(int, int)`), and all variables are typed as `int64_t` regardless of actual usage.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structures are not reconstructed; `func_struct_byval` treats the struct as a raw memory blob accessed via pointer arithmetic (`*(int64_t *)v2`) rather than named fields.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as casting `int64_t` pointers to `int32_t*` (e.g., `*(int32_t *)v2`) to access data, losing type safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures; only raw addresses are provided.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms like `va_arg` are not recognized; instead, the decompiler exposes the underlying stack pointer manipulation logic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents incorrect logic (e.g., `cdecl_func` returning `2 * v1` instead of `a + b`) without any warning or uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for non-null pointers in `func_struct_byptr` is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible and use the correct names, but the relationships are obscured by the incorrect parameter passing in the decompiled signatures.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order that roughly follows the source file structure, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile as-is due to incorrect function signatures (missing parameters) and the use of hex-encoded string literals that might not be valid C string syntax in all compilers without escaping.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- **Parameter Loss**: Function signatures are incorrect (e.g., `cdecl_func(void)`), completely hiding the input arguments and making the logic appear to use a single variable for everything.
+- **Semantic Corruption**: The logic inside `cdecl_func` is decompiled as `2 * v1` (doubling) instead of `a + b` (addition), which is a fundamental misinterpretation of the operation.
+- **Type Erasure**: All specific types are replaced by `int64_t`, and structs are accessed via raw pointer arithmetic, destroying the high-level type model.
+- **Unreadable Strings**: Human-readable strings are output as hex escape sequences, rendering comments and printfs unintelligible.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully preserved the original function names from the debug symbols, making it easy to identify the purpose of each block despite the internal logic failures.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)
+- The inability to recover function parameters and the universal use of `int64_t` makes the code semantically incorrect and very difficult to understand or verify.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Parameter Recovery**: The decompiler must correctly identify arguments passed in registers (especially for `-O0` code) and populate function signatures accordingly.
+2.  **Decode String Literals**: Automatically detect and decode UTF-8/hex-encoded strings back into readable text to preserve semantic meaning.
+3.  **Refine Type Inference**: Move away from defaulting everything to `int64_t`; utilize stack frame analysis and usage patterns to infer correct integer sizes and struct layouts.

@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most parameters use generic names like `param_1`, `param_2`, `a`, `b`. Local variables are frequently marked as "Unresolved local var" with `@[???]` (e.g., `va_list args@[???]`, `int i@[???]` in varargs_func). The duplicate parameter name `count, int count_1` in varargs functions is confusing.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions correctly named (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`), and many original function names preserved (`cdecl_func`, `stdcall_func`, `func_a`, `func_b`). However, some functions like `FUN_00011030` lack meaningful names, and the naming is inconsistent across the codebase.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x2a` (42), `0x32` (50) appear without explanation. Test functions use hardcoded constant results (e.g., `return 0xf;`) instead of showing the actual computation. The literal `0x12345678` in `call_complex_cast` is not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive WARNING comments clutter output (e.g., "Unknown calling convention", "Function: __x86.get_pc_thunk.bx replaced with injection"). Multiple "Unresolved local var" annotations create visual noise. The decompilation includes many boilerplate functions (_init, _start, deregister_tm_clones) that aren't part of the original source.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with clear if/else and loops. The `ret_multi_branch` function uses a computed formula `(op * 5 + 5) * 2` instead of switch-case, which is an optimization artifact but still readable. Loop constructs in varargs functions use do-while patterns appropriately.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching the original source. No excessive inlining or outlining artifacts. Each function has a clear single responsibility (e.g., `param_by_value_int`, `call_cdecl`). The decomposition closely mirrors the original 665-line source.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. No deep nesting (>4 levels) observed. The code flows naturally.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions show constant folding (e.g., `call_cdecl` returns `0xf` directly), which is expected at higher optimization but the original was -O0. Loop unrolling in varargs functions is present but the logic is still traceable. No significant dead code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Some types precise (e.g., `int *p`, `char *s`, `double d`, `longlong ll` in func_mixed_args). Function pointer types recovered as `_func_int_int *callback`. However, many parameters use generic `int` where original had specific types, and some return types are `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. Field names preserved (`s.data[i]`, `p->x`, `p->y`). However, some fields use hex notation (0xb, 0xf) and the typedef names are sometimes generic.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code with appropriate casts. The `param_complex_cast` function correctly handles void* to int* conversions. No obvious buffer overflow patterns. Minor issues: some pointer arithmetic but within safe bounds.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Many WARNING comments present but these are auto-generated noise. DWARF original prototypes captured (e.g., `/* DWARF original prototype: int param_varargs(int count, int count, ...) */`). No explanation of algorithm intent or original comments from source recovered.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard C idioms recognized: varargs with stack access (`&stack0x00000008 + iVar1 * 4`), function pointers as callbacks, struct by value/pointer patterns. However, no explicit naming of patterns (e.g., "This implements varargs pattern").
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage: "Unknown calling convention", "Unresolved local var", "This is an inlined function". However, some anomalies like the duplicate parameter name `count, int count_1` aren't flagged, and the incorrect struct return in `ret_small_struct` (returning pointer to stack) isn't marked as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Almost no preconditions/postconditions recovered. The original source had no explicit assertions, but the decompiler could infer: "requires: p != NULL" for `func_struct_byptr`, or "ensures: return value is pointer to stack" warning for `ret_small_struct`. None of this is present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No function call relationship documentation. The original test functions called specific functions (e.g., `call_cdecl` calls `cdecl_func`), but this relationship isn't explicitly documented. Callback relationships in `param_func_ptr` not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, parameter passing functions together). Static functions like `func_a`, `func_b` properly scoped. However, the file is a single monolithic output rather than matching any original header/source organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code states "Compilation Result: Yes" - it compiles. External dependencies like `puts`, `__printf_chk`, `strlen` are properly declared. No compiler-specific hacks visible. The code is standalone-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- Variable naming is extremely poor with generic names (`param_1`, `param_2`) and unresolved locals marked `@[???]`
+- Duplicate parameter name `count, int count_1` in varargs functions is confusing and incorrect
+- No contract/precondition recovery - functions like `func_struct_byptr` should have "requires: p != NULL"
+- Excessive WARNING comments create noise rather than useful information
+- Test functions show constant-folded results instead of actual computation, losing the algorithmic intent
+
+### Best Quality Aspect: Function Decomposition (9/10)
+Functions maintain appropriate granularity matching the original source. Each function has clear single responsibility with no excessive inlining or fragmentation.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+Most parameters use generic names, and many local variables are completely unresolved. This makes tracking data flow extremely difficult.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` used as count should be `count`, loop variable `iVar1` should be `i`
+2. **Recover preconditions/postconditions**: Add "requires: ptr != NULL" annotations for pointer parameters
+3. **Eliminate duplicate parameter names**: The `count, int count_1` pattern is incorrect - should be just `count` with proper va_list handling
+4. **Reduce warning noise**: Consolidate or make warnings optional to improve signal-to-noise ratio
+5. **Show computation in test functions**: Instead of `return 0xf;`, show the actual function call being tested

@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Object instances (`obj`, `base`, `derived`) and parameters (`x`, `n`) are well-named, but intermediate return values and temporaries are generic (`v0`, `v1`, `r1`, `r2`), obscuring the flow of calculations.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The decompiler successfully demangles C++ mangled names (e.g., `_Z20test_cpp_member_funcv` becomes `test_cpp_member_func`), and class methods are accurately named (e.g., `SimpleClass::getValue`).
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals (e.g., `"Test"`) are preserved, but magic numbers like `0x1F` (likely `sizeof(name)-1`) and stack canary offsets (`0x28u`) appear without explanation, requiring context to understand.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The expansion of `std::unique_ptr` internals (e.g., `std::_Head_base`, `std::_Tuple_impl`) creates massive amounts of verbose template noise that buries the actual logic of `test_cpp_smart_ptr`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: The code is generally linear and idiomatic due to `-O0`, but `test_cpp_exception` fails to reconstruct the `try/catch` blocks, showing only the throw path as a `__noreturn` function.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: User-defined test functions and class methods are correctly separated into distinct functions, though the sheer number of internal template helper functions (e.g., `std::get`, `std::forward`) clutters the output.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads top-to-bottom with minimal jumps or computed branches, making execution paths easy to follow in the absence of optimization.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: There is no dead code or loop unrolling artifacts; the code is clean of redundancy, which is expected for a debug build.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Complex C++ types are recovered with high precision, including template instantiations (`Container<int>`) and even lambda types used as template arguments (`std::unique_ptr<int, ...::{lambda(int*)#1}>`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class structures like `SimpleClass` and `Point` are reconstructed with correct field names (`value`, `name`, `x`, `y`), though standard library internals are exposed as raw structs.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Pointer types and const-correctness are mostly preserved; casts are primarily limited to vtable initializations (e.g., `(int (**)(...))&off_8B50`), which are inherent to the C++ ABI.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled output; complex logic like vtable setup or exception handling mechanisms is left unexplained.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ idioms like operator overloading (`operator+`, `operator++`) and virtual calls are syntactically correct, but the decompiler does not explicitly label high-level patterns (e.g., "Virtual Dispatch").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler presents the code confidently without flagging the reconstruction failure in `test_cpp_exception` or the overwhelming verbosity of `std::unique_ptr` internals as potential readability issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-null requirements for `dynamic_cast` are not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls to class methods and static functions are explicit and clear, making the call graph easy to understand despite the verbose standard library calls.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in a flat address order, mixing user logic with low-level runtime and standard library helpers, rather than grouping by logical module.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code relies on specific internal standard library structures (e.g., `_Tuple_impl`, `_Head_base`) that would require significant patching or specific internal headers to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- The expansion of `std::unique_ptr` internals (tuples, head bases) in `test_cpp_smart_ptr` renders the function nearly unreadable due to template noise.
+- `test_cpp_exception` fails to reconstruct `try/catch` control flow, showing only the throw mechanism.
+- Complete absence of comments for complex C++ runtime mechanisms like vtable initialization or RTTI checks.
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.3/10)  
+- The decompiler accurately recovers complex C++ types, including template classes and lambda types, which is often a failure point for other tools.
+
+**Most Needs Improvement:** Noise Reduction (scored 4/10)  
+- The exposure of standard library implementation details (specifically `std::tuple` internals used by `std::unique_ptr`) creates significant noise that obscures the program's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement "Pretty Print" modes for standard library containers (e.g., abstract `std::unique_ptr` internals to show only the constructor/destructor calls).
+2. Improve exception handling reconstruction to merge landing pads and display `try/catch` blocks structurally rather than as raw `__cxa_throw` calls.
+3. Add auto-generated comments for vtable initializations (e.g., `// Set vtable for Derived`) to clarify low-level object setup.

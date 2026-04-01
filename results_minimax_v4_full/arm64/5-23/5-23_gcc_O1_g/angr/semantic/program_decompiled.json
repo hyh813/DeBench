@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/5-23/5-23_gcc_O1_g/angr/syntactic/bin/5-23_gcc_O1_g_fixed",
+  "stdout": "Macro: -213927000\nFunction call: 64\nValue: 30\nValue: 32\nMulti-branch: 57122\nRecursion: 116\nValue: 19\nToken paste: 60\nLOG: Values: 10, 20, 30\nVariadic: 60\nOverride: 16\nValue: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:27\nBuiltin: 382\nASM clobber: 0\nASM multi: 15\nASM clobber result: 1439281055\n",
+  "stderr": "*** buffer overflow detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

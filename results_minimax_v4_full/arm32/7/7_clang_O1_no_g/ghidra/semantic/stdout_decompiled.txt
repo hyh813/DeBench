@@ -1,0 +1,3 @@
+Test: obfuscation and optimization edge cases
+
+Instruction substitution: 10

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`, `a4`) while original source had meaningful names like `x`, `c`, `arr`, `n`. Local variables are `v1`, `v2`, `result`, `result2` - completely obscuring their semantic purpose. Compare: original `sum` becomes `result`, original `i` becomes `v1` or `v2`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About 50% of functions have correct names matching source (`double_value`, `process_char`, `array_1d_stack`, `linked_list`). However, many have cryptic auto-generated names (`function_400`, `function_40c`, `$a`) that don't indicate purpose. The `$a` function at 0x20f0 is completely opaque.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x1000000`, `0x5a000000`, `256`, `44`, `40`, `20`. Chinese strings displayed as raw hex (`"\xe6\xb5\x8b\xe8\xaf\x95..."`). No named constants for values like `10`, `100` used in test calls. The original had clear constants like `'A'`, `'Z'`, `32`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from compiler/runtime functions: `__adddf3`, `__aeabi_dmul`, `__aeabi_ddiv`, `__mulsf3`, `llvm_ctlz_i32`. These 40+ lines of floating-point library code obscure the actual 830-line test program. Also includes startup code (`_start`, `_init`, `frame_dummy`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while` or `for`, conditionals use `if`. At `-O0`, the flow should closely match source. Minor issues: some complex boolean expressions like `a5 < a3 == a4 < a2 == a5 > -1` in `array_complex_index` are confusing. The original had clear `if (x < 0 || x >= w || y < 0 || y >= h)`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-100 lines each), matching the original's granularity. Each test function (`test_data_types_l1`, `test_array_types`, etc.) is separate. The original's function boundaries are well preserved. Minor: some functions like `$a` (500+ lines) are too large but these are compiler runtime.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with few forward jumps. However, nested loops in `array_3d` and `graph_traverse` are deeply nested (4+ levels) making flow harder to follow. The original had clear 3-level nesting with `for` loops.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns like repeated `result += *(int32_t *)(4 * v1 + (int32_t)a1)` in loops. The `array_3d` function has obvious duplicated loop patterns. At `-O0`, there should be minimal redundancy but some remains.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are correct: `int32_t`, `uint32_t`, `char*`. However, `float` and `double` are incorrectly returned as `int32_t`. Function pointers like in `ptr_func_simple` are `int32_t*` instead of proper function pointer types. Original had `float (*f)(int)` but decompiled shows `int32_t * a1`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure. All structs are lost. Original had `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode` with named fields. Decompiled shows raw pointer arithmetic: `*(int32_t *)(v1 + 4) + v1 + *(int32_t *)(v1 + 8)` instead of `p->x + p->y + p->z`. Unions completely lost - `union_type` shows `int32_t*` with switch on type.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe operations. Pointer arithmetic like `4 * v1 + (int32_t)a1` is raw without bounds. Casts everywhere: `(int32_t)a1`, `(float32_t)a1`, `(uint32_t)v2`. Function `ptr_const_ptr` directly writes `*a1 = result + 5` without type safety. Original had `int *const p` with clear semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only address comments like `// Address range: 0x5a4 - 0x5f4` which are auto-generated noise. No explanation of algorithm, no recovery confidence indicators, no API contracts. Original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The linked list traversal is just raw code, not labeled as "linked list traversal". Binary tree recursion not identified. Original had clear comments like "// 单向链表遍历".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `array_oob` function has obvious out-of-bounds access (`while (v1 <= a2)`) but no warning. The `ptr_diff` has operator precedence issue: `(int32_t)a1 - (int32_t)a2 >> 2` should be `((int32_t)a1 - (int32_t)a2) >> 2`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No invariant recognition. Original had clear semantics like "requires: ptr != NULL" implicit in the code but not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear - you can see `test_data_types_l1()` calls `process_char()`, etc. But no documentation of who calls whom, no callback relationships documented. Original had clear test flow.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped (test functions together, process functions together) but the file is polluted with 40+ lines of runtime/library code. The `$a`, `__mulsf3`, `__adddf3` functions are completely unrelated to the source program.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile. Many undefined functions: `printf`, `memset`, `abort`, `fabsf`. No includes. The code assumes these exist but they're not declared. Would need significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Composite type recovery completely failed**: All structs (`Point3D`, `Node`, `Rect`, `Widget`) reduced to raw pointer arithmetic with magic offsets (`v1 + 4`, `v1 + 8`), losing all semantic meaning
+- **Variable naming is unusable**: Parameters `a1-a4` and locals `v1-v50` provide no indication of purpose; original had `x`, `sum`, `arr`, `head`
+- **Type precision severely degraded**: Function pointers are `int32_t*` instead of proper function signatures; floats/doubles returned as integers
+- **Massive noise pollution**: 40+ lines of floating-point runtime (`__aeabi_dmul`, `__adddf3`, etc.) obscure the actual 830-line program
+- **No struct/union recovery**: Original had 15+ composite types; decompiled shows none - just `int32_t*` everywhere
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Loops and conditionals are mostly readable; at `-O0` the flow structure closely matches source
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+- All struct/union types completely lost; this is the core purpose of the test file (testing decompiler's ability to recover composite types), and it failed catastrophically
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct layouts with field names**: Use type propagation and allocation site analysis to identify `Point3D p = {1, 2, 3}` patterns and reconstruct `struct { int x; int y; int z; }`
+2. **Infer variable names from usage**: `a1` used as `*a1 + 10` should be named `value` or `ptr`; `v1` in `for (uint32_t i = 0; i < 10; i++)` should be `i`
+3. **Separate runtime/library code**: The floating-point math functions should be identified as library code and either stubbed out or placed in a separate section, not mixed with user code

@@ -1,0 +1,4 @@
+TRACE_ENT|0|varargs_func|0|Arg0=15,Arg1=1,Arg2=2,Arg3=3|x0=0xf,x1=0x1,x2=0x2,x3=0x3,x4=0x4,x5=0x5,x6=0xffffc72b1038,x7=0x0
+TRACE_EXT|0|varargs_func|0|15
+TRACE_ENT|1|param_varargs|0|Arg0=17,Arg1=10,Arg2=20,Arg3=30|x0=0x11,x1=0xa,x2=0x14,x3=0x1e,x4=0x28,x5=0xe347cad41430,x6=0xffffc72b1038,x7=0x0
+TRACE_EXT|1|param_varargs|0|100

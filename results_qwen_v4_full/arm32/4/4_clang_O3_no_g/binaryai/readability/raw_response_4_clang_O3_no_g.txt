@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_c` with no semantic meaning. For example, `func_struct_byval` has 40+ parameters named `param_1` through `param_30` instead of representing struct fields.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), which is excellent. However, helper functions like `__adddf3` retain cryptic compiler names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0xf`, `0x32`, `0x2a`, `0x12345678` with no explanation. Hex values used inconsistently (some decimal, some hex) obscuring that these are constant-folded results.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Includes compiler runtime helpers (`__adddf3`, `__floatsidf`, `__fixdfsi`) with hundreds of lines of low-level floating point emulation. External function stubs like `printf` that just call themselves add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex operations like `__subdf3` use deeply nested conditionals and goto labels (`LAB_00011250`). At -O0, this level of restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries preserved, but constant folding destroyed call relationships (e.g., `call_cdecl` returns `0xf` directly instead of calling `cdecl_func`). `func_struct_byval` has 40 parameters instead of accepting a struct.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but floating point helpers have forward jumps into loop bodies. The `__subdf3` function spans 400+ lines with multiple label targets.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating point helper functions contain massive redundant bit manipulation code. Each helper (`__adddf3`, `__subdf3`, `__floatsidf`) duplicates similar normalization logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation: `undefined4`, `undefined8`, `byte` used throughout. `func_mixed_args` shows `double` parameters as `undefined4 param_3, undefined4 param_4` (split across registers). Return types often `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct` (128 bytes) passed as 40 individual `int`/`undefined4` parameters in `func_struct_byval`. No struct definitions recovered. `SmallStruct` in `func_struct_byptr` reduced to `int *param_1` with array indexing `param_1[1] * *param_1`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointers degraded to `code *` without signature information. Pointer arithmetic implicit in array access. No const-correctness preserved. Varargs functions lose type information (`param_varargs` takes `int *piVar1` pointing to stack).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex floating point operations, calling conventions, or constant folding decisions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (uses manual stack pointer iteration). No recognition of common patterns like struct passing, callback functions, or ABI conventions.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. `func_mixed_args` has wrong signature (6 params vs 4) with no flag. Struct passing failure not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_2 != NULL` checks not explained). No postconditions. Error conditions like null pointer returns not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Constant folding destroyed actual call graph (test functions print constants instead of calling underlying functions). No call graph provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in load order, not logical grouping. Helper functions scattered throughout. No separation between user code and runtime support.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`printf`, `strlen`, `__libc_start_main`) not properly declared. Runtime helpers need linking. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.23/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Struct recovery completely failed**: `func_struct_byval` has 40 parameters instead of accepting `LargeStruct` by value
+- **Constant folding destroyed semantics**: Test functions return hardcoded values (`0xf`, `0x32`) instead of showing actual function calls
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar2` convey no semantic meaning
+- **Type degradation**: `undefined4`, `undefined8` used instead of proper types; `double` split across multiple parameters
+- **Zero documentation**: No comments explaining complex operations, calling conventions, or decompilation uncertainty
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it possible to identify test purposes despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding complex operations (especially floating point helpers) nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack/parameter patterns** - Detect when multiple consecutive parameters represent struct fields and reconstruct the original struct type
+2. **Preserve call relationships over constant folding** - Show actual function calls even when compiler optimized them to constants, with annotations indicating optimization
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (wrong parameter counts, type ambiguities) with comments like `// DECOMPILER UNCERTAIN: signature may be incorrect`

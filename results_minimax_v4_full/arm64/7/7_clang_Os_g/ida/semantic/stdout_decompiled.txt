@@ -1,0 +1,15 @@
+test
+Obf/L4_02: 10
+Obf/L4_03: 20
+Obf/L4_04: 225
+Obf/L4_05: 0
+Opt/L4_01: 500500
+Opt/L4_01: 5050
+Opt/L4_02: 0
+Opt/L5_01: 20
+Edge/L3_01: 2
+Edge/L3_02: 41
+Edge/L3_03: 30
+Edge/L3_04: 2000000000
+Edge/L4_01: 10
+Edge/L4_02: 48

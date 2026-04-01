@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The original source contains multiple test functions for obfuscation, optimization, and edge cases. The primary function of interest is `param_fake_branch`, which tests always-false condition branches. The decompiled version shows severe degradation - the function loses its parameter entirely and returns an uninitialized variable.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2` through `v16` with no semantic meaning. In `param_fake_branch`, the parameter `x` is completely lost - the function returns uninitialized `v0` instead of the input value. This makes tracking variable purpose practically impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The target function `param_fake_branch` is correctly named, matching the source. However, many helper functions use mechanical names like `sub_400498`, `call_weak_fn`. The main function name is accurate but this is inconsistent with the rest of the binary's naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `90` appears in string decryption (XOR key 0x5A) without explanation. The constant `0xDEADBEEF` from source is correctly optimized away since the branch never executes. However, `90` should be documented as the XOR decryption key.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present - register assignments like `v0 = v1`, `v4 = v5` clutter the code. The decompilation includes internal functions like `__divsi3` and `.divsi3_skip_div0_test` that shouldn't be in the main output. Debug register annotations like `// r0`, `// lr`, `// [bp-0x4]` add noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved but uses goto labels (e.g., `LABEL_400598`) instead of natural if/else structures. The `param_opaque_predicate` function has convoluted condition checking with `armg_calculate_condition` that obscures the logic. Loop constructs are present but not idiomatic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are extracted but some show poor granularity. The `param_fake_branch` is trivial (should be inline) while `test_obf_opt_edge` is 100+ lines. Parameter lists expose implementation details in some cases (e.g., passing `jmp_buffer` explicitly).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive use of goto labels disrupts linear reading. Forward jumps like `goto LABEL_400598` appear frequently. The code does not read naturally top-to-bottom; instead requires jumping between labels to follow execution.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls present - e.g., in `call_tail_call_optimized`: `v0 = param_tail_call_optimized(1000, 0); return param_tail_call_optimized(1000, 0);` - the function is called twice unnecessarily. Dead code from register spills clutters output.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `int` parameters become `unsigned int` in many functions. The critical bug: `param_fake_branch` loses its parameter entirely (should be `int x`). Integer types are generic `unsigned int` instead of specific sizes. Signed/unsigned correctness is compromised.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex structs in this specific function, but the decompilation shows some array handling (e.g., `char v0[31]`). The recovery is adequate for simple cases but lacks field names for any struct usage.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: In `param_fake_branch`, returning uninitialized `v0` is undefined behavior. Pointer arithmetic in string functions (`cur = &cur[1]`) lacks bounds checking. The division functions have potential division-by-zero that isn't safely handled in the decompiled view.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The source had extensive documentation explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) but none of this is recovered. Zero helpful annotations for the always-false conditions or opaque predicates.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The fake branch technique (always-false conditions) is not recognized or documented. The opaque predicate computation (gcd, bit operations) is decompiled but not identified as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The critical bug in `param_fake_branch` (returning uninitialized variable) is presented as normal code. No warnings about potential undefined behavior or decompilation uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The function `param_fake_branch` should have documented that it always returns the input value (since conditions are always false), but this semantic information is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible (e.g., `call_fake_branch` calls `param_fake_branch`) but not explicitly documented. Global variable usage (e.g., `g_401170`, `g_401190`) appears without explanation of their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but not logically organized. The test function `test_obf_opt_edge` contains all the test cases mixed together. No clear separation between obfuscation, optimization, and edge case categories.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile. `param_fake_branch` uses uninitialized variable `v0`. Many external declarations are missing or incorrect. The code requires significant patching to compile (missing headers, wrong function signatures).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- `param_fake_branch` loses its parameter entirely - function signature is `int param_fake_branch()` instead of `int param_fake_branch(int x)`, returning uninitialized garbage
+- Variable names are all generic (`v0`-`v16`) with no semantic meaning - cannot track purpose
+- No comments explaining the obfuscation techniques (fake branches, opaque predicates)
+- Duplicate function calls in wrapper functions (e.g., `call_tail_call_optimized` calls the function twice)
+- Type precision severely degraded - `int` parameters become `unsigned int`, losing signedness
+- Excessive goto-based control flow instead of natural if/else structures
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The target function `param_fake_branch` is correctly named, matching the source. However, this is inconsistent with the rest of the binary's mechanical naming.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Variables use completely generic names (`v0`, `v1`, etc.) that provide no semantic information. Combined with the lost parameter in `param_fake_branch`, the code is nearly impossible to analyze.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Parameter Recovery**: Implement analysis to recover function parameters from register usage patterns - `param_fake_branch` clearly should have an `int x` parameter based on how `v0` is used in the caller
+2. **Variable Name Inference**: Use usage pattern analysis to infer semantic names - if `v0` is passed from caller and returned unchanged, name it after the parameter
+3. **Comment Generation**: Add automatic comments for recognized obfuscation patterns - document that `x*x < 0` is an always-false condition and explain the semantic implications

@@ -1,0 +1,99 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_1c`, `iVar1`, `uVar1` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`) likely due to debug symbols (-g flag). This is excellent recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex obscure simple values: `0x2a` (42), `0xf` (15), `0x14` (20), `0x51eb851f` (float representation). String literals shown as `&DAT_00012180` instead of actual content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler runtime functions present (`_init`, `__do_global_dtors_aux`, `register_tm_clones`). Floating-point helpers (`__adddf3`, `__subdf3`) are extremely verbose with 100+ lines each.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `func_mixed_args` shows degraded floating-point operations as sequential function calls. Some `for` loops converted to `do-while` patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical signature errors: `call_cdecl` returns `void` instead of `int`, `func_mixed_args` has 6 parameters instead of 4. Struct-passing functions lose parameters entirely (`func_struct_byval` shows `void`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some functions use pointer iteration loops where array indexing existed in source, but flow remains traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Floating-point helper functions contain massive redundant bit-manipulation code. No dead code in main functions, but type splitting creates duplicate parameter handling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `double` split into `undefined4 param_3, undefined4 param_4`. Pointers shown as `int *` or `byte *` instead of specific types. `char *` becomes `byte *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct`, `SmallStruct`, `BigStruct` all lost. `func_struct_byval` shows no struct parameter (just `void`). `func_struct_byptr` shows `int *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined4 *)`, `(byte **)`, `(code *)`. `call_ret_large_struct` uses uninitialized `local_c` instead of `local_48[15]`. Function pointers as `code *` acceptable but imprecise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler-generated warnings present ("WARNING: Removing unreachable block"). No semantic comments explaining logic, algorithms, or decompiler confidence levels.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (shown as raw pointer iteration). No design pattern identification. Standard C idioms like `va_list` handling completely lost.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments for unreachable blocks and non-returning subroutines. However, critical issues (wrong signatures, missing returns, uninitialized variables) are NOT flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Null checks exist in code (`if (param_1 == (int *)0x0)`) but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global data references shown as `&DAT_00012180`. Callback relationships visible (`callback_func`) but not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 87 functions in single output with no logical grouping. Compiler runtime functions mixed with user code. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`printf`, `strlen`, `__libc_start_main`) without declarations. Data references need resolution. Floating-point helpers would need proper implementation to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average Score | Weight | Contribution |
+|-------|-----------|---------------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.50 | 30% | 1.65 |
+| L2: Structural | 4 | 6.00 | 25% | 1.50 |
+| L3: Type System | 3 | 3.33 | 20% | 0.67 |
+| L4: Semantic | 4 | 3.50 | 15% | 0.53 |
+| L5: Contextual | 3 | 4.33 | 10% | 0.43 |
+
+**Overall Readability Score: 4.78/10**
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct`, `SmallStruct` not recovered; `func_struct_byval` shows no parameters
+- **Function signature errors**: `call_cdecl` returns `void` instead of `int`; `func_mixed_args` has 6 params instead of 4
+- **Uninitialized variable usage**: `call_ret_large_struct` uses `local_c` without initialization (should be `local_48[15]`)
+- **Varargs pattern not recognized**: `va_list` handling shown as raw pointer arithmetic
+- **Magic numbers in hex**: `0x2a`, `0xf`, `0x14` obscure simple decimal values from source
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols preserved all original function names accurately
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types, making struct-related functions nearly unusable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from stack access patterns and field offset analysis to recover `LargeStruct`, `SmallStruct` definitions
+2. **Fix return type detection** for wrapper functions that call other functions and return their results (e.g., `call_cdecl` should inherit callee's return type)
+3. **Recognize varargs patterns** by detecting `va_start`/`va_arg`/`va_end` sequences or stack-based parameter iteration patterns

@@ -1,0 +1,3 @@
+Test: Opaque Predicate
+Test: Instruction SubstitutionResult: Opaque Predicate = 20
+Result: Instruction Substitution = 0xe1

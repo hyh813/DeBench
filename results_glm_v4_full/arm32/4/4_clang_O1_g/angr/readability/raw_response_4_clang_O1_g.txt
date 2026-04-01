@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `v1`), and internal lifting artifacts like `vvar_286{r64|1b}` and `cc_dep1` obscure meaning completely. No semantic names like `count` or `sum` are recovered from the source.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `cdecl_func` and `test_calling_conventions` are preserved accurately. However, library functions and unknowns fall back to generic names like `sub_4003f0` or raw symbol names like `__adddf3`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Function calls in test functions are replaced by inlined results (e.g., `return 15` instead of `cdecl_func(5, 10)`), hiding the logic. Magic numbers like `0x12` appear inside `armg_calculate_condition` calls without explanation.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with compiler/decompiler IR artifacts such as `armg_calculate_condition`, `Not Conv`, `Goto None`, and `vvar`. These make the code practically unreadable as high-level C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is expressed using explicit `goto` labels (e.g., `LABEL_400f7e`) and `do-while` loops even for simple logic. Conditional checks are obscured by nested `armg_calculate_condition` calls rather than simple `if` statements.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While user functions are separated, the decompiler inlines logic inside callers (e.g., `call_cdecl` just returns `15`), destroying the program's call structure. Library functions like `__adddf3` are presented as massive, monolithic logic dumps.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is non-linear, relying heavily on forward jumps to labels and computed gotos. The flow is interrupted by constant IR noise, making top-to-bottom reading nearly impossible.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: There is massive redundancy in the form of repeated `armg_calculate_condition` calls and verbose flag calculations (`cc_dep1`, `cc_ndep`) that represent single low-level operations, cluttering the logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: High-level types are completely lost. `double` and `long long` parameters in `func_mixed_args` are split into multiple `unsigned int` arguments. Pointers are often treated as `unsigned int`, losing type safety and semantic context.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structures are not recovered meaningfully. `LargeStruct` and `SmallStruct` parameters are flattened into lists of integers or generic `struct_0` with `field_0`. The semantic relationship between fields is lost.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code exhibits unsafe type handling, such as casting pointers to `unsigned int` and performing pointer arithmetic on raw integers. The use of `armg_calculate_condition` implies bit-level manipulation that bypasses type checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are headers indicating the decompiler name and platform, providing no insight into the code's function.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are not recognized. Varargs in `varargs_func` are exposed as raw stack pointer arithmetic rather than `va_list`. Floating-point arithmetic is reduced to integer bit manipulation and library calls.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag anomalies; instead, it presents confusion as code. For example, `Goto None` and `Not Conv` suggest the decompiler failed to resolve the flow, but these are presented as valid statements rather than warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. Null checks (e.g., in `param_double_ptr`) are buried in `armg_calculate_condition` noise rather than explicit assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function names are preserved, the actual call graph is obscured because calls are often inlined (e.g., inside `test_calling_conventions`). The relationship between the caller and callee is lost in the decompiled view of the caller.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat file. While they are generally grouped by address, there is no logical separation or module structure apparent in the output.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on non-existent functions like `armg_calculate_condition` and syntax like `vvar_286{r64|1b}` which are artifacts of the decompiler's internal representation, not valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- **IR Artifacts:** The code is littered with `armg_calculate_condition`, `vvar`, and `Goto None`, making it look like a raw IR dump rather than C code.
+- **Type Loss:** High-level types (`double`, `struct`) are completely flattened into `unsigned int` registers, destroying semantic meaning.
+- **Inlining:** Test functions like `test_calling_conventions` have had their logic inlined away (e.g., `return 15`), hiding the program's actual structure and flow.
+- **Varargs Obfuscation:** The `varargs_func` implementation is reduced to raw stack pointer manipulation (`ptr + 1`) rather than using `va_list`.
+
+**Best Quality Aspect:** Function Naming (Score: 7/10)
+- **Why?** The decompiler successfully preserved the original names for most user-defined functions (e.g., `cdecl_func`, `param_by_value_int`), which is the only remaining link to the source code's intent.
+
+**Most Needs Improvement:** Noise Reduction (Score: 1/10)
+- **Why?** The presence of internal decompiler artifacts (`armg_calculate_condition`, `Not Conv`) renders the code functionally unreadable. These must be abstracted away to produce valid, understandable C code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement IR Simplification:** Add a pass to resolve and remove `armg_calculate_condition` calls and `vvar` artifacts, converting them into standard C control flow (`if`, `while`) and boolean expressions.
+2.  **Improve Type Recovery:** Enhance the type analysis to reassemble split integer arguments back into composite types (structs, doubles) based on ABI rules for the target architecture.
+3.  **Control Inlining:** Provide an option or heuristic to prevent aggressive inlining of function calls within "test" or "main" functions, preserving the call graph structure for better readability.

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `iVar1`, `iVar2`, `piVar3`, `lVar1`, `lVar2`, `puVar1`, `local_8`, `lStack_80`. Many unresolved locals marked with `@[???]` like `int sum@[???]`, `int i@[???]`. Only parameter names like `param_1`, `count` are somewhat meaningful. This is a severe degradation from the original where variables like `val`, `ptr`, `result` were clear.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `ret_pointer`, `ret_void`. Minor issues: some internal functions like `FUN_00100710`, `FUN_001008bc` are generic. Overall excellent recovery of function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0x14` (20). The original source had meaningful constants like `5, 10` passed to functions, but these are now constant-folded. No named constants recovered. String literals like `"CALL-L1-01: %d\n"` preserved but provide limited context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with 50+ warning lines: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Variable defined which should be unmapped", "WARNING: Globals starting with '_' overlap smaller symbols", "WARNING: Subroutine does not return". These clutter every function and make reading extremely difficult. Auto-generated comments like `/* Total functions decompiled: 79 */` add no value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - loops use do-while constructs, conditionals are clear. Example: `varargs_func` has proper loop structure. At -O0, minimal optimization artifacts expected, and the decompiler mostly delivers. Minor issues: some complex pointer arithmetic in `varargs_func` makes tracing slightly difficult.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Small test wrapper functions preserved: `call_cdecl()`, `call_stdcall()`, `call_by_value_int()`. Each function has single responsibility. The original 665 LOC expanded to 1263 LOC partly due to verbose decompilation output, but decomposition quality is good.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in functions like `func_struct_byptr`. Some forward jumps exist in complex functions like `varargs_func` but are manageable. No severe spaghetti code observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from constant folding - the decompiler computes results at compile time (e.g., `call_cdecl()` returns `0xf` directly instead of calling `cdecl_func(5, 10)`). This is expected at any optimization level but could be annotated. No severe duplicate code blocks observed.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types generally accurate: `int`, `int*`, `char*`, `char**`, `longlong`, `va_list`. Some issues: `undefined8` used for return types where `int` would be correct (e.g., `call_thiscall` returns `undefined8` but should be `int`). Function pointer types like `_func_int_int *callback` are somewhat generic. Overall acceptable but not perfect.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types recovered well: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all present with field names. Example: `LargeStruct` has `data[16]` field correctly recovered. Minor: some struct definitions like `TestIntPair` referenced but not fully defined in output. Good recovery overall.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `param_complex_cast`: `(int *)p`, `(char *)int_ptr`, `(int *)((long)p + 4)` - multiple casts without justification. In `ret_large_struct`: direct memory copy with pointer arithmetic. However, most basic operations are type-safe. The issues are moderate, not severe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only warnings present (which are noise, not comments). No explanation of algorithm intent, no @param/@return documentation, no decompilation confidence indicators. The original source had extensive comments explaining each test case, but none were recovered. This is a major gap.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized but not named. Varargs handling shows some understanding (va_list, va_start/va_end concepts present). No explicit pattern naming like "state machine", "callback pattern", "RAII". The complex cast pattern in `param_complex_cast` could be flagged as "type punning" but isn't.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for some anomalies: "Unknown calling convention", "Unresolved local var", "Removing unreachable block". However, these are generic warnings, not specific explanations. For example, `call_thiscall` returning `undefined8` should have a note about C++ class method ABI uncertainty. Some issues silently produce wrong types without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "ptr != NULL" in `func_struct_byptr` are not documented. Postconditions not indicated. The original source had clear semantics (e.g., "returns -1 if p is NULL") but these are not recovered. The code just shows the conditional without explaining the contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat clear from the code - you can see `call_cdecl()` calling `cdecl_func()`. However, no explicit documentation of call graph, no indication of which functions are test wrappers vs. actual implementations. Global variables like `handle1_1`, `handle2_0` appear without explanation of their origin.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all calling convention tests together, parameter passing tests together, return value tests together. Matches source organization reasonably well. Static functions properly scoped. No header file structure recovered, but that's expected from binary-only analysis.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would NOT compile standalone. Issues: unresolved local variables marked `@[???]`, undefined types like `_func_int_int`, undefined globals like `handle1_1`, `handle2_0`, `completed_0`, `___stack_chk_guard`. The decompiled output includes many references to external symbols not defined. This is expected for binary-only but severely limits utility.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+1. Variable naming is nearly unusable - generic names like `iVar1`, `local_8`, `lStack_80` with many `@[???]` unresolved locals
+2. Severe noise pollution with 50+ warning lines cluttering every function
+3. No useful comments or documentation recovered from source
+4. No contract/precondition/postcondition recovery despite clear semantics in source
+5. Build system compatibility is poor - code cannot compile standalone due to undefined symbols
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Variables are almost entirely generic or stack location indicators, making it extremely difficult to track data flow and understand function logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*p << 1` suggests doubling, `ptr[i]` suggests indexing) to generate semantically meaningful names like `doubled_value` or `element_index`
+2. **Eliminate warning noise**: Move compiler warnings to a separate log file or summary section, not embedded in every function
+3. **Recover comments from debug symbols**: The source was compiled with `-g`, so DWARF debug info should contain source comments that can be extracted to explain function intent and contracts

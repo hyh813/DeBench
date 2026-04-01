@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 40,
+  "source_file": "decompiled/angr_out/x64/3/3_gcc_O1_no_g.c",
+  "fixed_file": "results_qwen_v4_full/x64/3/3_gcc_O1_no_g/angr/syntactic/fix_3_gcc_O1_no_g.c"
+}

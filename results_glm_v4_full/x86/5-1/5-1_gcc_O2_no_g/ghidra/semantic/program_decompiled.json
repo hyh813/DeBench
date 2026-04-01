@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/x86/5-1/5-1_gcc_O2_no_g/ghidra/syntactic/bin/5-1_gcc_O2_no_g_fixed",
+  "stdout": "=== Testing C++ OO Features ===\n\nName length: 4704\nConstructor test: 21\nVirtual function: 42\nMultiple inheritance: 71\nDiamond inheritance: 650\nOperator overload: 22\nTemplate function: 40\nTemplate class: 16\nLambda: 85\n",
+  "stderr": "Exception thrown\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false
+}

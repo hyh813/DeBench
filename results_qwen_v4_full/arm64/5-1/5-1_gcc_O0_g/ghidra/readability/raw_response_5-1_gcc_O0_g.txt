@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Test function variables like `obj`, `result`, `capture_by_value` are meaningful, but intermediate variables use generic names (`iVar1`, `lVar1`, `bVar2`) obscuring their purpose. Lambda captures recovered well (`__capture_by_ref`), but local temporaries lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions preserve original names (`test_cpp_member_func`, `SimpleClass::getValue`), but compiler-generated functions are verbose (`test_cpp_lambda::anon_struct_16_2_484633fb::operator()`) and some runtime functions are cryptic (`FUN_00101840`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x1234` (class ID), `0x1f` (buffer size), `0x1e` (30) appear without explanation. String literals externalized as `&DAT_001045e8` instead of inline strings, reducing readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Every function contains stack canary checks (`___stack_chk_guard`), multiple "WARNING:" comments about overlapping symbols, and 205 functions generated from 540 LOC original due to runtime support code bloat.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most conditionals use natural if-else, but `LifecycleClass` constructor uses goto-based loop (`LAB_00102ed4`), and exception regions marked but not fully reconstructed into try-catch blocks.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved well, class methods properly separated. However, template instantiations and thunk functions create fragmentation (205 functions total).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but exception handling introduces non-linear jumps, and stack canary checks at function exits disrupt flow with "WARNING: Subroutine does not return" blocks.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function, destructor calls repeated, template instantiations create near-identical code for `Container<int>` vs `Container<double>`, no dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Class types preserved (`SimpleClass`, `unique_ptr<int,...>`), but some types degrade to generic (`pointer`, `type`, `__tuple_element_t_conflict`). Primitive types use `int`/`long` instead of sized types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class fields recovered with names (`this->value`, `this->name`), inheritance via `super_Base` prefixes. However, diamond inheritance shows "ignoring overlapping field 'super_MiddleB'" and some fields use offset notation (`obj._40_4_`, `obj.field_0x20`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(ulong)(uint)x`, `*(undefined8 *)((long)&this->_vptr_MiddleA + ...)`. Virtual function calls use generic `(_func_int_varargs **)` instead of proper function pointer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: DWARF debug info provides original prototypes ("/* DWARF original prototype: int getValue(SimpleClass * this) */"), but no algorithm explanations or semantic documentation of logic intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: RAII pattern in smart pointers visible but not identified, virtual dispatch mechanism shown but not named as "vtable polymorphism", lambda capture mechanism exposed but not explained as closure pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good detection of decompilation issues: "WARNING: Struct 'DiamondDerived': ignoring overlapping field", "Unresolved local var: int * capture_by_ref@[???]", calling convention warnings properly flagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No precondition/postcondition documentation, exception regions marked but contracts not specified, constructor/destructor semantics visible but not documented as RAII guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls explicit with class scope (`SimpleClass::getValue(&obj)`), inheritance visible through `super_` prefixes, vtable dispatch clear. No explicit call graph documentation though.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file, class methods grouped together, but runtime support functions mixed with user code, no header file separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires linking external runtime functions (`__cxa_throw`, `operator_new`, `__stack_chk_fail`), would need significant stubbing to compile standalone, no dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+7+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (6+6+6)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (6+4+7+4)/4 = 5.25 × 0.15 = 0.79
+Level 5 (Contextual):  (7+5+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                              5.82/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects
+- Generic variable names (`iVar1`, `lVar1`, `bVar2`) obscure semantic purpose throughout test functions
+- Stack canary checks (`___stack_chk_guard`) duplicated in every function creating significant noise
+- Diamond inheritance struct recovery failed: "ignoring overlapping field 'super_MiddleB'"
+- Magic numbers (`0x1234`, `0x1f`, `0x1e`) appear without named constant recovery
+- C++ idioms (RAII, virtual dispatch, lambda closures) visible but not explicitly identified or documented
+
+### Best Quality Aspect
+- **Anomaly Indication (7/10)** - Decompiler effectively flags decompilation uncertainties with specific warnings about unresolved variables, struct field conflicts, and calling convention issues.
+
+### Most Needs Improvement
+- **Idiom Recognition (4/10)** - Fundamental C++ patterns (polymorphism via vtable, RAII resource management, lambda capture semantics) are present in code but never identified or explained, missing opportunity for semantic clarity.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference from usage patterns** - Analyze how `iVar1`, `iVar2` are used to suggest semantic names like `result`, `return_value`, `computed_sum`
+2. **Add C++ idiom detection and annotation** - Recognize vtable dispatch, RAII patterns, and lambda closures, adding comments like "// Virtual dispatch via vtable" or "// RAII: destructor called at scope exit"
+3. **Filter compiler instrumentation from output** - Provide option to elide stack canary checks and runtime support warnings from main code flow, moving them to separate analysis notes

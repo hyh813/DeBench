@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `str`, `str2`) instead of semantic names like `dst`, `src`, `thread_count`. In `param_strcpy`, both parameters collapse to `str2`, losing the dst/src distinction entirely.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_strcpy`, `call_strcpy`), but 50+ helper functions named `function_13c0`, `function_13d0` with no semantic meaning. Standard library wrappers should be inlined or named descriptively.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Error codes as magic hex (`0xfffffffd`, `0xfffffffe`) instead of named constants. String literals stored in opaque globals (`g17`, `g18`) rather than inline. No constant definitions recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) repeated in every function. Architecture-specific intrinsics (`__aarch64_cas4_acq_rel`) exposed. Redundant type casts throughout (`& 0xffffffff`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive goto usage instead of loops (e.g., `param_pthread_join` has `lab_0x2c58_2`, `lab_0x2c84` labels). Original clean for/while loops transformed into jump-heavy code even at `-O0`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with 136 functions including trivial wrappers (`function_13c0` just calls `memcpy`). Some functions missing parameters entirely (`param_strcpy(void)` should have `char* dst, const char* src`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple exit points via goto instead of early returns. `param_thread_local_storage` has 6+ jump labels.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated in every function. Type masking (`& 0xffffffff`) repeated unnecessarily. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, or `void*`. Original `char*`, `const char*`, `size_t`, `FILE*` lost. Function signatures wrong (`param_strcpy(void)` vs `param_strcpy(char*, const char*)`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic fields (`e0`, `e1`, `e2`...) instead of semantic names. `struct stat`, `struct sockaddr` layouts present but meaningless. TLS variables collapsed to pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(int64_t *)str`, `(int32_t)v1`). Pointer arithmetic on generic types. `param_strcpy` has critical bug: `strcpy(str, (char *)str2)` where both derive from same uninitialized variable.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated headers ("Address range: 0x1388 - 0x13a0"). No algorithm explanations, no parameter documentation, no decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library patterns visible but not identified (no "STRING_COPY" annotation). Thread patterns (mutex, condition variable) present but not labeled as synchronization idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Critical bugs presented confidently without warnings. `param_linux_syscall` calls wrong syscall (`SYS_mpx` vs `SYS_open`). No "UNCERTAIN" flags on indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). Error return values not explained. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g6`, `g7` for signal handling) have no semantic names. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 136 functions in single file. No logical grouping by section (standard library vs. syscalls vs. threads). Original 3 test functions collapsed.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims compilation succeeds, but requires many external stubs. Architecture-specific intrinsics need platform support. Dependency list incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **`param_strcpy` is semantically broken**: Both parameters derive from same uninitialized `str2`, making `strcpy(str, (char*)str2)` copy pointer to itself instead of dst/src
+- **Function signatures lost parameters**: `param_strcpy(void)`, `param_strlen(int64_t a1)` should have proper parameter lists
+- **Error codes as magic hex**: `0xfffffffd`, `0xfffffffe` instead of named constants like `ERR_FILE_WRITE_FAILED`
+- **Global variables opaque**: `g6`, `g7` used for signal handling with no semantic names
+- **Control flow uses goto**: Even at `-O0` debug build, loops transformed to jump labels (`lab_0x2c58_2`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `call_pthread_create` were preserved from debug symbols, providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; only address ranges and auto-generated headers. No explanation of algorithm intent, error conditions, or decompiler confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter names from debug symbols**: At `-O0 -g`, DWARF info contains original parameter names (`dst`, `src`) that should be preserved instead of `v1`, `str2`
+2. **Detect and flag semantic anomalies**: When both strcpy parameters resolve to same source, emit warning like "// ANOMALY: dst and src may alias - verify manually"
+3. **Replace magic error codes with named constants**: Detect repeated hex patterns (`0xfffffffd`, `0xfffffffe`) and suggest enum definitions like `enum { ERR_FILE_WRITE = -2, ERR_COMPARE_FAIL = -3 }`

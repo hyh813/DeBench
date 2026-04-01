@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `a0`, `a1`, `v0`, `v1`, `ptr`, and `idx`. Semantic names like `count`, `sum`, or `args` from the source are completely lost, forcing the reader to reverse-engineer variable purposes from usage.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: High-level test functions (`cdecl_func`, `main`, `test_calling_conventions`) retain their names, which is helpful. However, many helper functions and thunks are reduced to generic addresses (`sub_401030`, `sub_401040`), and `printf` is obfuscated as `sub_4010e0`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are preserved and readable (e.g., `"CALL-L1-01: %d\n"`), but magic numbers like `4294967295` (likely `-1` or `UINT_MAX`) appear without context. The `[D] unsupported...` literals are confusing artifacts rather than clarifying constants.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with decompiler artifacts such as `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `[D] PutI`. These internal debugging/error messages render sections of the code (like `func_mixed_args`) completely unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural, relying on `goto` statements (e.g., `goto ptr[2]`) where switch statements or structured loops likely existed. While `do-while` loops are recovered, the overall flow is disrupted by low-level jumps and dispatcher functions.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decomposition generally maps to the source structure, with distinct functions for different tests. However, the presence of many tiny "thunk" functions (e.g., `sub_40104e` calling `sub_401050`) fragments the code unnecessarily, likely due to compiler optimizations or PLT/GOT entries.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code does not read linearly. Forward jumps and computed gotos (e.g., in `sub_401030`) interrupt the top-to-bottom reading flow. The `test_calling_conventions` function is cluttered with stack guard checks that obscure the main logic.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully reflects compiler optimizations, such as constant propagation (e.g., `call_cdecl` returning `15` directly). While this deviates from the source structure, it eliminates redundant code, making the optimized logic concise where it succeeds.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type information is severely degraded. Most integers are generic `unsigned int`, and specific types like `double` or `long long` are lost or mishandled. Pointers are often cast to `unsigned int *`, losing the distinction between data types and pointers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered. `LargeStruct` and `SmallStruct` parameters are flattened into individual integer arguments or raw stack accesses (e.g., `a0[1] * *(a0)`). The semantic grouping of struct fields is completely absent.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts, primarily treating pointers as `unsigned int`. The failure to recover struct types leads to unsafe pointer arithmetic (e.g., accessing `(&v0)[4 * idx]` for varargs) without the safety of the original `va_list` abstraction.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments. The only "comments" are raw decompiler error messages (`[D] unsupported...`), which indicate failure rather than explaining the code's intent or algorithm.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are not recognized. Variable argument lists (`va_list`) are decompiled to manual stack walking. Struct member access is decompiled to pointer arithmetic. The code presents low-level implementation details rather than high-level idioms.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly flags unsupported instructions with `[D]` tags. While this accurately indicates where the decompilation failed, these are raw error messages rather than helpful semantic warnings (e.g., "Potential floating point operation").
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented. Checks like `if (!ptr)` are present in the code, but the contract (e.g., "ptr must not be NULL") is not stated or inferred as a semantic annotation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the obfuscation of standard library functions (e.g., `printf` -> `sub_4010e0`) and the use of generic global variable names (`g_402008`) make it difficult to understand the relationships and dependencies without external analysis.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While they roughly follow the source order, there is no logical grouping or module structure visible in the decompiled text, making it hard to navigate the large file.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not valid C. The presence of `[D]` tags and non-standard syntax (e.g., `unsigned int [2]` as a return type) means it cannot be compiled without significant manual modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 6 + 4 + 2) / 4 = 3.5
+L2_avg: (4 + 6 + 4 + 7) / 4 = 5.25
+L3_avg: (3 + 2 + 3) / 3 = 2.67
+L4_avg: (1 + 2 + 5 + 2) / 4 = 2.5
+L5_avg: (4 + 5 + 1) / 3 = 3.33
+
+Overall = (3.5 × 0.30) + (5.25 × 0.25) + (2.67 × 0.20) + 
+          (2.5 × 0.15) + (3.33 × 0.10)
+Overall = 1.05 + 1.3125 + 0.534 + 0.375 + 0.333
+Overall = 3.60 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.6/10
+
+### Critical Defects (Bullet List)
+- **Severe Noise Pollution:** The code is littered with `[D] unsupported_<class 'pyvex.expr.GetI'>()` artifacts, rendering functions like `func_mixed_args` unreadable and non-compilable.
+- **Total Loss of Struct Semantics:** Composite types (structs) are not recovered; `LargeStruct` and `SmallStruct` are flattened into raw integers/pointers, destroying data layout understanding.
+- **Generic Naming:** Variables are universally named `a0`, `v0`, `ptr`, etc., stripping all semantic meaning and forcing manual reverse engineering of variable purposes.
+- **Platform/Arch Mismatch:** The source metadata specifies `arm64`, but the decompiled code is clearly `x86` (evidenced by `__x86.get_pc_thunk` and 32-bit addressing), leading to confusion about the target environment.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Redundancy Elimination (7/10)
+- **Why?** The decompiler accurately reflects the compiler's optimizations (e.g., constant folding), resulting in concise code where the lifting succeeded, avoiding redundant intermediate variables.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Build System Compatibility (1/10)
+- **Why?** The output contains syntax errors and decompiler artifacts (`[D]` tags) that make it impossible to compile or even parse as valid C, fundamentally failing as a representation of source code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Suppress or Lift IR Failures:** Implement a fallback mechanism for unsupported instructions (like SIMD/FP) instead of dumping raw IR tags (`[D] unsupported...`) into the C output, perhaps using intrinsic functions or placeholder memory accesses.
+2.  **Enhance Type Recovery:** Implement heuristic-based struct recovery to group related stack variables and pointer arithmetic into composite types, rather than flattening everything to integers and pointers.
+3.  **Improve Variable Naming:** Utilize data flow analysis to infer variable names from usage (e.g., naming a loop counter `i` or `idx` instead of `v0`) and propagate argument names from function signatures where available.

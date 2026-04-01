@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_clang_Os_no_g/binaryai/syntactic/bin/5-23_clang_Os_no_g_fixed",
+  "stdout": "Testing Preprocessing Features:\n\nparam_macro_constants: expected 0x40, got 0x40\ncall_macro_constants: expected 0x40, got 0x1e\nparam_conditional_compile: expected 0x20, got 0x20\nparam_multi_branch_compile: expected 0xdf22, got 0xdf22\nparam_macro_recursion: expected 0x74, got 0x74\nparam_stringize: expected 0x13, got 0x13\ncall_token_paste: expected 0x3c, got 0x3c\nLOG: Values: 10, 20, 30\ncall_variadic_macro: expected 0x3c, got 0x3c\ncall_macro_override: expected 0x10, got 0x10\ncall_include_guard: expected 500, got 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:24\ncall_builtin_macros: expected 0x17e, got 0x17e\nTesting Assembly Features:\n\nparam_asm_basic: expected 0xf, got 0xf\nparam_asm_clobber: expected 0xf, got 0xf\ncall_asm_multi_insn: expected 0x2a, got 0x2a\ncall_asm_simd: got 0x6e\ncall_asm_atomic: got 30\ncall_asm_privileged: expected 0x4d, got 0x4d\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

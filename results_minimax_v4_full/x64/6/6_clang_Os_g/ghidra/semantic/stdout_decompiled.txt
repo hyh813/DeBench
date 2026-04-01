@@ -1,0 +1,20 @@
+=== Standard Library Function Tests ===
+
+strlen("HelloLib") = 14
+param_strcmp result: 0
+call_strlen result: 12
+call_memcpy result: 90
+call_memcmp result: 4294967295
+Value: 42, Name: Lib
+printf chars: 21
+sscanf result: 579
+fopen result: 42
+fread_fwrite result: 4294967293
+malloc_free result: 90
+memset result: 0
+strchr_strstr result: 15
+=== System Call Tests ===
+
+syscall result: 42
+stat result: 2758803614
+fork_exec result: 42

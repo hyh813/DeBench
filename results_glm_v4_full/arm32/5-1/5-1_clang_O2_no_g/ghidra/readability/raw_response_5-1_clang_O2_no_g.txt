@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `local_28`, `iVar1`, `puVar3`), providing no semantic hint about their role in the C++ objects (like `obj`, `derived`, or `ptr`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent recovery of C++ mangled names; functions like `Container<int>::push` and `test_cpp_virtual_func` are clearly identified and match the source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String constants are represented as hex integers (e.g., `0x74736554` for "Test"), and function logic is often replaced by magic number results (e.g., `return 0x2a` instead of the calculation), obscuring the original intent.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise from Ghidra's handling of 64-bit types on 32-bit ARM, using macros like `SUB84` and `CONCAT44`, and generic types like `undefined4` clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is natural where logic remains (e.g., `if` statements in `test_cpp_rtti`), though many functions are reduced to simple returns due to compiler optimization.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations and class methods are correctly decomposed into separate functions (e.g., `template_max<int>` vs `template_max<double>`), maintaining the source structure well.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumps; the decompiler successfully flattened the control flow of the optimized binary into a readable top-down format.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's redundancy elimination; there is no dead code or unnecessary variables left in the decompiled output.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While high-level types like `Base*` and `double` are recovered in signatures, member access often degrades to `undefined4` and pointer arithmetic (e.g., `*(undefined4 *)(this + 0x28)`).
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Class types are used in signatures, but internal structure is lost; members are accessed via hardcoded offsets (e.g., `this + 0x28`) rather than field names like `size` or `data`.
+
+**11. Type Safety:** Score: 4/10
+Justification: Virtual function calls are represented as dangerous raw pointer casts (e.g., `(*(code *)**(undefined4 **)param_1)()`), and `undefined4` casts are prevalent, erasing type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "WARNING: Unknown calling convention") and lack semantic explanations of the C++ logic or algorithms.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Strong recognition of C++ ABI idioms, correctly identifying `__dynamic_cast`, `operator_new`, `__cxa_throw`, and `__aeabi_dcmpgt` (double comparison).
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler provides clear warnings for difficult constructs, such as "Could not recover jumptable" for virtual calls and "Unknown calling convention," alerting the user to potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic is presented as-is without semantic contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Type names in function signatures (e.g., `RTTIBase`, `Container<int>`) provide good context, and calls to standard library/ABI functions are clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class (e.g., all `Container` methods are adjacent), though C++ namespaces are flattened into the global scope.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific macros (`SUB84`, `CONCAT44`) and non-standard types (`undefined4`), requiring significant cleanup to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- String literals represented as hex integers (`0x74736554` for "Test") instead of character arrays.
+- Logic of test functions replaced by constant-folded results (e.g., `return 0x2a`), completely hiding the original algorithmic flow.
+- Struct member access performed via raw offsets (`this + 0x28`) rather than semantic field names.
+- 64-bit double operations obscured by register splitting macros (`SUB84`, `CONCAT44`).
+- Virtual function calls displayed as unsafe pointer dereferences rather than method invocations.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully demangled C++ symbols, perfectly preserving the original function and class method names.
+
+**Most Needs Improvement:** Literal Clarity (scored 4/10)
+- The reliance on magic numbers and hex-encoded strings makes understanding the data flow and logic extremely difficult compared to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to convert stack-based hex integer assignments (like `local_28 = 0x74736554`) back into string literal initializations.
+2. Abstract 32-bit register splitting macros for 64-bit types (`SUB84`, `CONCAT44`) into native arithmetic operations or assignments.
+3. Utilize debug information (if available) or type propagation to replace struct member offset arithmetic (`this + 0x28`) with actual field names.

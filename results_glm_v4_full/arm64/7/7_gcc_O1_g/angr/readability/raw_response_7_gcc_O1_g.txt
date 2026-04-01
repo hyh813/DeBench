@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `ptr`, `p`), providing no semantic context. Arguments are named `a0`, `a1`, which is mechanical rather than descriptive.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `param_fake_branch` and `call_opaque_predicate` are preserved perfectly, which is excellent. However, system functions are reduced to generic names like `sub_400874`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers such as `4294967295` (0xFFFFFFFF) and `90` (0x5A) without context. While `0x12345678` appears, its purpose as a canary is not indicated.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: Every function is polluted with redundant stack frame setup code like `v0 = &v1` and `v1 = v3`. Additionally, low-level IR artifacts like `__ROL__` and `arm64g_calculate_condition` are treated as valid C expressions, severely impacting readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is obscured by the use of `arm64g_calculate_condition` to evaluate boolean logic instead of native C operators. This turns simple `if` statements into complex, unreadable function calls (e.g., in `param_integer_overflow`).
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decomposition matches the source file's function boundaries well. However, the internal logic of functions like `param_opaque_predicate` is flattened into a single block of complex expressions rather than being broken down into understandable steps.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While the code generally reads top-to-bottom, the logic is frequently interrupted by stack variable initialization and the use of helper functions for basic comparisons, disrupting the cognitive flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated stack pointer assignments (`v0 = &v1`) in every function. The logic in `param_instruction_substitution` is expanded into complex arithmetic operations rather than preserving the clear bit-shifts of the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Basic types like `int` and `unsigned int` are used, but precision is lost in complex expressions. The return type `char [2]` for `decrypt_string` is incorrect and confusing. Stack arrays are sometimes represented as `uint128_t`, which does not match the source `int` arrays.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No structs or unions were recovered. The bitfield struct in `param_implementation_defined` is completely missing, and the function is reduced to a constant return value `48`, losing all structural context.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on implicit casts and raw integer manipulation of flags via `arm64g_calculate_condition`. Pointers are cast to integers and back in ways that suggest a direct translation of register operations rather than type-safe C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comments are "do not return" annotations for functions like `abort`, which offer no insight into the algorithmic intent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed. The GCD algorithm in `param_opaque_predicate` is present but obscured by the `arm64g_calculate_condition` calls. Bit-manipulation idioms are expanded into verbose arithmetic rather than being recognized as shifts/masks.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently despite significant anomalies. For example, `param_buffer_overflow_stack` is reduced to `return v0;` with no indication that the logic was removed or that the binary behavior might differ from the source intent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. The error handling logic in `param_division_by_zero` is present but not explicitly documented as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Because function names are preserved, the call graph is relatively easy to follow. One can see that `call_fake_branch` calls `param_fake_branch`, maintaining the relationship context.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in an order that closely matches the source file, and related functions (e.g., a handler and its caller) are grouped together, which aids in navigation.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is. It relies on undefined external symbols like `arm64g_calculate_condition`, `__ROL__`, and `g_411f50`. It also uses syntax like `char [2]` as a return type which is not valid C.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- The use of `arm64g_calculate_condition` completely obfuscates control flow logic, replacing simple comparisons with opaque function calls.
+- Variable naming is entirely generic (`v0`, `v1`), stripping away all semantic meaning of local variables.
+- Redundant stack frame setup code (`v0 = &v1`) appears in every function, adding significant noise.
+- Composite types (structs/unions) are not recovered at all, reducing complex data structures to raw pointer arithmetic.
+- The code is not buildable due to reliance on internal IR lifting functions (`__ROL__`, etc.).
+
+**Best Quality Aspect:** Module Organization (scored 8/10)
+- The decompiler successfully preserved the file structure and the names of user-defined functions, making it possible to locate specific routines despite the poor internal code quality.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1/10)
+- The failure to translate low-level IR artifacts (like condition code calculations) into high-level C operators renders the algorithmic intent of the functions almost completely unintelligible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pattern-matching pass to replace `arm64g_calculate_condition` sequences with standard C comparison operators (`==`, `!=`, `<`, `>`).
+2. Enhance the type recovery engine to identify and reconstruct composite types (structs) from stack layout and memory access patterns.
+3. Add a simplification pass to eliminate redundant stack variable assignments that mimic frame pointer setup but serve no purpose in high-level logic.

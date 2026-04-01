@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_gcc_O2_g/ida/syntactic/bin/5-23_gcc_O2_g_fixed",
+  "stdout": "Preprocessing Features Test:\n  param_macro_constants: 64\n  param_macro_functions: 30\n  param_conditional_compile: 32\n  param_multi_branch_compile: 57122\n  param_macro_recursion: 116\n  param_stringize: 19\n  param_token_paste: 60\nLOG: Values: 10, 20, 30\n  param_variadic_macro: 60\n  param_macro_override: 16\nInclude guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:51\n  param_builtin_macros: 382\nASM Features Test:\nASM basic result: 15\nASM clobber sum: 932278580\nASM multi-instruction result: 42\nASM SIMD result: 36\nAtomic result: 30\nASM privileged result: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

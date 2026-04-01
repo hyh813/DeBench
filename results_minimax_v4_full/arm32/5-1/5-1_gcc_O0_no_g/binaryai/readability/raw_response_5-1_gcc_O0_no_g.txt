@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `local_c`, `local_14`, `local_1c`, `iVar1`, `iVar2` that obscure their semantic purpose. For example, in `test_cpp_member_func`, the stack variable `aSStack_30` holds a `SimpleClass` object but the name provides no indication. At -O0, these should be more descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Member functions are correctly named (e.g., `SimpleClass::getValue`, `SimpleClass::compute`). Template instantiations use suffixes (`template_max_int_`, `template_swap_int_`). However, some internal functions use cryptic names like `FUN_00010a68` and lambdas have unwieldy names like `test_cpp_lambda()::{lambda(int)#1}::operator__`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "Test", "Base", "Derived" are preserved correctly. However, magic numbers like `0x1f` (31 for buffer size), `0x14` (20), `0x1e` (30) appear without explanation. The constant `0x1234` for `getClassID` is not documented.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) add noise but are expected at -O0. External function stubs (e.g., `operator_new`, `strlen`) are present but necessary. Some redundant patterns in template code, but manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recovered (e.g., `for (local_c = 0; local_c < param_1; local_c = local_c + 1)` in LifecycleClass constructor). Exception handling shows as direct `__cxa_throw` calls which is accurate but low-level. Control flow generally matches source structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Template instantiations are properly separated (`template_max_int_` vs `template_max_double_`). Member functions are correctly decomposed from the class. No 500-line monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Exception handling has some forward jumps to error paths. Early returns are used appropriately. Minor disruption from stack canary checks.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Template instantiations are clean. Loop unrolling is minimal. Common subexpression elimination artifacts are not prominent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` instead of `int32_t` or `size_t`. Pointers are properly typed (e.g., `int *`, `char *`). Some `undefined4` usage instead of proper return types. At -O0, type precision should be higher.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Classes are properly reconstructed with correct names (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`). Template classes have type suffixes (`Container_int_`, `Container_double_`). Struct layouts are accurate. Some internal types like `_lambda_int__1_` are cryptic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic present (e.g., `*(int *)(this + param_1 * 4)`). Virtual function calls use triple-indirect dereferencing which is correct but verbose. No major type-confused function pointers. Some raw memory operations in template classes.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case, but these are completely lost. No documentation of algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Virtual function calls via vtable are correctly shown (`***(code ***)param_1`). Some C++ idioms like RAII for smart pointers are present but not explicitly named or flagged. Exception handling is shown at low level.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. Indirect virtual calls are shown without indicating resolution uncertainty. No flags for unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No invariant recovery. Error conditions are implicit in control flow but not documented. The original source had explicit return value expectations that are not captured.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. No documentation of which functions call which. Virtual dispatch relationships are implicit in vtable usage but not explicitly documented. Static member function calls are correctly shown.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by class. Template instantiations are together. Test functions are in logical order matching original. Static vs instance methods are properly distinguished.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with a C++ compiler. External dependencies are standard library functions. No obvious compiler-specific hacks. Template code uses proper C++ naming conventions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`local_c`, `iVar1`, `local_14`) that obscure semantic purpose at -O0 where debug info should enable better names
+- Complete absence of comments removes all documentation from original source
+- No anomaly indication for indirect virtual calls that couldn't be fully resolved
+- Type precision uses generic `int` instead of more specific types like `size_t`
+- No contract or assertion recovery - preconditions/postconditions are completely lost
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly separated with appropriate granularity. Template instantiations are correctly distinguished, and member functions maintain single responsibility.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 3/10)  
+The original source had extensive comments explaining each C++ feature test case. These are completely lost in decompilation, making it difficult to understand the purpose of each function without comparing to source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Variable Naming**: At -O0, leverage debug symbols to infer semantic variable names from usage patterns (e.g., `local_14` used as `result` accumulator should be named accordingly)
+2. **Comment Recovery**: Add basic comments explaining function purpose, especially for test functions with known expected outputs
+3. **Anomaly Flagging**: Mark indirect virtual calls and uncertain decompilations with confidence indicators rather than presenting them as definitive

@@ -1,0 +1,4 @@
+Test output:
+10
+Test output:
+10

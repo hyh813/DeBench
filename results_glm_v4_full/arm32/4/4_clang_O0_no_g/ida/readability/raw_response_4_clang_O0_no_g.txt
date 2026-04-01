@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `a2`. For example, in `varargs_func`, the accumulator is named `v4` instead of `sum`, and the loop counter is `i` (which is acceptable). No semantic meaning is preserved for local variables.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`). The names exactly match the original source, making navigation trivial.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Literals are clear and match the source logic (e.g., `return 42;`, `return 4;`). Magic numbers used in loops (e.g., `i <= 15`) correspond directly to the source logic and are easily understood in context.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is very clean with minimal compiler artifacts. There are no redundant casts or register spills cluttering the user-defined functions, though some library code (like `__aeabi_dadd`) contains macros like `LODWORD`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; `for` loops, `if/else` blocks, and `switch` statements are naturally reconstructed. The code reads top-to-bottom without confusing jumps or gotos, matching the source structure perfectly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions are mapped 1:1 with the source. There is no inlining or outlining of code; boundaries are preserved exactly as written, which is expected for `-O0` code.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code is highly linear. Execution flows naturally from start to end within functions, with standard loop constructs and early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent redundancy or dead code. The logic is concise and matches the source operations without unnecessary repetition or unrolling artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types (`int`, `double`, `const char*`) are recovered well. However, struct types are significantly degraded. `LargeStruct` and `BigStruct` passed by value are flattened into multiple integer arguments (e.g., `a1` through `a16`), and struct returns are converted to hidden pointer arguments (e.g., `_DWORD *a1` in `ret_small_struct`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite type recovery failed significantly. Structs passed by value (e.g., `BigStruct` in `param_struct_byval`) are not reconstructed; instead, the decompiler lists 16 separate integer arguments. Structs passed by pointer (e.g., `SmallStruct *`) are demoted to generic `_DWORD *`.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is generally type-safe, but the loss of struct types leads to manual pointer arithmetic and generic casts (e.g., `*(_QWORD *)&v7[2 * i]`). While functionally correct, it relies on the user understanding the underlying memory layout rather than type rules.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments in the decompiled code explaining the logic. The only comments are metadata headers or stack variable annotations (e.g., `[sp+4h] [bp-4h]`), which offer no semantic insight.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard idioms like `va_list` usage (`va_start`, `va_arg`) and `strlen` are recognized and preserved. However, the struct manipulation idioms are lost due to the failure to recover the struct types.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: There are no explicit warnings or flags indicating that the struct types were flattened or that the function signatures might be incomplete (e.g., the definition of `func_struct_byval` lists 4 args while the usage implies more). The decompiler presents the flattened view confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the null check in `func_struct_byptr` is present in code but not annotated as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and easy to trace. The relationship between callers and callees is clear, and standard library functions are correctly identified.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are organized in a logical order that matches the source file structure. Related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code uses specific decompiler extensions like `__fastcall` and `__int64`. While it compiles with MSVC-like compilers, it is not strictly standard C due to these annotations and the flattened struct signatures.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- **Struct Flattening**: `LargeStruct` and `BigStruct` arguments are completely flattened into scalar integers (e.g., `a1`...`a16`), destroying the data structure semantics.
+- **Hidden Pointer Exposure**: Struct return values (e.g., `SmallPoint`) are exposed as hidden pointer arguments (e.g., `_DWORD *a1`), obscuring the "return by value" logic.
+- **Generic Variable Naming**: Local variables use generic names (`v1`, `v2`) instead of semantic names (`sum`, `seed`), requiring manual analysis to understand purpose.
+- **Signature Mismatch**: The definition of `func_struct_byval` lists only 4 arguments while the logic implies accessing a larger structure, indicating a recovery failure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Debug symbols were preserved perfectly, allowing exact mapping of function names to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The complete failure to recover `struct` types for arguments and return values significantly degrades the high-level understanding of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhanced Struct Recovery**: Implement analysis to group contiguous stack-passed arguments into recovered struct types, especially when the total size matches common struct alignments.
+2.  **SRET (Struct Return) Detection**: Identify the "hidden pointer" calling convention pattern to convert pointer arguments back into struct return types in the function signature.
+3.  **Semantic Variable Renaming**: Use data-flow analysis to infer variable names based on usage (e.g., variables accumulating results in loops should be named `sum` or `accumulator`).

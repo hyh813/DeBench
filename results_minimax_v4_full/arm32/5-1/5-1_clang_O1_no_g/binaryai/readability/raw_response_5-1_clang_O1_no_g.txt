@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `local_28`, `uStack_24`, `local_14`, `uStack_10` are completely generic. The original had meaningful names like `value`, `name`, `data`, `size`, `instance_count`. Cannot infer purpose without significant reverse engineering effort.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names correctly match source: `test_cpp_member_func`, `test_cpp_constructor`, `Base::virtual_func`, `Derived::virtual_func`. However, there are duplicate function names (multiple `MultiDerived::funcB`, `MultiDerived::~MultiDerived` definitions) causing confusion.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c` (should be 4704), `0x14` (should be 20), `0x2a` (should be 42), `0x2bf` (should be 703). String "Test" encoded as hex `0x74736554` with no interpretation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation noise: `undefined4`, `undefined8`, `undefined**` types clutter the code. Extra stack variables that don't correspond to source. Duplicate function definitions (multiple destructors for same class) create confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow mostly preserved but uses indirect vtable calls: `(***(code ***)param_1)()`. Loop constructs use raw indexing `iVar3 + -1` instead of idiomatic for-loops. Some computed addresses disrupt natural flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are mostly well-separated and match source granularity. Some duplication exists (multiple destructor variants). Function sizes are reasonable. Minor granularity issues but generally acceptable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with recognizable structure. Some forward jumps via computed addresses like `*(int *)((int)pvVar1 + iVar3 * -4)`. Moderate non-linearity that requires effort to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from duplicate function definitions (6+ versions of some destructors). Loop constructs partially unrolled. Not severe but creates substantial noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Uses generic types `undefined4`, `undefined8`, `undefined**`, `code**` instead of proper C++ types. Should use `int`, `size_t`, `bool`, proper class pointers. No const correctness. Function pointers are `code**` instead of `int(*)(int)`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. All access via raw pointer arithmetic: `*(int *)(this + 0x28)`, `*(int *)((int)pvVar1 + iVar3 * -4)`. Original had `SimpleClass`, `LifecycleClass`, `Container<T>` - all lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe operations: raw pointer arithmetic without bounds checking, `(int)pvVar1` casts, `*(int *)(this + 4) * param_1` with no safety. Multiple opportunities for undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated function headers like `// Function: test_cpp_member_func @ 0x10e60`. No explanation of algorithms, vtable mechanics, or expected behavior.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms visible: virtual function calls through vtable `***(code ***)param_1`, template instantiation patterns. But not explicitly named or documented. Observer could deduce but it's not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. Duplicate function definitions not flagged. Indirect calls not marked as uncertain. No warnings about potential issues like the broken `call_virtual_func` function.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contracts recovered. No preconditions documented (e.g., "requires: obj != nullptr"). No postconditions (e.g., "ensures: return value is expected sum"). No invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships clear - virtual function calls through vtable, static member access `LifecycleClass::instance_count`. But not comprehensive. No documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions somewhat grouped by class (all Base, Derived functions together). But ordering is arbitrary (gaps in addresses). Could better match source file organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile. Uses undefined types (`undefined4`, `code**`). Has duplicate function definitions. Requires extensive patching to compile. No dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Variable naming completely generic (`local_28`, `uStack_24`) - original had `value`, `name`, `data`, `size`
+- No struct recovery - all composite types lost, replaced with raw pointer arithmetic (`this + 0x28`)
+- Type precision severely degraded - using `undefined4`, `undefined8`, `code**` instead of proper C++ types
+- Magic numbers everywhere without explanation (`0x125c` = 4704, `0x14` = 20)
+- Duplicate function definitions (6+ versions of destructors) create massive confusion
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Most function names correctly match source (`test_cpp_member_func`, `Base::virtual_func`)
+
+**Most Needs Improvement:** Type System Fidelity (3.0/10)  
+- Composite types completely lost, type precision severely degraded, no struct recovery
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `local_28` used with `strlen` should be named `name`)
+2. Recover struct types from pointer arithmetic patterns (`this + 0x28` → `size` field)
+3. Replace magic numbers with named constants based on expected return values (0x125c → 4704)
+4. Eliminate duplicate function definitions - only emit one canonical version
+5. Add comments explaining C++ idioms like vtable indirect calls and their resolution confidence

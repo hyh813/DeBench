@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) with no semantic meaning. For example, `sequential_ops` parameters should be `a`, `b`, `c` but are `a1`, `a2`, `a3`; loop variables like `i`, `sum`, `count` are replaced with `v1`, `v2`, `result`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_deep`), but some are generic (`sub_4DC`, `init_proc`). Test functions correctly named but contain hardcoded values instead of actual function calls.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation: `0x12`, `0x1F7C`, `1001`, `dword_1974`. The switch jump tables reference `dword_1F7C[a1]` instead of showing actual case values, obscuring the logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register variable annotations clutter code (`// r0`, `// r1`, `// [sp-4h]`). Type casts like `(__int64)((unsigned int)(a1 - 1) * (unsigned __int64)(unsigned int)(a1 - 2))` in `loop_for_fixed` add unnecessary complexity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Critical issue: `loop_for_fixed` converts a simple for-loop to a mathematical formula `((n-1)*(n-2))/2 + n-1`, losing the iterative structure. `switch_fallthrough` uses goto labels (`LABEL_5`) instead of clean fall-through. `goto_backward` has a bug where `v4 = ++i * v2` doesn't properly accumulate factorial.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but test functions (`test_control_flow_l1/2/3`) print hardcoded expected values instead of calling actual functions, breaking the test infrastructure. Helper functions like `double_value`, `triple_value` preserved correctly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Excessive goto usage disrupts flow: `switch_fallthrough` has `goto LABEL_5`, `duffs_device` has multiple `goto LABEL_X` patterns. Most functions read top-to-bottom but jump tables create non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop-to-formula optimization in `loop_for_fixed` and `loop_nested` removes redundancy but loses semantic clarity. No obvious dead code, but the mathematical substitutions obscure the original iterative intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used everywhere instead of specific types. `if_else` returns `bool` but original returns `int` (0/1). Function pointers use generic signatures `int (__fastcall *)(int)` instead of typed callbacks. Mixed signed/unsigned (`unsigned int a1` vs `int a1`) creates confusion.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays referenced as opaque globals (`dword_1974`, `dword_1988`, `off_12EBC`) with no structure definition. The `matrix[3][4]` in `loop_multi_exit` becomes `dword_1988[4 * v2]` losing the 2D array semantics entirely.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(__int64)`, `(_DWORD *)`, `(struct __jmp_buf_tag *)`. Function pointer array calls use generic casting `((int (__fastcall *)(int))off_12EBC[a1])(a2)`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present (register annotations, "positive sp value has been detected"). No algorithm explanations, no documentation of non-obvious transformations like loop-to-formula conversions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Duff's device structure preserved but not identified. State machine patterns in `state_machine` and `fsm_func_table` not labeled. Fall-through switch cases not explicitly noted.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("positive sp value has been detected", "FAILED to decompile: __imp_raise"). However, semantic anomalies like the `goto_backward` factorial bug not flagged. 9 failed decompilations listed but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions or error condition documentation. The `setjmp/longjmp` behavior in `non_local_jump` not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables opaque (`dword_1F7C`, `jump_buffer`). Callback relationships in `process_with_callback` preserved but function pointer arrays referenced as `off_12EBC` without showing contents.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order roughly. Test functions grouped together. However, helper functions (`double_value`, `triple_value`) scattered among main functions rather than grouped logically.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 functions failed to decompile (`__imp_raise`, `__imp_printf`, etc.). External dependencies not resolved. Test functions won't work as they print hardcoded values instead of calling functions. Would require significant stubbing to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+6+6+7)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.997 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`, `v2`) losing all semantic meaning from original source
+- **Test functions broken** - print hardcoded expected values instead of actually calling the functions they're testing
+- **Loop structures converted to formulas** (`loop_for_fixed`, `loop_nested`) losing iterative semantics despite -O0 compilation
+- **Arrays become opaque globals** (`dword_1974`, `dword_1988`) with no structure recovery
+- **goto_backward has semantic bug** - `v4 = ++i * v2` doesn't properly accumulate factorial result
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately, allowing identification of purpose despite other degradation
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero documentation of preconditions, postconditions, or error handling expectations that were clear in original source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve original variable names from debug symbols** - The -O0 -g compilation should have provided parameter names (`a`, `b`, `c`, `i`, `sum`) that were completely lost
+2. **Maintain loop structures at -O0** - Don't optimize loops to mathematical formulas when the source explicitly used iterative constructs
+3. **Recover array/struct types from debug info** - Global arrays like `dword_1974` should be recovered as `int arr[] = {10, 20, 30, 40, 50}` with actual values

@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Extensive "Unresolved local var" comments throughout (e.g., `SimpleClass obj@[???]`, `int r1@[???]`, `int r2@[???]`). Variables that are named use generic identifiers like `local_24`, `puVar1`, `lVar2`, `iVar4` - completely obscuring semantic purpose. This is essentially unusable for analysis.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly named (test_cpp_member_func, test_cpp_constructor, call_virtual_func, template_max<int>), but critical methods like SimpleClass::getValue, SimpleClass::setValue are completely missing. Many functions just return constants without implementing actual logic.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Functions return magic numbers directly (0x2a=42, 0x47=71, 0x28a=650, 0x16=22) without explaining computation. The decompiled code shows `return (int)sVar1 + 0x125c` but the actual formula (value * x + strlen(name)) is lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise from "WARNING" comments about unresolved variables and unknown calling conventions. However, the more critical issue is that most functions don't contain real logic - they're just constant returns, making the noise assessment somewhat moot.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Most functions just return constants (no control flow to evaluate). The few that have logic (test_cpp_member_func) show awkward manual string handling instead of proper C++ string class usage. call_virtual_func has a WARNING about indirect jump handling.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are separated but most are trivial stubs returning constants. The actual implementation logic is missing - class member functions like getValue(), setValue(), compute() are never decompiled, suggesting the decompiler failed to recover them.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Code that exists is relatively linear (mostly straight-line returns), but this is because the actual computation logic is absent. No meaningful flow analysis possible.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: No obvious redundancy in the minimal code shown. However, the template functions (template_max<int>, template_max<double>, template_swap<int>) are properly separated, which is good.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Basic types like int, undefined4, undefined8 appear. DWARF original prototypes are preserved (e.g., "DWARF original prototype: void Container(Container<int> * this)"). However, many types remain unresolved, and the distinction between int and size_t is not consistently maintained.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/union recovery is evident. The decompiled code doesn't show struct definitions for SimpleClass, LifecycleClass, Base, Derived, etc. Everything is handled as raw memory with pointer arithmetic (e.g., puVar1[2] accessing what should be struct members).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Some type safety issues present (raw pointer arithmetic like puVar1[2]). The call_virtual_func uses indirect vtable call `(**obj->_vptr_Base)()` which is potentially unsafe. Limited evaluation possible since core logic is missing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Mixed quality - DWARF original prototypes are preserved and helpful. However, "Unresolved local var" comments don't explain what variables should be. The comments don't explain the actual C++ semantics (virtual functions, inheritance, templates).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or C++ idioms recognized. The virtual function mechanism is not explained. Template instantiation is partially shown but not identified as a pattern. Exception handling shows __cxa_throw but doesn't explain the try-catch flow.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra does well marking unresolved variables with `[???]` and unknown calling conventions. Warnings about indirect jumps ("WARNING: Treating indirect jump as call") are present. However, the fundamental issue (missing function implementations) isn't flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The decompiled code doesn't document what the functions are supposed to compute or validate.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are shown (e.g., test_cpp_oo_features calls test_cpp_member_func, test_cpp_constructor). However, the relationships between classes (inheritance, virtual calls) are not documented. The vtable pointers aren't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by test category. Template instantiations are grouped together. However, the organization is somewhat arbitrary and doesn't reflect the original class structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile - many functions are incomplete stubs returning constants. External dependencies (std::ios_base::Init, operator new/delete) are referenced but not defined. The code requires significant patching to even attempt compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (1 + 4 + 2 + 5) / 4 = 3.0
+L2_avg = (2 + 4 + 3 + 5) / 4 = 3.5
+L3_avg = (3 + 1 + 4) / 3 = 2.67
+L4_avg = (6 + 2 + 7 + 1) / 4 = 4.0
+L5_avg = (3 + 5 + 2) / 3 = 3.33
+
+Overall = (3.0 × 0.30) + (3.5 × 0.25) + (2.67 × 0.20) + (4.0 × 0.15) + (3.33 × 0.10)
+        = 0.90 + 0.875 + 0.534 + 0.60 + 0.333
+        = 3.33/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects (Bullet List)
+
+- **Missing member function implementations**: SimpleClass::getValue(), setValue(), compute() are never decompiled - functions just return constants instead of actual computed values
+- **Unusable variable names**: Extensive "Unresolved local var" comments with `[???]` placeholders make code analysis impossible
+- **No struct/class recovery**: Composite types like SimpleClass, LifecycleClass, Base, Derived are not reconstructed - all accessed as raw memory
+- **Magic numbers without explanation**: Functions return hex values (0x2a, 0x47, 0x28a) without documenting the computation that produces them
+- **Incomplete virtual function handling**: call_virtual_func shows vtable access but the actual polymorphic behavior isn't properly recovered
+
+### Best Quality Aspect: Anomaly Indication (7/10)
+- Ghidra properly marks unresolved variables with `[???]` and provides warnings about unknown calling conventions and indirect jumps. The DWARF original prototypes are preserved which helps with type information.
+
+### Most Needs Improvement: Composite Type Recovery (1/10)
+- The decompiler failed to recover any C++ class structures. All class members are accessed via raw pointer arithmetic losing all semantic meaning. This is critical for C++ code analysis.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover class/struct definitions**: Parse vtable symbols and constructor/destructor to reconstruct class layouts with proper field names instead of treating everything as raw memory
+
+2. **Infer variable names from usage patterns**: When local variables can't be resolved from debug info, analyze how they're used (arithmetic, indexing, function calls) to suggest meaningful names
+
+3. **Flag incomplete decompilation**: When a function just returns a constant that matches expected output, flag this as a potential decompilation failure rather than presenting it as the final result

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`iVar1`, `iVar2`, `param_1`, `local_8`, `pbVar1`) with zero semantic meaning. No variable names reflect their purpose (e.g., `result`, `encrypted`, `buffer` from source are all lost).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`), accurately reflecting source. However, some runtime functions are generic (`FUN_00100860`, `_init`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x14`, `0xe1`, `0x30`, `0x5a`, `0x15`). Some recoverable from context (0x5a is XOR key), but most appear arbitrary. Constant-folded returns hide original computation intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks add noise (`___stack_chk_guard` comparisons in multiple functions). Runtime initialization functions (`_init`, `__do_global_dtors_aux`, `register_tm_clones`) clutter output. Some "WARNING: Removing unreachable block" annotations present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered well (tail recursion converted to `for` loop in `param_tail_call_optimized`). However, critical logic lost via constant folding (`call_fake_branch` returns `10` directly instead of calling function). Conditionals generally clear.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but several functions essentially empty (`param_fake_branch`, `param_buffer_overflow_stack` just `return;`). Constant folding collapsed meaningful functions into constant returns, destroying decomposition intent.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps. Loop structures use standard `for` syntax. Early returns used appropriately in signal handlers.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Over-aggressive optimization recovery - constant folding removed meaningful test logic (`call_opaque_predicate` doesn't actually call the function). Stack checking code duplicated across many functions adds redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `param_fake_branch` returns `void` instead of `int`, `param_string_encryption` returns `void` instead of `int`, `param_implementation_defined` returns `undefined8` instead of `int`. Parameter types sometimes wrong (`uint` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (function returns constant `0x30`). No struct/union recovery visible anywhere. All composite types collapsed to primitives or constants.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(__sighandler_t)0x0`, `(undefined *)0x0`). Pointer arithmetic in array access (`param_3 + lVar2 * 4`) is correct but verbose. No buffer overflow warnings despite overflow functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments, mostly Ghidra auto-warnings ("WARNING: Subroutine does not return", "WARNING: Globals starting with '_' overlap"). No algorithm explanations, no documentation of obfuscation patterns or test intent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. Opaque predicates not identified as such. Dead code branches (`x * x < 0`) eliminated without annotation. No recognition of encryption, GCD, or tail-call patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "Subroutine does not return") but inconsistent. Critical anomalies not flagged (constant-folded test functions, lost overflow logic, type mismatches).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. Error conditions not documented. Signal handler contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph. Global variable usage unclear (`encrypted_0`, `jmp_buffer`, `div_zero_caught` appear without context). Callback relationships (signal handlers) not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization functions mixed with application code. No separation between test harness and test functions. No header/API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant work to compile - missing headers (`<signal.h>`, `<setjmp.h>`, `<string.h>`), external dependencies (`__libc_start_main`, `__printf_chk`), undefined globals (`___stack_chk_guard`, `completed_0`). Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2 + 7 + 5 + 6) / 4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6 + 5 + 8 + 5) / 4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4 + 3 + 6) / 3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (3 + 2 + 5 + 2) / 4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5 + 5 + 4) / 3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.79/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Function `param_fake_branch` returns `void` with empty body** - original returns `int` with conditional logic; entire function semantics lost
+- **Function `param_buffer_overflow_stack` is just `return;`** - all overflow test logic eliminated, defeating test purpose
+- **Multiple `call_*` functions return constants** instead of calling underlying functions (`call_fake_branch`, `call_opaque_predicate`, `call_instruction_substitution`) - constant folding destroyed test harness
+- **Type mismatches throughout** - `param_string_encryption`, `param_implementation_defined` return wrong types (`void`/`undefined8` vs `int`)
+- **Zero semantic comments** - no explanation of obfuscation patterns, test intent, or why certain code exists
+
+### Best Quality Aspect: **Code Linearization (8/10)**
+- Control flow reads naturally top-to-bottom with standard loop constructs and no excessive gotos, making execution paths traceable despite other issues.
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- Complete failure to identify any patterns (opaque predicates, dead code branches, encryption, GCD algorithms) - decompiler treats all code as generic logic without semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function semantics over optimization recovery** - Do not constant-fold test functions; emit original call structure even if optimizer eliminated it, with annotation that code was optimized.
+2. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, XOR operations should suggest `key`/`encrypted`, loop accumulators should be `sum`/`count`.
+3. **Add semantic annotations for obfuscation patterns** - Detect and label dead code branches (`x * x < 0`), opaque predicates, instruction substitutions, and signal-based exception handling with explanatory comments.

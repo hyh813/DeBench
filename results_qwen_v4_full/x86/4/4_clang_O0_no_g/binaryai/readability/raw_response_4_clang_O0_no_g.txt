@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_8`, `iVar1`, `piVar2`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but compiler artifacts like `FUN_00011030` and `__x86_get_pc_thunk_bx` clutter the output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0x2a` for 42, `0x14` for 20, `0x12345678`). String literals replaced with opaque references like `&DAT_00013008` instead of actual text content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler initialization artifacts present (`__do_global_dtors_aux`, `deregister_tm_clones`, `register_tm_clones`). External function stubs that call themselves (`printf`, `strlen`) add confusion without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered (for loops in `varargs_func`), but `test_calling_conventions` has awkward stack manipulation patterns. At -O0, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but signatures corrupted (`call_cdecl` returns void instead of int, `fastcall_func` has 4 parameters instead of 3). Some functions missing return value usage.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions like `test_calling_conventions` have complex variable initialization that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack copying loops visible in `test_calling_conventions` and `call_struct_byval` that represent struct copying but aren't abstracted. Some redundant variable assignments present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types degraded to `undefined4`, `undefined8`, generic `int`. `double` preserved in `func_mixed_args`, but `longlong` used inconsistently. Pointer types often just `int *` losing semantic meaning.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types completely lost. `LargeStruct`, `SmallStruct`, `BigStruct` not recovered. `func_struct_byval` accesses stack directly instead of showing struct parameter. `func_struct_byptr` takes `int *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible: `(int *)&stack0x00000008`, `(char *)0x0`. `param_double_ptr` has type confusion (`int *` vs `int **`). Pointer arithmetic on generic types throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. Original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (uses raw stack pointer arithmetic). Struct passing conventions not recognized. Function pointer callbacks not annotated. No pattern hints provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Incorrect function signatures not flagged. Stack access patterns in `func_struct_byval` not explained. Calling convention mismatches silent. No warnings about decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (null checks in `func_struct_byptr` not explained). No error conditions documented. Original source's test expectations completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`_GLOBAL_OFFSET_TABLE_`, `&DAT_*`) not explained. No call graph information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Compiler initialization functions mixed with user code. No separation between test functions and implementation functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`&DAT_00013008`, `ret_opaque_handle_handle1`). External function stubs would need replacement. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+7+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.28/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` not recovered; `func_struct_byval` accesses raw stack instead of showing struct parameter
+- **Zero comments** - No documentation despite original source having extensive test case explanations
+- **Variable names entirely generic** - `param_1`, `local_8`, `iVar1` provide no semantic information
+- **String literals replaced with addresses** - `&DAT_00013008` instead of actual string content like `"=== 测试基础调用约定 ===\n"`
+- **Function signature corruption** - `call_cdecl` returns void instead of int, `fastcall_func` has wrong parameter count
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making basic navigation possible despite other degradations.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite types from stack access patterns** - Detect struct layouts from consistent offset access patterns (e.g., `param_1[0]`, `param_1[1]` should suggest a struct)
+2. **Preserve string literal content** - Instead of `&DAT_00013008`, display actual string content when recoverable from binary
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (varargs handling, calling conventions) with comments indicating analysis limitations

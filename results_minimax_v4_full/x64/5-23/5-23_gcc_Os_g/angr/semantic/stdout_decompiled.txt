@@ -1,0 +1,19 @@
+Testing macro constants: -1470015016
+Call macro constant: 64
+Testing macro functions: 30
+Call macro function: 32
+Testing multi-branch compile: 57122
+Testing macro recursion: 116
+Call macro recursion: 19
+Call token paste: 60
+LOG: Values: 10, 20, 30
+Testing variadic macro: 60
+Testing macro override: 16
+Testing include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:39
+Call builtin macros: 382
+Testing asm basic: 0
+Call asm clobber: -1977165182
+Call asm multi insn: -1
+Call asm simd: 6
+Call asm atomic: 35

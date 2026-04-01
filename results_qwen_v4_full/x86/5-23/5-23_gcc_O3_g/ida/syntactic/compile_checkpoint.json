@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 11,
+  "source_file": "decompiled/ida_out/x86/5-23/5-23_gcc_O3_g.c",
+  "fixed_file": "results_qwen_v4_full/x86/5-23/5-23_gcc_O3_g/ida/syntactic/fix_5-23_gcc_O3_g.c"
+}

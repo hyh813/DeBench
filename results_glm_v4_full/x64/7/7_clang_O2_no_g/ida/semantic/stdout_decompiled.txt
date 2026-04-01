@@ -1,0 +1,4 @@
+Testing obfuscation and optimization techniques
+10
+Opaque predicate: 20
+Instruction substitution: 225

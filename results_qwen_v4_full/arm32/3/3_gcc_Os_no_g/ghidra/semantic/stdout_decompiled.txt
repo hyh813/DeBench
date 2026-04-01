@@ -1,0 +1,35 @@
+Testing stack memory operations
+
+MEM-L1-01 (local_vars): 20
+MEM-L1-02 (local_array): 0
+MEM-L1-03 (local_struct): 15
+MEM-L1-04 (address_of_local): 42
+MEM-L1-05 (address_of_array): 2
+MEM-L2-01 (large_stack_frame): 0
+MEM-L2-02 (vla_stack): 0
+MEM-L2-03 (alloca_usage): 0
+MEM-L2-04 (stack_alias): 20
+Testing heap memory operations
+
+HEAP-L2-01 (heap_basic): 10
+HEAP-L2-02 (heap_calloc): 0
+HEAP-L2-03 (heap_realloc): 50
+HEAP-L2-04 (heap_array): 15
+HEAP-L2-05 (heap_struct): 15
+HEAP-L2-06 (heap_nested): 0
+HEAP-L3-01 (linked_list_heap): 100
+HEAP-L3-02 (tree_heap_traversal): 60
+HEAP-L3-03 (memory_leak): 2
+HEAP-L3-04 (dangling_pointer): value before free: 42
+Child process exited normally
+Exit status: 0
+Testing static and global variables
+
+STM-L1-01 (global_var_access): 1
+STM-L1-01 (global_var_read): 2
+STM-L1-02 (global_array_access): 5
+STM-L1-03 (static_local): 1
+STM-L1-03 (static_local): -629969664
+STM-L1-04 (call_static_func): 11
+STM-L2-01 (access_extern_global): 123
+STM-L2-02 (call_extern_func): 0

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `lVar1`, `paiVar1` instead of meaningful names like `sum`, `count`, `i`, `result`. The source had clear names (`temp1`, `temp2`, `temp3`, `total`) but these are lost. The decompiler marks many as "Unresolved local var" with DWARF offsets, indicating debug info wasn't fully utilized for naming.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `goto_forward`, `goto_backward`, `duffs_device`, `recursion_factorial`, etc. The decompiler preserved the original function naming exactly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are unclear - `0x14` instead of 20, `0x3039` for 12345, `0x3e9` for 1001, `0x65` for 101. However, shift masks like `0x1f` are appropriate. The decompiler uses hexadecimal for many values without explanation, making some test output harder to understand.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from 50+ warning comments: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Unknown calling convention", "Unresolved local var" annotations with DWARF opcodes. These clutter the output and impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control flow is natural - for/while/do-while loops correctly identified. `loop_while` uses for-loop (slightly awkward but functional). `tail_recursion` correctly converted to iterative loop. `duffs_device` preserves the switch-do pattern. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching source (10-50 lines each). No monoliths or over-fragmentation. Parameter lists are reasonable. The decomposition closely matches the original source organization.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately. `duffs_device` has complex flow due to the pattern itself. Generally good linearity for understanding execution flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop unrolling in duffs_device is inherent to the pattern. Common subexpressions properly eliminated. Code is clean without significant redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly precise - `int` for parameters, `ulong` for shift amounts, `uint` for comparisons, `long` for indices. Function pointers have proper signatures (`_func_int_int *`). Minor generic types in some contexts but overall accurate for 64-bit ARM.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent recovery - `matrix[3][4]` in loop_multi_exit, function pointer arrays `funcs[3]`, `ops[10]`, `state_handlers[4]` all properly reconstructed with correct dimensions. Arrays like `arr[5]` in loop_break recovered accurately.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Minor redundant null checks in `op_div` (`b != 0` checked twice). Function pointer calls have warnings but are structurally correct. No obvious buffer overflow patterns or dangerous casts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Sparse useful comments. Most are auto-generated warnings ("WARNING: Removing unreachable block") or DWARF debug artifacts ("Unresolved local var: int temp1@[DW_OP_breg0(x0)..."). No algorithm explanations or contract documentation. The comments don't help understand the code logic.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Several patterns recognized: Duff's device (with goto labels), state machines in `state_machine` and `fsm_func_table`, jump tables in switch statements, tail recursion converted to loop. However, patterns aren't explicitly named or documented with explanations.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Good anomaly detection - warnings for unreachable blocks, unrecovered jumptables, unknown calling conventions, indirect jumps treated as calls. These help identify decompilation confidence issues. However, some anomalies could be more specifically described.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or assumptions. The decompiler doesn't infer or document contracts from the code logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear in the code. Callback relationships evident in function pointer usage. However, no explicit documentation of "called by" or "calls" relationships. Relationships are inferable but not explicitly stated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file (typical for decompilation). Related functions grouped reasonably (ops together, state handlers together, test functions together). Static functions properly scoped. Organization is functional if not ideal.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code would require moderate patching to compile standalone. External dependencies: `__printf_chk`, `__libc_start_main`, `__stack_chk_fail`, etc. would need stubs. Standard library includes needed. Not immediately compilable without additional work.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`iVar1`, `lVar1`, `paiVar1`) instead of semantic names from source (`temp1`, `sum`, `count`)
+- Excessive noise from 50+ warning comments and "Unresolved local var" annotations cluttering code
+- No contract or assertion recovery - preconditions/postconditions not documented
+- Literal clarity issues - hexadecimal values without explanation (`0x14` for 20, `0x3039` for 12345)
+- Sparse useful comments - mostly auto-generated warnings rather than algorithm explanations
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Function names perfectly match the original source, providing immediate semantic understanding of what each function does
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+- Generic temporary variable names (`iVar1`, `iVar2`, `lVar1`) obscure the purpose of intermediate calculations. The decompiler should leverage DWARF debug information more effectively to recover meaningful variable names like `temp1`, `temp2`, `sum`, `count`.
+
+**Top 3 Recommendations:**
+1. **Improve variable name recovery**: Leverage available DWARF debug info (`-g` flag was used) to recover original variable names instead of generating generic `iVarN` names
+2. **Reduce noise**: Filter out or consolidate warning comments; move "Unresolved local var" annotations to a separate metadata section
+3. **Add semantic comments**: Include algorithm explanations, pattern names (e.g., "Duff's device", "state machine"), and contract hints rather than just decompilation warnings

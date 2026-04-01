@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `idx` instead of semantic names. For example, in `param_macro_constants`, parameter `a0` should be `size`, and the return values `0x400` and `0x200` are unexplained. The original uses meaningful names like `size`, `result`, `x`, `y`, `arr`, `n`.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: All functions use mechanical address-based names (e.g., `sub_401209`, `sub_401221`, `sub_401246`) instead of original semantic names like `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`. This completely loses the original function naming intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `64`, `30`, `32` match expected return values), but magic numbers like `0x400` (should be MAX_SIZE=1024), `0x200` (should be MAX_SIZE/2=512), and `57072` (should be 0xDEF0) lack explanation. The `& 4294967295` mask appears frequently as a 32-bit truncation artifact.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise present. The `& 4294967295` mask appears repeatedly (e.g., `call_variadic_macro() & 4294967295`, `call_asm_clobber() & 4294967295`) as a type-conversion artifact. Some unnecessary casts and type conversions present, but no major compiler artifacts like debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. Uses proper if-else constructs, for loops, and return statements. At -O0, the decompiled code correctly recovers loop structures (e.g., `for (idx = 0; (unsigned int)idx < a1; idx = (unsigned int)idx + 1)` in `param_asm_clobber`). Minor type casting in conditions but doesn't impede understanding.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly decomposed with good granularity. Each test function (`param_*` and `call_*` pairs) is separate. The decompiled code maintains the original function boundaries well. Parameter counts are reasonable (not exposing implementation details through excessive parameters).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. No excessive goto statements or forward jumps. Early returns are used appropriately. The code flow is easy to follow in most functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy from the `& 4294967295` mask appearing in multiple places (e.g., in `test_preprocessing_features` and `test_asm_features`). Otherwise, no significant redundant code patterns observed. Loop unrolling is not present (as expected at -O0).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision. Some types are correct (e.g., `unsigned int` for parameters matching original `int`), but others are imprecise: `unsigned long long` used where `int` would be appropriate (e.g., `param_macro_constants` returns `unsigned long long` instead of `int`). Pointer types are generic (`unsigned long` for pointers). The original uses precise types like `int`, `unsigned int`, `int*`, `size_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. The decompiled code uses raw pointer arithmetic instead of struct types. For example, in `param_asm_clobber`, the array is accessed via `ptr + idx * 4` rather than as a proper array type. No struct reconstruction with field names. The original has no complex structs but does use arrays and pointers.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety issues present. The frequent `& 4294967295` masks indicate unsigned/signed confusion. Pointer arithmetic is sometimes unsafe (e.g., `ptr + idx * 4` without bounds checking). Function pointer casting in `param_dynamic_code` (`v3 = ptr(a0)`) is potentially unsafe. However, no severe violations like buffer overflows.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled code. The original source has extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量", "// 测试: 编译时宏替换"). The decompiler provides zero documentation, making it impossible to understand the purpose of each function without cross-referencing the source.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicitly recognized but not named or documented. The macro expansion results are visible (e.g., `a0 * 3 + 2` for conditional compilation), but there's no indication these were originally macro expansions. No recognition of inline assembly patterns, atomic operations, or SIMD idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. Several suspicious elements lack warnings: the `ptr(a0)` function pointer call in `param_dynamic_code` should be flagged as uncertain; the `__printf_chk` calls with format strings at external addresses (`&g_40206a`) could be noted; the unusual `AddV` function in SIMD code could be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions (e.g., "size should be positive"), postconditions (e.g., "returns computed value"), and invariants are not documented. The original has no explicit assertions but the semantic contracts are clear from context.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Poor cross-reference clarity. Function call relationships are present in the code (e.g., `test_preprocessing_features` calls `call_macro_constants()`) but not documented. No indication of which functions are test helpers vs. main test targets. External dependencies (like `__printf_chk`, `mmap`, `mprotect`) are declared but their purpose isn't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but not logically organized. The decompiled output shows functions in memory order rather than logical grouping. Original groups (preprocessing tests, asm tests) are lost. Static function scoping is not indicated.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Some external declarations present (`extern unsigned long long g_403f98`, `extern char __bss_start`), but incomplete. The code uses `__printf_chk` which requires linking libc. Some type mismatches may cause compilation warnings. The metadata states "Compilation Result: Yes" suggesting it does compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 1 + 5 + 6) / 4 = 3.5
+L2_avg = (8 + 8 + 8 + 7) / 4 = 7.75
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.0
+L5_avg = (3 + 5 + 6) / 3 = 4.67
+
+Overall = (3.5 × 0.30) + (7.75 × 0.25) + (4.67 × 0.20) + 
+          (2.0 × 0.15) + (4.67 × 0.10)
+        = 1.05 + 1.9375 + 0.934 + 0.3 + 0.467
+        = 4.69/10
+```
+
+**Overall Readability Score:** 4.69/10
+
+### Critical Defects (Bullet List)
+- **Function names are address-based placeholders** (`sub_401209`) instead of semantic names (`param_macro_constants`), completely losing original intent
+- **Variable names are generic** (`a0`, `a1`, `v0`, `v1`, `ptr`, `idx`) rather than descriptive (`size`, `x`, `y`, `result`, `arr`, `n`)
+- **No comments or documentation** - the extensive original comments explaining each test case are completely lost
+- **Magic numbers unexplained** - `0x400`, `0x200`, `57072` should be `MAX_SIZE`, `MAX_SIZE/2`, `0xDEF0` with explanations
+- **No anomaly indication** for uncertain constructs like function pointer calls (`ptr(a0)` in `param_dynamic_code`)
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (8/10)** - At -O0, the decompiler correctly recovers natural if-else and for-loop constructs without spurious goto statements
+
+### Most Needs Improvement (Single Dimension)
+- **Function Naming Quality (1/10)** - The use of address-based names like `sub_401209` completely obscures the function's purpose. This is the most severe readability issue as it affects every function in the decompiled output.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer function names from symbols/debug info**: When debug symbols are available (-g flag), use them to recover original function names instead of generating address-based placeholders
+2. **Add semantic comments for macro expansions**: When detecting constant expressions that likely came from macro expansion (e.g., `0x400` for MAX_SIZE), add comments indicating the probable origin
+3. **Flag uncertain constructs**: Add annotations for indirect calls, function pointer invocations, and other potentially ambiguous constructs that couldn't be fully resolved

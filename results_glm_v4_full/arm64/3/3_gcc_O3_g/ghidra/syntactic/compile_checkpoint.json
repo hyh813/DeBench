@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 31,
+  "source_file": "decompiled/ghidra_out/arm64/3/3_gcc_O3_g.c",
+  "fixed_file": "results_glm_v4_full/arm64/3/3_gcc_O3_g/ghidra/syntactic/fix_3_gcc_O3_g.c"
+}

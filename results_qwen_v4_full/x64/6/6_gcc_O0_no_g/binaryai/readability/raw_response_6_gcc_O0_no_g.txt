@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `local_10`, `local_38`, `iVar1`, `uVar2`) instead of semantic names like `dst`, `src`, `buffer`, `fd`. Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_strcpy`, `call_strcpy`, `param_fork_exec`, `thread_compute`). Action verbs and purpose are clear, matching original intent closely.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x2a` (42), `0xffffffff` (-1), `0x1000` (4096), signal numbers `10`/`0xe` instead of `SIGUSR1`/`SIGALRM`. String literals preserved well ("HelloLib", "BinBench Test Data").
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks visible in every function (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`, `__stack_chk_fail()`). Redundant casts like `(undefined8)`, `(ulong)` add visual noise but don't completely obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered as if/else and for loops naturally. Some functions use goto labels (`LAB_00102e4a`, `LAB_00103cac`) where structured constructs would be cleaner, but at -O0 this is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Thread helper functions (`thread_compute`, `thread_sum`, `thread_increment`) properly separated. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with logical flow. Some do-while patterns with goto breaks (`param_pthread_join`) disrupt linearity slightly but remain traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks repeat across all functions (compiler artifact). No significant loop unrolling or dead code. Redundancy is manageable and doesn't obscure core logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `undefined8`, `undefined4`, `ulong` replace specific types like `size_t`, `int`, `char*`. Return types sometimes mismatch (`void` vs `undefined4`). Original `size_t len` becomes generic `size_t sVar1`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs referenced but not reconstructed. `ThreadData` struct becomes array access (`param_1[0]`, `param_1[1]`, `param_1[2]`). `sockaddr` fields accessed via `sa_data[2]`, `sa_data[3]` instead of named fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined8 *)`, `(int *)`, `(void **)`. Pointer arithmetic without proper typing (`local_38 + (long)local_60 * 3`). No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining purpose, expected values, and test scenarios. All semantic context lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (strcpy, strlen, printf, pthread_create). Thread patterns recognizable but not explicitly named or documented as concurrency patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly flags or warnings. Stack canary checks visible but not explained as security artifacts. Indirect calls not flagged for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. Error return values visible (`0xffffffff`, `0xfffffffe`) but meaning not explained. No contract inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variables referenced (`signal_received`, `atomic_counter`, `shared_counter`) but not documented with usage context or thread-safety notes.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (library functions, system calls, threads). External function declarations at top. Organization matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared but some signatures incomplete (e.g., `__isoc99_sscanf(void)`). Would need stubs and proper headers to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.8125
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+6+4+3)/4 = 3.75 × 0.15 = 0.5625
+Level 5 (Contextual):  (6+7+6)/3   = 6.33 × 0.10 = 0.633
+
+Overall Score: 5.67/10
+```
+
+**Overall Readability Score:** 5.67/10
+
+### Critical Defects:
+- Variable `param_1`, `param_2` should be named `dst`, `src` based on strcpy usage pattern
+- Magic numbers `0x2a`, `0xffffffff`, `10`, `0xe` should be constants (SUCCESS, ERROR, SIGUSR1, SIGALRM)
+- Zero comments despite complex concurrency and system call logic
+- Struct `ThreadData` recovered as array indexing `param_1[0/1/2]` losing field semantics
+- Stack canary checks visible in every function without explanation as compiler artifacts
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved from source with semantic meaning intact, making high-level navigation straightforward.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments loses all original documentation about purpose, expected values, and test scenarios.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how `param_1`/`param_2` are used in strcpy context to suggest `dst`/`src`
+2. **Recover named constants from magic numbers** - Detect repeated values (0x2a=42, 0xe=14) and suggest symbolic names based on context
+3. **Generate semantic comments from function patterns** - Auto-document standard library wrappers and concurrency patterns with purpose explanations

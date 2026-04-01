@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic names like `iVar1`, `uVar2`, `puVar3`, `local_10`, `local_c`. For example, `cdecl_func(int param_1, int param_2)` should be `cdecl_func(int a, int b)` based on the source. No semantic meaning can be inferred from these names.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names are almost perfectly preserved from the symbol table: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values` all match the original source exactly. The decompiler correctly retained the meaningful function identifiers.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21) are hardcoded throughout without explanation. The string references use cryptic labels like `&DAT_000114cc` instead of the actual string content. While the values are correct, their semantic meaning is completely obscured.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: The decompilation includes numerous floating-point library functions (`__aeabi_dadd`, `__subdf3`, `__aeabi_l2d`, `__aeabi_d2iz`) that clutter the output. However, the main test functions themselves are relatively clean without excessive compiler artifacts like register spills or frame pointer manipulation.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: Many loops are rendered as do-while with goto patterns. For example, `varargs_func` uses `do { iVar1 = iVar1 + 1; } while (param_1 != iVar1);` which could be a cleaner for-loop. At -O0, this level of control flow degradation is moderate but still impedes readability.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are properly decomposed with good granularity. Each test function (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) calls smaller helper functions. The decomposition matches the source structure well with appropriate function boundaries.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom without excessive forward jumps. The `test_calling_conventions` function has some complexity with loops but remains traceable. Most functions have clear entry and exit points.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code observed. Some loop unrolling is present in `test_calling_conventions` where the struct initialization is expanded, but this is manageable. The code is relatively clean of redundant expressions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Uses Ghidra-specific types like `undefined4` and `undefined8` instead of standard `int` and `long`. Function pointers are typed as `code *` which is non-standard. The type precision is significantly degraded from the original source which used proper `int`, `char*`, `double`, `long long` types.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct recovery is visible. The `LargeStruct` (128 bytes) and `SmallStruct` are completely flattened. For example, `func_struct_byval` receives `int param_1, undefined4 param_2, undefined4 param_3, undefined4 param_4` instead of a proper struct parameter. All composite type information is lost.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe operations present. The `param_ptr_array` function uses pointer arithmetic with `param_1 + -4` which is suspicious. Function pointers are cast to `code*` which loses type safety. However, no severe type safety violations that would cause undefined behavior are evident.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No comments are present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"). This semantic information is completely lost in the decompilation.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: Some idioms like varargs are somewhat recognizable through the `va_list` pattern, but not explicitly named or documented. The calling convention tests (cdecl, stdcall, fastcall) are not identified as such - they're just rendered as regular function calls.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly flags or warnings are present. The decompiler silently produces potentially incorrect code (like the broken `varargs_func` that doesn't actually sum the arguments) without any indication that something may be wrong.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 15") which are not recovered. No contract information is provided.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are syntactically clear (e.g., `test_calling_conventions()` calls `cdecl_func()`), but there's no documentation of the relationships. The caller/callee relationships are not explicitly documented, and there's no indication of the test harness structure.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - test functions together, helper functions together. The organization roughly matches the source file structure with calling convention tests, parameter passing tests, and return value tests grouped separately.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: The code uses Ghidra-specific types (`undefined4`, `undefined8`, `code*`) that won't compile with standard compilers. External function declarations are missing. Significant patching would be required to make this code compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 5) / 4 = 5.0
+L2_avg = (5 + 8 + 7 + 7) / 4 = 6.75
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg = (4 + 7 + 3) / 3 = 4.67
+
+Overall = (5.0 × 0.30) + (6.75 × 0.25) + (3.67 × 0.20) + 
+          (1.75 × 0.15) + (4.67 × 0.10)
+        = 1.5 + 1.6875 + 0.734 + 0.2625 + 0.467
+        = 4.65/10
+```
+
+### Overall Readability Score: 4.65/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic names (`param_1`, `param_2`) and locals use cryptic names (`iVar1`, `uVar2`, `local_10`) - completely loses semantic meaning
+- **Type recovery failure**: No struct types are recovered; `LargeStruct` (128 bytes) is flattened to 4 separate int parameters
+- **No comments**: All source code comments explaining test cases (e.g., "CALL-L1-01: cdecl调用约定") are completely lost
+- **Broken varargs**: `varargs_func` is incorrectly decompiled - it has an empty loop body that doesn't actually sum the arguments
+- **Non-standard types**: Uses Ghidra-specific types (`undefined4`, `undefined8`, `code*`) that prevent compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: Function names are almost perfectly preserved from the symbol table, matching the original source exactly.
+
+### Most Needs Improvement
+- **Comment Quality (1/10)**: Complete absence of comments loses all semantic context about what each test case validates and what the expected results mean.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `param_1 + param_2` → should suggest `a` and `b`; `*param_1 << 1` → suggests `value` or similar)
+2. **Recover struct types**: Detect sequential stack allocations and group them into struct types with field names based on access patterns
+3. **Add semantic comments**: When decompiling test harness code, recognize patterns like "expected value" comments and add them back (e.g., `// Expected: 15`)

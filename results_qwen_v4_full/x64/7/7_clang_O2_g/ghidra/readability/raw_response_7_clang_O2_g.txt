@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`iVar1`, `iVar2`, `pbVar4`) instead of semantic names like `result`, `p1`, `p2`, `encrypted`. Many show as "Unresolved local var" with DWARF references instead of proper names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_fake_branch`, `param_opaque_predicate`), but helper functions use generic names (`FUN_00101020`). Original intent is mostly recoverable from names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Original source had meaningful constants (`0xDEADBEEF`) with comments explaining purpose.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Multiple compiler artifacts present: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", and "Unresolved local var" comments clutter the code. Output LOC (998) is 2x original (464).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex unrolled versions (`param_vectorized_loop` has 200+ lines vs original 15). `param_fake_branch` logic completely optimized away (just `return x;`), losing the fake branch semantics entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `call_string_encryption` duplicates entire `param_string_encryption` body instead of calling it. `test_obf_opt_edge` inlines multiple function bodies, breaking modular structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `param_vectorized_loop` has excessive branching with labels like `LAB_00101561` and `LAB_00101599`. Simpler functions read linearly but complex ones have disruptive jump patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy: `call_string_encryption` duplicates decryption logic from `param_string_encryption`. `test_obf_opt_edge` repeats the same decryption code again. Same logic appears 3 times.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`) but many variables show as "Unresolved local var". Generic `int` used instead of specific types like `int32_t`. Signed/unsigned distinctions sometimes lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` recovered as `anon_struct_4_3_4e909822` with no field names. Original had named fields (`a`, `b`, `c`) with bit widths.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined *)0x0`, `(__sighandler_t)0x0`, `(ulong)(uint)` conversions. No type safety annotations or restrict keywords recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings exist ("WARNING: Subroutine does not return"). Zero semantic comments explaining algorithm purpose, unlike original source with detailed section headers and explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern not recognized. Original source had clear pattern labels (OBF-L4-02, OBF-L4-03, etc.).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Unresolved local var", "WARNING: Removing unreachable block") but inconsistently. Doesn't explain WHY code was optimized away or what the original intent was.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x must be non-zero for division"). No postconditions or invariants recovered. Original had clear expected return values in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage (`div_zero_caught`, `jmp_buffer`) not clearly linked to handlers. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping. Original had clear section headers (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (signal.h, setjmp.h, string.h) not documented. Would require manual stub creation for `__gmon_start__`, `__libc_start_main`, `__cxa_finalize`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (4+5+5+3)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (5+3+5)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+5)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.23/10
+```
+
+### Overall Readability Score: **4.2/10**
+
+### Critical Defects:
+- **`param_fake_branch` logic completely lost**: Original had two fake branch conditions (`x*x < 0`, `strlen(str) < 0`), decompiled version just returns `x` - semantic meaning destroyed
+- **Severe code duplication**: Decryption logic appears 3 times (`param_string_encryption`, `call_string_encryption`, `test_obf_opt_edge`) instead of function calls
+- **Generic variable naming**: All temporaries named `iVar1`, `iVar2`, `pbVar4` instead of semantic names like `result`, `p1`, `encrypted`
+- **No semantic comments**: Zero documentation of algorithm purpose, unlike original's detailed section headers and pattern labels
+- **Bitfield struct lost**: `anon_struct_4_3_4e909822` with no field names instead of named bitfield with `a:3`, `b:5`, `c:24`
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved accurately from source, allowing identification of original intent despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation; only auto-generated warnings exist, making it impossible to understand algorithm purpose without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns**: Analyze how variables are used (e.g., `iVar2` compared to 1 in GCD loop should be named `gcd_result`)
+2. **Detect and document optimization artifacts**: When code is optimized away (like fake branches), add comments explaining original intent was lost to optimization
+3. **Eliminate redundant inlining**: Recognize call sites and restore function calls instead of duplicating entire function bodies multiple times

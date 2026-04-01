@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Looking at the specific function `param_strcpy` in the decompiled output:
+
+```c
+int param_strcpy(char *dst,char *src)
+{
+  size_t sVar1;
+  
+  strcpy(dst,src);
+  sVar1 = strlen(dst);  return sVar1;
+}
+```
+
+This is a straightforward decompilation of the original:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+However, I need to evaluate the entire decompiled output against the full source file provided.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses generic names like `sVar1`, `iVar1`, `iVar2`, `local_24`, `local_30` throughout. For `param_strcpy`, the parameter `src` should be `const char*` but is just `char*`. Variables like `buffer`, `len`, `ret` from source become unresolvable local vars with cryptic names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_strcpy`, `call_strcpy`, `param_strcmp` are correctly named matching source. However, internal helper functions get generic names like `FUN_00011030`, and many functions have "WARNING: Unknown calling convention" annotations indicating incomplete recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals like "Value: %d, Name: %s\n" are preserved, but magic numbers like `0x2a` (42), `0x12` (18), `0xc` (12) appear without explanation. The decompiler shows `0x2a` in `call_fopen_fclose` but doesn't indicate this equals 42 (the expected return value).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The output is cluttered with "WARNING" comments (unknown calling conventions), "Unresolved local var" annotations, and "WARNING: Removing unreachable block" messages. These 100+ lines of noise severely impede readability. For example: `/* Unresolved local var: int len@[???] */` appears repeatedly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow should closely match source. The `param_strcpy` function is straightforward. However, functions like `param_pthread_join` show complex loop structures with manual index calculations that obscure the original clean for-loops. The `thread_sum` function has convoluted arithmetic that obscures the simple sum logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function (`call_strcpy`, `param_strcpy`, etc.) is properly separated. The decompiler correctly extracted 75 functions. Function granularity is appropriate - no 500-line monoliths. Parameter lists are reasonable, though some implementation details leak through.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. However, `param_signal_handling` has nested do-while loops with complex conditionals that make tracing difficult. The `call_strcmp` function returns a constant 0 instead of computing the actual result, showing some decompilation issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal at -O0. Some redundant expressions in complex functions like `param_pthread_join` but generally manageable.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (`int`, `char*`, `size_t`). However, `const` correctness is lost - `param_strcpy` has `char *src` instead of `const char *src`. Some return types use `int` where `size_t` would be more precise (e.g., `strlen` returns `size_t` but is stored in `size_t sVar1` then returned as `int`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: For this specific function, there are no complex composites. However, in functions like `param_pthread_join`, the `ThreadData` struct is not recovered - the decompiler uses raw memory access like `*(undefined4 *)((int)arg + 8)` instead of `data->result`. Global structs like `stat` are used but with generic field access.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No major type safety violations. However, there are some concerning patterns like `(int)buffer + sVar2` in `param_memset` for byte-by-byte iteration. The `thread_compute` function correctly uses `malloc(4)` for `int*` but this isn't validated.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely decompilation artifacts ("WARNING: Unknown calling convention", "Unresolved local var"). There are no semantic comments explaining what functions do, no @param/@return documentation, and no indication of algorithm intent. The source had rich comments explaining test scenarios; none are recovered.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (`strcpy`, `strlen`, `strcmp`, `memcpy`, `fopen`, etc.) are correctly identified. The pthread patterns (create, join, mutex lock/unlock) are recognized. However, no design patterns or algorithm patterns are named or explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler does flag some issues with "WARNING" comments, but these are generic. The `call_strcmp` returning constant 0 is suspicious but not flagged. The `call_strlen` returning constant 0xc (12) is correct but unexplained. No specific warnings about potential undefined behavior or indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source had clear expectations (e.g., "期望: 8" for expected return values) but these are completely lost. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`strcpy(dst,src)`). However, there's no documentation of what calls each function or the relationships between test functions. The global variables `signal_received`, `signal_number`, `shared_counter`, `atomic_counter` are used but their purpose isn't explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - standard library tests first, then system calls, then thread tests. This matches the source organization. However, all 75 functions are in a single flat listing with no namespace or file structure recovery.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code uses standard C library functions and should compile with gcc. Dependencies are implicit (libc, libpthread). The code has no obvious syntax errors. However, the "WARNING: Unknown calling convention" comments might cause compiler warnings.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Variable naming**: Generic names like `sVar1`, `local_30`, `iVar2` obscure semantic meaning throughout
+- **Noise pollution**: 100+ lines of "WARNING" and "Unresolved local var" comments clutter output
+- **Comment absence**: No semantic comments recovered from source; only decompilation artifacts
+- **Type degradation**: `const` correctness lost (`char *src` instead of `const char *src`)
+- **Contract loss**: All expected return values and test expectations from source comments are lost
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Functions are properly separated with appropriate granularity; 75 functions extracted matching source structure
+
+**Most Needs Improvement:** Lexical Clarity (4.25/10 avg)  
+- Variable naming is nearly unusable with generic names; noise comments overwhelm the actual code; literal values lack explanation
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `sVar1` used with `strlen()` should be named `len` or `str_len`
+2. **Eliminate decompilation noise**: Filter "WARNING" and "Unresolved" comments into a separate metadata section
+3. **Recover const correctness**: Track `const` qualifiers through function calls - `strcpy` second parameter should be `const char*`
+4. **Add semantic comments**: When source had explanatory comments (like "期望: 8"), preserve or reconstruct them
+5. **Explain magic numbers**: Flag constants like `0x2a` with comments suggesting they may be return codes or sizes

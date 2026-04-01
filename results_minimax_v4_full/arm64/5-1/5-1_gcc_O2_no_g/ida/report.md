@@ -1,0 +1,1897 @@
+# BinBench Evaluation Report
+
+**Generated:** 2026-03-13 00:18:09
+
+## 1. Test Object
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `src/5-1.cpp` |
+| Decompiled | `decompiled/ida_out/arm64/5-1/5-1_gcc_O2_no_g.c` |
+| Decompiler | IDA |
+| Architecture | arm64 |
+| Compiler | gcc |
+| Optimization | O2 |
+| Debug | no |
+
+## 2. Evaluation Results
+
+| Dimension | Status |
+|-----------|--------|
+| Readability | ✅ Completed |
+| Syntactic | ❌ Failed |
+| Semantic | ⏭ Skipped |
+
+## 3. Detailed Results
+
+### 3.1 Readability Evaluation
+
+*No readability results found.*
+
+### 3.2 Syntactic Correctness Evaluation
+
+#### Repair Trace Log
+
+```json
+{
+  "file_name": "results_minimax_v4_full/arm64/5-1/5-1_gcc_O2_no_g/ida/syntactic/fix_5-1_gcc_O2_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 55,
+  "final_status": "compile_failed",
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 110,
+        "stats": {
+          "Implicit Function Declaration": 11,
+          "Type Conversion Warning": 2,
+          "Other": 16,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 57,
+          "Unknown Type": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 5804,
+        "completion_tokens": 721,
+        "total_tokens": 6525
+      },
+      "time_cost": 12.389820575714111,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 5704,
+        "completion_tokens": 741,
+        "total_tokens": 6445
+      },
+      "time_cost": 15.949288606643677,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 106,
+        "stats": {
+          "Implicit Function Declaration": 7,
+          "Type Conversion Warning": 2,
+          "Other": 16,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 57,
+          "Unknown Type": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 5916,
+        "completion_tokens": 493,
+        "total_tokens": 6409
+      },
+      "time_cost": 21.431820154190063,
+      "phase": "compile",
+      "new_errors_introduced": 41
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 105,
+        "stats": {
+          "Implicit Function Declaration": 7,
+          "Type Conversion Warning": 2,
+          "Other": 15,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 56,
+          "Unknown Type": 6
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 5937,
+        "completion_tokens": 1772,
+        "total_tokens": 7709
+      },
+      "time_cost": 23.553513288497925,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 88,
+        "stats": {
+          "Implicit Function Declaration": 7,
+          "Type Conversion Warning": 2,
+          "Other": 9,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 50,
+          "Unknown Type": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6081,
+        "completion_tokens": 870,
+        "total_tokens": 6951
+      },
+      "time_cost": 15.259421586990356,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 83,
+        "stats": {
+          "Implicit Function Declaration": 6,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 1,
+          "Other": 8,
+          "Unknown Type": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6240,
+        "completion_tokens": 695,
+        "total_tokens": 6935
+      },
+      "time_cost": 10.089710474014282,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 82,
+        "stats": {
+          "Implicit Function Declaration": 6,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 1,
+          "Other": 7,
+          "Unknown Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6256,
+        "completion_tokens": 878,
+        "total_tokens": 7134
+      },
+      "time_cost": 14.96893572807312,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 1,
+        "stats": {
+          "Missing Header": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6177,
+        "completion_tokens": 339,
+        "total_tokens": 6516
+      },
+      "time_cost": 7.16405177116394,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 83,
+        "stats": {
+          "Implicit Int": 1,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Implicit Function Declaration": 4,
+          "Undeclared Identifier": 19,
+          "Other": 7,
+          "Unknown Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6353,
+        "completion_tokens": 740,
+        "total_tokens": 7093
+      },
+      "time_cost": 18.282612562179565,
+      "phase": "compile",
+      "new_errors_introduced": 40
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 82,
+        "stats": {
+          "Implicit Int": 1,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Implicit Function Declaration": 3,
+          "Undeclared Identifier": 19,
+          "Other": 7,
+          "Unknown Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6413,
+        "completion_tokens": 713,
+        "total_tokens": 7126
+      },
+      "time_cost": 11.793757915496826,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 82,
+        "stats": {
+          "Implicit Int": 1,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Implicit Function Declaration": 3,
+          "Undeclared Identifier": 19,
+          "Other": 7,
+          "Unknown Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6490,
+        "completion_tokens": 714,
+        "total_tokens": 7204
+      },
+      "time_cost": 13.96315050125122,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 78,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Syntax Error": 47,
+          "Implicit Function Declaration": 2,
+          "Other": 7,
+          "Unknown Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6524,
+        "completion_tokens": 703,
+        "total_tokens": 7227
+      },
+      "time_cost": 36.43563413619995,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 89,
+        "stats": {
+          "Unknown Type": 10,
+          "Syntax Error": 50,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 2,
+          "Other": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6601,
+        "completion_tokens": 940,
+        "total_tokens": 7541
+      },
+      "time_cost": 43.83336067199707,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 89,
+        "stats": {
+          "Unknown Type": 10,
+          "Syntax Error": 50,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 2,
+          "Other": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6675,
+        "completion_tokens": 1151,
+        "total_tokens": 7826
+      },
+      "time_cost": 31.939533948898315,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 89,
+        "stats": {
+          "Unknown Type": 10,
+          "Syntax Error": 51,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Other": 7
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6693,
+        "completion_tokens": 892,
+        "total_tokens": 7585
+      },
+      "time_cost": 21.324161052703857,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 78,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Syntax Error": 48,
+          "Implicit Function Declaration": 1,
+          "Other": 7,
+          "Unknown Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6668,
+        "completion_tokens": 746,
+        "total_tokens": 7414
+      },
+      "time_cost": 27.19062066078186,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 77,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Syntax Error": 47,
+          "Implicit Function Declaration": 1,
+          "Other": 6,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6667,
+        "completion_tokens": 836,
+        "total_tokens": 7503
+      },
+      "time_cost": 44.24055576324463,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6684,
+        "completion_tokens": 862,
+        "total_tokens": 7546
+      },
+      "time_cost": 15.056280612945557,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6721,
+        "completion_tokens": 2144,
+        "total_tokens": 8865
+      },
+      "time_cost": 44.9018030166626,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6795,
+        "completion_tokens": 545,
+        "total_tokens": 7340
+      },
+      "time_cost": 28.76280641555786,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6809,
+        "completion_tokens": 685,
+        "total_tokens": 7494
+      },
+      "time_cost": 11.769164323806763,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6810,
+        "completion_tokens": 1642,
+        "total_tokens": 8452
+      },
+      "time_cost": 46.839791774749756,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6802,
+        "completion_tokens": 1118,
+        "total_tokens": 7920
+      },
+      "time_cost": 19.415413856506348,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6805,
+        "completion_tokens": 719,
+        "total_tokens": 7524
+      },
+      "time_cost": 10.976621389389038,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6809,
+        "completion_tokens": 968,
+        "total_tokens": 7777
+      },
+      "time_cost": 38.040377378463745,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6883,
+        "completion_tokens": 641,
+        "total_tokens": 7524
+      },
+      "time_cost": 22.808254718780518,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6885,
+        "completion_tokens": 1212,
+        "total_tokens": 8097
+      },
+      "time_cost": 39.34252667427063,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7127,
+        "completion_tokens": 1073,
+        "total_tokens": 8200
+      },
+      "time_cost": 15.048985004425049,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7182,
+        "completion_tokens": 783,
+        "total_tokens": 7965
+      },
+      "time_cost": 13.840713500976562,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Other": 8,
+          "Syntax Error": 69,
+          "Unknown Type": 29,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7260,
+        "completion_tokens": 930,
+        "total_tokens": 8190
+      },
+      "time_cost": 29.021932125091553,
+      "phase": "compile",
+      "new_errors_introduced": 7
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 106,
+        "stats": {
+          "Other": 8,
+          "Syntax Error": 62,
+          "Unknown Type": 14,
+          "Type Conversion Warning": 2,
+          "Implicit Function Declaration": 2,
+          "Undeclared Identifier": 18
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7155,
+        "completion_tokens": 962,
+        "total_tokens": 8117
+      },
+      "time_cost": 36.15316557884216,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 104,
+        "stats": {
+          "Other": 8,
+          "Syntax Error": 61,
+          "Unknown Type": 14,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7441,
+        "completion_tokens": 1035,
+        "total_tokens": 8476
+      },
+      "time_cost": 42.193811655044556,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 80,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Implicit Function Declaration": 2,
+          "Undeclared Identifier": 18,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7425,
+        "completion_tokens": 1091,
+        "total_tokens": 8516
+      },
+      "time_cost": 18.58513593673706,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 80,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Implicit Function Declaration": 2,
+          "Undeclared Identifier": 18,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7422,
+        "completion_tokens": 769,
+        "total_tokens": 8191
+      },
+      "time_cost": 19.981475591659546,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7441,
+        "completion_tokens": 1477,
+        "total_tokens": 8918
+      },
+      "time_cost": 19.285467386245728,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7426,
+        "completion_tokens": 965,
+        "total_tokens": 8391
+      },
+      "time_cost": 14.323855638504028,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7440,
+        "completion_tokens": 890,
+        "total_tokens": 8330
+      },
+      "time_cost": 25.89546036720276,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7462,
+        "completion_tokens": 964,
+        "total_tokens": 8426
+      },
+      "time_cost": 18.432055950164795,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7514,
+        "completion_tokens": 635,
+        "total_tokens": 8149
+      },
+      "time_cost": 8.768610000610352,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 81,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 50,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7542,
+        "completion_tokens": 826,
+        "total_tokens": 8368
+      },
+      "time_cost": 12.463515043258667,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 81,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 50,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7508,
+        "completion_tokens": 703,
+        "total_tokens": 8211
+      },
+      "time_cost": 10.55555510520935,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 81,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 50,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 18,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7496,
+        "completion_tokens": 917,
+        "total_tokens": 8413
+      },
+      "time_cost": 44.38925814628601,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 77,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 17,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7494,
+        "completion_tokens": 782,
+        "total_tokens": 8276
+      },
+      "time_cost": 43.207088470458984,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 77,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 17,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7491,
+        "completion_tokens": 678,
+        "total_tokens": 8169
+      },
+      "time_cost": 24.972590923309326,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 77,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 17,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7512,
+        "completion_tokens": 686,
+        "total_tokens": 8198
+      },
+      "time_cost": 37.36044001579285,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 77,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Undeclared Identifier": 17,
+          "Implicit Function Declaration": 1,
+          "Unknown Type": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7512,
+        "completion_tokens": 831,
+        "total_tokens": 8343
+      },
+      "time_cost": 12.318860530853271,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Unknown Type": 4,
+          "Undeclared Identifier": 17,
+          "Implicit Function Declaration": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7530,
+        "completion_tokens": 987,
+        "total_tokens": 8517
+      },
+      "time_cost": 15.096062660217285,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 79,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 48,
+          "Type Conversion Warning": 2,
+          "Unknown Type": 5,
+          "Undeclared Identifier": 16,
+          "Implicit Function Declaration": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7526,
+        "completion_tokens": 534,
+        "total_tokens": 8060
+      },
+      "time_cost": 17.1211416721344,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 78,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Unknown Type": 5,
+          "Undeclared Identifier": 16,
+          "Implicit Function Declaration": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7541,
+        "completion_tokens": 1006,
+        "total_tokens": 8547
+      },
+      "time_cost": 14.947445154190063,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 78,
+        "stats": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Unknown Type": 5,
+          "Undeclared Identifier": 16,
+          "Implicit Function Declaration": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7541,
+        "completion_tokens": 677,
+        "total_tokens": 8218
+      },
+      "time_cost": 14.8025541305542,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 390871,
+    "total_time_seconds": 1156.49,
+    "initial_state": {
+      "error_count": 110,
+      "error_types": {
+        "Implicit Function Declaration": 11,
+        "Type Conversion Warning": 2,
+        "Other": 16,
+        "Undeclared Identifier": 19,
+        "Syntax Error": 57,
+        "Unknown Type": 5
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.1429,
+        "error_trajectory": [
+          110,
+          1,
+          106,
+          105,
+          88,
+          83,
+          82,
+          1,
+          83,
+          82,
+          82,
+          78,
+          89,
+          89,
+          89,
+          78,
+          77,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          79,
+          127,
+          106,
+          104,
+          80,
+          80,
+          79,
+          79,
+          79,
+          79,
+          79,
+          81,
+          81,
+          81,
+          77,
+          77,
+          77,
+          77,
+          79,
+          79,
+          78,
+          78
+        ],
+        "max_error_count": 127,
+        "min_error_count": 1
+      },
+      "effort": {
+        "initial_error_count": 110,
+        "lowest_error_count": 1,
+        "lowest_at_iteration": 2,
+        "error_reduction": 109,
+        "error_reduction_ratio": 0.9909
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Implicit Function Declaration": 11,
+          "Type Conversion Warning": 2,
+          "Other": 16,
+          "Undeclared Identifier": 19,
+          "Syntax Error": 57,
+          "Unknown Type": 5
+        },
+        "final_types": {
+          "Other": 7,
+          "Syntax Error": 47,
+          "Type Conversion Warning": 2,
+          "Unknown Type": 5,
+          "Undeclared Identifier": 16,
+          "Implicit Function Declaration": 1
+        },
+        "types_eliminated": [],
+        "types_introduced": []
+      },
+      "score": {
+        "effort_score": 49.55,
+        "stability_score": 42.86,
+        "total_score": 92.4,
+        "grade": "A+"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 8,
+    "type_breakdown": {
+      "Missing Header": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 57,
+        "max_count": 69,
+        "final_count": "unknown"
+      },
+      "Undeclared Identifier": {
+        "initial_count": 19,
+        "max_count": 19,
+        "final_count": "unknown"
+      },
+      "Type Conversion Warning": {
+        "initial_count": 2,
+        "max_count": 2,
+        "final_count": "unknown"
+      },
+      "Implicit Function Declaration": {
+        "initial_count": 11,
+        "max_count": 11,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 16,
+        "max_count": 16,
+        "final_count": "unknown"
+      },
+      "Implicit Int": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Unknown Type": {
+        "initial_count": 5,
+        "max_count": 29,
+        "final_count": "unknown"
+      }
+    }
+  }
+}
+```
+
+### 3.3 Semantic Fidelity Evaluation
+
+*No semantic analysis report found.*
+

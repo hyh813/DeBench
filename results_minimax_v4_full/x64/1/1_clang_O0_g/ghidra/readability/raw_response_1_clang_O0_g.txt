@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `local_c`, `local_14`, `local_10`, `temp1`, `temp2`, `temp3`, `x_local`, `b_local`, `a_local`. These obscure semantic purpose - e.g., in `sequential_ops`, the meaningful computation `temp1 = a + b; temp2 = temp1 * 2;` is lost behind generic temp names.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: All user-defined functions retain their original names: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. Only internal startup functions like `FUN_00101020` use generated names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0xe` (14), `0x30` (48) appear without explanation. However, some meaningful constants like array sizes are correctly inferred.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Significant compiler artifacts present: `undefined4` type declarations, auto-generated warnings ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention"), and redundant parameter copies (`x_local`, `b_local`) that add noise.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Most control structures match source - `for` loops in `loop_for_fixed`, `while` in `loop_while`, `do-while` in `loop_dowhile` all correctly recovered. Minor issue: `loop_while` source uses ternary `count > 0 ? count : 1` but decompiler uses if-else.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching source - each function has single responsibility. No over-fragmentation or monoliths observed. Parameter lists are reasonable.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `loop_break`. No excessive forward jumps disrupting flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy or dead code. Loop unrolling in `duffs_device` is appropriately structured (though complex). Common subexpression elimination is minimal at -O0.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Uses generic `int` instead of more specific types like `int32_t`. Some variables use `undefined4` which is a Ghidra artifact. Function pointer types use `_func_int_int` which is descriptive but not precise.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Arrays are correctly recovered (e.g., `int arr[5]`, `int matrix[3][4]`). Struct recovery is not heavily tested in this source, but basic types are handled correctly.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: No obvious unsafe casts or dangerous pointer arithmetic. Function pointer calls use proper signature types. Minor issue: some `undefined4` usages could mask type issues.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+Justification: Ghidra provides auto-generated warnings ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return") which are useful but not comprehensive. No algorithmic or semantic comments explaining the code logic.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Basic patterns recognized (switch statements, loops, function pointers). However, advanced patterns like Duff's device in `duffs_device` are not explicitly identified or named - the code is correct but the idiom is not highlighted.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+Justification: Useful warnings present for unreachable blocks, unknown calling conventions, and unresolved indirect jumps ("WARNING: Could not recover jumptable"). However, some anomalies like the opaque predicate in `opaque_predicate` are silently simplified.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants are documented. The complex logic in functions like `loop_while` (handling x=0 case) has no contract information.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: No explicit documentation of which functions call which. The test functions (`test_control_flow_l1`, etc.) show call relationships but aren't explicitly documented. Callback relationships in `process_with_callback` not highlighted.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions appear in reasonable order matching binary layout. Static helper functions (`double_value`, `triple_value`, `op_add`, etc.) are placed near their usage. However, no logical grouping or namespace structure is evident.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code uses standard C constructs. External functions (`printf`, `memcpy`, `memset`, `setjmp`, `longjmp`) are properly referenced. Should compile with minimal modifications. No compiler-specific hacks observed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+9+5+5)/4 = 5.5
+L2_avg = (8+8+8+8)/4 = 8.0
+L3_avg = (6+7+8)/3 = 7.0
+L4_avg = (5+6+7+3)/4 = 5.25
+L5_avg = (4+7+8)/3 = 6.33
+
+Overall = (5.5 × 0.30) + (8.0 × 0.25) + (7.0 × 0.20) + (5.25 × 0.15) + (6.33 × 0.10)
+Overall = 1.65 + 2.0 + 1.4 + 0.7875 + 0.633 = 6.47/10
+```
+
+**Overall Readability Score: 6.5/10**
+
+### Critical Defects
+- Variable naming uses generic patterns (`local_c`, `local_14`, `temp1`, `x_local`) that completely obscure semantic purpose
+- Magic numbers like `0x3e9`, `0x65`, `0x30` appear without explanation or constant names
+- No contract/precondition documentation for functions with complex logic (e.g., `loop_while` handling x=0)
+- Excessive compiler artifacts (`undefined4` types, parameter copies with `_local` suffix) add noise
+
+### Best Quality Aspect
+**Control Flow Naturalness (8/10)** - Loop constructs (for, while, do-while) are correctly recovered and match source patterns. Switch statements are properly structured. At -O0, the decompiler preserves the original control flow well.
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic names like `local_c`, `temp1`, `x_local` make it difficult to track variable purpose. The decompiler should infer names from usage patterns (e.g., `temp1` used as `a + b` should be named `sum_ab`).
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: When a variable is used in a specific way (e.g., `temp1 = a + b`), name it semantically (`sum_ab`, `product_temp`) rather than generically (`temp1`)
+2. **Detect and explain magic numbers**: Numbers like `0x3e9` (1001), `0x65` (101) should be flagged with possible meanings or named constants
+3. **Add semantic comments for complex logic**: Functions like `loop_while` that handle edge cases should have comments explaining the logic, not just auto-generated warnings

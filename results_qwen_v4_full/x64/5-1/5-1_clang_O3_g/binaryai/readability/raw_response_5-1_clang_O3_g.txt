@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic stack-based names (`local_24`, `uStack_20`, `iVar1`, `puVar2`) with zero semantic meaning. Original source had meaningful names like `value`, `name`, `instance_count`, `capture_by_value` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_virtual_func`) which is good, but template functions have mangled names (`template_max_int_`) and helper functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x3e9`, `0x2a`, `0x28a`) are constant-folded results with no explanation. String literals replaced with `DAT_` references losing all readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function wrappers are redundant (printf calling printf, strlen calling strlen). Stack initialization variables (`uStack_14 = 0`) are compiler artifacts that add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions collapsed to single `return` statements losing all original logic. Container methods preserved some control flow but `test_cpp_exception` doesn't match source exception handling structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template instantiations properly separated (`template_max_int_`, `template_max_double_`), Container class methods decomposed correctly, but many functions are just constant returns with no actual logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Where logic exists (Container methods, RTTI functions), code reads top-to-bottom naturally with clear if-else patterns. No excessive gotos observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_cpp_oo_features` duplicates RTTI logic from `test_cpp_rtti`. External function wrappers create unnecessary indirection layers throughout the codebase.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `undefined`) instead of specific types (`int32_t`, `size_t`, `double`). Container templates partially recovered (`Container_int_`) but most type information lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures mostly lost - `SimpleClass`, `LifecycleClass`, `Base`, `Derived` not recovered as structs. Container class partially recovered with methods but no field names. Heavy pointer arithmetic (`this + 0x28`) instead of field access.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4*)`, `(undefined8*)`, `(long*)`, `(code***)`. Pointer arithmetic without type safety. `operator_new` returns `void*` used without proper typing throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment "Decompiled by BinaryAI" exists. Zero comments explaining logic, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns not recognized (no RAII, virtual dispatch, or exception handling patterns named). Template instantiation recognized but not explained as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Virtual calls (`(***(code ***)param_1)()`) not flagged as potentially problematic. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., bounds checking in Container::get). No postconditions inferred. No invariants recognized for class methods.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible through vtable calls but not explained. No call graph documentation provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping comments. External functions marked `<EXTERNAL>` but not organized by category or dependency.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has C-like syntax but won't compile as-is (undefined types, missing headers). External dependencies not clearly documented. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+7+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                              4.06/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Constant folding destroyed logic**: Test functions return pre-computed constants (`0x125c`, `0x2a`, `0x47`) instead of showing actual computation
+- **Variable names completely generic**: `local_24`, `uStack_20`, `iVar1` provide zero semantic information
+- **Class structures not recovered**: `SimpleClass`, `LifecycleClass`, inheritance hierarchies lost to pointer arithmetic
+- **No comments or documentation**: Zero explanation of decompilation confidence or logic intent
+- **Type system degraded**: `undefined4`, `undefined8` instead of proper C++ types
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Where actual logic exists (Container methods), code reads naturally top-to-bottom without excessive jumps
+
+### Most Needs Improvement: **Semantic Transparency (2.25/10 average)**
+- Complete absence of comments, anomaly flags, pattern recognition, and contract documentation makes code practically unusable for understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve computational logic**: Disable aggressive constant folding for test/demonstration code; show actual calculations instead of pre-computed results
+2. **Recover class structures**: Reconstruct C++ class layouts with field names from debug symbols (`-g` flag was present)
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (virtual calls, exception handling) with comments indicating manual review needed

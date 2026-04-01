@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `v3`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `dst`, `src` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`). Only startup functions like `sub_810` and `init_proc` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072`, `57122`, `282` appear without explanation. String literals referenced through opaque variables (`asc_12AE`, `aPpL201D`) instead of inline. Original `MAX_SIZE`, `BUFFER_COUNT` constants lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Moderate noise from type casts (`(unsigned int)`, `(unsigned __int8)`) and stack annotations (`[xsp+10h] [xbp+10h] BYREF`). No severe compiler artifacts but adds visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures recovered well—`if-else` and `while` loops properly reconstructed (e.g., `param_asm_clobber` loop). Some functions constant-folded obscuring original logic flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each test function remains separate. Some caller functions constant-folded to single returns (`call_macro_constants` just returns 64).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps. Early returns used appropriately in error paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minor redundancy from constant folding—functions like `call_macro_constants` return pre-computed values instead of calling underlying functions. No dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Mixed precision—`__int64` used for returns where `int` suffices. Pointer types preserved (`void*`, `const void*`). Some type erosion: `int` parameters become `__int64` in some contexts.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source. Arrays handled via pointer arithmetic (`*(_DWORD *)(a1 + 4 * v3++)`). No struct reconstruction needed but pointer semantics slightly degraded.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present (`(__int64)v1`, `(__int64)&v2`). Pointer arithmetic without bounds checking. No buffer overflow protections visible in decompiled output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments—only auto-generated annotations like `// attributes: thunk` and stack layout notes. No algorithm explanations or logic documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Atomic operations (`_aarch64_ldadd4_acq_rel`) not identified as atomic patterns. SIMD loops not labeled as vector operations.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (12 functions) but no inline warnings. No uncertainty markers on potentially incorrect recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error contracts documented. Original comments about expected values (e.g., "期望: 64") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`global_var`, `_aarch64_have_lse_atomics`) referenced without usage context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Preprocessing tests grouped, then assembly tests. No namespace/package structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 external functions failed decompilation (`memcpy`, `mmap`, `printf`, etc.). Would require stubs or library linking to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (7+6+6)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.05/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v0`) losing all semantic meaning from original (`size`, `counter`, `increment`)
+- **Magic numbers unexplained** (`57072`, `57122`, `282`) where original had named constants (`MAX_SIZE`, `0xDEF0`)
+- **No contract documentation**—original expected values and preconditions completely lost
+- **String literals obfuscated** through variables (`asc_12AE`, `aPpL201D`) instead of inline
+- **12 external functions failed decompilation** requiring manual stub creation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)**—Most function names accurately preserved from source, maintaining semantic clarity about purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)**—Zero recovery of preconditions, postconditions, or expected value documentation that was present in original source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., parameter compared to 1024 should be named `size` or `max_threshold`)
+2. **Recover and inline string literals** instead of referencing through opaque variables (`asc_XXXX`)
+3. **Add uncertainty annotations** for constant-folded functions to indicate original computation was lost during optimization

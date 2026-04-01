@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`a1`, `a2`, `v0`, `v1`, `v2`) obscuring semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `filename` that are completely lost. Some exceptions exist (`newthread`, `ptr`, `arg`) but are inconsistent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved well (`param_strcpy`, `call_strcpy`, `param_mutex_lock`). However, helper functions use mechanical names (`sub_12E0`, `init_proc`) and 61 library functions show "FAILED to decompile" markers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Extensive magic numbers without explanation: `4294967196LL` (AT_FDCWD), `4294967293LL` (-3 error code), `0x12u` (18 bytes). String literals preserved but numeric constants obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: redundant temporaries (`v4`, `v5`, `v6`), explicit type casts (`(__sighandler_t)`, `(_DWORD *)`), and SIMD vector operations in `param_malloc_free` that obscure the simple loop logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else structures recovered, but loops often appear as `do-while` with manual counters instead of `for` loops. Signal handling uses explicit counter decrement patterns instead of clean while loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable; thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). However, `param_malloc_free` is overly complex due to SIMD optimization recovery.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions like `param_thread_local_storage` have nested conditionals with goto-style labels (`LABEL_13`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from optimization recovery: `param_malloc_free` shows loop unrolling with SIMD operations for a simple `for` loop. Multiple temporary variables hold identical values.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision with `__int64`, `size_t`, `unsigned int` used inconsistently. Original `char *dst` becomes `char *a1`. Const-correctness lost (`const char *` → `char *`). Pointer types often degraded to `void *`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct not recovered—fields accessed as array indices (`a1[0]`, `a1[1]`, `a1[2]`). `struct stat` partially recovered. TLS variables accessed via raw offset (`StatusReg + 16`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD *)ptr`, `(char *)v4`, `(void *(*)(void *))`. Pointer arithmetic visible throughout. No buffer overflow protections or alignment annotations recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Only "FAILED to decompile" markers for library functions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`) but not annotated. Thread patterns (producer-consumer, mutex protection) visible but not named or explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" markers for 61 functions provide some indication, but no warnings about suspicious patterns, indirect calls, or potential undefined behavior in the recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: a1 != NULL"). No postconditions inferred. Error return values visible but not explained (what does -3 mean vs -2?).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without context about their purpose or synchronization requirements.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping headers. Related functions (thread tests) are together but no namespace or module structure. All code in single output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 61 of 75 functions failed to decompile (library functions). Would require extensive stubs and external declarations to compile. Many system calls use raw numbers instead of constants.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):   (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System):  (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):     (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):   (5+5+3)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.79/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v0` should be named semantically** (e.g., `dst`, `src`, `result`) based on usage patterns
+- **61 library functions failed to decompile** leaving significant gaps in understanding
+- **Magic numbers throughout** (4294967196LL, 4294967293LL) without constant recovery
+- **Zero comments** explaining algorithm intent or decompilation confidence
+- **Struct ThreadData not recovered**—fields accessed as array indices losing semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names were preserved accurately (`param_strcpy`, `param_mutex_lock`, `param_condition_variable`), maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments makes understanding non-trivial logic extremely difficult; even basic function purpose documentation is missing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (parameters used in string operations should be named `src`/`dst`, loop counters should be `i`/`j`)
+2. **Recover and annotate magic numbers** by cross-referencing system headers (SYS_open = 56, AT_FDCWD = -100) and adding constant definitions
+3. **Add decompilation confidence comments** indicating which code paths are certain vs. reconstructed, especially for optimized-away functions that return constants

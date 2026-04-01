@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Generic names like `iVar1`, `iVar2`, `local_10`, `uStack_8` dominate; some parameters (`dst`, `src`, `filename`, `thread_count`) are descriptive but local variables obscure purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_strcpy`, `thread_compute`, `consumer_thread`, `test_standard_library_functions`); only a few generic names like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x5a` (90), `0xc` (12), signal numbers as `10` and `0xe`; string literals clear but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx replaced with injection`, `WARNING` comments, `LOCK()/UNLOCK()` macros, stack canary checks (`__stack_chk_fail_local`) add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs but goto labels (`LAB_00012435`, `LAB_00012fe3`, `LAB_0001352b`) disrupt flow; stack canary checks add extra conditionals.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized (most under 100 lines); thread functions properly separated; test functions cohesive but `test_standard_library_functions` is large.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels and stack canary checks at function ends create non-linear patterns requiring mental jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary code repeated in many functions; LOCK/UNLOCK patterns verbose for atomics; no obvious dead code but security checks add repetition.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, size_t, pthread_t) but const-correctness lost (`char *src` instead of `const char *src` in `param_strcpy`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: ThreadData struct recovered with field names (start, end, result); stat and sockaddr_in partially recovered; TLS access via `in_GS_OFFSET` is technical but accurate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)arg`, `(pthread_mutex_t *)&counter_mutex`; void* to int* conversions; pointer arithmetic visible throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated WARNING comments about calling conventions and "Unresolved local var"; no algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Thread patterns (pthread_create/join), mutex/condition variable, signal handling, and fork/exec patterns visible but not explicitly named or documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging through WARNING comments ("Unknown calling convention", "Unresolved local var", "Subroutine does not return"); decompilation uncertainty communicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; error return values visible but unexplained; no invariant recognition despite clear patterns.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls and global variable references (`signal_received`, `atomic_counter`, `shared_counter`) traceable; no explicit call graph or callback documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by functionality (library, syscall, thread); test functions separate from implementation; no header file structure or formal modules.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Architecture mismatch (ARM64 source → x86 decompiled); requires stubs for system functions; LOCK/UNLOCK macros need definition; won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+6)/4 = 6.0  × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+7)/4 = 6.5  × 0.25 = 1.625
+Level 3 (Type):        (7+7+5)/3   = 6.3  × 0.20 = 1.26
+Level 4 (Semantic):    (4+6+7+3)/4 = 5.0  × 0.15 = 0.75
+Level 5 (Contextual):  (6+6+4)/3   = 5.3  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.97 ≈ 6.0/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects
+- Variable names `iVar1`, `iVar2`, `local_10` obscure semantic purpose (should be `result`, `index`, `canary_check`)
+- Magic numbers `0x2a`, `0x5a`, `0xe` used without explanation (should be `SUCCESS`, `EXPECTED_SUM`, `SIGALRM`)
+- Goto labels (`LAB_00012435`, `LAB_0001352b`) disrupt natural control flow
+- Const-correctness lost in function signatures (`char *src` vs `const char *src`)
+- No semantic comments explaining algorithm intent or error conditions
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making code navigation intuitive
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error semantics documented despite clear patterns
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, return values) to generate semantic names like `iteration_count` instead of `iVar1`
+2. **Replace magic numbers with named constants** - Detect common patterns (signal numbers, success codes, array sizes) and suggest symbolic names with comments
+3. **Recover structured control flow from goto patterns** - Convert goto-based error handling and loop exits into proper if/else and break/continue constructs

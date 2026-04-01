@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `local_8`, `local_c`, `iVar1` are generic and obscure purpose; however, some names like `result`, `sum`, `counter`, `page_size`, `exec_mem` are semantically meaningful and match source intent.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`) matching original source exactly with clear action-oriented naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x401` (should be MAX_SIZE), `0x200` (MAX_SIZE/2), `0x40` (BUFFER_COUNT*4), `0x800` (2048), `0x10` (16) - all lose macro semantic meaning from preprocessing.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some generic warnings ("Unknown calling convention") and stack variables (`local_8`, `auStack_4`) but no excessive dead code or redundant casts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures recovered well as natural C (if/else, for loops); `param_asm_clobber` shows proper for-loop recovery from assembly; no spurious gotos in main logic.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved; each function maintains single responsibility matching source; no monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally; early returns used appropriately; no forward jumps disrupting flow in decompiled functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed; compiler constant folding recognized (e.g., `param_macro_recursion` returns `x + 0x10` instead of nested additions); no duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered (`int`, `void*`, `size_t`, `char*`); however, `undefined4` used for some locals losing precision; signed/unsigned distinction mostly preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered well (`char dst[32]`, `int arr[5]`); no complex structs in this code; pointer arithmetic in `param_asm_multi_insn` uses explicit casts `(undefined1 *)` losing type safety.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(void *)((int)dst + 1)`, `(int *)0xffffffff`; `undefined *` casts in `FUN_00011030`; pointer arithmetic without proper type checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments recovered; only auto-generated warnings ("WARNING: Unknown calling convention"); original documentation about macro behavior completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals); macro expansion patterns not identified (e.g., `ADD_16` became `x + 0x10` without noting macro recursion); assembly patterns converted to C equivalents without annotation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for calling conventions and inlined functions; assembly clobber effects noted (`LOCK()`, `UNLOCK()` pseudo-functions); but no explanation of preprocessing information loss.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `size` validation in `param_macro_constants`); error conditions not annotated; return value semantics not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph clear (`call_macro_constants` → `param_macro_constants`); global variable `global_var` referenced properly; string literals externalized as `&DAT_00013099` losing readability.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (preprocessing functions together, assembly functions together); matches source file organization; no arbitrary scattering.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions undeclared (`printf`, `strlen`, `mmap`, `sysconf`); would need header includes; `LOCK()`/`UNLOCK()` are pseudo-functions requiring implementation; string data references need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5 + 9 + 4 + 7) / 4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (8 + 9 + 8 + 8) / 4 = 8.25 × 0.25 = 2.063
+Level 3 (Type):        (7 + 6 + 6) / 3     = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2 + 5 + 6 + 3) / 4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (7 + 7 + 5) / 3     = 6.33 × 0.10 = 0.633
+
+Overall Score: 6.44/10
+```
+
+**Overall Readability Score:** 6.4/10
+
+### Critical Defects
+- **Magic numbers everywhere**: `0x401`, `0x200`, `0x40`, `0x800`, `0x10` replace meaningful constants (MAX_SIZE, BUFFER_COUNT, etc.) - preprocessing information permanently lost
+- **Zero semantic comments**: Original documentation about macro behavior, conditional compilation, and assembly intent completely absent
+- **Generic variable names**: `local_8`, `local_c`, `iVar1` obscure variable purpose when source had meaningful names
+- **String literals externalized**: `&DAT_00013099` instead of inline strings in `test_preprocessing_features` reduces readability
+- **Type safety issues**: Unsafe casts like `(void *)((int)dst + 1)` and `undefined *` types introduce potential confusion
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, maintaining semantic clarity and making code navigation intuitive.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic comments means readers cannot understand the original intent behind macro expansions, conditional compilation choices, or assembly semantics.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro constant semantics**: Detect constant-folded values and suggest original macro names based on common patterns (e.g., `0x400` → `MAX_SIZE` when used in size comparisons)
+2. **Preserve source comments in debug builds**: When `-g` flag is present, extract and embed DWARF debug information comments into decompiled output
+3. **Inline string literal recovery**: Replace `&DAT_00013099` references with actual string content in function calls where the data section is accessible

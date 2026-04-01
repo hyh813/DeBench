@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Most local variables are generic (`v0`, `v1`, `v2`), obscuring semantic meaning like `arr`, `i`, or `result`. Global variables are renamed to symbols like `$d.2` or `g_413ff8`, losing names like `global_counter`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), matching the original source exactly due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent; for example, `4294967295` (UINT_MAX) is used instead of `-1`, and `4294967294` instead of `-2`. Bitwise operations like `__ROL__(a0, 2) & 18446744073709551612` obscure simple multiplication by 4.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise from stack pointer arithmetic, particularly in Variable Length Arrays (VLA) and `alloca` usage (e.g., `ptr = &(&v0)[-1 * ((__ROL__(v8, 2) & ...)]`). `__ROL__` macros are used for simple shifts, adding unnecessary complexity.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; `for` loops and `if` statements are preserved naturally thanks to the `-O0` optimization level. The logic reads top-to-bottom without confusing jumps or gotos.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the original source. There is no inlining or outlining, maintaining the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: Code is highly linear with minimal forward jumps. Early returns and loop structures are clear, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Very little redundancy; the code is clean of dead stores or excessive variable spilling often seen in optimized builds. The logic is direct.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are generally correct (`unsigned int`, `void*`), but signedness is sometimes lost (e.g., `double_value` uses unsigned logic for a signed operation). `size_t` is often demoted to `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structs are recovered but with generic field names (`field_0`, `field_8`) instead of semantic names (`data`, `next`). The layout is correct (including padding), but the meaning is lost.
+
+**11. Type Safety:** Score: 7/10
+Justification: Code is generally type-safe, though casts are explicit and verbose (e.g., `*((unsigned int *)((char *)ptr + 4 * i))`). No dangerous type confusion is introduced by the decompiler.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no semantic comments explaining logic or algorithms. Comments are limited to stack offsets (e.g., `// [bp-0x10]`), offering no insight into purpose.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard patterns like linked list traversal or heap allocation are not explicitly identified; they are presented as raw loops and pointer arithmetic without higher-level abstraction.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings are provided for suspicious code like `dangling_pointer` (use-after-free) or `double_free`. The decompiler presents these as standard operations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., `ptr != NULL`) are not documented or inferred as contracts. Error checking logic is present but not highlighted as such.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are direct and clear. However, global variable access is opaque (e.g., accessing `$d.2` instead of `global_counter`), weakening the understanding of global state.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are present but ordered by address rather than logical grouping (e.g., all heap functions together), making it harder to navigate the codebase compared to the source.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on standard library headers and external definitions not included in the output. It would require significant patching (adding headers, fixing global references) to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Stack Pointer Arithmetic**: VLA and `alloca` usage results in unreadable pointer math (`ptr = &(&v0)[-1 * ...]`), completely obscuring the intent of dynamic stack allocation.
+- **Generic Struct Fields**: Structs use `field_0`, `field_8` instead of `x`, `y`, `next`, destroying the semantic context of data structures.
+- **Magic Numbers**: Return values use `4294967295` instead of `-1`, and bit shifts use `__ROL__` macros, making simple arithmetic hard to read.
+- **Global Variable Obfuscation**: Globals are renamed to symbols like `$d.2` or addresses, breaking the understanding of shared state.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, making the high-level purpose of each block immediately obvious.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)
+- **Why?** The decompiler fails to add any semantic layer on top of the assembly; there are no comments, no pattern recognition, and no anomaly warnings, leaving the user to interpret raw logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Simplify Stack Arithmetic**: Detect and abstract complex stack pointer adjustments for VLA/alloca into cleaner pseudo-operations or comments indicating "Stack Allocation".
+2. **Recover Struct Field Names**: Leverage debug information more aggressively to recover field names, or infer them from usage patterns (e.g., if a field is always passed to `free()`, name it `next` or `ptr`).
+3. **Normalize Integer Literals**: Replace unsigned magic numbers (like `4294967295`) with their signed equivalents (`-1`) when the context suggests a signed error code or return value.

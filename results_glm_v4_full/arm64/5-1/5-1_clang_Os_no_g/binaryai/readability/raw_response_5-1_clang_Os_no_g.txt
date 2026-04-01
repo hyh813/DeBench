@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic and meaningless, such as `local_38`, `uStack_2c`, and `param_1`. In `test_cpp_member_func`, the stack variables representing the `SimpleClass` object are split into undefined types (`undefined7`, `undefined8`), completely obscuring the object structure.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: High-level test functions like `test_cpp_member_func` and `test_cpp_rtti` retain their original names, which is helpful. However, internal or compiler-generated functions use generic names like `FUN_00100d60`, and class methods are often stripped of context or renamed poorly (e.g., destructors named `_RTTIDerivedA` instead of `~RTTIDerivedA`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and hex constants without explanation. For example, `test_cpp_virtual_func` returns `0x2a` (42) and `test_cpp_member_func` calculates `0x125c` (4700), hiding the original arithmetic logic (`10 + 34 + 4660`).
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts and padding are exposed as variables. In `test_cpp_member_func`, `undefined7 uStack_2c` and `undefined uStack_25` represent structure padding and alignment bytes, which clutters the view and makes it hard to identify the actual data fields.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The control flow is severely degraded. In `test_cpp_member_func`, the logic of creating an object, calling methods, and summing results is entirely missing, replaced by a single return statement calculating a constant. Where flow exists (e.g., `Container<int>::push`), it is basic but lacks the context of the original loop or class structure.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Constructors and destructors are correctly separated into individual functions (e.g., `Container<int>::Container`), which is accurate for C++. However, the logic within the main test functions is often missing or collapsed, making the decomposition feel fragmented and incomplete.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code that remains reads linearly from top to bottom. There are no complex jumps or `goto` statements interrupting the flow within the recovered function bodies, primarily because the complex logic was eliminated rather than reconstructed.
+
+**8. Redundancy Elimination:** Score: 1/10
+Justification: The decompiler has eliminated *too much* information. In a debug build (`-O0`), one expects to see every assignment and calculation. Instead, the decompiler has constant-folded the results (e.g., `return 0x2a`), removing the entire algorithmic logic necessary to understand how the result was derived.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded. Class instances are broken down into primitive types like `undefined4` and `undefined8`. The vtable call in `call_virtual_func` is represented as `code ***`, losing the specific function signature and class context.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and classes are not reconstructed with their fields. In `Container<int>::push`, the member `size` is accessed via `*(int *)(this + 0x28)` and the array `data` via `*(int *)(this + (long)iVar1 * 4)`. The semantic relationship between `this`, `size`, and `data` is lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies on unsafe casts and pointer arithmetic. The vtable call `(***(code ***)param_1)(param_1,param_2)` is a dangerous triple-dereference cast that provides no type safety or indication of the actual method being called.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex operations like `__dynamic_cast` or the setup of vtables are presented without explanation, leaving the user to guess at their purpose.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common C++ idioms are not recognized. The virtual function call is presented as a raw indirect memory access rather than a virtual method dispatch. The RAII pattern in `test_cpp_smart_ptr` is invisible; the logic is just reduced to a constant return `0x2bf`.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the collapsed constant-return functions (`return 0x2a`) as normal code without any warning that the logic has been optimized away or that the reconstruction might be incomplete for a debug build.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds checks in `Container::get` are present in code but not documented as contracts) or invariants. The `try-catch` blocks in `test_cpp_exception` are reduced to a throw, losing the contract of error handling.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls to standard library (e.g., `operator_new`, `strlen`) are visible, the relationships between class methods and their data members are broken due to the lack of struct recovery. The vtable structure is not cross-referenced to the class definitions.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat manner. While related functions (like `Container<int>` methods) are grouped by address, there is no namespace or class hierarchy reconstruction to organize them logically.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses undefined types (`undefined4`, `undefined7`) and non-standard syntax (`(***(code ***)param_1)`), making it impossible to compile without significant manual refactoring to define the missing structures and fix the types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- **Logic Elimination**: Functions like `test_cpp_virtual_func` are reduced to `return 0x2a`, completely hiding the implementation logic (object creation, virtual calls, arithmetic) expected in an `-O0` build.
+- **Struct/Class Loss**: Class members are accessed via raw offsets (e.g., `this + 0x28`) instead of field names, destroying the object-oriented context.
+- **Vtable Obfuscation**: Virtual function calls are represented as dangerous raw pointer dereferences (`code ***`) rather than semantic virtual method calls.
+- **Padding Pollution**: Structure padding is exposed as variables (`undefined7 uStack_2c`), cluttering the variable list.
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)
+- **Why?** The remaining code fragments are straightforward and linear, lacking the spaghetti code often seen in failed decompilations of optimized builds, primarily because the complex logic was removed entirely.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- **Why?** The decompiler fails to communicate *what* the code is doing; logic is replaced by constants, classes are replaced by offsets, and there are no comments or idiom recognitions to bridge the gap.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Disable Aggressive Constant Propagation for Debug Builds**: When metadata indicates `-O0`, preserve intermediate assignment statements and logic flow instead of collapsing them into final constant values.
+2.  **Reconstruct Class Layouts from Constructors**: Analyze constructor code (like `SimpleClass` or `Container`) to identify member offsets and rebuild struct definitions with named fields, replacing `this + offset` access.
+3.  **Identify and Annotate Vtable Calls**: Detect the standard vtable lookup pattern (loading a pointer from offset 0 and calling it) and annotate it as a virtual call, potentially linking it to recovered class methods.

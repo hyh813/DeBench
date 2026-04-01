@@ -1,0 +1,210 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Examples include:
+- `iVar1`, `iVar2`, `iVar3` for integer variables
+- `local_8`, `local_10`, `local_20` for stack variables
+- `aSStack_30`, `aDStack_18` for object instances
+- `puVar1`, `ptVar4` for pointers
+
+These names provide no semantic meaning and make tracking data flow extremely difficult.
+
+### 2. Function Naming Quality  
+**Score: 5/10**
+
+Test functions like `test_cpp_member_func`, `test_cpp_constructor` are well-named and match the original. However:
+- Many internal functions use cryptic patterns: `FUN_00101840`, `call_weak_fn`
+- Member functions are named correctly (e.g., `SimpleClass::getValue`)
+- But operator overloads become: `Point::operator_`, `Point::operator__`
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Some literals are clear:
+- `0x1234` for class ID is understandable
+- String constants like `"Test"` preserved
+
+However, many numeric values lack context, and the magic numbers in complex expressions (especially in virtual function tables and RTTI code) are not explained.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Significant noise from:
+- Extensive STL boilerplate (unique_ptr, tuple, forward implementations)
+- Duplicate function definitions
+- Many external function stubs that add clutter
+- Stack guard checks (`___stack_chk_guard`) add noise
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+The control flow is generally understandable but has some awkward patterns:
+- Virtual function calls use complex indirect patterns: `(***(code **)param_1)(param_1,param_2)`
+- Exception handling is fragmented (the `test_cpp_exception` function is incomplete in output)
+- Some goto-like patterns in error handling
+
+### 6. Function Decomposition
+**Score: 4/10**
+
+The test functions are properly separated, but:
+- STL implementation details create many tiny functions
+- Some functions are over-fragmented (e.g., many `std::*` helper functions)
+- The main test functions are appropriately sized
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Generally reads top-to-bottom with:
+- Early returns in some places
+- Some nested conditionals in RTTI code
+- Acceptable linearity for most test functions
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some redundancy in:
+- Repeated type checking patterns in RTTI code
+- Similar STL wrapper functions
+- But overall acceptable for the complexity
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+Types are partially preserved:
+- Class types are recognized (`SimpleClass`, `LifecycleClass`)
+- Basic types like `int`, `char*` are used
+- But many `undefined4`, `undefined8` types remain
+- Parameter types sometimes unclear
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Structures are partially recovered:
+- Class member functions are properly associated
+- But field names are lost (replaced with offsets)
+- vtable structures are recognized but not fully explained
+
+### 11. Type Safety
+**Score: 5/10**
+
+Some type safety issues:
+- Many `void*` casts
+- Raw pointer arithmetic visible
+- Some unsafe conversions in STL code
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Minimal comments:
+- Only function signatures have comments
+- No explanation of complex logic
+- No indication of uncertainty or confidence levels
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Some patterns recognized:
+- Virtual function calls identified
+- Exception handling patterns visible
+- But no explicit naming of design patterns
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomaly flags:
+- No warnings about uncertain calls
+- No indication of potential issues
+- Complex indirect calls not flagged
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No contract information recovered:
+- No pre/post conditions
+- No invariant documentation
+- No validation of assumptions
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Limited cross-reference information:
+- Function calls are visible
+- But relationships between test functions not documented
+- External dependencies not clearly listed
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are grouped by:
+- Test function + member functions together
+- STL functions at the end
+- Some logical grouping
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code would require significant work:
+- Many undefined types
+- External dependencies not resolved
+- Would need substantial patching to compile
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+5+6+3)/4 = 4.0
+L2_avg = (5+4+6+5)/4 = 5.0
+L3_avg = (6+5+5)/3 = 5.33
+L4_avg = (3+4+2)/3 = 3.0
+L5_avg = (2+4+6+4)/4 = 4.0
+
+Overall = (4.0 × 0.30) + (5.0 × 0.25) + (5.33 × 0.20) + (3.0 × 0.15) + (4.0 × 0.10)
+        = 1.2 + 1.25 + 1.066 + 0.45 + 0.4 = 4.366 ≈ 4.4/10
+```
+
+### Critical Defects
+
+1. **Variable names are completely generic** - `iVar1`, `local_8`, `aSStack_30` provide no semantic meaning
+2. **No comments** - Complex logic like vtable calls and RTTI has no explanation
+3. **No anomaly indication** - Indirect calls not flagged as uncertain
+4. **Type precision issues** - Many `undefined4`/`undefined8` types
+5. **Excessive STL noise** - Hundreds of lines of boilerplate obscure actual logic
+
+### Best Quality Aspect
+
+**Function Naming (Score: 5/10)** - Test functions are properly named and match original source
+
+### Most Needs Improvement
+
+**Variable Naming (Score: 2/10)** - Critical for code readability; current names are unusable
+
+---
+
+## Top 3 Recommendations
+
+1. **Infer variable names from usage patterns** - e.g., `local_10` used as size → rename to `size` or `count`
+2. **Add comments for complex patterns** - vtable calls, RTTI operations, virtual inheritance
+3. **Filter STL boilerplate** - Provide option to collapse or hide standard library implementations

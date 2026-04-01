@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `result`, `arr`). Global strings are named `g1`, `g2`, `g3` with hex-encoded content, obscuring their meaning as test headers.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `sequential_ops`, `duffs_device`), likely due to the presence of debug symbols (`-g`), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers appear frequently without context (e.g., `15` in `switch_small`, `0x12468` in `computed_goto`). String literals are represented as hex-encoded UTF-8 bytes (e.g., `\xe6\xb5\x8b...`), making them unreadable.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including spurious global writes (e.g., `g4 = op;` in `switch_small`) and invalid C syntax for array initialization (e.g., `arr = {5, 0, 0, 0, 0};`), which acts as syntactic noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10
+Justification: Control flow is catastrophically recovered. Function pointers are ignored (`call_func_ptr` returns `x` instead of calling `f(x)`), loop conditions are corrupted (`infinite_loop` checks `flag != (int32_t *)1` instead of `*flag == 1`), and complex structures like Duff's device are reduced to a default case.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries and granularity match the source perfectly. The decompiler correctly identified the scope of each test function, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While some simple functions are linearized into one-liners (e.g., `sequential_ops`), others like `loop_break` and `loop_multi_exit` contain convoluted pointer arithmetic and forward jumps that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler over-optimizes or fails to recover logic, effectively eliminating necessary code. For example, `large_jump_table` and `fsm_func_table` lose their entire dispatch logic and function calls, reducing complex control flow to simple ternary checks.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic integer types (`int32_t`, `uint32_t`) are used correctly, but composite types are lost. `jmp_buf` is recovered as a single `int32_t`, and function pointer signatures are present in parameters but not utilized in the body.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Local arrays like `int32_t arr[5]` and `int32_t matrix[3][4]` are correctly identified, but the initialization syntax is invalid C. The `jmp_buf` type is completely lost, treated as a primitive integer.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe pointer arithmetic (e.g., `*(int32_t *)((int32_t)&v3 - 28 + 4 * v2)`) and invalid type operations (e.g., comparing a pointer `flag` to the integer `1` in `infinite_loop`), posing significant safety and correctness risks.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to metadata (module, address range, line numbers) and provide no semantic explanation of the logic, algorithms, or anomalies found in the code.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard idioms. Duff's device is stripped to a stub, computed gotos are replaced with address returns, and function pointer arrays are treated as integer data, completely obscuring the intended patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There are no warnings or flags indicating the severe failures in recovery, such as the missing bodies of switches or the invalid handling of indirect calls. The code is presented confidently despite being incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `n > 0` in `duffs_device` is present in the logic but not explicitly stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Direct function calls are visible, but relationships involving function pointers or callbacks are broken. The call graph is incomplete because indirect calls are not resolved.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file structure. Helper functions and test functions are grouped correctly, maintaining the original module organization.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable due to invalid C syntax (e.g., `arr = {5, 0, 0, 0, 0};` is not a valid assignment) and type mismatches, requiring significant patching before it can be built.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Semantic Loss in Function Pointers**: `call_func_ptr` returns `x` instead of calling `f(x)`, and `large_jump_table` ignores the function pointer array, completely breaking the logic.
+- **Invalid C Syntax**: Array initializations use invalid assignment syntax (e.g., `arr = {5, 0, 0, 0, 0};`), making the output uncompilable.
+- **Control Flow Corruption**: `infinite_loop` checks `flag != (int32_t *)1` instead of `*flag == 1`, and `duffs_device` is reduced to a stub, losing the `do-while` switch logic.
+- **Type Confusion**: `jmp_buf` is recovered as `int32_t`, and pointer comparisons in `infinite_loop` are semantically incorrect.
+- **Missing Logic**: The body of `computed_goto` is replaced by returning a hard-coded address (`0x12468`), failing to represent the jump table logic.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 10/10)
+- **Why?** The decompiler perfectly preserved the original function names from the debug symbols, making the high-level intent of each block immediately identifiable despite the poor implementation recovery.
+
+**Most Needs Improvement:** Idiom Recognition (Score: 1/10)
+- **Why?** The decompiler failed to recognize virtually every complex idiom (function pointers, computed gotos, Duff's device), replacing them with incorrect or simplified logic that renders the code functionally useless.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Fix Indirect Call Resolution**: Implement robust analysis to recover function pointer calls and array dispatches rather than ignoring them or replacing them with argument returns.
+2.  **Correct C Syntax Generation**: Ensure array initialization and assignment syntax conforms to valid C standards (e.g., using `memcpy` or proper initializers) to ensure output compilability.
+3.  **Improve Complex Control Flow Recovery**: Enhance the handling of `switch` statements with fall-through (Duff's device) and computed gotos to preserve the original branching structure rather than collapsing it into a single return or default case.

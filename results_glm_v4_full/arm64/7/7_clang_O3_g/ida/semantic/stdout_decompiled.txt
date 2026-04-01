@@ -1,0 +1,16 @@
+Testing obfuscation and optimization:
+
+obf_l40 = 10
+obf_l40 = 20
+obf_l40 = 225
+obf_l40 = 72
+opt_l40 = 500500
+opt_l40 = 5050
+opt_l40 = 72
+opt_l50 = 20
+edge_l30 = 2
+edge_l30 = 41
+edge_l30 = 30
+edge_l30 = 2000000000
+edge_l40 = 10
+edge_l40 = 48

@@ -1,0 +1,21 @@
+test
+value=64
+value=30
+value=32
+value=57122
+value=116
+value=19
+value=60
+LOG: Values: 10, 20, 30
+value=60
+value=16
+value=500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:00
+value=382
+test
+asm basic: 15
+asm clobber: -1531669915
+asm multi: 42, , 0
+asm simd: 10
+asm atomic: 30
+asm privileged: 77

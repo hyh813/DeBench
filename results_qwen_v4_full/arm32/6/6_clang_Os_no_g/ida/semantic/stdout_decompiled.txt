@@ -1,0 +1,22 @@
+Testing Standard Library Functions
+LibL101: 8
+LibL102: 0
+LibL103: 12
+LibL104: 90
+LibL105: 0
+Value: 42, Name: Test
+LibL106: 22
+LibL107: 579
+LibL108: 42
+LibL109: 42
+LibL110: 90
+LibL111: 0
+LibL112: 15
+Testing System Calls
+SysL301: 42
+SysL302: -2
+SysL303: 42
+SysL304: 42
+SysL305: 42
+SysL306: -1
+SysL307: 42

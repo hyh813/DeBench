@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/6/6_gcc_O1_g/ida/syntactic/bin/6_gcc_O1_g_fixed",
+  "stdout": "=== Standard Library Function Tests ===\n\nLibL101d: strcpy returned 8\nLibL102d: strcmp returned 0\nLibL103d: strlen returned 12\nLibL104d: memcpy returned 90\nLibL105d: memcmp returned -1\nValue: 42, Name: Test\nLibL106d: printf returned 22\nLibL107d: scanf returned 579\nLibL108d: fopen/fclose returned 42\nLibL109d: fread/fwrite returned 42\nLibL110d: malloc/free returned 90\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

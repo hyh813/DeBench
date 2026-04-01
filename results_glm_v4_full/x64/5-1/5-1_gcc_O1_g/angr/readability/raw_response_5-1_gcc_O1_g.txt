@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_rtti`, `p` and `ptr` are used for `RTTIDerivedA` and `RTTIDerivedB` objects respectively, offering no semantic hint about their types or purpose.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: While C++ mangled names are demangled successfully for test functions (e.g., `_Z20test_cpp_member_funcv`), many helper functions and class methods are reduced to generic addresses like `sub_402020` or `sub_40202d`, completely obscuring their role in the program logic.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are prevalent without explanation. For instance, `0x4004000000000000` is used in `test_cpp_template_func` (representing the double 2.5), and `4294967295` is used as a mask in `test_cpp_oo_features`, but neither is defined as a named constant.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains numerous "wrapper" functions that serve no semantic purpose, such as `sub_40202d` which simply calls `sub_402030`. These artifacts clutter the output and distract from the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural or broken. In `sub_402020`, a `goto` is used to jump to a function pointer `g_405f38`, and exception handling in `test_cpp_exception` is reduced to a series of confusing `if` checks on variables like `v3` rather than structured `try/catch` blocks.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler failed to recover the logic for most class methods, leaving them as empty stubs (e.g., `Base::virtual_func` is `void` and empty). The logic that should be inside these methods is either missing or inlined incorrectly into the test functions.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code is difficult to read linearly due to the heavy use of indirect calls and thunks (e.g., `thunk to DiamondDerived::func()`), which interrupt the flow of execution and require the reader to jump around the file to understand the program path.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of trivial wrapper functions (e.g., `sub_40202d`, `sub_40203f`) that add no value. Additionally, the decompiler often fails to recognize standard library calls, presenting them as raw memory operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are frequently incorrect or overly generic. Pointers are often typed as `unsigned long long` or `void*`, and function return types are wrong; for example, `test_cpp_member_func` returns `void` in the decompilation but `int` in the source.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class definitions are poorly recovered. The `Base` class is defined as an empty struct `class Base {}`, and `struct_0` is used with generic fields like `field_0`, completely losing the semantic structure of the original C++ classes.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code is rife with unsafe casts and pointer arithmetic. In `test_cpp_diamond_inheritance`, expressions like `(char *)a0 + (*(a0))[24]` are used to adjust `this` pointers for virtual inheritance, which is type-unsafe and difficult to verify.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code explaining the logic, data structures, or the purpose of the complex pointer arithmetic used for virtual inheritance and RTTI.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual function calls are presented as raw vtable lookups (e.g., `(*((long long *)*((long long *)&arg_0)))()`), and exception handling is shown as low-level `__cxa` API calls rather than `try/catch` blocks.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: While one function (`sub_4022a5`) has a comment about an "Unsupported jumpkind", the vast majority of the code presents incorrect or incomplete logic (like empty function bodies) without any warning or indication that the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the constraints on template functions or the expected state of objects in member functions are entirely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Relationships between functions are obscured. Virtual function tables are referenced via global variables (e.g., `g_4059a0`), but the decompiler does not explicitly link these to the class definitions or show the inheritance hierarchy clearly.
+
+**17. Module Organization:** Score: 3/10
+Justification: Functions are organized by their memory address rather than by logical class or functionality. This scatters related methods (e.g., constructors, destructors, and member functions of the same class) throughout the file.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code would not compile. It uses undefined types (e.g., `class Base {}`), missing headers, and incorrect function signatures (e.g., `void` returns for `int` functions), requiring massive manual intervention to even syntactically parse.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.6/10
+
+**Critical Defects:**
+- Function logic is completely missing; most class methods are decompiled as empty stubs (e.g., `Base::virtual_func`).
+- Return types are frequently incorrect (e.g., `test_cpp_member_func` returns `void` instead of `int`).
+- Complex C++ features like virtual inheritance and RTTI are reduced to unsafe pointer arithmetic without semantic context.
+- Variable names are entirely generic (`v0`, `v1`), providing no insight into data usage.
+
+**Best Quality Aspect:** Function Naming Quality (scored 4/10)
+- The decompiler successfully demangled C++ mangled names for the main test functions, allowing at least the entry points to be identified.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The failure to recognize C++ idioms (virtual calls, exceptions) and the lack of comments makes the code nearly impossible to understand at a high level.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve control flow analysis for C++ exceptions to reconstruct `try/catch` blocks instead of low-level `__cxa` calls.
+2. Enhance type recovery for classes to prevent empty struct definitions and recover member variable layouts.
+3. Implement logic recovery for class member functions, as the current output leaves critical methods as empty stubs.

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/6/6_gcc_O3_g/ida/syntactic/bin/6_gcc_O3_g_fixed",
+  "stdout": "Standard Library Test\nstrcpy: 8\nstrcmp: 0\nstrlen: 12\nmemcpy: 90\nmemcmp: 1\nValue: 42, Name: Test\nprintf: 22\nscanf: 579\nfopen: 42\nfread: 42\nmalloc: 90\nmemset: 0\nstrchr: 15\nSystem Calls Test\nsyscall: 42\nstat: 42\nfork/exec: 42\npipe: 42\nsocket: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

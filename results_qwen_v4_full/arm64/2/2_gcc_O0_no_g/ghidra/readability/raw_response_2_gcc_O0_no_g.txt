@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_8`, `uVar1`, `iVar3` with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Only a few initialization functions use generic names (`FUN_001006d0`, `FUN_0010083c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals appear as hex (`0x41` instead of `'A'`, `0x20` instead of `32`). Struct offsets like `0xc`, `0x28`, `0x50` lack semantic meaning. Printf strings preserved but magic numbers unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated in every function. Generic types (`undefined4`, `undefined8`, `undefined1[16]`) clutter code. Multiple "WARNING:" comments about unreachable blocks and overlapping symbols.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For/while loops mostly recovered correctly. `enum_switch` uses nested if-else instead of switch statement. Control flow generally traceable despite -O0 compilation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with single responsibility. No excessive inlining or fragmentation. Each test function and processing function remains separate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Test functions have some forward variable initialization but no disruptive gotos in main logic paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack check code duplicated across all functions. Redundant type casts (`(ulong)(uVar2 & 0xff)`). No major loop unrolling but some expression repetition.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `double` becomes `undefined1[16]`, `long double` becomes `void` return, `char` becomes `byte`, pointers become `long` or `undefined8*`. Original type information largely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct/union definitions recovered. `Point3D` accessed as `param_1[0]`, `param_1[1]`, `param_1[2]`. Nested structs accessed via raw offsets (`param_1 + 8`, `param_1 + 0x14`). Bitfields expanded to shift/mask operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointers typed as `code*` without signatures. Unsafe casts throughout (`*(int**)(param_1 + 2)`). Void pointer usage where specific types expected. High risk of undefined behavior if modified.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated Ghidra headers present. Zero semantic comments explaining algorithm purpose. Original source had extensive documentation (e.g., "大写转小写", "对角线元素") completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal recognized as loop but not identified as such. Tree recursion preserved but not named as tree traversal. No design pattern identification despite clear data structure patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Type propagation algorithm not settling", "Removing unreachable block"). Stack canary checks flagged but not explained as security features. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Array bounds checks present but not explained as safety contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Callback relationships (`ptr_func_simple`, `complex_callback`) visible but not explained. Global variable usage not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Original source section headers (2.1 Data Types, 2.2 Arrays, etc.) completely lost. No logical grouping comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires stubs for `__libc_start_main`, `printf`, `puts`, `__stack_chk_fail`. Undefined types need definition. Stack canary infrastructure required. Would not compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00  × 0.25 = 1.750
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (2+4+6+3)/4 = 3.75  × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.05/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **Struct/union types completely lost** - All composite types accessed via pointer arithmetic (`param_1[0]`, `param_1 + 8`) instead of field names
+- **Variable names entirely generic** - `param_1`, `local_8`, `uVar1` provide zero semantic information vs. original `sum`, `len`, `current`
+- **Type precision severely degraded** - `double` → `undefined1[16]`, `long double` → `void`, function pointers → `code*`
+- **Zero semantic comments** - Original source had extensive documentation; decompiled code has none
+- **Magic offsets unexplained** - Struct field offsets (`0xc`, `0x28`, `0x50`) not mapped to field names
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Ghidra successfully preserved most original function names, making it possible to identify function purposes despite other degradation.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions forces all composite type access through raw pointer arithmetic, destroying semantic clarity.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement struct/union type inference** - Analyze consistent access patterns (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct struct definitions with field names
+2. **Add semantic variable naming** - Use data flow analysis to infer variable purposes (accumulators → `sum`, counters → `i`, pointers → `head`/`current`)
+3. **Recover high-level type information** - Distinguish `double`/`long double` from generic arrays, restore function pointer signatures from call site analysis

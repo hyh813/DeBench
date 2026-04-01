@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/2/2_gcc_O3_g/ida/syntactic/bin/2_gcc_O3_g_fixed",
+  "stdout": "Data Types Test\nArray Types Test\nPointer Types Test\nComposite Types Test\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

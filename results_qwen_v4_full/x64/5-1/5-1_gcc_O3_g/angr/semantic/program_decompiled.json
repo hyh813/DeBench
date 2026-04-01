@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/5-1/5-1_gcc_O3_g/angr/syntactic/bin/5-1_gcc_O3_g_fixed",
+  "stdout": "Testing C++ OO features\n\nString length: 4700\nInstance count: 21\nValue: 42\nAnother value: 71\nMore values: 650\nCount: 22\nTotal: 37\nSize: 16\nResult: 85\nStatus: 0\nOutput: 703\nFinal: 0\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

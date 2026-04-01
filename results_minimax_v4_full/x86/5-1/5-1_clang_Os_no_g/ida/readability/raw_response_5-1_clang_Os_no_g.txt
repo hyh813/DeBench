@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v6`, `a1`, `a2`, `result`. For example, in `test_cpp_constructor`, `v0` is used as a loop counter but should be named `i` or `index`. The name `result` is the only semi-descriptive one, but even it doesn't indicate what result (e.g., `sum` or `total`).
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions retain C++ mangled names like `_Z20test_cpp_member_funcv` instead of demangled `test_cpp_member_func`. Some helper functions like `sub_1030`, `sub_1160` have no semantic meaning. The pattern `test_cpp_*` is partially readable but not properly demangled.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x14u` (20 bytes for array), `0x1Fu` (31 for memcpy), and `4700` appear without explanation. The return values `42`, `71`, `650` are hardcoded but not documented as expected test results. Constants like `10` in loops are unannotated.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes register annotations (`// esi`, `// eax`, `// ebx`), `// BYREF` comments, and 21 failed decompilation entries at the end. However, no debug instrumentation or frame pointer manipulation clutter is present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow - `test_cpp_constructor` uses a proper do-while loop. However, some functions like `test_cpp_virtual_func` are reduced to trivial `return 42;` losing all original logic. At -O0, more structure should be recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The 12 test functions are properly separated. Template instantiations like `template_max<int>` and `template_max<double>` are correctly distinguished. Minor issue: some small helper functions could be inlined but are kept separate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `test_cpp_constructor` has a forward jump pattern but it's manageable. No excessive goto usage or deeply nested structures observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (the do-while in constructor is appropriate). Common subexpression elimination artifacts are not prominent.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - `_DWORD` used instead of `int`, `int*` for pointers. Function pointer types are wrong: `int (__cdecl ***a1)(_DWORD, int)` should be `Base*` and `int`. No `const` correctness. `size_t` not used.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The `Container<int>` class is accessed via raw pointer arithmetic: `*(_DWORD *)(a1 + 40)` for `size` field instead of `obj.size`. All composite types lost to void pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw `operator new` returns `void*` cast to `_DWORD*`, pointer arithmetic like `a1 + 40` without bounds checking, and incorrect function pointer signatures. The `call_virtual_func` has completely wrong parameter types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only register annotations (`// esi`, `// eax`) and `// BYREF` present. No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The failed decompilations are listed but not explained inline.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Virtual function calls through vtable are not labeled. Template instantiation pattern not recognized as such. Exception handling mechanism not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at the end (21 functions), but not flagged inline where they occur. No warnings about indirect calls that couldn't be resolved. The `__noreturn` functions are correctly marked but without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No bounds checking documentation. The `Container::get` has implicit bounds check but it's not documented as a contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (e.g., `test_cpp_constructor()` called from `test_cpp_oo_features()`), but relationships to class methods and vtable dispatch are not documented. No call graph or usage context provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped (test functions first, then template instantiations, then class methods), but the ordering is not logical. Static functions not explicitly marked. No namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile - missing `#include <iostream>`, `#include <memory>`, etc. Uses undefined types like `_DWORD`, `operator new` without proper headers. Mangled names would need demangling. Significant patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) - no semantic meaning recovered
+- Type information severely degraded - `_DWORD` instead of `int`, no struct recovery, raw pointer arithmetic
+- C++ mangled names not demangled (`_Z20test_cpp_member_funcv` should be `test_cpp_member_func`)
+- Composite types completely lost - `Container<int>` accessed via `*(_DWORD *)(a1 + 40)` instead of `obj.size`
+- 21 functions failed to decompile, listed but not integrated into code flow
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Test functions are properly separated and template instantiations are correctly distinguished
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10) and Composite Type Recovery (scored 2/10)  
+- Variable names are completely uninformative, making code flow tracking extremely difficult
+- All struct/class types are lost to raw pointer arithmetic, obscuring data flow
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as loop counter from 0 to 50 should be named `i` or `index`
+2. Recover struct/class layouts from pointer offset patterns - `a1 + 40` accessing `size` field should reconstruct `Container::size`
+3. Demangle C++ names fully - `_Z20test_cpp_member_funcv` → `test_cpp_member_func()` with proper parameter types

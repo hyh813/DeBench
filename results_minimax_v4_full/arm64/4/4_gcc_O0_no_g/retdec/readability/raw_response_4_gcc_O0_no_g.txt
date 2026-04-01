@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `a1` throughout. The original source uses meaningful names like `count`, `args`, `sum`, `str`, `p`, `x`, `y`, `val`, `ptr`. Only `result`, `i`, and `len` are somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `param_by_value_int`, `param_string`, `ret_pointer`, `ret_small_struct`, etc. Excellent semantic preservation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The literal `42` in `func_no_args` is clear. However, the decompiled code contains many unexplained magic numbers: `& 0xffffffff` mask appears 30+ times, `0x100000000` in `ret_small_struct`, `-56` in varargs functions. These obscure the original arithmetic operations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts include: excessive bitwise masking (`& 0xffffffff`), redundant casts like `(int32_t)v2`, `(int64_t)v1`, unnecessary type conversions throughout. The varargs functions have complex pointer arithmetic that doesn't reflect the clean `va_list` usage in the original.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, while loops). However, `varargs_func` and `param_varargs` show unusual pointer manipulation instead of the clean `va_start`/`va_arg`/`va_end` pattern from the original. Loop structures are present but implemented differently.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler maintained good function granularity matching the original. Functions like `varargs_func` (144 LOC) and `param_varargs` are large but reflect the complex logic. Most functions are appropriately sized with clear single responsibilities.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. The varargs functions have complex nested conditionals that disrupt linear flow. Some forward jumps exist in the loop handling within `varargs_func`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some code duplication exists in varargs functions where similar pointer arithmetic blocks repeat. The original's clean loop is decompiled into repetitive code patterns. However, no obvious dead code from register spilling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The decompiler uses `int64_t` for most values while the original uses `int` (32-bit). There's confusion between `int32_t` and `int64_t` in casts. Pointers are correctly `int64_t` on arm64. The original `int` parameters become `int64_t` in many places.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct types were recovered. The original's `LargeStruct`, `SmallStruct`, `BigStruct` are completely lost. The decompiled code uses raw pointer arithmetic like `*(int32_t *)(v2 + 4)` instead of struct field access. This is a major semantic loss.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t *)v2` casts, `(int32_t *)(v2 + 4)` pointer arithmetic, `(int32_t *)result` in `ret_void`. The original's type-safe operations like `p->x * p->y` become unsafe pointer dereferences.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining logic. The original has extensive comments describing calling conventions, parameter patterns, and test scenarios. The decompiled output has only address range comments which are auto-generated noise.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are technically recognizable (loops, conditionals) but not named or documented. The original's use of `va_list`, `va_start`, `va_arg`, `va_end` is completely lost in favor of raw pointer manipulation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain areas or anomalies. The complex varargs handling should have warnings about potential decompilation issues. The original's intentional undefined behavior in `call_order_dep` is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original's null checks like `if (!p) return -1` in `func_struct_byptr` are present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls. Global variable usage is partially visible (`g1`, `g4`, `g5`). However, callback relationships (like `callback_func` passed to `param_func_ptr`) are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped. The test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are together. Related functions like calling convention pairs are adjacent. Single file but reasonable organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code has proper includes (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`) and function prototypes. Should compile with minimal issues. The `float128_t` typedef is non-standard but defined.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are all generic (`v1`, `v2`, `a1`, `result`) losing semantic meaning from original (`count`, `args`, `sum`, `str`, `p`)
+- No struct type recovery - `LargeStruct`, `SmallStruct`, `BigStruct` all become raw pointer arithmetic
+- No comments explaining calling convention behaviors, parameter passing semantics, or return value handling
+- Excessive bitwise masking (`& 0xffffffff`) obscures original arithmetic operations
+- Varargs functions completely lose `va_list`/`va_start`/`va_arg`/`va_end` pattern
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names almost perfectly match the original source, preserving semantic meaning like `cdecl_func`, `varargs_func`, `param_by_value_ptr`, `ret_pointer`.
+
+**Most Needs Improvement:** Comment Quality (2/10)  
+The decompiled output has zero explanatory comments. The original source has extensive documentation about calling conventions, test scenarios, and expected behaviors that is completely lost.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v1` used as `count` in varargs should be named `count`)
+2. Recover struct types from pointer arithmetic patterns (e.g., `*(int32_t *)(v2 + 4)` should become `p->y`)
+3. Add comments explaining decompilation confidence, especially for complex patterns like varargs handling

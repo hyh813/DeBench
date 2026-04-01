@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `local_c` (return value), `__ptr` (malloc result), and `n_local` are generic Ghidra conventions. However, semantic names like `arr`, `i`, `sum`, `head`, `temp` are preserved from source. The `_local` suffix adds noise without semantic value.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `local_vars`, `heap_basic`, `global_var_access`, `memop_memset`, etc. The decompiler correctly preserved the naming scheme including test function names like `test_stack_memory`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x800` (2048), `0x14` (20), `0x1e` (30) appear without explanation. The original source had clear constants like `10`, `2048`, `1000`. Some literals like array sizes are correctly shown as `[10]`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive Ghidra artifacts include: "WARNING: Unknown calling convention" (appears 15+ times), "WARNING: Removing unreachable block", "WARNING: Heritage AFTER dead removal". Variable types like `undefined4`, `undefined1` add clutter. The `__ptr` naming convention for malloc results is non-idiomatic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow closely matches source. `for` loops are correctly identified (e.g., `for (i = 0; i < 10; i = i + 1)`). However, `stack_alias` has confusing control flow with the stack address check `if (&stack0x00000000 == (undefined1 *)0x24)` which obscures the original logic.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition matching source. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is separate. Helper functions like `create_tree_node` are properly extracted. Function sizes are appropriate (no monoliths).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in error handling. No excessive goto usage. The `linked_list_heap` function has clear while loops for traversal.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At -O0, minimal redundancy is expected and delivered. No dead code observed. Loop unrolling is minimal since loops are small. Common subexpression elimination is not aggressive.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int`, `uint`, `size_t`, `char*`. Function pointers use Ghidra's `_func_int_int` convention which is unclear. Some `void*` could be more specific (e.g., `int*` for `malloc` result). The original `int` vs `unsigned` distinction is mostly preserved.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. `Point` struct with `x`, `y` fields correctly identified. `Node` struct with `data`, `next` fields recovered. `TreeNode` with `data`, `left`, `right` fields preserved. The decompiler correctly inferred the structure layouts.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with necessary pointer arithmetic for array access. Some unsafe patterns: `*(int *)((long)__ptr + (long)i * 4)` is verbose but correct. No type-confused function pointers. Minor issues with `undefined4` types used for return values.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "Decompiled by Ghidra", "WARNING: Unknown calling convention". No algorithm explanations, no recovery confidence indicators, no API contracts. The original source had no comments either, but decompiler could add explanatory notes.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms explicitly identified. The linked list creation, tree traversal, and memory operations are presented as raw code without naming the patterns (e.g., "linked list creation", "binary tree").
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra provides some warnings: "Unknown calling convention", "Removing unreachable block", "Heritage AFTER dead removal". However, critical issues like the `stack_alias` function's broken logic and `dangling_pointer` undefined behavior are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no contracts either, but the decompiler could infer: "requires: n > 0" for `alloca_usage`, "ensures: returns heap-allocated value" for `heap_basic`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and visible. Global variable usage (`global_counter`, `global_array`, etc.) is transparent. However, no explicit call graph or relationship documentation between functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in binary order rather than logical grouping. The original source had clear sections (stack, heap, static, memory ops) which are not reflected in the decompiled output organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library stubs. External functions like `printf`, `malloc`, `free` are used correctly. No obvious compilation errors expected. Missing header declarations but these are implicit.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Excessive Ghidra warning messages ("WARNING: Unknown calling convention" appears 15+ times) clutter the output
+- Variable naming uses generic `_local` suffixes and `__ptr` conventions that obscure purpose
+- `stack_alias` function has completely broken control flow logic (checks stack address instead of pointer equality)
+- Magic numbers like `0x2a`, `0x800`, `0x14` lack explanatory constants
+- No comments or semantic annotations to aid understanding
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+The decompiler excellently recovered struct definitions with accurate field names: `Point {x, y}`, `Node {data, next}`, `TreeNode {data, left, right}`. This preserves the semantic meaning of complex data structures.
+
+**Most Needs Improvement:** Comment Quality (3/10)  
+The decompiled output contains only auto-generated warnings and no meaningful comments. At -O0, the code is close to source; adding explanatory comments for algorithms, contracts, and anomalies would significantly improve readability.
+
+**Top 3 Recommendations:**
+1. Suppress or consolidate "WARNING" messages - they add noise rather than value
+2. Infer variable names from usage patterns (e.g., `local_c` used as return value → `result`)
+3. Add semantic annotations: "// Linked list creation", "// Binary tree traversal", "// VLA stack allocation"
+4. Fix `stack_alias` decompilation - the control flow is incorrectly rendered
+5. Replace magic numbers with named constants where inferable from context

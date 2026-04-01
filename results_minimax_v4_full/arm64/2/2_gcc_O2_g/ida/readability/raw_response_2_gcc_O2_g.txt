@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5` in test functions and complex functions like `binary_tree_sum`. While function parameters retain meaningful names like `c`, `x`, `p`, `arr`, the local variables obscure tracking of purpose. For example, in `test_array_types`, variables `v0` through `v22` make it difficult to understand which represents array indices vs. loop counters.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from the original source. Names like `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree` all match exactly. The test functions `test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types` are also correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65` and `32` in `process_char` should be `'A'` and `32` (the offset for case conversion). Test functions have hardcoded expected values (300, 11, 200) without explaining they're test expectations. However, array sizes like `10` in `array_2d_stack` are inferable from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Failed decompilations are noted for 7 functions (`__libc_start_main`, `__cxa_finalize`, etc.) which is appropriate. No excessive register spilling artifacts or redundant casts observed in the main functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper while/do-while loops recognized. However, `binary_tree_sum` has extremely convoluted control flow with many nested loops and labels (`LABEL_24`, `LABEL_27`, etc.) that make the recursive tree traversal nearly impossible to follow. At `-O0` this should be much cleaner with recognizable recursive calls.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated and appropriately sized. Each test function is separate, and the core functions like `process_char`, `array_1d_stack`, `ptr_single` are focused and cohesive. The `binary_tree_sum` function is the exception at ~230 lines due to complex control flow decompilation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns for boundary conditions (e.g., `if (n <= 0) return 0;`). The `binary_tree_sum` function has poor linearization with many forward jumps and labels, but other functions are clean.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal. Some common subexpression patterns exist in `binary_tree_sum` but that's due to decompilation complexity rather than redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int`, `char`, `short`, `float`, `double`, `long double` are correctly identified. Some generic types appear: `__int16`, `__int64`, `bool` instead of standard types. Function pointer types like `int (*f)(int)` are correctly preserved. The `process_ld` function has an issue with `*(long double *)&xmmword_3420` suggesting a constant loading problem.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All types are preserved: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `Device`. Field names are correctly recovered: `x`, `y`, `z`, `data`, `next`, `left`, `right`, `dest`, `numVertices`. Union types are properly distinguished from structs.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with correct pointer usage. Some unsafe patterns: `*(_DWORD *)p` casts in `ptr_void`, `ptr_cast`. The bitfield handling in `struct_bitfields` uses raw bit manipulation `*(_DWORD *)f` which is correct but low-level. No major buffer overflow risks in the recovered code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments present in the decompiled output. While function names are descriptive, there's no explanation of algorithms, parameter constraints, or return value meanings. The decompilation header mentions "Decompiled by IDA Pro 9.1" but no functional comments.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognizable: linked list traversal in `linked_list`, tree traversal in `binary_tree`, graph traversal in `graph_traverse`. However, these patterns are not explicitly named or commented. The recursive nature of `binary_tree_sum` is obscured by the goto-heavy decompilation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are clearly noted: "FAILED to decompile: __libc_start_main @ 0x14080" for 7 functions. However, there's no indication of potential issues in successfully decompiled code like the unusual constant loading in `process_ld` or the complex control flow in `binary_tree_sum`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No implicit preconditions, postconditions, or invariants are documented. The boundary checks like `if (n <= 0) return 0;` are present but not explained as preconditions. No documentation of error conditions or special return values.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear - `main` calls the four test functions, test functions call the various process functions. However, there's no explicit documentation of call graphs or relationships. The callback relationship in `ptr_func_simple` and `ptr_func_complex` is visible but not documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - test functions at the end, data type functions first, then array, pointer, and composite type functions. Static functions like `double_value` are properly scoped. The organization roughly matches the source file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile with minimal modifications. External functions like `puts`, `__printf_chk`, `strcpy` are standard C library calls. The decompiled code uses `__fastcall` and `__cdecl` which are compiler-specific but standard. Some minor adjustments may be needed for type definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`-`v44`) in test functions and complex functions like `binary_tree_sum`, making code flow extremely difficult to trace
+- `binary_tree_sum` has completely convoluted control flow with goto statements and labels, making the recursive tree traversal nearly incomprehensible
+- No comments explaining algorithms, parameter constraints, or return value meanings
+- Magic numbers like `65` and `32` in `process_char` should be `'A'` and the case conversion offset
+- `process_ld` has incorrect constant loading: `*(long double *)&xmmword_3420` instead of `1.0L`
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)  
+All struct and union types are correctly reconstructed with accurate field names matching the original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+Generic variable names like `v0`, `v1`, `v2` throughout test functions make it nearly impossible to track which variable holds what data without extensive cross-referencing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as array index in loops should be named `i` or `index`
+2. Recognize recursive function patterns and restore recursive calls instead of converting to goto-based loops
+3. Detect magic numbers and suggest named constants (e.g., `65` → `'A'`, `32` → `('a' - 'A')`)

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/6/6_clang_Os_g/ida/syntactic/bin/6_clang_Os_g_fixed",
+  "stdout": "Testing standard library functions\nstrcpy result: 8\nstrcmp result: 0\nstrlen result: 12\nmemcpy result: 90\nmemcmp result: -1\nValue: 42, Name: Test\nprintf result: 22\nsscanf result: 579\nfopen/fclose result: 42\nfread/fwrite result: 42\nmalloc/free result: 90\nmemset result: 0\nstrchr/strstr result: 15\nTesting system calls\nlinux syscall: 42\nwin32 api: 42\nfork/exec: 42\npipe communication: 42\nsocket create: 42\nshmget/shmat: 42\nsignal handling: 42\nTesting thread concurrency\npthread create: 49\npthread join: 410\nmutex lock: 42\ncondition variable: 42\natomic ops: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

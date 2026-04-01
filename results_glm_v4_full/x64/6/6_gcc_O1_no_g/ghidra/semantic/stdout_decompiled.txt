@@ -1,0 +1,5 @@
+Standard Library Functions:
+
+strcpy: 42
+strcmp: 2
+strlen: 12

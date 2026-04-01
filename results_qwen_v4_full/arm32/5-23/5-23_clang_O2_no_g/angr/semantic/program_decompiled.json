@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_clang_O2_no_g/angr/syntactic/bin/5-23_clang_O2_no_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\nMACRO_CONSTANTS: 64\nMACRO_FUNCTIONS: 30\nCONDITIONAL_COMPILE: 32\nMULTI_BRANCH_COMPILE: 57122\nMACRO_RECURSION: 116\nSTRINGIZE: 19\nTOKEN_PASTE: 60\nLOG: Values: 10, 20, 30\nMACRO_OVERRIDE: 60\nINCLUDE_GUARD: 16\nBUILTIN_MACROS: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19\nCALL_BUILTIN_MACROS: 382\nCALL_BUILTIN_MACROS: 382\n=== Testing ASM Features ===\nASM_BASIC: 15\nASM_CLOBBER: 15\nASM_MULTI_INSN: 42\nASM_SIMD: 36\nASM-L4-05: ASM_ATOMIC: 77\nASM_ATOMIC: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

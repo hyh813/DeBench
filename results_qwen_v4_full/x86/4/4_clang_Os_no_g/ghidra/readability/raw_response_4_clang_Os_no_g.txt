@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `local_44`) instead of semantic names from source (`count`, `sum`, `large`, `s`). No variable indicates its purpose through naming.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but some internal functions degraded to `FUN_00011030`, `FUN_0001183b`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. Original source had clear constant expressions through variable assignments.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `get_pc_thunk_*` functions, stack manipulation warnings, "Removing unreachable block" annotations clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but `varargs_func` uses manual stack pointer arithmetic with do-while instead of clean `va_list` iteration pattern.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Aggressive optimization collapsed `call_*` functions to constant returns (e.g., `call_cdecl` returns `0xf` directly), losing original call structure and test intent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions use awkward do-while loops where for-loops would be clearer (e.g., `func_struct_byval`).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminated actual computation appropriately, but this obscures the original test logic that was meant to demonstrate calling conventions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types (`undefined4`, `undefined1`) replace specific types. Function pointers degraded to `code *`. Original `double`, `long long` types partially preserved but mixed with undefined types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types lost (`LargeStruct`, `SmallStruct`, `TestIntPair`). Struct access becomes raw pointer arithmetic (`param_1[1] * *param_1` instead of `p->x * p->y`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `ret_small_struct` returns `void` instead of struct (hidden pointer convention not explained), struct-by-value functions access stack directly without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No source comments recovered**. Only decompiler warnings present. Original had extensive documentation explaining each test case's purpose and expected behavior.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: `stdarg` pattern not recognized (manual stack access instead of `va_list` macros). Struct passing conventions not explained. No algorithm or pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings about inlined functions and unreachable blocks, but no clear indication of decompilation uncertainty or calling convention mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Null checks present but not documented as preconditions. No postconditions inferred. Original's test expectations completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. No call graph information. Test functions call implementation functions but this relationship isn't explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order, but no explicit module structure. Test functions grouped but not clearly separated from implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`printf`, `puts`, `strlen`) require stubs. Some undefined references (`__gmon_start__`, `__libc_start_main`). Would need significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+7)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Context):     (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.33/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` become raw pointer arithmetic (`param_1[1] * *param_1`)
+- **No source comments recovered** - All test documentation and expected values lost
+- **Variable names entirely generic** - `param_1`, `iVar1`, `local_44` provide no semantic information
+- **Calling convention semantics obscured** - `fastcall_func` shows `in_ECX`, `in_EDX` but this isn't explained as register passing
+- **Constant folding hides test logic** - `call_cdecl` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved, allowing identification of test purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all source documentation makes understanding test intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct type definitions** from stack access patterns and field offsets to restore `LargeStruct`, `SmallStruct` types with named fields.
+2. **Preserve or infer variable names** from usage context (e.g., loop counters, sum accumulators, pointer parameters) instead of generic `param_N`/`iVarN`.
+3. **Detect and document stdarg patterns** - Recognize `&stack0x00000008` iteration as variable argument handling and annotate with `va_list` semantics.

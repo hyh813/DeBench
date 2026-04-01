@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_O3_no_g/ida/syntactic/bin/7_clang_O3_no_g_fixed",
+  "stdout": "ObfL40: param_fake_branch: %d\n\nObfL40: param_fake_branch: 10\nObfL40: call_fake_branch: 20\nObfL40: param_instruction_substitution: 225\nObfL40: call_string_encryption: 0\nOptL40: param_tail_call_optimized: 500500\nOptL40: param_non_tail_call: 5050\nOptL40: call_vectorized_loop: 72\nOptL50: call_link_time_optimization: 20\nEdgeL30: call_division_by_zero: 1\nEdgeL30: call_null_pointer_deref: 41\nEdgeL30: call_buffer_overflow: 30\nEdgeL30: call_integer_overflow: 2000000000\nEdgeL40: call_undefined_behavior: 10\nEdgeL40: call_implementation_defined: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

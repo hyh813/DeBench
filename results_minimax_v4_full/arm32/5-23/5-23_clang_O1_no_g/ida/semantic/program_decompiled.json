@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_clang_O1_no_g/ida/syntactic/bin/5-23_clang_O1_no_g_fixed",
+  "stdout": "Preprocessing Test\nResult: 64\n30\n32\n57122\n116\n19\n60\nLOG: Values: 10, 20, 30\n60\n16\n500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:16\n382\nAssembly Features Test\nASM Basic: 15\nASM Clobber: 15\nASM Multi: 42\nASM SIMD: 20\nASM Atomic: 30\nASM Mem/Prot: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

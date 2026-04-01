@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1` for parameters and `v0`, `v1` for locals. Struct fields are named `field_0`, `field_1`, `field_2`. Loop counters `i`, `j`, `k` are acceptable. The original source had meaningful names like `packet_size`, `arr`, `str` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: About 40% of functions retain correct names from source (`double_value`, `process_char`, `process_int`, `array_1d_stack`). However, many are auto-generated like `sub_4006e4`, `sub_4007b0`, and helper/runtime functions have no semantic naming.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (0xFFFFFFFF), `18446744073709551612` (mask), `65535` (0xFFFF). The `__ROL__` (rotate left) macro is used extensively for type reconstruction but has no explanation. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: frame pointer manipulation (`v0 = &v1`), stack canary checks (`__stack_chk_guard`), extensive bit manipulation for type reconstruction (`__ROL__` with masks), redundant casts, and undefined external references. The code is 3x longer than source due to artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - for loops, while loops, if-else are recognizable. However, `process_short` has an overly complex return expression due to type reconstruction. At -O0, control flow should be nearly perfect, but the bit manipulation obscures the simple `return a + b` logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each test function is separate, helper functions are distinct. The original small functions (20-50 lines) are preserved. Minor issue: some runtime helper functions (`__addtf3`, `__multf3`) are included in the output.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Some forward references exist in complex functions but don't severely disrupt flow. The `array_2d_stack` and `array_3d` functions have complex indexing that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from type reconstruction - the same bit manipulation patterns repeat across functions. Loop unrolling is minimal at -O0. Dead code is minimal. The main issue is the repetitive type reconstruction logic that could be abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type erosion - `int` becomes `unsigned int`, `short` requires complex reconstruction, `char` is often `unsigned long`. Pointer types are generic (`unsigned long` for pointers). Const/volatile are lost. The original had precise types like `int`, `short`, `char`, `float`, `double`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery with generic names (`struct_0`, `struct_1`, `struct_2`). Field names are generic (`field_0`, `field_8`). Union recovery has bugs - `union_type` returns wrong member for type==1 (should return float as int, but code returns int). Enums not recovered - `State` becomes `unsigned int`. Linked list nodes have padding annotations but wrong field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: `union_type` accesses wrong union member for type==1, function pointer types are wrong (`unsigned long long *a0` instead of `int (*f)(int)`), pointer arithmetic uses raw offsets without bounds checking. The `ptr_func_simple` has completely wrong signature.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "场景: [SCENE-ALL]"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (loops, conditionals, function calls). But design patterns like "linked list traversal", "binary tree recursion", "state machine via enum" are not identified or named. The original source explicitly tests these patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of decompilation uncertainty. The `process_float` and `process_double` functions return completely wrong values (returning uninitialized `v0` or address of global), but there's no warning. Indirect calls that couldn't be resolved are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear contracts like "requires: ptr != NULL" or "ensures: return is heap-allocated" that could be inferred. Zero contract recovery.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `main` calls `test_data_types_l1`). But there's no documentation of who calls whom, global variable usage, or callback relationships. The original had clear call graphs in comments.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file but grouped by type (data types, arrays, pointers, composites). Static functions aren't marked. No header file or API separation. Basic logical grouping present but not explicit.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile. Missing: `uint128_t` type definition, `__ROL__` macro, external functions (`puts`, `printf`, `__stack_chk_fail`, `__libc_start_main`). The `ptr_func_simple` has wrong signature causing type errors. Significant patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `v0`, `field_0`) - loses all semantic meaning from source
+- Type precision severely degraded - `int`→`unsigned int`, structs→`struct_0`, enums→`unsigned int`
+- No comments or documentation recovered from original source
+- `union_type` function returns wrong union member for type==1 (semantic bug)
+- `process_float` and `process_double` return completely wrong values (uninitialized/address)
+- Excessive noise from type reconstruction using `__ROL__` and bit masks
+- Function pointer types wrong (`ptr_func_simple` signature completely incorrect)
+- No compilation - missing type definitions and external declarations
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Function granularity is well-preserved from source. Each test function remains separate, and helper functions are distinct. The overall structure matches the original.
+
+**Most Needs Improvement:** Lexical Clarity (3.0/10)  
+Variable naming is completely generic, losing all semantic meaning. Combined with no comments and magic numbers everywhere, the code is nearly incomprehensible without referring to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - e.g., `a0` used as array index → name it `index` or `i`; `field_0` added to `field_1` → name them `x` and `y` based on Point3D semantics
+2. **Recover enum types from switch statements** - the `enum_switch` function clearly handles discrete values (0,1,2,3) with specific returns; should recover as `State` enum
+3. **Eliminate type reconstruction noise** - the `__ROL__` with magic masks is obfuscation; decompiler should recognize this pattern and simplify to clean type casts

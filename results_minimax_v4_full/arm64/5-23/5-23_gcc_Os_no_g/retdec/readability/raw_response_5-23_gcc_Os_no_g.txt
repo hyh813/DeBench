@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc. The original parameter `size` in `param_macro_constants` becomes meaningless `v1`. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Main test functions like `param_macro_constants`, `call_asm_basic` are correctly named, but utility functions use address-based names like `function_830`, `function_8b0`. Mixed result - some semantic recovery, many generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Global `g27` (value 0x400 = 1024) represents MAX_SIZE but is unexplained. Magic numbers like `0xdef0`, `0xdf22` appear without context. Some literals are clear (string format strings), but constant values lack semantic binding.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts from -O0, but decompiler introduces noise through helper functions (`function_830` = memcpy wrapper). Some redundant casts present. Overall manageable but not clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, while loops). However, some expressions are convoluted: `v3 == 0 | v3 < 0 != ((v3 ^ v2) & (v2 ^ (int32_t)&g27)) < 0 ? 512 : 64` should be a simple comparison `size > MAX_SIZE`. At -O0 this transformation is unnecessary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines). Main functions extracted correctly. Some helper functions like `function_830` (memcpy) are correctly identified but given generic names.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto or forward jumps. Good linearization.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant expressions in complex conditionals but manageable. At -O0, minimal optimization artifacts expected and delivered.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t` and `int32_t` appropriately. However, `int32_t * a1` in `param_asm_atomic` should be `int32_t *` (correct) but the return type doesn't match the original `int`. Some signed/unsigned confusion present.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. The original had `#if defined(__x86_64__)` blocks with different code paths, but decompiler shows only one path. Array parameters like `int *arr` in `param_asm_clobber` lost their array semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `param_asm_simd`: `int64_t v2; int32_t v3 = *(int32_t *)(v1 + v2);` - uninitialized `v2` used. Multiple casts without justification. Not dangerous but concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original had extensive documentation explaining macro behavior, assembly constraints, and expected outputs. All lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like `memcpy` (via `function_830`) and `mmap` are recognized but not named as idioms. The inline assembly patterns are completely lost - original had `__asm__ volatile` blocks, decompiled shows only C code results.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The original had platform-specific code (`#if defined(__x86_64__)`) that was compiled for ARM64 - this architectural difference should be flagged. The `__COUNTER__` macro expansion is silently baked into constants.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The original had no explicit assertions, but the decompiler could note implicit contracts like "ptr != NULL" for mmap/mprotect results.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear through direct invocation. Global variable usage (`g27` for MAX_SIZE) is traceable. However, no explicit documentation of caller/callee relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (preprocessing functions together, asm functions together). Static functions properly scoped. Minor issue: some utility functions interleaved with main logic.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code includes necessary headers (`<stdint.h>`, `<stdlib.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`). Should compile with minimal patching. External dependencies clearly from libc.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Calculation:**
+- L1 avg: (2+5+5+6)/4 = 4.5 × 0.30 = 1.35
+- L2 avg: (6+7+8+7)/4 = 7.0 × 0.25 = 1.75
+- L3 avg: (7+4+6)/3 = 5.67 × 0.20 = 1.13
+- L4 avg: (1+4+1+2)/4 = 2.0 × 0.15 = 0.30
+- L5 avg: (7+7+8)/3 = 7.33 × 0.10 = 0.73
+- **Total: 5.26/10**
+
+**Critical Defects:**
+- Variable naming is universally generic (`v1`, `v2`, `v3`) - no semantic inference from usage
+- No comments explaining macro expansions, assembly semantics, or expected behaviors
+- Complex boolean expressions like `v3 == 0 | v3 < 0 != ((v3 ^ v2) & (v2 ^ (int32_t)&g27)) < 0` are unreadable - should be `size > MAX_SIZE`
+- Inline assembly completely lost - original had `__asm__ volatile` blocks, decompiled shows only C results
+- No anomaly indication for platform-specific code that was compiled for different architecture
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+- All necessary headers included, code should compile with minimal changes
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments in entire 726-line output. Original source had extensive documentation explaining preprocessing behavior, assembly constraints, and expected outputs - all completely lost.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `v1` used in comparison with `&g27` (1024) should be named `size` or `input_size`
+2. **Recover simple boolean expressions**: The convoluted ternary `v3 == 0 | v3 < 0 != ...` should be decompiled as `if (size > MAX_SIZE)` for readability
+3. **Add comments for macro-expanded code**: Document that `64` is `BUFFER_COUNT * 4` and `512` is `MAX_SIZE / 2` from original macro definitions

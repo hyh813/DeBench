@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/6/6_gcc_O0_g/ghidra/syntactic/bin/6_gcc_O0_g_fixed",
+  "stdout": "Testing standard library functions...\n\ncall_strcpy: 8\ncall_strcmp: 0\ncall_strlen: 12\ncall_memcpy: 90\ncall_memcmp: -1\nValue: 42, Name: Test\ncall_printf: 22\ncall_scanf: 579\ncall_fopen_fclose: 42\ncall_fread_fwrite: 42\ncall_malloc_free: 90\ncall_memset: 0\ncall_strchr_strstr: 15\nTesting system calls...\n\ncall_linux_syscall: 42\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

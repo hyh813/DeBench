@@ -1,0 +1,16 @@
+=== Preprocessing Features Test ===
+Macro constants (param): 64
+Macro functions (param): 30
+Conditional compile: 32
+Multi-branch compile: 57122
+Macro recursion: 116
+Stringize: 19
+Token paste: 60
+LOG: Values: 10, 20, 30
+Variadic macro: 60
+Macro override: 16
+Include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:06
+Builtin macros: 382
+SIMD result: -2037972480, 0
+Asm basic: 15

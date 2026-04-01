@@ -1,0 +1,32 @@
+=== Standard Library Function Tests ===
+
+String length: 8
+Strcmp result: 0
+Strlen result: 12
+Memcpy result: 90
+Memcmp result: 0
+Value: 42, Name: Test
+Printf result: 22
+Sscanf result: 579
+Fopen result: 42
+Fread result: 42
+Malloc result: 90
+Memset result: 0
+Strchr/Strstr result: 15
+=== System Call Tests ===
+
+Linux syscall result: 42
+Stat result: 42
+Fork/Exec result: 42
+Pipe result: 42
+Socket result: 42
+Shmget result: 42
+Signal result: 42
+=== Thread Concurrency Tests ===
+
+Pthread create result: 49
+Pthread join result: 410
+Mutex lock result: 42
+Condition variable result: 42
+Atomic ops result: 42
+Thread local storage result: -3

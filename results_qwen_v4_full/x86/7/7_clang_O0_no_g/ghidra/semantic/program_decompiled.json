@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_clang_O0_no_g/ghidra/syntactic/bin/7_clang_O0_no_g_fixed",
+  "stdout": "test_fake_branch\ntest_opaque_predicate\ntest_instruction_substitution\ntest_string_encryption\ntest_tail_call_optimized\ntest_non_tail_call\ntest_vectorized_loop\ntest_link_time_optimization\ntest_division_by_zero: -1208505120\ntest_null_pointer_deref: 1\ntest_buffer_overflow: 41\ntest_integer_overflow: 30\ntest_undefined_behavior: 2000000000\ntest_implementation_defined\nAll tests completed\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

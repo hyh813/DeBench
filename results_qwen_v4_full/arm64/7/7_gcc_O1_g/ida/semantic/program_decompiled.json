@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_gcc_O1_g/ida/syntactic/bin/7_gcc_O1_g_fixed",
+  "stdout": "Testing obfuscated optimizations edge cases\n\n10\nOpaque predicate result: 20\nInstruction substitution result: 225\nString encryption result: 31\nTail call optimized result: 500500\nNon-tail call result: 5050\nVectorized loop result: 1754237324\nLink time optimization result: 20\nDivision by zero result: 2\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, the `SimpleClass` object is reduced to stack variables `v0` and `v1` with no semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_ZN14DiamondDerived4funcEv` to `DiamondDerived::func`), which is excellent. However, many wrapper functions retain generic names like `sub_401030` or `sub_40104e`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals like `"Test"` and `"12RTTIDerivedA"` are preserved, which is helpful. However, magic numbers resulting from optimization (e.g., `4700`, `21`, `42`) appear without context, obscuring the original arithmetic logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with compiler artifacts like `__x86.get_pc_thunk.ax`, `__stack_chk_fail_local`, and redundant `sub_XXXX` wrapper functions that do nothing but call another function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily disrupted by `goto` statements and indirect jumps. For instance, `sub_401030` uses `goto ptr[2]`, and exception handling in `test_cpp_exception` is flattened into a series of conditional jumps and calls to stubs, losing the `try/catch` structure entirely.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: While the original test functions are identified, their bodies are often empty or reduced to a single call to a generic stub (e.g., `test_cpp_constructor` just calls `__x86.get_pc_thunk.ax`). The logic is not decomposed meaningfully but rather lost or obfuscated.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly. Functions like `test_cpp_exception` contain forward jumps and scattered logic that requires tracing memory addresses and indirect calls to understand the execution path.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of numerous `sub_XXXX` functions that act as thunks (e.g., `sub_40104e` calls `sub_401050`). This adds clutter without adding semantic value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are generally generic (`unsigned int`, `void*`, `char`). Complex types like `std::unique_ptr` or template instances are not recovered; they appear as raw integers or pointers. The `this` pointer is often explicitly passed as `arg_0` but not typed as the class.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: C++ classes are not reconstructed. Instead, the decompiler uses generic `struct_0` definitions with `padding_0` and `field_X` (e.g., `struct_0 { char padding_0[84]; unsigned int field_54; };`). The semantic structure of `SimpleClass` or `Container` is completely lost.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe casts and operations, such as `_ccall` invocations and accessing memory via offsets like `*(int *)((int)(*(ptr))[4] + 4)`. This reflects a lack of high-level type safety recovery.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are decompiler error messages like `[D] Unsupported jumpkind` or `[D] unsupported_<class 'pyvex.expr.GetI'>`.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms are invisible. RAII, smart pointers, and lambda expressions are not recognized; they appear as complex memory manipulations or unsupported instructions. Virtual function calls are reduced to indirect jumps via vtable offsets without explicit indication of polymorphism.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly marks failures with `[D] unsupported...` tags, which is honest. However, it presents the rest of the broken code as valid C, which is misleading. The architecture mismatch (Source: ARM64, Binary: X86) is a major anomaly not flagged in the output itself.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. Exception handling contracts are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Demangled function names help identify relationships (e.g., `Derived::virtual_func`), but the call graph is obscured by the generic `sub_XXXX` wrappers and indirect calls. The relationship between a class and its methods is not structurally represented.
+
+**17. Module Organization:** Score: 3/10
+Justification: Functions are ordered by address, not by logical class or module grouping. Related methods of a class are scattered throughout the listing.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable. It contains non-C syntax like `[D] unsupported_<class 'pyvex.expr.GetI'>` and relies on external symbols and compiler intrinsics that are not properly declared or defined in the snippet.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- **Decompilation Failures:** The code is littered with `[D] unsupported_<class 'pyvex.expr.GetI'>` errors, indicating the lifter failed to process instructions (likely SIMD/FPU).
+- **Architecture Mismatch:** The source is ARM64, but the decompiled code is X86 (evident from `__x86.get_pc_thunk`), making the comparison invalid and the output irrelevant to the provided source.
+- **Optimization Mismatch:** The source is `-O0`, but the binary appears to be `-O3` (evident from constant propagation like `4700` and inlined logic), causing the decompiler to miss the original structure.
+- **Loss of C++ Semantics:** Classes, inheritance, and templates are not recovered; the code is reduced to generic structs and pointer arithmetic.
+- **Control Flow Obfuscation:** Logic is replaced by `goto` statements and calls to opaque stubs (`sub_XXXX`).
+
+**Best Quality Aspect:** Function Naming Quality (Score: 7/10)
+- **Why?** The decompiler successfully demangled C++ mangled names (e.g., `_Z18test_cpp_exceptionv`), allowing the identification of high-level test functions and class methods despite the poor body recovery.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1/10)
+- **Why?** The decompiler failed to recognize any C++ idioms (RAII, smart pointers, exceptions) and produced code filled with internal error markers, making it semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Instruction Lifting Robustness:** Fix the VEX lifter to handle SIMD and floating-point instructions that cause `GetI` errors, preventing code generation from failing mid-function.
+2.  **C++ Class Reconstruction:** Implement analysis to recover class layouts, vtables, and inheritance relationships from RTTI and vtable structures, rather than outputting generic `struct_0`.
+3.  **Exception Handling Recovery:** Analyze LSDA (Language-Specific Data Area) tables to reconstruct `try/catch` blocks and `throw` statements instead of flattening them into `goto` chains and indirect calls.

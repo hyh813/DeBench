@@ -1,0 +1,9 @@
+TRACE_ENT|0|test_preprocessing_features|0|Arg0=-1208481424,Arg1=-1074333760,Arg2=0,Arg3=-1210527839|eax=0x466fc0,ebx=0x0,ecx=0xbff6f7c0,edx=0xbff6f7e4,esi=0xb7f4c000,edi=0x0
+TRACE_PRINT|0|%3D%3D%3D%20%50%72%65%70%72%6F%63%65%73%73%69%6E%67%20%46%65%61%74%75%72%65%73%20%54%65%73%74%20%3D%3D%3D%0A
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|call_macro_constants|1|Arg0=-1074333796,Arg1=0,Arg2=-1074333724,Arg3=-1074333760|eax=0x25,ebx=0x466fc0,ecx=0x0,edx=0xb7f4d890,esi=0xb7f4c000,edi=0x0
+TRACE_ENT|2|param_macro_constants|2|Arg0=2048,Arg1=-1208690544,Arg2=0,Arg3=37|eax=0x466fc0,ebx=0x466fc0,ecx=0x0,edx=0xb7f4d890,esi=0xb7f4c000,edi=0x0
+TRACE_EXT|2|param_macro_constants|2|64
+TRACE_EXT|1|call_macro_constants|1|64
+TRACE_PRINT|0|%70%61%72%61%6D%5F%6D%61%63%72%6F%5F%63%6F%6E%73%74%61%6E%74%73%3A%20%36%34%0A
+TRACE_ENT|3|call_macro_functions|1|Arg0=-1074333796,Arg1=0,Arg2=-1074333724,Arg3=64|eax=0x1a,ebx=0x466fc0,ecx=0x0,edx=0xbff6d174,esi=0xb7f4c000,edi=0x0

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Simple functions preserve names (`c`, `x`, `arr`), but complex functions like `binary_tree_sum` use excessive generic names (`v1` through `v32`, `v12`-`v17`), making tracking impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use generic names (`sub_1030`, `sub_1040`) and runtime functions are unclear.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `65`, `97` in `process_char` and array indices `99`, `88`, `77` in `array_2d_stack` lack explanation; string literals referenced externally (`asc_3008`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__readgsdword(0x14u)` for stack canaries, `__printf_chk` instead of `printf`, `__x86.get_pc_thunk.*` stub functions, and inline assembly blocks.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `array_2d_stack` and `array_3d` unroll loops into explicit additions instead of loop constructs; `binary_tree_sum` has severely degraded control flow with 200+ lines of nested logic instead of clean recursion.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but test functions reduced to print statements with pre-computed values; `binary_tree_sum` is excessively large (200+ lines) from failed recursion recovery.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read linearly, but `binary_tree_sum` has severe non-linearity with deep nesting; array functions use do-while patterns less natural than for loops.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `array_3d` has 125+ explicit additions from loop unrolling; `pointer_array` has 10 levels of nested if statements instead of a simple loop; massive code duplication in `binary_tree_sum`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: `ptr_single` uses `_DWORD *` instead of `int *`; `process_long` returns `int` instead of `long`; non-standard types like `__int16`, `__int64` used; `volatile_access` loses volatile semantics.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types well-preserved (Point3D, Rect, Widget, Node) with field names intact; union types recovered; but `struct_bitfields` shows raw bit manipulation (`>> 6`, `& 7`) instead of field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)p`, `(char *)g`, `(_BYTE *)f`; `volatile_access` returns `2 * *p` instead of two separate reads (loses volatile semantics); pointer arithmetic in graph traversal.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; only header mentions "Decompiled by IDA Pro 9.1"; no algorithm explanations, decompilation confidence indicators, or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal and tree recursion patterns not identified; `enum_switch` uses jump table (`CSWTCH_75[s]`) without explanation; no design patterns recognized or named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked ("FAILED to decompile" for library functions, "positive sp value detected"), but `binary_tree_sum` degradation not explained; volatile semantics loss not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; NULL checks exist in code but not documented as contracts; error conditions unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not documented; test functions call processing functions but this isn't explicit; callback relationships visible but unexplained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no header separation; static functions not clearly marked; runtime functions (`init_proc`, `frame_dummy`) mixed with user code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `puts`) marked "FAILED to decompile"; requires stubs to compile; compiler-specific constructs (`__readgsdword`) reduce portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (5+7+6+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):     (4+6+5+3)/4 = 4.50  × 0.25 = 1.125
+Level 3 (Type System):    (6+7+5)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):       (2+3+4+2)/4 = 2.75  × 0.15 = 0.4125
+Level 5 (Contextual):     (5+4+4)/3   = 4.33  × 0.10 = 0.433
+
+Overall Score: 4.97/10 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Test functions print pre-computed values** instead of calling actual functions, losing all executable logic
+- **`binary_tree_sum` severely degraded** with 32+ generic variables (v1-v32) instead of clean recursive structure
+- **Loop unrolling in `array_2d_stack`/`array_3d`** produces 125+ explicit additions instead of loop constructs
+- **Volatile semantics lost** in `volatile_access` - returns `2 * *p` instead of two separate memory reads
+- **Architecture mismatch** - source claims arm64 but decompiled code shows x86 assembly (ebx registers)
+
+### Best Quality Aspect:
+- **Composite Type Recovery (7/10)** - Struct types (Point3D, Rect, Widget, Node) preserved with accurate field names and nesting
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation explaining logic, algorithms, or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover loop constructs from unrolled code** - Detect repeated addition patterns and reconstruct for/while loops with iteration counts
+2. **Preserve volatile semantics** - Track volatile qualifiers through compilation and emit separate memory access statements
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (like `binary_tree_sum`) with warnings for manual review

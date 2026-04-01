@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mix of semantic names (`arr`, `sum`, `result`, `head`) and generic names (`iVar1`, `local_c`, `local_8`, `__ptr`). The decompiler uses systematic patterns like `iVar1` for temporaries and `local_X` for stack variables, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (`local_vars`, `heap_basic`, `linked_list_heap`, `tree_heap_traversal`, `memop_memset`, etc.). Only internal functions like `FUN_00011030` remain unnamed. Excellent preservation of function semantics.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals converted to hex (`0x2a`=42, `0x14`=20) without explanation, while others remain decimal. The magic number `0x800` for 2048 is unexplained. However, context often makes meaning clear (e.g., `n << 2` for `n * sizeof(int)`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy pollution from warnings: "WARNING: Unknown calling convention" appears 30+ times, "WARNING: Removing unreachable block" multiple times, "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection". These 50+ warning lines obscure actual code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops correctly decompiled as `for`/`while` constructs. However, `stack_alias` has bizarre control flow (`if (&stack0x00000000 == (undefined1 *)0xc)`) that doesn't match source logic. At -O0, such anomalies are unexpected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each test function remains separate with appropriate granularity. No over-fragmentation or monoliths. Static helper functions (`static_helper`, `create_tree_node`) properly extracted. Good decomposition matching source organization.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in null-check patterns. No excessive forward jumps. The `linked_list_heap` function has nested while loops but they're readable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal (the source had explicit loops). Some redundant expressions in memory operations but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation - everything is generic `int` or `void*`. No `size_t`, `uint32_t`, or `int32_t`. Function pointers use generic `_func_int_int` typedef. The decompiler lost all precise typing information.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types `Point`, `Node`, `TreeNode` correctly recovered with field names (`data`, `next`, `left`, `right`). However, some field access uses pointer arithmetic instead of dot notation in complex cases.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `(int *)((int)__ptr + i * 4)` - raw pointer arithmetic throughout heap functions. `(void *)0x0` null checks. No bounds checking on array accesses. The code is riddled with type-unsafe operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention"). No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The comments are entirely compiler/runtime noise, not useful semantic information.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard C library functions correctly identified (`malloc`, `free`, `memset`, `memcpy`, `memmove`, `memcmp`, `bcopy`, `bzero`). Common patterns like linked list traversal and tree operations recognized. But no explicit pattern naming (e.g., "Implements linked list pattern").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for "Unknown calling convention" but these are generic. No flagging of potential undefined behavior in `dangling_pointer` (accessing freed memory) or `double_free`. The `stack_alias` anomaly with `&stack0x00000000` comparison not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Null checks are present but not documented as preconditions. Error return values (-1, -2, -3) not explained. The decompiler provides no contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`main` calls `test_stack_memory`, etc.). Global variables accessed correctly. But no explicit documentation of call graph or relationships. External dependencies (`extern_global_var`, `extern_function`) not clearly marked as external.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file but logically grouped by test category (stack, heap, static, memory ops). Static functions properly scoped. However, no header file or API boundary separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would compile with standard libc includes. External symbols would cause linker errors but are clearly marked as extern. No platform-specific portability issues noted. Moderate patching needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming uses systematic generic patterns (`iVar1`, `local_c`, `__ptr`) obscuring semantic purpose
+- `stack_alias` function has completely wrong control flow logic (compares stack address to constant)
+- Heavy warning noise (50+ lines) obscuring actual code
+- No type precision - everything is generic `int`/`void*`
+- No semantic comments - only compiler warnings present
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names match original source exactly, preserving semantic meaning
+
+**Most Needs Improvement:** Variable Naming Quality (5/10) and Comment Quality (3/10)  
+- Generic variable names make code difficult to trace; complete lack of useful comments
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `temp` used as array index → `array_index`)
+2. Replace auto-generated warnings with meaningful semantic comments explaining algorithm intent
+3. Recover precise types from debug symbols (`size_t` instead of `int`, `uint32_t` instead of `int`)
+4. Fix `stack_alias` decompilation - the comparison `&stack0x00000000 == 0xc` is incorrect
+5. Add precondition/postcondition documentation for functions with null checks and bounds validation

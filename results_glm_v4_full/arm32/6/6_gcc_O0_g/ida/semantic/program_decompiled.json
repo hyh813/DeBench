@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_gcc_O0_g/ida/syntactic/bin/6_gcc_O0_g_fixed",
+  "stdout": "=== Standard Library Functions Test ===\n[Lib] 1: strcpy = 8\n[Lib] 2: strcmp = 0\n[Lib] 3: strlen = 12\n[Lib] 4: memcpy = 90\n[Lib] 5: memcmp = -1\nValue: 42, Name: Test\n[Lib] 6: printf = 22\n[Lib] 7: scanf = 579\n[Lib] 8: fopen_fclose = 42\n[Lib] 9: fread_fwrite = 42\n[Lib] 10: malloc_free = 90\n[Lib] 11: memset = 0\n[Lib] 12: strchr_strstr = 15\n=== System Calls Test ===\n[Sys] 1: linux_syscall = 42\n[Sys] 2: win32_api = 42\n[Sys] 3: fork_exec = 42\n[Sys] 4: pipe_communication = 42\n[Sys] 5: socket_create = 42\n[Sys] 6: shmget_shmat = 42\n[Sys] 7: signal_handling = 42\n=== Thread Concurrency Test ===\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

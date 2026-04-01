@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `local_14`, `uVar2`, `iVar3`). Original source used meaningful names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from debug symbols (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Action verbs accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals converted to hex (`0x41` instead of `'A'`, `0x20` instead of `32`). Magic numbers like `0x3fc00000` appear without explanation for float constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Excessive type casts (`(ulong)(uVar2 & 0xff)`, `(undefined4 *)`), redundant local variables (`local_14`, `local_10`), and compiler artifacts from debug build present throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops preserved as for-loops, but complex functions like `__addtf3` and `__multf3` use excessive goto labels (`LAB_00102ac0`, `joined_r0x0010245c`) instead of structured control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. However, helper functions like `__addtf3` (500+ lines) are monolithic compiler runtime functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom, but complex floating-point functions have excessive forward jumps and label references disrupting linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type promotions and casts from decompilation process, but no significant dead code or loop unrolling artifacts in user functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `char`→`byte`, `float`→`undefined4`, `long double`→`undefined8`, pointers→`long`. Original `short` functions return `int` instead of `short`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all struct/union types lost. `Point3D` accessed as `param_1[0]`, `param_1[1]`, `param_1[2]`. `Widget` nested structure reduced to offset arithmetic (`param_1 + 8`, `param_1 + 0x14`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(undefined8 *)`), pointer arithmetic replacing struct access, void pointer usage without type information creates potential undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive documentation (`// DT-L1-01: 字符类型`, `// 大写转小写`) completely absent in decompiled output.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree recursion) present but not identified. No algorithm or design pattern annotations despite clear idioms in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. No call graph information, callback relationships unclear (e.g., `ptr_func_simple` doesn't indicate it's a callback invoker).
+
+**15. Module Organization:** Score: 4/10  
+Justification: All functions in single file without section organization. Original source had clear sections (`// 2.1 基础数据类型`, `// 2.2 数组类型`) completely lost.
+
+**16. Build System Compatibility:** Score: 5/10  
+Justification: References external symbols (`__libc_start_main`, `__cxa_finalize`, `printf`) without declarations. Would require significant stubbing to compile standalone.
+
+**17. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for problematic patterns. `array_oob` intentional out-of-bounds access not flagged. Floating-point runtime functions (`__addtf3`) not identified as compiler helpers.
+
+**18. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Null pointer checks present but not documented as contracts. Error conditions silently handled.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+3)/2     = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+4+5+3+2)/5 = 3.80 × 0.10 = 0.38
+
+Overall Score: 4.62/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **All struct/union types lost** - `Point3D`, `Rect`, `Widget`, `Node` accessed via raw pointer arithmetic instead of field names
+- **Zero comments recovered** - Original 830 LOC had extensive documentation; decompiled 2870 LOC has none
+- **Type precision severely degraded** - `float`→`undefined4`, `long double`→`undefined8`, `char`→`byte`
+- **Variable names completely generic** - `param_1`, `local_14`, `uVar2` instead of `sum`, `len`, `current`
+- **Floating-point runtime functions bloated** - `__addtf3` and `__multf3` are 500+ line incomprehensible blocks
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most function names accurately, maintaining semantic clarity for function purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions from debug info** - DWARF metadata contains complete type layouts that should be reconstructed as named structs with field names
+2. **Preserve source comments in debug builds** - When `-g` flag is present, extract and embed original comments at function and block level
+3. **Improve variable name inference** - Use data flow analysis to infer semantic names (e.g., loop accumulators → `sum`, index variables → `i`/`index`)

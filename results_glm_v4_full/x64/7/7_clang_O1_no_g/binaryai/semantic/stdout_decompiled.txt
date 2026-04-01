@@ -1,0 +1,16 @@
+Testing optimization techniques:
+
+10
+20
+225
+46
+0
+5050
+1809036739
+After vectorized loop: 
+Testing null pointer dereference:
+41
+30
+2000000000
+10
+47

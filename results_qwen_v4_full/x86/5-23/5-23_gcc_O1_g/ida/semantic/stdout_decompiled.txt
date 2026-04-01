@@ -1,0 +1,21 @@
+=== Preprocessing Features Test ===
+Line 201: 64
+Line 202: 30
+Line 203: 32
+Line 204: 57122
+Line 301: 116
+Line 302: 19
+Line 303: 60
+LOG: Values: 10, 20, 30
+Line 304: 60
+Line 305: 16
+Line 306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:47
+Line 307: 382
+=== ASM Features Test ===
+Line 401: 15
+Line 402: -1204697962
+Line 403: 42
+Line 404: 36
+Line 405: 30
+Line 406: 77

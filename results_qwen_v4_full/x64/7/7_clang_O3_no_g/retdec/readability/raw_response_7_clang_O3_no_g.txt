@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) with zero semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions retained names (`param_fake_branch`, `call_opaque_predicate`), but helper functions are generic (`function_1030`, `function_1040`). Mixed quality with ~50% meaningful names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive (`0x100000000`, `0xffffffff`, `90` for XOR key). String literals stored as hex bytes in globals (`g1` = `"OBF-L4-02: %d..."`) without recovery to readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Assembly intrinsics pollute code (`__asm_movdqu`, `__asm_paddd`, `__asm_pshufd`). Excessive type masking (`& 0xffffffff`) appears throughout. No dead code elimination visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy goto usage with labels (`lab_0x1403`, `lab_0x1590`, `lab_0x159d`). `param_vectorized_loop` has 6+ jump labels creating spaghetti flow. Original loops converted to while+goto hybrids.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but `param_vectorized_loop` bloated to 300+ lines. Helper functions like `decrypt_string` correctly separated but inline candidates not recovered.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. `param_opaque_predicate` has early-exit path that jumps back into main logic. Multiple exit points scattered.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bit-manipulation patterns (`>> 32`, `& 0xffffffff`) not abstracted. Vectorization loop unrolling visible but not commented. Some dead branches from optimization remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything coerced to `int64_t` regardless of original type. Original `int` parameters become `int64_t a1`. Signed/unsigned distinctions lost (`unsigned int ux` → `uint32_t v1`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic fields (`e0[8]`, `e1`, `e2`). Bitfield struct from `param_implementation_defined` completely lost. No field semantic names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere (`(int32_t)a1`, `(char *)str`, `(int64_t *)0x4060`). Pointer arithmetic without bounds checking. Function pointer types degraded to generic signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero explanatory comments in decompiled code. Only auto-generated file header present. No algorithm explanations, confidence indicators, or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern shown as raw loops without recognition. Vectorization shown as assembly intrinsics without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation regions. Assembly intrinsics present without explanation of why they couldn't be lifted. No indication of potential correctness issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Error handling paths (`return -1`) not explained. Complete absence of contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g15`) used without purpose explanation. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with basic grouping (prototypes, globals, functions). Static functions not properly scoped. Original section comments lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard headers included but assembly intrinsics (`__asm_movdqu`) may not compile portably. Function declarations present. Metadata claims compilation success but intrinsics are platform-specific.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50
+Level 2 (Structural):  (3+5+3+5)/4 = 4.00
+Level 3 (Type):        (3+3+3)/3   = 3.00
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50
+Level 5 (Contextual):  (4+5+5)/3   = 4.67
+
+Overall = (3.50 × 0.30) + (4.00 × 0.25) + (3.00 × 0.20) + 
+          (1.50 × 0.15) + (4.67 × 0.10)
+        = 1.05 + 1.00 + 0.60 + 0.225 + 0.467
+        = 3.34/10
+```
+
+**Overall Readability Score:** 3.34/10
+
+### Critical Defects
+- **Variable names completely generic** (`v1`, `v2`, `a1`) losing all semantic meaning from original (`result`, `encrypted`, `canary`)
+- **Control flow uses goto labels** (`lab_0x1403`, `lab_0x1590`) instead of structured loops and conditionals
+- **Zero comments** explaining algorithm purpose, non-obvious logic, or decompilation confidence
+- **Assembly intrinsics exposed** (`__asm_movdqu`, `__asm_paddd`) without lifting to high-level operations
+- **Type information degraded** to `int64_t` universally, losing signed/unsigned and pointer semantics
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)** - Core test functions retained original names (`param_fake_branch`, `call_opaque_predicate`), providing some anchor points for understanding code purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes understanding algorithm intent nearly impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size comparisons should be named `*_size` or `*_length`)
+2. **Recover structured control flow** from jump patterns - convert `goto` + condition pairs back to `for`/`while`/`if-else` constructs
+3. **Add decompilation confidence annotations** marking uncertain regions, unresolved calls, and potential optimization artifacts with explanatory comments

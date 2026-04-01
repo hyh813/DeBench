@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `local_10`, `local_18`, `iVar1`, `iVar2` throughout; original meaningful names like `capture_by_value`, `multiplier`, `instance_count` are completely lost, requiring significant effort to infer purpose from usage context.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names are well-preserved (`test_cpp_member_func`, `test_cpp_constructor`), and class methods follow clear patterns (`SimpleClass::getValue`), but template instantiations (`template_max_int_`) and lambdas (`test_cpp_lambda()::{lambda(int)#1}::operator__`) have awkward mangled names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234`, `0x32` (50), `0x96` (150), `0x2a` (42) appear without explanation; array bounds (10, 32) and loop limits are present but not named as constants from original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Every function contains stack canary checks (`if (local_10 != *(int *)(in_GS_OFFSET + 0x14))`), `__thiscall` conventions clutter signatures, and numerous compiler thunk functions (`__x86_get_pc_thunk_*`) and runtime helpers (`FUN_00011200` for delete) pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Test functions have natural linear flow, but exception handling (`test_cpp_exception`) and RTTI checks use goto labels (`LAB_00011fcb`, `LAB_00011ff9`) instead of structured try-catch blocks; virtual dispatch shows correct vtable pattern but with awkward `(***(code ***)param_1)` syntax.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions have reasonable granularity, but smart pointer implementation explodes into 30+ helper functions (`std::__uniq_ptr_impl`, `std::_Tuple_impl`, `std::_Head_base`), and lambda functions become separate entities with verbose naming.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most test functions read top-to-bottom naturally, but exception handling and RTTI code introduce forward jumps via goto; virtual function calls add indirection that disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeat identically in every function; multiple destructor variants for virtual inheritance (`DiamondDerived::_DiamondDerived` appears 6 times); smart pointer operations show repetitive template instantiation patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (int, char, double) preserved correctly, class types recovered (`SimpleClass*`, `Base*`), but template types become mangled (`Container_int_`, `Container_double_`), lambda types generic (`_lambda_int__1_`), and some degrade to `undefined4` or `void*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with size annotations (`SimpleClass local_34 [36]`, `LifecycleClass local_18 [8]`), but field names lost entirely—access uses pointer arithmetic (`*(int *)this`, `this + 4`) instead of named members; inheritance relationships visible but virtual inheritance shows complex offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(Base *)&local_34`, `(unique_ptr *)ptVar3`, `(type *)param_1`; function pointers use generic `(code **)` types; smart pointer operations involve multiple implicit conversions that could hide type errors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only a header comment with SHA256 hash present; zero comments explaining logic, algorithms, or decompilation confidence; no documentation of non-obvious patterns like vtable dispatch or virtual inheritance adjustments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ idioms structurally present (vtable dispatch, RAII via destructors, template instantiation) but never explicitly identified or named; exception handling uses goto instead of try-catch pattern recognition; no design pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No uncertainty markers for indirect calls that couldn't be fully resolved; virtual inheritance this-pointer adjustments shown but not flagged as potentially problematic; code presented confidently without indicating decompilation limitations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: idx < size"); postconditions absent; null checks exist in smart pointer code but not explained as safety guards; error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through direct calls; class method relationships visible through `Class::method` naming; but virtual dispatch relationships not explicitly documented, and lambda capture relationships obscured by generic closure types.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 200+ functions in single monolithic output; no logical grouping by class or feature; static functions not properly scoped; no header file structure or namespace organization matching original source.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—missing type definitions for `EVP_PKEY_CTX`, `unique_ptr`, `type_info`; external function references (`FUN_00011200`, `FUN_000111b0`) unresolved; mangled template names not valid C++ syntax.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type System): (6+5+4)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (6+4+3)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  4.82/10
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`local_10`, `iVar1`, `local_18`) losing all semantic meaning from original source (`capture_by_value`, `multiplier`, `instance_count`)
+- **Zero comments** explaining any logic, algorithms, or decompilation confidence indicators
+- **Exception handling degrades to goto** instead of recovering try-catch structure
+- **Template and lambda types severely mangled** (`Container_int_`, `_lambda_int__1_`) making generic code unreadable
+- **Does not compile standalone** due to missing type definitions and unresolved external function references
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved accurately from source (`test_cpp_member_func`, `test_cpp_virtual_func`), and class method naming follows consistent `Class::method` pattern that clearly indicates ownership.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments means readers must reverse-engineer all non-trivial logic without any guidance on decompilation confidence or algorithm intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols—`local_10` used in stack canary check should be `stack_canary`, `iVar1` accumulating results should be `result` or `sum`
+2. **Recover structured exception handling** from unwind tables instead of emitting goto-based control flow; annotate try-catch blocks explicitly
+3. **Add decompilation confidence annotations** for uncertain constructs (indirect calls, virtual dispatch, template instantiations) to guide manual review effort

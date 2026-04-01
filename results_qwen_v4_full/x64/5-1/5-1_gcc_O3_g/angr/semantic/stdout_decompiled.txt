@@ -1,0 +1,14 @@
+Testing C++ OO features
+
+String length: 4700
+Instance count: 21
+Value: 42
+Another value: 71
+More values: 650
+Count: 22
+Total: 37
+Size: 16
+Result: 85
+Status: 0
+Output: 703
+Final: 0

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Original source used meaningful names like `size`, `x`, `y`, `result`, `counter`, `exec_mem` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Action-oriented naming clearly indicates purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (`0xdef0`, `0xffffffff`, `282`, `50`, `7`, `34`) without explanation. Original constants like `MAX_SIZE` (1024), `BUFFER_COUNT` (16) are folded to raw values losing semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(40)`) add noise to simple functions. Type casts like `(int64_t)&g20` and `(int32_t)v1` create visual clutter without adding clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if/while structures. However, `param_macro_constants` uses an overly complex ternary expression for a simple comparison that was `if (size > MAX_SIZE)` in source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each test case is its own unit. However, `call_*` functions are constant-folded to single return statements losing call relationship visibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some functions like `param_asm_clobber` have awkward loop structure with pre-loop body duplication that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Type widening operations create redundancy (`int64_t v1 = 0x100000000 * a1 >> 32`). Stack canary checks duplicated in every function with stack variables add unnecessary code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - uses `int32_t`, `int64_t`, `uint32_t` but original `int` parameters become `int64_t a1`. Pointer types degraded (`int64_t *` for `void *`). Some sign information lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code, but string literals are stored as `char * g1` with hex-encoded UTF-8 Chinese characters losing readability. Basic types handled appropriately.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t)&g20`, `(int64_t)arr`, `(int128_t)v3`. The typedef `typedef int64_t int128_t` is incorrect and misleading for SIMD operations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from original source. All Chinese documentation, macro explanations, and assembly comments completely lost. Only auto-generated file header present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns not recognized - `SQUARE(x)`, `MAX(a,b)`, `ADD_16(x)` all folded to arithmetic expressions. Assembly intrinsics partially recovered (`__asm_movaps`, `__asm_paddd`) but not identified as SIMD patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about constant folding, macro loss, or assembly recovery uncertainty. The incorrect `int128_t` typedef should be flagged as potentially problematic for SIMD operations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/post conditions documented. Original comments like "期望：64" (expected: 64) and parameter constraints completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear, but global variables named generically (`g1`, `g2`...`g22`) losing string content meaning. No call graph documentation. String literals stored as hex bytes obscuring content.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in one file which is reasonable for this size. Function prototypes listed at top. However, helper functions like `function_1090`, `function_10a0` should have meaningful names.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears mostly compilable but has issues: `int128_t` typedef conflicts with actual 128-bit types, `__asm_hlt()` undefined, some intrinsic functions (`__asm_movaps_1`) may not exist in standard headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+7+6)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 5.69/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `a1`) losing all semantic meaning from original (`size`, `counter`, `exec_mem`)
+- **Zero comment recovery** - all original documentation, macro explanations, and assembly comments lost
+- **Magic numbers everywhere** - `MAX_SIZE` (1024), `BUFFER_COUNT` (16) folded to raw values without constant names
+- **Incorrect type typedef** - `typedef int64_t int128_t` is wrong and misleading for SIMD operations
+- **String literals as hex** - Chinese strings stored as `\xe6\x9c\x9f` bytes instead of readable text
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names preserved almost perfectly from source, maintaining semantic clarity about purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation, making code intent opaque despite preserved function names
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even at -O0 with debug info, comment strings should be extractable from DWARF debug sections
+2. **Infer variable names from usage patterns** - Variables used in size comparisons should be named `size`/`length`, loop counters should be `i`/`index`
+3. **Detect and name magic constants** - Recognize repeated values (1024, 16, 64) and suggest named constants with comments explaining their purpose

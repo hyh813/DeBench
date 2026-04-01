@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` and local variables use `v0`, `v1`, `v2` throughout. While some variables like `result`, `i`, `sum` are descriptive, the majority obscure their semantic purpose (e.g., `a0` should be `size`, `v1` should be `result` based on usage).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some function names are preserved from source (`param_macro_constants`, `param_asm_basic`, `my_func`), but many use address-based naming like `sub_400ad4`, `sub_40101c`. The original meaningful names like `call_conditional_compile` are preserved, but the pattern is inconsistent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals are well-preserved ("Hello World", "1.2.3", "src/5-23.c"), but many numeric constants lack explanation. For example, `57072` (0xDEF0) appears without noting it's from the `#else` branch of `param_multi_branch_compile`, and `0x400` (1024) should be labeled as `MAX_SIZE`.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some stack frame setup (`v0 = &v1`) is present but doesn't significantly impede readability. No redundant casts or debug instrumentation clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow closely matches source - `if-else` structures, `for` loops are properly recovered. At `-O0` optimization, the flow should be nearly identical to source, and the decompiler achieves this. Minor issue: some complex expressions like `((v0 * 2 | v0 >> 31) & 4294967294)` could be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. Each test function (`call_macro_constants`, `call_asm_basic`, etc.) correctly calls its corresponding implementation function. Function sizes are appropriate - no monoliths or over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. No goto statements or confusing jumps. Early returns are used appropriately (e.g., in `param_dynamic_code`). The code flows naturally without backward jumps that would indicate loop reconstruction issues.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in `param_asm_simd` is handled via a simple `for` loop (the ARM64 version uses a loop rather than SIMD, which is correct for the architecture). Duplicate expressions are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Type precision shows some degradation. Original `int` parameters often become `unsigned int` (e.g., `param_macro_constants(unsigned int a0)`). Return types vary between `int`, `unsigned int`, `unsigned long long`, and `long long` without clear rationale. The original `int` return type is sometimes preserved, sometimes not.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Not heavily applicable since source uses minimal structs, but the code correctly handles arrays (e.g., `int arr[]` becomes stack-allocated variables). No struct recovery needed as source doesn't define custom structs.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Pointer arithmetic is correct (e.g., `a0 + (__ROL__(i, 2) & ...)` for array indexing). No obvious unsafe casts. The `__stack_chk_guard` handling shows awareness of stack protection.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output. The original source had extensive comments explaining macro behavior, test scenarios, and expected values - all lost. No indication of what each function tests or what the magic numbers represent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible but not named or documented. The `#define` constants are correctly inlined but not identified as macro expansions. The conditional compilation branches are resolved but not noted as such. No recognition of the preprocessor test patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler silently fails on `__aarch64_ldadd4_acq_rel` with "Failed to decompile" but provides no explanation of what this function does or why it failed. No flags for unusual patterns like the inline assembly replacement in `param_asm_basic` (now pure C).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had clear expectations (e.g., "期望: 64", "期望: 15") that are completely lost. No documentation of what each function requires or guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls (e.g., `call_macro_constants()` calls `param_macro_constants()`), but there's no documentation of the call graph. External dependencies like `mmap`, `memcpy`, `printf` are declared but not grouped or documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order (0x400ad4, 0x400afc, etc.) rather than logically grouped. The original source had clear sections: "5.2 预处理与条件编译" and "5.3 内联汇编与底层特性" - this organization is completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions are declared with `extern`, but there are missing dependencies (e.g., `__stack_chk_guard` used without declaration). The failed decompilation of `__aarch64_ldadd4_acq_rel` leaves a gap. Some patching needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names like `size`, `x`, `result`
+- Complete loss of all comments from original source explaining macro behavior and test expectations
+- No indication that code represents preprocessor-expanded macros (constants like 64, 57072 should be annotated)
+- Function organization by address rather than logical grouping obscures code structure
+- No recovery of expected test values ("期望: 64", "期望: 15") that were in original comments
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+The decompiler correctly recovers if-else structures and for loops, maintaining natural control flow that closely matches the source at -O0 optimization level.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The original source had extensive documentation explaining test scenarios, expected values, and macro semantics - all completely lost. Adding just basic comments explaining what each function tests would dramatically improve readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0` used in comparison with `0x400` should be named `size` or `MAX_SIZE`
+2. Add comments explaining preprocessor transformations - annotate inlined constants with their macro origins
+3. Preserve or reconstruct test expectations - add comments like "Expected: 64" from original source comments
+4. Group functions logically rather than by address - separate preprocessing tests from assembly tests
+5. Flag architecture-specific replacements - note when inline assembly was replaced with C code (e.g., `param_asm_basic`)

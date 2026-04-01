@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function parameters are excellent (e.g., `c`, `arr`, `n`) due to debug symbols, but local variables are frequently generic (`iVar1`, `local_10`) or marked as "Unresolved local var", obscuring the logic in complex functions like `test_array_types`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names match the original source exactly (e.g., `process_char`, `struct_bitfields`, `graph_traverse`), providing perfect semantic context for the code's purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The test functions (`test_data_types_l1`, etc.) suffer from aggressive constant folding, replacing logic like `process_char('A')` with hardcoded results like `0x61`, and magic numbers like `0xbf` and `0x1a` obscure the range check in `process_char`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The output contains significant noise from compiler intrinsics (`__mulsf3`, `__adddf3`), Ghidra-specific macros (`CONCAT44`), and "Unresolved local var" warnings, though the core user functions are relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions are readable, but loops in test functions are converted to `do-while` structures, and array accesses like `arr[i][i]` are flattened into pointer arithmetic with magic offsets (`+ 0x2c`), requiring mental effort to map back to source logic.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The decompiler perfectly preserves the original function boundaries and granularity; there is no inlining or outlining of functions, matching the source structure exactly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads mostly top-to-bottom with minimal forward jumps; the use of `do-while` loops for `for` constructs is a standard decompiler pattern that maintains reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: There is no dead code or obvious redundancy; the expression `*p + *p` in `volatile_access` is concise, though it hides the volatile read semantics slightly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: While standard types are correct, floating-point parameters are often typed as `undefined4` (e.g., `process_float`), and bitfields are degraded into integer masking operations (`ushort uVar1`), losing type specificity.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structures like `Point3D`, `Rect`, and `Node` are recovered with correct field names and nesting, but bitfield structures (`Flags`) fail to recover field names, resorting to raw bit manipulation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Array accesses frequently rely on unsafe pointer casts and byte offsets (e.g., `*(int *)((int)*arr + iVar2)`), which is technically accurate to the binary but significantly less safe and readable than standard array indexing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are limited to compiler warnings ("Removing unreachable block") and type uncertainty alerts; there are no semantic comments explaining the logic or algorithms used.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common idioms like pointer subtraction are recognized (`>> 2`), but higher-level patterns like the uppercase range check in `process_char` are left as low-level arithmetic tricks rather than semantic comparisons.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler correctly flags "Unresolved local var" and "Unknown calling convention" issues, providing useful hints about where the analysis might be uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds checking logic in `array_complex_index` is presented as raw arithmetic without explaining the contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10  
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to follow (e.g., `main` calling `test_data_types_l1`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are ordered by their address in the binary rather than their logical grouping in the source, but the clear naming makes it easy to navigate.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code uses Ghidra-specific types (`undefined4`) and macros (`CONCAT44`) and relies on compiler intrinsics, requiring significant modification to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- **Constant Folding in Test Functions**: The logic of test functions is replaced by hardcoded results (e.g., `0x61` instead of `process_char('A')`), rendering the test intent unreadable.
+- **Bitfield Type Loss**: The `Flags` structure is accessed via raw bit masking (`(uVar1 >> 1 & 3)`) instead of field names (`f->flag2`).
+- **Unsafe Array Access**: Multi-dimensional array access uses pointer arithmetic with magic offsets (`+ 0x2c`) instead of `[][]` syntax.
+- **Floating Point Type Erosion**: Float parameters are typed as `undefined4`, and operations are shown as library calls (`__mulsf3`) rather than operators.
+- **Missing Local Variables**: Many local variables in complex functions are marked "Unresolved," replaced by generic temporaries (`iVar1`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The preservation of debug symbols allows every function to be identified by its original semantic name.
+
+**Most Needs Improvement:** Literal Clarity (scored 4/10)  
+- The combination of constant folding in test functions and magic numbers for range checks significantly obscures the original logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Disable Aggressive Constant Propagation for Test Harnesses**: Detect functions that primarily call other functions with constant arguments and preserve the function call structure to demonstrate the code's intent.
+2. **Improve Bitfield Recovery**: Enhance the pattern matching for bitfield structures to recover field names and accessors instead of defaulting to integer masking.
+3. **Recover Multi-Dimensional Array Syntax**: Implement logic to detect pointer arithmetic patterns that iterate with fixed strides (e.g., `+ 0x2c`) and convert them back into `arr[i][j]` syntax.

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/6/6_clang_O0_g/angr/syntactic/bin/6_clang_O0_g_fixed",
+  "stdout": "Testing Standard Library Functions\nstrcpy: 8\nstrcmp: 2\nstrlen: 12\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

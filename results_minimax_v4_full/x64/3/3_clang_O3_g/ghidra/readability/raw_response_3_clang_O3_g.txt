@@ -1,0 +1,141 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Nearly all local variables are marked as "Unresolved local var" with DWARF expressions like `int a@[DW_OP_reg5(RDI)]` or generic placeholders like `int i@[???]`. The decompiler uses auto-generated names like `iVar1`, `lVar1`, `piVar1` which provide no semantic meaning. Compare to source where variables like `arr`, `i`, `local`, `out` are clearly named.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names almost perfectly match the original source - `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `memory_leak`, `dangling_pointer`, etc. The decompiler correctly recovered all function names from symbols. Minor deduction for some internal functions with generic names.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers appear throughout without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60). The decompiler outputs hardcoded values in printf statements (e.g., `printf("MEM-L1-01 (local_vars): %d\n",0x14);`) instead of computing them. Some values like `0x800` (2048 buffer size) are inferable but most lack context.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Severe noise pollution throughout. Contains extensive "Unresolved local var" comments, "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable". The `large_stack_frame` function has 200+ lines of repetitive buffer operations that obscure the simple loop logic. Multiple undefined symbol references like `DAT_00103719`, `stack0x00000008`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is natural - simple if/else, for loops, while loops are correctly recovered. However, `vla_stack` and `alloca_usage` have unusual goto-based structures with computed jumps that don't match the original for-loop semantics. The `large_stack_frame` uses do-while correctly but the loop body is unrolled into 200+ repetitive statements.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function boundaries are correctly preserved from the original source. Each test function (MEM-L1-01, MEM-L1-02, etc.) is decompiled as a separate function matching the source exactly. No inlining or outlining artifacts - all original functions remain distinct.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, the `large_stack_frame` function's unrolled loop body (200+ lines) makes linear reading impractical. Some computed goto patterns in VLA functions disrupt flow. Early returns are used appropriately in error-checking code.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+Justification: Severe redundancy in `large_stack_frame` - the same 16-byte pattern is written 128 times with different offsets. Loop unrolling is not commented or abstracted. The `vla_stack` and `alloca_usage` functions have nearly identical unrolled loop patterns repeated. Dead code elimination appears incomplete.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Basic types are correct - `int`, `int*`, `void*`, `char*` are used appropriately. However, many instances of `undefined4`, `undefined8`, `undefined1` instead of proper types. Function pointer types like `_func_int_int` are awkward. Some size_t parameters lost. Const correctness not preserved (e.g., `const char *const_string` becomes just `const_string`).
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Some struct recovery - `Node` and `TreeNode` are recognized. However, `Point` struct is not recovered - `local_struct` returns `x * 3` directly instead of accessing `p.x + p.y`. Field names are lost - the decompiler uses offset-based access like `*(undefined4 *)(__ptr + 2)` instead of named fields. The `Node` struct fields are accessed via offsets rather than `->data`, `->next`.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple unsafe patterns present. Extensive pointer arithmetic with raw offsets (e.g., `(long)__ptr + lVar9 * 4 + 0x30`). Many void* to typed pointer casts without validation. The `heap_realloc` function has incorrect pointer arithmetic treating 8-byte pointers as 4-byte. No bounds checking visible. Multiple "possible undefined behavior" patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only auto-generated comments present: "Unresolved local var", "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". No algorithm explanation, no recovery confidence indicators, no API contracts. The comments don't help understand what the code does - they only indicate decompiler limitations.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms explicitly identified. The linked list creation, tree traversal, memory pool patterns are not named or documented. The decompiler doesn't recognize these as common data structure patterns.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some warnings present but they're generic. "WARNING: Could not recover jumptable at 0x0010234c. Too many branches" - doesn't explain what the switch was. "WARNING: Removing unreachable block" - doesn't explain why. However, anomalies are at least flagged rather than silently wrong.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition/invariant recovery. The decompiler doesn't document requirements like "requires: n > 0" or "ensures: return is heap-allocated". Error handling is present in code but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+Justification: No function call relationship documentation. The decompiler doesn't indicate which functions call `malloc`/`free`, doesn't show callback relationships, doesn't document static variable access patterns. Each function is isolated.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions appear in roughly the same order as source file, but no explicit grouping or comments indicating test categories (stack memory, heap memory, static memory, etc.). No header file structure recovered. Static vs. non-static scope not clearly indicated.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: Code would not compile as-is. Missing type definitions for `Node`, `TreeNode`, `Point`. Undefined symbols like `DAT_00103719`, `DAT_00103010`. Incorrect printf format strings (e.g., `printf("STM-L1-01 (global_var_access): %d\n");` missing the value argument). Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 3) / 4 = 4.50
+L2_avg = (6 + 8 + 6 + 3) / 4 = 5.75
+L3_avg = (6 + 4 + 4) / 3 = 4.67
+L4_avg = (3 + 3 + 5 + 2) / 4 = 3.25
+L5_avg = (3 + 6 + 3) / 3 = 4.00
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (4.67 × 0.20) + (3.25 × 0.15) + (4.00 × 0.10)
+        = 1.35 + 1.44 + 0.93 + 0.49 + 0.40 = 4.61
+```
+
+**Overall Readability Score: 4.6/10**
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming completely lost**: All local variables show as "Unresolved local var" with DWARF expressions - the decompiler cannot recover any semantic variable names
+- **Severe code bloat in `large_stack_frame`**: 200+ lines of repetitive buffer operations from unrolled loop make the function practically unreadable
+- **Struct field recovery failure**: The `Point` struct is not recovered - `local_struct` returns `x * 3` instead of accessing `p.x + p.y`
+- **Magic numbers everywhere**: Values like `0x2a`, `0x14`, `0xf` appear without explanation; the decompiler hardcodes computed results in printf
+- **Compilation-incompatible output**: Missing type definitions, undefined symbols, incorrect printf format strings - code cannot compile
+
+---
+
+### Best Quality Aspect
+**Function Naming Quality (Score: 9/10)**
+The decompiler almost perfectly recovered all function names from symbols, matching the original source exactly (`local_vars`, `heap_basic`, `linked_list_heap`, `memory_leak`, etc.). This is the standout positive.
+
+---
+
+### Most Needs Improvement
+**Variable Naming Quality (Score: 2/10)**
+The complete failure to recover any local variable names is the most severe readability issue. Without meaningful variable names, understanding function logic requires significant reverse-engineering effort. The "Unresolved local var" comments with raw DWARF expressions are useless for analysis.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic operations) to suggest semantic names. For example, a variable used in `arr[i] = i * n` should suggest `arr` and `i`.
+
+2. **Detect and annotate loop unrolling**: When repetitive patterns are detected (same operation with sequential offsets), collapse them back to a loop construct with a comment explaining the unrolling, rather than expanding 128 times.
+
+3. **Recover struct layouts from allocation sites**: When `malloc(sizeof(Point))` is detected, the decompiler should reconstruct the `Point` struct definition and use field names instead of raw offsets like `*(int*)(ptr + 4)`.

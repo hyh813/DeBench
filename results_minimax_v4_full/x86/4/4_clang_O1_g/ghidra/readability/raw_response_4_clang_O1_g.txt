@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most local variables are marked as "Unresolved local var" with no names (e.g., `int sum@[???]`, `int i@[???]`). Only parameters retain meaningful names (`a`, `b`, `x`, `y`). Generic names like `iVar1`, `iVar2`, `local_8` don't convey semantic purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `cdecl_func`, `stdcall_func`, `test_calling_conventions` are correctly named. However, infrastructure functions have cryptic names like `FUN_00011030`, and some show address-based naming patterns.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0xf` (15), `0x32` (50), `0x2a` (42) without explanations. String literals use raw addresses like `&DAT_00012352`. Only `0x10` (16) for loop bounds is inferable. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy pollution from 15+ "WARNING" comments about unknown calling conventions, unresolved local variables, unreachable blocks, and inlined functions. These auto-generated warnings clutter the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use proper do-while constructs, conditionals are clear. Minor artifact: `param_varargs` uses pointer arithmetic instead of va_list macros, but at -O0 this is acceptable. Switch statements properly converted to if-else chains.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Test functions (`test_calling_conventions`, etc.) properly separated from implementation. No 500-line monoliths; each function has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `func_struct_byptr` and `param_double_ptr`. No excessive forward jumps. Some deep nesting in `test_calling_conventions` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling present in `test_calling_conventions` (manual array initialization) but this reflects source structure. Common subexpression elimination minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameter types mostly accurate (`int`, `char *`, `double`, `long long`). Function pointer types shown as `_func_int_int *`. However, some type erosion: `int *arr` instead of `int arr[10]`, and `int *local_8` for varargs handling loses va_list semantics.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types recovered well: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all present with field names (`s.data[iVar2]`, `p->y * p->x`). Field names preserved accurately.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `param_complex_cast` has unsafe pointer casting: `*(int *)((int)p + 4) + *(int *)p`. Some pointer arithmetic without bounds checking. Function pointer calls use proper signatures. No buffer overflow patterns but some risky operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No algorithm explanations, no API contracts (@param, @return), no decompilation confidence indicators. Comments don't help understanding.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Varargs recognized (`int count,...`) but not labeled as such. Struct by-value passing handled correctly. Callback pattern in `param_func_ptr` identified. However, no explicit pattern naming (e.g., "This implements varargs pattern").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for unknown calling conventions and unresolved variables. However, these are generic and don't explain implications. No guidance on how to resolve indirect calls or verify stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. Error handling present in code (`if (p != NULL)`) but not explained as contracts. Silent about what `func_no_args(void)` guarantees.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. However, no comments indicating who calls whom or global variable usage. Callback relationships not documented (e.g., `callback_func` used by `param_func_ptr`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped by feature (calling conventions, parameter passing, return values). All in single file. No namespace or static scope indication beyond what's in source.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard C (`stdio.h`, `stdarg.h`, `string.h`). External functions like `puts`, `printf`, `strlen` properly referenced. Should compile with minimal stubs. No compiler-specific hacks visible.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming: Most local variables marked as "Unresolved" with `@[???]` suffix, making code practically unusable for analysis
+- Literal clarity: Magic numbers everywhere (`0xf`, `0x32`, `0x2a`) without explanations; string literals use raw addresses
+- Noise pollution: 15+ WARNING comments about unknown calling conventions and unresolved variables clutter output
+- Comment quality: Only auto-generated warnings; no algorithm explanations or API contracts
+- Type safety: Unsafe pointer casting in `param_complex_cast` without justification
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct types like `LargeStruct`, `SmallPoint`, `BigStruct` recovered with accurate field names matching source.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Most local variables are unresolved or have generic names like `iVar1`, making it impossible to track semantic purpose without significant reverse engineering effort.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `sum@[???]` used in accumulation → `sum`)
+2. Replace magic numbers with named constants where meaning is determinable from context
+3. Add meaningful comments explaining algorithm intent, not just decompilation warnings

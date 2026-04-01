@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/4/4_gcc_O3_g/retdec/syntactic/bin/4_gcc_O3_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0xf0 in position 157: invalid continuation byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false
+}

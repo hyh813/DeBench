@@ -1,0 +1,4 @@
+Testing StandardStrlen: %z\nStrcmp: %d\n
+Strlen: %\nStrcmp: 8\nStrcmp: 0\nStrlen: 12\nMemcpy: 90\nMemcmp: 0\nPrintf: 1134272512\nValue: 42, Name: TestNameTesting StandardStrlen: %z\nStrcmp: %d\n
+Printf: 66\nSscanf: -1091237868\nFopen: 42\nRW: 42\nMalloc: 90\nMemset: 0\nStrchr: 15\nTesting SyscallsSyscall: %d\n
+Syscall: 42\nStat: 42\nFork: 42\n

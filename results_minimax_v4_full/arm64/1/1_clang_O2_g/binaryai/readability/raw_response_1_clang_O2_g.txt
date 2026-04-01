@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use auto-generated names like `param_1`, `param_2`, `iVar1`, `uVar1`, `bVar2`, `puVar1`. These cryptic names completely obscure semantic purpose - e.g., in `sequential_ops`, parameters should be `a, b, c` but are `param_1, param_2, param_3`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`). Internal functions like `FUN_00100880` are appropriately labeled as unknown. External library functions properly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout: `0x3e9` (1001), `0x65` (101), `0x12` (18), `0xfffffff8`. Test functions use hardcoded values like `0x15` (21) instead of computed expressions. No named constants recovered.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Very clean decompilation with minimal compiler artifacts. No obvious register spilling, debug instrumentation, or redundant casts. Some NEON intrinsics appear in optimized code but are handled appropriately.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops recognized as while/do-while, switches properly identified. However, `loop_continue` shows aggressive unrolling with NEON intrinsics that obscures the simple "sum odd numbers" logic. `goto_forward` uses confusing conditional logic instead of recognizing the goto structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with appropriate granularity. No 500-line monoliths. Parameter lists reasonable though generic. Static helper functions (`double_value`, `triple_value`) correctly extracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in complex functions like `loop_continue` and `goto_backward` disrupt flow. The `duffs_device` has labeled goto targets that are confusing.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling present in `loop_continue`, `goto_backward`, `recursion_factorial`, `tail_recursion`, `call_func_ptr_array` - all using similar NEON patterns. Not explicitly commented as unrolling. Some common subexpression patterns but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic `int` instead of specific types. Uses `uint` for unsigned, `undefined4`/`undefined8` for uncertain types. Function pointers use `code *` generic type. No `int32_t`, `size_t`, or other specific types recovered.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery visible. Arrays accessed via pointer arithmetic (e.g., `*(int *)(&DAT_00101a00 + ...)`). The matrix in `loop_multi_exit` is accessed through computed addresses with no struct recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic without bounds checking in array accesses. Function pointer type `code *` is too generic. No `restrict` or alignment annotations. Mixed signed/unsigned in comparisons (e.g., `param_1 < 1` vs `param_1 < 8`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in decompiled output whatsoever. No algorithm explanations, no decompilation confidence indicators, no API contracts. The code is completely bare of explanatory text.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (loops, switches, conditionals). However, `duffs_device` is not identified as such - shows as switch with goto labels. State machine patterns in `state_machine` not explicitly named. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Indirect calls flagged as `UNRECOVERED_JUMPTABLE` in `call_func_ptr` and `conditional_func_ptr`. However, no warnings about unusual stack layouts, potential undefined behavior, or hand-written assembly patterns. Some anomalies silently handled.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant documentation. Error conditions not explicitly marked. The code provides no guidance on expected input ranges or contract requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls within code are clear. No documentation of which functions call which, global variable usage, or callback relationships. External dependencies not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions grouped by address in memory order, not logically. Related functions (like state machine helpers `state_idle`, `state_processing`, `state_done`, `state_error`) scattered. No logical grouping matching source file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with standard C headers. External functions (`printf`, `puts`, `longjmp`, `_setjmp`) properly declared. No obvious compiler-specific hacks. Would require linking with libc.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `uVar1`) - cannot track semantic purpose
+- No comments whatsoever - zero explanatory text for algorithms or intent
+- Type precision severely degraded - everything is generic `int` or `undefined4`
+- Composite types completely lost - no struct recovery, raw pointer arithmetic everywhere
+- Loop unrolling in 5+ functions not annotated, obscuring simple logic
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Original function names recovered accurately, making it easy to identify which function is being analyzed
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- Zero comments in entire decompiled output; even basic algorithm explanations would dramatically improve readability
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used in size check → name it `size` or `count`)
+2. **Add comments for optimized constructs**: Label loop unrolling, NEON intrinsics, and other optimization artifacts with explanations
+3. **Recover type information**: Use debug symbols and common patterns to infer struct layouts and specific integer types (`int32_t`, `size_t`)

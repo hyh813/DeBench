@@ -1,0 +1,5 @@
+Testing optimization and security features:
+
+fake_branch: 10
+opaque_predicate: 35
+instruction_substitution: 225

@@ -1,0 +1,16 @@
+Testing standard library functions
+call_strcpy result: 0
+call_strcmp result: 2
+call_strlen result: 0
+call_memcpy result: -1224860590
+call_memcmp result: 1
+Value: 42, Name: Test
+call_printf result: 22
+call_scanf result: 0
+call_fopen_fclose result: 42
+call_fread_fwrite result: 0
+call_malloc_free result: 0
+call_memset result: 0
+call_strchr_strstr result: 15
+Testing system calls
+call_linux_syscall result: 42

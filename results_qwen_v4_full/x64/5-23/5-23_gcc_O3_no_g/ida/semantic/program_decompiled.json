@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/5-23/5-23_gcc_O3_no_g/ida/syntactic/bin/5-23_gcc_O3_no_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\nL2.1: 64\nL2.2: 30\nL2.3: 32\nL2.4: 57122\nL3.1: 116\nL3.2: 19\nL3.3: 60\nLOG: Values: 10, 20, 30\nL3.4: 60\nL3.5: 16\nL3.6: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:37\nL3.7: 382\n=== ASM Features Test ===\nL4.1: 15\nL4.2: -1709134784\nL4.3: 42, \nL4.4: 0\nL4.5: 30\nL4.6: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

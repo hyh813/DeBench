@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables are cryptic (`local_c`, `local_10`, `local_14`, `local_28`). The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `i`, `j`. This represents a complete loss of semantic naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved exactly (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc.). Some compiler-generated functions like `_init` and `__do_global_dtors_aux` are noise but don't impact analysis of the target functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x66666667` (division optimization), `0x3e9` (1001), `0xe` and `7` (Duff's device calculations) appear without explanation. The source had clear constants like `n=5`, `10`, `100` that are preserved in test calls but the internal logic uses unexplained values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING" comments about unreachable blocks, unresolved jump tables, and stack_chk_fail add noise. However, core logic is relatively clean. The `__aeabi_idiv` function (200+ lines) is compiler-generated and pollutes the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - for loops, while loops, switch statements, and if-else chains are correctly recovered. The `goto_forward` and `goto_backward` functions preserve goto semantics appropriately. At -O0, this is excellent recovery.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is appropriately sized and separated. No inlining artifacts. The test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) correctly call all target functions. Function boundaries match source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in `switch_fallthrough` (due to fall-through logic) and `goto_forward`, but these are faithful to source. No excessive nesting disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The `__aeabi_idiv` function is large but that's a compiler runtime function, not part of the target code. Loop constructs are not unnecessarily unrolled at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined` types instead of `int`, `uint32_t`. Function pointers use generic `code *` type. The source used `int` consistently, which should be recoverable at -O0. Boolean returns show as `bool` in some places but `undefined4` in others.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are correctly recovered (e.g., `local_20[6]` for the 5-element array in `loop_break`). The source didn't use structs, so no struct recovery was needed. Pointer arithmetic for array access is handled correctly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts or pointer arithmetic errors in the target functions. Some `CONCAT44` macro usage in `loop_while` and `loop_dowhile` is unusual but appears correct for the 64-bit return value handling.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable") are present. The original source had extensive comments explaining each function's purpose, test scenarios, and expected values - all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Duff's device (`switch_fallthrough`) shows switch-case with fall-through but isn't identified as such. State machines are recovered as switch statements but not named. No pattern naming or explanation provided.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra correctly flags unreachable blocks and unresolved indirect jumps with warnings. However, these are generic and don't explain the root cause or suggest analysis approaches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source had implicit contracts (e.g., "n must be > 0" for factorial) that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in test functions, but relationships (callback registration, virtual dispatch, state machine handlers) aren't documented. The `call_func_ptr_array` and `fsm_func_table` functions show function pointer arrays but purposes aren't explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 77 functions in a single file with no logical grouping. The source had clear sections (Control Flow Level 1, Level 2, Level 3) with comments - all lost. Static functions aren't distinguished from public ones.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code won't compile standalone - it depends on `puts`, `printf`, `__gmon_start__`, and compiler runtime functions (`__aeabi_idiv`, `__stack_chk_fail`). No header declarations or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 5) / 4 = 4.75
+L2_avg = (8 + 9 + 7 + 8) / 4 = 8.00
+L3_avg = (4 + 7 + 7) / 3 = 6.00
+L4_avg = (3 + 4 + 6 + 2) / 4 = 3.75
+L5_avg = (5 + 4 + 3) / 3 = 4.00
+
+Overall = (4.75 × 0.30) + (8.00 × 0.25) + (6.00 × 0.20) + (3.75 × 0.15) + (4.00 × 0.10)
+        = 1.425 + 2.00 + 1.20 + 0.5625 + 0.40
+        = 5.5875 / 10
+```
+
+**Overall Readability Score:** 5.6/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: All parameters are `param_N` and locals are `local_X`, losing all semantic meaning from source (e.g., `temp1`, `sum`, `i`, `j` should be recoverable at -O0)
+- **No comment recovery**: Extensive source comments explaining function purpose, test scenarios, and expected values are completely lost
+- **Type precision severely degraded**: Heavy use of `undefined4`/`undefined8` instead of `int`/`uint32_t` when source clearly used `int`
+- **No contract/precondition recovery**: Implicit contracts like "n > 0 for factorial" are lost
+- **Compiler runtime pollution**: 200+ line `__aeabi_idiv` function and other runtime code混 decompiled output
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+- **Which dimension scored highest? Function Decomposition (9/10)**
+- **Why?** At -O0, each function is correctly separated with appropriate boundaries matching the source exactly. No inlining or fragmentation occurred.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+- **Which dimension scored lowest? Variable Naming Quality (2/10)**
+- **Why?** At -O0 with debug symbols (-g), variable names should be recoverable from debugging information. The complete loss of semantic variable names (temp1, temp2, sum, i, j, count, result) significantly impedes readability.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: At -O0 with debug info, analyze how variables are used (arithmetic operations, array indices, loop counters) to generate semantically meaningful names like `packet_size`, `loop_counter`, `checksum_accumulator`
+
+2. **Recover type precision from debug symbols**: Use DWARF debug information to recover exact types (`int`, `unsigned int`) instead of defaulting to `undefined4`
+
+3. **Add semantic comments from source analysis**: When source comments are available during evaluation, preserve them. Otherwise, generate comments explaining algorithmic intent (e.g., "// Implements Duff's device for unrolled memory copy")

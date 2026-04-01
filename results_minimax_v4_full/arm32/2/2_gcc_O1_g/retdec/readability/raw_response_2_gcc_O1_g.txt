@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`) with no semantic meaning. For example, in `array_1d_stack`, `v1` represents the array pointer offset and `result` is the only descriptive name. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are well-preserved from the original source: `array_1d_stack`, `ptr_increment`, `struct_simple`, `linked_list`, etc. They accurately reflect functionality and use appropriate action verbs. Minor deduction for some callback functions being called with raw addresses.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers without explanation (e.g., `4 * n` for byte offsets, `12 * n` for struct array stride, `110` in loop condition). The value `0x2710` (10000) is used directly. Some string literals are UTF-8 encoded Chinese but not explained. Constants like array sizes are not named.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. Some redundant pointer arithmetic (e.g., `(int32_t)arr - 4` then adding 4 back). No debug instrumentation or register spilling artifacts visible. Minor noise from repeated offset calculations.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are implemented as while constructs with manual pointer arithmetic rather than idiomatic for-loops. In `array_3d`, the nested loops are convoluted with multiple while statements. Some control flow is readable but the pointer-based iteration pattern is not natural C style.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. Each function has a single responsibility. The test functions call individual test cases appropriately. No over-fragmentation or monoliths observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns for boundary conditions. However, in `array_3d` and `graph_traverse`, there are complex nested loops with multiple exit points that disrupt linear reading. Some forward jumps present.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant calculations in `array_3d` where the same offset calculations repeat. The loop in `array_2d_stack` uses `i += 11` which appears to be unrolled diagonal access but not commented. Some duplicate offset calculations in `graph_traverse`.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good for arm64. However, all pointers are raw `int32_t*` without distinction between pointer types. Function pointers have generic signatures. No const correctness preserved. The `char*` strings are handled but `volatile` is lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct/union types were recovered. All composite types are accessed via raw pointer arithmetic with manual offsets. For example, `struct_simple` uses `*(int32_t *)(v1 + 4) + v1 + *(int32_t *)(v1 + 8)` instead of `p->x + p->y + p->z`. The `Point3D`, `Node`, `Rect`, `Widget` structures are completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Severe type safety issues throughout. Extensive unsafe casts: `(int32_t *)v2`, `(char *)v3`, `(int32_t **)`. Pointer arithmetic is manual and error-prone. No bounds checking. Function pointers cast to `int32_t (*)` without proper type safety. Many opportunities for undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present (source file path, address range, line numbers). No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The comments are metadata only and provide no semantic value for understanding the code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic operations are recognizable but no design patterns or algorithms are identified or named. The linked list traversal, binary tree recursion, and graph traversal are present but not identified as such. No pattern naming (e.g., "Implements: linked list traversal").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code or potential issues. The indirect function calls in test functions (e.g., `ptr_func_simple((int32_t (*)(int32_t))0x10524, 5)`) are presented without warning. No indication of potential undefined behavior in array_oob (which was commented out but still present in some form).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The code provides no guidance on what conditions must hold before function calls or what guarantees are provided after.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes are declared at the top, showing relationships. However, no documentation of which functions call which, no global variable usage transparency, and callback relationships are not explained. The `complex_callback` function is referenced but not shown.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by type (array functions, pointer functions, struct functions). Static functions are properly scoped. Function declarations are separated from implementations. Minor issue: test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Function prototypes are declared. Should compile with minimal patching. The `__printf_chk` and `__stack_chk_fail` are glibc-specific but standard.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Composite type recovery completely failed**: All structs (`Point3D`, `Node`, `Rect`, `Widget`, `TreeNode`, `Graph`, `Edge`, `DNode`) are reduced to raw pointer arithmetic with manual offsets, losing all semantic meaning
+- **Variable naming is unusable**: All variables use generic names (`v1`-`v10`) with no semantic indication of purpose
+- **Type safety severely compromised**: Extensive unsafe casts throughout, no const correctness, all pointers are generic `int32_t*`
+- **No struct/union distinction**: Unions like `UnionData` are treated as regular arrays, losing the shared-memory semantics
+- **Magic numbers everywhere**: Array strides (`4`, `10`, `12`, `20`, `40`, `100`, `400`) used without explanation
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are well-preserved and accurately reflect the original source functionality, making it easy to identify what each function does at a high level.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+The decompiler completely failed to recover any struct or union types from the binary. This is the most severe readability issue as it transforms meaningful structured data access into incomprehensible pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct layouts**: Analyze memory access patterns to identify field offsets and reconstruct struct definitions with meaningful field names based on usage context
+2. **Infer variable names from usage**: Use data flow analysis to name variables based on their semantic role (e.g., `offset`, `stride`, `count`, `index`) rather than generic `v1`, `v2`
+3. **Preserve type information**: Maintain distinction between different pointer types, recover const/volatile qualifiers, and properly type function pointers with their exact signatures

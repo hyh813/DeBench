@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `bVar3`, `local_28`). Original source used meaningful names like `result`, `str`, `encrypted`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`param_fake_branch`, `call_opaque_predicate`), which is excellent. However, helper functions use compiler-generated names (`__divsi3`, `_divsi3_skip_div0_test`) without semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x5a`, `0x14`, `0x23`, `0xe1`, `0x7a314`. Original had comments explaining these (e.g., `"Hello" ^ 0x5A`). No constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__do_global_dtors_aux`, `register_tm_clones`, `deregister_tm_clones`. The `__divsi3` function has 30+ boolean variables (`bVar5` through `bVar35`) from division algorithm expansion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_opaque_predicate` uses convoluted do-while loops for GCD instead of clear while. `param_tail_call_optimized` lost recursive structure entirely, replaced with arithmetic. Original's clear if-else branches obscured.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure: `param_fake_branch` is empty (`return;`) when it should contain branch logic. `call_fake_branch` returns constant `10` (compiler optimized away). `__divsi3` is 200+ lines of boolean chains.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. However, nested do-while loops in `param_opaque_predicate` and `test_obf_opt_edge` disrupt flow with `extraout_r1` patterns.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__divsi3` and `_divsi3_skip_div0_test` are nearly identical (300+ lines duplicated). `call_string_encryption` duplicates `param_string_encryption` logic. No dead code elimination.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int`, `uint`, `byte`, `undefined4` instead of `int32_t`, `size_t`. Original had explicit `size_t`, `unsigned int`. Pointer types present but imprecise (`undefined4 *`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Original had minimal structs (only `bitfield` in `param_implementation_defined`). Decompiled version doesn't recover this struct, returns constant `0x2c` instead. Nothing complex to evaluate.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(byte *)`, `(undefined4 *)`, `(__sighandler_t)0x0`. `param_null_pointer_deref` takes `undefined4 *` allowing any pointer. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original had extensive Chinese comments explaining obfuscation techniques, expected values, and test scenarios. Complete loss of documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Original's obfuscation patterns (fake branches, opaque predicates, instruction substitution) not identified. GCD algorithm not recognized. String decryption pattern not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues: empty `param_fake_branch`, optimized-away logic, 30+ boolean variables in division. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `x != 0` for normal path). No postconditions. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. `test_obf_opt_edge` calls many functions but relationships not documented. Global variables (`jmp_buffer`, `div_zero_caught`) not clearly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat file. No logical grouping (obfuscation vs. optimization vs. edge cases). Original had clear section headers (`7.1 混淆与保护`, `7.2 编译器特有优化`).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but many are stubs (`<EXTERNAL>::raise`). Would need significant work to compile standalone. Dependencies on ARM-specific functions (`__aeabi_idivmod`) not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+3+6+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **`param_fake_branch` is empty** - Core obfuscation logic completely lost, function just returns
+- **Zero comments** - Original had extensive documentation explaining each technique; all lost
+- **Generic variable names** - `param_1`, `iVar1`, `bVar3` instead of `x`, `result`, `is_valid`
+- **`__divsi3` has 30+ boolean variables** - Division algorithm expanded into unreadable boolean chain
+- **Magic numbers unexplained** - `0x5a`, `0x14`, `0x23` without context from original comments
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names preserved (`param_fake_branch`, `call_opaque_predicate`), making it possible to identify which function is which despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation. Original had extensive Chinese comments explaining obfuscation techniques, expected values, and test scenarios. This is the most severe readability loss.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and include original comments in decompiled output
+2. **Infer semantic variable names from usage patterns** - `param_1` used in multiplication should be `x` or `input`; loop counters should be `i`, `j`
+3. **Flag optimization artifacts explicitly** - Add comments like `// OPTIMIZED: Original recursive tail call converted to iterative arithmetic` when logic is transformed

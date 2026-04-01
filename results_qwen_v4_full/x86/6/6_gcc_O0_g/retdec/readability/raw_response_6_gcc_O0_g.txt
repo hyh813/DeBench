@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables are generic (`v1`, `v2`, `v3`, `temp`, `result`) obscuring semantic meaning. For example, in `param_strcpy`, parameters `dst` and `src` are preserved, but local variables like `v1` in `call_strcpy` should be `buffer` or `length`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved matching original source (`param_strcpy`, `call_mutex_lock`, `thread_atomic_increment`). This is the strongest aspect—action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x1000` for shm size, `42` as success code, `255` for buffer fill). String literals preserved but numeric constants lack named equivalents.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe architecture mismatch noise—`__x86_get_pc_thunk_*` calls appear throughout despite ARM64 original. Stack canary checks (`__readgsdword(20)`) repeated in nearly every function add significant clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto labels (`lab_0x1f54`, `lab_0x2daf_2`) instead of structured loops. In `param_fread_fwrite`, nested conditionals with goto disrupt natural reading flow expected at -O0.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. Helper functions for library calls (`function_15d0` for `strcpy`) are appropriately separated, though some could be inlined.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps and label targets disrupt top-to-bottom reading. `param_pipe_communication` has multiple exit points connected via goto rather than early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary check pattern repeated identically in 40+ functions. Each function ends with identical `if (v2 != __readgsdword(20))` block that could be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type erosion—`size_t` becomes `int32_t`, `pthread_t` becomes `int32_t*`, `FILE*` becomes `struct _IO_FILE*`. In `param_memset`, `size` parameter should be `size_t` not `int32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct fields are completely generic (`e0`, `e1`, `e2`...). `struct stat` has 20 fields all named `e0`-`e19` losing all semantic meaning (should be `st_size`, `st_mode`, etc.).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout—`(int32_t *)dst`, `(char *)&v5`, `(volatile int*)&atomic_counter`. In `param_shmget_shmat`, `shmat` return cast to `int32_t*` loses pointer semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case; decompiled version has no algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—producer-consumer pattern in `param_condition_variable` not identified, mutex lock patterns not annotated, atomic operations not flagged as synchronization primitives.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Critical architecture mismatch (ARM64→x86) not flagged. No warnings about unresolved indirect calls, stack layout anomalies, or the `__x86_get_pc_thunk_*` artifacts that shouldn't exist.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for `param_strcpy`). Error return values (-1, -2, -3) not explained. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code but not documented. Global variables (`g1`-`g17`) have no usage context—reader must trace manually to understand `g8` is `signal_received`.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 137 functions in single file with no logical grouping. Original source had clear section headers (6.1, 6.2, 6.3); decompiled version has arbitrary address-based ordering.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but architecture mismatch prevents compilation. x86-specific intrinsics (`__readgsdword`) won't compile on ARM64. Some function signatures mismatch expected library prototypes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+3)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):   (5+7+4+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type System):  (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):     (1+2+1+2)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):   (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects
+- **Architecture mismatch**: x86 thunk functions (`__x86_get_pc_thunk_*`) appear in ARM64 decompilation—fundamental decompiler error
+- **Struct field names lost**: All composite types use `e0`, `e1`, `e2`... making `struct stat`, `struct sockaddr` unusable
+- **Zero documentation**: No comments explaining test purposes, error codes, or API contracts
+- **Goto-based control flow**: Simple loops converted to goto labels (`lab_0x1f54`) reducing readability
+- **Type erosion**: `size_t`, `pthread_t`, `FILE*` all degraded to `int32_t` or generic pointers
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**—Function names preserved accurately from source (`param_strcpy`, `call_mutex_lock`, `thread_atomic_increment`), making high-level navigation possible despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**—Complete absence of documentation makes understanding test purposes, expected values, and error conditions require reverse-engineering the decompiled code itself.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Fix architecture detection**—ARM64 binaries should not produce x86 thunk calls; this indicates fundamental IR translation failure
+2. **Recover struct field semantics**—Use debug info (`-g` flag present) to restore field names like `st_size`, `sin_family`, `shm_nattch`
+3. **Preserve source comments**—Debug sections contain original comments that should be embedded in decompiled output, especially for test harness code

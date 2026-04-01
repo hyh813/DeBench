@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_gcc_O2_g/angr/syntactic/bin/7_gcc_O2_g_fixed",
+  "stdout": "Testing Obfuscation and Optimizations:\n\nOpaque predicate result: 10\nOpaque predicate with loop result: 20\nInstruction substitution result: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`. For example, in `_Z13test_cpp_rttiv`, the pointers `v1` and `v3` represent `RTTIDerivedA` and `RTTIDerivedB` objects, but this semantic meaning is completely lost.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: While the internal function names are mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`), the decompiler provides excellent demangled comments (e.g., `// Demangled: test_cpp_member_func()`), which significantly aids readability. However, library wrappers are named poorly (e.g., `function_1040`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are often obfuscated as hex integers, such as `0x74736554` representing "Test" in `_Z20test_cpp_member_funcv`. Magic numbers like `0x125c` (4700) are used without context, making the logic opaque.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with compiler artifacts like `__x86_get_pc_thunk_bx` and frame pointer manipulation code (e.g., `int32_t v1; __x86_get_pc_thunk_bx(v1);`), which distracts from the program logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: The control flow is severely degraded by constant folding; for instance, `_Z21test_cpp_virtual_funcv` is reduced to `return 42`, completely hiding the virtual dispatch mechanism and object creation logic present in the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Class methods are flattened into standalone functions with `this` passed as a generic `int32_t *` (e.g., `_ZN9ContainerIiE4pushEi`), losing the cohesive object-oriented structure and grouping provided by the original classes.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Functions like `_Z18test_cpp_exceptionv` exhibit fragmented control flow with nested `if` statements checking generic variables (`v2 == 3`), making it difficult to map the execution path to the original `try-catch` blocks.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler fails to recover the source logic, presenting optimized constants instead of the algorithmic steps. For example, the arithmetic in `test_cpp_member_func` is replaced by a hardcoded addition, rendering the code unrecoverable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: High-level types are completely erased; class instances like `SimpleClass` or `Base` are represented as generic `int32_t *`, and specific types like `bool` are demoted to `int32_t`, losing type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No C++ class or struct definitions are recovered. The `Container` class, `SimpleClass`, and inheritance hierarchies are absent, forcing the reader to interpret raw pointer arithmetic (e.g., `*(int32_t *)(4 * v2 + result2) = a2;`).
+
+**11. Type Safety:** Score: 1/10
+Justification: A critical semantic error exists in `_Z13template_swapIiEvRT_S1_` where the code is `*a1 = *a2; *a2 = *a1;`. This loses the original value of `*a1`, indicating a severe failure in data flow analysis and type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: The inclusion of demangled function names is helpful, but there are no comments explaining the logic, C++ constructs (like RAII or virtual tables), or the purpose of complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: C++ idioms are not recognized. Smart pointers are reduced to raw `_Znwj` (new) and `_ZdlPv` (delete) calls, and virtual function calls are hidden behind constant folding, failing to convey the design patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the incorrect `template_swap` logic and constant-folded functions with high confidence, providing no warnings about the potential loss of logic or semantic anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds checking in `Container::get` is obscured by pointer arithmetic without explicit comments on safety.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: While mangled names allow tracing, the lack of struct definitions and the flattening of classes make it difficult to understand the relationships between data members and their methods (e.g., which `int32_t*` belongs to which object instance).
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed primarily by address order with no logical grouping by class or functionality, making it hard to navigate the codebase compared to the source's clear class-based organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on external C++ runtime symbols (e.g., `__cxa_throw`) but lacks the necessary header definitions and struct layouts to be easily integrated or compiled into a working project.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- **Semantic Error**: `template_swap` implementation is incorrect (`*a1 = *a2; *a2 = *a1;`), resulting in data loss.
+- **Missing Types**: All C++ class structures (structs) are missing; objects are raw `int32_t*` pointers.
+- **Logic Loss**: Source logic is replaced by constant folding (e.g., `return 42`), hiding the implementation details.
+- **Obfuscated Literals**: String literals appear as hex integers (e.g., `0x74736554` for "Test").
+
+**Best Quality Aspect:** Function Naming (Score: 7/10)
+- **Why?** The decompiler successfully demangles C++ symbols in comments (e.g., `// Demangled: test_cpp_member_func()`), which is the only feature preserving the original semantic intent.
+
+**Most Needs Improvement:** Type System Fidelity (Score: 1.3/10)
+- **Why?** The complete absence of struct/class definitions and the presence of a critical logic error in a template function render the type system recovery fundamentally broken.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery**: Analyze vtables and member access patterns to reconstruct `struct` and `class` definitions instead of flattening everything to `int32_t*`.
+2.  **Fix Data Flow Analysis**: Correct the handling of temporary variables in swap functions to prevent semantic errors like the one seen in `template_swap`.
+3.  **Recover String Literals**: Detect and convert hex-encoded integer constants back into string literals (e.g., `0x74736554` -> `"Test"`).
+4.  **Control Constant Folding**: Provide an option or heuristic to disable aggressive constant folding when it obscures the source logic, especially for test functions.

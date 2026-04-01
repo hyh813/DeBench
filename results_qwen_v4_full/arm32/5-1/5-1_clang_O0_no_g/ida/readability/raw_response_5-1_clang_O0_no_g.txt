@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Only occasional better names like `Value`, `InstanceCount`, `Size` appear inconsistently. Objects are represented as `_BYTE v3[36]` instead of `SimpleClass obj`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain readable names (`test_cpp_member_func`, `test_cpp_virtual_func`), but class methods use mangled names (`_ZN11SimpleClassC2EiPKc`). Helper functions have cryptic names (`sub_D38`, `sub_1F40`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1Fu` (31 for strncpy), `4660` (0x1234 class ID) appear without explanation. Some values are recoverable from context but lack named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame comments (`[sp+Ch] [bp-28h]`), BYREF annotations, and register hints (`// r0`) create visual clutter. Some functions have spurious warnings ("positive sp value has been detected").
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if/else, loops) are mostly recovered correctly. Exception handling in `test_cpp_exception` is severely degraded to raw `_cxa_throw` calls without try/catch structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries are preserved, but template instantiation creates excessive helper functions (20+ `std::unique_ptr` helpers). Lambda closures become separate `$_0`, `$_1` functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom within functions. Virtual dispatch and exception paths create some non-linear flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiation causes significant code duplication (separate `Container<int>` and `Container<double>` versions). Destructor chains repeat similar patterns without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types (int, double, char*) are preserved, but class types degrade to raw pointers (`SimpleClass *this`). Function pointers use generic signatures (`int (__fastcall **)(_DWORD)`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct/class definitions recovered. Objects are `_BYTE` arrays with offset arithmetic (`*(_DWORD *)this + 4`). Inheritance relationships invisible in type system.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive unsafe casts (`(_DWORD *)`, `(__fastcall **)`). Pointer arithmetic on class objects (`(char *)this + 8`). No const-correctness preserved despite `const` methods in source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present (stack layout, register hints). No algorithm explanations, no C++ feature documentation. Failed decompilations listed but not explained.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **Critical failure** - C++ idioms completely lost. RAII (smart pointers) shown as manual new/delete. Virtual dispatch shown as raw vtable pointer dereference. Lambda captures not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: 28 failed decompilations clearly listed at end. Stack warnings present ("positive sp value has been detected"). However, no inline warnings for suspicious patterns within successful decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts lost. Object lifetime requirements not indicated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but class hierarchy relationships opaque. Virtual method dispatch shown as indirect calls without vtable structure documentation. Inheritance chains not recoverable.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed in link order, not logical grouping. Related class methods scattered throughout file. No namespace or class organization preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 28 external functions failed to decompile (`__imp_printf`, `__imp___cxa_throw`, etc.). Would require extensive stub implementation. C++ runtime dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+5+5)/4 = 4.50
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75
+Level 3 (Type):        (4+2+3)/3   = 3.00
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25
+Level 5 (Contextual):  (5+4+3)/3   = 4.00
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (3.00 × 0.20) + (3.25 × 0.15) + (4.00 × 0.10)
+        = 1.35 + 1.4375 + 0.60 + 0.4875 + 0.40
+        = 4.275/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects
+- **No struct/class type recovery** - All C++ classes represented as `_BYTE` arrays with manual offset arithmetic
+- **Mangled function names** - C++ name mangling not demangled (`_ZN11SimpleClassC2EiPKc` instead of `SimpleClass::SimpleClass`)
+- **28 failed decompilations** - External runtime functions completely missing, blocking standalone compilation
+- **C++ idioms lost** - RAII, virtual dispatch, lambdas, templates shown as low-level operations without semantic meaning
+- **Architecture mismatch** - Source claims `arm64` but decompiled code shows 32-bit `arm` with different calling conventions
+
+### Best Quality Aspect
+- **Control Flow Naturalness (6/10)** - Basic if/else and loop structures are mostly recovered correctly despite the C++ complexity
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover any class/struct definitions, forcing all object access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement C++ class structure recovery** - Analyze vtable layouts and constructor patterns to reconstruct struct definitions with field names
+2. **Add C++ name demangling** - Integrate `c++filt` or equivalent to convert mangled names (`_ZN...`) to readable form (`Class::method`)
+3. **Recognize C++ idioms** - Detect RAII patterns (constructor/destructor pairs), virtual dispatch (vtable calls), and lambda closures to add semantic annotations

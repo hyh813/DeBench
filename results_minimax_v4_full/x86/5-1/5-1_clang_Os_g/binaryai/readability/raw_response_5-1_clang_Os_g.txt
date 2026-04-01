@@ -1,0 +1,160 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use compiler-generated names like `local_28`, `local_9`, `param_1`, `param_2`, `iVar1`, `sVar1`, `uVar1`, `piVar1`, `puVar1`, and `unaff_EBX`. These cryptic names provide no semantic meaning about their purpose (e.g., `local_28` should be `name_buffer` based on its 31-byte size and `strncpy` usage in the original).
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Mixed results - some functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `main`), template functions partially recovered (`template_max_int_`, `template_swap_int_`), but many internal functions use mechanical addresses (`FUN_00011030`, `FUN_00011160`, `__do_global_dtors_aux`). The naming is inconsistent between recovered and external symbols.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers like `0x14` (20 for array size), `0x1f` (31 for string length), `0x2a` (42 expected result) appear without explanation. While some values like `0x2a` can be inferred from context, most lack named constant equivalents that would clarify their purpose.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or frame pointer manipulation cluttering the output. External function stubs are appropriately declared. The code is relatively clean compared to typical decompiled output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Control flow is natural with clear if-else structures and loops. For example, `test_cpp_constructor` uses a proper do-while loop (`do { *piVar2 = iVar3; ... } while (iVar3 != 0x32)`). At `-O0` optimization, the flow closely matches source patterns.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions maintain appropriate granularity. Template instantiations are properly separated (`template_max_int_`, `template_max_double_`, `template_swap_int_`). Container methods are logically grouped. No monolithic functions observed; each function has a clear single responsibility.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code reads top-to-bottom with minimal forward jumps. The `test_cpp_constructor` function has a simple linear flow: allocate → initialize → increment count → compute result → deallocate → decrement count → return. No spaghetti code or confusing goto patterns.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (the constructor loop is straightforward). Common subexpression elimination artifacts are not prominent. The code is clean and non-repetitive.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Heavy use of `undefined4` instead of `int` or `int32_t`. For example, `test_cpp_virtual_func` returns `undefined4` instead of `int`. Template type parameters are partially recovered (`Container_int_`, `Container_double_`) but underlying types use generic declarations. Const correctness is not preserved.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: Partial success - Container template classes recovered with type-specific suffixes (`Container_int_`, `Container_double_`). However, field names are lost (e.g., `*(undefined4 *)(this + 0x28)` instead of `this->size`). Many structures remain unnamed or use raw pointer arithmetic.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Justification: Generally safe pointer usage. The code uses proper pointer arithmetic for array access (e.g., `*(int *)(this + iVar1 * 4)`). No obvious buffer overflow patterns. Function pointer types are reasonably accurate for virtual calls. Minor issues with `undefined4` type mixing.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No meaningful comments present. No explanation of algorithm logic, no decompilation confidence indicators, no recovered pre/postconditions. The only comments are the auto-generated header (`// Decompiled by BinaryAI`). This makes understanding non-trivial logic very difficult.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+
+Justification: Some C++ idioms are recognizable - virtual function calls through vtable (`(***(code ***)param_1)(param_1,param_2)`), template instantiation patterns, RAII patterns in constructor/destructor pairs. However, no explicit naming or documentation of these patterns.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Justification: No indication of uncertain or ambiguous code. Indirect virtual calls are not flagged as potentially unresolvable. No warnings about unusual stack layouts or potential undefined behavior. The decompiler presents everything with equal confidence.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or boundary checks. For example, `Container<int>::get` has implicit bounds checking that is not documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Justification: Function calls are clear and traceable. External dependencies (`operator_new`, `memcpy`, `strlen`) are properly declared. Virtual dispatch relationships are visible through vtable access patterns. However, no explicit documentation of call relationships or caller/callee graphs.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are grouped logically - test functions together, template instantiations grouped, Container methods grouped, external stubs at the beginning. Static vs. non-static distinction is maintained. Minor issues with arbitrary ordering of some internal functions.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: External functions are declared but not implemented (stubs only). Code would not compile standalone without linking against C++ runtime. No documentation of required dependencies (`libstdc++`, etc.). The decompiled code requires significant patching to build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 8) / 4 = 4.75
+L2_avg = (8 + 8 + 8 + 9) / 4 = 8.25
+L3_avg = (5 + 6 + 7) / 3 = 6.00
+L4_avg = (2 + 6 + 3 + 2) / 4 = 3.25
+L5_avg = (6 + 7 + 4) / 3 = 5.67
+
+Overall = (4.75 × 0.30) + (8.25 × 0.25) + (6.00 × 0.20) + (3.25 × 0.15) + (5.67 × 0.10)
+        = 1.425 + 2.0625 + 1.2 + 0.4875 + 0.567 = 5.74/10
+```
+
+### Overall Readability Score: 5.74/10
+
+---
+
+### Critical Defects
+
+- **Variable naming**: All stack variables use generic compiler-generated names (`local_28`, `param_1`, `iVar1`) providing zero semantic information about their purpose
+- **Type precision**: Heavy use of `undefined4` instead of proper integer types; const correctness completely lost
+- **Comment absence**: No comments explaining algorithms, recovered structures, or decompilation confidence
+- **Anomaly indication**: No flags for uncertain indirect calls or potential undefined behavior
+- **Contract recovery**: No pre/postconditions or invariants documented despite obvious boundary checks in code
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (8/10)** - At `-O0` optimization, the decompiled control flow closely matches the original source. Loops, conditionals, and function calls are structured naturally without goto abuse or confusing restructuring.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The decompiler uses completely generic variable names that provide no semantic meaning. This single dimension severely impacts readability as every variable must be understood through context rather than name inference.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `local_28` used in `strncpy` and `strlen` → should be `name_buffer` or similar)
+
+2. **Recover type information more precisely**: Replace `undefined4` with `int` where possible; recover `const` qualifiers; use proper integer types (`size_t`, `uint32_t`)
+
+3. **Add meaningful comments**: Include algorithm explanations, recovered contracts, and uncertainty indicators for indirect calls or ambiguous constructs

@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `lVar1`, `iVar2`, `__ptr`, `puVar2`) with no semantic meaning. Original source had meaningful names like `arr`, `p`, `local`, `head` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions preserved original names (`double_value`, `local_vars`, `heap_basic`), but helper functions use generic names (`FUN_001009b0`, `FUN_00100bfc`). Core functionality names are recoverable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0x2a`, `0x14`, `0xf`, `0x1e`, `0x32`). Original expressions like `x * 2 + 10` became opaque constants. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts (`___stack_chk_guard` checks, `__printf_chk` instead of `printf`). Multiple "WARNING: Removing unreachable block" comments clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while patterns (`do { ... } while (lVar1 != 10)`). Several functions lost return statements entirely (changed from `int` to `void`). Optimization artifacts disrupt natural flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but signatures degraded (e.g., `local_array` returns `void` instead of `int`). Some functions completely optimized to constants (`static_complex_init` returns `0xf` directly).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains forward jump labels (`LAB_00101680`). Some functions have excessive nesting from optimization (VLA stack allocation code).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding occurred appropriately (simple functions return computed constants). However, some redundancy in stack check code repeated across functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `undefined4`/`undefined8`, `size_t` becomes `ulong`. Original `Point` struct type lost entirely. Function pointers become `code *` or `undefined8`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost. `Point` struct accessed as raw memory (`malloc(8)`). `Node` struct fields accessed via pointer arithmetic (`__ptr + 2`) instead of named fields (`->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(undefined8 *)`). Pointer arithmetic without type safety (`(long)__ptr + lVar1 * 4`). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler-generated warnings present ("WARNING: Removing unreachable block"). No semantic comments explaining function purpose or algorithm logic. Original test scenario comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Linked list creation/traversal in `linked_list_heap` not identified as such. Tree structure in `tree_heap_traversal` not recognized.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Could not recover jumptable", "Subroutine does not return"). However, critical issues like missing return values not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (NULL checks present but not explained). No postconditions inferred. Error return values (`-1`, `-2`, `0xffffffff`) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without indication of their scope or purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by test category (stack/heap/static). Original section organization completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies clear (`malloc`, `free`, `printf`, `fork`). Some platform-specific code (`__printf_chk`) may need adjustment.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+7)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 4.69/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `lVar1`, `iVar2`) - should infer from usage context
+- **Struct types not recovered** - `Point` and `Node` structs accessed via pointer arithmetic instead of field names
+- **Return types corrupted** - functions like `local_array`, `large_stack_frame` changed from `int` to `void`
+- **Magic numbers everywhere** - `0x2a`, `0x14`, `0xf` instead of original expressions
+- **Test logic optimized away** - `test_stack_memory` prints constants instead of calling functions and printing results
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved from source, making core functionality identifiable despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, forcing all composite data access through opaque pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze consistent memory access patterns to recover struct layouts and field names (e.g., `__ptr + 8` consistently accessed as `next` pointer should become `->next`)
+
+2. **Preserve return type semantics** - Don't optimize away return values even when compiler does; track data flow to recover original return types (functions returning array elements should not become `void`)
+
+3. **Add semantic comment generation** - Infer function purpose from call patterns and generate explanatory comments (e.g., "Creates linked list of 5 nodes, sums values, frees memory" for `linked_list_heap`)

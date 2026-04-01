@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/5-23/5-23_clang_O2_g/angr/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\n\nMacro constants: 64\nMacro functions: 30\nConditional compile: 32\nMulti-branch compile: 57122\nMacro recursion: 116\nStringize: 19\nToken paste: 60\nLOG: Values: 30, 20, 10\nVariadic macro: 60\nMacro override: 16\nInclude guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:11\nBuiltin macros: 382\n=== Testing ASM Features ===\n\nBasic ASM: 5\nMulti-instruction ASM: 5\nSIMD intrinsics: 0\nAtomic operations: 0\nDynamic code: 0\nMemory clobber demo: 0\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

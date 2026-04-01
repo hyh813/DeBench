@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Occasional better names like `result`, `cur`, `flag1` appear but are rare. Original variables like `capture_by_value`, `instance_count` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed quality—some functions retain readable names (`test_cpp_member_func`, `SimpleClass::getValue`) but many use mangled C++ names (`_Z20test_cpp_member_funcv`) or generic `sub_XXXXXX` labels. Class method names are partially recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `0x4004000000000000` (double representation), `18446744073709551615`. String literals preserved but numeric constants lack semantic names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from C++ runtime helpers (`__cxa_allocate_exception`, `__do_global_dtors_aux`, `deregister_tm_clones`). Dozens of `sub_XXXXXX` wrapper functions that add no value. One unsupported jumpkind error marker present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mostly linear but uses `goto` in places (`sub_402020`: `goto g_409010`). Exception handling creates convoluted control paths. At `-O0` this level of restructuring is unexpected and reduces clarity.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Catastrophic fragmentation—540 source lines became 4368 decompiled lines (8x expansion). C++ template instantiations and standard library internals exposed as separate functions. Many `sub_XXXXXX` functions are trivial wrappers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Individual functions generally read top-to-bottom. Exception handling paths create some non-linear jumps but most functions maintain reasonable flow without deep nesting.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from template instantiations (separate `template_max<int>` and `template_max<double>`). Standard library helper functions repeat similar patterns. No consolidation of common operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int`, `char`, `unsigned long long`) but C++ class types degraded to generic `struct_0`. Smart pointers become raw pointer operations. Template type information completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes become `struct_0 { field_0, padding_4, field_8 }` with no semantic field names. Inheritance relationships not reconstructed. Virtual table layouts not recovered. Lambda capture structs have generic fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(unsigned long long)call_virtual_func(v8, 5)`, `(char)Point::operator==(&v3, &v2) & 1`. Extensive void* and raw pointer arithmetic on class objects throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. One anomaly marker exists (`[D] Unsupported jumpkind Ijk_SigTRAP`) but no algorithm explanations, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized—RAII patterns, virtual dispatch, smart pointer semantics, lambda captures all appear as raw operations. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Single anomaly marker for unsupported jumpkind. Most problematic code (indirect calls, vtable access, exception handling) presented confidently without warnings about uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts not recovered. No null checks or bounds validation comments despite their presence in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not explained. Virtual dispatch mechanism not clarified. No call graph documentation. Global variable usage opaque (`g_408fe8`, `g_409008`).
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single flat structure. No logical grouping of related functions. C++ class methods scattered. No namespace or header file organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies declared but code won't compile standalone. Missing type definitions, incomplete struct layouts, unresolved external symbols. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+3+6+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.59/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from original (`capture_by_value`, `instance_count`, `multiplier`)
+- **8x code expansion** (540→4368 lines) from excessive function fragmentation and C++ runtime exposure
+- **Class structures degraded** to `struct_0 { field_0, padding_4 }` with no field names or inheritance relationships
+- **No comments** explaining C++ idioms (RAII, virtual dispatch, smart pointers, lambdas)
+- **Template instantiation redundancy** creates separate functions for each type without consolidation
+
+### Best Quality Aspect
+- **Code Linearization (6/10)** — Individual functions generally maintain top-to-bottom readability without excessive forward jumps or deep nesting, making local comprehension possible despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** — Virtually no documentation exists to explain C++ semantics, making the decompiled code nearly impossible to understand without the original source for comparison.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover semantic variable names** from usage patterns and debug symbols (e.g., `v5=10` in lambda context should be `capture_by_value`)
+2. **Consolidate C++ runtime helpers** into inline operations or library stubs rather than exposing hundreds of `sub_XXXXXX` wrapper functions
+3. **Add decompilation confidence annotations** for uncertain constructs (vtable calls, exception handling, lambda captures) to guide manual review

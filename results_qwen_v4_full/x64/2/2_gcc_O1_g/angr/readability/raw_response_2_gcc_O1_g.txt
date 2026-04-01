@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`double_value`, `process_int`, `struct_simple`), but many helpers degraded to `sub_401020` format. Test functions kept names but implementation functions mixed.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (0xFFFFFFFF), `0x3fc00000`, `4591870180066957722`. Some recognizable values (97='a', 98='b') but no named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe decompilation artifacts: `[D] Unsupported jumpkind`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI()` operations. Redundant casts like `(unsigned int)v1` throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For-loops converted to awkward do-while patterns (`ptr != &a0[1 + a1 + 1]`). Some functions use goto (`sub_401020`). At -O0, should expect near-perfect recovery.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes reasonable and mostly match original structure. Test functions remain monolithic as in source. Some helpers collapsed into generic `sub_` functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but forward jumps in test functions disrupt flow. Do-while patterns require mental transformation to understand original for-loop intent.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but redundant casts throughout (`(unsigned int)v1`, `(unsigned long long)`). Loop termination conditions overly complex.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`long long` (`process_char`), `int`→`unsigned int`, `float`/`double` functions lose parameters entirely. `process_float()` has no parameters in decompiled version.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_8` naming. No field names, no semantic meaning. Nested structures (`Rect`, `Widget`) completely lost. Bitfields not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int*)`, `(char*)`), generic pointer arithmetic (`unsigned long`), function pointer signatures degraded to `unsigned long long *`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal, tree recursion, array iteration all appear as generic loops. Data structure patterns completely unnamed.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `[D]` markers for unsupported operations, but type mismatches not flagged. `process_float` missing parameters not warned. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. Null checks exist in code but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables have cryptic names (`g_405fe8`, `g_403008`). No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order. Test functions separated but no logical grouping comments. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies (`__printf_chk`, `puts`, `__libc_start_main`) require stubs. `[D]` errors would prevent compilation. Some function signatures incompatible.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+5+6)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type System): (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  3.89/10
+```
+
+### Overall Readability Score: **3.9/10**
+
+### Critical Defects:
+- **Type system collapse**: `process_char` returns `long long` instead of `char`; `process_float`/`process_double` have no parameters
+- **Struct field names lost**: All composite types use `field_0`, `field_8` with no semantic meaning
+- **Decompilation failures**: `[D] Unsupported jumpkind` and `unsupported_<class 'pyvex.expr.GetI'>` markers indicate incomplete recovery
+- **Magic numbers unexplained**: `4294967295`, `0x3fc00000`, `4591870180066957722` without context
+- **Variable naming generic**: `v0`, `v1`, `v2` throughout test functions obscuring data flow
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`double_value`, `process_int`, `struct_simple`), providing anchor points for understanding
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete loss of struct/union semantics with generic `struct_0`/`field_0` naming makes complex data structures unintelligible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols** (-g flag present): Use DWARF info to restore original types (`char`, `short`, `float`) instead of inferring from usage
+2. **Implement struct field name recovery**: Cross-reference with debug info or use access pattern analysis to name fields semantically (`position.x` not `field_0`)
+3. **Suppress or annotate decompilation failures**: Replace `[D]` markers with clear warnings and fallback C code, or mark functions as "incomplete recovery"

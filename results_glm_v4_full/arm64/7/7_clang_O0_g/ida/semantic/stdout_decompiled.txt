@@ -1,0 +1,8 @@
+
+=== Testing Obfuscation & Optimization ===
+  Fake Branch: 10
+  Opaque Predicate: 20
+  Instruction Substitution: 225
+  String Encryption: 62
+  Tail Call Optimized: 500500
+  Non-Tail Call: 5050

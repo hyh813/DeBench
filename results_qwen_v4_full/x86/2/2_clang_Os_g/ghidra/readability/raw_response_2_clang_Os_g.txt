@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `iVar2`, `piVar2`, `puVar3`) with 30+ "Unresolved local var" comments indicating complete name loss. Simple functions preserve parameter names (`c`, `x`, `p`) but locals are lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, helper functions use generic names (`FUN_00011030`) and function pointer types are degraded (`_func_int_int *`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions show pre-computed constants (`0x61`, `0x3c`, `0x12345678`) instead of actual function calls, obscuring the computation flow. Magic numbers like `0x2c`, `0x1b8` appear in array indexing without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive "Unresolved local var" comments throughout, architecture warnings ("Function: __x86.get_pc_thunk.bx replaced"), and "WARNING: Removing unreachable block" messages pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical semantic error in `binary_tree_sum` - recursive tree traversal converted to incorrect `for` loop that only traverses right children. Loops use `do-while` instead of `for`, and `enum_switch` becomes a lookup table instead of switch statement.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved with reasonable granularity. However, test functions are over-optimized with constant folding that hides actual function call relationships.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but index-based iteration (`iVar2 = iVar2 + 1`) replaces natural pointer arithmetic. Nested loops in `array_3d` are readable but verbose.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop patterns are consistent though not optimally expressed. Some redundant variable assignments in simple functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `long long` becomes `longlong`, `long double` incorrectly becomes `longdouble *` with extra return parameter. `volatile` qualifier completely lost in `volatile_access`. Function pointer types degraded to `_func_int_int *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct definitions (`Point3D`, `Rect`, `Widget`, `Node`) preserved with field names. However, `struct_bitfields` shows raw bit manipulation (`uVar1 >> 6`, `uVar1 & 1`) instead of field access. Union type information partially lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `ptr_diff` uses unsafe cast `(int)p1 - (int)p2 >> 2` instead of proper pointer subtraction. `volatile_access` loses volatile semantics (`return *p + *p` allows optimization). Multiple implicit casts throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are exclusively auto-generated warnings ("Unresolved local var", "WARNING: Unknown calling convention"). No algorithm explanations, API documentation, or semantic guidance provided.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal pattern visible but not identified. Tree recursion transformed incorrectly. Enum+switch pattern degraded to array lookup without recognition of the original pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "Unresolved local var" comments flag some issues. However, critical semantic errors (like `binary_tree_sum` transformation) are not flagged. No indication of potential undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (null checks not noted). No postcondition information. Error conditions in functions like `array_complex_index` return -1 but this isn't documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in main functions but test functions show constants instead of actual calls. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) preserved but type signatures degraded.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order with logical grouping. Related functions (data types, arrays, pointers, composites) maintain separation. No header file structure or static function scoping visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone - missing type definitions (`Point3D`, `Node`, etc. used but not defined in output), unresolved variables, architecture-specific artifacts, and incorrect function signatures (`process_ld`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50
+Level 2 (Structural):  (4+6+5+7)/4 = 5.50
+Level 3 (Type):        (4+5+4)/3   = 4.33
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75
+Level 5 (Contextual):  (5+6+3)/3   = 4.67
+
+Overall = (4.50 × 0.30) + (5.50 × 0.25) + (4.33 × 0.20) + 
+          (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.375 + 0.866 + 0.4125 + 0.467
+        = 4.47/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **`binary_tree_sum` semantic corruption**: Recursive tree traversal incorrectly transformed to iterative loop that only visits right children, fundamentally changing algorithm behavior
+- **`volatile_access` loses volatile semantics**: Returns `*p + *p` allowing compiler optimization, defeating the purpose of volatile
+- **`process_ld` incorrect signature**: Returns `longdouble *` with extra `__return_storage_ptr__` parameter instead of `long double`
+- **Test functions show constants**: All test functions display pre-computed results instead of actual function calls, hiding computation flow
+- **30+ unresolved local variables**: "Unresolved local var" comments throughout indicate significant variable recovery failures
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), making function identification straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Comments are exclusively auto-generated warnings with zero semantic documentation, algorithm explanations, or decompilation confidence indicators.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover recursive patterns accurately** - The `binary_tree_sum` transformation from recursion to incorrect iteration is a critical failure; implement better recursion detection and preservation
+2. **Preserve type qualifiers** - `volatile`, `const`, and extended precision types (`long double`) are lost or corrupted; improve type system analysis
+3. **Add semantic documentation** - Replace generic "Unresolved local var" warnings with inferred variable purposes based on usage patterns and add algorithm-level comments for complex functions

@@ -1,0 +1,16 @@
+Testing obfuscated code...
+
+10
+20
+225
+48
+500500
+5050
+72
+Division by zero test
+Null pointer test
+41
+30
+2000000000
+10
+47

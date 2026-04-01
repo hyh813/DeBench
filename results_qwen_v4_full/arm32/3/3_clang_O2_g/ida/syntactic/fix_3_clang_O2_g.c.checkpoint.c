@@ -1,0 +1,1917 @@
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+typedef unsigned long ptrdiff_t;
+typedef long long intmax_t;
+typedef unsigned long long uintmax_t;
+typedef int bool;
+
+/* Standard library function declarations */
+extern void *malloc(size_t size);
+extern void free(void *ptr);
+extern void *calloc(size_t nmemb, size_t size);
+extern void *realloc(void *ptr, size_t size);
+extern int printf(const char *format, ...);
+extern int puts(const char *s);
+extern void *memcpy(void *dest, const void *src, size_t n);
+extern void *memmove(void *dest, const void *src, size_t n);
+extern int memcmp(const void *s1, const void *s2, size_t n);
+extern void *memset(void *s, int c, size_t n);
+extern int fork(void);
+extern int waitpid(int pid, int *status, int options);
+extern void perror(const char *s);
+extern void exit(int status);
+extern void abort(void);
+
+/* Macro definitions for missing symbols */
+#define BYTE1(x) (((x) >> 8) & 0xFF)
+#define JUMPOUT(x) return
+#define qmemcpy(dst, src, n) memcpy(dst, src, n)
+#define _sync_synchronize() __sync_synchronize()
+
+/* Node structure for linked lists */
+typedef struct Node {
+    int data;
+    struct Node *next;
+} Node;
+
+/* TreeNode structure for binary trees */
+typedef struct TreeNode {
+    int data;
+    struct TreeNode *left;
+    struct TreeNode *right;
+} TreeNode;
+
+/* Global variable declarations */
+int global_counter = 0;
+int static_local_counter = 0;
+int *file_scope_static = 0;
+int (*global_func_ptr)(int) = 0;
+char *byte_9 = 0;
+int extern_global_var = 0;
+const char *const_string = 0;
+int *global_heap_ptr = 0;
+
+/* Additional global declarations for missing symbols */
+const char *aD = "%d\n";
+const char *aFork_0 = "Fork";
+const char *byte_2A42 = "Exited with signal %d\n";
+const char *byte_2A1D = "Exited with status %d\n";
+int (*MEMORY[256])(int, int, int) = {0};
+int global_array[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+const char *asc_2D92 = "=== Static/Global Memory Tests ===";
+int word_32 = 50;
+const char *asc_2DB6 = "=== Memory Operation Tests ===";
+int double_value(int x);
+int call_weak_fn(void);
+static int extern_function(int x);
+const char unk_2E04[12] = "HelloWorld12";
+const char unk_2E10[12] = "HelloWorld34";
+
+/*
+ * Decompiled by IDA Pro 9.1 with Hex-Rays
+ * Binary: build/arm32/3/3_clang_O2_g
+ * Processor: arm
+ */
+
+/* Function: .init_proc @ 0x55C */
+int init_proc()
+{
+ return 0;
+}
+
+/* Function: call_weak_fn - stub implementation */
+int call_weak_fn(void)
+{
+ return 0;
+}
+
+
+/* Function: sub_568 @ 0x568 */
+void sub_568()
+{
+ return;
+}
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+
+/* CRT stub function call_weak_fn removed by preprocessor */
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+/* Function: local_vars @ 0x7BC */
+int local_vars(int x)
+{
+ return 2 * x + 10;
+}
+
+
+/* Function: local_array @ 0x7C8 */
+int local_array(int n)
+{
+ return 5 * n;
+}
+
+
+/* Function: local_struct @ 0x7D0 */
+int local_struct(int x)
+{
+ return 3 * x;
+}
+
+
+/* Function: address_of_local @ 0x7D8 */
+int address_of_local(int *out)
+{
+ *out = 42;
+ return 42;
+}
+
+
+/* Function: address_of_array @ 0x7E8 */
+int address_of_array(int *arr)
+{
+ return 2 * *arr;
+}
+
+
+/* Function: large_stack_frame @ 0x7F4 */
+int large_stack_frame()
+{
+ int i; // r0
+ unsigned char v2[2056]; // [sp+0h] [bp-808h]
+
+ for ( i = 0; i != 2048; ++i )
+ v2[i] = i;
+ return v2[1024];
+}
+
+
+/* Function: vla_stack @ 0x824 */
+int vla_stack(int n)
+{
+ int v1; // r1
+ char *v2; // r1
+ int v3; // r3
+ int v4; // r2
+ int v6; // [sp-4h] [bp-10h] BYREF
+
+ v1 = -1;
+ if ( (unsigned int)(n - 1001) >= 0xFFFFFC18 )
+ {
+ v2 = (char *)&v6 - ((4 * n + 7) & 0xFFFFFFF8);
+ v3 = 0;
+ v4 = n;
+ do
+ {
+ *(unsigned int *)&v2[2 * v3] = v3;
+ v3 += 2;
+ --v4;
+ }
+ while ( v4 );
+ return *(unsigned int *)&v2[(2 * (n + ((unsigned int)n >> 31))) & 0xFFFFFFFD];
+ }
+ return v1;
+}
+
+
+/* Function: alloca_usage @ 0x898 */
+int alloca_usage(int n)
+{
+ char *v2; // r1
+ int v3; // r2
+ int i; // r3
+ int v5; // [sp-4h] [bp-10h] BYREF
+
+ if ( n < 1 )
+ return -1;
+ v2 = (char *)&v5 - ((4 * n + 7) & 0xFFFFFFF8);
+ v3 = 0;
+ for ( i = 0; i != n; ++i )
+ {
+ *(unsigned int *)&v2[4 * i] = v3;
+ v3 += 3;
+ }
+ return *(unsigned int *)&v2[(2 * (n + ((unsigned int)n >> 31))) & 0xFFFFFFFD];
+}
+
+
+/* Function: stack_alias @ 0x8FC */
+int stack_alias(int *p1, int *p2)
+{
+ return 20;
+}
+
+
+/* Global string constants */
+const char *asc_2D56 = "=== Stack Memory Tests ===";
+const char *asc_2D74 = "=== Heap Memory Tests ===";
+
+/* Function: test_stack_memory @ 0x904 */
+void test_stack_memory()
+{
+ int i; // r0
+ unsigned char v1[2056]; // [sp+0h] [bp-808h]
+
+ puts(asc_2D56);
+ printf("MEM-L1-01 (local_vars): %d\n", 20);
+ printf("MEM-L1-02 (local_array): %d\n", 10);
+ printf("MEM-L1-03 (local_struct): %d\n", 15);
+ printf("MEM-L1-04 (address_of_local): %d\n", 42);
+ printf("MEM-L1-05 (address_of_array): %d\n", 2);
+ for ( i = 0; i != 2048; ++i )
+ v1[i] = i;
+ printf("MEM-L2-01 (large_stack_frame): %d\n", v1[1024]);
+ printf("MEM-L2-02 (vla_stack): %d\n", 10);
+ printf("MEM-L2-03 (alloca_usage): %d\n", 15);
+ printf("MEM-L2-04 (stack_alias): %d\n", 20);
+}
+
+
+/* Function: heap_basic @ 0x9F0 */
+int heap_basic(int n)
+{
+ char *v2; // r0
+ int v3; // r1
+ int v4; // r2
+ int v5; // r4
+
+ v2 = (char *)malloc(4 * n);
+ if ( !v2 )
+ return -1;
+ if ( n >= 1 )
+ {
+ v3 = 0;
+ v4 = n;
+ do
+ {
+ *(unsigned int *)&v2[2 * v3] = v3;
+ v3 += 2;
+ --v4;
+ }
+ while ( v4 );
+ }
+ v5 = *(unsigned int *)&v2[(2 * (n + ((unsigned int)n >> 31))) & 0xFFFFFFFD];
+ free(v2);
+ return v5;
+}
+
+
+/* Function: heap_calloc @ 0xA50 */
+int heap_calloc(int n)
+{
+ int *v2; // r0
+ int v3; // r4
+ int *v4; // r1
+ int v5; // r2
+ int v6; // t1
+
+ v2 = (int *)calloc(n, 4u);
+ if ( !v2 )
+ return -1;
+ v3 = 0;
+ if ( n >= 2 )
+ {
+ v4 = v2 + 1;
+ v5 = n - 1;
+ v3 = 0;
+ do
+ {
+ v6 = *v4++;
+ --v5;
+ v3 += v6;
+ }
+ while ( v5 );
+ }
+ free(v2);
+ return v3;
+}
+
+
+/* Function: heap_realloc @ 0xAA8 */
+int heap_realloc()
+{
+ unsigned int *v0; // r0
+ void *v1; // r4
+ unsigned int *v2; // r0
+ int v3; // r1
+ int v4; // r5
+
+ v0 = malloc(0x14u);
+ if ( !v0 )
+ return -1;
+ v1 = v0;
+ v0[3] = 4;
+ v0[4] = 5;
+ *v0 = 1;
+ v0[1] = 2;
+ v0[2] = 3;
+ v2 = realloc(v0, 0x28u);
+ if ( v2 )
+ {
+ v2[9] = 90;
+ v3 = v2[2];
+ v2[6] = 60;
+ v4 = -3;
+ v2[5] = 50;
+ v1 = v2;
+ v2[7] = 70;
+ v2[8] = 80;
+ if ( v3 == 3 )
+ v4 = 50;
+ }
+ else
+ {
+ v4 = -2;
+ }
+ free(v1);
+ return v4;
+}
+
+
+/* Function: heap_array @ 0xB5C */
+int heap_array(int n)
+{
+ unsigned int *v2; // r0
+ int v3; // r1
+ unsigned int *v4; // r2
+ int v5; // r3
+ int v6; // r4
+
+ v2 = malloc(4 * n);
+ if ( !v2 )
+ return -1;
+ if ( n >= 1 )
+ {
+ v3 = 0;
+ v4 = v2;
+ v5 = n;
+ do
+ {
+ *v4++ = v3;
+ v3 += 3;
+ --v5;
+ }
+ while ( v5 );
+ }
+ v6 = *(unsigned int *)((char *)v2 + ((2 * (n + ((unsigned int)n >> 31))) & 0xFFFFFFFD));
+ free(v2);
+ return v6;
+}
+
+
+/* Function: heap_struct @ 0xBC0 */
+int heap_struct(int x)
+{
+ return 3 * x;
+}
+
+
+/* Function: heap_nested @ 0xBC8 */
+int heap_nested(Node **head)
+{
+ Node *v2; // r0
+ int result; // r0
+ Node *v4; // r4
+ Node *v5; // r0
+ Node *v6; // r1
+
+ v2 = (Node *)malloc(8u);
+ *head = v2;
+ if ( !v2 )
+ return -1;
+ v4 = v2;
+ v2->data = 10;
+ v5 = (Node *)malloc(8u);
+ v4->next = v5;
+ if ( v5 )
+ {
+ v6 = v5;
+ result = 0;
+ v6->data = 20;
+ v6->next = 0;
+ }
+ else
+ {
+ free(v4);
+ return -2;
+ }
+ return result;
+}
+
+
+/* Function: linked_list_heap @ 0xC3C */
+int linked_list_heap()
+{
+ int *v0; // r0
+ int v1; // r4
+ int *v2; // r5
+ unsigned int *v3; // r0
+ unsigned int *v4; // r6
+ unsigned int *v5; // r0
+ unsigned int *v6; // r7
+ unsigned int *v7; // r0
+ unsigned int *v8; // r6
+ unsigned int *v9; // r0
+ int *v10; // r0
+ int v11; // r1
+ int *v12; // r6
+ int *v13; // r6
+ int *v14; // r6
+ int *v15; // r6
+
+ v0 = (int *)malloc(8u);
+ v1 = -1;
+ if ( v0 )
+ {
+ v2 = v0;
+ *v0 = 0;
+ v3 = malloc(8u);
+ if ( v3 )
+ {
+ v4 = v3;
+ *v3 = 10;
+ v3[1] = 0;
+ v2[1] = (int)v3;
+ v5 = malloc(8u);
+ if ( v5 )
+ {
+ v6 = v5;
+ *v5 = 20;
+ v5[1] = 0;
+ v4[1] = v5;
+ v7 = malloc(8u);
+ if ( v7 )
+ {
+ v8 = v7;
+ *v7 = 30;
+ v7[1] = 0;
+ v6[1] = v7;
+ v9 = malloc(8u);
+ if ( v9 )
+ {
+ v1 = 0;
+ v8[1] = v9;
+ *v9 = 40;
+ v9[1] = 0;
+ v10 = v2;
+ do
+ {
+ v11 = *v10;
+ v10 = (int *)v10[1];
+ v1 += v11;
+ }
+ while ( v10 );
+ do
+ {
+ v12 = (int *)v2[1];
+ free(v2);
+ v2 = v12;
+ }
+ while ( v12 );
+ }
+ else
+ {
+ do
+ {
+ v15 = (int *)v2[1];
+ free(v2);
+ v2 = v15;
+ }
+ while ( v15 );
+ }
+ }
+ else
+ {
+ do
+ {
+ v14 = (int *)v2[1];
+ free(v2);
+ v2 = v14;
+ }
+ while ( v14 );
+ }
+ }
+ else
+ {
+ do
+ {
+ v13 = (int *)v2[1];
+ free(v2);
+ v2 = v13;
+ }
+ while ( v13 );
+ }
+ }
+ else
+ {
+ free(v2);
+ }
+ }
+ return v1;
+}
+
+
+/* Function: create_tree_node @ 0xD80 */
+TreeNode * create_tree_node(int data)
+{
+ TreeNode *result; // r0
+
+ result = (TreeNode *)malloc(0xCu);
+ if ( result )
+ {
+ result->data = data;
+ result->left = 0;
+ result->right = 0;
+ }
+ return result;
+}
+
+
+/* Function: tree_heap_traversal @ 0xDAC */
+int tree_heap_traversal()
+{
+ return 60;
+}
+
+
+/* Function: memory_leak @ 0xDB4 */
+int memory_leak(int n)
+{
+ unsigned int *v2; // r0
+ int i; // r1
+
+ v2 = malloc(4 * n);
+ if ( !v2 )
+ return -1;
+ if ( n >= 1 )
+ {
+ for ( i = 0; i != n; ++i )
+ v2[i] = i;
+ }
+ return *(unsigned int *)((char *)v2 + ((2 * (n + ((unsigned int)n >> 31))) & 0xFFFFFFFD));
+}
+
+
+/* Function: dangling_pointer @ 0xE08 */
+int dangling_pointer()
+{
+ void *v0; // r0
+ void *v2; // r4
+
+ v0 = malloc(4u);
+ if ( !v0 )
+ return -1;
+ v2 = v0;
+ printf("value before free: %d\n", 42);
+ free(v2);
+ return *(unsigned int *)v2;
+}
+
+
+/* Function: double_free @ 0xE50 */
+int double_free(int *p)
+{
+ if ( p )
+ return *p;
+ else
+ return -2;
+}
+
+
+/* Function: heap_overflow @ 0xE60 */
+int heap_overflow()
+{
+ return 0;
+}
+
+
+/* Function: test_heap_memory @ 0xE68 */
+void test_heap_memory()
+{
+ unsigned int *v0; // r0
+ void *v1; // r4
+ unsigned int *v2; // r0
+ int v3; // r1
+ int v4; // r5
+ void **v5; // r0
+ void **v6; // r4
+ unsigned int *v7; // r0
+ int v8; // r1
+ int v9; // r0
+ int v10; // r0
+ int v11; // r1
+ int v12; // r0
+ int stat_loc; // [sp+4h] [bp-14h] BYREF
+
+ puts(asc_2D74);
+ printf("HEAP-L2-01 (heap_basic): %d\n", 10);
+ printf("HEAP-L2-02 (heap_calloc): %d\n", 0);
+ v0 = malloc(0x14u);
+ if ( v0 )
+ {
+ v1 = v0;
+ v0[3] = 4;
+ v0[4] = 5;
+ *v0 = 1;
+ v0[1] = 2;
+ v0[2] = 3;
+ v2 = realloc(v0, 0x28u);
+ if ( v2 )
+ {
+ v2[9] = 90;
+ v3 = v2[2];
+ v2[6] = 60;
+ v4 = -3;
+ v2[5] = 50;
+ v1 = v2;
+ v2[7] = 70;
+ v2[8] = 80;
+ if ( v3 == 3 )
+ v4 = 50;
+ }
+ else
+ {
+ v4 = -2;
+ }
+ free(v1);
+ }
+ else
+ {
+ v4 = -1;
+ }
+ printf("HEAP-L2-03 (heap_realloc): %d\n", v4);
+ printf("HEAP-L2-04 (heap_array): %d\n", 15);
+ printf("HEAP-L2-05 (heap_struct): %d\n", 15);
+ v5 = (void **)malloc(8u);
+ if ( v5 )
+ {
+ v6 = v5;
+ *v5 = byte_9 + 1;
+ v7 = malloc(8u);
+ v6[1] = v7;
+ if ( v7 )
+ {
+ v8 = 0;
+ *v7 = 20;
+ v7[1] = 0;
+ }
+ else
+ {
+ free(v6);
+ v8 = -2;
+ }
+ printf("HEAP-L2-06 (heap_nested): %d\n", v8);
+ free(v6[1]);
+ free(v6);
+ }
+ else
+ {
+ printf("HEAP-L2-06 (heap_nested): %d\n", -1);
+ }
+ v9 = linked_list_heap();
+ printf("HEAP-L3-01 (linked_list_heap): %d\n", v9);
+ printf("HEAP-L3-02 (tree_heap_traversal): %d\n", 60);
+ printf("HEAP-L3-03 (memory_leak): %d\n", 2);
+ printf("HEAP-L3-04 (dangling_pointer): ");
+ v10 = fork();
+ if ( !v10 )
+ {
+ v12 = dangling_pointer();
+ printf(aD, v12);
+ exit(0);
+ }
+ if ( v10 < 1 )
+ {
+ perror(aFork_0);
+ }
+ else
+ {
+ waitpid(v10, &stat_loc, 0);
+ v11 = stat_loc & 0x7F;
+ if ( (stat_loc & 0x7F) != 0 )
+ {
+ if ( (v11 << 24) + 0x1000000 >= 0x2000000 )
+ printf(byte_2A42, v11);
+ }
+ else
+ {
+ printf(byte_2A1D, BYTE1(stat_loc));
+ }
+ }
+}
+
+
+/* Function: global_var_access @ 0x1108 */
+int global_var_access()
+{
+ return ++global_counter;
+}
+
+
+/* Function: global_var_read @ 0x112C */
+int global_var_read()
+{
+ return 2 * global_counter;
+}
+
+
+/* Function: global_array_access @ 0x1140 */
+int global_array_access(int idx)
+{
+ int result; // r0
+
+ result = -1;
+ if ( (unsigned int)idx <= 9 )
+ return global_array[idx];
+ return result;
+}
+
+
+/* Function: static_local @ 0x1160 */
+int static_local(int reset)
+{
+ int v1; // r1
+
+ v1 = 0;
+ if ( !reset )
+ v1 = static_local_counter + 1;
+ static_local_counter = v1;
+ return v1;
+}
+
+
+/* Function: call_static_func @ 0x1190 */
+int call_static_func(int x)
+{
+ return (2 * x) | 1;
+}
+
+
+/* Function: access_extern_global @ 0x119C */
+int access_extern_global()
+{
+ return extern_global_var + 100;
+}
+
+
+/* Function: call_extern_func @ 0x11B4 */
+int call_extern_func()
+{
+ return extern_function(5);
+}
+
+
+/* Function: read_const_data @ 0x11BC */
+int read_const_data()
+{
+ return (unsigned char)const_string[4] + 42;
+}
+
+
+/* Function: access_bss_var @ 0x11D4 */
+int access_bss_var()
+{
+ return 0;
+}
+
+
+/* Function: access_bss_buffer @ 0x11DC */
+int access_bss_buffer()
+{
+ return 0;
+}
+
+
+/* Function: global_struct_access @ 0x11E4 */
+int global_struct_access()
+{
+ return 30;
+}
+
+
+/* Function: set_file_static @ 0x11EC */
+void set_file_static(int val)
+{
+ file_scope_static = (int *)val;
+}
+
+
+/* Function: get_file_static @ 0x1200 */
+int *get_file_static()
+{
+ return file_scope_static;
+}
+
+
+/* Function: set_global_callback @ 0x1210 */
+void set_global_callback(int (*f)(int))
+{
+ global_func_ptr = f;
+}
+
+
+/* Function: call_global_callback @ 0x1224 */
+int call_global_callback(int x)
+{
+ if ( global_func_ptr )
+ return global_func_ptr(x);
+ else
+ return -1;
+}
+
+
+/* Function: global_heap_store @ 0x1240 */
+int global_heap_store(int *p)
+{
+ global_heap_ptr = (int)p;
+ if ( p )
+ return *p;
+ else
+ return -1;
+}
+
+
+/* Function: static_complex_init @ 0x1260 */
+int static_complex_init()
+{
+ return 15;
+}
+
+
+/* Function: tls_access @ 0x1268 */
+int tls_access(int val)
+{
+ return 2 * val;
+}
+
+
+/* Function: init_order_test @ 0x1270 */
+int init_order_test()
+{
+ return 20;
+}
+
+
+/* Function: test_static_global @ 0x1278 */
+void test_static_global()
+{
+ int v0; // r0
+ int v1; // [sp+4h] [bp-14h] BYREF
+
+ puts(asc_2D92);
+ printf("STM-L1-01 (global_var_access): %d\n", ++global_counter);
+ printf("STM-L1-01 (global_var_read): %d\n", 2 * global_counter);
+ printf("STM-L1-02 (global_array_access): %d\n", 5);
+ static_local_counter = 1;
+ printf("STM-L1-03 (static_local): %d\n", 1);
+ printf("STM-L1-03 (static_local): %d\n", ++static_local_counter);
+ printf("STM-L1-04 (call_static_func): %d\n", 11);
+ printf("STM-L2-01 (access_extern_global): %d\n", extern_global_var + 100);
+ v0 = extern_function(5);
+ printf("STM-L2-02 (call_extern_func): %d\n", v0);
+ printf("STM-L2-03 (read_const_data): %d\n", (unsigned char)const_string[4] + 42);
+ printf("STM-L2-04 (access_bss_var): %d\n", 0);
+ printf("STM-L2-04 (access_bss_buffer): %d\n", 0);
+ printf("STM-L2-05 (global_struct_access): %d\n", 30);
+ file_scope_static = (unsigned int *)&word_32;
+ printf("STM-L2-06 (file_static): %d\n", 50);
+ global_func_ptr = double_value;
+ printf("STM-L2-07 (global_func_ptr): %d\n", 10);
+ global_heap_ptr = (int)&v1;
+ v1 = 100;
+ printf("STM-L2-08 (global_heap_store): %d\n", 100);
+ printf("STM-L2-09 (static_complex_init): %d\n", 15);
+ printf("STM-L3-01 (tls_access): %d\n", 20);
+ printf("STM-L3-02 (init_order_test): %d\n", 20);
+}
+
+
+/* Function: extern_function - static helper */
+static int extern_function(int x)
+{
+ return 2 * x;
+}
+
+
+/* Function: double_value @ 0x14C0 */
+int double_value(int x)
+{
+ return 2 * x;
+}
+
+
+/* Function: memop_memset @ 0x14C8 */
+int memop_memset(void *buf, size_t size, int fill_value)
+{
+ size_t v3; // r3
+ int result; // r0
+ bool v6; // zf
+
+ result = -1;
+ v6 = buf == 0;
+ if ( buf )
+ {
+ v3 = size;
+ v6 = size == 0;
+ }
+ if ( !v6 )
+ {
+ memset(buf, fill_value, v3);
+ return *(unsigned char *)buf;
+ }
+ return result;
+}
+
+
+/* Function: memop_memcpy @ 0x1508 */
+int memop_memcpy(void *dst, const void *src, size_t n)
+{
+ size_t v3; // r4
+ int result; // r0
+ bool v6; // zf
+
+ result = -1;
+ if ( dst )
+ {
+ v6 = src == 0;
+ if ( src )
+ {
+ v3 = n;
+ v6 = n == 0;
+ }
+ if ( !v6 )
+ {
+ memcpy(dst, src, v3);
+ return *(unsigned int *)((char *)dst + (v3 & 0xFFFFFFFC) - 4);
+ }
+ }
+ return result;
+}
+
+
+/* Function: memop_memmove @ 0x1554 */
+int memop_memmove(void *buf, size_t n)
+{
+ int result; // r0
+
+ result = -1;
+ if ( buf )
+ {
+ if ( n >= 2 )
+ {
+ memmove((char *)buf + 1, buf, n - 1);
+ return *((unsigned char *)buf + 1);
+ }
+ }
+ return result;
+}
+
+
+/* Function: memop_memcmp @ 0x158C */
+int memop_memcmp(const void *p1, const void *p2, size_t n)
+{
+ int result; // r0
+ bool v5; // zf
+ int v6; // r1
+
+ result = 0;
+ if ( p1 )
+ {
+ v5 = p2 == 0;
+ if ( p2 )
+ v5 = n == 0;
+ if ( !v5 )
+ {
+ result = memcmp(p1, p2, n);
+ v6 = result;
+ if ( result )
+ result = -1;
+ if ( v6 >= 1 )
+ return 1;
+ }
+ }
+ return result;
+}
+
+
+/* Function: memop_bzero @ 0x15D4 */
+int memop_bzero(void *buf, size_t n)
+{
+ if ( !buf )
+ return -1;
+ memset(buf, 0, n);
+ return *(unsigned char *)buf;
+}
+
+
+/* Function: memop_bcopy @ 0x1600 */
+int memop_bcopy(const void *src, void *dst, size_t n)
+{
+ int result; // r0
+ bool v6; // zf
+
+ result = -1;
+ if ( src )
+ {
+ v6 = dst == 0;
+ if ( dst )
+ v6 = n == 0;
+ if ( !v6 )
+ {
+ memmove(dst, src, n);
+ return *(unsigned char *)dst;
+ }
+ }
+ return result;
+}
+
+
+/* Function: memop_unaligned_access @ 0x1640 */
+int memop_unaligned_access(const char *buf)
+{
+ if ( buf )
+ return *((unsigned char *)buf + 1)
+ | (*((unsigned char *)buf + 2) << 8)
+ | ((*((unsigned char *)buf + 3) | (*((unsigned char *)buf + 4) << 8)) << 16);
+ else
+ return -1;
+}
+
+
+/* Function: memop_memory_barrier @ 0x166C */
+int memop_memory_barrier(volatile int *flag)
+{
+ volatile int v2; // r5
+
+ if ( !flag )
+ return -1;
+ v2 = *flag;
+ _sync_synchronize();
+ return *flag + v2;
+}
+
+
+/* Function: test_memory_op_functions @ 0x1698 */
+void test_memory_op_functions()
+{
+ int v0; // r0
+ int v1; // r1
+ unsigned int src[5]; // [sp+4h] [bp-14h] BYREF
+
+ puts(asc_2DB6);
+ printf("MEMOP-L2-01: %d\n", 65);
+ printf("MEMOP-L2-02: %d\n", 50);
+ qmemcpy(src, "HelloWorld", 10);
+ memmove((char *)src + 1, src, 9u);
+ printf("MEMOP-L2-03: %c\n", BYTE1(src[0]));
+ v0 = memcmp(&unk_2E04, &unk_2E10, 0xCu);
+ v1 = v0;
+ if ( v0 )
+ v1 = -1;
+ if ( v0 >= 1 )
+ v1 = 1;
+ printf("MEMOP-L2-04: %d\n", v1);
+ printf("MEMOP-L2-05: %d\n", 0);
+ printf("MEMOP-L2-06: %d\n", 1);
+ printf("MEMOP-L3-01: 0x%x\n", 67305985);
+ _sync_synchronize();
+ printf("MEMOP-L3-02: %d\n", 10);
+}
+
+
+/* Function: main @ 0x17D8 */
+int main(int argc, const char **argv, const char **envp)
+{
+ test_stack_memory();
+ test_heap_memory();
+ test_static_global();
+ test_memory_op_functions();
+ return 0;
+}
+
+
+
+
+
+/* Function: __sync_fetch_and_add_4 @ 0x1800 */
+int _sync_fetch_and_add_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ v4 = *a1;
+ *a1 = v4 + a2;
+ return v4;
+}
+
+
+/* Function: __sync_fetch_and_sub_4 @ 0x1838 */
+int _sync_fetch_and_sub_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ v4 = *a1;
+ *a1 = v4 - a2;
+ return v4;
+}
+
+
+/* Function: __sync_fetch_and_or_4 @ 0x1870 */
+int _sync_fetch_and_or_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ v4 = *a1;
+ *a1 = v4 | a2;
+ return v4;
+}
+
+
+/* Function: __sync_fetch_and_and_4 @ 0x18A8 */
+int _sync_fetch_and_and_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ v4 = *a1;
+ *a1 = v4 & a2;
+ return v4;
+}
+
+
+/* Function: __sync_fetch_and_xor_4 @ 0x18E0 */
+int _sync_fetch_and_xor_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ v4 = *a1;
+ *a1 = v4 ^ a2;
+ return v4;
+}
+
+
+/* Function: __sync_fetch_and_nand_4 @ 0x1918 */
+int _sync_fetch_and_nand_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ v4 = *a1;
+ *a1 = ~(v4 & a2);
+ return v4;
+}
+
+
+/* Function: __sync_fetch_and_add_2 @ 0x1954 */
+int _sync_fetch_and_add_2(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 + a2) << v3)) & v5 ^ *v4, v4) );
+ return (short)v6;
+}
+
+
+/* Function: __sync_fetch_and_sub_2 @ 0x19B4 */
+int _sync_fetch_and_sub_2(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 - a2) << v3)) & v5 ^ *v4, v4) );
+ return (short)v6;
+}
+
+
+/* Function: __sync_fetch_and_or_2 @ 0x1A14 */
+int _sync_fetch_and_or_2(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 | a2) << v3)) & v5 ^ *v4, v4) );
+ return (short)v6;
+}
+
+
+/* Function: __sync_fetch_and_and_2 @ 0x1A74 */
+int _sync_fetch_and_and_2(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 & a2) << v3)) & v5 ^ *v4, v4) );
+ return (short)v6;
+}
+
+
+/* Function: __sync_fetch_and_xor_2 @ 0x1AD4 */
+int _sync_fetch_and_xor_2(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 ^ a2) << v3)) & v5 ^ *v4, v4) );
+ return (short)v6;
+}
+
+
+/* Function: __sync_fetch_and_nand_2 @ 0x1B34 */
+int _sync_fetch_and_nand_2(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ (~(v6 & a2) << v3)) & v5 ^ *v4, v4) );
+ return (short)v6;
+}
+
+
+/* Function: __sync_fetch_and_add_1 @ 0x1B98 */
+int _sync_fetch_and_add_1(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 + a2) << v3)) & v5 ^ *v4, v4) );
+ return (char)v6;
+}
+
+
+/* Function: __sync_fetch_and_sub_1 @ 0x1BF4 */
+int _sync_fetch_and_sub_1(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 - a2) << v3)) & v5 ^ *v4, v4) );
+ return (char)v6;
+}
+
+
+/* Function: __sync_fetch_and_or_1 @ 0x1C50 */
+int _sync_fetch_and_or_1(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 | a2) << v3)) & v5 ^ *v4, v4) );
+ return (char)v6;
+}
+
+
+/* Function: __sync_fetch_and_and_1 @ 0x1CAC */
+int _sync_fetch_and_and_1(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 & a2) << v3)) & v5 ^ *v4, v4) );
+ return (char)v6;
+}
+
+
+/* Function: __sync_fetch_and_xor_1 @ 0x1D08 */
+int _sync_fetch_and_xor_1(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ ((v6 ^ a2) << v3)) & v5 ^ *v4, v4) );
+ return (char)v6;
+}
+
+
+/* Function: __sync_fetch_and_nand_1 @ 0x1D64 */
+int _sync_fetch_and_nand_1(int a1, int a2)
+{
+ char v3; // r5
+ unsigned int *v4; // r9
+ int v5; // r8
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = ((unsigned int)v5 & *v4) >> v3;
+ while ( MEMORY[0xFFFF0FC0](*v4, (*v4 ^ (~(v6 & a2) << v3)) & v5 ^ *v4, v4) );
+ return (char)v6;
+}
+
+
+/* Function: __sync_add_and_fetch_4 @ 0x1DC4 */
+int _sync_add_and_fetch_4(unsigned int *a1, int a2)
+{
+ int v4; // r5
+
+ do
+ v4 = *a1 + a2;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return v4;
+}
+
+
+/* Function: __sync_sub_and_fetch_4 @ 0x1DFC */
+int _sync_sub_and_fetch_4(unsigned int *a1, int a2)
+{
+ int v4; // r5
+
+ do
+ v4 = *a1 - a2;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return v4;
+}
+
+
+/* Function: __sync_or_and_fetch_4 @ 0x1E34 */
+int _sync_or_and_fetch_4(unsigned int *a1, int a2)
+{
+ int v4; // r5
+
+ do
+ v4 = *a1 | a2;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return v4;
+}
+
+
+/* Function: __sync_and_and_fetch_4 @ 0x1E6C */
+int _sync_and_and_fetch_4(unsigned int *a1, int a2)
+{
+ int v4; // r5
+
+ do
+ v4 = *a1 & a2;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return v4;
+}
+
+
+/* Function: __sync_xor_and_fetch_4 @ 0x1EA4 */
+int _sync_xor_and_fetch_4(unsigned int *a1, int a2)
+{
+ int v4; // r5
+
+ do
+ v4 = *a1 ^ a2;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return v4;
+}
+
+
+/* Function: __sync_nand_and_fetch_4 @ 0x1EDC */
+int _sync_nand_and_fetch_4(unsigned int *a1, int a2)
+{
+ int v4; // r4
+
+ do
+ v4 = ~(*a1 & a2);
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return v4;
+}
+
+
+/* Function: __sync_add_and_fetch_2 @ 0x1F18 */
+int _sync_add_and_fetch_2(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = (*v4 ^ ((a2 + (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (short)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_sub_and_fetch_2 @ 0x1F80 */
+int _sync_sub_and_fetch_2(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = (*v4 ^ (((((unsigned int)v5 & *v4) >> v3) - a2) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (short)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_or_and_fetch_2 @ 0x1FE8 */
+int _sync_or_and_fetch_2(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = (*v4 ^ ((a2 | (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (short)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_and_and_fetch_2 @ 0x2050 */
+int _sync_and_and_fetch_2(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = (*v4 ^ ((a2 & (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (short)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_xor_and_fetch_2 @ 0x20B8 */
+int _sync_xor_and_fetch_2(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = (*v4 ^ ((a2 ^ (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (short)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_nand_and_fetch_2 @ 0x2120 */
+int _sync_nand_and_fetch_2(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 0xFFFF << v3;
+ do
+ v6 = (*v4 ^ (~(a2 & (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (short)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_add_and_fetch_1 @ 0x218C */
+int _sync_add_and_fetch_1(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = (*v4 ^ ((a2 + (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (char)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_sub_and_fetch_1 @ 0x21F0 */
+int _sync_sub_and_fetch_1(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = (*v4 ^ (((((unsigned int)v5 & *v4) >> v3) - a2) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (char)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_or_and_fetch_1 @ 0x2254 */
+int _sync_or_and_fetch_1(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = (*v4 ^ ((a2 | (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (char)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_and_and_fetch_1 @ 0x22B8 */
+int _sync_and_and_fetch_1(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = (*v4 ^ ((a2 & (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (char)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_xor_and_fetch_1 @ 0x231C */
+int _sync_xor_and_fetch_1(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = (*v4 ^ ((a2 ^ (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (char)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_nand_and_fetch_1 @ 0x2380 */
+int _sync_nand_and_fetch_1(int a1, int a2)
+{
+ char v3; // r8
+ unsigned int *v4; // r9
+ int v5; // r5
+ unsigned int v6; // r4
+
+ v3 = (8 * a1) & 0x18;
+ v4 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v5 = 255 << v3;
+ do
+ v6 = (*v4 ^ (~(a2 & (((unsigned int)v5 & *v4) >> v3)) << v3)) & v5 ^ *v4;
+ while ( MEMORY[0xFFFF0FC0](0, 0, 0) );
+ return (char)((v5 & v6) >> v3);
+}
+
+
+/* Function: __sync_val_compare_and_swap_4 @ 0x23E8 */
+int _sync_val_compare_and_swap_4(int a1, int a2, int a3)
+{
+ while ( *(unsigned int *)a1 == a2 )
+ {
+ if ( !MEMORY[0xFFFF0FC0](a2, a3, a1) )
+ return a2;
+ }
+ return *(unsigned int *)a1;
+}
+
+
+/* Function: __sync_val_compare_and_swap_2 @ 0x2438 */
+int _sync_val_compare_and_swap_2(int a1, int a2, int a3)
+{
+ char v4; // r5
+ int v5; // r10
+ unsigned int *v6; // r4
+ int v7; // r9
+ int v8; // r7
+ unsigned int v9; // r3
+
+ v4 = (8 * a1) & 0x18;
+ v5 = 0xFFFF << v4;
+ v6 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v7 = a3 << v4;
+ v8 = (unsigned short)a2;
+ while ( 1 )
+ {
+ v9 = ((unsigned int)v5 & *v6) >> v4;
+ if ( v9 != v8 )
+ break;
+ if ( !MEMORY[0xFFFF0FC0](*v6, (v7 ^ *v6) & v5 ^ *v6, v6) )
+ return a2;
+ }
+ return (short)v9;
+}
+
+
+/* Function: __sync_val_compare_and_swap_1 @ 0x24B0 */
+int _sync_val_compare_and_swap_1(int a1, int a2, int a3)
+{
+ char v4; // r5
+ unsigned int *v5; // r4
+ int v6; // r7
+ int v7; // r9
+ int v8; // r10
+ unsigned int v9; // r3
+
+ v4 = (8 * a1) & 0x18;
+ v5 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v6 = 255 << v4;
+ v7 = a3 << v4;
+ v8 = (unsigned char)a2;
+ while ( 1 )
+ {
+ v9 = ((unsigned int)v6 & *v5) >> v4;
+ if ( v9 != v8 )
+ break;
+ if ( !MEMORY[0xFFFF0FC0](*v5, (v7 ^ *v5) & v6 ^ *v5, v5) )
+ return a2;
+ }
+ return (char)v9;
+}
+
+
+/* Function: __sync_bool_compare_and_swap_4 @ 0x2524 */
+bool _sync_bool_compare_and_swap_4(int a1, int a2, int a3)
+{
+ return MEMORY[0xFFFF0FC0](a2, a3, a1) == 0;
+}
+
+
+/* Function: __sync_bool_compare_and_swap_2 @ 0x2550 */
+bool _sync_bool_compare_and_swap_2(int a1, int a2, int a3)
+{
+ return a2 == _sync_val_compare_and_swap_2(a1, a2, a3);
+}
+
+
+/* Function: __sync_bool_compare_and_swap_1 @ 0x256C */
+bool _sync_bool_compare_and_swap_1(int a1, int a2, int a3)
+{
+ return a2 == _sync_val_compare_and_swap_1(a1, a2, a3);
+}
+
+
+/* Function: __sync_lock_test_and_set_4 @ 0x2594 */
+int _sync_lock_test_and_set_4(unsigned int *a1, int a2)
+{
+ int v4; // r5
+
+ do
+ v4 = *a1;
+ while ( MEMORY[0xFFFF0FC0](*a1, a2, a1) );
+ return v4;
+}
+
+
+/* Function: __sync_lock_test_and_set_2 @ 0x25CC */
+int _sync_lock_test_and_set_2(int a1, int a2)
+{
+ char v2; // r9
+ unsigned int *v3; // r5
+ int v4; // r6
+ int v5; // r7
+ unsigned int v6; // r4
+
+ v2 = (8 * a1) & 0x18;
+ v3 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v4 = 0xFFFF << v2;
+ v5 = a2 << v2;
+ do
+ v6 = *v3;
+ while ( MEMORY[0xFFFF0FC0](*v3, (v5 ^ *v3) & v4 ^ *v3, v3) );
+ return (short)((v4 & v6) >> v2);
+}
+
+
+/* Function: __sync_lock_test_and_set_1 @ 0x262C */
+int _sync_lock_test_and_set_1(int a1, int a2)
+{
+ char v2; // r9
+ unsigned int *v3; // r5
+ int v4; // r6
+ int v5; // r7
+ unsigned int v6; // r4
+
+ v2 = (8 * a1) & 0x18;
+ v3 = (unsigned int *)(a1 & 0xFFFFFFFC);
+ v4 = 255 << v2;
+ v5 = a2 << v2;
+ do
+ v6 = *v3;
+ while ( MEMORY[0xFFFF0FC0](*v3, (v5 ^ *v3) & v4 ^ *v3, v3) );
+ return (char)((v4 & v6) >> v2);
+}
+
+
+/* Function: __sync_lock_release_8 @ 0x2688 */
+int _sync_lock_release_8(unsigned int *a1)
+{
+ *a1 = 0;
+ a1[1] = 0;
+ return 0;
+}
+
+
+/* Function: __sync_lock_release_4 @ 0x26AC */
+int _sync_lock_release_4(unsigned int *a1)
+{
+ *a1 = 0;
+ return 0;
+}
+
+
+/* Function: __sync_lock_release_2 @ 0x26CC */
+int _sync_lock_release_2(unsigned short *a1)
+{
+ *a1 = 0;
+ return 0;
+}
+
+
+/* Function: __sync_lock_release_1 @ 0x26EC */
+int _sync_lock_release_1(unsigned char *a1)
+{
+ *a1 = 0;
+ return 0;
+}
+
+
+/* Function: .term_proc @ 0x270C */
+void term_proc()
+{
+ ;
+}
+
+
+/* FAILED to decompile: __imp_calloc @ 0x130C4 */
+
+/* FAILED to decompile: __imp___libc_start_main @ 0x130C8 */
+
+/* FAILED to decompile: __imp___cxa_finalize @ 0x130CC */
+
+/* FAILED to decompile: __imp_printf @ 0x130D0 */
+
+/* FAILED to decompile: __imp_memmove @ 0x130D4 */
+
+/* FAILED to decompile: __imp_free @ 0x130D8 */
+
+/* FAILED to decompile: __imp_memcpy @ 0x130DC */
+
+/* FAILED to decompile: __imp_memcmp @ 0x130E0 */
+
+/* FAILED to decompile: __imp_realloc @ 0x130E4 */
+
+/* FAILED to decompile: __imp_perror @ 0x130E8 */
+
+/* FAILED to decompile: __imp_waitpid @ 0x130EC */
+
+/* FAILED to decompile: __imp_puts @ 0x130F0 */
+
+/* FAILED to decompile: __imp_malloc @ 0x130F4 */
+
+/* FAILED to decompile: __imp_exit @ 0x130F8 */
+
+/* FAILED to decompile: __imp_memset @ 0x130FC */
+
+/* FAILED to decompile: __imp_fork @ 0x13100 */
+
+/* FAILED to decompile: __imp_abort @ 0x13104 */
+
+/* FAILED to decompile: __imp___gmon_start__ @ 0x1310C */
+
+/* Total functions decompiled: 114, failed: 18 */

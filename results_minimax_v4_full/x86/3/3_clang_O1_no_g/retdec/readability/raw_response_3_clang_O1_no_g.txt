@@ -1,0 +1,162 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `mem`, `result`, `v4`, `v5`. These provide no semantic meaning - for example, in `local_array`, the stack array variable should be named `arr` but is decompiled as `v3` with manual pointer arithmetic like `*(int32_t *)(4 * v2 + (int32_t)&v3)`.
+
+### 2. Function Naming Quality  
+**Score: 6/10**
+
+Justification: Many test functions are correctly named (local_vars, heap_basic, linked_list_heap, memory_leak, double_value, memop_memset, etc.). However, critical infrastructure functions have generic names: `function_1040` (should be _start), `function_1050` (printf wrapper), `function_10d0` (malloc wrapper), and internal helpers like `__x86_get_pc_thunk_bx` are not human-readable.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: The code is riddled with unexplained magic numbers: global variables `g1 = 0x10c00`, `g2 = 0xe640210`, and offset calculations like `v1 + 0x2185`, `a1 + 0x41af`, `v1 + 0x174f`. The value 2048 (for large_stack_frame) is correctly preserved but others like array size calculations `2 * ((int32_t)(a2 < 0) + a2) & -4` are opaque.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise pollution from compiler artifacts including: `__x86_get_pc_thunk_bx/di/dx`, `__libc_start_main`, `frame_dummy`, `register_tm_clones`, `deregister_tm_clones`, `_init`, `_start`, `_fini`, `__do_global_ctors_aux`, `__do_global_dtors_aux`. Additionally, 12 spurious global variables `g1-g12` with random hex values pollute the namespace. The decompiler also generated wrapper functions for every standard library call.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most control flow is natural - loops are properly recognized as while/for constructs. However, some awkward patterns exist like in `linked_list_heap` using `goto lab_0x1880` for cleanup, and complex array indexing expressions like `*(int32_t *)((2 * ((int32_t)(a2 < 0) + a2) & -4) + v1)` obscure the simple `arr[n/2]` logic.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are reasonably sized and cohesive. Test functions are appropriately large (containing multiple test cases). Minor issue: some standard library wrappers could be inlined rather than extracted as separate functions (function_1070 for free, function_10d0 for malloc).
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom. The main disruption is in `linked_list_heap` with its goto-based cleanup loop at `lab_0x1880`. Most functions have clear entry and exit paths without excessive forward jumps.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No significant dead code. Some loop unrolling is present in array initialization loops but it's minimal and doesn't severely impact readability. The code is reasonably clean in this dimension.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+
+Justification: Uses `int32_t` consistently which is appropriate for arm64. However, all pointers are treated as `int32_t` losing the pointer distinction - for example `int32_t * mem = malloc(4 * a2)` should use `int32_t*`. Some size calculations use raw integers rather than `size_t`.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: **Critical failure** - no struct types were recovered. The original source defines `Point`, `Node`, and `TreeNode` structures, but the decompiled code uses raw pointer arithmetic: `*(int32_t *)(v2 + 4)` instead of `node->next`. The struct field semantics are completely lost.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several unsafe patterns exist: casting between int and pointers throughout (e.g., `(int32_t)&v3`), unsafe pointer arithmetic in array indexing, and treating all pointers as `int32_t`. The dangling_pointer function correctly shows the use-after-free pattern but the type system doesn't warn about it.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: **No comments whatsoever** in the decompiled output. The original source has extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.) but none are recovered. No explanation of algorithm logic, no uncertainty indicators, no documentation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are implicitly recognized (malloc/free pairs, loops) but not explicitly named or documented. The original source's test scenarios (stack memory, heap memory, static memory) are not identified as distinct patterns in the output.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly flags. The code silently produces potentially incorrect results in several places: the `dangling_pointer` function accesses freed memory, `double_free` has obvious issues, and `heap_overflow` has buffer overflow - but none are flagged or annotated.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source has safety checks (e.g., `if (n <= 0 || n > 1000) return -1;`) that are preserved in logic but not explained as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are syntactically clear (e.g., `linked_list_heap(...)`, `tree_heap_traversal(...)`). However, the relationships between functions (which test calls which, callback relationships like set_global_callback → call_global_callback) are not documented.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: All functions are in a single file which is expected for decompilation. Some logical grouping exists (test functions together, memory operation functions together) but the file is essentially a flat list of 84 functions with no clear organization hierarchy.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: Includes are present (`#include <stdint.h>`, `#include <stdio.h>`, etc.) but incomplete - missing `<alloca.h>`, `<strings.h>`, `<sys/wait.h>`, `<unistd.h>`. The code would require significant patching to compile, including stubbing the undefined `extern_global_var` and `extern_function`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 2) / 4 = 3.50
+L2_avg = (7 + 7 + 7 + 7) / 4 = 7.00
+L3_avg = (7 + 2 + 5) / 3 = 4.67
+L4_avg = (1 + 5 + 1 + 1) / 4 = 2.00
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (3.50 × 0.30) + (7.00 × 0.25) + (4.67 × 0.20) + 
+          (2.00 × 0.15) + (5.33 × 0.10)
+        = 1.050 + 1.750 + 0.934 + 0.300 + 0.533
+        = 4.57/10
+```
+
+### Overall Readability Score: 4.57/10
+
+---
+
+### Critical Defects
+
+1. **No struct recovery**: `Point`, `Node`, `TreeNode` structures completely lost - replaced with raw pointer arithmetic losing all semantic meaning
+2. **Generic variable names**: All variables named `v1`, `v2`, `v3`, `mem`, `result` provide no semantic information
+3. **No comments**: Zero documentation explaining algorithms, test scenarios, or uncertainty
+4. **Severe noise pollution**: 12 spurious global variables (g1-g12), 20+ wrapper functions for standard library calls, and compiler infrastructure functions
+5. **No anomaly indication**: Dangerous patterns (dangling_pointer, double_free, heap_overflow) are silently presented without warnings
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (7/10)** - Despite some complex expressions, the decompiler correctly recovered loop constructs and conditional logic. Most functions read naturally top-to-bottom with recognizable for/while loops.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The generic `v1`/`v2`/`v3` naming makes it nearly impossible to track variable purpose. Combined with no struct recovery, code like `*(int32_t *)(4 * v3 + v1) = v2` is completely opaque compared to `arr[i] = i * n`.
+
+---
+
+### Top 3 Recommendations
+
+1. **Recover struct types**: Analyze allocation sizes and field access patterns to reconstruct `Point`, `Node`, `TreeNode` with meaningful field names instead of raw pointer arithmetic
+
+2. **Infer variable names from usage**: When a variable is used as array index → name it `i` or `index`; when used as size → name it `size` or `count`; when holding malloc result → name it `mem` or `buffer`
+
+3. **Add semantic comments**: At minimum, document the test scenario each function implements (e.g., "// MEM-L1-02: Stack array test") and flag dangerous patterns like use-after-free with "// WARNING: potential use-after-free"

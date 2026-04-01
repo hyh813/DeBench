@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_10`, `local_34`, `iVar1`, `sVar1`, `puVar1` with zero semantic meaning. Original source had meaningful names like `value`, `name`, `capture_by_value`, `data`, `size` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original test function names preserved (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods retain class prefixes (`Base::virtual_func`, `Container<int>::push`). However, some functions use generic names (`FUN_00101020`) and template instantiations have mangled names (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate: `0x125c`, `0x2a`, `0x47`, `0x28a`, `0x16`, `0x55`, `0x2bf` are computed return values presented without explanation. String literals referenced as `&DAT_00102018` instead of actual text. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`, `__stack_chk_fail()`) appear in multiple functions. External function stubs are redundant (e.g., `strlen` just calls itself). Frame pointer manipulation visible throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failure: many test functions reduced to constant returns (`test_cpp_virtual_func` returns `0x2a`, `test_cpp_multiple_inheritance` returns `0x47`) instead of actual computation logic. Original control flow completely lost in optimized-away functions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but severe duplication exists (`DiamondDerived::func` appears 3 times, `DiamondDerived::~DiamondDerived` appears 3 times with different signatures). Template instantiations properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Stack checking at function ends creates minor awkwardness. No excessive gotos visible, but the constant-return pattern disrupts expected flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor definitions per class with slight variations. External function stubs that call themselves are completely redundant. Some functions appear duplicated with different calling conventions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Ghidra-specific types (`undefined4`, `undefined8`, `undefined`) reduce clarity significantly. Some types recovered (`int`, `double`, `size_t`, `char*`) but const-correctness lost. Pointer types often generic (`void*`, `long*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Complete failure - no struct/class definitions visible. Object access through raw pointer arithmetic: `*(int *)(this + 8)`, `*(long *)(this + -0x18)`. Container class shows `*(undefined4 *)(this + 0x28)` for size field but no field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(long *)`, `(char **)`. Pointer arithmetic without bounds checking throughout. `operator_delete` calls with hardcoded sizes. Type confusion possible with `undefined` types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except SHA256 header. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive Chinese comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns visible (virtual dispatch through vtable, exception handling) but not identified or named. RAII pattern (smart pointers) not recognized. Template instantiation pattern visible but unexplained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Confidently presents potentially incorrect code (constant returns instead of logic). Stack checking code present but not explained as compiler artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions. No invariants. Exception contracts not documented despite exception handling being present in source.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Virtual dispatch through vtable visible (`(***(code ***)param_1)()`) but not clearly explained. No call graph documentation. Global variable usage opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed but not logically grouped by feature. Class methods grouped by class name in function names. External functions listed at top. No namespace structure visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined8`) that won't compile in standard C++. External function declarations present but some are stubs that call themselves. Missing proper headers and type definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+6+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.72/10
+```
+
+**Overall Readability Score: 3.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `local_10`, `iVar1`, `sVar1` provide zero semantic information compared to original `value`, `name`, `capture_by_value`
+- **Logic reduced to constants** - Functions like `test_cpp_virtual_func` return `0x2a` instead of actual computation, losing all original logic
+- **No struct/class definitions** - All composite types lost; access through raw pointer arithmetic like `*(int *)(this + 8)`
+- **Zero comments** - No explanation of magic numbers, algorithms, or decompilation uncertainty
+- **Ghidra-specific types** - `undefined4`, `undefined8` prevent standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Original test function names mostly preserved (`test_cpp_member_func`, `test_cpp_constructor`), providing some semantic anchors for navigation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding the decompiled code's purpose extremely difficult, especially given the semantic loss in other dimensions.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `local_34 = 0x74736554` is "Test" in little-endian) to infer semantic names like `name_buffer`
+2. **Preserve original computation logic** - Avoid optimizing away test functions to constants; even at -O0, the decompiler should recover the actual computation flow
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: vtable call`) and explain compiler artifacts (e.g., `// STACK_CANARY_CHECK`)

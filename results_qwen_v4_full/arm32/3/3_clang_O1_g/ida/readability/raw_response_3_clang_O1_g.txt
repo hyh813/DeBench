@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `i`, `j`, `k`) with no semantic meaning. For example, `local_array` uses `v4[10]` instead of `arr[10]`, and `heap_basic` uses `v2` for the malloc'd pointer instead of `arr`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but runtime functions have generic names (`sub_568`, `call_weak_fn`). The core test functions match source names well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xFFFFFFF8`, `0xFFFFFFFD`, `0x140C4` appear without explanation. Test functions have hardcoded expected values (e.g., `printf("MEM-L1-01... %d\n", 20)`) instead of calling actual functions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including complex pointer arithmetic (`(char *)&v5 - ((4 * n + 7) & 0xFFFFFFF8)`), unnecessary casts, and frame pointer manipulation throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops transformed to unnatural backward-counting patterns (`for (i = 0; i != -10; --i)` in `local_array`). `vla_stack` has convoluted conditional logic that obscures the simple VLA allocation pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated, but test functions inline logic instead of calling actual functions. `test_stack_memory` hardcodes results rather than calling `local_vars()`, `local_array()`, etc.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but functions like `linked_list_heap` have complex label-based jumps (`LABEL_10`) that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain duplicated loop patterns that should call the actual functions. `test_heap_memory` reimplements `heap_basic` logic inline instead of calling it.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `set_file_static` takes `int` but stores as `int*`, `get_file_static` returns `int*` instead of `int`. Many pointers degraded to `char*` or `void*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` and `TreeNode` structs partially recovered, but accessed via array indexing (`v4[1]`, `v1[2]`) instead of field names (`next`, `left`, `right`). `Point` struct completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int *)val`, `(int)p`), type-confused function pointers, and pointer arithmetic that obscures buffer boundaries.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments. Only auto-generated decompiler warnings ("positive sp value has been detected"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory operations (`memset`, `memcpy`, `malloc/free` patterns) not identified as such. Linked list and tree traversal patterns not recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (sp value warning, "FAILED to decompile" for 18 functions), but semantic losses like `double_free` losing the double-free logic aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `vla_stack`). Null checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls mostly preserved, but test functions don't call actual functions (hardcoded values). `double_value` referenced but test uses literal `10` instead of calling it.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but no clear module structure. Static variables (`global_counter`, `static_local_counter`) appear without proper declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 functions failed to decompile (library functions). Would need significant stubbing and type fixes to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50
+Level 3 (Type):        (4+5+4)/3   = 4.33
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75
+Level 5 (Contextual):  (5+5+4)/3   = 4.67
+
+Overall = (4.50 × 0.30) + (5.50 × 0.25) + (4.33 × 0.20) + 
+          (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.375 + 0.866 + 0.4125 + 0.467
+        = 4.47/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Test functions don't call actual functions** - `test_stack_memory` hardcodes `20` instead of calling `local_vars(5)`, defeating the purpose of decompilation
+- **Variable names completely generic** - `v0`, `v1`, `v2` throughout with no semantic inference from usage patterns
+- **Type confusion in static functions** - `set_file_static(int val)` stores as `int*`, `get_file_static()` returns `int*` instead of `int`
+- **Loop structures inverted** - `local_array` uses backward counting (`i != -10; --i`) with negative indexing instead of natural forward loop
+- **No documentation** - Zero comments explaining algorithm intent, preconditions, or decompiler confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `linked_list_heap`), making it possible to identify function purposes despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist; even basic decompiler confidence indicators and algorithm explanations are absent, making semantic understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - When a variable is used in `malloc(n * sizeof(int))`, name it `arr` or `buffer`; when used as loop counter, name it `i` or `index`
+2. **Preserve function call relationships in test code** - Instead of inlining and hardcoding expected values, maintain calls to actual functions to preserve test semantics
+3. **Add decompiler confidence annotations** - Flag transformations that may have lost semantics (e.g., "WARNING: loop structure transformed from forward to backward counting")

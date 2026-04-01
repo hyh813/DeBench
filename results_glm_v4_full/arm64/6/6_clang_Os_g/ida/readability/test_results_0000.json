@@ -1,0 +1,39 @@
+{
+  "eval_id": "6_clang_Os_g",
+  "overall_score": 8.32,
+  "levels": {
+    "L1_lexical_clarity": 8.25,
+    "L2_structural_intelligibility": 9.0,
+    "L3_type_system_fidelity": 9.67,
+    "L4_semantic_transparency": 6.0,
+    "L5_contextual_coherence": 8.67
+  },
+  "dimensions": {
+    "1_variable_naming_quality": 7.0,
+    "2_function_naming_quality": 10.0,
+    "3_literal_clarity": 8.0,
+    "4_noise_reduction": 8.0,
+    "5_control_flow_naturalness": 9.0,
+    "6_function_decomposition": 10.0,
+    "7_code_linearization": 9.0,
+    "8_redundancy_elimination": 8.0,
+    "9_type_precision": 10.0,
+    "10_composite_type_recovery": 9.0,
+    "11_type_safety": 10.0,
+    "12_comment_quality": 2.0,
+    "13_idiom_recognition": 10.0,
+    "14_anomaly_indication": 10.0,
+    "15_assertion_contract_recovery": 2.0,
+    "16_cross_reference_clarity": 9.0,
+    "17_module_organization": 9.0,
+    "18_build_system_compatibility": 8.0
+  },
+  "tokens": {
+    "prompt": 25290,
+    "completion": 6359,
+    "total": 31649
+  },
+  "time_cost_seconds": 147.17,
+  "schema_version": 1,
+  "raw_response_file": "raw_response_6_clang_Os_g.txt"
+}

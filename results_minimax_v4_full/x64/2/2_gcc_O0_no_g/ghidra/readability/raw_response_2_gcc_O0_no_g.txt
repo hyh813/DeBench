@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `local_10`, `local_c`, `uVar1`, `iVar2`. For example, in `array_1d_stack`, parameters should be `arr` and `n`, and `local_10` should be `sum`. Only compiler-generated names present.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from source: `double_value`, `process_char`, `process_short`, `process_int`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_bool`, `const_param`, `volatile_access` all match exactly. Minor issues with some test function naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x20` (32 for case conversion), `0x41` ('A'), `0x62` ('b') appear without explanation. The value `0x28` for stack canary offset is unexplained. No constants recovered from enum values (STATE_IDLE=0, STATE_RUNNING=1, etc.).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including "WARNING: Removing unreachable block", stack canary checks (`__stack_chk_fail`), "WARNING: Subroutine does not return", and numerous `undefined4`, `undefined8`, `undefined` type annotations. These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for` constructs correctly, conditionals are straightforward. At `-O0`, no goto abuse or confusing jumps. Example: `for (local_c = 0; local_c < param_2; local_c = local_c + 1)` is clear.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function granularity preserved well. Each function (e.g., `double_value`, `process_char`, `array_1d_stack`) remains separate with appropriate size. No monoliths created. Parameter counts match original.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately (e.g., in `process_char`). No forward jumps into loop bodies. Nesting depth reasonable (max 3 levels in `array_3d`).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. At `-O0`, compiler hasn't performed aggressive optimizations that create redundancy. Loop unrolling not present as expected.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - basic types correct (`int`, `float`, `double`), but `byte` used for char, `ushort` for short, `uint` for unsigned. Heavy use of `undefined4`, `undefined8`, `undefined*` pollutes the output. Function pointers use generic `code*` type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `Point3D` becomes `int*` with array indexing (`param_1[2]`), `Rect` becomes `int*`, `Node` becomes `int*` with pointer arithmetic. Union `UnionData` becomes `float*`. No struct/union definitions recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe patterns: pointer arithmetic without bounds (`*(int *)(param_1 + (long)local_c * 4)`), function pointer type mismatches (`code*` vs proper signatures), no const correctness preserved. The `ptr_diff` function has operator precedence issues: `return param_1 - param_2 >> 2;` should be `(param_1 - param_2) >> 2`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present ("Decompiled by Ghidra 12.0", "WARNING: Globals starting with '_' overlap smaller symbols"). No explanation of algorithm logic, no recovery of original comments from source. No uncertainty indicators for indirect calls.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal (`while (current != NULL)`) not identified as such. Binary tree recursion not labeled. No recognition of common patterns like "pointer to array", "VLA", or "opaque handle".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return") but these are compiler artifacts, not semantic anomalies. No indication of `process_ld` being empty/broken, or `ptr_diff` operator precedence issue.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_complex_index` returns -1 on bounds error, or that `array_oob` has intentional off-by-one bug. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships partially visible through direct calls (e.g., `binary_tree_sum` called by `binary_tree`). However, no documentation of who calls whom, no callback relationships explained (e.g., `ptr_func_simple` uses `double_value` as callback).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with arbitrary ordering. Original source organization (data types, arrays, pointers, composites sections) not reflected. Static functions not identified as such (all functions appear global).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Heavy use of `undefined4`, `undefined8`, `byte`, `ushort` types that don't exist in C. Function signatures use types like `code*` and `undefined8`. Missing standard library declarations (`printf`, `puts`, `__stack_chk_fail`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - all generic `param_X`, `local_X`, `uVarX` names
+- Complete failure to recover any struct/union types - all become raw pointer arithmetic
+- `process_ld` function is empty - long double processing completely lost
+- `ptr_diff` has operator precedence bug: `param_1 - param_2 >> 2` should be `(param_1 - param_2) >> 2`
+- Heavy use of `undefined4`, `undefined8`, `undefined*` types makes code uncompilable
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+All struct and union types are completely lost - they become raw `int*` with pointer arithmetic, losing all semantic meaning about field names, types, and layout.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used as array with index should be named `arr` or `buffer`
+2. Recover struct/union definitions from stack frame analysis and memory access patterns
+3. Replace `undefined4`/`undefined8` with concrete C types based on usage context, or at minimum use standard C types like `uint32_t`

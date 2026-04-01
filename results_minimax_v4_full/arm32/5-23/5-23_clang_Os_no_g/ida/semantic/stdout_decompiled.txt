@@ -1,0 +1,21 @@
+Preprocessing Tests
+Preprocessing Test 201: 64
+Preprocessing Test 202: 30
+Preprocessing Test 203: 32
+Preprocessing Test 204: 57122
+Preprocessing Test 301: 116
+Preprocessing Test 302: 19
+Preprocessing Test 303: 60
+LOG: Values: 10, 20, 30
+Preprocessing Test 304: 60
+Preprocessing Test 305: 16
+Preprocessing Test 306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:24
+Preprocessing Test 307: 382
+ASM Testing
+ASM Test 401: 15
+ASM Test 402: 15
+ASM Test 403: 42
+ASM Test 404: 36
+ASM Test 405: 30
+ASM Test 406: 77

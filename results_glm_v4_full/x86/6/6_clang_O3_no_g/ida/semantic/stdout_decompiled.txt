@@ -1,0 +1,6 @@
+Standard Library Functions Test:
+LibL1: 8
+LibL2: 0
+LibL3: 12
+LibL4: 90
+LibL5: 0

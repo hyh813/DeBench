@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`a1`, `v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source had descriptive names like `large_buf`, `local`, `arr`, but decompiled code uses `v2[2048]` and `v3[10]` instead.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions degraded to `sub_1030`, `sub_116C`. Function names generally indicate purpose when preserved.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x14u` for 20 bytes, `0x28u` for 40 bytes, `0xCu` for 12 bytes). Original used `sizeof(int)`, `sizeof(Point)` which were lost in decompilation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: stack frame comments (`[esp+0h] [ebp-8h]`), redundant type casts (`(_DWORD *)`), register variables (`v0`, `v1`). Some cleanup achieved but not comprehensive.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures mostly recovered as `for` loops. Some functions use natural patterns (`for (i = 0; i < 10; ++i)`), but `stack_alias` lost its pointer comparison logic entirely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well; each original function maps to one decompiled function. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally in most cases. Early returns used appropriately. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant temporaries (`v2 = ptr[a1/2]; return v2;`), but no severe dead code. Compiler optimization artifacts manageable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `_DWORD`, `Point*` becomes `_DWORD*`, `size_t` becomes `unsigned int`. Signed/unsigned distinctions often lost (`signed int nmemb`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure—`Point` struct completely lost (becomes `ptr[0]`, `ptr[1]`), `Node` linked list becomes raw pointer arithmetic (`(_DWORD *)j[1]`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD *)*a1`, `(void **)create_tree_node(10)`. Pointer arithmetic on void pointers throughout. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero original comments recovered. Only decompiler metadata present ("Decompiled by IDA Pro"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation, tree traversal, memory leak patterns all appear as raw code without identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for 16 functions, "positive sp value has been detected, the output may be wrong!"). No detailed explanations of why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 > 0` checks exist but aren't labeled as requirements). No postconditions or invariants recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and named correctly. Global variables referenced by name (`global_counter`, `file_scope_static`). Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Original section organization (stack/heap/static) lost. Static functions properly marked but not grouped logically.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 16 external functions failed to decompile (`malloc`, `free`, `printf`, etc.). Would require significant stubbing. Architecture mismatch (original arm64, decompiled x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.11/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **Struct types completely lost**: `Point` and `Node` structs degraded to raw pointer arithmetic (`ptr[1]`, `(_DWORD *)j[1]`)
+- **Variable names generic**: `a1`, `v0`, `v1` instead of `x`, `arr`, `local_buf` from original source
+- **Zero comment recovery**: All original documentation and test case explanations lost
+- **Architecture mismatch**: Original compiled for arm64, decompiled shows x86 registers (ebx, eax, esp)
+- **16 external functions failed**: Critical libc functions (`malloc`, `free`, `printf`) not decompiled
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Function boundaries preserved accurately; each original function maps cleanly to one decompiled function without inappropriate merging or splitting.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all original source comments, test case documentation, and semantic explanations makes understanding intent difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union type definitions** from memory access patterns (e.g., consistent `ptr[0]`, `ptr[1]` access should suggest a 2-field struct)
+2. **Infer variable names from usage context** (loop counters → `i`, size parameters → `n`/`size`, pointers → `ptr`/`buf`)
+3. **Preserve and display original debug symbols** when `-g` flag was used during compilation (function names preserved but comments lost)

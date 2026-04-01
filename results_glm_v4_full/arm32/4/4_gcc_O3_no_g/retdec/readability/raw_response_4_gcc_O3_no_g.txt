@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Global variables are named generically as `g1` through `g18`, completely stripping semantic meaning (e.g., `g1` represents a section header string). Function parameters use generic names like `a1`, `a2`, offering no hint about their purpose (e.g., `count`, `sum`).
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: High-level test functions like `test_calling_conventions` are preserved, which is good. However, specific logic functions like `cdecl_func` are missing, replaced by specialized, auto-generated names like `param_varargs_constprop_0` which describe compiler optimizations rather than functionality.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are represented as hex-encoded escape sequences (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`), making the text completely unreadable to a human analyst without external decoding. Magic numbers like `15`, `50`, and `0x12345678` are used directly without the context of the variables that produced them.
+
+**4. Noise Reduction:** Score: 9/10
+Justification: The code is very clean with no register spilling, redundant casts, or stack frame manipulation artifacts visible. The logic is distilled to its core operations, though this is partly due to aggressive inlining.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: The control flow is extremely linear, consisting almost entirely of sequential function calls and returns. There are no confusing jumps or spaghetti code structures, making the execution path trivial to follow.
+
+**6. Function Decomposition:** Score: 1/10
+Justification: This is a critical failure. The decompiler has inlined almost all specific logic functions (`cdecl_func`, `stdcall_func`, `fastcall_func`, etc.) into the test harnesses. The modular structure of the original source is completely lost; only the `test_*` drivers remain.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads naturally from top to bottom. There are no forward jumps or computed branches that disrupt the reading flow within the visible functions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler (or the binary) has aggressively eliminated redundancy by constant folding (e.g., calculating `5+10` to `15`). While this removes the original logic, it results in very concise code for the remaining execution paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise, using `int32_t` and `char*` appropriately. The signatures match the usage, though the loss of struct definitions (due to inlining) limits the scope of this evaluation.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite types are entirely absent. Structs like `LargeStruct`, `SmallStruct`, and `TestClass` defined in the source are not reconstructed in the decompiled output, likely because their usage was optimized away or inlined.
+
+**11. Type Safety:** Score: 9/10
+Justification: There are no unsafe casts or pointer arithmetic visible in the provided output. The operations are standard arithmetic and function calls on correctly typed variables.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. No logic is explained, and the hex-encoded strings are not annotated with their decoded values.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: There are no complex design patterns or algorithms visible to recognize, as the code has been reduced to simple I/O operations. The score is neutral as there is nothing to identify.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not flag the aggressive inlining or the missing function definitions as anomalies. It presents the optimized view as the ground truth without warning the user that structure has been lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The parameters to `__printf_chk` are not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: The calls to `puts` and `__printf_chk` are clear. The relationships between the `test_*` functions and `main` are preserved. However, the cross-references to the actual logic functions are missing because those functions are gone.
+
+**17. Module Organization:** Score: 5/10
+Justification: The code is presented as a flat file. While the `test_*` functions are grouped, the loss of the individual implementation functions destroys the logical organization of the "Calling Conventions" vs "Parameter Passing" modules.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes standard headers and uses standard types. It would likely compile if provided with a stub for `__printf_chk`, though the hex strings would result in garbage output if not handled by the compiler.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Structure Loss**: Core functions (`cdecl_func`, `stdcall_func`, etc.) are completely inlined/missing, destroying the program's modularity.
+- **Unreadable Strings**: Human-readable strings are output as hex escape sequences (e.g., `\xe6\xb5\x8b`), rendering text opaque.
+- **Generic Naming**: Global variables use meaningless names (`g1`-`g18`) instead of their semantic content.
+
+**Best Quality Aspect:** Noise Reduction (Score: 9/10)
+- The code is free of compiler artifacts like register spills or redundant casts, presenting a very clean (albeit oversimplified) view of the execution.
+
+**Most Needs Improvement:** Function Decomposition (Score: 1/10)
+- The decompiler failed to preserve the boundaries of the functions defined in the source code, opting instead to inline everything into the test harnesses. This makes the code useless for understanding the implementation of specific calling conventions or parameter passing modes.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Preserve Function Boundaries**: Implement heuristics to avoid inlining functions that are distinct semantic units in the source, especially when they are the subject of the analysis (like the `*_func` implementations here).
+2.  **Decode String Literals**: Automatically decode hex-encoded UTF-8 strings in the output to display human-readable text, or provide an option to toggle this view.
+3.  **Recover Global Variable Names**: Attempt to infer global variable names from string references or usage context (e.g., naming the string holding "=== 测试..." something like `str_test_header` instead of `g1`).

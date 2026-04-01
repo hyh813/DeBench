@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) instead of semantic names like `dst` and `src`. Local variables use patterns like `local_18`, `local_14`, making it nearly impossible to track purpose without analyzing every usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names accurately match source (`param_strcpy`, `call_strcpy`, `param_strcmp`). The naming is action-oriented and semantically correct, though internal helper functions could be more descriptive.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals preserved well ("HelloLib", "Value: %d, Name: %s\n"). Magic numbers like `0x2a` (42) are used but contextually inferable. Some socket constants like `2` for AF_INET could be named.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean output with minimal compiler artifacts. No obvious debug instrumentation or register spilling noise visible. The code is relatively readable without extraneous artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops and conditionals are properly structured. Minor awkwardness in some error-handling paths but overall natural execution flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with clear single responsibilities. Each test function (`call_strcpy`, `call_strcmp`) correctly calls its wrapper (`param_strcpy`). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error-checking paths. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. At -O0, no loop unrolling artifacts. Clean code without duplicate expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **CRITICAL DEFECT**: `param_strcpy` returns `void` instead of `int`, and the return value `strlen(param_1)` is computed but discarded. Many types use `undefined4` instead of proper types. Const-correctness lost (`const char *src` becomes `char *param_2`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Basic types handled reasonably. Some struct-like usage visible (e.g., `sockaddr` in `param_socket_create`). Field names are generic but structure is recognizable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The missing return value in `param_strcpy` is a semantic error. Pointer types often generic (`void *`). Const correctness not preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. No explanation of function purpose, algorithm logic, or non-obvious operations. Zero documentation for the critical return value bug.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions correctly identified (`strcpy`, `strcmp`, `strlen`). No explicit pattern naming (e.g., "producer-consumer pattern" for condition variables). Some recognition but no semantic labeling.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **CRITICAL**: The missing return value in `param_strcpy` is not flagged. No indication that `strlen(param_1)` result is discarded. No warnings about type mismatches or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No error condition explanations. The function contract (returns string length) is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through code structure. No documentation of who calls what or global variable usage. Relationships inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by category (library calls, system calls, thread functions). Static functions properly scoped. Reasonable organization matching test structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses `undefined4` which is not valid C. Would require significant patching to compile. Missing return value makes compilation semantically incorrect. External declarations needed for many functions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **CRITICAL**: `param_strcpy` returns `void` instead of `int`; the `strlen(param_1)` return value is computed but discarded, completely changing function semantics
+- Variable names are all generic (`param_1`, `param_2`, `local_18`) with no semantic recovery
+- Const-correctness lost (`const char *src` → `char *param_2`)
+- No comments explaining any function purpose or algorithm
+- No anomaly indication for the critical return value bug
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function names accurately reflect source (`param_strcpy`, `call_strcpy`) and use appropriate action verbs
+
+**Most Needs Improvement:** Type Precision (3/10)  
+- The return type error in `param_strcpy` is a semantic failure that makes the decompiled code incorrect, not just less readable
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and preserve return values**: When a function computes a value and returns it (like `strlen(dst)` in strcpy wrapper), the decompiler must preserve the return statement - this is a fundamental semantic error
+2. **Infer parameter names from usage**: Analyze how parameters are used within the function and in standard library calls to recover names like `dst`, `src` instead of `param_1`, `param_2`
+3. **Add anomaly warnings**: Flag cases where return values are computed but discarded, type mismatches occur, or const-correctness is lost

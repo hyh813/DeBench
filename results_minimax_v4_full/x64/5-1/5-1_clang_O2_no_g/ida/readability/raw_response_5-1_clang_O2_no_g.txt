@@ -1,0 +1,142 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**Justification: Variables are almost entirely generic: `s[31]`, `v2`, `v3`, `v4`, `v5`, `a1`, `a2`, `a3`. The array `s` in `test_cpp_member_func` clearly corresponds to the `name` char array from the source but is named generically. No semantic meaning recovered.
+
+### 2. Function Naming Quality  
+**Score: 5/10**
+Justification: Mixed results - some functions like `test_cpp_member_func`, `test_cpp_constructor` are properly demangled, but many remain as `sub_1020`, `sub_1120`. The `call_virtual_func` is correctly named, but internal helper functions have no meaningful names.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: Magic numbers like `1001`, `4700`, `42` appear without explanation. The expression `1001 * LifecycleClass::instance_count + 21` in `test_cpp_constructor` is completely opaque - the original had clear separate computations. String literals like `aCppL302D` are cryptic.
+
+### 4. Noise Reduction
+**Score: 2/10**
+Justification: Severe noise pollution. `JUMPOUT(0)` statements, compiler attributes like `__fastcall`, `__noreturn`, `__int64`, `_BYTE`, `_DWORD` clutter the output. 19 functions failed to decompile, leaving gaps. The header states "Decompiled by IDA Pro" but metadata says Ghidra - confusion adds noise.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: Most functions return constant values with trivial control flow. However, `test_cpp_member_func` shows awkward array initialization with `*(_OWORD *)&s[15] = *(__int128*)` constructs that obscure the original `strncpy` logic. The exception function `test_cpp_exception` is incomplete.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Function granularity is preserved - each test function remains separate. Template instantiations like `template_max<int>` and `template_max<double>` are correctly separated. Minor issues with some functions being too trivial (returning constants).
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Most functions read top-to-bottom without complex jumps. Early returns used appropriately. The code is generally linear and follows natural execution order.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy observed. Each function computes its result directly without duplicate expressions or dead code. Loop unrolling from optimization is minimal.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Mixed type precision - `__int64` used for most returns, `_DWORD` for 32-bit. However, `call_virtual_func` has confusing type `__int64 (__fastcall ***a1)(_QWORD)` - the original was `Base*` and `int`. Function pointer types are imprecise.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct recovery. The `Container<int>` class is accessed via raw offsets: `a1 + 40` for size, `a1 + 4 * result` for data. Original struct fields (`data`, `size`) completely lost. Same for `LifecycleClass` - `data` accessed as `*(_DWORD *)(a1 + 40)`.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Several type safety issues: raw pointer arithmetic without bounds (`a1 + 40`, `a1 + 80`), function pointer type confusion in virtual calls, no const-correctness. The `Container` template uses unchecked array access.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only auto-generated function headers like `/* Function: test_cpp_member_func @ 0x1240 */`. No useful comments explaining logic, algorithm, or decompilation confidence. Failed decompilations noted but not explained.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+Justification: No design patterns or C++ idioms recognized. Virtual function calls not identified as vtable dispatch. Exception handling not recognized as try/catch. Template instantiation patterns not identified. The original's OOP patterns are completely opaque.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: Failed functions are listed but not explained. No indication of indirect calls, vtable resolution issues, or uncertain decompilations. The `test_cpp_exception` function shows incomplete decompilation but no warning.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. No error handling contracts recovered. The original's error conditions and assumptions are completely lost.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are visible in the code (e.g., `test_cpp_oo_features` calls other test functions), but relationships not documented. Virtual dispatch through vtables not clearly indicated. No call graph or usage context provided.
+
+### 17. Module Organization
+**Score: 4/10**
+Justification: Functions are present but not logically organized. No class structure recovery - all class methods appear as standalone functions. No namespace or module grouping. Template class methods scattered without class context.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Marked as "Compilation Result: Yes" - code compiles. However, 19 functions failed to decompile including standard library functions (`printf`, `strlen`, `__cxa_throw`). External dependencies not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L2_avg = (5 + 7 + 7 + 8) / 4 = 6.75
+L3_avg = (4 + 2 + 4) / 3 = 3.33
+L4_avg = (3 + 2 + 3 + 2) / 4 = 2.50
+L5_avg = (4 + 4 + 5) / 3 = 4.33
+
+Overall = (3.00 × 0.30) + (6.75 × 0.25) + (3.33 × 0.20) + (2.50 × 0.15) + (4.33 × 0.10)
+        = 0.90 + 1.69 + 0.67 + 0.38 + 0.43
+        = 4.07/10
+```
+
+### Overall Readability Score: 4.07/10
+
+---
+
+### Critical Defects
+
+- **Variable naming**: All variables are generic (`s`, `v2`, `a1`, `a2`) - the original's `value`, `name`, `data`, `size` are completely lost
+- **Composite type loss**: All struct/class fields accessed via raw offsets (`a1 + 40`, `a1 + 80`) - no struct recovery whatsoever
+- **Idioms not recognized**: Virtual function calls, exception handling, templates all appear as low-level code without high-level pattern recognition
+- **Magic numbers unexplained**: `1001 * LifecycleClass::instance_count + 21` is opaque; original had clear separate computations
+- **Failed decompilations**: 19 functions including critical ones like `printf`, `__cxa_throw` left as "FAILED to decompile"
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (7/10)** - Function granularity is preserved; each test function remains separate, and template instantiations are correctly separated. This is the highest-scoring dimension.
+
+---
+
+### Most Needs Improvement
+
+**Idiom Recognition (2/10)** - The decompiler completely fails to recognize C++ idioms. Virtual function calls, exception handling, operator overloading, lambda expressions, and template patterns are all rendered as low-level code. This is the lowest-scoring dimension and most impacts readability for C++ code.
+
+---
+
+### Top 3 Recommendations
+
+1. **Recover struct/class types**: Analyze vtable layouts and constructor patterns to reconstruct composite types with meaningful field names instead of raw offsets like `a1 + 40`
+
+2. **Recognize C++ idioms**: Implement pattern recognition for virtual dispatch (vtable calls), exception handling (try/catch/throw), operator overloading, and templates to present high-level constructs rather than low-level assembly
+
+3. **Explain magic numbers**: Add heuristics to detect computed expressions (like `1001 * instance_count + 21`) and either recover the original logic or add explanatory comments about what the computation represents

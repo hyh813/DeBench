@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `piVar4` throughout. The source has meaningful parameter names like `a`, `b`, `count` but these are lost. Internal variables in `varargs_func` and `param_ptr_array` are particularly cryptic.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `cdecl_func`, `stdcall_func`, `call_cdecl` correctly match source names. However, compiler/runtime functions have generic names like `FUN_00011030`, `FUN_00011080`. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42), `0x12345678` appear without explanation. The source comments indicate expected values but these are lost. Some masking constants like `0xfffffffc` are unclear without context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. Minor noise includes Ghidra-specific types like `undefined4`, unusual `code *` type for function pointers, and stack references like `&stack0x00000008`. These don't significantly impede understanding.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with clear if/else and return statements. The `varargs_func` and `param_ptr_array` have somewhat complex loop structures due to optimization, but they remain traceable. No spurious goto usage.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines), each handling a single responsibility. The test wrapper functions like `call_cdecl` are simple and cohesive. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. Some complexity in varargs handling but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `varargs_func` (processing 4 ints at a time), which is expected at -O0 but could be cleaner. No obvious dead code. Minor redundant expressions in pointer array handling.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses Ghidra's `undefined4` instead of `int`. Function pointers use non-standard `code *` type. The source uses `int`, `char*`, `double`, `long long` but these are sometimes degraded. `uint` used inconsistently with `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` (128 bytes) is completely exploded into 21 individual parameters in `func_struct_byval`, losing all structure. `SmallStruct` not recovered - operations use raw pointer arithmetic `param_1[1] * *param_1`. No struct type definitions recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `param_complex_cast` loses type information from the original `void*` and `TestIntPair*` casts. Pointer arithmetic is explicit but correct. Function pointer calls use `code *` which is imprecise but not dangerous.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled output whatsoever. The source has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"), expected values, and ABI details. None of this is recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like varargs handling are recognizable from the loop structure, but not explicitly labeled. Calling convention attributes (like `__regparm3` for fastcall) are present but not explained as ABI-specific patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain items. The source has intentional undefined behavior tests (like `param_order_dep` with `++i, ++i`) but the decompiled code presents them as normal without flags. No warnings about indirect resolution issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The source has implicit contracts (e.g., `func_struct_byptr` requires non-null pointer) but these are not indicated in the decompiled code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear (e.g., `call_cdecl()` calls `cdecl_func()`), but not documented. The source shows which test calls which function and expected outputs, but this relationship context is lost.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Some logical grouping visible (calling convention tests, parameter tests, return tests) but no explicit sections or headers. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is. Uses Ghidra-specific types (`undefined4`, `code *`). External functions like `printf`, `puts`, `strlen` declared but some missing (e.g., `ret_opaque_handle` referenced but not defined). Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_X` and `iVar1` patterns, losing semantic meaning from source
+- No struct type recovery - `LargeStruct` exploded to 21 parameters, `SmallStruct` to raw pointer arithmetic
+- Complete absence of comments - source's extensive documentation (test names, expected values, ABI explanations) entirely lost
+- Type precision severely degraded - `undefined4` instead of `int`, `code*` for function pointers
+- No anomaly indication for undefined behavior tests or uncertain items
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are appropriately sized with clear single responsibilities, matching the source's modular structure well.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled output has zero comments, while the source has extensive documentation explaining test cases, expected values, and ABI details. This is the biggest gap in recoverability.
+
+**Top 3 Recommendations:**
+1. Add comments explaining test case purposes (e.g., "// CALL-L1-01: Tests cdecl calling convention, expects 15")
+2. Recover struct types from parameter patterns - `LargeStruct` parameters should be grouped into a struct definition
+3. Replace `undefined4` with `int` and `code *` with proper function pointer typedefs for compilation compatibility

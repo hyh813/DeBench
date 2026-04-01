@@ -1,0 +1,16 @@
+test_obf_opt_edge called
+
+opaque_predicate(10) = 10
+instruction_substitution(10) = 20
+call_instruction_substitution() = 225
+string_encryption() = 0
+tail_call_optimized(10, 0) = 500500
+non_tail_call(10) = 5050
+vectorized_loop(10) = 72
+link_time_optimization returned
+division_by_zero handled
+null_pointer_deref() = 41
+buffer_overflow() = 30
+integer_overflow() = 2000000000
+undefined_behavior() = 10
+implementation_defined() = 47

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/5-23/5-23_clang_O2_g/ida/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "Testing preprocessing features...\n\nmacro_constants: 64\nmacro_functions: 30\nconditional_compile: 32\nmulti_branch_compile: 57122\nmacro_recursion: 116\nstringize: 19\ntoken_paste: 60\nLOG: Values: 10, -1081509716, 134516065\nvariadic_macro: 60\nmacro_override: 16\ninclude_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:11\nbuiltin_macros: 382\nTesting ASM features...\n\nasm_basic: 15\nasm_clobber: 15\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

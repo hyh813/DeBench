@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelmingly generic names (v0, v1, v2, ptr) dominate; only occasional semantic names like `fp`, `sock`, `pid` appear. Variables like `v1[32]` should be `buffer[32]` based on usage context.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `thread_compute`, `signal_handler`), but many are mechanical (`sub_4013b4`, `$x`). Action verbs present but inconsistent.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere: 4294967295 (-1 unsigned), 4294967293 (-3), 4278190081. No constants recovered; error codes should be named (ERR_FILE_NOT_FOUND, etc.).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`) in every function, frame pointer setup (`v0 = &v1`), and redundant variable assignments clutter the code significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses if/else appropriately but with awkward unsigned comparisons (`(char)(v2 >> 31) & 1`). Some loops recovered but with non-idiomatic do-while patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity matches source reasonably well, but some functions are fragmented (e.g., `call_strcpy` just calls `param_strcpy` with stack check boilerplate).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Deep nesting in functions like `param_thread_local_storage` (8+ levels). Forward jumps and complex conditionals disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls (`call_scanf` calls `param_scanf` twice), redundant stack checks, and repeated variable saves (`v1 = v7; v2 = v8`) throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type erosion: `unsigned long long` everywhere instead of `size_t`, `int`, `pid_t`. Function parameters lost (`param_strlen()` has no parameters but should have `const char*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`sockaddr`, `struct_0`) but with generic fields (`field_0`, `field_5`, `padding_0`). TLS struct access via `tpidr_el0` is opaque.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(char *)ptr`, `(unsigned int)v0`), pointer arithmetic without bounds, and type-confused operations (`ptr[2]` on ThreadData without proper struct).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Library calls recognized (`strcpy`, `pthread_create`, `memcpy`) but no pattern naming. Producer-consumer pattern in `consumer_thread`/`producer_thread` not identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some failures noted ("Failed to decompile function __aarch64_cas4_acq_rel"), but most issues silently degraded. No warnings about parameter loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error condition explanations. Return values like 4294967295 unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. Global variables (`signal_received`, `atomic_counter`) used without declaration context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file or API boundary.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies implicit (`pthread`, `libc`). Some functions won't compile (`[D] MBusEvent-Imbe_Fence()` syntax invalid). Missing includes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.03/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Parameter loss**: `param_strlen()`, `param_scanf()`, `param_fopen_fclose()`, `param_win32_api()` missing all parameters despite being used with arguments
+- **Magic number pollution**: 4294967295, 4294967293, 4278190081 throughout without constant definitions
+- **Variable naming collapse**: Everything is `v0`, `v1`, `v2`, `ptr` - no semantic inference from usage patterns
+- **Zero documentation**: No comments explaining algorithm intent, error codes, or decompilation uncertainty
+- **Type erosion**: `unsigned long long` used universally instead of recovering `size_t`, `pid_t`, `ssize_t`, etc.
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `thread_compute`, `signal_handler` were preserved from debug symbols, providing anchor points for understanding.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult; even auto-generated confidence markers would help.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery from call sites**: Analyze how functions are called to reconstruct missing parameter lists (e.g., `param_strlen` is called with a string argument)
+2. **Magic number constant inference**: Detect repeated values (4294967295 = -1U, 42 = success code) and suggest named constants with comments
+3. **Usage-based variable naming**: Infer variable purposes from context (variables used in `malloc` calls → `buffer`, `ptr`; loop counters → `i`, `idx`; sizes → `len`, `count`)

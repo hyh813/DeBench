@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` throughout. Local variables are `v0`, `v1`, `idx` - only `idx` in `param_asm_clobber` is semantically meaningful. The original source used `size`, `x`, `y`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`. However, many are generic like `sub_401030`, `sub_401040`. The original source had meaningful names like `param_stringize`, `param_token_paste` which are only partially recovered.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return values like `64`, `30`, `32` are correctly computed and shown. However, magic numbers like `0x400` (1024), `0x200` (512) in `param_macro_constants` lack explanatory constants. The original had `MAX_SIZE` and `BUFFER_COUNT` which are lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some struct definitions (`struct_0`) are auto-generated but don't significantly impede readability. No excessive register spilling or debug instrumentation visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper loops in `param_asm_clobber` and `param_asm_multi_insn`. Some goto statements in initialization code but core logic is readable. At -O0, this is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. The original 709 LOC is decomposed into properly separated functions. Each function has clear single responsibility (e.g., `param_macro_constants` does one thing).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_macro_constants` are properly structured. Some forward jumps in initialization code but core business logic flows naturally.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions. Loop unrolling is minimal since -O0 was used. Code is clean without duplicate computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most integers are `unsigned int` which is reasonable. However, the original used `int` for many parameters. Pointers are generic `char*` or `unsigned int` rather than specific types. Some precision lost compared to original `size_t`, `int*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler created generic `struct_0` with fields like `field_0`, `padding_0` but lost original struct semantics. The original had no complex structs but the recovery shows generic placeholder structures that add noise.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `param_asm_multi_insn`, pointer arithmetic `ptr + idx * 4` is visible but not unsafe. Function pointers like `atomic_exchange_add` are called correctly. Minor type safety issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled output. Original source had extensive comments explaining each test case (e.g., "PP-L2-01: 宏定义常量"). None of this semantic context is preserved. Only auto-generated function signatures present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals recognized. However, the original's preprocessing test cases (macro expansion, conditional compilation) are reduced to simple arithmetic without indicating these were originally macro-driven computations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198747()`. However, many indirect calls and complex assembly patterns lack warnings. The inline assembly in original source is not flagged as such.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear expectations (e.g., "期望: 64", "期望: 30") which are completely lost. Only the computed return values remain.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`call_macro_constants()` calls `param_macro_constants()`). External functions marked with `extern` (e.g., `extern unsigned int g_402041`). However, the relationship between test functions and tested functions is not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing functions together, asm functions together. The original's section comments (5.2, 5.3) are lost but the code organization roughly matches source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". Code appears to compile with minimal stubs. Some external references need linking but overall buildable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: Parameters `a0`, `a1`, `a2` completely obscure original semantic names (`size`, `x`, `y`, `ptr`, `n`)
+- **Comment loss**: All original documentation explaining test scenarios (PP-L2-01, ASM-L4-01, etc.) is completely lost
+- **Macro semantics lost**: Original preprocessing tests (macro constants, functions, conditional compilation) are reduced to plain arithmetic without indicating they were macro-driven
+- **Contract expectations lost**: Original "期望: XX" comments showing expected outputs are not preserved
+- **Type precision loss**: Original `int`, `size_t` become generic `unsigned int`; original specific types not recovered
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions maintain proper granularity and single responsibility
+- Core logic is well-separated into logical units
+- At -O0, function boundaries closely match source intent
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+- Generic parameter names (`a0`, `a1`) make it difficult to track data flow
+- Original meaningful names (`size`, `buffer`, `counter`) completely lost
+- Only `idx` in one function shows semantic awareness
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a0` used in `if (a0 <= 0x400)` should suggest `size` or `max_size`. `a0` in `param_asm_basic` returning `a0 + 10` should suggest `input` or `value`.
+2. **Recover macro semantics**: When constant folding produces specific values (like `64` from `BUFFER_COUNT * 4`), add comments indicating original macro structure
+3. **Preserve test expectations**: The original's "期望: XX" comments provide valuable semantic context - decompiler should preserve or reconstruct such test oracle information

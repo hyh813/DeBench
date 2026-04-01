@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ OOP Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `local_28`, `uStack_24`, `iVar1`, `puVar1` are completely generic with no semantic meaning. Original source had meaningful names like `value`, `name`, `data`, `size`, `capture_by_value` that are entirely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), but template functions use awkward naming (`template_max_int_`), and many external stubs have `<EXTERNAL>::` prefix with recursive self-calls that are misleading.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a` with no explanation. Original had clear calculations like `10*3 + 4 = 34` that are now opaque constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs that call themselves (`operator_new`, `printf`, `__cxa_throw`) create confusion. Stack variable declarations (`local_28 = 0x74736554`) are verbose compiler artifacts that obscure the string "Test".
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions are constant-folded to `return 0x2a` instead of showing actual logic. `test_cpp_exception` shows exception allocation but no try-catch structure. Virtual calls shown as `(***(code ***)param_1)()` obscuring vtable mechanism.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template instantiations properly separated (`template_max_int_`, `Container<int>::push`). However, `test_cpp_oo_features` duplicates RTTI code from `test_cpp_rtti` instead of calling it, creating redundancy.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but verbose stack initialization (`local_28 = 0x74736554; uStack_24 = 0;...`) disrupts flow. No problematic goto patterns but excessive variable declarations.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_cpp_oo_features` duplicates the entire RTTI logic from `test_cpp_rtti` (operator_new, __dynamic_cast, operator_delete sequence). External stub functions are redundant noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `void*` instead of precise types. Original `int`, `size_t`, `double` sometimes preserved but const-correctness completely lost. Function pointers degraded to `code**`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes mostly lost - no struct definitions for `SimpleClass`, `LifecycleClass`, `Base`, `Derived`. `Container<int>` shows raw offset access (`this + 0x28`) with no field names. Virtual table structures not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(int *)`, `(void*)`. Pointer arithmetic without bounds checking (`this + param_1 * 4`). No const correctness on member functions that were `const` in source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining functionality. No indication of what constants mean, no algorithm explanations, no decompilation confidence markers. Original had extensive documentation headers.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns not recognized: vtable calls shown as raw pointer dereferences, exception handling reduced to `__cxa_allocate_exception`/`__cxa_throw` calls, lambda expressions completely lost (constant return `0x55`).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Virtual dispatch shown without flagging potential issues. Exception handling structure lost without indication that try-catch was present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` checks in Container not explained). No postconditions or error condition documentation. Original had clear expected return values in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch through `__dynamic_cast` shown but vtable relationships unclear. No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order but external stubs mixed with application code. No clear separation between test functions, class methods, and runtime support.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant stubs to compile. External function signatures incorrect (printf varargs shown as single parameter). Missing typeinfo structures, vtable definitions, and exception handling runtime.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              4.09/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_28`, `iVar1`) losing all semantic meaning from original (`value`, `name`, `data`)
+- **Class/struct definitions not recovered** - no `SimpleClass`, `LifecycleClass`, `Base`, `Derived` structures visible
+- **Magic numbers without explanation** (`0x125c`, `0x3e9`, `0x28a`) replacing clear calculations
+- **Exception handling structure lost** - try-catch blocks reduced to `__cxa_*` function calls
+- **Lambda expressions completely decompiled to constants** - no closure structure visible
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), providing some orientation despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero explanatory comments despite complex C++ features (vtables, exceptions, templates) that desperately need documentation for human understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions** from vtable layouts and object memory patterns instead of raw pointer arithmetic (`this + 0x28`)
+2. **Infer variable names from usage context** - `local_28 = 0x74736554` is clearly a string "Test" and should be named accordingly
+3. **Add decompilation confidence annotations** for uncertain reconstructions (virtual calls, exception handling, template instantiations) to guide manual review

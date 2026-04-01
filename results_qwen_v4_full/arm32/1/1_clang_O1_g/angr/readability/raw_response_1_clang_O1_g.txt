@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names (`v0`, `v1`, `a0`, `a1`) and cryptic annotations like `vvar_112{r64|4b}`. Original meaningful names (`temp1`, `sum`, `count`, `matrix`) completely lost. Only occasional semantic names like `result` and `ptr` appear.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`sequential_ops`, `single_if`, `loop_for_fixed`), but helper functions degraded to `sub_4004dc`, `$a.16`, `$a.22`. Test functions preserved naming but test logic was constant-folded.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX/-1), `1717986919` (division optimization constant), and `0x12345678` without explanation. Some switch case values (10, 20, 30) remain inferable but most constants obscure intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant Angr-specific artifacts (`armg_calculate_condition` calls throughout), redundant variable assignments (`v0 = v1; v1 = v2`), dead code paths, and platform-specific constructs that don't exist in original source.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `sequential_ops` and `ternary_op` recovered well, but `single_if` became unreadable bit manipulation, `nested_if_deep` fragmented into goto chains with `LABEL_400720`, and loops use awkward do-while with goto patterns instead of clean for/while.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but test functions (`test_control_flow_l1/2/3`) collapsed into hardcoded printf statements rather than actual function calls. Some functions like `duffs_device` became monolithic with nested ternary expressions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Scattered goto labels (`LABEL_400720`, `LABEL_400824`, `LABEL_400970`) disrupt top-to-bottom reading. Some functions like `switch_small` maintain reasonable linearity, but complex functions have multiple forward jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate return statements in `tail_recursion` and `call_func_ptr` (returns called twice), unnecessary intermediate variables, and repeated expressions like `armg_calculate_condition(178, a0, 1, 0)` appearing multiple times.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int` regardless of original signedness (original `int` parameters became `unsigned int`). Pointer types lack specificity, function pointers use generic signatures, and no const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs appear as generic `struct_0`, `struct_1` with meaningless fields (`field_0`, `field_4`, `field_8`, `field_c`). Original array structures and matrix layouts completely lost to pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe implicit casts between signed/unsigned, function pointer calls without proper type verification (`v0 = a0(a1)`), and unchecked pointer arithmetic throughout array access patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or intent. No documentation of non-obvious transformations, no decompilation confidence indicators, and no API contracts. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Control flow patterns (state machines, Duff's device, fall-through switches) not identified or labeled. `switch_fallthrough` logic obscured into nested if-else. No algorithm pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Angr-specific artifacts (`armg_calculate_condition`) appear without explanation of what they represent. No warnings about unresolved indirect calls, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial), no postconditions, no error condition documentation. Functions like `duffs_device` lose the `n <= 0` check semantics.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g_413008`, `g_401f7c`) appear without context. Callback relationships in `process_with_callback` partially visible but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but without logical organization matching source structure. Helper functions scattered, no clear separation between test code and implementation code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `__gmon_start__`, `__divsi3`) declared but not documented. Platform-specific constructs (ARMEL) won't compile on standard systems without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Weighted Calculation:**
+- L1 (Lexical): 4.0 × 0.30 = 1.20
+- L2 (Structural): 4.5 × 0.25 = 1.13
+- L3 (Type System): 3.7 × 0.20 = 0.74
+- L4 (Semantic): 1.5 × 0.15 = 0.23
+- L5 (Contextual): 4.3 × 0.10 = 0.43
+- **Total: 3.73/10** (rounded to 3.5)
+
+**Critical Defects:**
+- Variable `v0`, `v1`, `a0` should be named based on semantic usage (e.g., `sum`, `count`, `packet_size`)
+- Control flow uses goto labels (`LABEL_400720`) instead of structured if-else/loop constructs
+- Magic numbers like `1717986919` (division optimization) and `4294967295` (-1) unexplained
+- `armg_calculate_condition` calls throughout without explanation of purpose
+- Test functions constant-folded to hardcoded printf values instead of actual function calls
+- All types degraded to `unsigned int` losing signedness semantics
+- Zero comments explaining any logic or algorithm intent
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core function names like `sequential_ops`, `loop_for_fixed`, `recursion_factorial` were preserved from original source
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Complete absence of any documentation, explanations, or decompilation confidence indicators makes code practically unusable for maintenance
+
+**Top 3 Recommendations:**
+1. **Implement semantic variable naming**: Use data flow analysis to infer variable purposes from usage patterns (e.g., accumulator variables in loops should be named `sum`, `count`, `total`)
+2. **Recover structured control flow**: Replace goto-based patterns with idiomatic for/while/if-else constructs, especially for simple loops and conditionals that were clearly structured in source
+3. **Add decompilation confidence annotations**: Mark uncertain reconstructions with comments (e.g., `// DECOMPILER UNCERTAIN: indirect call target not resolved`) and explain platform-specific artifacts like `armg_calculate_condition`

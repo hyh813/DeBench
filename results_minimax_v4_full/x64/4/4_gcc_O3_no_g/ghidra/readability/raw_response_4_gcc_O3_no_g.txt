@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic patterns (`iVar1`, `piVar2`, `uVar3`, `puVar1`, `pcVar2`). Stack variables are named `local_38`, `local_30` etc. No semantic names like `count`, `sum`, or `args` that match the original source are recovered.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names like `cdecl_func`, `stdcall_func`, `varargs_func` correctly match the source. However, suffixes like `.constprop.0` (constant propagation) and `.cold` (cold path) are compiler artifacts that add noise without semantic value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation (e.g., `0xf` for 15, `0x32` for 50, `0x2a` for 42). String literals are referenced as `&DAT_00102008` with no meaningful labels. The value `0x2f` (47) used in varargs loop bounds is unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple optimization artifacts present: `.constprop.0` function variants, `.cold` path functions, stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`), and warnings about unreachable blocks. These obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow matching source (e.g., `cdecl_func` is simple `return param_1 + param_2`). The varargs functions have complex loop structures due to stack handling, but these are legitimate compiler transformations at -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The `call_*` wrapper functions are properly separated from implementation functions. Function granularity matches the source well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The varargs functions have some forward jumps for stack overflow handling, but the core logic is linear. Early returns are used appropriately.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in varargs functions with separate `.constprop.0` versions. Dead code warnings are present but blocks are retained. Overall manageable but optimization artifacts add visual noise.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `int`, `undefined8`, `undefined4`, `long` for pointers. Function pointers use `code *` which is imprecise. The original `int` parameters are correctly typed, but many types are uncertain (`undefined*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery is visible. The `LargeStruct` (128 bytes) and `SmallStruct` are not reconstructed - parameters are passed as individual stack values. The `func_struct_byval` shows raw stack access (`in_stack_00000008`, etc.) instead of struct field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: pointer arithmetic in `ret_pointer` (`param_1 + 4`), array indexing without bounds checks, function pointer calls via `code *`. The `param_double_ptr` uses `long *` for `int **` which is type-confused on x64.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present: "WARNING: Subroutine does not return", "WARNING: Removing unreachable block". No meaningful comments explaining algorithm logic, parameter purposes, or return value semantics. String data references use cryptic `DAT_` addresses.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns are identified or named. The varargs handling pattern (va_list iteration) is not recognized as a standard idiom. No recognition of calling convention patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: unreachable block warnings, stack check failures (`__stack_chk_fail`), and indirect call resolution issues. However, these warnings are generic and don't explain the root cause or suggest fixes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit contracts, but the decompiler could infer some (e.g., "requires: count > 0" for varargs). None are present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `test_calling_conventions()` calls various functions). However, there's no documentation of caller/callee relationships, global variable usage, or callback connections.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, implementation functions together). However, there's no clear file structure, header declarations, or namespace organization visible in the output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard library functions (`puts`, `__printf_chk`, `strlen`). Should compile with libc and appropriate headers. No obvious compiler-specific hacks that would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `param_N` and locals use cryptic `iVar1`, `piVar2` patterns - completely non-informative
+- **No struct recovery**: `LargeStruct` and `SmallStruct` from source are lost; shown as raw stack accesses
+- **No type recovery**: Composite types completely missing; only primitive types inferred
+- **Magic numbers unexplained**: Values like `0xf`, `0x32`, `0x2a` appear without constant names
+- **No comments**: Only auto-generated warnings; no meaningful documentation
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are appropriately sized and separated. The `call_*` wrapper pattern from source is preserved, and function granularity matches well.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+Every parameter and local variable uses generic auto-generated names. The original source had meaningful names like `count`, `sum`, `args` that are completely lost.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` used as loop counter should be named `count`; variables accumulating sums should be named `sum`
+2. **Recover struct types from stack access patterns**: Multiple consecutive stack parameters (`in_stack_00000008` through `in_stack_00000080`) should be recognized as struct fields
+3. **Replace magic numbers with named constants**: Detect constant values like `0xf` (15), `0x2a` (42) and suggest meaningful names based on context

@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "arm32",
+  "src_name": "5-23",
+  "source_path": "src/5-23.c",
+  "target_src_names": [
+    "5-23"
+  ],
+  "build_cmd": "arm-linux-gnueabi-gcc -O1 -g -std=c99 -lm -latomic src/5-23.c -o build/arm32/5-23/5-23_gcc_O1_g",
+  "original_bin": "results_glm_v4_full/arm32/5-23/5-23_gcc_O1_g/binaryai/semantic/native_arm32_bin/5-23_gcc_O1_g_native",
+  "decompiled_bin": "results_glm_v4_full/arm32/5-23/5-23_gcc_O1_g/binaryai/syntactic/bin/5-23_gcc_O1_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "results_glm_v4_full/arm32/5-23/5-23_gcc_O1_g/binaryai/semantic/native_arm32_bin/5-23_gcc_O1_g_native",
+      "src_name": "5-23",
+      "target_src_names": [
+        "5-23"
+      ],
+      "error": null,
+      "event_count": 1,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 0
+    },
+    "decompiled": {
+      "status": "failed",
+      "label": "Decompiled",
+      "binary_path": "results_glm_v4_full/arm32/5-23/5-23_gcc_O1_g/binaryai/syntactic/bin/5-23_gcc_O1_g_fixed",
+      "src_name": "5-23",
+      "target_src_names": [
+        "5-23"
+      ],
+      "error": "bootstrapper crashed with signal 11; please file a bug\n\t pc: 00441620\n\t lr: 00441627\n\t sp: b6f1b000\n\t r0: b6f31618\n\t r1: b6f3175c\n\t r2: 00000080\n\t r3: b6e062c9\n\t r4: b6f3160c\n\t r5: 00000000\n\t r6: b6f5a968\n\t r7: b6e24000\n\t r8: b6f31758\n\t r9: 00000020\n\tr10: 00000000",
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0
+    }
+  }
+}

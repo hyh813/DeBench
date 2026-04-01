@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `vars0`, `vars8`) with no semantic meaning. Parameters like `a`, `b`, `count` are acceptable but locals like `v4 = &v14` in `varargs_func` obscure the stack pointer's purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only startup stubs like `sub_710` and `init_proc` lack semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Constant-folded results (`return 15`, `return 50`) hide original computations. String literals referenced as `asc_15B0`, `aCallL206` instead of inline text, requiring external lookup.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__fastcall`/`__cdecl` annotations, explicit casts `(__int64)`, stack variables `vars0` through `vars28`. Warning "local variable allocation has failed" appears in `ret_small_struct`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions are clean, but `varargs_func` uses goto (`LABEL_5`) and complex while loops instead of the original for-loop. Constant folding simplifies test functions but obscures actual logic flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, many test functions (`call_cdecl`, `call_stdcall`) are reduced to single return statements, losing the call relationship visibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. `varargs_func` has backward jumps and goto statements that disrupt linear reading. `ret_large_struct` has complex register shuffling.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminates redundant computations appropriately. However, struct iteration code is duplicated across `func_struct_byval` and `test_calling_conventions` without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic types dominate (`__int64`, `_QWORD`, `_DWORD`) instead of precise types. `func_b` returns `__int64` but source returns `int`. Pointer types mostly preserved but with excessive casting.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structs `LargeStruct`, `SmallStruct`, `BigStruct` recovered by name. However, field access uses array indexing (`s->data[0]`) rather than named fields, losing semantic meaning of individual members.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `*(_DWORD *)v7`, `(__int64 (__fastcall *)(_QWORD))callback`. Pointer arithmetic `(char *)v1 + 8` bypasses type checking. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated warnings like "local variable allocation has failed, the output may be wrong!" No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C patterns (varargs, struct passing) not identified as idioms. `va_start`/`va_arg`/`va_end` sequence not recognized as variadic pattern. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures noted ("FAILED to decompile: strlen"). One decompilation warning present. However, suspicious type casts and potential UB not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist in code (`if ( p )`) but not documented as preconditions. No postconditions or invariants recovered. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variables (`handle1_1`, `handle2_0`) appear without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No logical grouping comments. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions (`puts`, `__printf_chk`, `strlen`) referenced but not declared. Type mismatches (`__int64` vs `int`). Would require significant stubbing and type fixes to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4×0.10 + 8×0.10 + 5×0.05 + 5×0.05) = 1.70
+Level 2 (25%): (6×0.08 + 7×0.07 + 6×0.05 + 7×0.05) = 1.62
+Level 3 (20%): (6×0.08 + 6×0.07 + 5×0.05) = 1.15
+Level 4 (15%): (2×0.05 + 4×0.03 + 5×0.03 + 3×0.04) = 0.49
+Level 5 (10%): (5×0.04 + 6×0.03 + 4×0.03) = 0.50
+
+Overall = 1.70 + 1.62 + 1.15 + 0.49 + 0.50 = 5.46/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects
+- **Variable names are generic** (`v0`, `v1`, `vars0`) obscuring semantic purpose throughout
+- **`varargs_func` decompilation is severely degraded** with goto statements instead of clean for-loop
+- **No comments** explaining any non-trivial logic or decompilation confidence
+- **Constant folding hides original computations** - test functions return literals instead of showing calls
+- **Type precision degraded** with excessive `__int64`, `_QWORD` instead of original types
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most function names preserved exactly from source, making navigation and identification straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no documentation; decompiler should add confidence indicators and explain transformed logic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `count`, `size`; pointer iterations should be named `ptr`, `iter`
+2. **Recover high-level control structures** - Transform goto-based loops back to for/while constructs, especially for varargs handling patterns
+3. **Add decompilation confidence annotations** - Mark constant-folded regions, note where original call relationships were lost, flag type uncertainty

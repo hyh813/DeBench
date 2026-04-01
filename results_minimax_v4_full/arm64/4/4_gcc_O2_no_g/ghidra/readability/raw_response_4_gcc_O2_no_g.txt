@@ -1,0 +1,87 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `param_1`, `param_2`, `iVar1`, `lVar1`, `uVar1`, `plVar3` which obscure semantic meaning. Original source uses meaningful names like `a`, `b`, `count`, `args`, `sum`. The decompiled code provides no way to infer that `param_1` in `cdecl_func` represents `a` or that `iVar1` represents `sum`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are correctly preserved: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `param_by_value_int`, etc. However, wrapper functions like `call_cdecl` return `undefined8` instead of `int`, and some names like `FUN_00100710` are still present for unused functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many magic numbers appear without explanation: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0xad` (173). While these are correct values, they're not named as constants. The source uses meaningful values like `5` and `10` for parameters, but the decompiled call sites show only computed results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Several compiler artifacts present: warnings about "Removing unreachable block", "Globals starting with '_' overlap smaller symbols", stack_chk_guard code, and `__stack_chk_fail` calls. However, these are clearly marked and don't severely impede understanding of the core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if/else structures and loops. The complex `test_calling_conventions` function has intricate stack manipulation but the logic (initializing arrays, computing sums) is traceable. At -O0, loops should be more recognizable, and they are.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each test case (call_cdecl, call_stdcall, etc.) is a separate function. The 1129 LOC output vs 665 LOC source is reasonable given the added decompilation metadata. No severe fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `test_calling_conventions` function has some backward jumps for loops but these are structured as do-while loops. No severe forward jumps into loop bodies or computed goto patterns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal (appropriate for -O0). Some repetitive patterns in test functions (multiple printf calls) but these reflect the source structure. Stack setup code is present but necessary.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Multiple type degradations observed: `undefined8` used for functions returning `int` (call_cdecl, call_stdcall, etc.), `long*` for `int*` in func_struct_byval, `byte*` for `char*` in param_string, `code*` for function pointer in param_func_ptr. The original uses `int` consistently but decompilation introduces pointer size and type confusion.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are almost entirely lost. `LargeStruct` (128 bytes) and `SmallStruct` are not recovered - instead raw pointer arithmetic is used: `func_struct_byval(long *param_1)` and `func_struct_byptr(int *param_1)`. The field names `data[0]`, `data[1]`, `x`, `y` are accessed via array indexing rather than struct members.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: casting between `int*` and `long*`, using `byte*` for string parameters, function pointer type `code*` is imprecise. However, no severe buffer overflow patterns or completely dangerous casts. The param_double_ptr correctly checks for NULL before dereferencing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comments present ("Decompiled by Ghidra 12.0", "Binary: ..."). No comments explaining algorithm purpose, parameter meanings, or return value contracts. The source has extensive comments (CALL-L1-01, PARAM-L1-01, etc.) but these are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (varargs using va_list, function pointers as callbacks) but not explicitly named or documented. The calling convention tests (cdecl, stdcall, fastcall) aren't identified as such - they're just function names. No mention of AAPCS, System V AMD64 ABI, or other conventions.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues: "WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap smaller symbols", "WARNING: Subroutine does not return". However, these are generic warnings without specific explanations of what went wrong during decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source has implicit contracts (e.g., func_struct_byptr requires non-NULL pointer, varargs_func requires count > 0) but these aren't recovered. The decompiled code shows the checks but doesn't explain their purpose.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (test_calling_conventions calls call_cdecl, etc.) but not explicitly documented. Global variables like `handle1_1`, `handle2_0` are used but their origin isn't explained. Callback relationships (param_func_ptr calling callback) are technically visible but not annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (calling convention functions together, parameter passing functions together, return value functions together). However, all 79 functions are in one flat listing without clear section headers or organization beyond alphabetical ordering by address.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code would not compile as-is due to: `undefined8` return types, undefined symbols like `__gmon_start__`, `__stack_chk_fail`, `__printf_chk`, `puts`, `strlen`. Requires linking against libc and additional stubs. The source uses standard C that compiles with `gcc -o test test.c`.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`param_1`, `iVar1`, `lVar1`) completely obscuring semantic meaning
+- Struct types completely lost - `LargeStruct` and `SmallStruct` become raw pointer arithmetic
+- Return types incorrectly shown as `undefined8` for functions returning `int`
+- No comments explaining algorithm purpose, parameter meanings, or calling convention context
+- Magic numbers like `0xf`, `0x32`, `0x2a` appear without explanation of what they represent
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions maintain appropriate granularity matching the source. Each test case is properly separated, and the overall structure reflects the original code organization well.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10) and Assertion & Contract Recovery (scored 2/10)  
+The generic variable names make it nearly impossible to understand what parameters represent without cross-referencing the source. Additionally, the complete loss of pre/postcondition documentation means the decompiled code provides no guidance on valid usage.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - if `param_1` is used in arithmetic with `param_2` and returned, name it `sum` or `result`; if used as array index, name it `index` or `i`
+2. Recover struct/union types from stack layout analysis - the 128-byte LargeStruct should be reconstructed with field names, not pointer arithmetic
+3. Add semantic annotations for calling conventions - identify cdecl, stdcall, AAPCS patterns and document parameter passing expectations

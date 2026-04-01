@@ -1,0 +1,7 @@
+test
+opaque_predicate: 10
+opaque_predicate: 20
+instruction_substitution: 225
+string_encryption: 47
+tail_call_optimized: 500500
+non_tail_call: 5050

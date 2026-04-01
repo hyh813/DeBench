@@ -1,0 +1,21 @@
+=== Preprocessing Features Test ===
+Result: 64
+Macro constants result: 30
+Conditional compile result: 32
+Multi-branch compile result: 57122
+Macro recursion result: 116
+Stringize result: 19
+Token paste result: 60
+LOG: Values: 10, -1076679156, 134515377
+Variadic macro result: 60
+Macro override result: 16
+Include guard result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:21
+Result: 382
+=== ASM Features Test ===
+ASM basic result: 15
+ASM clobber result: -1208813200
+ASM multi-instruction result: 42
+SIMD result: 0
+Atomic result: 30
+Privileged result: -1

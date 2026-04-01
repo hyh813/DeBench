@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `local_38`, `iVar1`, `param_1`, `puVar1` that completely obscure semantic meaning. The original source used meaningful names like `value`, `name`, `data`, `size`, `instance_count` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.). Member functions like `SimpleClass::getValue`, `LifecycleClass::getData` are accurate. Minor issues with operator overloads showing as `operator_` and `operator__` but overall good.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1234` (class ID), `0x1f` (31 for strncpy), `0x96` (150), `0xfa` (250) appear without explanation. The value `5` for array size and `10` for multiplier lack context. Only `instance_count` variable provides some semantic clarity.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) and `in_FS_OFFSET` references add noise. However, at -O0 these are minimal. Some redundant patterns in template code but generally manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with proper if-else and loop constructs. The `call_virtual_func` uses indirect call `(**(code ***)param_1)(param_1,param_2)` which is correct for vtable dispatch. Minor awkwardness in exception handling where `test_cpp_exception` only shows the throw, not the catch blocks.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibility. Test functions (~30-50 lines) and member functions (~10-20 lines) are well-granular. Template instantiations properly separated (`template_max_int_`, `template_max_double_`, `template_swap_int_`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in some functions. The `test_cpp_exception` function has incomplete linearization (only shows throw, missing catch logic), but other functions flow well.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code. Template code shows proper instance separation. Some duplicated vtable setup patterns in constructors but these are necessary for object initialization.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` instead of `int32_t`/`size_t`. Some `undefined4`, `undefined8` types appear. Function pointers use `code *` instead of proper signatures. However, class types are correctly identified. Signed/unsigned distinction often lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class names recovered well (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Point`, `Container_int_`, `Container_double_`). Template instantiations properly distinguished. However, struct fields use raw offsets (e.g., `*(int *)(this + 8)` instead of `this->size`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe pointer arithmetic. Some unsafe patterns in virtual inheritance (`this + *(long *)(*(long *)this + -0x18)`) but these reflect actual complexity. No major buffer overflow risks in the recovered code. Minor issues with void pointer casts.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output. Original source had extensive comments explaining each test case's purpose - completely lost. No documentation of what each function does or returns.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns like constructors, destructors, vtable setup are present but not explicitly labeled. Smart pointer RAII patterns visible in `unique_ptr` code but not named as such. Template instantiation patterns recognized but not highlighted.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flags for suspicious code. The indirect virtual function call in `call_virtual_func` could warrant a comment. Exception handling incomplete but not flagged. No indication of uncertainty in complex patterns like virtual inheritance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expectations (e.g., "期望: 4704") - completely lost. No documentation of what functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. No indication of which functions call which. Virtual dispatch relationships implicit in vtable usage but not explained. Static member function `getClassID` called correctly but context not shown.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically by test case. Class methods placed near their definitions. However, all in single file with no namespace structure. Template implementations mixed with declarations.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Compilation succeeded ("Yes"). External dependencies (libc++, standard library) implicitly required but not documented. Some std namespace functions have mangled names but compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`local_38`, `iVar1`, `param_1`) - original semantic names like `value`, `data`, `size` completely lost
+- No comments explaining any function purpose, algorithm, or expected behavior
+- Exception handling only shows throw, not catch blocks - incomplete control flow recovery
+- Magic numbers like `0x1234`, `0x96`, `0xfa` lack explanatory constants
+- Virtual inheritance offset calculations (`this + *(long *)(*(long *)this + -0x18)`) are opaque without explanation
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Test functions and member functions are correctly named, matching original source almost exactly. This is the strongest area of the decompilation.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled code has zero meaningful comments. Original source had extensive documentation explaining each test case, expected values, and C++ feature being demonstrated - all completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index`/`i`, size fields should be `size`/`count`, pointers to data should be `data`/`buffer`
+2. **Recover exception handling structure**: The try-catch blocks are fundamental to understanding control flow - show both throw and catch, not just throw
+3. **Add semantic comments for complex patterns**: Document vtable dispatch, virtual inheritance offsets, and RAII patterns so analysts understand what's happening without needing to be C++ experts

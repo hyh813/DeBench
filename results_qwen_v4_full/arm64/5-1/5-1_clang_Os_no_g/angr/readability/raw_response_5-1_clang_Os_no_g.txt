@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `ptr`, `arg_0`, `arg_1`) with no semantic meaning. Original variables like `value`, `name`, `data`, `size` are completely lost. In `test_cpp_member_func`, `v1[15]` should be `name[32]` and `v0` should be `value`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retain mangled names that decode correctly (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`), but many helpers are mechanical (`sub_400d74`, `sub_400f30`). Template functions show partial recovery (`template_max<int>`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`4700`, `1001`, `42`, `71`, `650`) without explanation. String literals are external references (`&g_401680`) instead of actual strings. Expected test results are hardcoded in printf calls obscuring actual computation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Frame pointer setup (`v4 = &v5;`) repeated in every function. Runtime artifacts (`call_weak_fn`, `deregister_tm_clones`, `register_tm_clones`) mixed throughout. Many functions contain only initialization noise then return.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0));` instead of proper vtable call. `register_tm_clones` has bizarre `__ROL__` bit operations. Most test functions just `return;` - actual logic is lost.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized (not monolithic), and template instantiations are separate functions. However, semantic cohesion is lost - `test_cpp_constructor` and `test_cpp_virtual_func` are empty stubs.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom due to short length. However, frame setup code at start of each function disrupts flow, and `register_tm_clones` has complex branching with goto.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Frame pointer setup repeated in every function. `__cxa_atexit` called twice in `$x.18`. `sub_401008` just calls `frame_dummy` and returns its result - unnecessary wrapper.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `void*`, `char*`, `unsigned long long` instead of precise types. `this` pointers are `void*` instead of class types. No const-correctness. Template types partially recovered (`Container<int>`) but method signatures degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `struct_0` and `struct_1` are generic with `field_8`, `field_0`. `Base` class is empty in decompilation. `SimpleClass`, `LifecycleClass`, `Derived` not recovered as structs. Array `char name[32]` becomes `char v1[15]` (wrong size).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts: `(unsigned long long)test_cpp_exception() & 4294967295`. Extensive pointer arithmetic: `*((int *)ptr)`, `*((char *)ptr + 4 * index)`. `void*` used for this pointers throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only one header comment (`// Angr Decompilation of 5-1_clang_Os_no_g`). No function documentation, no explanation of logic, no uncertainty indicators. Zero comments explaining C++ semantics.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No C++ OOP patterns identified (vtable, inheritance, polymorphism). Template instantiation not explained. Exception handling appears as raw `_Unwind_Resume` calls. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. Functions that just `return;` are not marked as incomplete. Lost logic not indicated. No confidence indicators anywhere in the output.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. No indication of null checks or bounds validation that existed in source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `g_411ff8`, `g_411fd0` with no meaning. Virtual dispatch partially visible but not explained as such.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in one file with no logical grouping. Runtime functions mixed with test functions. No namespace structure. Class methods not grouped with their classes.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: References external symbols (`operatornew`, `operatordelete`, `__cxa_throw`, `__cxa_allocate_exception`) without declarations. Would not compile standalone. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+5+6+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+1+1+1)/4 = 1.00 × 0.15 = 0.150
+Level 5 (Contextual):  (3+3+2)/3   = 2.67 × 0.10 = 0.267
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.20/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named semantically (`value`, `name`, `data`) based on usage context
+- **Most test functions are empty stubs** (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) - actual logic completely lost
+- **C++ class structures not recovered** - `SimpleClass`, `LifecycleClass`, `Derived` appear as empty or generic structs
+- **Zero comments** explaining decompilation uncertainty or C++ semantic patterns
+- **Code will not compile** - missing external symbol declarations and incorrect type signatures
+
+### Best Quality Aspect:
+- **Function Decomposition (5/10)** - Functions are appropriately granular with template instantiations as separate functions, though semantic content is lost
+
+### Most Needs Improvement:
+- **Semantic Transparency (1/10 average)** - No comments, no idiom recognition, no anomaly indication, no contract recovery - the decompiler provides zero semantic guidance
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts** - Analyze vtable structures and object memory layouts to reconstruct class definitions with proper field names (`value`, `name`, `data`, `size`)
+2. **Add uncertainty annotations** - Flag functions that appear incomplete (empty returns) with comments like `// DECOMPILATION INCOMPLETE: Logic not recovered`
+3. **Infer variable names from usage patterns** - Variables used in `strncpy` should be named `name`/`buffer`, variables in arithmetic with constants should reflect their semantic role

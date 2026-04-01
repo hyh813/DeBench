@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a1`, `a2` instead of semantic names like `dst`, `src`. Local variables like `v1`, `v2` are cryptic. The stack canary `__readfsqword(0x28u)` in `call_strcpy` obscures the actual buffer variable.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names `param_strcpy`, `call_strcpy`, `param_strcmp` match original source exactly. The naming convention correctly identifies wrapper functions vs. test callers.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: String literals like "HelloLib", "abc", "def" are correctly preserved. Magic numbers like buffer sizes (32) are implicit in array declarations. Minor issue: some error codes like `-1` could have named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary reads (`__readfsqword(0x28u)`), frame annotations (`[rsp+8h] [rbp-30h] BYREF`), and register spill comments (`// rax`, `// r12d`). These obscure the actual logic, especially in functions like `call_strcpy`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and follows source structure. Simple sequential execution in `param_strcpy`, proper conditional logic in `param_strcmp`. At `-O0`, loops and conditionals are straightforward. Minor: some nested conditionals in error handling could be cleaner.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are appropriately sized (20-50 lines each). `param_*` wrapper functions correctly separated from `call_*` test functions. Good single responsibility principle. No over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling are appropriate. No excessive goto statements or forward jumps into loops. Minor nesting in `param_fork_exec` but acceptable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling visible in `call_memcpy` but minimal. The `qmemcpy` in `param_memcpy` is a recognized pattern. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly accurate: `char *a1`, `const char *a2`, `size_t` return for string functions. Integer types use generic `int` vs. specific `int32_t`, but this is acceptable for decompiled code. Const-correctness preserved in `param_strcpy`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Simple types handled well. For complex functions like `param_pthread_join`, the `ThreadData` struct is partially recovered as `arg[36]` with manual field access (`arg[v7 + 8]`). Some structure information lost but usable.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. Minor issues: some pointer arithmetic in `thread_tls_test` using `__readfsdword` for TLS access is low-level but correct. No dangerous casts observed. The atomic operations use `_InterlockedIncrement` correctly.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments. Only auto-generated frame annotations and register comments. No explanation of algorithm intent, parameter contracts, or return value semantics. The source had rich comments explaining each function's purpose; these were not recovered.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library calls correctly identified: `strcpy`, `strlen`, `strcmp`, `memcpy`, `pthread_mutex_lock`. Threading patterns recognized: `pthread_create`, `pthread_join`, mutex operations. Some patterns like the strcmp normalization could be better explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler marks 58 functions as "FAILED to decompile" including critical functions like `malloc`, `free`, `strcpy`. However, these are external library calls, not internal anomalies. No indication of uncertain decompilation decisions within recovered functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_strcpy` should document "requires: dst buffer large enough to hold src" but this is absent. Error handling paths not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `call_strcpy` calls `param_strcpy`). However, no documentation of who calls each function or global variable usage. The test harness structure is inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (standard library, system calls, threading). Static functions properly marked. However, all 126 functions in one output makes it difficult to understand the logical sections without running the code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc and pthreads. External declarations needed for `__printf_chk`, `__isoc99_sscanf`. The "FAILED to decompile" functions are imports that would need linking, not compilation issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`a1`, `a2`, `v1`, `v2`) that completely obscure semantic purpose
+- Stack canary checks (`__readfsqword(0x28u)`) add significant noise in every function
+- No comments explaining function intent, parameters, or return values
+- Type information uses generic `int` instead of specific types like `size_t`, `pid_t`
+- 58 external functions marked as "FAILED to decompile" creates incomplete picture
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names match original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic single-letter variable names with register suffixes make code extremely difficult to follow semantically
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` used as destination in `strcpy(a1, a2)` should be named `dst`; `a2` should be `src`
+2. **Suppress stack canary checks in output**: The `__readfsqword(0x28u)` adds noise without semantic value at `-O0`
+3. **Recover comments from debug symbols**: Source had rich documentation explaining each function's purpose; debug info (`-g`) should enable comment recovery

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/5-23/5-23_clang_O1_g/angr/syntactic/bin/5-23_clang_O1_g_fixed",
+  "stdout": "Testing preprocessing features\n\nValue: 64\nValue: 30\nValue: 32\nValue: 57122\nValue: 116\nValue: 19\nValue: 60\nLOG: Values: 10, 20, 30\nValue: 60\nValue: 16\nValue: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:46\nValue: 382\nTesting ASM features\n\nASM Value: 15\nASM Value: 1718516409\nASM Value: -1\nASM Value: 1762374928\nASM Value: 25\nASM Value: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

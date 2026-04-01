@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `lVar1` with no semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, some return types are wrong (e.g., `call_macro_constants` returns `void` instead of `int`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers replace named constants: `0x401` (MAX_SIZE=1024), `0x200` (MAX_SIZE/2=512), `0x40` (BUFFER_COUNT*4=64), `0x10` (ADD_16=16). String literals preserved but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) appear in most functions. Runtime initialization functions (`_init`, `_start`, `deregister_tm_clones`) add clutter but are identifiable as compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well-recovered: if-else chains, for loops (e.g., `param_asm_clobber` loop reconstructed correctly). Assembly control flow converted to idiomatic C patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No excessive inlining or fragmentation. Each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop constructs properly identified without forward jumps disrupting flow. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks duplicated across functions (compiler artifact, not decompiler fault). No significant dead code or redundant expressions from decompilation process.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used where specific types needed. Pointer types degraded to `undefined1 *`, `undefined8 *`. Some return types incorrect (`call_macro_constants` should return `int`, not `void`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in source, but array handling preserved correctly. Stack arrays in `call_asm_clobber` properly reconstructed as `local_28`, `local_24`, etc.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(ulong)`, `(undefined4 *)`, `(code *)`). Pointer arithmetic visible but generally safe. `LOCK()`/`UNLOCK()` macros undefined in decompiled output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ALL original source comments lost (macro explanations, test expectations, architecture notes). Only Ghidra function headers present. No decompiler-generated documentation of recovered logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions recognized semantically (e.g., `ADD_16(x)` → `x + 0x10`, `SQUARE(x) + MAX(x,y)` → `param_1 * param_1 + max`). However, no explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Stack canary warnings present ("WARNING: Subroutine does not return"). Unreachable blocks noted in `deregister_tm_clones`. No indication of preprocessing information loss (critical for macro-heavy code).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1` constraints). No postconditions or error condition documentation. Original test expectations (e.g., "期望: 64") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships preserved. Global variable `global_var` referenced correctly. No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file structure or API declaration separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies unclear (`printf`, `mmap`, `sysconf` need headers). `LOCK()`/`UNLOCK()` macros undefined. String literals referenced via `&DAT_00102090` instead of inline strings in test functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 6.0/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar1` provide zero semantic information compared to original `size`, `counter`, `increment`
+- **All source comments lost**: No documentation of macro semantics, test expectations, or architecture-specific behavior
+- **Magic numbers replace constants**: `0x401`, `0x200`, `0x40` instead of `MAX_SIZE`, `MAX_SIZE/2`, `BUFFER_COUNT*4`
+- **Incorrect return types**: `call_macro_constants` returns `void` but original returns `int` (value used in printf)
+- **Undefined macros in output**: `LOCK()` and `UNLOCK()` appear without definition, breaking compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Ghidra successfully preserved all original function names, making navigation and identification straightforward despite other readability issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation is the most severe degradation; users cannot understand macro semantics, test expectations, or architecture conditions without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover constant semantics from usage patterns**: Detect repeated values (0x401, 0x200, 0x40) and suggest named constant definitions with inferred names based on comparison context.
+2. **Preserve or reconstruct documentation**: Extract debug symbols (-g flag) to recover original comments, or generate semantic comments explaining recovered logic (e.g., "// Recovered: MAX_SIZE comparison").
+3. **Fix return type inference**: Analyze call sites to determine actual return types (e.g., `call_macro_constants()` result passed to `printf` indicates non-void return).

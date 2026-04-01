@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `v1`), obscuring semantic meaning. While `ptr` and `idx` appear occasionally, the lack of descriptive names like `c` or `sum` significantly hinders readability.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level function names from the source (`process_char`, `array_1d_stack`, `test_data_types_l1`) are preserved accurately. However, some functions are reduced to generic names like `sub_401a89` or mangled names like `$a.10`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character literals are replaced by ASCII integers (e.g., `65` instead of `'A'`, `90` instead of `'Z'`). Floating-point constants appear as raw hex values (e.g., `0x3fc00000` for `1.5f`) or are buried in library calls, removing semantic context.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with lifting artifacts, specifically `armg_calculate_condition` calls for boolean logic and `__mulsf3`/`__adddf3` calls for floating-point arithmetic. These obscure the actual high-level operations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Loop structures (for/while) are generally recovered well for simple integer arithmetic. However, control flow for boolean logic in `process_bool` is completely obfuscated by `armg_calculate_condition` calls, making it unreadable.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully maps the source functions 1-to-1 without aggressive inlining or outlining, which is appropriate for `-O0`. The granularity matches the source well.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly from top to bottom. However, functions involving floating-point operations or complex boolean checks have awkward control flow due to the inserted helper calls.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is moderate redundancy, such as the common pattern `v0 = <expression>; return v0;` instead of directly returning the expression. Dead code is minimal, but the lifting artifacts add significant bulk.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type recovery is poor. Floating-point values are represented as `unsigned int` (or split into multiple `unsigned int`s for doubles), and boolean operations are represented as `armg_calculate_condition` calls rather than C logical operators.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely flattened into pointer arithmetic or array accesses. For example, `struct_simple` accesses fields as `*(a0)`, `a0[1]`, `a0[2]` instead of `p->x`, `p->y`, `p->z`, losing all semantic field names.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on explicit casts (e.g., `(int *)`, `(char *)`) to access memory, indicating a failure to recover the correct pointer types. Function pointer signatures are also incorrect (e.g., `ptr_func_simple` passes 2 arguments instead of 1).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. No explanations are provided for the complex `armg_` calls or the floating-point library invocations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. Bitfields in `struct_bitfields` are reduced to manual bitwise shifts and masks (`(v0 & 1) + (3 & v0 >> 1)`). Structs are treated as raw byte arrays.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the `armg_calculate_condition` and soft-float library calls as standard code without any indication that these are lifting artifacts or potential decompilation failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the non-null requirement for pointers is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are readable because the function names are preserved (e.g., `process_char(65)`). However, the relationship is obscured by the incorrect types passed as arguments.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While it roughly follows the source order, there is no logical grouping or module separation (e.g., separating data type tests from pointer tests).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on undefined symbols like `armg_calculate_condition` and has incorrect function signatures for standard library calls or soft-float helpers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Floating point arithmetic (`process_float`, `process_double`) is reduced to opaque library calls (`__mulsf3`, `__adddf3`) with hex literals instead of operators.
+- Boolean logic (`process_bool`) is obfuscated by `armg_calculate_condition` calls instead of C comparison and logical operators.
+- Composite types (structs) are flattened; `struct_simple` uses array indexing `a0[1]` instead of field access `p->y`.
+- Variable naming is entirely generic (`a0`, `v0`), losing all semantic context.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)
+- The decompiler successfully maintained the 1-to-1 mapping of functions from the source code without inlining or outlining, which preserves the high-level structure of the test suite.
+
+**Most Needs Improvement:** Type Precision (Score: 2/10)
+- The failure to recover basic types like `float`, `double`, and `bool` (replacing them with `unsigned int` and helper calls) makes the mathematical and logical intent of the code nearly impossible to discern.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to recognize soft-float library calls (`__mulsf3`, `__adddf3`) and lift them back to high-level arithmetic operators (`*`, `/`).
+2. Improve the lifting engine to translate VEX condition flags (`armg_calculate_condition`) back into native C boolean expressions (`&&`, `||`, `==`, etc.).
+3. Enhance type recovery to identify struct layouts from sequential memory access patterns (e.g., `a0[0]`, `a0[1]`, `a0[2]`) and reconstruct struct definitions with field offsets.

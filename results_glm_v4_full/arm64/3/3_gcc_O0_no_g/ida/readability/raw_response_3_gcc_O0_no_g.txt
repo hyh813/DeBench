@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `v2`, `v3`, `v4`, and `v6` (e.g., in `vla_stack` and `alloca_usage`), obscuring the original intent (e.g., `vla`, `arr`, `i`). While `ptr` and `i` are used occasionally, the lack of semantic names for local variables significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `double_value`, `local_array`, `heap_basic`), likely due to the presence of debug symbols (`-g`). This provides perfect semantic context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers replace named constants; for example, `0xFFFFFFFFLL` is used instead of `-1`, and `0x14u` (20) or `0x28u` (40) are used instead of `5 * sizeof(int)`. While the logic is preserved, the semantic meaning of these values is lost.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant compiler artifacts, such as redundant casts like `(unsigned int)(...)`, `LODWORD(result) = ...`, and `__fastcall` annotations. These artifacts clutter the code, deviating from the clean C style of the original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow structures are recovered accurately; `for` loops and `if/else` blocks match the source perfectly (e.g., `local_array`). The complex stack probing logic in `vla_stack` is an accurate representation of the compiler's VLA implementation, even if it looks awkward.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the original source with no inlining or outlining, which is expected for `-O0`. The granularity is identical to the author's intent.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The exception is the stack alignment check in `vla_stack`, which is a necessary artifact of the generated assembly rather than a decompilation failure.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or loop unrolling present. The decompiler successfully removed the intermediate variables `a`, `b`, and `c` in `local_vars` by simplifying the return expression to `2 * a1 + 10`, which actually improves readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are mostly correct, though `int` is often represented as `__int64` (e.g., in `double_value`), which is technically correct for the register width but less precise than the original `int`. `size_t` is correctly mapped to `__int64` on ARM64.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are not recovered; they are accessed via raw pointer arithmetic. In `heap_struct`, the `Point` struct is accessed as `*ptr` and `ptr[1]` instead of `p->x` and `p->y`. In `heap_nested`, the `Node` struct is completely flattened into `_QWORD*` and `_DWORD*` casts.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts to access structure fields, such as `*(_DWORD *)*a1 = 10` and `v2[1] = malloc(...)`. This erases type boundaries and makes the code dangerous to modify without referring to the original definitions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output consists solely of auto-generated headers and code, offering zero semantic transparency beyond the syntax.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `malloc`, `free`, and `memcpy` are recognized. However, higher-level patterns like the linked list traversal in `linked_list_heap` are not explicitly identified or abstracted; they appear as generic pointer manipulation.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The unusual stack manipulation code in `vla_stack` (the `while` loop involving `v2`) is presented as standard code without any warning or annotation that it represents compiler-generated stack probing/alignment logic.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Preconditions like `if ( !ptr )` are present in the code, but they are not documented as contracts. The return of `0xFFFFFFFFLL` for error cases is not explicitly flagged as an error code convention.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and use the correct names. The relationship between `test_stack_memory` and its sub-functions is easily traceable.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping. For example, `test_stack_memory` appears far after the functions it tests, whereas the source kept them together.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses non-standard keywords like `__fastcall` and types like `__int64` which are specific to the decompiler/Windows environment. It would require modification (e.g., defining `__int64`) to compile with standard GCC on Linux.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic (e.g., `ptr[1]` instead of `p->y`).
+- Variable naming is almost entirely generic (`v2`, `v3`), obscuring the logic.
+- Excessive type casting noise (`LODWORD`, `unsigned int`) clutters the simple logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The preservation of original function names makes navigating the codebase trivial despite other readability issues.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `Point` or `Node` structures reduces complex data manipulation to confusing pointer math, which is the biggest barrier to understanding the heap and stack operations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement structure type recovery based on access patterns (e.g., consecutive `int` accesses at offset 0 and 4 should suggest a struct).
+2. Infer variable names from context or standard patterns (e.g., loop counters should be `i`, `j`; heap pointers should be `ptr`).
+3. Clean up redundant casts and `__fastcall` annotations to produce standard C code compatible with common compilers.

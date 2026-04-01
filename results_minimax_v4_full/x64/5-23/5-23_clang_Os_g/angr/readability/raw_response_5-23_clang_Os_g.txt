@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `idx`, `ptr`, `a0`, `a1`, `a2` throughout. These provide no semantic indication of purpose (e.g., `a0` should be `size`, `idx` should be `index`). Only test functions have meaningful internal variable names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions (`test_preprocessing_features`, `test_asm_features`, `main`) and core test targets (`param_macro_constants`, `call_asm_basic`) are well-named. However, many utility functions use auto-generated names like `sub_401020`, `sub_40102c` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants correctly recovered (e.g., `64` in `call_macro_constants`, `30` for sysconf result), but many magic numbers remain unexplained: `0x200`, `1025` in macro constants, `7` (PROT flags), `34` (MAP flags), `30` (sysconf _SC_PAGESIZE). The decompiler didn't infer these represent meaningful constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary casts present (e.g., `(unsigned int)idx` in loops). No debug instrumentation or register spilling artifacts visible. Overall acceptable for -O0 code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recognized as `for` constructs. Conditionals use natural `if` statements. At -O0, control flow should closely match source, and the decompiler delivers this. No spurious goto statements.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Test wrapper functions (`call_*`) correctly separated from implementation functions (`param_*`). No 500-line monoliths; each function has single responsibility. Parameter lists reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No forward jumps into loop bodies. Depth nesting is minimal (2-3 levels max). Flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. At -O0, loop unrolling shouldn't be present. Common subexpression elimination minimal. Clean code without duplicate logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - uses `unsigned int`, `unsigned long`, `unsigned long long` appropriately for parameters. However, some type precision lost: `int` vs `unsigned int` confusion in return types, some `long long` where `int` would suffice. Function pointers treated as raw function calls.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. Arrays accessed via pointer arithmetic (e.g., `ptr + idx * 4`). The decompiled code uses raw pointers instead of reconstructing the `int arr[]` from the source. Limited composite type fidelity.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some unsafe operations: pointer arithmetic visible (`ptr + idx * 4`), but these are necessary for array access. No obvious type-confused function pointers. Minor issues don't create undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output whatsoever. The original source had extensive comments explaining macro behavior, assembly constraints, and test expectations. Zero recovery of this documentation. This is a critical gap for understanding preprocessor-dependent code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, function calls). However, no recognition of higher-level idioms like "macro expansion pattern," "inline assembly with clobbers," or "atomic operation." The source heavily uses preprocessor macros and inline assembly - these aren't identified as special patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags present. The dynamic code generation in `param_dynamic_code` (self-modifying code) isn't flagged as unusual. The indirect function call via `ptr(a0)` could be flagged as potentially unsafe. No warnings about unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. Preconditions (e.g., "requires: size > 0"), postconditions, and invariants not documented. The source had explicit behavior expectations (e.g., "期望: 64") that aren't reflected.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: External functions properly declared with `extern` (e.g., `extern unsigned long long g_404008`). Function call relationships clear within test functions. However, no documentation of "called by" or "calls" relationships. Global variable usage noted but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: preprocessing tests together, asm tests together, main/test entry points at end. Static functions properly scoped. However, the original had clear section comments (// 5.2, // 5.3) that aren't recovered. Organization is implicit, not explicit.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external references. Should compile with minimal stubs. However, missing definitions for `puts`, `printf`, `mmap`, `munmap`, `mprotect`, `sysconf`, `atomic_exchange_add`. No header includes or compilation instructions. Moderate patching needed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `a0`, `idx`) providing no semantic meaning
+- Zero comment recovery - original source had extensive documentation about macro behavior and test expectations
+- No preprocessor macro recognition - source heavily uses `#define` constants and macro functions, but decompiled code shows only computed values
+- Composite type recovery absent - arrays passed to functions not reconstructed, accessed via raw pointer arithmetic
+- No anomaly indication for unusual patterns like self-modifying code (`param_dynamic_code`)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, loops and conditionals closely match source structure. The decompiler correctly identified `for` loops and `if` statements without introducing spurious goto statements.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- The original source is an educational test file with extensive comments explaining each test case's purpose, expected values, and compilation instructions. Zero recovery of this documentation severely impacts understanding of preprocessor-dependent code behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover preprocessor macro semantics**: When decompiling -O0 code, detect magic numbers that match `#define` values and suggest original macro names (e.g., `1025` → `MAX_SIZE + 1`, `16` → `BUFFER_COUNT`)
+2. **Add semantic comments for non-obvious code**: Flag dynamic code generation, atomic operations, and memory protection changes with explanations of what the original code intended
+3. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, size bounds, function results) to generate more meaningful names than `v0`, `v1`, `a0`

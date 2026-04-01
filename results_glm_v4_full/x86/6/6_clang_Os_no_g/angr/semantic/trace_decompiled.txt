@@ -1,0 +1,4 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=-1209208832,Arg1=-1209208832,Arg2=0,Arg3=-1211039839|eax=0xb7ed0dd8,ebx=0x0,ecx=0xf0de0484,edx=0xbfd446b4,esi=0xb7ecf000,edi=0x0
+TRACE_ENT|1|param_fopen_fclose|1|Arg0=134520842,Arg1=0,Arg2=134520821,Arg3=-1209049585|eax=0x13,ebx=0x0,ecx=0x0,edx=0xbfd42074,esi=0xb7ecf000,edi=0x0
+TRACE_EXT|1|param_fopen_fclose|1|9
+TRACE_ENT|2|param_fread_fwrite|1|Arg0=134520876,Arg1=0,Arg2=134520821,Arg3=-1209049585|eax=0x19,ebx=0x0,ecx=0x0,edx=0xbfd42074,esi=0xb7ecf000,edi=0x0

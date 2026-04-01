@@ -1,0 +1,9 @@
+
+Test: 8
+strcpy: 0
+strcmp: 12
+memcpy: 90
+memcmp: 0
+Value: 42, Name: Aprintf: %d
+
+printf: 30

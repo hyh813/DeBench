@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `a0`, `a1`, `a2`. The original source had meaningful names like `x`, `arr`, `n`, `local`, but these are completely lost. Parameters are `a0`, `a1` etc. with no semantic meaning.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: User-defined functions are named with address-based identifiers (e.g., `sub_10598`, `sub_106bc`, `double_value` at 0x1077c). The original function names like `local_vars`, `heap_basic`, `global_var_access` are completely lost. Only standard library functions (malloc, free, memset) retain proper names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. Some literals like `10`, `20`, `50` are hardcoded in test functions. String literals are referenced as raw addresses (e.g., `0x128a0`) with no decoding.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack protection code (`__stack_chk_guard`, `__stack_chk_fail`) adds noise. Some redundant variable declarations exist (e.g., `unsigned int *ptr;` declared twice in `heap_basic`). However, no debug instrumentation or frame pointer manipulation clutter is present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are correctly recovered as `do-while` constructs. However, some conditionals use complex `armg_calculate_condition` patterns that obscure logic. At `-O0`, more natural `for`/`while` loops would be expected. The `static_local` function has confusing goto-based flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - each function handles a single task. The original source's function boundaries are preserved. No over-fragmentation or monoliths observed. Parameter counts are reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns are used appropriately. However, some functions like `linked_list_heap` have nested loops that reduce linearity. The `tree_heap_traversal` function has complex branching.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling is present in array initialization loops but is recognizable as such. Some common subexpression patterns exist but don't significantly obscure logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most integers are `unsigned int` but original used `int`. Pointers are correctly typed. Function signatures lose parameter names but retain types. The original `int` return types are sometimes `unsigned int` in decompiled code. `size_t` is not recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types are poorly recovered. The original `Point` struct becomes a raw calculation in `local_struct` (returns `a0 * 3`). The `Node` struct in `linked_list_heap` is recovered as `struct_0` with generic field names (`field_0`, `field_4`). The `TreeNode` struct has partially recovered fields but wrong nesting.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Pointer arithmetic is generally correct but some off-by-one issues exist (e.g., `heap_basic` increments `ptr` before loop, then frees wrong pointer). Function pointers have incorrect types in `call_global_callback`. Some unsafe pointer dereferences after `free()` in `dangling_pointer`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "MEM-L1-01: 局部变量（基础类型）"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like malloc/free pairs are recognized. Linked list traversal is partially identifiable but not named. No recognition of higher-level idioms like "initialize-then-free" patterns or "create-traverse-destroy" sequences.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses memory after `free()` but no warning. The `double_free` function has obvious bug but no indication. The `heap_overflow` writes beyond allocation but no anomaly marked.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original source had safety checks (e.g., `if (n <= 0 || n > 1000) return -1;`) but these are not documented as contracts. Error return meanings are not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships are not documented. The callback mechanism in `set_global_callback`/`call_global_callback` is visible but not explained. No indication which functions call which others.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are ordered by address, not logically grouped. The original had clear sections: stack memory, heap memory, static memory, memory operations. The decompiled output mixes all functions together. Static functions are not marked.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard library functions correctly. However, `extern` declarations for undefined symbols (e.g., `extern unsigned int g_24008`) would cause linking errors. The `armg_calculate_condition` is a Ghidra internal that wouldn't compile. Some type mismatches would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+2+4+5)/4 = 3.25
+L2_avg = (5+7+6+7)/4 = 6.25
+L3_avg = (6+3+6)/3 = 5.0
+L4_avg = (1+4+1+1)/4 = 1.75
+L5_avg = (4+3+5)/3 = 4.0
+
+Overall = (3.25 × 0.30) + (6.25 × 0.25) + (5.0 × 0.20) + (1.75 × 0.15) + (4.0 × 0.10)
+        = 0.975 + 1.5625 + 1.0 + 0.2625 + 0.4
+        = 4.2/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All user variables use generic names (`v0`, `v1`, `ptr`, `i`) losing semantic meaning like `x`, `arr`, `n`, `local`
+- **Function naming**: User functions renamed to `sub_XXXX` addresses, completely losing original names like `local_vars`, `heap_basic`, `global_var_access`
+- **No comments**: Zero recovery of extensive source documentation explaining test scenarios
+- **Struct recovery failure**: Original `Point` struct becomes inline calculation; `Node` and `TreeNode` have generic field names (`field_0`, `field_4`)
+- **Anomaly silence**: Dangerous patterns like dangling pointer access (`dangling_pointer`), double free (`double_free`), and heap overflow (`heap_overflow`) have no warnings
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (7/10)**: Functions maintain appropriate granularity matching original source boundaries. Each function handles a single responsibility with reasonable parameter counts.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**: Zero comments recovered. The original source had extensive documentation for each test case (MEM-L1-01, HEAP-L2-01, etc.) explaining scenarios and expected values. This loss severely impacts understandability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function names from debug symbols**: The binary was compiled with `-g`, so debug info contains original function names. Extract and apply these to decompiled output.
+2. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used in loop as index → `i` or `index`; `a0 * 2` pattern → `double_value` parameter should be `x`)
+3. **Add semantic annotations for dangerous patterns**: Flag memory safety issues like post-free dereferences, double-frees, and buffer overflows with warnings like `// WARNING: use-after-free detected`

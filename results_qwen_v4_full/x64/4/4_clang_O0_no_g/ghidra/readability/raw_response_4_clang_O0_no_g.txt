@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `param_2`, `local_100`, `local_e8`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `val`, `ptr` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`cdecl_func`, `call_cdecl`, `varargs_func`). Some startup functions have generic names (`FUN_00101020`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x2a` (42), `0xf` (15), `0x10` (16), `0x51eb851f` (3.14 float representation). String literals replaced with `DAT_*` references losing readability.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler startup code present (`_init`, `_start`, `deregister_tm_clones`). Varargs functions have complex stack manipulation code with warnings like "WARNING: Restarted to delay deadcode elimination."
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural (if/else, for loops). Switch statements converted to if-else chains. Varargs stack-walking logic is complex but follows recognizable patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Several functions have incorrect signatures (`call_cdecl` returns `void` instead of `int`, `func_no_args` returns `undefined8`). Function boundaries preserved but return types degraded.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward references to data (`DAT_*`) but no disruptive goto patterns. Varargs functions have complex but linear stack logic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some redundant type casts visible (`(ulong)uVar1`). No obvious loop unrolling artifacts at -O0 optimization level.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `int` instead of specific widths, `long` instead of `int64_t`. Function pointers become `code *`. Pointer types often generic (`void*`, `int*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - Struct types completely lost. `LargeStruct` becomes `*(long *)(&stack0x00000008 + (long)local_14 * 8)`. `SmallStruct` becomes `int *param_1` with array indexing. No struct definitions in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(int *)0x0`, `(char *)0x0`). Varargs handling has potential type confusion. Pointer arithmetic on generic types throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very few comments. Only auto-generated warnings about unreachable blocks and deadcode elimination. No algorithm explanations or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`printf`, `strlen`). Varargs pattern not explicitly identified. No design pattern recognition. Basic idioms only.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "WARNING: Restarted to delay deadcode elimination"). No indication of type conversion issues or signature mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables shown as `DAT_*` references. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping visible. Static functions not properly scoped. Original test organization lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols (`printf`, `strlen`, `__libc_start_main`). Data references (`DAT_*`) need resolution. Would require significant stubs and data definitions to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+5+7+7)/4 = 6.50  × 0.25 = 1.63
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.88/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` accessed via raw pointer arithmetic instead of field names
+- **Function return types incorrect** - `call_cdecl`, `call_stdcall`, `call_fastcall` return `void` instead of `int`
+- **Variable names completely generic** - `param_1`, `local_100` provide no semantic information about purpose
+- **Magic numbers unexplained** - `0x51eb851f` (float 3.14), `0x2a` (42), `0xf` (15) without context
+- **Data references unresolved** - All string literals become `DAT_*` references requiring manual resolution
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify test purposes
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, forcing raw memory access patterns that obscure intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from stack access patterns** - Detect repeated offset-based access (e.g., `+0`, `+4`, `+8`) and propose struct definitions with field names
+2. **Preserve function return types from call site analysis** - Analyze how return values are used to infer correct return types instead of defaulting to `void` or `undefined8`
+3. **Add semantic variable naming from usage context** - Infer names like `count`, `sum`, `index` from loop patterns and arithmetic operations rather than `param_1`, `local_100`

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_gcc_O2_g/ida/syntactic/bin/5-23_gcc_O2_g_fixed",
+  "stdout": "Preprocessing Features Test:\nPP L2.01: 64\nPP L2.02: 30\nPP L2.03: 32\nPP L2.04: 57122\nPP L3.01: 116\nPP L3.02: 19\nPP L3.03: 60\nLOG: Values: 10, 20, 30\nPP L3.04: 60\nPP L3.05: 16\nPP L3.06: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:29\nPP L3.07: 382\nStack guard: 0xc2ea5a0c0028, value: 0x0\nASM L4.01: 15\nASM L4.02: -6258562\nASM L4.03: 42\nASM L4.04: 6\nASM L4.05: 30\nASM L4.06: 77, stack chk: 0\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

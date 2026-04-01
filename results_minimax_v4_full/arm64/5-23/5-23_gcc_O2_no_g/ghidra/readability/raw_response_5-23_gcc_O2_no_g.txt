@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `lVar1`, `uVar1` which completely obscure their semantic purpose. For example, in `param_macro_constants`, `param_1` should be `size`, and `uVar1` should be `result`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (e.g., `param_macro_constants`, `call_asm_basic`, `param_asm_atomic`). However, some internal functions use auto-generated names like `FUN_00100810`, `FUN_00100a3c`. The core API functions are correctly named, but helper/utility functions lack semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x200` (512), `0x40` (64), `0xdef0`, `0x10` (16), `0x32` (50) appear without explanation. The decompiler correctly preserved string literals like `"LOG: Values: %d, %d, %d\n"` and `"file=%s, func=%s, line=%d..."`, but lost all macro semantics. Constants like `0x1e` for `_SC_PAGESIZE` are unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some auto-generated warnings about unreachable blocks and overlapping globals appear, but these don't significantly impede readability. No redundant casts or debug instrumentation clutter the code. Stack canary checks (`__stack_chk_guard`) are present but expected at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with clear if-else structures. However, loops use do-while constructs (e.g., `param_asm_clobber`) instead of the more idiomatic for-loops from the source. At -O0, this transformation is unnecessary. The logic is traceable but reads less naturally than the original.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler preserved the function granularity from the source - each test function remains separate. Functions are reasonably sized (20-50 lines). Parameter lists are preserved though with generic names. No over-fragmentation or monolith formation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `param_dynamic_code`. No deep nesting (>4 levels) observed. The flow is disrupted only by simple conditional branches.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some loop unrolling in `call_asm_simd` with manual array initialization, but it's manageable. The `test_asm_features` function has some repetitive patterns but nothing severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed type precision. `int` used consistently for integers, `long` correctly used for ARM64 pointers. However, return types use `undefined4` and `undefined8` instead of proper `int`/`long` types. The `size_t` is correctly used for memory sizes. Some type information lost but mostly inferable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this source code - mostly primitive types and simple arrays. The decompiler handled simple arrays correctly (e.g., `local_24[7]` for stack arrays). Since the source had minimal composite types, recovery quality is difficult to fully assess.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with correct pointer arithmetic. No obvious unsafe casts observed. Pointer arithmetic in loops (e.g., `param_1 + lVar1 * 4`) is correct for int arrays. Minor concern: some functions use `undefined8` for pointers which could mask issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present: decompiler header, "WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap smaller symbols". No comments explaining macro semantics, algorithm purpose, or inline assembly behavior. The source had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms recognized. The inline assembly code is translated to C loops without recognizing the assembly patterns. Conditional compilation branches are correctly resolved but not documented. No recognition of atomic operations, SIMD patterns, or memory protection idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some generic warnings present ("WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap"), but these are compiler-generated artifacts, not code anomalies. No indication of indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior. The inline assembly translation to `__aarch64_ldadd4_acq_rel` could warrant a note.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had clear expectations (e.g., "期望: 64", "期望: 15") which are completely lost. No error condition documentation (e.g., mmap failure handling).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No function call graph or relationship documentation. The `test_preprocessing_features` and `test_asm_features` functions call all test functions, but this relationship isn't documented. No indication of which functions are public API vs. internal helpers.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in some logical order but not clearly grouped by category. The decompiled output mixes initialization functions, test functions, and utility functions. No clear separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references external functions like `__printf_chk`, `__aarch64_ldadd4_acq_rel`, `__stack_chk_fail`, `sysconf`, `mmap`, `munmap`, `mprotect` that require linking against libc. The code would not compile standalone without these declarations. No dependency documentation provided.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `param_2`, `iVar1`, `lVar1`, `uVar1`) - the original semantic names like `size`, `x`, `y`, `result`, `arr`, `n` are completely lost
+- All macro semantics lost - constants like `MAX_SIZE`, `BUFFER_COUNT`, `ADD_16` replaced with magic numbers without explanation
+- No comments explaining the purpose of any test function or the macro/assembly patterns being demonstrated
+- Inline assembly completely translated to C loops, losing the demonstration of assembly idioms (clobber lists, memory barriers, SIMD operations)
+- Type information degraded - return types use `undefined4`/`undefined8` instead of proper types
+
+**Best Quality Aspect:** Structural Intelligibility (scored 7.5/10)  
+Control flow is natural and readable, function decomposition matches the source, and code linearization is good. The decompiler preserved the logical structure of the program well.
+
+**Most Needs Improvement:** Lexical Clarity (scored 5.75/10)  
+Variable naming is the most critical failure - every parameter and local variable uses generic auto-generated names that completely obscure their purpose. Combined with lost macro semantics and minimal comments, the code requires significant reverse-engineering effort to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests `size` or `count`; `param_1 * param_1` suggests `square` operation) to generate semantically meaningful names instead of `param_1`, `iVar1`
+2. **Recover macro semantics**: Detect constant expressions that match known macro expansions (e.g., `0x200` for `MAX_SIZE/2`, `0x10` for `ADD_16`) and suggest original macro names as comments
+3. **Add semantic comments**: When translating inline assembly or complex patterns, add comments explaining what the original assembly did (e.g., "Atomic load-add operation using LSE instructions" for `__aarch64_ldadd4_acq_rel`)

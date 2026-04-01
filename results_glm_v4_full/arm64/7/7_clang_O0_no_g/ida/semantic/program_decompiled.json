@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_clang_O0_no_g/ida/syntactic/bin/7_clang_O0_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization:\n  Fake branch: 10\n  Opaque predicate: 20\n  Instruction substitution: 225\n  String encryption: 0\n  Tail call optimized: 500500\n  Non-tail call: 5050\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

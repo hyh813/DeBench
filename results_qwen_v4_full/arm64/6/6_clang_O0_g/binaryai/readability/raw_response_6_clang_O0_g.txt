@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic auto-generated names (`param_1`, `local_14`, `iVar1`, `uVar2`) with zero semantic inference. Original source had meaningful names like `dst`, `src`, `buffer`, `write_data`, `shared_counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most application functions preserved original names from debug symbols (`param_strcpy`, `thread_compute`, `signal_handler`, `consumer_thread`). However, some initialization functions remain generic (`FUN_001012e0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved well ("HelloLib", "/etc/passwd"), but numeric constants appear as unexplained hex (`0x2a` for 42, `0xffffffff` for -1, `0x38` for syscall number, `0x1000` for 4096 bytes).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casting noise (`undefined4`, `undefined8`, `(ulong)`, `(int *)`), architecture-specific intrinsics (`__aarch64_cas4_acq_rel`), and bitwise masking (`& 0xffffffff`) clutter the code throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops and conditionals mostly recovered correctly, but some `while(true) { if(condition) break; }` patterns instead of clean `while(condition)`. At `-O0` debug level, near-perfect recovery was expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation (thread functions, test functions, implementation functions). `param_fread_fwrite` is somewhat long but cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some disruption from `while(true)` patterns and nested conditionals in signal handling and socket creation functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Frequent redundant type casts and bitwise masking for type conversion. Duplicate error handling patterns (return `0xffffffff`, `0xfffffffe`, etc.) could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined8`, `ulong`) instead of precise types. Const correctness lost (`char *param_1` vs `const char *`). Some return types incorrect (`param_strcpy` returns `void` but source returns `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs poorly recovered—fields accessed as `sa_data[0]`, `auStack_a0._48_8_` (offset notation). `ThreadData` struct not recovered, accessed as array with offset calculations (`local_54 + (long)local_58 * 3`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int *)`, `(void *)`, `(char *)`), pointer arithmetic without bounds checking, array access without validation. Thread return values cast without type verification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only header has "Decompiled by BinaryAI" and SHA256.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, strlen, memcpy, pthread functions). Higher-level patterns not identified (producer-consumer in condition variable test, fork/exec pattern, signal handling pattern not labeled).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings about uncertain decompilation. Architecture-specific intrinsics (`__aarch64_cas4_acq_rel`, `tpidr_el0` TLS access) present without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Error return values (-1, -2, -3, -4, -5) not documented. No null pointer check documentation or invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables used without declaration context (`signal_received`, `shared_counter`, `atomic_counter`). Callback relationships (thread functions to pthread_create) not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No file organization matching source structure. No header file separation or namespace/package structure. External functions listed at top but not organized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues (undefined types like `undefined4`, missing includes). Architecture-specific intrinsics need special handling. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00   × 0.30 = 1.500
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50   × 0.25 = 1.625
+Level 3 (Type):        (4+3+4)/3   = 3.67   × 0.20 = 0.734
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00   × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33   × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  = 4.74/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- Variable `param_1`, `param_2`, `local_14` should be named based on semantic usage (e.g., `dst`, `src`, `file_descriptor`)
+- Struct `ThreadData` not recovered—fields accessed via array offset calculations losing semantic meaning
+- Magic numbers `0x2a`, `0xffffffff`, `0x38` used without explanation or constant definitions
+- No comments explaining algorithm logic, error codes, or decompilation confidence
+- Return type of `param_strcpy` incorrectly recovered as `void` instead of `int`
+- TLS access via `tpidr_el0` register not explained or abstracted
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Debug symbols preserved most application function names accurately, maintaining semantic connection to original source code.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding complex logic (signal handling, atomic operations, thread synchronization) extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze variable usage patterns to suggest meaningful names (e.g., variables used in size comparisons should be named `*_size`, file path strings should be `*_path`).
+
+2. **Recover and document struct layouts** - Instead of field offset notation (`auStack_a0._48_8_`), reconstruct struct definitions with named fields based on access patterns and type analysis.
+
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (architecture intrinsics, indirect calls, TLS access) with comments explaining potential issues and suggesting manual review.

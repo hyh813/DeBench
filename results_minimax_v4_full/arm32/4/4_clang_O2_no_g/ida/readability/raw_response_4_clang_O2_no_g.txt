@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `a1`, `a2`, `a3` for parameters and `v2`, `v3`, `v4` for locals. For example, `cdecl_func(int a1, int a2)` should be `cdecl_func(int a, int b)`. The source uses meaningful names like `count`, `args`, `sum` in varargs functions, but these are lost in decompilation.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Core function names match source exactly (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`). However, calling convention annotations are inconsistent - `cdecl_func` is marked `__fastcall` which is incorrect for the ARM64 target.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `15`, `50`, `6` are hardcoded in return statements without explanation. Format strings use obfuscated names like `asc_170A`, `aCallL206`, `aRetL101D` instead of the original "CALL-L1-01: %d\n" patterns.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts present. The main noise is the obfuscated string references and occasional incorrect calling convention annotations. No excessive register spilling or debug instrumentation observed.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and readable. Simple functions use direct returns. Loops in varargs functions are properly recognized as do-while constructs. At -O0, control flow closely matches source.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized with clear single responsibility. The decomposition matches the source - each test function (`call_cdecl`, `call_stdcall`) is separate from the implementation functions. No over-fragmentation or monoliths.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `func_no_args` and `param_by_value_ptr`. No forward jumps into loop bodies or computed goto patterns.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or significant redundancy. The varargs handling shows some repetitive patterns but these are necessary for the functionality. Loop unrolling is minimal.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic `int` and `_DWORD` instead of specific types. Pointers are typed as `_DWORD *` (32-bit) rather than proper pointer types. String parameters use `unsigned __int8 *` instead of `char *`. Mixed signed/unsigned in `func_mixed_args` parameters.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: **Critical failure** - `LargeStruct` (128 bytes) is completely decomposed into 31 separate integer parameters in `func_struct_byval`. `SmallStruct` is not recovered at all - `func_struct_byptr` uses raw `_DWORD *` pointer arithmetic. The original struct definitions are lost.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Some unsafe operations present. The varargs functions use suspicious pointer arithmetic: `v4 = *((_DWORD *)v2 - 1);` which is non-obvious. Function pointer types are somewhat preserved but with incorrect calling conventions. No bounds checking on array accesses.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No meaningful comments explaining algorithms or logic. Only auto-generated function headers like `/* Function: cdecl_func @ 0x5C0 */`. No documentation of what the functions do, parameter meanings, or return value semantics.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some C idioms are recognizable (varargs with va_list, function pointers) but not explicitly named or documented. The calling convention tests don't indicate that's what they are testing.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: Failed imports are listed at the end but without explanation of impact. No indication of uncertainty in the decompilation. The incorrect `__fastcall` annotations on ARM64 functions are presented as fact.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `param_double_ptr` that modify pointer parameters don't document this behavior. No null-check expectations documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are clear within test functions (e.g., `call_cdecl` calls `cdecl_func`). However, no documentation of which functions call which, or the overall call graph. Static functions not marked as such consistently.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - all calling convention functions together, parameter passing tests together, return value tests together. Matches source organization reasonably well. Some runtime support functions (`__aeabi_drsub`, `__subdf3`) intermixed.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code compiles (metadata indicates "Compilation Result: Yes"). External dependencies are standard C library functions (printf, puts, strlen). No compiler-specific hacks. Minimal patching needed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 4 + 7) / 4 = 5.5
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.0
+L3_avg = (5 + 2 + 6) / 3 = 4.33
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.0
+L5_avg = (6 + 7 + 8) / 3 = 7.0
+
+Overall = (5.5 × 0.30) + (8.0 × 0.25) + (4.33 × 0.20) + (3.0 × 0.15) + (7.0 × 0.10)
+        = 1.65 + 2.0 + 0.866 + 0.45 + 0.7 = 5.67/10
+```
+
+### Overall Readability Score: 5.7/10
+
+### Critical Defects
+- **Struct recovery failure**: `LargeStruct` decomposed into 31 parameters, `SmallStruct` lost entirely - original struct definitions are not recoverable from decompiled code
+- **Variable naming**: All parameters use generic names (`a1`, `a2`, `a3`) losing semantic meaning from source (`a`, `b`, `count`, `args`)
+- **Magic numbers**: Hardcoded return values like `15`, `50`, `6` without explanation of what they represent
+- **No comments**: Zero algorithm or logic documentation - code provides no guidance on purpose
+- **Type precision loss**: All types generic (`int`, `_DWORD`, `void*`) instead of specific types from source
+
+### Best Quality Aspect: Structural Intelligibility (8.0/10)
+Control flow is natural, functions are well-decomposed, code linearizes cleanly with top-to-bottom readability. At -O0, the decompiler correctly preserves the source's logical structure.
+
+### Most Needs Improvement: Semantic Transparency (3.0/10)
+No comments, no pattern recognition, no anomaly indication, and no contract recovery. The decompiled code provides zero guidance on what functions do or how to use them correctly.
+
+### Top 3 Recommendations
+1. **Recover struct types**: Instead of decomposing `LargeStruct` into 31 parameters, preserve the struct definition and pass by value properly. Use `struct LargeStruct s` parameter.
+2. **Infer variable names from usage**: Analyze how parameters are used to generate meaningful names. `a1` used in addition → `a`, `count` used in loop → `count`.
+3. **Add semantic comments**: Include function purpose, parameter meanings, and return value semantics. At minimum, document what each test function is verifying.

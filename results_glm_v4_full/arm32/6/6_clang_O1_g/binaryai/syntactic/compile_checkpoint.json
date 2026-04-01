@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 39,
+  "source_file": "decompiled/BinaryAI_out/arm32/6/6_clang_O1_g.c",
+  "fixed_file": "results_glm_v4_full/arm32/6/6_clang_O1_g/binaryai/syntactic/fix_6_clang_O1_g.c"
+}

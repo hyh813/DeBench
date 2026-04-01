@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `result` with no semantic meaning. For example, in `_Z20test_cpp_member_funcv`, the variable `str` is actually a stack buffer for the class object, not a string.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions retain mangled names (`_Z20test_cpp_member_funcv`) with demangled comments. Some are recognizable but lack action-oriented naming (e.g., `function_1490` instead of `allocate_array`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation: `0x125c`, `0xffffffff`, `&g32`, `&g33`. The expected return values (4704, 21, 42) from source are lost, replaced with opaque constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__stack_chk_fail()` calls, frame pointer manipulation, redundant casts like `(int64_t)(int32_t)v2`. Many wrapper functions (`function_1490`, `function_1510`) just call library functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured loops/conditionals. Exception handling in `_Z18test_cpp_exceptionv` uses label-based jumps (`lab_0x1a84`, `lab_0x1a8c`) instead of try-catch blocks.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many functions return hardcoded values instead of computing (`_Z29test_cpp_multiple_inheritancev` returns 71 directly). Critical logic like object construction is lost or simplified.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow. Exception handling code jumps between labels non-linearly. Stack check paths create parallel exit branches.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated `__stack_chk_fail()` patterns throughout. Multiple wrapper functions for single library calls. Some dead code paths from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, or `void*`. Class types completely lost (`SimpleClass`, `LifecycleClass` become raw pointers). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtables recovered as generic structs (`vtable_13b58_type` with `e0`, `e1`, `e2` fields). Class inheritance relationships mentioned in comments but not encoded in types. No field names for class members.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Unsafe casts everywhere: `(int64_t *)(int64_t)size`, `(char *)(v3 + (int64_t)(*(char *)v3 == 42))`. Pointer arithmetic obscures object boundaries. No null checks before dereferences.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only demangled function names as comments. No explanation of logic, algorithms, or C++ semantics. No indication of decompiler uncertainty where logic is broken.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized: virtual dispatch appears as raw pointer calls, exception handling as goto chains, RAII/smart pointers as raw memory operations. No pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved calls, lost semantics, or uncertain recovery. Functions returning hardcoded values aren't flagged as suspicious. Critical C++ features silently degraded.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or expected values recovered. Original source had explicit expected results (4704, 21, 42, etc.) - all lost. No null checks or bounds validation documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Inheritance hierarchy mentioned in comments but not encoded. Global variables (`g1`, `g2`, `g3`) have no semantic names.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not by original test categories. No separation between test functions, class methods, and runtime support. All in single file without logical sections.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has necessary headers and declarations but won't compile as-is. Missing C++ runtime support, undefined symbols (`__asm_fcmpe`), and type mismatches. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+4+4+5)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (2+3+2)/3   = 2.33 × 0.20 = 0.47
+Level 4 (Semantic):    (3+2+2+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 3.29/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Hardcoded return values**: Functions like `test_cpp_multiple_inheritance` return `71` directly instead of computing, losing all logic
+- **Complete type erasure**: All C++ class types degraded to `int64_t` pointers; no distinction between `SimpleClass`, `Base`, `Derived`
+- **Control flow degradation**: Exception handling converted to goto-based state machine instead of try-catch blocks
+- **No semantic variable names**: Every variable is `v1`, `v2`, `result` - impossible to track data flow
+- **Missing C++ semantics**: Virtual dispatch, inheritance adjustments, and object lifecycle completely obscured
+
+### Best Quality Aspect:
+- **Module Organization (5/10)** - Functions are at least grouped and identifiable by mangled names with demangled comments, providing minimal structural context
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (1/10)** - Zero recovery of expected values, preconditions, or postconditions despite original source having explicit test expectations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class semantics**: Encode inheritance relationships, vtable structures, and object layouts as proper C++ types rather than raw pointers
+2. **Detect and flag constant-folding**: When functions return hardcoded values, add comments indicating original computation was optimized away or couldn't be recovered
+3. **Recover high-level C++ constructs**: Transform exception handling gotos back to try-catch, virtual calls to method syntax, and RAII patterns to smart pointer usage

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar2`, `local_28`) with no semantic meaning. For example, `param_strcpy` uses `param_1` and `param_2` instead of `dst` and `src` which are obvious from the strcpy call pattern.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names like `param_strcpy`, `call_strcpy`, `param_fork_exec` are correctly recovered from symbols. However, helper functions like `FUN_00102020` remain unnamed, and some thread functions could be more descriptive.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the code: `0x2a` (42), `0x5a` (90), `0xffffffff` (-1), `0x7f` (127) appear without explanation. String literals like "HelloPipe" and "/etc/passwd" are recovered, but numeric constants lack semantic names.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present, especially in `param_memset` (hundreds of lines of vector operations for a simple byte-sum loop) and `param_malloc_free` (excessive loop unrolling with `auVar8`, `auVar9` temporary vectors).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic functions like `param_strcmp` have natural if-else flow, but `param_fread_fwrite` uses bizarre vector comparison logic instead of simple `strcmp`. At -O0, this restructuring is unexpected and harms readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved correctly, but some functions are excessively complex (`param_memset` is ~150 lines for a 10-line source function). Thread helper functions are appropriately separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Deep nesting in `param_fread_fwrite` and `param_malloc_free` disrupts top-to-bottom reading. Multiple early returns exist but are buried in complex conditional chains.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `param_memset` with 19 `auVar` vectors doing similar byte-extraction operations. `param_malloc_free` has duplicated loop body patterns that should be consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type degradation: `param_strcpy` returns `void` instead of `int`, `size_t` becomes `ulong`, `char*` parameters lose `const` qualification. `param_strlen` returns `void` instead of `int`, losing the return value entirely.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are not recovered—`ThreadData` becomes raw stack variables (`local_68`, `uStack_5c`), `sockaddr` becomes byte array access (`sa_data[6]`, `sa_data[7]`). `stat` struct fields accessed as `local_90.st_size` but layout is opaque.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined8 *)0x0`, `(pthread_mutex_t *)counter_mutex`, `(int *)0xffffffffffffffff`. Pointer arithmetic on void pointers without proper casting in several locations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex logic in `param_fread_fwrite`'s vector comparison, no documentation of signal handling flow, no API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard library patterns (strcpy, strcmp, pthread_create) are called but not identified as idioms. No recognition of producer-consumer pattern in `param_condition_variable` or mutex-protected critical sections.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. `param_fread_fwrite`'s bizarre vector comparison should be flagged as potentially incorrect. No indication of unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions (e.g., "ensures: return value is heap-allocated"). Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible through direct calls. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) are referenced but not documented. Callback relationships (thread functions) are traceable.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped (library functions, syscalls, threads). External function declarations are present. Related test functions (`call_*`) are adjacent to implementation (`param_*`).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with proper headers. External dependencies (pthread, libc) are declared. Some stubs may be needed for platform-specific functions. Metadata indicates "Compilation Result: Yes".
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3×10 + 7×10 + 4×5 + 4×5) / 30 = 100/300 = 3.33
+Level 2 (25%): (5×8 + 6×7 + 5×5 + 4×5) / 25 = 127/250 = 5.08
+Level 3 (20%): (3×8 + 3×7 + 4×5) / 20 = 65/200 = 3.25
+Level 4 (15%): (1×5 + 2×3 + 2×3 + 1×4) / 15 = 21/150 = 1.40
+Level 5 (10%): (6×4 + 7×3 + 7×3) / 10 = 66/100 = 6.60
+
+Overall = (3.33×0.30) + (5.08×0.25) + (3.25×0.20) + (1.40×0.15) + (6.60×0.10)
+        = 1.00 + 1.27 + 0.65 + 0.21 + 0.66
+        = 3.79/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be named `dst`, `src`** in `param_strcpy` based on strcpy usage pattern
+- **`param_strcpy` return type is `void` but should be `int`** (returns strlen result in source)
+- **`param_fread_fwrite` uses incomprehensible vector comparison** instead of simple strcmp for string verification
+- **Zero comments** despite complex logic in signal handling, thread synchronization, and file operations
+- **`param_memset` expanded to 150+ lines** with vector operations for a simple byte-sum verification loop
+
+### Best Quality Aspect:
+- **Module Organization (scored 7/10)** - Functions are logically grouped by category (library, syscall, thread) with test functions adjacent to implementations, making navigation straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 1/10)** - Complete absence of documentation makes complex functions like `param_fread_fwrite` and `param_signal_handling` nearly impossible to understand without referring to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from API usage patterns** - When `strcpy(dst, src)` is called, name parameters `dst` and `src` instead of `param_1`/`param_2`
+2. **Recover return types from call sites** - If a function's return value is used in arithmetic or conditionals, infer it's not `void`
+3. **Add decompilation confidence annotations** - Flag complex transformations (like vector comparisons) with comments indicating uncertainty and suggesting manual review

@@ -1,0 +1,22 @@
+Testing fake branch: 1
+Fake branch result: 10
+Testing opaque predicate: 5
+Opaque predicate result: 20
+Testing instruction substitution: 10
+Instruction substitution result: 225
+Testing non-tail call: 1000
+Non-tail call result: 500500
+Testing vectorized loop: 100
+Vectorized loop result: 5050
+Testing division by zero: 5
+Division by zero result: 0
+Testing null pointer deref: 5
+Null pointer deref result: 2
+Testing buffer overflow: 10
+Testing integer overflow: 30
+Integer overflow result: 1000000000
+Testing undefined behavior: 999999999
+Undefined behavior result: 5
+Testing implementation defined: 10
+Implementation defined result: 0
+Implementation defined result: 48

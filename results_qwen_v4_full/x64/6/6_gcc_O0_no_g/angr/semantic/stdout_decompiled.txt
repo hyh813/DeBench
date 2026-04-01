@@ -1,0 +1,11 @@
+Testing standard library functions
+
+strcpy result: 8
+strcmp result: 2
+strlen result: 12
+memcpy result: 0
+memcmp result: 2
+Value: 42, Name: Test
+printf result: 22
+scanf result: 67
+fopen/fclose result: 42

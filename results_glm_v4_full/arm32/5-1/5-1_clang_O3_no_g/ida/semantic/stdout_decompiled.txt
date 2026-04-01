@@ -1,0 +1,10 @@
+Testing C++ features
+Member func result: 4704
+Constructor result: 21
+Virtual func result: 42
+Multiple inheritance: 71
+Diamond inheritance: 650
+Operator overload: 22
+Template func: 39
+Template class: 16
+Lambda: 85

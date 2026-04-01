@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-1/5-1_clang_O3_g/ida/syntactic/bin/5-1_clang_O3_g_fixed",
+  "stdout": "Testing C++ Object-Oriented Features:\nString test result: 4704\nConstructor test result: 21\nVirtual function test result: 42\nMultiple inheritance test result: 71\nDiamond inheritance test result: 650\nOperator overload test result: 22\nTemplate function test result: 39\nTemplate class test result: 16\nLambda test result: 85\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

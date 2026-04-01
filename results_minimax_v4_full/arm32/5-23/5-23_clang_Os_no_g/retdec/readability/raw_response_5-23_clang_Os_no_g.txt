@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of original `size`, `x`, `y`. Local variables are `v1`, `v2`, `v3`. Globals are `g7`, `g8`, `g9` with no semantic meaning. The original had meaningful names like `MAX_SIZE`, `BUFFER_COUNT` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_macro_constants`, `call_asm_basic`, `param_conditional_compile` correctly preserve original names. However, many utility functions have cryptic names like `function_50c`, `function_518` using addresses as identifiers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return values like `64`, `30`, `32` are clear constants matching source. However, expressions like `a1 > (int32_t)&g17 ? 64 : (int32_t)&g15` use cryptic global variable references instead of the original `MAX_SIZE` and `BUFFER_COUNT` constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without obvious compiler artifacts like register spilling or debug instrumentation. Some noise in global variable declarations but manageable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with clear if-else statements and loops. For example, `param_asm_clobber` correctly shows a for-loop structure. At `-O0`, the flow closely matches the original source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - many small test functions are preserved as in the original. Functions like `param_dynamic_code` (18 lines) and `param_memory_protection` (27 lines) are reasonably sized.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. The `param_asm_clobber` function has a simple while-loop structure that flows naturally.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Loop unrolling is minimal at `-O0` optimization level.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate. However, pointers are often treated as `int32_t` without proper pointer types (e.g., `int32_t * v2` for mmap result). Some type precision is lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The original code doesn't heavily use structs, but the decompilation handles the few struct-like patterns (like the array in `param_asm_clobber`) reasonably with pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate casts. Minor issues like `(int32_t)&g17` treating boolean as integer, but no severe safety violations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. The original had extensive comments about preprocessing, inline assembly, and expected values - all completely lost. Only address range comments present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like the atomic operations (`__atomic_fetch_add_4`) are recognizable. However, the original's macro expansions, conditional compilation branches, and inline assembly idioms are not identified or labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The original had platform-specific `#if defined(__x86_64__)` blocks that became dead code on arm64 - this isn't flagged. The `param_asm_multi_insn` function has a clear bug (`memcpy(v1, v1, v1)`) that isn't indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. The original's error handling (checking `MAP_FAILED`, return value validation) isn't explained as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `test_preprocessing_features` calls various functions), but not explicitly documented. Global variable usage (like `g7`, `g8` for arrays) isn't explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions. However, it's a single monolithic file with utility functions interspersed.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`). Should compile with minimal issues. Missing some declarations but generally portable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: `a1`, `a2`, `v1`, `v2`, `g7`, `g8` provide no semantic meaning
+- No comments explaining preprocessing macros, inline assembly, or expected values
+- `param_asm_multi_insn` has a clear bug: `memcpy((int32_t *)v1, (int32_t *)v1, v1)` - using uninitialized variable as size
+- No anomaly indication for platform-specific code that became dead code on arm64
+- Literal expressions like `(int32_t)&g17` obscure the original constants `MAX_SIZE` and `BUFFER_COUNT`
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At `-O0` optimization, the decompiled control structures (if-else, loops) closely match the original source code flow
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic parameter names (`a1`, `a2`) and local variables (`v1`, `v2`, `v3`) completely lose the semantic meaning of original names like `size`, `x`, `y`, `result`, `arr`, `n`
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 > 1024` suggests `a1` is `size` or `max_size`; `a1 * a1` suggests squaring operation)
+2. **Recover macro constants**: Detect constant expressions like `&g17` (which is `false` = 0) and reconstruct the original `MAX_SIZE` constant (1024) from comparison patterns
+3. **Add semantic comments**: Include explanations for preprocessing behavior, inline assembly constraints, and platform-specific code paths that became dead code

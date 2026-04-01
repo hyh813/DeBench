@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3`; local variables are `v1`, `v2`, `v3`; global variables are `g1`, `g2`, `g3`. No semantic meaning whatsoever - e.g., `param_macro_constants` uses `a1 > (int32_t)&g23 ? 64 : (int32_t)&g20` where `g23` is actually `false` and `g20` is `18` (representing MAX_SIZE/2 = 512, but shown as offset).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered like `param_macro_constants`, `call_asm_basic`, `param_dynamic_code`. However, many utility functions are named arbitrarily like `function_50c`, `function_518`, `function_530` (which is actually `memcpy`). Mixed result - main test functions good, infrastructure functions poor.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers used directly without explanation (e.g., `64`, `30`, `32`). The expression `a1 > (int32_t)&g23 ? 64 : (int32_t)&g20` is completely opaque - `&g23` is address of boolean `false`, and `&g20` is address of value `18`. String literals show raw UTF-8 bytes (e.g., `"\xe6\x9c\x9f\xe6\x9c\x9b"`). No constant recovery.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some odd constructs like `(int32_t)&g23` for boolean comparison, but overall manageable. The code compiles successfully as noted in metadata.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with clear if-else structures and loops. Example: `param_asm_clobber` uses proper while loop. At -O0, control flow should be close to source, and the decompiler largely achieves this. Minor issues with some ternary expressions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (20-80 lines typical). Main test functions properly separated. Some infrastructure functions like `function_518` (printf wrapper) could be better integrated. Overall good granularity matching source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but appropriate. No excessive goto usage or backward jumps. The `param_asm_clobber` loop is clear. Some nested ternaries but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in string handling (repeated format strings). The `call_asm_simd` function has awkward expression `2 * v5 + v5 + v1` which should simplify. Minor loop unrolling artifacts but nothing severe for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is good for arm64. Some issues: `param_asm_multi_insn` returns `(int32_t)memcpy(...)` with unclear pointer types. Function pointers not properly typed. Overall decent type recovery for 32-bit integers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. The code uses raw pointer arithmetic throughout (e.g., `*(int32_t *)(v1 + a2)`). The `param_asm_simd` clearly operates on arrays but no struct recovered for the vector data. All composite types lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: `(int32_t)&g23` treating pointer as integer for comparison; `(int32_t *)v1` treating uninitialized variable as pointer; `mmap` return cast to `int32_t *` without validation. Some pointer arithmetic without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. Zero explanation of what functions do, what parameters mean, or what the magic values represent. The original source had extensive comments explaining macro behavior and assembly semantics - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible but not named or documented. The atomic operations use `__atomic_fetch_add_4` which is recognized. The macro expansion results are visible (e.g., `3 * a1 + 2` for conditional compile) but not identified as such. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The code silently produces wrong results in some cases: `param_macro_constants` compares `a1` (size) against address of boolean `&g23` instead of value `1024`. This is a critical error that should be flagged. No warnings about suspicious constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `param_dynamic_code` has implicit requirement that `mmap` succeeds, but no contract. No error handling documentation. The function returns `-1` on failure but this isn't explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code. However, the relationships between functions are not documented. No indication of which functions call which, or the purpose of helper functions. The `function_530` is clearly `memcpy` but not labeled as such.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (preprocessing functions together, asm functions together). However, the arbitrary numbering of helper functions (`function_50c`, `function_518`) breaks organization. No clear separation between test code and library code.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code compiles successfully as noted in metadata ("Compilation Result: Yes"). Minimal dependencies needed (just standard C library). However, some odd constructs like `(int32_t *)v1` might cause warnings. Overall good compilation readiness.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `v1`, `g1`) with no semantic meaning
+- `param_macro_constants` has critical error: compares `a1` against address `&g23` (boolean false) instead of value 1024
+- No comments explaining macro expansions, assembly semantics, or any code logic
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Anomaly detection completely absent - suspicious constructs not flagged
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+The code compiles successfully with minimal dependencies, which is essential for practical use.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+The complete absence of comments severely impedes understanding. The original source had extensive documentation about macro behavior, assembly constraints, and test expectations - all completely lost in decompilation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+
+1. **Recover macro semantics**: The decompiler should identify constant expressions resulting from macro expansion (e.g., `64` from `BUFFER_COUNT * 4`) and annotate them with the original macro names.
+
+2. **Add semantic comments**: Include comments explaining what each function does, parameter purposes, and any non-obvious logic. At minimum, document the purpose of helper functions like `function_518` (printf wrapper).
+
+3. **Flag anomalies**: Mark suspicious constructs like `(int32_t)&g23` used in comparison, or uninitialized variables used as pointers, with warnings that these may be decompilation artifacts.

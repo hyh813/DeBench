@@ -1,0 +1,20 @@
+test_macro_constants: PASS
+test_macro_functions: PASS
+test_conditional_compile: PASS
+test_multi_branch_compile: PASS
+test_macro_recursion: PASS
+test_stringize: PASS
+test_token_paste: PASS
+test_variadic_macro: PASS
+LOG: Values: 10, 20, 30
+test_macro_override: PASS
+test_include_guard: PASS
+test_builtin_macros: PASS
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:41
+test_preprocessing_features complete
+test_asm_basic: PASS
+test_asm_clobber: PASS
+test_asm_multi_insn: PASS
+test_asm_simd: PASS
+test_asm_atomic: PASS
+test_asm_privileged: PASS

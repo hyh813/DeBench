@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are reduced to generic names like `param_1`, `iVar1`, and `local_20`, completely losing semantic meaning found in the source (e.g., `sum`, `len`, `arr`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names match the original source exactly (e.g., `process_char`, `array_1d_stack`), likely due to the presence of debug symbols (`-g`), providing perfect context.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character checks are obfuscated as arithmetic ranges (e.g., `(byte)(param_1 + 0xbfU) < 0x1a` for `c >= 'A' && c <= 'Z'`), and array strides appear as magic numbers (e.g., `0x2c`), obscuring intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The code contains significant noise from type handling, such as `CONCAT44` macros for 64-bit integer reconstruction and bit-shift masking for type promotion, which impedes readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are generally recovered as `do-while` structures rather than the original `for` loops, and loop bounds are often checked with `if` guards before the loop body, which is slightly less natural but readable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries are preserved 1:1 with the source; there is no inlining or outlining, maintaining the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads linearly from top to bottom with minimal forward jumps; loop guard checks are placed logically before the loop bodies, facilitating easy tracing.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: There is no dead code or loop unrolling present; the logic is concise and matches the source structure without redundant artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation is present: `short` is widened to `int`, `float`/`double` functions incorrectly return `void` (losing the result), and 64-bit integers are split into 32-bit parameters.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are completely lost and represented as raw pointers (e.g., `int *param_1` for `Point3D*`), with field access replaced by unsafe array indexing (e.g., `param_1[3]` instead of `r->size.width`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: The code exhibits unsafe type handling, such as casting `void*` to `uint*` and accessing struct fields via raw pointer arithmetic, which removes type boundaries and safety checks.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are limited to auto-generated warnings (e.g., "Removing unreachable block") and provide no explanation of the underlying logic or algorithms.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop idioms are recognized, but higher-level patterns like "uppercase check" are reduced to arithmetic, and string operations are not explicitly identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Indirect jumps and unreachable blocks are flagged with warnings, but other significant issues like lost return values in floating-point functions are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no documentation of preconditions, postconditions, or invariants; the code provides no contract information.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are explicit and standard library calls (like `printf`) are easily recognizable, maintaining clear relationships between functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped by address order rather than logical source grouping, but the overall organization remains navigable and related functions are generally proximate.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies on Ghidra-specific macros (e.g., `CONCAT44`) and contains incorrect return types, making it non-compilable without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- **Type Precision Failure:** Functions `process_float` and `process_double` return `void` instead of `float`/`double`, completely losing the function's output.
+- **Composite Type Loss:** Structs like `Point3D` and `Rect` are demoted to raw `int*` pointers with array indexing (e.g., `param_1[3]`), obscuring the data structure.
+- **Literal Obfuscation:** Character range checks are represented as obscure arithmetic (e.g., `(byte)(param_1 + 0xbfU) < 0x1a`), hiding the intent "is uppercase".
+- **Variable Naming:** All local variables use generic names (`iVar1`, `local_20`), providing no semantic context.
+- **Build Incompatibility:** Usage of Ghidra-specific macros like `CONCAT44` prevents compilation.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)  
+- Debug symbols were preserved, allowing exact recovery of original function names.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+- The complete failure to recover structs, reducing them to pointer arithmetic, significantly harms understanding of the data model.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve floating-point return type recovery for soft-float ABIs to ensure function results are not dropped.
+2. Implement heuristics to detect and reconstruct struct types from pointer arithmetic patterns and constant offsets.
+3. Enhance constant propagation to recognize arithmetic range checks as character comparisons (e.g., `c >= 'A' && c <= 'Z'`).

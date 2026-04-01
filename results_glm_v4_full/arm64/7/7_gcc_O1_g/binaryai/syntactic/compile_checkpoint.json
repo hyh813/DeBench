@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 14,
+  "source_file": "decompiled/BinaryAI_out/arm64/7/7_gcc_O1_g.c",
+  "fixed_file": "results_glm_v4_full/arm64/7/7_gcc_O1_g/binaryai/syntactic/fix_7_gcc_O1_g.c"
+}

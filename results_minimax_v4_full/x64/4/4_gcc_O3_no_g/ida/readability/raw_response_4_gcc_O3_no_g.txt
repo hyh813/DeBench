@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3`, and local variables are `v5`, `v6`, `v8`, `v9`, etc. No semantic meaning is conveyed - for example, in `cdecl_func(int a1, int a2)`, the parameters should be `a` and `b` based on source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions correctly match source names (`cdecl_func`, `stdcall_func`, `func_a`, `func_b`, `func_no_args`), but many use generic names like `sub_1020`, `sub_1030`. Mixed result - good for test functions, poor for infrastructure.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: The decompiled code shows computed results (15, 50, 6, 42, etc.) rather than source magic numbers. This is actually appropriate since these are constant-propagated results. No unexplained magic numbers that obscure logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present: failed decompilations for `__libc_start_main`, `puts`, `strlen`; cold split functions (`varargs_func.cold`, `param_varargs.cold`); constprop versions; SIMD intrinsics (`_mm_add_epi64`, `_mm_unpacklo_epi32`); JUMPOUT statements. Heavy optimization artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (loops, conditionals) are recognizable. However, cold function splitting creates unnatural flow, and JUMPOUT statements interrupt readability. At -O0, this level of fragmentation is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and separated. Test wrapper functions (`call_cdecl`, `call_stdcall`) correctly extracted. Minor issues with cold splits but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but cold function splits and JUMPOUT statements create discontinuities. Some forward jumps present in varargs handling.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant propagation applied (showing results like `return 15` instead of computing `5+10`). Loop unrolling visible in varargs functions but not commented. Some redundancy from cold function duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - `int` parameters correctly typed, but return types use `__int64` instead of `int`. Function pointers are imprecise: `unsigned int (__fastcall *a1)(_QWORD)` should be `int (*)(int)`. Many `_DWORD` and `__int64` instead of proper types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `func_struct_byval` uses 14 raw parameters (`a1` through `a14`) instead of `LargeStruct s`. `func_struct_byptr` uses `_DWORD *a1` instead of `SmallStruct *p`. All composite types lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `ret_pointer` returns `a1 + 4` (should be `a1 + 1` for int pointer); type-confused function pointers; extensive pointer arithmetic without safety comments. Unsafe casts present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comment ("Decompiled by IDA Pro 9.0"). No logic explanations, no decompilation confidence indicators, no API contracts. Comments are essentially noise.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The varargs handling, calling convention tests, and callback patterns are not recognized or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "positive sp value has been detected, the output may be wrong!" in `_start`. "FAILED to decompile" messages for 7 functions. However, no warnings about cold splits, constprop transformations, or indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of NULL checks semantics, parameter constraints, or return value guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication of which functions call which, callback relationships unclear, no call graph information.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Single monolithic output file. No logical grouping of related functions (calling conventions, parameter tests, return tests). No namespace or static scoping indicated.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - missing declarations for `puts`, `__printf_chk`, `strlen`. External dependencies not documented. No stubs provided for failed decompilations.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses only generic `a1`, `a2`, `v5`, `v6` with no semantic meaning
+- No struct/union recovery - all composite types lost, replaced with raw parameters
+- Type precision poor - returns `__int64` instead of `int`, function pointers imprecise
+- No comments explaining logic or decompilation decisions
+- Build system incompatible - missing standard library declarations
+
+**Best Quality Aspect:** Literal Clarity (8/10)  
+The decompiler correctly propagated constants showing computed results rather than unexplained magic numbers.
+
+**Most Needs Improvement:** Type System Fidelity (3.7/10)  
+Composite type recovery is completely absent (2/10), and type precision is poor (5/10). Struct parameters should be reconstructed with field names, not decomposed into individual parameters.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover composite types**: Reconstruct `LargeStruct` and `SmallStruct` from parameter patterns instead of decomposing into `a1-a14`
+2. **Improve variable naming**: Use semantic names from usage patterns - `a1` used as `count` in varargs should be named `count`
+3. **Add meaningful comments**: Document calling convention decisions, cold split rationale, and flag uncertain decompilations with specific reasons

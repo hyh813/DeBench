@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic types like `iVar1`, `pvVar1`, and `sVar2`, which obscure their semantic roles (e.g., `pvVar1` is actually a `LifecycleClass` object). While some variables like `base` and `derived` are recovered, the heavy reliance on generic names makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most user-defined functions retain their original names (e.g., `test_cpp_member_func`, `Base::virtual_func`), likely due to DWARF debug symbols. However, the presence of `FUN_00011030` and the verbose naming of thunks (e.g., `virtual thunk to DiamondDerived::func`) slightly degrades the cleanliness.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers resulting from compiler optimization, such as `0x125c` (4704) and `0x47` (71), which replace the actual logic of functions like `test_cpp_multiple_inheritance`. String literals for RTTI are mangled (e.g., `"12RTTIDerivedA"`), requiring manual demangling.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts pollute the code, including frequent `__x86.get_pc_thunk.bx` calls for Position Independent Code and stack canary checks (`in_GS_OFFSET + 0x14`). These artifacts interrupt the reading flow and obscure the program's core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: High-level control structures are often flattened. For instance, exception handling (`try/catch`) in `test_cpp_exception` is reduced to low-level calls like `__cxa_throw` and `__cxa_allocate_exception`, losing the structural clarity of the error handling flow.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods are correctly separated into individual functions (e.g., `Base::virtual_func`), and constructor/destructor logic is distinct. However, the presence of multiple "thunk" functions (adjustor thunks for inheritance) fragments the class view, making it harder to understand the class hierarchy as a whole.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom within functions. While there are forward jumps and computed calls via vtables, the decompiler presents them in a linear sequence that is reasonably easy to follow, absent complex spaghetti logic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations, such as constant propagation (e.g., `test_cpp_multiple_inheritance` returning `0x47`). While this removes the source logic, it correctly eliminates redundant code from the binary representation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While some types like `Base *` are recovered, many object instances are reduced to generic `void *` or `undefined4` (e.g., the result of `operator_new__` in `test_cpp_constructor`). This loss of type information makes it hard to see what specific class is being manipulated.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Structures like `SimpleClass` and `DiamondDerived` are recovered, but complex inheritance layouts result in warnings like "ignoring overlapping field 'super_MiddleB'". The field names within these structs are often generic or missing, reducing the semantic value of the recovery.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code exposes unsafe pointer arithmetic typical of compiled C++, such as `(int)pvVar1 + 4` to access struct fields. While accurate to the binary, these operations lack the type safety and bounds checking implied by the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: Ghidra provides useful warnings about compiler artifacts (e.g., "Function: __x86.get_pc_thunk.bx replaced with injection") and struct overlaps. However, there are no comments explaining the *intent* of the code (e.g., "Calculates sum of class data"), leaving the user to infer semantics from assembly.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Low-level C++ idioms like vtable lookups (`(**obj->_vptr_Base)(obj,x)`) are exposed, but high-level patterns like RAII or smart pointer management are obscured by library calls (`operator_delete`, `std::ios_base::Init::Init`), making the original design patterns hard to see.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags potential issues, such as "WARNING: Unknown calling convention" and "WARNING: Removing unreachable block". These indicators help the user identify where the decompilation might be unreliable or where the compiler performed aggressive transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds checking in `Container::get` is present as code but not documented as a contract, and the logic of `test_cpp_exception` (asserting specific catch blocks) is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Virtual function calls are explicitly shown as vtable dereferences, which clarifies the dynamic dispatch mechanism. However, relationships like template instantiations are only visible in function names (`template_max<int>`), and the connection to the template definition is not explicit in this view.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, with class methods generally appearing near their test functions or related class members. The separation of constructors, destructors, and thunks is organized, albeit verbose.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on injected functions (`get_pc_thunk_bx`) and specific compiler runtime symbols (`__cxa_throw`, `__dynamic_cast`). It would require significant patching and stubbing to compile, as it reflects the binary layout rather than source-level dependencies.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Optimization Obfuscation**: Functions like `test_cpp_multiple_inheritance` are reduced to `return 0x47;`, completely hiding the algorithmic logic due to compiler constant propagation.
+- **Generic Variable Naming**: Heavy use of `iVar1`, `pvVar1`, and `undefined4` obscures the data types and flow (e.g., `pvVar1` representing a `LifecycleClass` instance).
+- **Exception Handling Flattened**: The `try/catch` structure in `test_cpp_exception` is lost, replaced by low-level C++ runtime calls (`__cxa_allocate_exception`), making the control flow hard to follow.
+- **Type Information Loss**: Object pointers are frequently cast to `void*` or `int` for arithmetic, destroying the high-level type semantics of the original C++ code.
+- **Mangled Literals**: RTTI type names appear as mangled strings (e.g., `"12RTTIDerivedA"`), requiring manual demangling to understand the type comparisons.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- **Why?** The decompiler successfully recovered the original names for almost all user-defined functions and methods (e.g., `Base::virtual_func`, `test_cpp_rtti`), which provides a crucial anchor for understanding the code's purpose despite the low-level noise.
+
+**Most Needs Improvement:** Variable Naming (Score: 4/10)
+- **Why?** The pervasive use of generic names like `iVar1` and `pvVar1` makes it extremely difficult to track the state of objects or understand what specific data is being manipulated without deep analysis of the memory offsets.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhanced Type Propagation**: Improve the analysis of `operator_new` and constructor calls to assign specific class types (e.g., `LifecycleClass*`) to pointers instead of generic `void*`.
+2.  **Exception Handling Reconstruction**: Attempt to reconstruct `try/catch` blocks from the LSDA (Language-Specific Data Area) and personality routines, rather than just emitting the runtime calls.
+3.  **Smart Variable Renaming**: Use heuristics based on usage context (e.g., a variable passed to `strlen` is likely a string) to suggest more meaningful names than `iVar1` or `pvVar1`.

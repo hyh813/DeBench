@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mixed quality - `result`, `buffer`, `encrypted` preserved well, but many generic names like `x_local`, `local_c`, `iVar1` obscure purpose. In `param_opaque_predicate`, `p1`/`p2`/`p3` preserved but return value stored in `local_c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_fake_branch`, `decrypt_string`). One anonymous function `FUN_00101020` indicates incomplete recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers unexplained: `-0x21524111` (should be 0xDEADBEEF), `0x14` (20), signal numbers as `8` and `0xb` instead of `SIGFPE`/`SIGSEGV`. `param_implementation_defined` returns constant `0x2f` with no context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Compiler artifacts present (`x_local` variables, `undefined4` types) but manageable. Warning comments like "Unknown calling convention" add noise but indicate decompiler uncertainty appropriately.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered well (for loops in `param_vectorized_loop`). Dead branch correctly removed in `param_fake_branch` with warning. Setjmp/longjmp patterns preserved correctly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity appropriate - `decrypt_string` kept separate, `param_*` and `call_*` pairs maintained. No problematic inlining or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive goto usage or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_instruction_substitution` optimized from bit shifts to `x * 0x15` - loses original obfuscation intent. Some semantic information lost to optimization recovery.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (int, char, size_t) mostly accurate. Some `undefined4` for locals. Pointer types correct. Cast `(long)x` in division present but appropriate.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Bitfield struct recovered as `anon_struct_4_3_4e909822` - generic name loses semantic meaning. Arrays properly identified (`decrypted[32]`, `buffer[8]`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe pointer arithmetic in `param_buffer_overflow_heap`: `(undefined1 *)((long)__ptr + (long)i)`. NULL cast as `(int *)0x0`. Signal handler casts appropriate.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block"). No semantic comments explaining function purpose, algorithm, or obfuscation intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. Setjmp/longjmp exception pattern preserved but not explained. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra flags some issues ("Subroutine does not return", "Unreachable block"). However, semantic anomalies like dead branch removal not fully explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Error conditions not documented despite signal handling.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear. Global variables referenced (`div_zero_caught`, `jmp_buffer`) but not documented. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (`param_*` and `call_*` pairs adjacent). Static functions properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires stubs for globals and external functions. Missing type definitions (`anon_struct_4_3_4e909822`). Would need moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+5+7)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+8+8+6)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (7+6+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (4+4+6+3)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.27/10
+```
+
+**Overall Readability Score: 6.3/10**
+
+### Critical Defects:
+- **Semantic loss in `param_instruction_substitution`**: Original bit-shift obfuscation (`(x<<3)-(x<<1)`) optimized to `x * 0x15`, losing obfuscation intent
+- **Complete logic loss in `param_implementation_defined`**: Function reduced to constant return `0x2f`, all original computation eliminated
+- **Incorrect transformation in `param_undefined_behavior`**: Returns `i << 1` instead of original `i * 2`
+- **Magic numbers unexplained**: `-0x21524111`, `0x14`, `0x2f` without constant definitions
+- **No semantic comments**: Zero documentation of obfuscation techniques or algorithm purposes
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making code navigation straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error handling documentation despite complex signal/exception handling
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve obfuscation patterns**: Detect and comment on instruction substitution patterns rather than optimizing them away (e.g., note "original: (x<<3)-(x<<1) for x*6")
+2. **Recover magic number semantics**: Cross-reference constants with common patterns (0xDEADBEEF, signal numbers) and suggest named constants
+3. **Add contract documentation**: Infer and document preconditions from signal handlers and error paths (e.g., "requires: x != 0 to avoid SIGFPE")

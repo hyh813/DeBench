@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `local_3c`, `param_1`, `puVar4`). While `aiStack_38` hints at an array of integers, meaningful names like `n`, `arr`, or `p` from the source are lost, requiring significant effort to track data flow.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table (e.g., `double_value`, `heap_basic`, `linked_list_heap`). The names accurately reflect the source code's intent, making the high-level structure easy to navigate.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered perfectly, but integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`). While semantically correct, this adds unnecessary translation burden compared to the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present from compiler security features. Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) appear in almost every function, and Variable Length Array (VLA) allocation is obfuscated by stack-clash protection loops (`puVar4` manipulation), severely impacting readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic loops and conditionals are natural, but complex stack manipulations in `vla_stack` and `alloca_usage` result in confusing pointer arithmetic loops. Additionally, `stack_alias` appears to have failed parameter recovery, resulting in nonsensical control flow (`if (&stack0x00000000 == (undefined *)0x14)`).
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler maintained a 1:1 mapping with the source functions. There is no inlining or outlining, and the granularity matches the original source perfectly, making it easy to locate specific logic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with appropriate early returns. However, the stack probing logic in VLA functions introduces non-linear jumps and pointer arithmetic that disrupt the flow of the core algorithm.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: With `-O0`, the code is clean without loop unrolling or dead code elimination artifacts. The redundancy present (e.g., stack checks) is inherent to the binary security features rather than decompiler failure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `void*` are recovered well. However, Ghidra uses specific types like `undefined4` and `undefined8` instead of standard `uint32_t` or `size_t`, and `char` is often represented as `byte`, which is slightly non-idiomatic.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct types (`Point`, `Node`, `TreeNode`) are completely lost. Accesses are done via raw pointer arithmetic (e.g., `*(long *)((long)*param_1 + 8)`) or array indexing on int pointers (e.g., `__ptr[1]`), obscuring the semantic relationship between fields like `x`, `y`, `next`, and `data`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on explicit casts (e.g., `(int *)malloc(8)`) and raw pointer arithmetic for struct access. While this reflects the binary reality, it removes the type safety and semantic layering provided by the original structs.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output is purely the decompiled logic without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: High-level patterns like linked lists are recognizable but implemented as raw pointer manipulations rather than semantic structures. The "memory leak" or "dangling pointer" patterns are not identified or flagged; they just look like standard code.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag suspicious behavior. For example, in `dangling_pointer`, the read after `free(__ptr)` is presented as normal code without any warning or "UNCERTAIN" marker, despite being undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are documented. For instance, `heap_basic` does not indicate that the returned value is derived from the heap or that `param_1` represents a count.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct targets, and global variables are accessed by name. The relationship between `test_stack_memory` and its sub-functions is clear.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically in the output, matching the source file's organization. Static functions are correctly identified and kept within the module scope.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types (`undefined`, `code *`) that will not compile with a standard C compiler without significant modification or a custom header file.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: Composite types like `Point` and `Node` are not recovered; fields are accessed via raw offsets (e.g., `offset + 8`), destroying semantic meaning.
+- **VLA/Alloca Obfuscation**: Variable Length Array logic is buried under stack-clash protection loops, making functions like `vla_stack` extremely difficult to read.
+- **Parameter Recovery Error**: Function `stack_alias` failed to recover parameters, resulting in nonsensical logic involving stack addresses.
+- **Lack of Semantic Annotations**: No comments or warnings regarding unsafe operations (e.g., use-after-free in `dangling_pointer`).
+- **Generic Naming**: Variable names are purely mechanical (`local_XX`, `param_1`), offering no insight into their purpose.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler successfully recovered all function symbols from the binary, preserving the exact names from the original source code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- **Why?** The complete inability to reconstruct `struct` types reduces complex data manipulation (linked lists, trees) to confusing pointer arithmetic, which is the biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Struct Recovery**: Implement heuristic analysis to identify struct layouts based on access patterns (e.g., consistent offsets like `+8` or `+16` across functions) to reconstruct `Point` or `Node` types.
+2.  **Abstract Security Prologues**: Detect and abstract stack-clash protection loops (common in `alloca`/VLA usage) into a pseudo-function or comment to preserve the readability of the core allocation logic.
+3.  **Improve Variable Naming**: Infer variable names from context (e.g., naming a variable `size` if it is used immediately in `malloc(size * 4)`) rather than relying solely on `local_XX` conventions.

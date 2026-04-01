@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr` instead of semantic names (`size`, `counter`, `result`). Original source had descriptive names that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_macro_constants`). Some runtime helpers have generic names (`sub_4004ec`), but user functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE=1024), `57072`, `282` appear without explanation. Some output constants (64, 30, 32) are clear but original named constants not recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: User functions are relatively clean. Startup code contains goto labels and compiler artifacts. Some assembly artifacts remain (`armg_calculate_condition`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions use natural if-ternary patterns. Loop structures recovered in `param_asm_simd`. Some goto usage in startup/runtime code is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with original structure preserved. Call functions constant-folded to return constants (expected at -O0 with constant arguments).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. User functions well-linearized. Some goto usage in runtime initialization code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding creates minor redundancy (call_* functions return pre-computed values). No significant dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to generic `unsigned int` or `int`. Original `size_t`, specific integer types lost. Pointer types present but generic (`void*`, `unsigned int*`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in this code sample. Arrays handled as pointers. Global arrays declared (`g_4011a0[4]`) but no struct reconstruction needed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns (pointer arithmetic without bounds in `param_asm_clobber`). Generic types increase risk. No obvious type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 2/10  
+Justification: No comments in decompiled code. Original had extensive documentation explaining macro behavior. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns lost (constant folded). Loop patterns preserved. No design pattern recognition visible in output.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly flags for questionable code. Complex logic in `param_memory_protection` not marked as uncertain. No recovery confidence indicators.
+
+**15. Assertion Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Error conditions not documented. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear. Global variables referenced but not well-documented (`g_412008`, `g_40114f`). External declarations present.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically. Test functions grouped together. Original structure mostly preserved in output.
+
+**18. Build Compatibility:** Score: 8/10  
+Justification: Metadata indicates successful compilation. External dependencies declared. Some platform-specific code present (ARM).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+5+7)/4 = 6.0  → 1.80
+Level 2 (25%): (7+8+7+7)/4 = 7.25 → 1.81
+Level 3 (20%): (5+6+6)/3 = 5.67   → 1.13
+Level 4 (15%): (2+4+4+3)/4 = 3.25 → 0.49
+Level 5 (10%): (6+7+8)/3 = 7.0    → 0.70
+─────────────────────────────────────────────
+Overall Score:                    5.93/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable names completely generic**: `a0`, `a1`, `v0`, `v1` instead of `size`, `x`, `y`, `result`
+- **No comments recovered**: Original had extensive documentation explaining macro semantics
+- **Magic numbers unexplained**: `0x400`, `57072`, `282` should be named constants
+- **Macro semantics lost**: Preprocessor behavior not indicated (constant folding hides original intent)
+- **Type precision degraded**: `size_t` and specific integer types reduced to generic `unsigned int`
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify purpose of each function
+
+### Most Needs Improvement
+- **Comment Quality (2/10)** - Complete absence of comments loses all semantic documentation about macro behavior and preprocessing intent
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., compared to constants, used in arithmetic) to suggest semantic names like `size`, `counter`, `result`
+2. **Add decompilation confidence annotations** - Mark regions where macro expansion was constant-folded vs. actual runtime logic to help analysts understand what was lost
+3. **Recover named constants from magic numbers** - Detect repeated literals and suggest constant definitions (e.g., `0x400` → `MAX_SIZE`, `57072` → `0xDF20`)

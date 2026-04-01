@@ -1,0 +1,1830 @@
+# BinBench Evaluation Report
+
+**Generated:** 2026-03-16 18:43:57
+
+## 1. Test Object
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `src/5-1.cpp` |
+| Decompiled | `decompiled/ghidra_out/arm32/5-1/5-1_gcc_O1_no_g.c` |
+| Decompiler | GHIDRA |
+| Architecture | arm32 |
+| Compiler | gcc |
+| Optimization | O1 |
+| Debug | no |
+
+## 2. Evaluation Results
+
+| Dimension | Status |
+|-----------|--------|
+| Readability | ✅ Completed |
+| Syntactic | ❌ Failed |
+| Semantic | ⏭ Skipped |
+
+## 3. Detailed Results
+
+### 3.1 Readability Evaluation
+
+*No readability results found.*
+
+### 3.2 Syntactic Correctness Evaluation
+
+#### Repair Trace Log
+
+```json
+{
+  "file_name": "results_minimax_v4_full/arm32/5-1/5-1_gcc_O1_no_g/ghidra/syntactic/fix_5-1_gcc_O1_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 50,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 169,
+        "stats": {
+          "Other": 127,
+          "Syntax Error": 40,
+          "Incomplete Type": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 6515,
+        "completion_tokens": 1387,
+        "total_tokens": 7902
+      },
+      "time_cost": 27.672275066375732,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 118,
+        "stats": {
+          "Other": 54,
+          "Syntax Error": 52,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7111,
+        "completion_tokens": 782,
+        "total_tokens": 7893
+      },
+      "time_cost": 11.888999462127686,
+      "phase": "compile",
+      "new_errors_introduced": 27
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 104,
+        "stats": {
+          "Other": 52,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Syntax Error": 40,
+          "Argument Count Mismatch": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7090,
+        "completion_tokens": 701,
+        "total_tokens": 7791
+      },
+      "time_cost": 16.145267963409424,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 101,
+        "stats": {
+          "Other": 49,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7127,
+        "completion_tokens": 833,
+        "total_tokens": 7960
+      },
+      "time_cost": 13.80504584312439,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 100,
+        "stats": {
+          "Other": 48,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7179,
+        "completion_tokens": 1108,
+        "total_tokens": 8287
+      },
+      "time_cost": 19.453032970428467,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 100,
+        "stats": {
+          "Other": 38,
+          "Incomplete Type": 13,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7083,
+        "completion_tokens": 716,
+        "total_tokens": 7799
+      },
+      "time_cost": 12.069908142089844,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 100,
+        "stats": {
+          "Other": 38,
+          "Incomplete Type": 13,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7113,
+        "completion_tokens": 662,
+        "total_tokens": 7775
+      },
+      "time_cost": 21.567591428756714,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 101,
+        "stats": {
+          "Other": 39,
+          "Incomplete Type": 13,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7266,
+        "completion_tokens": 781,
+        "total_tokens": 8047
+      },
+      "time_cost": 24.55410146713257,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 101,
+        "stats": {
+          "Other": 39,
+          "Incomplete Type": 13,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7313,
+        "completion_tokens": 916,
+        "total_tokens": 8229
+      },
+      "time_cost": 48.55439519882202,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 101,
+        "stats": {
+          "Other": 39,
+          "Incomplete Type": 13,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7346,
+        "completion_tokens": 865,
+        "total_tokens": 8211
+      },
+      "time_cost": 14.842266321182251,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 99,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7420,
+        "completion_tokens": 777,
+        "total_tokens": 8197
+      },
+      "time_cost": 14.884565353393555,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 99,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7448,
+        "completion_tokens": 1018,
+        "total_tokens": 8466
+      },
+      "time_cost": 15.922337532043457,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 99,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7500,
+        "completion_tokens": 815,
+        "total_tokens": 8315
+      },
+      "time_cost": 22.432283878326416,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 100,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7557,
+        "completion_tokens": 645,
+        "total_tokens": 8202
+      },
+      "time_cost": 11.515586614608765,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 98,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Argument Count Mismatch": 4,
+          "Void Value Error": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7601,
+        "completion_tokens": 850,
+        "total_tokens": 8451
+      },
+      "time_cost": 13.626619577407837,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 98,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Argument Count Mismatch": 4,
+          "Void Value Error": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7612,
+        "completion_tokens": 853,
+        "total_tokens": 8465
+      },
+      "time_cost": 14.507365942001343,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 97,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Argument Count Mismatch": 4,
+          "Void Value Error": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7576,
+        "completion_tokens": 816,
+        "total_tokens": 8392
+      },
+      "time_cost": 29.318654775619507,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 97,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Argument Count Mismatch": 4,
+          "Void Value Error": 6,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7631,
+        "completion_tokens": 1083,
+        "total_tokens": 8714
+      },
+      "time_cost": 18.080596923828125,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 96,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7651,
+        "completion_tokens": 957,
+        "total_tokens": 8608
+      },
+      "time_cost": 16.55104684829712,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 96,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7651,
+        "completion_tokens": 1310,
+        "total_tokens": 8961
+      },
+      "time_cost": 35.03148651123047,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 96,
+        "stats": {
+          "Other": 41,
+          "Incomplete Type": 9,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7669,
+        "completion_tokens": 1388,
+        "total_tokens": 9057
+      },
+      "time_cost": 20.48125147819519,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 94,
+        "stats": {
+          "Other": 45,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7774,
+        "completion_tokens": 988,
+        "total_tokens": 8762
+      },
+      "time_cost": 31.84493899345398,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 94,
+        "stats": {
+          "Other": 45,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7681,
+        "completion_tokens": 1958,
+        "total_tokens": 9639
+      },
+      "time_cost": 56.14821672439575,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 92,
+        "stats": {
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7697,
+        "completion_tokens": 732,
+        "total_tokens": 8429
+      },
+      "time_cost": 20.342004776000977,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 92,
+        "stats": {
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7701,
+        "completion_tokens": 1411,
+        "total_tokens": 9112
+      },
+      "time_cost": 49.60928249359131,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 93,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7732,
+        "completion_tokens": 1718,
+        "total_tokens": 9450
+      },
+      "time_cost": 63.34736251831055,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 93,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7743,
+        "completion_tokens": 1946,
+        "total_tokens": 9689
+      },
+      "time_cost": 47.58261227607727,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 93,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Void Value Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8004,
+        "completion_tokens": 1635,
+        "total_tokens": 9639
+      },
+      "time_cost": 45.43663740158081,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 91,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7969,
+        "completion_tokens": 757,
+        "total_tokens": 8726
+      },
+      "time_cost": 24.418007850646973,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 91,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7949,
+        "completion_tokens": 1190,
+        "total_tokens": 9139
+      },
+      "time_cost": 19.45195436477661,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 152,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 104,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8268,
+        "completion_tokens": 1562,
+        "total_tokens": 9830
+      },
+      "time_cost": 34.2728750705719,
+      "phase": "compile",
+      "new_errors_introduced": 45
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 77,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8171,
+        "completion_tokens": 1530,
+        "total_tokens": 9701
+      },
+      "time_cost": 24.76711368560791,
+      "phase": "compile",
+      "new_errors_introduced": 13
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 65,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8614,
+        "completion_tokens": 1677,
+        "total_tokens": 10291
+      },
+      "time_cost": 29.20913076400757,
+      "phase": "compile",
+      "new_errors_introduced": 9
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 101,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8477,
+        "completion_tokens": 785,
+        "total_tokens": 9262
+      },
+      "time_cost": 13.448100090026855,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 101,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 43,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8490,
+        "completion_tokens": 798,
+        "total_tokens": 9288
+      },
+      "time_cost": 27.227149486541748,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 103,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 45,
+          "Incomplete Type": 3,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8496,
+        "completion_tokens": 3361,
+        "total_tokens": 11857
+      },
+      "time_cost": 92.55882692337036,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 102,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 45,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8538,
+        "completion_tokens": 1160,
+        "total_tokens": 9698
+      },
+      "time_cost": 21.069740533828735,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 102,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 45,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8570,
+        "completion_tokens": 2202,
+        "total_tokens": 10772
+      },
+      "time_cost": 48.42518401145935,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 108,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 45,
+          "Member Access Error": 6,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 37,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8649,
+        "completion_tokens": 2127,
+        "total_tokens": 10776
+      },
+      "time_cost": 44.20216774940491,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 93,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 45,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8135,
+        "completion_tokens": 2182,
+        "total_tokens": 10317
+      },
+      "time_cost": 41.834064960479736,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 93,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 45,
+          "Argument Count Mismatch": 3,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8117,
+        "completion_tokens": 961,
+        "total_tokens": 9078
+      },
+      "time_cost": 18.492044925689697,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 96,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 45,
+          "Argument Count Mismatch": 6,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 8133,
+        "completion_tokens": 1083,
+        "total_tokens": 9216
+      },
+      "time_cost": 18.788110733032227,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 95,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 45,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7832,
+        "completion_tokens": 1021,
+        "total_tokens": 8853
+      },
+      "time_cost": 20.154606580734253,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 95,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 45,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7833,
+        "completion_tokens": 996,
+        "total_tokens": 8829
+      },
+      "time_cost": 16.510645151138306,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 94,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 44,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7837,
+        "completion_tokens": 953,
+        "total_tokens": 8790
+      },
+      "time_cost": 19.134331464767456,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 94,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 44,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7848,
+        "completion_tokens": 1407,
+        "total_tokens": 9255
+      },
+      "time_cost": 25.45039439201355,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 94,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 44,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7898,
+        "completion_tokens": 2000,
+        "total_tokens": 9898
+      },
+      "time_cost": 29.780263423919678,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 91,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 41,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7945,
+        "completion_tokens": 904,
+        "total_tokens": 8849
+      },
+      "time_cost": 28.337144374847412,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 93,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 43,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7945,
+        "completion_tokens": 853,
+        "total_tokens": 8798
+      },
+      "time_cost": 22.486418962478638,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 94,
+        "stats": {
+          "Redefinition": 1,
+          "Other": 44,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 7951,
+        "completion_tokens": 1150,
+        "total_tokens": 9101
+      },
+      "time_cost": 17.094069957733154,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 448766,
+    "total_time_seconds": 1374.33,
+    "initial_state": {
+      "error_count": 169,
+      "error_types": {
+        "Other": 127,
+        "Syntax Error": 40,
+        "Incomplete Type": 2
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.1837,
+        "error_trajectory": [
+          169,
+          118,
+          104,
+          101,
+          100,
+          100,
+          100,
+          101,
+          101,
+          101,
+          99,
+          99,
+          99,
+          100,
+          98,
+          98,
+          97,
+          97,
+          96,
+          96,
+          96,
+          94,
+          94,
+          92,
+          92,
+          93,
+          93,
+          93,
+          91,
+          91,
+          152,
+          125,
+          123,
+          101,
+          101,
+          103,
+          102,
+          102,
+          108,
+          93,
+          93,
+          96,
+          95,
+          95,
+          94,
+          94,
+          94,
+          91,
+          93,
+          94
+        ],
+        "max_error_count": 169,
+        "min_error_count": 91
+      },
+      "effort": {
+        "initial_error_count": 169,
+        "lowest_error_count": 91,
+        "lowest_at_iteration": 29,
+        "error_reduction": 78,
+        "error_reduction_ratio": 0.4615
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 127,
+          "Syntax Error": 40,
+          "Incomplete Type": 2
+        },
+        "final_types": {
+          "Redefinition": 1,
+          "Other": 44,
+          "Argument Count Mismatch": 5,
+          "Syntax Error": 38,
+          "Incomplete Type": 2,
+          "Void Value Error": 4
+        },
+        "types_eliminated": [],
+        "types_introduced": [
+          "Argument Count Mismatch",
+          "Redefinition",
+          "Void Value Error"
+        ]
+      },
+      "score": {
+        "effort_score": 23.08,
+        "stability_score": 40.82,
+        "total_score": 63.89,
+        "grade": "C+"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 7,
+    "type_breakdown": {
+      "Argument Count Mismatch": {
+        "initial_count": 0,
+        "max_count": 6,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 127,
+        "max_count": 127,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 0,
+        "max_count": 11,
+        "final_count": "unknown"
+      },
+      "Member Access Error": {
+        "initial_count": 0,
+        "max_count": 6,
+        "final_count": "unknown"
+      },
+      "Incomplete Type": {
+        "initial_count": 2,
+        "max_count": 13,
+        "final_count": "unknown"
+      },
+      "Void Value Error": {
+        "initial_count": 0,
+        "max_count": 6,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 40,
+        "max_count": 52,
+        "final_count": "unknown"
+      }
+    }
+  }
+}
+```
+
+### 3.3 Semantic Fidelity Evaluation
+
+> **Note:** For ARM32 architecture, the source code was recompiled natively within the ARM32 VM to avoid GLIBC version mismatch (original binaries require GLIBC 2.34+, VM has GLIBC 2.27).
+
+*No semantic analysis report found.*
+

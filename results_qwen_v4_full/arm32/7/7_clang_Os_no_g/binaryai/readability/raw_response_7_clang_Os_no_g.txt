@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are entirely generic (`param_1`, `iVar1`, `uVar1`, `bVar1`-`bVar35`, `local_28`, `local_9`) with zero semantic meaning. The 35 boolean variables in `__divsi3` are particularly egregious—none indicate their role in the division algorithm.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `decrypt_string`). However, some functions like `param_fake_branch` are empty despite retaining their descriptive names, creating misleading expectations.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x5a` (XOR key), `0x14` (20), `0xe1` (225), `0x7a314` (500500), `0x13ba` (5050), `0x1e` (30), `0x2c` (44). String literals replaced with `&DAT_00011221` references, losing all readability.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from 35 boolean variables in `__divsi3`, external function stubs (`raise`, `__libc_start_main`, `__cxa_finalize`), runtime initialization code (`_init`, `_start`, `deregister_tm_clones`), and functions optimized to empty bodies (`param_fake_branch`, `param_buffer_overflow_stack`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed results—`param_vectorized_loop` recovers reasonable do-while loops, but `param_opaque_predicate` uses unnatural do-while for GCD instead of while, `param_tail_call_optimized` replaces recursion with complex arithmetic, and `__divsi3` uses 35 sequential if statements instead of a proper algorithm.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `__divsi3` and `_divsi3_skip_div0_test` exceed 200 lines each with poor cohesion. Several functions reduced to empty bodies or constant returns (`param_fake_branch`, `call_fake_branch` returns `10`), losing original structure entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with do-while loops for iteration. However, `__divsi3` has deeply nested conditionals (35+ levels) that severely disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__divsi3` and `_divsi3_skip_div0_test` are nearly identical (~95% code duplication). The 35 boolean variables represent massive redundancy. Constant folding eliminates actual function calls in `call_*` functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` replaces specific types, `undefined4` used for return values instead of proper types, `uint` instead of `unsigned int`, `byte *` instead of `char *`. Some `size_t` recovered in `decrypt_string` but inconsistent throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Complete failure—the bitfield struct from `param_implementation_defined` is entirely lost (function just returns `0x2c`). No struct definitions recovered. `__jmp_buf_tag` referenced but never defined.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(byte *)`, `(char *)`, `(undefined4 *)`, `(ulonglong)`. `__divsi3` contains extensive implicit type conversions. Pointer arithmetic lacks proper typing throughout signal handling functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero explanatory comments in decompiled code. Only a SHA256 hash at the top. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original Chinese comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No patterns recognized—GCD algorithm in `param_opaque_predicate` unidentified, XOR decryption in `decrypt_string` unannotated, tail recursion optimization not noted, signal handling with setjmp/longjmp unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for empty functions (`param_fake_branch`), constant-folded returns, or the unusual 35-boolean structure in `__divsi3`. Decompiler presents incorrect/optimized code confidently without flagging discrepancies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division), no postconditions inferred, no invariants recognized, no error condition documentation for signal handlers.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variable usage (`div_zero_caught`, `jmp_buffer`) not explained. Signal handler callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but initialization functions mix with application code. External stubs clutter output. No logical grouping by functionality (obfuscation vs. optimization vs. edge cases).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present. Can compile with appropriate stubs but depends on ARM-specific runtime (`__aeabi_idivmod`, `__aeabi_ldiv0`). Not standalone portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+8+4+3)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):     (5+5+6+4)/4 = 5.00  × 0.25 = 1.250
+Level 3 (Type System):    (5+3+4)/3   = 4.00  × 0.20 = 0.800
+Level 4 (Semantic):       (1+2+2+2)/4 = 1.75  × 0.15 = 0.263
+Level 5 (Contextual):     (5+5+6)/3   = 5.33  × 0.10 = 0.533
+─────────────────────────────────────────────────────────────
+Overall Score:                                    4.12/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **35 generic boolean variables** (`bVar1`-`bVar35`) in `__divsi3` with zero semantic meaning
+- **Empty function bodies** for `param_fake_branch`, `param_buffer_overflow_stack`, `param_buffer_overflow_heap` despite source containing logic
+- **Zero comments** explaining any non-trivial logic, algorithms, or decompilation uncertainty
+- **Magic numbers everywhere** (`0x5a`, `0x14`, `0xe1`, `0x7a314`, `0x13ba`) without constant definitions
+- **Complete struct loss**—bitfield struct from `param_implementation_defined` entirely unrecovered
+- **Duplicate functions** (`__divsi3` and `_divsi3_skip_div0_test` are ~95% identical)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Absolutely no explanatory comments, making it impossible to understand algorithm intent or decompilation confidence without comparing to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables in division context should be `dividend`, `divisor`, `quotient`, `remainder` not `param_1`, `param_2`)
+2. **Add decompilation confidence annotations** - Flag optimized-away code, constant-folded functions, and unrecoverable structures with warnings like `// DECOMPILER: Function body optimized away at -O0`
+3. **Recover and document common algorithms** - Recognize GCD, XOR decryption, tail recursion patterns and add comments like `// Algorithm: Euclidean GCD` or `// Pattern: XOR string decryption with key 0x5A`

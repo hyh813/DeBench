@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, `v4`, `result`, etc. The original source used meaningful names like `sum`, `i`, `c`, `p`, but these are lost. Generic names like `v2 = n - 10` in `pointer_array` make tracking purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all application-level functions retain their original names exactly (`double_value`, `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, etc.). Only some compiler-generated stubs have generic names like `function_1080`. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation. Float constants like `*(float32_t *)(v2 + 0x22fa)` are hardcoded offsets. String format pointers use raw offsets like `(char *)(v1 + 0x1bde)`. Global variables have unexplained hex values: `g1 = 0x2effffd9`. No named constants for meaningful values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from `__x86_get_pc_thunk_ax(bx, dx, di)` calls injected at the start of nearly every function - these are compiler artifacts that add no semantic value. Redundant casts throughout. The decompiler should eliminate these completely for -O0 code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - `for` loops, `while` loops, `if-else` chains are recognizable. However, some loops are manually implemented with goto-style patterns (e.g., `array_1d_stack` uses `while (v2 != n)` with manual increment). At -O0, these should be cleaner for-loops.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity closely matches original source. Each test function (`test_data_types_l1`, `test_array_types`, etc.) is properly separated. The original 830 LOC is decomposed into ~50 functions with appropriate responsibilities. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `if (n <= 0) return 0;`). No excessive forward jumps. The flow is mostly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present (e.g., `array_1d_stack` manually unrolls first iteration). Duplicate code patterns in `graph_traverse` where the same edge-traversal logic appears twice. However, no dead code. Some redundancy from optimization but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good type precision with `int32_t`, `uint32_t`, `int16_t`, `int64_t`, `float32_t`, `float64_t`, `float80_t`. Signed/unsigned correctly distinguished (`uint32_t n`). Minor issues: `bool` used instead of `_Bool`, some `char*` where `int8_t*` might be clearer.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure** - No struct/union types recovered. All composite types are accessed via raw pointer arithmetic: `*(int32_t *)(v1 + 4) + *p + *(int32_t *)(v1 + 8)` instead of `p->x + p->y + p->z`. The original `Point3D`, `Rect`, `Widget`, `Node`, `UnionData` types are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts throughout - `(int32_t)p1 - (int32_t)p2 >> 2` in `ptr_diff` has operator precedence issues. Pointer arithmetic like `*(int32_t *)(4 * offset + (int32_t)p)` is manual. Function pointer calls use raw addresses. Some risk of undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments provide source file and line number mappings (e.g., "From module: /work/2.c, Line range: 6-8"), which is useful for debugging the decompilation. However, no algorithmic explanations, no documentation of non-obvious logic, and no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. The original contains clear patterns (linked list traversal, binary tree recursion, state machine via enum switch) but these are not named or highlighted. The decompiler could note "linked list traversal pattern" or "recursive tree traversal."
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The original has intentional undefined behavior in `array_oob` (off-by-one loop `i <= n`), but the decompiled code presents this as normal without warning. No indication of potential issues or uncertain reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original has implicit contracts (e.g., `array_complex_index` requires valid bounds) that are not recovered. Error return values (-1) not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit through direct calls but not documented. No indication of which functions call `double_value` (used as function pointer in `ptr_func_simple`). Global variable usage is present but not explained (`g4 = &g3`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably - test functions together, helper functions together. Static functions properly scoped. However, all in one large file rather than matching any potential original module structure. Compiler runtime functions grouped separately.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code includes necessary headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`). Function prototypes declared. Should compile with minimal issues. The decompiler added typedefs for float types which helps.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **Variable naming**: All variables are generic (`v1`, `v2`, `result`) losing semantic meaning from source (`sum`, `i`, `len`)
+- **Composite type loss**: Structs/unions completely lost - all access is raw pointer arithmetic like `*(int32_t *)(v1 + 4)` instead of `p->y`
+- **Noise artifacts**: `__x86_get_pc_thunk_ax` calls injected throughout every function, adding no value
+- **Magic numbers**: Unexplained hex offsets (`0x22fa`, `0x1bde`) and global values (`g1 = 0x2effffd9`)
+- **No anomaly flagging**: Intentional undefined behavior in `array_oob` presented as normal code
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler recovered almost all function names exactly from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+The decompiler failed to recover any struct or union types. All composite data access is through raw pointer arithmetic with offsets, completely losing the semantic meaning of fields like `node->data`, `p->x`, or union member access.
+
+**Top 3 Recommendations:**
+1. **Recover struct/union types**: Use field offset analysis to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Eliminate compiler artifacts**: Remove `__x86_get_pc_thunk_*` calls and other purely compiler-generated code that adds no semantic value
+3. **Infer variable names from usage**: Analyze how variables are used (array index → `i`, accumulator → `sum`, pointer → `p` or descriptive name based on dereference pattern) to replace generic `v1`, `v2` names

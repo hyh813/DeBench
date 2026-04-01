@@ -1,0 +1,5 @@
+Testing obfuscated code:
+
+call_opaque_predicate: 10
+param_opaque_predicate: 20
+call_instruction_substitution: 225

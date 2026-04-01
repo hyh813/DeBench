@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_data_types_l1|0|Arg0=1,Arg1=-1098508284,Arg2=-1098508276,Arg3=5088489|r0=0x1,r1=0xbe861804,r2=0xbe86180c,r3=0x4da4e9,r4=0xbe8616c8,r5=0x0,r6=0x0,r7=0x0

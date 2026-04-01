@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `local_20`) with zero semantic meaning. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c` from source, and loop counters are `iVar2` instead of `i`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names recovered correctly (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`), but some are generic (`FUN_00100940`, `FUN_00100afc`). Action verbs are missing from helper functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x3e9`, `0x65`, `0x14`, `0x2d`). Test functions show hardcoded constants in printf calls instead of actual function invocations, obscuring test intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) add noise to every test function. Multiple "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return" annotations clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while patterns reasonably well, but switch statements often become if-else chains (`switch_small` uses jump table pointer arithmetic). Goto patterns partially recovered (`goto_forward` became conditional expression).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions appropriately sized, but test functions (`test_control_flow_l1/2/3`) are heavily inlined with printf constants instead of actual function calls, losing modular structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jump labels present (`LAB_0010123c`, `LAB_001014a0`) disrupting top-to-bottom reading. Switch fallthrough cases create non-linear flow in `switch_fallthrough` and `duffs_device`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts visible (e.g., `switch_large` computes `param_1 * 10` instead of switch). Test functions duplicate array initialization code multiple times instead of calling helper.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`, `loop_break` returns `void` instead of `int`, `state_done` returns `undefined8`. Signed/unsigned confusion in `op_shl`/`op_shr`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as `local_20[6]` without semantic names. No struct recovery visible. Function pointer arrays use `undefined *local_20[4]` instead of proper typed arrays.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: function pointer calls show "Treating indirect jump as call" warnings. `call_func_ptr` uses `code *UNRECOVERED_JUMPTABLE`. Implicit casts between int/ulong/undefined4 throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Could not recover jumptable"). No algorithm explanations, no parameter documentation, no recovery confidence indicators beyond error messages.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. State machine functions (`state_machine`, `fsm_func_table`) not identified as such. Duff's device not recognized as unrolled loop pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning messages for problematic code ("Could not recover jumptable at 0x001016f0. Too many branches", "Treating indirect jump as call"). Helps identify where manual analysis needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n>0` but this isn't indicated. No null pointer checks documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Function pointer relationships (`double_value`, `triple_value` used in arrays) not explicitly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 76 functions in single output with no logical grouping. Helper functions (`op_add`, `op_sub`) not grouped with related code. No header file or API boundary indicated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains undefined references (`___stack_chk_guard`, `__printf_chk`, `__libc_start_main`). Multiple "WARNING: Subroutine does not return" indicate potential compilation issues. Would require significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+6+5+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (3+3+7+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.84/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Type corruption**: `if_else` returns `bool`, `nested_if_deep` returns `char`, `loop_break` returns `void` - all should be `int`
+- **Test function inlining**: `test_control_flow_l1/2/3` show hardcoded printf constants instead of actual function calls, losing test semantics
+- **Variable naming**: All variables are `param_N`, `iVar_N`, `uVar_N` with zero semantic meaning
+- **Function pointer recovery**: Multiple "UNRECOVERED_JUMPTABLE" and "Could not recover jumptable" warnings indicate failed indirect call resolution
+- **Magic numbers**: Constants like `0x3e9` (1001), `0x65` (101), `0x14` (20) appear without explanation
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - Ghidra provides clear warnings about unrecovered jumptables and indirect calls, helping analysts identify where manual intervention is needed
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or parameter constraints documented, making it difficult to understand function requirements and guarantees
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, `j`; parameters should match source names when debug info available)
+2. **Fix type recovery accuracy** - ensure return types match function semantics (int-returning functions shouldn't become bool/char/void)
+3. **Preserve function call structure in test code** - don't inline printf constants; show actual function invocations to maintain test semantics

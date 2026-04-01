@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_clang_O2_g/ida/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\n\nLOG: Macro constants result: 64\nLOG: Macro functions result: 30\nLOG: Conditional compile result: 32\nLOG: Multi-branch compile result: 57122\nLOG: Macro recursion result: 116\nLOG: Stringize result: 19\nLOG: Token paste result: 60\nLOG: Values: 10, 20, 30\nLOG: Variadic macro result: 60\nLOG: Macro override result: 16\nLOG: Include guard result: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:17\nLOG: Builtin macros result: 382\n=== Assembly Features Test ===\n\nLOG: ASM basic result: 15\nLOG: ASM clobber result: 15\nLOG: ASM multi-instruction result: 42\nLOG: ASM SIMD result: 36\nLOG: ASM atomic result: 30\nLOG: ASM privileged result: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

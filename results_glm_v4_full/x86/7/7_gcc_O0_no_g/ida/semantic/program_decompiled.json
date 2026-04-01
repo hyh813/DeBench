@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_gcc_O0_no_g/ida/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "Test Output\n\nFake branch: 10\nOpaque predicate: 20\nInstruction substitution: 225\nString encryption: -4630194269456433152\nTail call: 500500\nNon-tail call: 5050\nVectorized loop: 72\nLTO: 20\nDivision by zero: 1\nNull pointer deref: -4630194269456433111\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

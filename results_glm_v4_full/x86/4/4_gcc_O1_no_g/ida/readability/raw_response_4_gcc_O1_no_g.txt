@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v0`, and `v3`, which completely obscure semantic meaning (e.g., `count` became `a1`, `sum` became `v4`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names from the original source (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`) are perfectly preserved, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are abstracted to global pointers (e.g., `asc_2008`, `unk_202C`) rather than embedded in the code, and magic numbers like `4` (pointer size) and `0x14u` (stack canary offset) appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler and runtime noise pollutes the code, including stack canary checks (`__readgsdword(0x14u)`), Position-Independent Code thunks (`__x86.get_pc_thunk.bx`), and inline assembly blocks.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally clean and linear, but the implementation of `varargs_func` uses raw pointer arithmetic in a `do-while` loop instead of the standard `va_list` macro idioms, requiring expert knowledge to interpret.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-separated with appropriate granularity; the decompiler correctly identified distinct functions rather than merging them into a monolithic block.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads naturally from top to bottom with minimal jumps or confusing forward references, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The code is concise, though the constant propagation (e.g., `call_cdecl` returning `15` instead of calling the function) removes the structural context of the calling convention tests present in the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `char`, `__int64`) and function pointers are recovered accurately, but the distinction between `char*` (string) and `char*` (buffer) is sometimes generic.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Major failure; `LargeStruct` passed by value in `func_struct_byval` is exploded into 33 separate arguments (`char a1` through `char a33`), completely destroying the semantic structure of the input.
+
+**11. Type Safety:** Score: 6/10
+Justification: Code contains standard C casts (e.g., `(_DWORD *)v5`) which are necessary for the low-level representation but reduce the perceived safety compared to the original high-level source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Almost entirely devoid of comments; the only comment is a warning about stack pointer detection, with no explanation of the complex logic in functions like `varargs_func`.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms are missed; variable argument lists are represented as pointer arithmetic (`v2 += 4`) rather than `va_arg`, and struct returns use `__userpurge` instead of the standard return syntax.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Includes a warning about stack pointer detection, but fails to flag the suspicious "exploded" function arguments for `func_struct_byval` or the raw pointer manipulation in varargs functions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement that `param_func_ptr` receives a valid callback is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to understand despite the loss of variable context.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and the separation between different test categories (calling conventions, parameters, return values) is preserved in the ordering.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on non-standard extensions like `__usercall`, `__userpurge`, `__asm`, and `__readgsdword`, making it impossible to compile with a standard C compiler without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable `a1` in `varargs_func` should be named `count` and `a2` represents the start of the varargs list, but is treated as a generic `char`.
+- Struct `LargeStruct` in `func_struct_byval` is completely lost, exploded into 33 individual arguments (`a1`-`a33`).
+- Control flow in `varargs_func` uses raw pointer arithmetic (`v2 += 4`) instead of `va_list` idioms.
+- String literals are abstracted to global pointers (e.g., `asc_2008`), obscuring the output messages.
+- Stack canary checks (`__readgsdword`) clutter the logic of almost every function.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names, providing a high-level map that matches the source perfectly.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `LargeStruct` and instead listing its fields as flat function arguments makes the signature of `func_struct_byval` unreadable and misleading.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to detect stack-passed structures and re-aggregate flat argument lists into struct definitions.
+2. Recognize the `va_list` implementation pattern (pointer walking on stack) and replace it with standard `va_start`/`va_arg` macros.
+3. Inline string literals into the function body where possible, or at least preserve the string content in the variable declaration, rather than referencing opaque global addresses.

@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: In `test_cpp_rtti`, variables are named generically (`v0`, `v1`, `v2`, `v3`) despite representing specific objects like `RTTIDerivedA` and `RTTIDerivedB`. In `Container` methods, `a1` is used for `this`, which is standard but not descriptive.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent demangling of C++ symbols; functions like `_Z20test_cpp_member_funcv` are correctly presented as `test_cpp_member_func`, and template instantiations like `Container<int>::push` are clearly labeled.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `4700`, `1001`, `130`, `200`) that obscure the original logic (e.g., `130` represents the sum of RTTI checks and data).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While mostly clean, there are artifacts like `*(_OWORD *)&s[15]` and `xmmword_21F8` references in `test_cpp_member_func` which represent optimized string initialization but look like noisy memory operations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The control flow is very linear and simple, largely because the compiler optimized away complex logic into constant returns. The remaining logic in `test_cpp_rtti` uses standard `if` statements that are easy to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler correctly separated template instantiations (e.g., `template_max<int>` vs `template_max<double>`) and class methods (`Container<int>::push`) into distinct functions, maintaining good granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps; the optimized functions are single-line returns, and `test_cpp_rtti` has a straightforward sequential flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's removal of redundant code; there is no dead code or unnecessary variables cluttering the view, though this is due to high optimization rather than decompiler cleanup.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate; `double` is correctly distinguished from `int` in template functions, and `__int64` is correctly used for pointers on this x64 binary.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor; `Container` methods access fields via raw offsets (e.g., `a1 + 40` for size, `a1 + 4 * result` for data array) rather than through a reconstructed struct definition with named fields.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code uses standard C++ casts and operators; `operator new` and `__dynamic_cast` are handled with correct type signatures, though the lack of struct definitions forces reliance on raw pointer arithmetic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent; there is no explanation of what the magic numbers represent or what the complex `__dynamic_cast` logic is trying to achieve (RTTI verification).
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms like `__cxa_throw` (exceptions), `__dynamic_cast` (RTTI), and `operator new` are correctly identified and named, preserving the high-level semantic intent of those specific operations.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There is a useful warning `// positive sp value has been detected` in the `_start` function, but the constant-folded functions (e.g., `return 4700`) lack any indication that this is an optimized result rather than the original logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the bounds check in `Container::get` is present but not explicitly documented as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: The mangled names and type_info strings (e.g., `typeinfo for'RTTIBase`) provide clear context about class hierarchies and relationships, even if the structs themselves aren't defined.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat order; while related `Container` methods are grouped, there is no higher-level namespace or module grouping visible in the output.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on undefined structs and external symbols (e.g., `off_3D78` for vtables) and would not compile without significant manual reconstruction of class definitions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 9 + 3 + 6) / 4 = 5.5
+L2_avg: (8 + 8 + 9 + 9) / 4 = 8.5
+L3_avg: (8 + 2 + 7) / 3 = 5.67
+L4_avg: (2 + 7 + 5 + 1) / 4 = 3.75
+L5_avg: (7 + 5 + 3) / 3 = 5.0
+
+Overall = (5.5 × 0.30) + (8.5 × 0.25) + (5.67 × 0.20) + 
+          (3.75 × 0.15) + (5.0 × 0.10)
+Overall = 1.65 + 2.125 + 1.134 + 0.5625 + 0.5
+Overall = 5.97
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects
+- **Composite Type Loss**: Class `Container` and RTTI classes are accessed via raw pointer arithmetic (e.g., `a1 + 40`) instead of reconstructed struct definitions, obscuring data layout.
+- **Magic Number Obscurity**: Logic is replaced by constant-folded results (e.g., `return 4700`), making the original algorithmic intent (C++ feature demonstration) completely unreadable.
+- **Missing Variable Context**: In `test_cpp_rtti`, variables `v0` and `v1` are generic pointers to `RTTIDerivedA` and `RTTIDerivedB` respectively, losing the semantic type information.
+
+### Best Quality Aspect
+- **Function Naming (Score: 9/10)**
+- The decompiler excellently demangled C++ symbols, accurately recovering template parameters and class scopes (e.g., `Container<int>::push`), which is crucial for navigating C++ binaries.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**
+- The failure to reconstruct class definitions (structs) from the member functions forces the reader to interpret raw offsets, which is the biggest barrier to understanding the data structures.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Struct Reconstruction from Methods**: Analyze `this` pointer usage across class methods to synthesize struct definitions with field names and types, rather than leaving raw offsets.
+2.  **Optimization Annotation**: When functions are reduced to constant returns due to optimization, add a comment like "Result of constant propagation: original logic was optimized out" to manage user expectations.
+3.  **Variable Type Propagation**: In functions like `test_cpp_rtti`, use the type information from `operator new` and `type_info` references to rename generic pointer variables (e.g., `v0` -> `derivedA_obj`).

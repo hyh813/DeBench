@@ -1,0 +1,22 @@
+Test preprocessing features
+
+LOG: 64
+LOG: 30
+LOG: 32
+LOG: 57122
+LOG: 116
+LOG: 19
+LOG: 60
+LOG: Values: 10, 20, 30
+LOG: 60
+LOG: 16
+LOG: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=03:00:15, time=03:00:15
+LOG: 382
+Test asm features
+
+LOG: 15
+LOG: 15
+LOG: -1
+LOG: 1145324544
+LOG: 35

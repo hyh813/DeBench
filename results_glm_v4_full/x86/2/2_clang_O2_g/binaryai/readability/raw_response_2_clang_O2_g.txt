@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `uVar1`, `iVar1`, and `local_38c`, providing no semantic context about their role (e.g., `sum`, `index`, `buffer`).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level functions retain their original names (e.g., `process_char`, `array_1d_stack`), which is excellent, but some functions like `process_float` are renamed to `FUN_00011275`, breaking continuity.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants are replaced by magic numbers (e.g., `0x61` instead of `'a'`, `0x19` instead of range bounds), and float constants are loaded via obscure memory offsets like `unaff_retaddr + 0x1d93`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant low-level noise such as `CONCAT44` macros for 64-bit math, `unaff_retaddr` references for PIC addressing, and `__x86.get_pc_thunk.bx` calls, which clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple functions are readable, but loops are often aggressively unrolled (e.g., `array_3d` sums 25 items per line) or transformed into obscure arithmetic checks (e.g., `process_char`), making the flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and correspond to the source structure, maintaining a good granularity that matches the original modular design.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom without excessive jumping, though the massive unrolled loops in functions like `array_1d_stack` disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy due to loop unrolling; for example, `array_1d_stack` repeats the same addition logic 8 times per loop iteration instead of using a compact loop structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often imprecise; `long long` operations are split into 32-bit parts (`undefined8` with `CONCAT44`), structs are demoted to `int*`, and function signatures sometimes use `undefined4`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are not recovered; they are treated as raw byte arrays or integer arrays (e.g., `struct_simple` accesses fields as `param_1[0]`, `param_1[1]`), completely losing semantic field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on numerous explicit casts (e.g., `(int *)param_1[1]`) and pointer arithmetic on `void*` or `int*` representing structs, which is unsafe and obscures the original type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain the logic, data structures, or the purpose of obscure arithmetic operations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are missed; bitfields are expanded into shift/mask operations (`uVar1 >> 1 & 3`), and string length calculation is a generic loop rather than being recognized as a standard idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler confidently presents obscure logic (like the `process_char` range check) without indicating that it might be a compiler optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds) or postconditions; for example, `array_complex_index` checks bounds but doesn't document the contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but the loss of struct types makes data flow hard to track (e.g., passing `int*` instead of `Point3D*` hides the relationship).
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are grouped logically in the output, matching the source file's organization of data types, arrays, pointers, and composite types.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard macros like `CONCAT44`, `undefined` types, and architecture-specific intrinsics (`__x86.get_pc_thunk.bx`), making it non-compilable without heavy modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.5
+L2_avg: 5.75
+L3_avg: 3.67
+L4_avg: 1.5
+L5_avg: 5.0
+
+Overall = (4.5 × 0.30) + (5.75 × 0.25) + (3.67 × 0.20) + 
+          (1.5 × 0.15) + (5.0 × 0.10)
+Overall = 1.35 + 1.4375 + 0.734 + 0.225 + 0.5
+Overall = 4.2465
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects
+- **Struct/Union Loss**: Composite types are completely flattened into raw pointer arithmetic (e.g., `param_1[1]` instead of `p->y`), destroying data structure semantics.
+- **64-bit Splitting**: `long long` operations are split into 32-bit high/low parts using `CONCAT44`, making simple math like `x*x` unreadable.
+- **Constant Folding**: Test functions have their logic constant-folded away (e.g., `printf(..., 0x61)` instead of `process_char('A')`), hiding the program's intent.
+- **Loop Unrolling**: Simple loops are aggressively unrolled (e.g., 25 additions in one statement), turning readable iteration into massive arithmetic expressions.
+- **Literal Obfuscation**: Character constants and float values are replaced by magic hex numbers or memory offsets, removing semantic meaning.
+
+### Best Quality Aspect
+- **Module Organization (Score: 8/10)**
+- **Why?** The decompiler successfully preserved the high-level grouping of functions, keeping data types, arrays, and composite type tests in distinct, logical sections matching the source.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**
+- **Why?** The failure to recover structs, unions, and bitfields reduces complex data manipulation to indecipherable array indexing and bit shifting, which is the biggest barrier to understanding the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Composite Types**: Implement analysis to recognize stack variable layouts and standard struct patterns to restore field names and struct definitions instead of treating them as raw byte arrays.
+2.  **Re-roll Loops**: Add an option or heuristic to re-roll aggressively unrolled loops into `for` or `while` loops to drastically reduce code volume and improve readability.
+3.  **Simplify Arithmetic Patterns**: Detect compiler-specific range check tricks (like the `0x19 < ...` pattern in `process_char`) and simplify them back to standard comparison operators (`>=`, `<=`).

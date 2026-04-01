@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `size`, `x`, `y`. Local variables are `v1`, `v2`, `result` with no indication of purpose (e.g., `param_macro_constants` should have `size` parameter, not `a1`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions like `function_50c`, `function_518` for library wrappers are generic and uninformative.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0xdef0`, `282`, `19`, `0xdf22`). String literals stored as hex-encoded globals (`g1`, `g2` with UTF-8 bytes like `\xe6\x9c\x9f\xe6\x9c\x9b`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant boilerplate pollution: startup code (`_init`, `_start`, `_fini`), runtime helpers (`deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`), and 18 generic `function_XXX` wrappers for library calls that obscure actual program logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow. `param_asm_clobber` successfully recovered a while-loop from assembly. However, many functions are over-simplified through constant folding (e.g., `call_macro_constants` returns 64 directly instead of calling `param_macro_constants(2048)`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Core functions appropriately sized, but excessive fragmentation with 18+ helper functions for simple library calls (`function_518` for printf, `function_530` for memcpy). This creates artificial decomposition that doesn't match source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. `param_asm_clobber` loop structure is clear. Some functions like `call_asm_privileged` have nested conditionals that could be cleaner but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Helper function wrappers create redundancy (each library call has a wrapper). Some functions like `param_simd_intrinsics` and `param_asm_simd` have identical bodies, suggesting missed consolidation opportunity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Everything degraded to `int32_t` and `int32_t*`. Lost `size_t` for sizes, `const char*` for strings, `void*` for generic pointers. Original had `size_t page_size`, decompiled has `int32_t v1`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs/unions in this code sample, so dimension is N/A. Pointer arithmetic used where struct access might apply (e.g., `*(int32_t *)(a3 + 4)` instead of `result[1]`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)v1` in `param_asm_multi_insn`, `(char *)` casts throughout. No const-correctness preserved. Pointer arithmetic on `int32_t*` without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output despite original source having extensive documentation (section headers, test descriptions, expected values). Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Macro expansion patterns (SQUARE, MAX, ADD_16) not identified. Assembly-to-C conversion done but not annotated as recovered from inline assembly.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite significant transformations. `param_stringize` returns constant 19 instead of computing string lengths—no warning that original semantics were lost through constant folding.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` requires valid array pointer). No postconditions or error handling contracts recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No indication which functions are test drivers vs. implementation. Global variable usage (`g14`, `g19`) opaque without source context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Helper functions interspersed with application code. No separation between test infrastructure and test implementations.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers (`stdio.h`, `string.h`, `sys/mman.h`, `unistd.h`). Should compile with minor stubs. Some functions reference undefined globals that need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (7+5+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 4.82/10
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects:
+- **Zero comments** despite original source having extensive documentation explaining each test section
+- **Generic variable names** (`a1`, `a2`, `v1`, `v2`) obscure parameter semantics (e.g., `size`, `x`, `y`, `counter`)
+- **Aggressive constant folding** lost original computation semantics (`call_macro_constants` returns 64 directly instead of showing the call chain)
+- **String literals encoded as hex** in globals (`g1`, `g2`) instead of readable C strings
+- **18+ helper function wrappers** for library calls create artificial fragmentation and noise
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), maintaining semantic identity.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation despite original having section headers, test descriptions, expected values, and preprocessing explanations—critical for understanding macro/assembly recovery.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug symbols (-g flag present) or infer semantic documentation from function behavior patterns
+2. **Infer variable names from usage context** (e.g., parameter compared to 1024 should be named `size`, loop accumulator should be `sum` or `count`)
+3. **Annotate constant-folded regions** with warnings when original computation semantics are lost (e.g., "OPTIMIZED: original called param_macro_constants(2048)")

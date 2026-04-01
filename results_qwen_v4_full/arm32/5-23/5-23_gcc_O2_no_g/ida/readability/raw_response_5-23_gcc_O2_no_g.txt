@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v3`, `v4`, `temp_1`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`). A few generic names exist (`sub_10438`) but core functionality names are intact.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `1024`, `64`, `512`, `57072`, `0xFFFF0FC0`. Original `#define MAX_SIZE 1024` and `#define BUFFER_COUNT 16` are folded into raw constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations clutter code (`[sp-4h] [bp-4h] BYREF`). Atomic helper functions are verbose with `MEMORY[0xFFFF0FC0]` calls. Some register spill artifacts visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions have natural if/else structures. Loop reconstruction in `param_asm_clobber` is reasonable. However, aggressive constant folding removes original control flow entirely in many functions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly. Each original function remains separate. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Do-while loops reconstructed appropriately. Some stack variable declarations at function start disrupt initial flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Severe constant folding creates redundancy: `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`. Test functions duplicate printf calls unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`). Some degradation: `__int64` used instead of proper types. Pointer types generally correct but signedness sometimes ambiguous.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source code. Array handling reasonable (`_DWORD v4[5]`). No complex struct recovery needed for this code sample.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)`, `(int *)`, `(char **)`. Pointer arithmetic visible but generally correct. No buffer overflow protections recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present (register annotations, stack layout). No semantic comments explaining purpose. Metadata contradiction (says Ghidra but comment says "IDA Pro 9.1").
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Atomic operations decompiled to verbose helper calls without identifying them as `__atomic_fetch_add`. Loop patterns not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: External functions marked "FAILED to decompile". Stack warning present ("positive sp value has been detected"). But no warnings about constant folding losing original semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero preconditions/postconditions documented. No null checks recovered. Original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph visible. Global variable `global_var` referenced correctly. No callback relationship documentation or call site annotations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order (preprocessing tests, then assembly tests). Related functions grouped together reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 10 external functions "FAILED to decompile" requiring stubs. Library dependencies (`printf`, `mmap`, `sysconf`) not properly declared. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.59/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `v3`, `temp_1`) losing all semantic meaning from original `size`, `counter`, `exec_mem`
+- **Aggressive constant folding** destroys original logic (e.g., `call_macro_constants()` returns `64` directly instead of showing the call chain)
+- **Magic numbers without context** (`57072`, `0xFFFF0FC0`, `30` for `_SC_PAGESIZE`)
+- **Metadata contradictions** (claims Ghidra but comment says "IDA Pro 9.1"; claims `-O0` but shows `-O2` optimizations)
+- **10 external functions failed to decompile** requiring manual stub creation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names like `param_macro_constants`, `param_memory_protection`, `test_preprocessing_features` are preserved accurately, maintaining semantic clarity at the function level.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero documentation of preconditions, postconditions, or expected values. Original comments about expected results (e.g., "期望: 64") are completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., parameter used in size comparison should be `size`, loop accumulator should be `sum` or `counter`)
+2. **Preserve macro semantics** - Detect constant-folded values and annotate with original macro names where possible (e.g., `return 64; // BUFFER_COUNT * 4`)
+3. **Recover contract documentation** - Extract expected values from test assertions and add them as comments (e.g., `// Expected: 64 when size > MAX_SIZE`)

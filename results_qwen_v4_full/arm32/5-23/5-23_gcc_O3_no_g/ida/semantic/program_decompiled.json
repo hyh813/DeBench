@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_gcc_O3_no_g/ida/syntactic/bin/5-23_gcc_O3_no_g_fixed",
+  "stdout": "Testing preprocessing features:\nPPL201: 64\nPPL202: 30\nPPL203: 32\nPPL204: 57122\nPPL301: 116\nPPL302: 19\nPPL303: 60\nLOG: Values: 10, 20, 30\nPPL304: 60\nPPL305: 16\nPPL306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:08\nPPL307: 382\nTesting ASM features: -1955030784, 0\nASM_L401: 15\nASM_L402: 15\nASM_L403: 42\nASM_L404: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

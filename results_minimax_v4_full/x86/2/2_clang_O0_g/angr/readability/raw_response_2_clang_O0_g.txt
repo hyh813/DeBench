@@ -1,0 +1,93 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:2/10  
+Justification: Variables are named generically as `v0`, `v1`, `v2`, `ptr`, `idx`, `i`, `j`, `a0`, `a1` throughout. The original source uses meaningful names like `sum`, `c`, `n`, `arr`, `str`, `len` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (process_char, process_short, array_1d_stack, ptr_single). However, many wrapper/thunk functions (sub_401030, sub_401070) are introduced that don't exist in source. The core function names are preserved well.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation (e.g., 65, 90 for 'A'-'Z' range, 32 for case conversion offset). The original source uses character literals ('A', 'Z', 'a') which are semantically clear. Float/double constants are replaced with hex values or nan.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: numerous `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers, spurious `extern char _GLOBAL_OFFSET_TABLE_` declarations, auto-generated struct definitions with padding, and goto statements used inappropriately. The code is cluttered with decompilation artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops and conditionals are correctly recovered. However, some use goto instead of proper loop constructs (e.g., array_string uses goto for loop). The enum_switch uses computed goto which is non-idiomatic. At -O0, control flow should be nearly perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each source function is correctly decomposed into separate functions. Function sizes are appropriate. However, many unnecessary wrapper functions (sub_401030, sub_401258, etc.) that just call the main functions add noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but has goto statements that disrupt flow. Some forward jumps exist. The overall readability is moderate but not as clean as the original source.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. Some repeated patterns in test functions but that's expected from the source. Loop unrolling is minimal at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation throughout. Original `char` becomes `unsigned int` (process_char), `short` becomes `unsigned short`, `long` becomes `unsigned int`. Float/double/long double functions show "unsupported" operations. Pointers are represented as `unsigned int`. Const/volatile qualifiers are lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery exists (struct_0, struct_1 with field_0, field_4), but field names are generic. Original Point3D with x,y,z becomes generic access via pointer arithmetic. Node struct with data/next is partially recovered but loses semantic field names. Union types are not properly recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: extensive pointer arithmetic (`ptr + idx * 4`), unsafe casts throughout, function pointers called via `a0(a1, ...)` without proper type signatures. The code could cause undefined behavior easily.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no comments present. The original source has extensive comments explaining each test case (DT-L1-01, ARR-L1-01, etc.) which are completely lost. No explanation of algorithm intent or purpose.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified or named. The original uses common patterns (linked list traversal, binary tree recursion, switch on enum) but these are not recognized or labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomaly indication exists via `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers for float/double operations. However, these are cryptic and don't explain what's wrong or provide workarounds. No indication of decompilation confidence.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear expectations (e.g., "期望: 15") which are completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships are not documented. No indication of which functions call which, callback relationships, or global variable usage. The test driver pattern is not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in memory address order (sub_401030, sub_401070, etc.) rather than logically grouped. The original groups functions by category (data types, arrays, pointers, composite types) which is lost.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code will not compile. Issues include: undefined `_GLOBAL_OFFSET_TABLE_`, incorrect struct definitions, unsupported operations in float/double functions, and missing function implementations. The decompilation is not standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful variable names replaced with generic `v0`, `v1`, `a0`, `idx` - completely loses semantic intent
+- **Type precision**: All types degraded to `unsigned int` or `unsigned int*`, losing char, short, long, float, double distinctions
+- **No comments**: Original source has extensive documentation (830 LOC with comments) completely lost
+- **Float/double/long double functions**: Show "unsupported" operations, completely non-functional
+- **Build failure**: Code will not compile due to undefined symbols and incorrect declarations
+
+### Best Quality Aspect: Function Decomposition (7/10)
+- Core functions are correctly separated and maintain single responsibility
+- Function names mostly match original source
+- Parameter counts are preserved
+
+### Most Needs Improvement: Lexical Clarity (2.75/10)
+- Variable naming is nearly unusable with generic names throughout
+- Literal clarity is poor with magic numbers replacing character constants
+- Severe noise from decompilation artifacts
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `idx` used as loop counter should be `i` or `index`; `ptr` used in array traversal should be `arr` or `array`
+2. **Recover original types**: Use size analysis and context to determine char vs int vs long; preserve float/double properly
+3. **Add semantic comments**: Document what each test function validates (e.g., "Tests uppercase to lowercase conversion")

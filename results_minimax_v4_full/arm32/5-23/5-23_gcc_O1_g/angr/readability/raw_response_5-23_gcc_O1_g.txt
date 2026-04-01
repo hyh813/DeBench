@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use numeric patterns (`v0`, `v1`, `v2`, etc.). Only a few variables like `index`, `pos`, `ptr` in SIMD functions have descriptive names. The original source used meaningful names like `size`, `x`, `y`, `result`, `counter`, `increment` which are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names match the original source exactly: `param_macro_constants`, `call_macro_functions`, `param_conditional_compile`, `param_asm_basic`, `param_dynamic_code`, etc. The decompiler correctly recovered the original function naming scheme with only minor additions like `sub_10438` for startup functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some computed constants are correct (64, 30, 32, 57122, 116, 19, 60, 16, 500), but many magic numbers remain unexplained: `0x400` (MAX_SIZE), `0x200` (512), platform-specific hex values in multi_branch_compile, and the value `57072` (0xDEF0). The decompiler computed some macro results but failed to name them appropriately.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant decompilation artifacts present: spurious `__stack_chk_guard` checks, malformed atomic operation loops (`do { } while (4294905792());`), confusing `armg_calculate_condition` calls, and redundant function calls (e.g., `call_variadic_macro` calls `param_variadic_macro` twice). These artifacts severely impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow matching the source. However, `param_macro_constants` uses confusing conditional logic with `armg_calculate_condition` instead of simple if-else. Some goto statements present in startup code. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the original source well. All small functions (10-30 lines) are preserved. The decompiler correctly kept separate functions for each test case rather than inlining everything.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal jumps. Early returns used appropriately. Some forward jumps exist in conditional compilation handling but are manageable. The code generally flows well.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy found: `call_variadic_macro` calls `param_variadic_macro(10, 20, 30)` twice, storing result in `v0` then returning the same call again. Similar pattern in `call_builtin_macros` and `test_asm_features`. This is a major readability issue.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All types are generic `int` or `unsigned int`. No use of specific types like `int32_t`, `uint64_t`, `size_t`, or `ptrdiff_t`. No const correctness preserved. Pointers are generic `unsigned int*` or `void*` without specific type information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery. Arrays in test functions are represented as `unsigned int result[1]` with manual element access. The original source had no complex structs, but the decompiler could have better represented the test arrays.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Pointer arithmetic is used but generally safe. The atomic operations have severe issues - the `__sync_fetch_and_add_4` function contains nonsensical code (`do { } while (4294905792());`) that wouldn't compile. Some unsafe patterns but not critical.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments present. Only auto-generated function headers like `// Function: param_macro_constants at 0x105bc`. The original source had extensive comments explaining macro behavior, preprocessing, and assembly semantics - all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not documented. Macro expansions are computed to constants but not labeled as macro results. The conditional compilation logic is resolved but not indicated as preprocessor branches. Assembly is recognized as such but not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. The malformed atomic operation code (`do { } while (4294905792());`) is presented as valid code without warning. The redundant function calls are not flagged. No suspicious code flags or uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. Preconditions like "requires: x > 0" for some functions not documented. Postconditions not inferred. The original source had no explicit assertions but the decompiler could have inferred some bounds.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls. External dependencies shown with `extern` declarations. However, no documentation of "called by" or "calls" relationships. The test driver pattern is evident but not explicitly documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching source organization: preprocessing functions first, then assembly functions, then test drivers, then main. Static functions properly scoped. The original file structure is reasonably preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many extern declarations needed for standard library functions. The atomic operation functions contain non-compilable code (`do { } while (4294905792());`). Would require significant patching to compile. The `__printf_chk` and `__stack_chk_guard` dependencies need headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `a1`, `v0`, `v1`) losing all semantic meaning from source
+- Redundant function calls in `call_variadic_macro`, `call_builtin_macros`, and test functions
+- Malformed atomic operation code that wouldn't compile (`do { } while (4294905792());`)
+- No comments explaining macro behavior, preprocessor branches, or assembly semantics
+- Magic numbers like `0x400`, `57072` not named despite being computable from source
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The decompiler almost perfectly recovered the original function names, making it easy to locate specific functionality.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+All parameter and local variable names are generic numeric patterns, completely losing the semantic meaning from the original source (e.g., `size`, `counter`, `increment`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0` used in size comparison should be named `size`; `a1` as loop bound should be `count` or `length`
+2. Fix the atomic operation decompilation - the `__sync_fetch_and_add_4` function contains garbage that makes it non-compilable
+3. Add comments explaining preprocessor resolution - document which macro branches were taken and what constants evaluate to

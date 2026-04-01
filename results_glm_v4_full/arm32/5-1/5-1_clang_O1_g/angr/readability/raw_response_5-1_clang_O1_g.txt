@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `result`), providing no semantic context. For instance, in `test_cpp_member_func`, the `SimpleClass` instance is broken down into `v0` (value) and `v1` (name buffer), losing the object abstraction entirely.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: While many functions retain their mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), which is useful for identification, others are generic (e.g., `sub_400b90`). Some are successfully demangled (e.g., `Base::virtual_func`), but the mix creates inconsistency.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, but integer logic is often obscured. Magic numbers like `4294967291` (unsigned -5) appear in loops without context, and the logic for constants like `0x1234` is missing from the decompiled `test_cpp_member_func`.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with lifting artifacts, specifically calls to `armg_calculate_condition` in `test_cpp_exception` and redundant stack variable initializations (`v0 = v8; v1 = v9; ...`) at the start of functions, which significantly hinders readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural; exception handling in `test_cpp_exception` is reduced to a complex web of `if` statements and `armg_calculate_condition` calls rather than `try-catch` blocks. Loops are present but use `do-while` with decrementing counters that are harder to read than standard `for` loops.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: Several functions (`test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_smart_ptr`) are decompiled as empty `void` functions with just a `return` statement, despite the source containing logic. This indicates a failure to recover the function bodies, likely due to inlining or lifting errors.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but forward jumps and the structure of `test_cpp_oo_features` (which seems to contain inlined logic mixed with calls) disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is little obvious redundancy in the logic itself, mostly because the logic is missing or simplified. However, the repetitive `printf` calls in `test_cpp_oo_features` reflect the source structure accurately.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `unsigned int` and `void*` are used, but precision is low. Member function `this` pointers are often typed as `void*` rather than the specific class type, and class instances are decomposed into primitive stack variables.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: C++ classes are not reconstructed. `SimpleClass`, `LifecycleClass`, and `Container` are absent as structured types; their data members are exposed as raw local variables (e.g., `v0`, `v1`) or raw memory accesses, destroying the object-oriented structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts. Virtual function calls are implemented as raw pointer dereferences, e.g., `(*((int *)*((int *)arg_0)))()`, which bypasses type safety and obscures the actual interface being called.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or C++ idioms used. The decompiler provides no semantic annotation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual inheritance and virtual function calls are shown as pointer arithmetic and indirect calls (thunks), rather than abstract concepts like "polymorphic dispatch."
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents empty function bodies for complex logic (e.g., `test_cpp_lambda`) without any warning or indication that the recovery might be incomplete or that the code was optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic for checking array bounds in `Container::get` is present but not explicitly stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Calls to standard library functions (`printf`, `strlen`) are clear. However, relationships between classes (e.g., inheritance) are lost; thunks like `non-virtual thunk to MultiDerived::funcB` are present but their relationship to the class hierarchy is not explained.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in address order. There is no logical grouping of classes or their member methods, making it difficult to navigate the object-oriented structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on `extern` declarations for global variables and types (e.g., `g_412cf0`) that are not defined in the snippet, making it unlikely to compile without significant manual intervention or the original binary's specific headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 6 + 5 + 3) / 4 = 4.25
+L2_avg = (4 + 3 + 5 + 6) / 4 = 4.50
+L3_avg = (5 + 2 + 3) / 3 = 3.33
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (5 + 4 + 3) / 3 = 4.00
+
+Overall = (4.25 × 0.30) + (4.50 × 0.25) + (3.33 × 0.20) + 
+          (1.25 × 0.15) + (4.00 × 0.10)
+Overall = 1.275 + 1.125 + 0.666 + 0.1875 + 0.4
+Overall = 3.65
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.7/10
+
+### Critical Defects (Bullet List)
+- **Missing Function Logic**: Functions like `test_cpp_operator_overload` and `test_cpp_lambda` are decompiled as empty `void` functions, completely losing the implementation details.
+- **No Class Reconstruction**: C++ classes are not recovered; members are scattered as local variables (e.g., `SimpleClass` members become `v0` and `v1`), destroying the object-oriented model.
+- **Raw Vtable Exposure**: Virtual function calls are represented as unsafe raw pointer dereferences (e.g., `(*((int *)*((int *)arg_0)))()`) rather than semantic virtual calls.
+- **Lifting Artifacts**: The code contains noise like `armg_calculate_condition` which obscures the actual control flow, particularly in exception handling.
+- **Generic Naming**: Universal use of `v0`, `v1`, `ptr` makes tracking data flow across the OO structure nearly impossible.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (6/10)
+- **Why?** Despite the presence of mangled names, the decompiler preserves the original symbol names (e.g., `test_cpp_member_func`) and successfully demangles some virtual table methods, allowing at least basic identification of the code's purpose.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The complete failure to reconstruct C++ classes from the binary is the most critical issue; without `struct` or `class` definitions, the code is just a collection of disjointed variables and pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement C++ Class Reconstruction**: Aggregate member variables and methods into structured `class` or `struct` definitions to restore the object-oriented hierarchy.
+2.  **Enhance Virtual Function Analysis**: Replace raw vtable pointer dereferences with high-level virtual function calls, referencing the recovered class methods.
+3.  **Filter Lifting Artifacts**: Remove or abstract internal lifter helper functions (like `armg_calculate_condition`) to present cleaner, more idiomatic C control flow.

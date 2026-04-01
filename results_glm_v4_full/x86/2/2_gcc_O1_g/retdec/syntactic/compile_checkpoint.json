@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 6,
+  "source_file": "decompiled/retdec_out/x86/2/2_gcc_O1_g.c",
+  "fixed_file": "results_glm_v4_full/x86/2/2_gcc_O1_g/retdec/syntactic/fix_2_gcc_O1_g.c"
+}

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `uVar1`, `puVar5`, and `iVar8`, providing no semantic context about their purpose (e.g., `n`, `arr`, `node`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names (`double_value`, `local_vars`, `heap_basic`) are accurately recovered from symbols, likely due to the `-g` flag, though a few generic names like `FUN_001009b0` remain.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Aggressive constant propagation replaces function calls with magic numbers (e.g., `0x14` instead of `local_vars(5)`), and magic numbers like `0x28` (40) appear without explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with Ghidra-specific artifacts like `CONCAT44`, `CONCAT17` macros, and pervasive `undefined8`/`undefined4` types that obscure the underlying logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While loops in functions like `linked_list_heap` are preserved, the test functions (e.g., `test_stack_memory`) are destroyed by inlining, replacing control flow with sequential constant assignments.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are generally distinct and cohesive, though some artifacts like `alloca_usage.constprop.0` indicate cloning/propagation that fragments the view slightly.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads mostly top-to-bottom, but uses `goto` for error handling (e.g., `goto LAB_00100e8c`) and loop exits, which disrupts linear flow slightly.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler over-optimizes by eliminating logic; for example, the loop in `local_array` is completely removed and replaced with `return param_1 * 5;`, hiding the source algorithm.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; specific types like `int` or `Point*` are often replaced with generic `undefined8`, `undefined4`, or `void*`, losing type safety and information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; access to `Point` or `Node` fields is replaced by raw pointer arithmetic and offsets (e.g., `*(undefined4 **)(__ptr + 2)` instead of `node->next`).
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts to `undefined*` types and manual pointer arithmetic (e.g., `param_1 + 8`), which removes the safety guarantees of the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the aggressive transformations applied (like inlining), leaving the user to guess the intent.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Basic patterns like `malloc`/`free` are visible, but higher-level idioms like linked list traversal or struct initialization are obscured by type loss and pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication that the code has been heavily analyzed or modified (e.g., flags for "inlined function" or "constant propagation"), leading to confusion about why `test_stack_memory` looks so different from the source.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Basic null checks (e.g., `if (__ptr == (undefined8 *)0x0)`) are preserved, but higher-level contracts or preconditions are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are generally clear where not inlined, and global variable accesses (e.g., `global_counter`) are visible, but the relationships are muddied by type information loss.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are presented in address order rather than logical groupings (e.g., all heap functions are scattered), making it harder to navigate the codebase.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to Ghidra-specific macros (`CONCAT44`), `undefined` types, and missing header definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- **Struct Loss:** Composite types like `Point` and `Node` are not recovered; code uses raw pointer arithmetic (e.g., `__ptr + 2`) instead of field access.
+- **Over-Optimization:** Test functions like `test_stack_memory` have function calls replaced with constant results (e.g., `0x14`), completely hiding the original program flow.
+- **Type Erasure:** Extensive use of `undefined8` and `undefined4` types obscures the actual data types used in the source.
+- **Noise Pollution:** Ghidra macros (`CONCAT44`) clutter the code, making it difficult to read standard operations.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- **Why?** The decompiler successfully recovered the original function names for the vast majority of functions, providing a high-level map of the binary that matches the source.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- **Why?** The failure to recover basic `struct` definitions turns readable data structure manipulations into obscure pointer math, which is the biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Structure Recovery:** Implement better heuristics to recover C structures from stack layouts and heap access patterns instead of defaulting to raw pointer offsets.
+2. **Configurable Analysis Levels:** Offer a "Source Fidelity" mode that disables aggressive inter-procedural constant propagation and inlining, especially for functions identified as `main` or test drivers, to preserve the original control flow.
+3. **Clean Up Macro Output:** Replace internal representation macros like `CONCAT44` with standard C bit-shifts or masking operations, or hide them behind helper functions to improve readability.

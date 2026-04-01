@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original source used meaningful names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`process_char`, `array_1d_stack`, `ptr_single`), but numerous wrapper functions have cryptic names (`sub_401030`, `sub_401070`) that add no value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `90`, `32` for character operations are inferable but not documented. Array stride calculations (`idx * 4`, `idx * 40`) lack explanation of element sizes.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `[D] Unsupported jumpkind` markers, runtime initialization code (`_init`, `deregister_tm_clones`), and floating-point operations filled with `[D] PutI` artifacts that obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as `for` constructs, but `enum_switch` uses `goto` with computed jump table. Floating-point functions completely broken with unsupported operation markers instead of actual logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive wrapper functions (`sub_40123f` just calls `process_short`) create artificial fragmentation. Each real function has a corresponding useless wrapper, doubling function count unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom with standard loop structures. Some disruption from `goto` statements in switch recovery and forward jumps in initialization code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper function pattern creates significant redundancy. No dead code elimination visible; initialization boilerplate repeated across multiple runtime functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - `float`, `double`, `long long` all collapsed to `unsigned int`. Original `char process_char(char c)` became `int process_char(char a0)`. Floating-point functions completely non-functional.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`) instead of semantic names (`x`, `y`, `z`, `data`, `next`). Bitfields converted to manual bit operations losing type semantics. Unions not properly distinguished.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic via `unsigned int`, void* casts without documentation, function pointers with incorrect signatures (`ptr_func_simple` shows `a0(a1, ...)` with wrong parameter types).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Original source had extensive documentation explaining each function's purpose. Only `[D]` markers indicate problems without explanation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Linked list traversal pattern recognized (`for (cur = a0; cur; cur = cur->field_4)`), but no explicit pattern naming. Tree recursion and graph traversal not identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers flag unsupported operations in floating-point code, but no explanation of what went wrong or how to fix. Silent failures in type conversions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions or error condition documentation. Original bounds checks present but not highlighted as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but callback relationships unclear. Global variables referenced with generic names (`g_40312c`, `g_405ff4`) without indicating purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear sections (data types, arrays, pointers, composite types) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains external declarations but missing headers. Floating-point functions won't compile due to `[D]` markers. Would require extensive manual修复 to build standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.26/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Floating-point functions completely broken** - `process_float`, `process_double`, `process_ld` contain only `[D] Unsupported` markers instead of actual computation logic
+- **Type system collapse** - All floating-point types, `long long`, and `size_t` degraded to `unsigned int`, losing critical type information
+- **Struct field names lost** - Semantic field names (`x`, `y`, `z`, `data`, `next`, `width`, `height`) replaced with generic `field_0`, `field_4`
+- **Wrapper function proliferation** - Every real function has a useless wrapper (`sub_40123f` → `process_short`) doubling code size without value
+- **Zero documentation recovery** - Original source comments explaining each function's purpose completely absent
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core algorithm functions preserved original semantic names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`) enabling basic function identification
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of any documentation; original source had extensive comments explaining purpose, test scenarios, and expected behavior - all lost in decompilation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement floating-point IR recovery** - Current `[D] Unsupported` markers indicate complete failure on SSE/x87 operations; need proper FPU instruction translation
+2. **Add struct field name inference** - Use usage patterns and debug symbols (`-g` was present) to recover semantic field names instead of `field_0`, `field_4`
+3. **Eliminate wrapper function artifacts** - Detect and merge trivial wrapper functions that only call another function with same parameters, reducing noise by ~50%

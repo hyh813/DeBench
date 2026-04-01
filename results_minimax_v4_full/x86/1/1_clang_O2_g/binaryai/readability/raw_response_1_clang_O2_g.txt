@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2` throughout. The original source used meaningful names like `a`, `b`, `temp1`, `temp2`, `sum`, `count` - all lost in decompilation. Only a few functions like `double_value` and `triple_value` have semantically appropriate names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About half the functions retain their original names (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`), but many have cryptic addresses like `FUN_00011030`, `FUN_000112f5`. The test functions are correctly named, but helper functions lack semantic naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions embed computed values directly (e.g., `0x15` for 21) rather than showing the expression. Magic numbers like `0x3e9` (1001) appear without explanation. However, some constants like loop bounds are inferable from context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No obvious register spill code, redundant casts, or debug instrumentation. The output is readable without significant noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Several functions show unnatural transformations: `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of if-else; `loop_for_fixed` uses complex arithmetic formula instead of loop (unexpected at -O0); `nested_if_2` restructured to arithmetic instead of branches. These lose the original control flow semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. No 500-line monoliths. Helper functions like `double_value`, `triple_value` are properly extracted. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `multi_return`. Some complexity in `loop_continue` and `goto_backward` but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_for_fixed` shows loop unrolling as complex arithmetic (should be a loop at -O0). `loop_continue` has unrolled pattern with redundant calculations. `goto_backward` shows significant redundancy in factorial computation. These optimizations are inappropriate for -O0 compilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most parameters use `int` or `uint` which is reasonable. However, many use `undefined4` which loses type information. Function pointers use generic `code *` instead of proper function signatures. Some signed/unsigned mismatches visible (e.g., comparing uint to int literals).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Arrays like `matrix[3][4]` in `loop_multi_exit` are accessed via pointer arithmetic with raw addresses (`&DAT_00013108`). No union types identified. The original source's `int arr[] = {10, 20, 30, 40, 50}` becomes cryptic data access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic present (e.g., `param_1 + iVar2 * 4`). Function pointer types not fully specified (uses `code *` generic). Casts from `undefined4` to `int` could cause issues. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in decompiled code. Only auto-generated function headers like "Decompiled by BinaryAI". Original source had extensive comments explaining each function's purpose and test cases - none recovered. No algorithm documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: `duffs_device` shows switch-case with fall-through pattern correctly (labeled `switchD_00011936_caseD_X`). Some patterns like state machines are partially recognizable but not explicitly named or documented. The original's 20+ distinct control flow patterns are not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code or uncertain decompilation. Indirect calls in `call_func_ptr_array` use function pointer arrays but no warning about resolution uncertainty. No indication of potential undefined behavior in complex transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Original source had explicit test cases validating behavior - no recovery of these contracts. Error conditions from original (e.g., division by zero checks) not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code but relationships not documented. No indication of which functions call which. Callback relationships in `process_with_callback` visible but not explained. External dependencies like `printf`, `longjmp` correctly identified as external.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions grouped by address rather than purpose. The original organized functions into logical groups (CF-L1, CF-L2, CF-L3) with test入口 - completely lost. Static functions not clearly distinguished from public API.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C types that should compile. External functions declared. Some `undefined4` types need fixing for clean compilation. Should require minimal patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `param_N` and locals use `iVar1`/`uVar2` - loses all semantic meaning from original source
+- **Control flow distortion**: `loop_for_fixed` uses arithmetic formula instead of loop (inappropriate for -O0); `single_if` uses bit-shift trick losing if-else structure
+- **No comments**: Original had extensive documentation explaining each function - completely lost
+- **No struct recovery**: Arrays and matrices accessed via raw pointer arithmetic losing original data structure semantics
+- **Anomaly indication**: Complex transformations with potential semantic errors not flagged
+
+### Best Quality Aspect: Noise Reduction (8/10)
+The decompiled code is clean without compiler artifacts like register spills, redundant casts, or debug instrumentation. The output is readable at the basic level.
+
+### Most Needs Improvement: Comment Quality & Semantic Transparency (2/10)
+The decompiler provides no useful comments, pattern identification, or anomaly warnings. The original source's extensive documentation and clear semantics are completely lost, making it difficult to understand the code's purpose and verify correctness.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` in `sequential_ops` should be `a` based on the calculation `(param_2 + param_1) * 2 - param_3` matching `a + b`
+2. **Recover loop constructs**: At -O0, `loop_for_fixed` should show a for loop, not arithmetic unrolling. The decompiler incorrectly applied optimizations.
+3. **Add semantic comments**: Document what each function does, its test cases, and flag uncertain decompilations (e.g., indirect calls, complex arithmetic that may mask original logic)

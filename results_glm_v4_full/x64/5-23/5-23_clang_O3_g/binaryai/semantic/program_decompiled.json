@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_clang_O3_g/binaryai/syntactic/bin/5-23_clang_O3_g_fixed",
+  "stdout": "=== Preprocessing Features ===\n  param_macro_constants: 0x40\n  param_macro_functions: 0x1e\n  param_conditional_compile: 0x20\n  param_multi_branch_compile: 0xdf22\n  param_macro_recursion: 0x74\n  param_stringize: 0x13\n  param_token_paste: 0x3c\nLOG: Values: 10, 20, 30\n  call_variadic_macro: 0x3c\n  param_macro_override: 0x10\n  param_include_guard: 0x1f4\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:54\n  call_builtin_macros: 0x17e\n=== ASM Features ===\n  param_asm_basic: 0xf\n  call_asm_clobber: 140723144619008\n  call_asm_multi_insn: 0x2a\n  call_asm_simd: 0x24\n  call_asm_atomic: 0x1e\n  call_asm_privileged: 0x4d\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

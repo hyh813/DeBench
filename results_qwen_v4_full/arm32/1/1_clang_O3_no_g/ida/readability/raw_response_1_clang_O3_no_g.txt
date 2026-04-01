@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (a1, a2, a3, v1, v2, result) with zero semantic meaning recovered. For example, `sequential_ops` parameters should be named `a`, `b`, `c` based on source, but appear as `a1`, `a2`, `a3`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (sequential_ops, single_if, nested_if_2, loop_for_fixed, etc.). Names accurately reflect functionality and match original source identifiers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x65` in non_local_jump, `1001` in infinite_loop). Some are inferable from context but none are documented as named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including `__fastcall` annotations, register comments (`[sp-4h] [bp-4h]`), and inline assembly in `duffs_device` (`__asm { ADD PC, LR, R3 }`). Manageable but distracting.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural, but `loop_for_fixed` converts loop to mathematical formula losing original structure. `switch_fallthrough` uses awkward `LABEL_5` goto pattern instead of clean fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each function is appropriately sized with clear single responsibility. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with logical flow. Some LABEL jumps disrupt reading (e.g., `switch_fallthrough`), but most functions maintain linear execution paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some optimization artifacts present (e.g., `loop_for_fixed` formula is cleaner than original loop), but no significant redundancy obscuring logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` types dominate throughout. Some `unsigned int` and `__int64` mixed inconsistently. Function pointer types present but generic (`int (__fastcall *)(int)`). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited struct/union usage in this codebase. Arrays handled reasonably (e.g., `int matrix[3][4]` in loop_multi_exit recovered as lookup tables). No complex nested structures to evaluate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer calls use generic types without signature verification. Some implicit casts present (e.g., `unsigned int` to `int` in comparisons). No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except function headers. No algorithm explanations, no documentation of non-obvious logic. Original source comments completely lost in decompilation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. State machines (state_machine, fsm_func_table) not recognized as such. Loop patterns converted to formulas without explanation of transformation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some failures noted at end ("FAILED to decompile: __imp_raise"), but no inline warnings for uncertain decompilation. `duffs_device` inline assembly not flagged as potentially problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n > 0` but this is not indicated. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not documented. No call graph information. Callback relationships (process_with_callback) not explicitly noted.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source file structure. Related functions grouped logically (control flow tests together). Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 functions failed to decompile (external imports). External dependencies not clearly documented. Would require stubs for `__imp_*` functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Weight | Average Score | Weighted Contribution |
+|-------|--------|---------------|----------------------|
+| L1: Lexical Clarity | 30% | 5.5/10 | 1.65 |
+| L2: Structural Intelligibility | 25% | 7.0/10 | 1.75 |
+| L3: Type System Fidelity | 20% | 5.3/10 | 1.06 |
+| L4: Semantic Transparency | 15% | 2.6/10 | 0.39 |
+| L5: Contextual Coherence | 10% | 5.3/10 | 0.53 |
+
+**Overall Readability Score: 5.38/10**
+
+### Critical Defects:
+- **Variable names completely generic** (a1, a2, v1, v2) - should recover semantic names from usage patterns
+- **Zero comments** - original source documentation completely lost
+- **Magic numbers undocumented** (0x65, 1001, etc.) - should suggest named constants
+- **Control flow optimizations not explained** - loop_to_formula transformations lack annotation
+- **9 external functions failed to decompile** - dependency clarity missing
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names preserved perfectly from source, making identification and navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding algorithm intent extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and cross-reference analysis (e.g., `a1` in `sequential_ops` used in addition should suggest `operand_a`)
+2. **Add decompilation confidence annotations** for optimized code regions (e.g., "OPTIMIZED: loop converted to closed-form formula")
+3. **Recover and preserve source comments** when debug symbols (-g) are available, or generate semantic comments for non-trivial logic

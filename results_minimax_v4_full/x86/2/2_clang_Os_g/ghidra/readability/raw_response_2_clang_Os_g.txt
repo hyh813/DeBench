@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use type-hinting prefixes (`iVar1`, `puVar3`, `lVar1`) rather than semantic names. While better than completely generic names, they don't convey purpose like `sum`, `index`, or `length` from the original source. Many local variables marked as `Unresolved local var: int sum@[???]` lose meaningful names entirely.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `process_char`, `process_int`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, etc. The decompiler preserved all 40+ function names exactly, demonstrating excellent symbol recovery from debug information.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals use unresolved references like `&DAT_000125bf` instead of meaningful labels. Magic numbers like `0x19`, `0x2c`, `0x1b8` appear without explanation. However, test functions compute expected values directly (e.g., `printf("DT-L1-03 (process_int): %d\n",0xb);`), which provides some clarity.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise includes: 50+ "Unresolved local var" annotations, "WARNING: Unknown calling convention" repeated 4 times, "WARNING: Removing unreachable block" messages, and internal functions like `FUN_00011030`. The code also includes auto-generated function stubs that aren't in the original.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is readable, using do-while loops that map to original for-loops. However, some patterns are awkward: `while( true )` with internal breaks in `test_array_types`, and inverted conditions like `if (n < 1)` checking for empty loops. At -O0, these transformations are unnecessary.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent preservation of function granularity. All test functions (`test_data_types_l1`, `test_array_types`, etc.) remain separate, and helper functions like `complex_callback` are properly extracted. No function exceeds reasonable size, matching the original's clean decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with only minor disruptions. Some forward jumps exist in array initialization loops, and the `array_3d` function has complex nested pointer arithmetic that disrupts flow. Most functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns present, particularly in array access. The `array_2d_stack` uses manual offset calculation `*(int *)((int)*arr + iVar2)` instead of cleaner array subscripting. Loop unrolling is minimal, which is appropriate for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are precise: `char`, `short`, `int`, `long`, `longlong`, `float`, `double`, `_Bool` correctly identified. Issues: `process_ld` returns `longdouble *` instead of `longdouble`, and `process_ll` uses problematic `CONCAT44` macro. Function pointer types use auto-generated names like `_func_int_int *`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery - all types found: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `Device`. Field names mostly preserved (`p->x`, `p->y`, `node->next`). Minor issue: some pointer arithmetic obscures field access in `struct_array`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several type safety issues: `ptr_diff` has incorrect expression `(int)p1 - (int)p2 >> 2` (should be `p1 - p2`), causing wrong semantics. Some unsafe casts in void pointer handling. The `process_ll` function has complex and potentially unsafe 64-bit arithmetic using `CONCAT44`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Variable defined which should be unmapped") rather than explanatory comments. No algorithm documentation or intent comments. The few useful annotations are decompiler diagnostics, not semantic explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are structurally visible (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`), but no explicit pattern naming or documentation. The decompiler doesn't identify these as common data structure patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Decompiler appropriately flags issues: "WARNING: Unknown calling convention" (4 times), "WARNING: Variable defined which should be unmapped", "WARNING: Type propagation algorithm not settling". However, some anomalies like the broken `ptr_diff` logic aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The decompiler doesn't infer contracts from usage patterns. Error conditions are handled but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit documentation of function call relationships, global variable usage, or callback connections. While function names are preserved, the relationships between functions (e.g., that `ptr_func_simple` calls the function pointer `f`) aren't explicitly documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching source organization: data type functions first, then array functions, pointer functions, composite type functions, then test functions. Static functions properly scoped. Matches the original file's logical structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses undefined types `_func_int_int *` and `_func_int_int_ptr_char_ptr_ptr *` which won't compile. Unresolved data references like `&DAT_000125bf`. However, the overall structure is sound and would compile with type definitions and string data added.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects (Bullet List)
+- **`ptr_diff` function has incorrect logic**: `(int)p1 - (int)p2 >> 2` produces wrong result (byte offset instead of element count)
+- **50+ unresolved local variables**: Annotations like `Unresolved local var: int sum@[???]` indicate complete name loss
+- **Function pointer types undefined**: `_func_int_int *` and similar types won't compile
+- **`process_ld` returns wrong type**: Returns `longdouble *` instead of `longdouble`
+- **String literals use unresolved references**: `&DAT_000125bf` instead of actual strings
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+Every function name perfectly matches the original source, demonstrating excellent debug symbol recovery. This is the standout success of this decompilation.
+
+### Most Needs Improvement: Variable Naming Quality (4/18)
+Despite function names being perfect, variable names use only type-hinting prefixes (`iVar1`, `puVar3`) without semantic meaning. Combined with 50+ completely unresolved variables, this severely impacts readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Variables used as loop indices should be named `i`, `j`, `k`; accumulators should be `sum`, `total`; pointers to arrays should indicate their purpose
+2. **Fix type inference for `ptr_diff`**: The pointer subtraction semantics are incorrectly rendered as integer arithmetic with shift
+3. **Recover string literal references**: Map `&DAT_000125bf` to actual string content or provide hex dump fallback

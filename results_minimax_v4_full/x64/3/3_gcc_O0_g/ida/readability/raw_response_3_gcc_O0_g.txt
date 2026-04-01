@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 9/10**
+
+Justification: Function names match original source exactly (e.g., `double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Local variables like `i`, `arr`, `sum`, `result` are appropriately named. Minor扣分 for test functions using generic temporaries like `v0`, `v1` which are compiler-generated but obscure the flow slightly.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+Justification: Every function name perfectly matches the original source - `double_value`, `local_array`, `vla_stack`, `alloca_usage`, `stack_alias`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `heap_overflow`. This is exceptional decompilation accuracy.
+
+### 3. Literal Clarity
+**Score: 8/10**
+
+Justification: Most literals are clear - `42` in address_of_local, `10` in stack_alias, array bounds like `0xA` (10), malloc sizes like `0x14` (20). Minor issue: some sizes like `0x28` (40) could be more clearly expressed as `sizeof(Point) * 5` but this is acceptable.
+
+### 4. Noise Reduction
+**Score: 9/10**
+
+Justification: Code is remarkably clean with no redundant casts or dead code. Stack canary reads (`__readfsqword(0x28u)`) are compiler-generated security features expected at -O0 with -g. No frame pointer manipulation artifacts or debug instrumentation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 9/10**
+
+Justification: Loops are properly recognized as `for` loops with correct bounds. Conditionals are clear with proper if-else structures. No goto abuse. Early returns used appropriately in error handling paths. The control flow closely matches the original source.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Each function maintains appropriate granularity matching the original source. Functions like `create_tree_node` are properly extracted as separate static functions. No monolithic functions; all have clear single responsibilities. Parameter lists are reasonable.
+
+### 7. Code Linearization
+**Score: 9/10**
+
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in error paths (`if (!arr) return -1;`) are appropriately placed. No forward jumps into loop bodies. The flow is natural and easy to follow.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+Justification: No dead code observed. Loop unrolling is minimal (the original had small fixed iterations anyway). No significant duplicate expressions. The code is clean and efficient.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 9/10**
+
+Justification: Types are precise - `int` for integers, `int*` for pointers, `char*` for strings, `size_t` for sizes, `pid_t` for process IDs. Function pointer types are properly typed (e.g., `int (*f)(int)`). Minor issue: some `unsigned` vs `signed` distinctions could be clearer.
+
+### 10. Composite Type Recovery
+**Score: 9/10**
+
+Justification: Struct recovery is excellent - `Point` with `x` and `y` fields, `Node` with `data` and `next`, `TreeNode` with `data`, `left`, `right`. All field names match the original source exactly. The struct layouts are accurate.
+
+### 11. Type Safety
+**Score: 9/10**
+
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `arr[i]`, `buf + 1`). Function pointers are properly typed. The code is type-safe with no obvious undefined behavior patterns (except where intentional in the original like `dangling_pointer`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Justification: No comments present in the decompiled output. While the code is self-documenting due to excellent naming, there are no explanations of algorithm intent, preconditions, or decompilation confidence indicators. The original source had extensive comments that are completely lost.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+
+Justification: Common idioms like loops, conditionals, and error handling patterns are recognized. However, no explicit naming of patterns like "linked list traversal" or "binary tree creation" is provided. The code structure makes patterns obvious but unnamed.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+
+Justification: The decompiler correctly identified functions that failed to decompile (18 external functions like `free`, `malloc`, `printf`, etc. marked as "FAILED to decompile"). However, no warnings about potentially undefined behavior in functions like `dangling_pointer` or `double_free`.
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**
+
+Justification: No implicit preconditions, postconditions, or invariants are documented. Error return values (-1, -2) are present but not explained. The original source had no explicit assertions, so this is partially expected.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+
+Justification: Function calls are clear and direct. Global variable usage is transparent (`global_counter`, `global_array`, etc.). Callback relationships (e.g., `set_global_callback` → `call_global_callback`) are clear through naming. However, no explicit call graph documentation.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are grouped logically matching the original source organization (stack memory, heap memory, static/global, memory operations). Static functions are properly scoped. The test functions are appropriately grouped with their tested functions.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: The code would require significant patching to compile - string constants are referenced as `asc_3160`, `asc_3360`, etc. without definitions. The architecture mismatch (x86-64 decompiled from arm64 binary) means platform-specific intrinsics like `__readfsqword` need replacement. External declarations for `extern_global_var` and `extern_function` are needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (9 + 10 + 8 + 9) / 4 = 9.0
+L2_avg = (9 + 9 + 9 + 9) / 4 = 9.0  
+L3_avg = (9 + 9 + 9) / 3 = 9.0
+L4_avg = (4 + 7 + 7 + 4) / 4 = 5.5
+L5_avg = (7 + 8 + 6) / 3 = 7.0
+
+Overall = (9.0 × 0.30) + (9.0 × 0.25) + (9.0 × 0.20) + (5.5 × 0.15) + (7.0 × 0.10)
+        = 2.70 + 2.25 + 1.80 + 0.825 + 0.70
+        = 8.275/10
+```
+
+**Overall Readability Score: 8.3/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **No comments recovered** - All original source comments (MEM-L1-01, HEAP-L2-01, etc.) are completely lost, making it harder to understand test scenarios
+2. **String constants not defined** - References like `asc_3160`, `asc_3360` for printf format strings are not actualized, requiring manual recovery
+3. **Architecture mismatch** - The decompiled code uses x86-64 intrinsics (`__readfsqword`) but original was arm64, indicating cross-compilation or binary mismatch
+4. **No contract/precondition documentation** - Error conditions (-1, -2 returns) lack explanation of what went wrong
+5. **External symbol references unresolved** - `extern_global_var` and `extern_function` need manual declarations to compile
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Type System Fidelity (9.0/10)**
+- **Why?** Composite type recovery is exceptional - structs like `Point`, `Node`, and `TreeNode` are perfectly reconstructed with accurate field names matching the original source exactly.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (5.5/10)**
+- **Why?** Complete absence of comments and no recovery of preconditions/postconditions makes it difficult to understand algorithmic intent, especially for complex functions like linked list traversal and tree operations.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover string literals from rodata section** - Format strings like `"MEM-L1-01 (local_vars): %d\n"` should be extracted and used directly instead of placeholder references like `asc_3160`
+
+2. **Add semantic comments for complex patterns** - For functions like `linked_list_heap` and `tree_heap_traversal`, add comments explaining the algorithm (e.g., "// Creates 5-node linked list, traverses summing data, frees all nodes")
+
+3. **Document error handling contracts** - Add comments explaining return values like `-1` = allocation failure, `-2` = secondary allocation failure to help analysts understand error paths

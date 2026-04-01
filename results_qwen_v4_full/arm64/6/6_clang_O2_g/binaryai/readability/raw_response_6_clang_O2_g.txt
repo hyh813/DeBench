@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_30`, `iVar1`, `uVar2`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcpy`, `param_malloc_free`), but helper functions have generic names (`FUN_001012e0`, `thread_compute`). External functions properly identified.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x1000` (4096), syscall numbers (`0x38`, `0x39`). String literals sometimes hex-encoded. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs present but don't severely impede reading. Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) add noise. Some redundant casts from type promotions visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops reconstructed as do-while instead of for loops. Some goto-like patterns with labels (`LAB_00101c34`, `LAB_00102390`). Conditional logic sometimes inverted, requiring mental translation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly match source structure. Thread functions properly separated. However, `param_malloc_free` is excessively long with loop unrolling artifacts that should be abstracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps disrupt flow (`goto LAB_00102390`). Deep nesting in signal handling and atomic operation functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling clearly visible in `param_malloc_free` and `param_memset` (8-element unrolled loops). Redundant variable assignments from register spilling not eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types: generic `undefined8`, `undefined4`, `ulong` alongside proper `FILE*`, `pthread_t`, `size_t`. Pointer types often degraded to `void*`. Signed/unsigned distinctions sometimes lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` partially recovered with field names. `ThreadData` struct not recovered (accessed as array indices). TLS variables accessed via raw offsets (`tpidr_el0 + 0x10`) instead of proper TLS access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(undefined8 *)`, `(int *)`). Pointer arithmetic on void* in several places. Function pointer types sometimes confused. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread synchronization patterns not explicitly identified. No design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls or uncertain decompilation. Architecture-specific intrinsics (`__aarch64_cas4_acq_rel`) not explained. Silent about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions inferred. Error return values not explained. No invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graphs. Global variable usage (`shared_counter`, `atomic_counter`) not explicitly marked. Callback relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. External functions grouped at top. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but would need stubs. Architecture-specific code (`__aarch64_*`) requires porting. Some undefined symbols (`completed_0`, `__dso_handle`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25  × 0.15 = 0.4875
+Level 5 (Contextual):  (5+6+5)/3   = 5.33  × 0.10 = 0.533
+
+Overall Score: 4.76/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `param_2`, `iVar1`, `uVar2` provide zero semantic information about purpose
+- **Zero comments**: No documentation for any non-trivial logic, algorithms, or error conditions
+- **Magic numbers unexplained**: `0x2a`, `0xffffffff`, syscall numbers `0x38`/`0x39` used without context
+- **Composite types lost**: `ThreadData` struct accessed as array, TLS accessed via raw offset `tpidr_el0 + 0x10`
+- **Loop unrolling artifacts**: `param_malloc_free` and `param_memset` show 8-element unrolled loops that obscure original intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names preserved from source (`param_strcpy`, `param_malloc_free`, `param_signal_handling`), making it possible to identify function purposes despite other readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any comments means readers must reverse-engineer all logic without guidance, severely impacting maintainability and understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size checks should be named `size`/`length`, file descriptors should be named `fd`)
+2. **Add decompilation confidence annotations** marking uncertain regions, indirect calls, and architecture-specific intrinsics with explanatory comments
+3. **Recover composite type structures** from access patterns instead of leaving raw pointer arithmetic (detect struct field access patterns and reconstruct named fields)

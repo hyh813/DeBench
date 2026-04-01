@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `iVar1`, `lVar1`, `bVar1`, and `param_1`, completely stripping semantic meaning (e.g., `result`, `str`, `key` are lost).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_fake_branch`, `main`, and `test_obf_opt_edge` are recovered accurately from symbols, perfectly matching the source intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a` (XOR key) and `0x15` (multiplier) appear without named constants, though `0x5a` is clearly an operation in context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) and `undefined` type casts clutter the logic, but the core algorithmic flow is relatively clean of register spilling artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is reconstructed into idiomatic `do-while` and `if` structures; the compiler's tail-call optimization is correctly represented as a loop rather than a recursive call.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are separated exactly as in the source, with appropriate granularity and parameter lists preserved (e.g., `param_vectorized_loop` keeps its 4 parameters).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads top-to-bottom with minimal jumps; early returns and loop structures are placed naturally.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler presents the optimized code cleanly without redundant intermediate variables, reflecting the compiler's efficiency.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Return types are often `undefined8` or `undefined4` instead of concrete types like `int` or `void`, and pointers are frequently typed as `long` or `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs and bitfields (e.g., in `param_implementation_defined`) are not reconstructed; data is accessed via raw pointer arithmetic or lost entirely.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer arithmetic is generally correct, though the use of `undefined` types and casts to `long` for pointers reduces perceived safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are sparse and mostly limited to compiler warnings (e.g., "Removing unreachable block"), with no explanation of algorithm logic or variable purpose.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard loops and conditionals are recognized, but specific patterns like the "opaque predicate" or "string encryption" are not explicitly identified or annotated.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra flags unreachable blocks and stack guard checks, providing useful warnings about compiler optimizations and security features.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to follow (e.g., `test_obf_opt_edge` calling specific test functions).
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically in the output, and static functions are distinguished, matching the source structure well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code relies on `undefined` types and missing standard library definitions, requiring significant patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable names are generic (`iVar1`, `lVar1`), obscuring the logic of opaque predicates and encryption.
+- Composite types (structs, bitfields) are not recovered, leading to raw pointer arithmetic.
+- Dead code elimination (compiler optimization) removed the "fake branch" logic entirely, making the decompiled code semantically different from the source (though this is a binary issue, the readability impact is high).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- Symbols were preserved, making it easy to map decompiled functions to the source.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The heavy reliance on `iVar`/`lVar` names makes understanding the math-heavy obfuscation logic very difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement type propagation to recover `int` types instead of `undefined8/undefined4` for return values.
+2. Use data flow analysis to infer variable names from usage (e.g., variables used in `strlen` or `printf` format strings).
+3. Attempt to reconstruct composite types (structs) from stack layout and access patterns, especially for bitfields.

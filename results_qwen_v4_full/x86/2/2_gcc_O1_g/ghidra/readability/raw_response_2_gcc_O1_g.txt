@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names like `iVar1`, `iVar2`, `piVar1` instead of semantic names (e.g., `sum` becomes `iVar2`). Many loop counters marked as "Unresolved local var: int i@[???]" losing all context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Some helper functions remain generic (`FUN_00011030`) and function pointer types use mechanical names (`_func_int_int`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy constant folding obscures intent: `0x61` instead of `'a'`, `0xb` instead of `11`, `0x14` instead of `20`. Magic hex values like `0x12345678` appear without explanation of their purpose.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention" annotations clutter output. Stack canary checks (`__stack_chk_fail_local`) and `get_pc_thunk` injection warnings add noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For-loops converted to do-while patterns (`arr = arr + 1` instead of `arr[i]`). `enum_switch` uses chained if-else instead of switch statement, losing pattern clarity.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved well without excessive inlining. Test functions become monolithic with all setup code inline rather than extracted helpers.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Stack canary checks at function ends create minor disruption to flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `array_3d` shows loop unrolling with explicit element access (`[0][0]` through `[0][4]`). Constant folding in test functions creates redundant computed values.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, short, longlong) but function pointers degraded to `_func_int_int`. Critical error: `process_ld` returns `longdouble*` instead of `longdouble`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names recovered well (`Point3D`, `Rect`, `Widget`, `Node`, `Flags`). Bitfield access degrades to manual bit operations (`bVar1 & 1`, `bVar1 >> 1 & 3`) instead of field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)handle * 2`, `(int)*(char *)p`, `(int)p1 - (int)p2 >> 2`. The `process_ld` type error could cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: All original source comments completely lost. Only decompiler warnings present ("WARNING: Unknown calling convention"). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal and binary tree recursion preserved structurally but not identified. Enum+switch pattern degrades to if-else chains without pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some issues flagged ("Unresolved local var", "Unknown calling convention") but critical problems like `process_ld` type error and `array_oob` undefined behavior not highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but not explained as contracts. Error conditions lack documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names. Callback relationships not explicitly documented. Global variable usage lacks transparency.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Original source sections (data types, arrays, pointers, composite) not preserved. No header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—undefined types (`Point3D`, `Rect`, `Widget` need definitions). External dependencies (`__printf_chk`, `puts`) not declared. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (6+7+5)/3   = 6.00  × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (6+4+4)/3   = 4.67  × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.39 ≈ 5.4/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects
+- **Variable `iVar1`, `iVar2` should be named semantically** (e.g., `sum`, `result`, `index`) based on usage patterns
+- **`process_ld` has critical type error** returning `longdouble*` instead of `longdouble`
+- **All original comments lost** - no algorithm explanations or API documentation recovered
+- **Constant folding obscures intent** - `0x61` instead of `'a'`, `0xb` instead of `11`
+- **Bitfield access degrades to manual operations** losing field name semantics (`f->flag1` becomes `bVar1 & 1`)
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most user-defined function names preserved accurately from original source, maintaining semantic clarity for the core logic.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all original source comments; decompiler adds no semantic documentation, only warnings.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve original source comments** from debug symbols when `-g` flag is present, or infer semantic comments from usage patterns
+2. **Improve variable name inference** using data flow analysis to identify loop counters, accumulators, and pointers (e.g., `iVar2` in summing loops → `sum`)
+3. **Detect and flag type inconsistencies** like `process_ld` returning pointer instead of value, with confidence indicators for uncertain type recovery

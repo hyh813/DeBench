@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use cryptic sequential names (`v0` through `v35`), and parameters use mechanical register names (`a0`, `a1`, `a2`). No semantic inference from usage patterns (e.g., loop counter `i` is the only exception). Compare to source: original uses meaningful names like `count`, `args`, `sum` in varargs functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions correctly named (`cdecl_func`, `call_cdecl`, `test_calling_conventions`), but many internal functions use mechanical addresses (`sub_400694`, `sub_400770`). The main public API functions match source, while helper functions lack semantic naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) appear without explanation; `18446743528248704968` is unexplained. However, simple constants like `15`, `50`, `6` in return statements are correct values from source. String literals use external references (`&g_40157a`) which obscures content.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: unused variables `v23`-`v30` assigned from registers but never used meaningfully; redundant `memcpy` calls in `sub_400694`; excessive register spill variables in varargs functions. Compare to source's clean 8-line varargs implementation vs. 50+ line decompiled version.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow preserved (if/else, while loops). However, `register_tm_clones` uses convoluted boolean expression instead of simple conditional. Loop structures in `varargs_func` are recognizable but overly complex compared to source's clean `for` loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately separated matching source granularity. No 500-line monoliths. Test wrapper functions (`call_cdecl`, `call_stdcall`) correctly kept separate from implementation functions. Minor issue: some small functions could be inlined.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom, but `varargs_func` has complex nested conditions disrupting flow. Forward jumps present in loop handling. Some `do-while` constructs could be clearer as `for` loops.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in varargs functions: unused vector register variables (`v0`-`v7`) clutter code; loop unrolling not recognized or commented; duplicate register saves. Source's clean 8-line function becomes 50+ lines of decompiled noise.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters correctly use `unsigned int` for ARM64 calling convention. However, function pointers use `unsigned long long *` instead of proper function pointer types (see `param_func_ptr`). Return types inconsistent: some functions return `unsigned long long` when `int` would be correct. `void*` often becomes `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No meaningful struct recovery. Source's `SmallStruct` with fields `x`, `y` becomes raw pointer arithmetic in `func_struct_byptr`. Fabricated structs like `struct_0 { char field_0; }` in `param_ptr_array` lack semantic meaning. Large struct handling shows as unsupported operation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: `param_func_ptr` treats `unsigned long long *` as function pointer; `ret_opaque_handle` returns `"d"` (string literal) as void* handle; pointer arithmetic not type-safe. However, basic pointer dereferences are structurally correct.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Source had extensive comments explaining calling conventions, test scenarios, and expected values. Zero recovery of documentation or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns identified. Varargs handling (`va_list`, `va_start`, `va_arg`, `va_end`) not recognized as standard C idiom - appears as complex register manipulation. No recognition of calling convention patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged with `[D] unsupported_Iop_ZeroHI64ofV128()` for large struct operations. However, many issues silently handled: indirect function calls not flagged, potential undefined behavior in `param_order_dep` not mentioned, register allocation issues not documented.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition/postcondition recovery. Source had explicit null checks (`if (!p) return -1`) that are preserved structurally but not documented as contracts. No recovery of `requires:`, `ensures:` or invariant documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and resolve correctly. External dependencies marked with `extern` (e.g., `extern char g_4012d0`). However, no documentation of call graph relationships, no indication which functions call which, no global variable usage documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file output. No logical grouping of related functions. Source had clear sections: calling conventions, parameter passing, return values - not reflected in decompiled organization. Static functions not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile as-is: `uint128_t` type undefined; fabricated structs (`struct_0`) not defined; external symbols (`g_4012d0`, etc.) unresolved; `arm64g_calculate_condition` is internal function. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 3) / 4 = 3.75
+L2_avg = (6 + 7 + 5 + 4) / 4 = 5.50
+L3_avg = (5 + 3 + 5) / 3 = 4.33
+L4_avg = (1 + 2 + 4 + 1) / 4 = 2.00
+L5_avg = (5 + 4 + 2) / 3 = 3.67
+
+Overall = (3.75 × 0.30) + (5.50 × 0.25) + (4.33 × 0.20) + 
+          (2.00 × 0.15) + (3.67 × 0.10)
+        = 1.125 + 1.375 + 0.866 + 0.300 + 0.367
+        = 4.03/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use cryptic names (`v0`-`v35`, `a0`-`a7`) with no semantic inference from usage patterns
+- **No comments**: Zero documentation recovered from source despite extensive comments explaining calling conventions and test scenarios
+- **Struct recovery failure**: All composite types lost; `SmallStruct` with `x`, `y` fields becomes raw pointer arithmetic
+- **Noise pollution**: Varargs functions bloated from 8 lines to 50+ lines with unused register spill variables
+- **Type safety**: Function pointers incorrectly typed as `unsigned long long *`; opaque handles return string literals
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are appropriately separated matching source granularity. Test wrapper functions correctly kept separate from implementations. No excessive fragmentation or monoliths.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+Zero comments recovered despite source having extensive documentation explaining calling conventions, test scenarios, expected values, and algorithm explanations. This is critical for understanding decompiled code intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop counters, string lengths, accumulators) to generate semantic names like `sum`, `count`, `ptr` instead of `v0`, `v1`
+2. **Recover struct types from allocation/field access patterns**: Detect `malloc(sizeof(struct))` patterns and field offset accesses to reconstruct meaningful struct definitions with field names
+3. **Add minimal documentation**: Include basic comments explaining function purpose, parameter semantics, and return value meaning - even auto-generated comments would significantly improve readability

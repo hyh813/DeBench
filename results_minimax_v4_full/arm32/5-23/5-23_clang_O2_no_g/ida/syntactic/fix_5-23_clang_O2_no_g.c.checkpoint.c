@@ -1,0 +1,600 @@
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+typedef unsigned long ptrdiff_t;
+typedef long long intmax_t;
+typedef unsigned long long uintmax_t;
+typedef int bool;
+#define true 1
+#define false 0
+
+/* JUMPOUT macro for ARM branch */
+#define JUMPOUT(addr) __asm__ volatile("b " #addr ::: "memory")
+
+/* Atomic fetch add wrapper for ARM32 */
+static inline int _atomic_fetch_add_4(int *ptr, int val, int memorder) {
+    return __atomic_fetch_add(ptr, val, memorder);
+}
+
+/* String constants */
+const char asc_11AB[] = "test_preprocessing_features\n";
+const char asc_11D2[] = "test_asm_features\n";
+const char aPpL201D[] = "param_macro_constants: %d\n";
+const char aPpL202D[] = "call_macro_constants: %d\n";
+const char aPpL203D[] = "param_macro_functions: %d\n";
+const char aPpL204D[] = "call_multi_branch_compile: %d\n";
+const char aPpL301D[] = "param_macro_recursion: %d\n";
+const char aPpL302D[] = "param_stringize: %d\n";
+const char aPpL303D[] = "param_token_paste: %d\n";
+const char aPpL304D[] = "call_variadic_macro: %d\n";
+const char aPpL305D[] = "call_macro_override: %d\n";
+const char aPpL306D[] = "call_include_guard: %d\n";
+const char aPpL307D[] = "call_builtin_macros: %d\n";
+const char aAsmL401D[] = "param_asm_basic: %d\n";
+const char aAsmL402D[] = "call_asm_basic: %d\n";
+const char aAsmL403D[] = "call_asm_multi_insn: %d\n";
+const char aAsmL404D[] = "call_asm_simd: %d\n";
+const char aAsmL405D[] = "call_asm_atomic: %d\n";
+const char aAsmL406D[] = "test_asm_features: %d\n";
+
+/* Global variables */
+char global_var[256];
+
+/*
+ * Decompiled by IDA Pro 9.1 with Hex-Rays
+ * Binary: build/arm32/5-23/5-23_clang_O2_no_g
+ * Processor: arm
+ */
+
+/* Function: .init_proc @ 0x4E0 */
+int init_proc()
+{
+ return call_weak_fn();
+}
+
+
+/* Function: sub_4EC @ 0x4EC */
+void sub_4EC()
+{
+ JUMPOUT(0);
+}
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+
+/* CRT stub function call_weak_fn */
+__attribute__((weak)) int call_weak_fn()
+{
+ return 0;
+}
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+/* Function: param_macro_constants @ 0x6F8 */
+int param_macro_constants(int a1)
+{
+ int v1; // r1
+
+ v1 = 512;
+ if ( a1 > 1024 )
+ return 64;
+ return v1;
+}
+
+
+/* Function: call_macro_constants @ 0x70C */
+int call_macro_constants()
+{
+ return 64;
+}
+
+
+/* Function: param_macro_functions @ 0x714 */
+int param_macro_functions(int a1, int a2)
+{
+ if ( a1 > a2 )
+ a2 = a1;
+ return a2 + a1 * a1;
+}
+
+
+/* Function: call_macro_functions @ 0x728 */
+int call_macro_functions()
+{
+ return 30;
+}
+
+
+/* Function: param_conditional_compile @ 0x730 */
+int param_conditional_compile(int a1)
+{
+ return 3 * a1 + 2;
+}
+
+
+/* Function: call_conditional_compile @ 0x73C */
+int call_conditional_compile()
+{
+ return 32;
+}
+
+
+/* Function: param_multi_branch_compile @ 0x744 */
+int param_multi_branch_compile(int a1)
+{
+ return 5 * a1 + 57072;
+}
+
+
+/* Function: call_multi_branch_compile @ 0x754 */
+int call_multi_branch_compile()
+{
+ return 57122;
+}
+
+
+/* Function: param_macro_recursion @ 0x760 */
+int param_macro_recursion(int a1)
+{
+ return a1 + 16;
+}
+
+
+/* Function: call_macro_recursion @ 0x768 */
+int call_macro_recursion()
+{
+ return 116;
+}
+
+
+/* Function: param_stringize @ 0x770 */
+int param_stringize()
+{
+ return 19;
+}
+
+
+/* Function: call_stringize @ 0x778 */
+int call_stringize()
+{
+ return 19;
+}
+
+
+/* Function: my_func @ 0x780 */
+int my_func(int a1)
+{
+ return 10 * a1;
+}
+
+
+/* Function: param_token_paste @ 0x78C */
+int param_token_paste(int a1)
+{
+ return 11 * a1 + 5;
+}
+
+
+/* Function: call_token_paste @ 0x79C */
+int call_token_paste()
+{
+ return 60;
+}
+
+
+/* Function: param_variadic_macro @ 0x7A4 */
+int param_variadic_macro(int a1, int a2, int a3)
+{
+ printf("LOG: Values: %d, %d, %d\n", a1, a2, a3);
+ return a1 + 50;
+}
+
+
+/* Function: call_variadic_macro @ 0x7D4 */
+int call_variadic_macro()
+{
+ printf("LOG: Values: %d, %d, %d\n", 10, 20, 30);
+ return 60;
+}
+
+
+/* Function: param_macro_override @ 0x800 */
+int param_macro_override(int a1)
+{
+ return 3 * a1 + 1;
+}
+
+
+/* Function: call_macro_override @ 0x80C */
+int call_macro_override()
+{
+ return 16;
+}
+
+
+/* Function: param_include_guard @ 0x814 */
+int param_include_guard()
+{
+ return 500;
+}
+
+
+/* Function: call_include_guard @ 0x81C */
+int call_include_guard()
+{
+ return 500;
+}
+
+
+/* Function: param_builtin_macros @ 0x824 */
+int param_builtin_macros(int a1)
+{
+ printf(
+ "file=%s, func=%s, line=%d, date=%s, time=%s\n",
+ "src/5-23.c",
+ "param_builtin_macros",
+ 279,
+ "Jan 15 2026",
+ "03:01:19");
+ return a1 + 282;
+}
+
+
+/* Function: call_builtin_macros @ 0x894 */
+int call_builtin_macros()
+{
+ printf(
+ "file=%s, func=%s, line=%d, date=%s, time=%s\n",
+ "src/5-23.c",
+ "param_builtin_macros",
+ 279,
+ "Jan 15 2026",
+ "03:01:19");
+ return 382;
+}
+
+
+/* Function: test_preprocessing_features @ 0x900 */
+int test_preprocessing_features()
+{
+ puts(asc_11AB);
+ printf(aPpL201D, 64);
+ printf(aPpL202D, 30);
+ printf(aPpL203D, 32);
+ printf(aPpL204D, 57122);
+ printf(aPpL301D, 116);
+ printf(aPpL302D, 19);
+ printf(aPpL303D, 60);
+ printf("LOG: Values: %d, %d, %d\n", 10, 20, 30);
+ printf(aPpL304D, 60);
+ printf(aPpL305D, 16);
+ printf(aPpL306D, 500);
+ printf(
+ "file=%s, func=%s, line=%d, date=%s, time=%s\n",
+ "src/5-23.c",
+ "param_builtin_macros",
+ 279,
+ "Jan 15 2026",
+ "03:01:19");
+ return printf(aPpL307D, 382);
+}
+
+
+/* Function: param_asm_basic @ 0xA70 */
+int param_asm_basic(int a1)
+{
+ return a1 + 10;
+}
+
+
+/* Function: call_asm_basic @ 0xA78 */
+int call_asm_basic()
+{
+ return 15;
+}
+
+
+/* Function: param_asm_clobber @ 0xA80 */
+int param_asm_clobber(int *a1, int a2)
+{
+ int result; // r0
+ int v4; // t1
+
+ if ( a2 < 1 )
+ return 0;
+ result = 0;
+ do
+ {
+ v4 = *a1++;
+ --a2;
+ result += v4;
+ }
+ while ( a2 );
+ return result;
+}
+
+
+/* Function: call_asm_clobber @ 0xAAC */
+int call_asm_clobber()
+{
+ return 15;
+}
+
+
+/* Function: param_asm_multi_insn @ 0xAB4 */
+// attributes: thunk
+void *param_asm_multi_insn(void *dest, const void *src, size_t n)
+{
+ return memcpy(dest, src, n);
+}
+
+
+/* Function: call_asm_multi_insn @ 0xAB8 */
+int call_asm_multi_insn()
+{
+ return 42;
+}
+
+
+/* Function: param_asm_simd @ 0xAC0 */
+int param_asm_simd(unsigned int *a1, unsigned int *a2, unsigned int *a3)
+{
+ *a3 = *a2 + *a1;
+ a3[1] = a2[1] + a1[1];
+ a3[2] = a2[2] + a1[2];
+ a3[3] = a2[3] + a1[3];
+ return 0;
+}
+
+
+/* Function: param_simd_intrinsics @ 0xB08 */
+int param_simd_intrinsics(unsigned int *a1, unsigned int *a2, unsigned int *a3)
+{
+ *a3 = *a2 + *a1;
+ a3[1] = a2[1] + a1[1];
+ a3[2] = a2[2] + a1[2];
+ a3[3] = a2[3] + a1[3];
+ return 0;
+}
+
+
+/* Function: call_asm_simd @ 0xB50 */
+int call_asm_simd()
+{
+ return 36;
+}
+
+
+/* Function: param_asm_atomic @ 0xB58 */
+int param_asm_atomic(int a1, int a2)
+{
+ return _atomic_fetch_add_4(a1, a2, 5) + a2;
+}
+
+
+/* Function: param_atomic_c11 @ 0xB74 */
+int param_atomic_c11(int a1, int a2)
+{
+ return _atomic_fetch_add_4(a1, a2, 5) + a2;
+}
+
+
+/* Function: call_asm_atomic @ 0xB90 */
+int call_asm_atomic()
+{
+ int add_4; // r0
+ int v2; // [sp+4h] [bp-Ch] BYREF
+
+ v2 = 10;
+ add_4 = _atomic_fetch_add_4(&v2, 5, 5);
+ return add_4 + v2 + 5;
+}
+
+
+/* Function: param_dynamic_code @ 0xBC8 */
+int param_dynamic_code(int a1)
+{
+ size_t v2; // r5
+ int v3; // r6
+ void *v4; // r0
+
+ v2 = sysconf(30);
+ v3 = -1;
+ v4 = mmap(0, v2, 7, 34, -1, 0);
+ if ( v4 != (void *)-1 )
+ {
+ munmap(v4, v2);
+ return a1 + 5;
+ }
+ return v3;
+}
+
+
+/* Function: param_memory_protection @ 0xC28 */
+int param_memory_protection()
+{
+ size_t v0; // r4
+ int v1; // r6
+ int *v2; // r0
+ int *v3; // r5
+ int v4; // r7
+
+ v0 = sysconf(30);
+ v1 = -1;
+ v2 = (int *)mmap(0, v0, 3, 34, -1, 0);
+ if ( v2 != (int *)-1 )
+ {
+ v3 = v2;
+ *v2 = 42;
+ v1 = -2;
+ if ( !mprotect(v2, v0, 1) )
+ {
+ v4 = *v3;
+ v1 = -3;
+ if ( !mprotect(v3, v0, 3) )
+ {
+ v1 = v4;
+ *v3 = 100;
+ }
+ }
+ munmap(v3, v0);
+ }
+ return v1;
+}
+
+
+/* Function: param_clobber_importance @ 0xCD4 */
+int param_clobber_importance(int a1, int a2)
+{
+ return 2 * (a2 + a1);
+}
+
+
+/* Function: call_asm_privileged @ 0xCE0 */
+int call_asm_privileged()
+{
+ size_t v0; // r4
+ int v1; // r6
+ void *v2; // r0
+ void *v3; // r5
+ bool v4; // zf
+
+ v0 = sysconf(30);
+ v1 = -1;
+ v2 = mmap(0, v0, 7, 34, -1, 0);
+ v3 = v2;
+ if ( v2 != (void *)-1 )
+ {
+ munmap(v2, v0);
+ v1 = 15;
+ }
+ v4 = param_memory_protection() == 42;
+ if ( v4 )
+ v1 = 77;
+ if ( v3 == (void *)-1 )
+ return v1;
+ return v1;
+}
+
+
+/* Function: param_memory_clobber_demo @ 0xD58 */
+char *param_memory_clobber_demo()
+{
+ return (char *)global_var + 50;
+}
+
+
+/* Function: test_asm_features @ 0xD6C */
+int test_asm_features()
+{
+ int add_4; // r0
+ size_t v1; // r4
+ int v2; // r6
+ void *v3; // r0
+ void *v4; // r5
+ int v5; // r0
+ int v6; // r1
+ int v8; // [sp+Ch] [bp-14h] BYREF
+
+ puts(asc_11D2);
+ printf(aAsmL401D, 15);
+ printf(aAsmL402D, 15);
+ printf(aAsmL403D, 42);
+ printf(aAsmL404D, 36);
+ v8 = 10;
+ add_4 = _atomic_fetch_add_4(&v8, 5, 5);
+ printf(aAsmL405D, add_4 + v8 + 5);
+ v1 = sysconf(30);
+ v2 = -1;
+ v3 = mmap(0, v1, 7, 34, -1, 0);
+ v4 = v3;
+ if ( v3 != (void *)-1 )
+ {
+ munmap(v3, v1);
+ v2 = 15;
+ }
+ v5 = param_memory_protection();
+ v6 = v2;
+ if ( v5 == 42 )
+ v6 = 77;
+ if ( v4 == (void *)-1 )
+ v6 = v2;
+ return printf(aAsmL406D, v6);
+}
+
+
+/* Function: main @ 0xE88 */
+int main(int argc, const char **argv, const char **envp)
+{
+ test_preprocessing_features();
+ test_asm_features();
+ return 0;
+}
+
+
+/* Function: .term_proc @ 0xEA0 */
+void term_proc()
+{
+ ;
+}
+
+
+/* FAILED to decompile: __imp___libc_start_main @ 0x12088 */
+
+/* FAILED to decompile: __imp___cxa_finalize @ 0x1208C */
+
+/* FAILED to decompile: __imp_printf @ 0x12090 */
+
+/* FAILED to decompile: __imp_mprotect @ 0x12094 */
+
+/* FAILED to decompile: __imp_memcpy @ 0x12098 */
+
+/* FAILED to decompile: __imp___atomic_fetch_add_4 @ 0x1209C */
+
+/* FAILED to decompile: __imp_sysconf @ 0x120A0 */
+
+/* FAILED to decompile: __imp_puts @ 0x120A4 */
+
+/* FAILED to decompile: __imp_mmap @ 0x120A8 */
+
+/* FAILED to decompile: __imp_munmap @ 0x120AC */
+
+/* FAILED to decompile: __imp_abort @ 0x120B0 */
+
+/* FAILED to decompile: __imp___gmon_start__ @ 0x120B8 */
+
+/* Total functions decompiled: 52, failed: 12 */

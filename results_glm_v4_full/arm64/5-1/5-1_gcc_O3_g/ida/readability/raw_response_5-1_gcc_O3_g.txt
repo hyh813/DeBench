@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: While class instances like `obj` are named correctly, local variables in complex functions like `test_cpp_rtti` use generic names (`v0`, `v1`, `v2`) which obscure their roles as `RTTIDerivedA` and `RTTIDerivedB` pointers.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`), and class methods are accurately named (e.g., `Base::virtual_func`), providing excellent semantic context.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Aggressive compiler optimization has replaced logic with magic numbers; for example, `test_cpp_virtual_func` returns `42` directly, and `test_cpp_member_func` returns `strlen(v0) + 4700`, completely obscuring the original arithmetic logic.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The decompiled code is clean with minimal register spilling or compiler artifacts; however, necessary thunks for multiple inheritance (e.g., `non-virtual thunk to...`) add structural complexity that is inherent to the binary but reduces readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is mostly linear and idiomatic, but the aggressive inlining in `test_cpp_oo_features` transforms a sequence of function calls into a monolithic block of `__printf_chk` calls, which disrupts the high-level flow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Due to high optimization (likely -O3 despite metadata), the compiler inlined most logic into `test_cpp_oo_features` and reduced test functions like `test_cpp_virtual_func` to simple constant returns (`return 42;`), destroying the original structural granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal backward jumps or confusing `goto` chains, making the execution path easy to trace within individual functions.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: The compiler successfully eliminated all redundancy, and the decompiler reflects this clean state without any dead code or duplicate expressions cluttering the logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: User-defined types like `SimpleClass`, `Base`, and `Derived` are recovered with correct signatures and `this` pointers, though standard library types like `std::unique_ptr` are devolved into raw `operator new`/`delete` calls due to inlining.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs are recovered accurately with correct field names (e.g., `SimpleClass` contains `name[32]`), and the layout for complex inheritance scenarios like `MultiDerived` is handled correctly.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer types are generally respected, and casts like `dynamic_cast` are explicitly represented as `__dynamic_cast` calls, preserving the type safety semantics of the original code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic, nor are there annotations indicating that functions have been inlined or constants folded, leaving the user to guess why a function just returns `42`.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Virtual function calls are presented as low-level vtable accesses (e.g., `(*obj->_vptr.Base)(obj, x)`), which is technically accurate but fails to highlight the high-level C++ polymorphism idiom.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the suspiciously simple implementations (e.g., `return 42`) as potential optimization artifacts or anomalies, which might confuse a user expecting the full source logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-trivial logic inside `test_cpp_rtti` regarding type checks lacks any explanation of the expected contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between classes and their methods is preserved through naming conventions (e.g., `Derived::virtual_func`), making the call graph easy to understand.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped by their mangled names, roughly keeping class members together, but the lack of logical grouping (e.g., separating test harnesses from class implementations) makes the file feel flat.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: While the C++ syntax is valid, the code relies on implicit compiler internals (like `__cxxabiv1` structures referenced in `__dynamic_cast`) and would require significant patching and headers to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- **Constant Folding Obscures Logic:** Functions like `test_cpp_virtual_func` are reduced to `return 42`, hiding the actual implementation details.
+- **Aggressive Inlining:** The test harness `test_cpp_oo_features` contains inlined copies of logic, making it a monolithic 40-line function rather than a coordinator.
+- **Generic Variable Names:** In RTTI logic, variables `v0` through `v8` are used without semantic names, making the complex type checking hard to follow.
+- **Missing Optimization Annotations:** No indication that code has been heavily optimized, leading to confusion about why source logic is missing.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** Ghidra's demangling of C++ symbols is excellent, perfectly preserving class namespaces and method names (e.g., `Base::virtual_func`), which is crucial for understanding Object-Oriented code.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- **Why?** The lack of annotations explaining compiler optimizations (like "inlined" or "constant folded") makes the optimized code significantly harder to reverse engineer back to the original source intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Optimization Annotation:** Detect and comment on functions that are trivial wrappers returning constants (e.g., `// Optimized: constant folded result`).
+2.  **Variable Name Inference:** Infer variable names from usage context; for example, a variable passed to `strlen` and `strncpy` should be named `str` or `name` rather than `v0`.
+3.  **Idiom Preservation:** Optionally abstract low-level vtable calls (`(*obj->_vptr.Base)(...)`) back into virtual function call syntax or add comments indicating the virtual target.

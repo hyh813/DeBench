@@ -1,0 +1,1278 @@
+#include <stdio.h>
+#include <string.h>
+#include <setjmp.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+typedef unsigned long ptrdiff_t;
+typedef long long intmax_t;
+typedef unsigned long long uintmax_t;
+typedef unsigned char byte;
+
+// Decompiled by BinaryAI
+// SHA256: 602e296222cdb926e21948e7d6d865c4c9fdecfbcce073211c00bf05af2321d7
+
+// Forward declarations
+int __gmon_start__(void);
+
+// Function: _init @ 0x101000
+int _init(void *ctx)
+{
+ (void)ctx;
+ return 0;
+}
+
+// Global variables
+static int completed_0 = 0;
+static void *__dso_handle = 0;
+static jmp_buf jump_buffer;
+static const char DAT_001030e4[] = "=== Control Flow Level 1 Tests ===\n";
+static const char DAT_00103352[] = "=== Control Flow Level 2 Tests ===\n";
+static const char DAT_00103546[] = "=== Control Flow Level 3 Tests ===\n";
+static const int DAT_001030a0[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120};
+
+// Forward declarations
+int __gmon_start__(void);
+int main(void);
+int double_value(int param_1, int param_2, int param_3);
+int triple_value(int param_1,int param_2,int param_3);
+int recursion_factorial(int param_1,int param_2,int param_3);
+unsigned int state_idle(int param_1, int param_2, int param_3);
+unsigned int state_processing(int param_1, int param_2, int param_3);
+unsigned int state_done(int param_1, int param_2, int param_3);
+unsigned int state_error(int param_1, int param_2, int param_3);
+int op_add(int param_1,int param_2);
+int op_sub(int param_1,int param_2);
+int op_mul(int param_1,int param_2);
+int op_div_wrapper(int param_1,int param_2);
+int op_div(int param_1,int param_2);
+int op_mod(int param_1,int param_2);
+int indirect_recursion_b(int param_1,int param_2);
+void call_func_ptr(void *param_1,unsigned int param_2,int param_3);
+unsigned int call_func_ptr_array(int param_1,unsigned int param_2);
+int call_virtual_func(unsigned long long param_1,int param_2);
+int process_with_callback(long param_1,int param_2,void *param_3);
+void conditional_func_ptr(int param_1,unsigned int param_2,int param_3);
+static void *PTR_op_add_00105d60[] = {op_add, op_sub, op_mul, op_div_wrapper, op_mod};
+
+// Function: FUN_00101020 @ 0x101020
+void FUN_00101020(void)
+{
+ return;
+}
+
+// Function: _start @ 0x101090
+void _start(unsigned long long param_1,unsigned long long param_2)
+{
+ exit(main());
+}
+
+// Function: deregister_tm_clones @ 0x1010c0
+void deregister_tm_clones(void)
+{
+ return;
+}
+
+// Function: register_tm_clones @ 0x1010f0
+void register_tm_clones(void)
+{
+ return;
+}
+
+// Function: __do_global_dtors_aux @ 0x101130
+void __do_global_dtors_aux(void)
+{
+ if (completed_0 != 0) {
+ return;
+ }
+ deregister_tm_clones();
+ completed_0 = 1;
+ return;
+}
+
+// Function: sequential_ops @ 0x101180
+int sequential_ops(int param_1,int param_2,int param_3)
+{
+ return (param_1 + param_2) * 2 - param_3;
+}
+
+// Function: single_if @ 0x1011b0
+int single_if(int param_1)
+{
+ int local_c;
+ local_c = param_1;
+ if (0 < param_1) {
+ local_c = param_1 << 1;
+ }
+ return local_c;
+}
+
+// Function: if_else @ 0x1011d0
+bool if_else(int param_1)
+{
+ return 0 < param_1;
+}
+
+// Function: nested_if_2 @ 0x101200
+int nested_if_2(int param_1,int param_2)
+{
+ int local_c;
+ if (param_1 < 1) {
+ local_c = 0;
+ }
+ else {
+ local_c = param_1;
+ if (0 < param_2) {
+ local_c = param_1 + param_2;
+ }
+ }
+ return local_c;
+}
+
+// Function: nested_if_deep @ 0x101250
+unsigned int nested_if_deep(int param_1,int param_2,int param_3,int param_4,int param_5)
+{
+ unsigned int local_c;
+ if (param_1 < 1) {
+ local_c = 0;
+ }
+ else if (param_2 < 1) {
+ local_c = 1;
+ }
+ else if (param_3 < 1) {
+ local_c = 2;
+ }
+ else if (param_4 < 1) {
+ local_c = 3;
+ }
+ else if (param_5 < 1) {
+ local_c = 4;
+ }
+ else {
+ local_c = 5;
+ }
+ return local_c;
+}
+
+// Function: if_elseif_chain @ 0x1012e0
+unsigned int if_elseif_chain(int param_1)
+{
+ unsigned int local_c;
+ if (param_1 == 0) {
+ local_c = 10;
+ }
+ else if (param_1 == 1) {
+ local_c = 0x14;
+ }
+ else if (param_1 == 2) {
+ local_c = 0x1e;
+ }
+ else {
+ local_c = 0xffffffff;
+ }
+ return local_c;
+}
+
+// Function: if_elseif_long @ 0x101340
+unsigned int if_elseif_long(int param_1)
+{
+ unsigned int local_c;
+ if (param_1 == 0) {
+ local_c = 100;
+ }
+ else if (param_1 == 1) {
+ local_c = 200;
+ }
+ else if (param_1 == 2) {
+ local_c = 300;
+ }
+ else if (param_1 == 3) {
+ local_c = 400;
+ }
+ else if (param_1 == 4) {
+ local_c = 500;
+ }
+ else {
+ local_c = 0xffffffff;
+ }
+ return local_c;
+}
+
+// Function: switch_small @ 0x1013d0
+unsigned int switch_small(unsigned int param_1,unsigned long long param_2,unsigned long long param_3)
+{
+ uint local_c;
+ switch(param_1) {
+ case 0:
+ local_c = 0xf;
+ break;
+ case 1:
+ local_c = 5;
+ break;
+ case 2:
+ local_c = 0x32;
+ break;
+ case 3:
+ local_c = 2;
+ break;
+ default:
+ local_c = 0xffffffff;
+ }
+ return local_c;
+}
+
+// Function: switch_large @ 0x101450
+unsigned int switch_large(unsigned int param_1)
+{
+ unsigned int local_c;
+ switch(param_1) {
+ case 0:
+ local_c = 0;
+ break;
+ case 1:
+ local_c = 10;
+ break;
+ case 2:
+ local_c = 0x14;
+ break;
+ case 3:
+ local_c = 0x1e;
+ break;
+ case 4:
+ local_c = 0x28;
+ break;
+ case 5:
+ local_c = 0x32;
+ break;
+ case 6:
+ local_c = 0x3c;
+ break;
+ case 7:
+ local_c = 0x46;
+ break;
+ case 8:
+ local_c = 0x50;
+ break;
+ case 9:
+ local_c = 0x5a;
+ break;
+ default:
+ local_c = 0xffffffff;
+ }
+ return local_c;
+}
+
+// Function: switch_default @ 0x101500
+unsigned int switch_default(int param_1)
+{
+ unsigned int local_c;
+ if (param_1 == 1) {
+ local_c = 100;
+ }
+ else if (param_1 == 2) {
+ local_c = 200;
+ }
+ else if (param_1 == 3) {
+ local_c = 300;
+ }
+ else {
+ local_c = 0;
+ }
+ return local_c;
+}
+
+// Function: switch_fallthrough @ 0x101570
+int switch_fallthrough(int param_1)
+{
+ int local_10;
+ local_10 = 0;
+ if (param_1 != 1) {
+ if (param_1 != 2) {
+ if (param_1 != 3) {
+ return -1;
+ }
+ local_10 = 0xc;
+ }
+ local_10 = param_1 * 2 + local_10;
+ }
+ return param_1 + local_10;
+}
+
+// Function: loop_for_fixed @ 0x1015f0
+int loop_for_fixed(int param_1)
+{
+ int local_14;
+ int local_10;
+ local_10 = 0;
+ for (local_14 = 0; local_14 < param_1; local_14 = local_14 + 1) {
+ local_10 = local_14 + local_10;
+ }
+ return local_10;
+}
+
+// Function: loop_while @ 0x101630
+unsigned int loop_while(int param_1,unsigned long long param_2,unsigned long param_3)
+{
+ uint local_14;
+ uint local_10;
+ int local_c;
+ local_10 = 0;
+ for (local_c = param_1; local_c != 0; local_c = local_c / 10) {
+ local_10 = local_10 + 1;
+ }
+ if ((int)local_10 < 1) {
+ local_14 = 1;
+ }
+ else {
+ local_14 = local_10;
+ }
+ return local_14;
+}
+
+// Function: loop_dowhile @ 0x101690
+int loop_dowhile(int param_1)
+{
+ int local_10;
+ int local_c;
+ local_10 = 0;
+ local_c = param_1;
+ do {
+ local_c = local_c / 10;
+ local_10 = local_10 + 1;
+ } while (local_c != 0);
+ return local_10;
+}
+
+// Function: loop_nested @ 0x1016d0
+int loop_nested(int param_1,int param_2)
+{
+ int local_1c;
+ int local_18;
+ int local_14;
+ local_14 = 0;
+ for (local_18 = 0; local_18 < param_1; local_18 = local_18 + 1) {
+ for (local_1c = 0; local_1c < param_2; local_1c = local_1c + 1) {
+ local_14 = local_14 + 1;
+ }
+ }
+ return local_14;
+}
+
+// Function: loop_break @ 0x101740
+int loop_break(int param_1)
+{
+ int local_30;
+ unsigned long long local_28;
+ unsigned long long local_20;
+ unsigned int local_18;
+ int local_10;
+ local_10 = param_1;
+ local_28 = 0x140000000a;
+ local_20 = 0x280000001e;
+ local_18 = 0x32;
+ local_30 = 0;
+ while( true ) {
+ if (4 < local_30) {
+ return -1;
+ }
+ if (*(int *)((long)&local_28 + (long)local_30 * 4) == param_1) break;
+ local_30 = local_30 + 1;
+ }
+ return local_30;
+}
+
+// Function: loop_continue @ 0x1017c0
+int loop_continue(int param_1)
+{
+ int local_14;
+ int local_10;
+ local_10 = 0;
+ for (local_14 = 1; local_14 <= param_1; local_14 = local_14 + 1) {
+ if (local_14 % 2 != 0) {
+ local_10 = local_14 + local_10;
+ }
+ }
+ return local_10;
+}
+
+// Function: goto_forward @ 0x101820
+int goto_forward(int param_1)
+{
+ int local_10;
+ local_10 = param_1;
+ if (0 < param_1) {
+ local_10 = param_1 * param_1;
+ }
+ return local_10 << 1;
+}
+
+// Function: goto_backward @ 0x101860
+int goto_backward(int param_1)
+{
+ int local_18;
+ int local_14;
+ int local_c;
+ if (param_1 < 1) {
+ local_c = 1;
+ }
+ else {
+ local_14 = 1;
+ for (local_18 = 1; local_18 <= param_1; local_18 = local_18 + 1) {
+ local_14 = local_18 * local_14;
+ }
+ local_c = local_14;
+ }
+ return local_c;
+}
+
+// Function: ternary_op @ 0x1018c0
+int ternary_op(int param_1,int param_2)
+{
+ int local_14;
+ local_14 = param_2;
+ if (param_2 < param_1) {
+ local_14 = param_1;
+ }
+ return local_14;
+}
+
+// Function: test_control_flow_l1 @ 0x1018f0
+void test_control_flow_l1(void)
+{
+ uint uVar1;
+ printf("%s", DAT_001030e4);
+ uVar1 = sequential_ops(5,7,3);
+ printf("CF-L1-01 (sequential_ops): %d\n",(unsigned long)uVar1);
+ uVar1 = single_if(10);
+ printf("CF-L1-02 (single_if): %d\n",(unsigned long)uVar1);
+ uVar1 = single_if(0xfffffffb);
+ printf("CF-L1-02 (single_if): %d\n",(unsigned long)uVar1);
+ uVar1 = if_else(5);
+ printf("CF-L1-03 (if_else): %d\n",(unsigned long)uVar1);
+ uVar1 = if_else(0xfffffffd);
+ printf("CF-L1-03 (if_else): %d\n",(unsigned long)uVar1);
+ uVar1 = nested_if_2(10,5);
+ printf("CF-L1-04 (nested_if_2): %d\n",(unsigned long)uVar1);
+ uVar1 = nested_if_2(10,0xfffffffb);
+ printf("CF-L1-04 (nested_if_2): %d\n",(unsigned long)uVar1);
+ uVar1 = nested_if_2(0xfffffff6,5);
+ printf("CF-L1-04 (nested_if_2): %d\n",(unsigned long)uVar1);
+ uVar1 = nested_if_deep(1,1,1,1,1);
+ printf("CF-L1-05 (nested_if_deep): %d\n",(unsigned long)uVar1);
+ uVar1 = if_elseif_chain(1);
+ printf("CF-L1-06 (if_elseif_chain): %d\n",(unsigned long)uVar1);
+ uVar1 = if_elseif_long(3);
+ printf("CF-L1-07 (if_elseif_long): %d\n",(unsigned long)uVar1);
+ uVar1 = switch_small(2);
+ printf("CF-L1-08 (switch_small): %d\n",(unsigned long)uVar1);
+ uVar1 = switch_large(7);
+ printf("CF-L1-09 (switch_large): %d\n",(unsigned long)uVar1);
+ uVar1 = switch_default(5);
+ printf("CF-L1-10 (switch_default): %d\n",(unsigned long)uVar1);
+ uVar1 = switch_fallthrough(3);
+ printf("CF-L1-11 (switch_fallthrough): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_for_fixed(10);
+ printf("CF-L1-12 (loop_for_fixed): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_while(0x3039);
+ printf("CF-L1-13 (loop_while): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_dowhile(0x2694);
+ printf("CF-L1-14 (loop_dowhile): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_nested(3,4);
+ printf("CF-L1-15 (loop_nested): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_break(0x1e);
+ printf("CF-L1-16 (loop_break): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_break(99);
+ printf("CF-L1-16 (loop_break): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_continue(10);
+ printf("CF-L1-17 (loop_continue): %d\n",(unsigned long)uVar1);
+ uVar1 = goto_forward(5);
+ printf("CF-L1-18 (goto_forward): %d\n",(unsigned long)uVar1);
+ uVar1 = goto_forward(0xfffffffd);
+ printf("CF-L1-18 (goto_forward): %d\n",(unsigned long)uVar1);
+ uVar1 = goto_backward(5);
+ printf("CF-L1-19 (goto_backward): %d\n",(unsigned long)uVar1);
+ uVar1 = ternary_op(10,5);
+ printf("CF-L1-20 (ternary_op): %d\n",(unsigned long)uVar1);
+ uVar1 = ternary_op(3,8);
+ printf("CF-L1-20 (ternary_op): %d\n",(unsigned long)uVar1);
+ return;
+}
+
+// Function: loop_multi_exit @ 0x101c00
+int loop_multi_exit(int param_1)
+{
+ int local_50;
+ int local_4c;
+ int local_48 [14];
+ int local_10;
+ local_10 = param_1;
+ memcpy(local_48,&DAT_001030a0,0x30);
+ local_4c = 0;
+ do {
+ if (2 < local_4c) {
+ return -1;
+ }
+ for (local_50 = 0; local_50 < 4; local_50 = local_50 + 1) {
+ if (local_48[(long)local_4c * 4 + (long)local_50] == local_10) {
+ return local_4c * 10 + local_50;
+ }
+ }
+ local_4c = local_4c + 1;
+ } while( true );
+}
+
+// Function: infinite_loop @ 0x101cb0
+int infinite_loop(int *param_1)
+{
+ int local_14;
+ local_14 = 0;
+ do {
+ if (*param_1 == 1) {
+ return local_14;
+ }
+ local_14 = local_14 + 1;
+ } while (local_14 < 0x3e9);
+ *param_1 = 1;
+ return local_14;
+}
+
+// Function: multi_return @ 0x101d10
+int multi_return(int param_1)
+{
+ int local_c;
+ if (param_1 < 0) {
+ local_c = -1;
+ }
+ else {
+ local_c = param_1 << 1;
+ if (local_c < 0x65) {
+ if (param_1 % 2 != 0) {
+ local_c = param_1 + 1;
+ }
+ }
+ else {
+ local_c = -2;
+ }
+ }
+ return local_c;
+}
+
+// Function: conditional_return @ 0x101d80
+int conditional_return(int param_1)
+{
+ int local_14;
+ int local_10;
+ if (param_1 < 1) {
+ if (param_1 < 0) {
+ local_14 = -param_1;
+ }
+ else {
+ local_14 = 0;
+ }
+ local_10 = local_14;
+ }
+ else {
+ local_10 = param_1 << 1;
+ }
+ return local_10;
+}
+
+// Function: duffs_device @ 0x101dd0
+int duffs_device(unsigned int *param_1,unsigned int *param_2,int param_3)
+{
+ int local_28;
+ unsigned int *local_20;
+ unsigned int *local_18;
+ int local_c;
+ if (param_3 < 1) {
+ local_c = -1;
+ }
+ else {
+ local_28 = param_3 + 7;
+ if (param_3 + 7 < 0) {
+ local_28 = param_3 + 0xe;
+ }
+ local_28 = local_28 >> 3;
+ local_c = param_3;
+ if ((uint)(param_3 % 8) < 8) {
+ local_20 = param_2;
+ local_18 = param_1;
+ switch(param_3 % 8) {
+ case 0:
+ local_20 = param_2;
+ local_18 = param_1;
+ break;
+ case 1:
+ goto switchD_00101e40_caseD_1;
+ case 2:
+ goto switchD_00101e40_caseD_2;
+ case 3:
+ goto switchD_00101e40_caseD_3;
+ case 4:
+ goto switchD_00101e40_caseD_4;
+ case 5:
+ goto switchD_00101e40_caseD_5;
+ case 6:
+ goto switchD_00101e40_caseD_6;
+ case 7:
+ goto switchD_00101e40_caseD_7;
+ }
+ do {
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_7:
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_6:
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_5:
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_4:
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_3:
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_2:
+ *local_18 = *local_20;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+switchD_00101e40_caseD_1:
+ *local_18 = *local_20;
+ local_28 = local_28 + -1;
+ local_20 = local_20 + 1;
+ local_18 = local_18 + 1;
+ } while (0 < local_28);
+ }
+ }
+ return local_c;
+}
+
+// Function: loop_complex_cond @ 0x101f80
+int loop_complex_cond(int param_1)
+{
+ bool bVar1;
+ int local_18;
+ int local_14;
+ int local_10;
+ local_10 = 0;
+ local_18 = 0;
+ local_14 = param_1;
+ while( true ) {
+ bVar1 = false;
+ if ((local_10 < local_14) && (bVar1 = false, local_18 < 10)) {
+ bVar1 = 0 < local_14;
+ }
+ if (!bVar1) break;
+ local_10 = local_10 + 2;
+ local_14 = local_14 + -1;
+ local_18 = local_18 + 1;
+ }
+ return local_10 + local_14 + local_18;
+}
+
+// Function: loop_modify_var @ 0x102000
+int loop_modify_var(int param_1)
+{
+ int local_14;
+ int local_10;
+ local_10 = 0;
+ for (local_14 = 0; local_14 < param_1; local_14 = local_14 + 1) {
+ local_10 = local_14 + local_10;
+ if (5 < local_14) {
+ local_14 = local_14 + 2;
+ }
+ }
+ return local_10;
+}
+
+// Function: loop_external_state @ 0x102060
+int loop_external_state(int *param_1)
+{
+ int local_14;
+ local_14 = 0;
+ do {
+ if (*param_1 != 0) {
+ return local_14;
+ }
+ local_14 = local_14 + 1;
+ } while (local_14 < 0x65);
+ return local_14;
+}
+
+// Function: recursion_factorial @ 0x1020a0
+int recursion_factorial(int param_1,int param_2,int param_3)
+{
+ int local_c;
+ (void)param_2;
+ (void)param_3;
+ if (param_1 < 2) {
+ local_c = 1;
+ }
+ else {
+ local_c = recursion_factorial(param_1 + -1, 0, 0);
+ local_c = param_1 * local_c;
+ }
+ return local_c;
+}
+
+// Function: tail_recursion @ 0x1020f0
+int tail_recursion(int param_1,int param_2)
+{
+ int local_c;
+ local_c = param_2;
+ if (1 < param_1) {
+ local_c = tail_recursion(param_1 + -1,param_1 * param_2);
+ }
+ return local_c;
+}
+
+// Function: indirect_recursion_a @ 0x102140
+int indirect_recursion_a(int param_1,int param_2)
+{
+ int local_c;
+ local_c = param_1;
+ if (0 < param_2) {
+ if (param_1 % 2 == 0) {
+ local_c = indirect_recursion_b
+ ((long)param_1 / 2 & 0xffffffff,param_2 + -1);
+ }
+ else {
+ local_c = indirect_recursion_b(param_1 * 3 + 1,param_2 + -1);
+ }
+ }
+ return local_c;
+}
+
+// Function: indirect_recursion_b @ 0x1021c0
+int indirect_recursion_b(int param_1,int param_2)
+{
+ int local_c;
+ local_c = param_1;
+ if (0 < param_2) {
+ local_c = indirect_recursion_a(param_1 + 1,param_2 + -1);
+ }
+ return local_c;
+}
+
+// Function: call_func_ptr @ 0x102200
+void call_func_ptr(void *param_1,unsigned int param_2,int param_3)
+{
+ ((int (*)(int, int, int))param_1)(param_2, param_3, 0);
+ return;
+}
+
+// Function: double_value @ 0x102290
+int double_value(int param_1,int param_2,int param_3)
+{
+ (void)param_2;
+ (void)param_3;
+ return param_1 << 1;
+}
+
+// Function: triple_value @ 0x1022a0
+int triple_value(int param_1,int param_2,int param_3)
+{
+ (void)param_2;
+ (void)param_3;
+ return param_1 * 3;
+}
+
+// Function: call_func_ptr_array @ 0x102220
+unsigned int call_func_ptr_array(int param_1,unsigned int param_2)
+{
+ int (*local_38 [4])(int, int, int);
+ unsigned int local_14;
+ int local_10;
+ unsigned int local_c;
+ local_10 = param_1;
+ local_14 = param_2;
+local_38[0] = (int (*)(int, int, int))double_value;
+local_38[1] = (int (*)(int, int, int))triple_value;
+local_38[2] = (int (*)(int, int, int))recursion_factorial;
+ if ((param_1 < 0) || (2 < param_1)) {
+ local_c = 0xffffffff;
+ }
+ else {
+ local_c = local_38[param_1](param_2, 0, 0);
+ }
+ return local_c;
+}
+
+// Function: call_virtual_func @ 0x1022b0
+int call_virtual_func(unsigned long long param_1,int param_2)
+{
+ return param_2 << 1;
+}
+
+// Function: process_with_callback @ 0x1022d0
+int process_with_callback(long param_1,int param_2,void *param_3)
+{
+ int iVar1;
+ int local_28;
+ int local_24;
+ local_24 = 0;
+ for (local_28 = 0; local_28 < param_2; local_28 = local_28 + 1) {
+ iVar1 = ((int (*)(int, int, int))param_3)(*(unsigned int *)(param_1 + (long)local_28 * 4), 0, 0);
+ local_24 = iVar1 + local_24;
+ }
+ return local_24;
+}
+
+// Function: test_control_flow_l2 @ 0x102330
+void test_control_flow_l2(void)
+{
+ uint uVar1;
+ unsigned long long local_78;
+ unsigned long long local_70;
+ unsigned int local_68;
+ unsigned int local_5c;
+ char local_58 [32];
+ unsigned long long local_38;
+ unsigned long long local_30;
+ unsigned long long local_28;
+ unsigned long long local_20;
+ unsigned int local_c;
+ printf("%s", DAT_00103352);
+ uVar1 = loop_multi_exit(7);
+ printf("CF-L2-01 (loop_multi_exit): %d\n",(unsigned long)uVar1);
+ local_c = 0;
+ uVar1 = infinite_loop(&local_c);
+ printf("CF-L2-02 (infinite_loop): %d\n",(unsigned long)uVar1);
+ uVar1 = multi_return(0xfffffffb);
+ printf("CF-L2-03 (multi_return): %d\n",(unsigned long)uVar1);
+ uVar1 = multi_return(100);
+ printf("CF-L2-03 (multi_return): %d\n",(unsigned long)uVar1);
+ uVar1 = multi_return(3);
+ printf("CF-L2-03 (multi_return): %d\n",(unsigned long)uVar1);
+ uVar1 = conditional_return(5);
+ printf("CF-L2-04 (conditional_return): %d\n",(unsigned long)uVar1);
+ conditional_return(0xfffffffb);
+ printf("CF-L2-04 (conditional_return): done\n");
+ local_38 = 0x200000001;
+ local_30 = 0x400000003;
+ local_28 = 0x600000005;
+ local_20 = 0x800000007;
+ memset(local_58,0,0x20);
+ uVar1 = duffs_device((unsigned int *)local_58,(unsigned int *)&local_38,8);
+ printf("CF-L2-05 (duffs_device): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_complex_cond(10);
+ printf("CF-L2-06 (loop_complex_cond): %d\n",(unsigned long)uVar1);
+ uVar1 = loop_modify_var(10);
+ printf("CF-L2-07 (loop_modify_var): %d\n",(unsigned long)uVar1);
+ local_5c = 0;
+ uVar1 = loop_external_state(&local_5c);
+ printf("CF-L2-08 (loop_external_state): %d\n",(unsigned long)uVar1);
+ conditional_func_ptr(0,5,0);
+ printf("CF-L2-09 (conditional_func_ptr): done\n");
+ uVar1 = recursion_factorial(5,0,0);
+ printf("CF-L2-09 (recursion_factorial): %d\n",(unsigned long)uVar1);
+ uVar1 = tail_recursion(5,1);
+ printf("CF-L2-10 (tail_recursion): %d\n",(unsigned long)uVar1);
+ uVar1 = indirect_recursion_a(10,3);
+ printf("CF-L2-11 (indirect_recursion): %d\n",(unsigned long)uVar1);
+  call_func_ptr((void *)double_value, 5, 0);
+ printf("CF-L2-12 (call_func_ptr): done\n");
+ uVar1 = call_func_ptr_array(0,5);
+ printf("CF-L2-13 (call_func_ptr_array): %d\n",(unsigned long)uVar1);
+ uVar1 = call_func_ptr_array(2,5);
+ printf("CF-L2-13 (call_func_ptr_array): %d\n",(unsigned long)uVar1);
+ local_78 = 0x200000001;
+ local_70 = 0x400000003;
+ local_68 = 5;
+ uVar1 = process_with_callback((long)&local_78, 5, (void *)double_value);
+ printf("CF-L2-15 (process_with_callback): %d\n",(unsigned long)uVar1);
+ return;
+}
+
+// Function: non_local_jump @ 0x1025c0
+int non_local_jump(int param_1)
+{
+ int iVar1;
+ int local_c;
+ iVar1 = _setjmp(jump_buffer);
+ if (iVar1 == 0) {
+ if (param_1 < 0) {
+ longjmp(jump_buffer,1);
+ }
+ if (100 < param_1) {
+ longjmp(jump_buffer,2);
+ }
+ local_c = param_1 << 1;
+ }
+ else {
+ local_c = -1;
+ }
+ return local_c;
+}
+
+// Function: cpp_exception @ 0x102640
+int cpp_exception(int param_1)
+{
+ int local_c;
+ if (param_1 < 0) {
+ local_c = -1;
+ }
+ else if (param_1 < 0x65) {
+ local_c = param_1 << 1;
+ }
+ else {
+ local_c = -2;
+ }
+ return local_c;
+}
+
+// Function: large_jump_table @ 0x102690
+unsigned int large_jump_table(int param_1,unsigned int param_2,unsigned int param_3)
+{
+ int (*local_68 [10])(int, int);
+ unsigned int local_18;
+ unsigned int local_14;
+ int local_10;
+ unsigned int local_c;
+ local_18 = param_3;
+ local_14 = param_2;
+ local_10 = param_1;
+ local_68[0] = (int (*)(int, int))op_add;
+ local_68[1] = (int (*)(int, int))op_sub;
+ local_68[2] = (int (*)(int, int))op_mul;
+ local_68[3] = (int (*)(int, int))op_div;
+ local_68[4] = (int (*)(int, int))op_mod;
+ if ((local_10 < 0) || (4 < local_10)) {
+ local_c = 0xffffffff;
+ }
+ else {
+ local_c = local_68[local_10](local_14,local_18);
+ }
+ return local_c;
+}
+
+// Function: op_add @ 0x102700
+int op_add(int param_1,int param_2)
+{
+ return param_1 + param_2;
+}
+
+// Function: op_sub @ 0x102720
+int op_sub(int param_1,int param_2)
+{
+ return param_1 - param_2;
+}
+
+// Function: op_mul @ 0x102740
+int op_mul(int param_1,int param_2)
+{
+ return param_1 * param_2;
+}
+
+// Function: op_div @ 0x102760
+int op_div_wrapper(int param_1,int param_2)
+{
+ uint local_14;
+ if (param_2 == 0) {
+ local_14 = 0;
+ }
+ else {
+ local_14 = param_1 / param_2;
+ }
+ return local_14;
+}
+
+// Function: op_div @ 0x102760
+int op_div(int param_1,int param_2)
+{
+ return op_div_wrapper(param_1, param_2);
+}
+
+// Function: op_mod @ 0x1027a0
+int op_mod(int param_1,int param_2)
+{
+ int local_14;
+ if (param_2 == 0) {
+ local_14 = 0;
+ }
+ else {
+ local_14 = param_1 % param_2;
+ }
+ return local_14;
+}
+
+// Function: op_and @ 0x1027e0
+uint op_and(uint param_1,uint param_2)
+{
+ return param_1 & param_2;
+}
+
+// Function: op_or @ 0x102800
+uint op_or(uint param_1,uint param_2)
+{
+ return param_1 | param_2;
+}
+
+// Function: op_xor @ 0x102820
+uint op_xor(uint param_1,uint param_2)
+{
+ return param_1 ^ param_2;
+}
+
+// Function: op_shl @ 0x102840
+int op_shl(int param_1,byte param_2)
+{
+ return param_1 << (param_2 & 0x1f);
+}
+
+// Function: op_shr @ 0x102860
+int op_shr(int param_1,byte param_2)
+{
+ return param_1 >> (param_2 & 0x1f);
+}
+
+// Function: conditional_func_ptr @ 0x102880
+void conditional_func_ptr(int param_1,unsigned int param_2,int param_3)
+{
+ int (*local_18)(int, int, int);
+ if (param_1 == 0) {
+ local_18 = (int (*)(int, int, int))double_value;
+ }
+ else if (param_1 == 1) {
+ local_18 = (int (*)(int, int, int))triple_value;
+ }
+ else {
+ local_18 = (int (*)(int, int, int))recursion_factorial;
+ }
+ (*local_18)(param_2, 0, 0);
+ return;
+}
+
+// Function: state_machine @ 0x1028f0
+unsigned int state_machine(int param_1,unsigned int param_2)
+{
+ unsigned int local_c;
+ switch(param_2) {
+ case 0:
+ if (param_1 == 1) {
+ local_c = 1;
+ }
+ else {
+ local_c = 0;
+ }
+ break;
+ case 1:
+ if (param_1 == 2) {
+ local_c = 2;
+ }
+ else if (param_1 == 99) {
+ local_c = 3;
+ }
+ else {
+ local_c = 1;
+ }
+ break;
+ case 2:
+ local_c = 2;
+ break;
+ case 3:
+ if (param_1 == 0) {
+ local_c = 0;
+ }
+ else {
+ local_c = 3;
+ }
+ break;
+ default:
+ local_c = 3;
+ }
+ return local_c;
+}
+
+// Function: fsm_func_table @ 0x1029c0
+unsigned int fsm_func_table(unsigned int param_1,int param_2)
+{
+ unsigned int (*local_38 [4])(int, int, int);
+ int local_14;
+ unsigned int local_10;
+ unsigned int local_c;
+ local_10 = param_1;
+ local_14 = param_2;
+ local_38[0] = (unsigned int (*)(int, int, int))state_idle;
+ local_38[1] = (unsigned int (*)(int, int, int))state_processing;
+ local_38[2] = (unsigned int (*)(int, int, int))state_done;
+ local_38[3] = (unsigned int (*)(int, int, int))state_error;
+ if ((param_2 < 0) || (3 < param_2)) {
+ local_c = 3;
+ }
+ else {
+ local_c = (*local_38[param_2])(param_1, 0, 0);
+ }
+ return local_c;
+}
+
+// Function: state_idle @ 0x102a40
+unsigned int state_idle(int param_1, int param_2, int param_3)
+{
+ (void)param_2;
+ (void)param_3;
+ return param_1 == 1;
+}
+
+// Function: state_processing @ 0x102a60
+unsigned int state_processing(int param_1, int param_2, int param_3)
+{
+ unsigned int local_c;
+ (void)param_2;
+ (void)param_3;
+ if (param_1 == 2) {
+ local_c = 2;
+ }
+ else if (param_1 == 99) {
+ local_c = 3;
+ }
+ else {
+ local_c = 1;
+ }
+ return local_c;
+}
+
+// Function: state_done @ 0x102aa0
+unsigned int state_done(int param_1, int param_2, int param_3)
+{
+ (void)param_1;
+ (void)param_2;
+ (void)param_3;
+ return 2;
+}
+
+// Function: state_error @ 0x102ab0
+unsigned int state_error(int param_1, int param_2, int param_3)
+{
+ unsigned int uVar1;
+ (void)param_2;
+ (void)param_3;
+ uVar1 = 3;
+ if (param_1 == 0) {
+ uVar1 = 0;
+ }
+ return uVar1;
+}
+
+// Function: computed_goto @ 0x102ad0
+unsigned int computed_goto(unsigned long long param_1,int param_2)
+{
+ unsigned int uVar1;
+ unsigned int (*local_48 [5])(int, int, int);
+ int local_1c;
+ unsigned long long local_18;
+ local_18 = param_1;
+ local_1c = param_2;
+ local_48[0] = (unsigned int (*)(int, int, int))state_idle;
+ local_48[1] = (unsigned int (*)(int, int, int))state_processing;
+ local_48[2] = (unsigned int (*)(int, int, int))state_done;
+ local_48[3] = (unsigned int (*)(int, int, int))state_error;
+ if ((-1 < param_2) && (param_2 < 4)) {
+ uVar1 = (*local_48[param_2])((int)local_18, 0, 0);
+ return uVar1;
+ }
+ return 0xffffffff;
+}
+
+// Function: obfuscated_cf @ 0x102b70
+int obfuscated_cf(int param_1)
+{
+ int local_10;
+ local_10 = param_1;
+ if (param_1 * param_1 + 1 < 0) {
+ local_10 = param_1 * 2 + 1;
+ }
+ return local_10 << 1;
+}
+
+// Function: opaque_predicate @ 0x102bb0
+int opaque_predicate(int param_1)
+{
+ return param_1 << 1;
+}
+
+// Function: overlapped_code @ 0x102bf0
+unsigned int overlapped_code(uint param_1,unsigned long long param_2,unsigned long param_3)
+{
+ uint local_c;
+ if ((param_1 & 1) == 0) {
+ local_c = (int)param_1 / 2;
+ }
+ else {
+ local_c = param_1 * 3 + 1;
+ }
+ return local_c;
+}
+
+// Function: test_control_flow_l3 @ 0x102c30
+void test_control_flow_l3(void)
+{
+ uint uVar1;
+ unsigned long long local_18;
+ unsigned long long local_10;
+ printf("%s", DAT_00103546);
+ uVar1 = non_local_jump(5);
+ printf("CF-L3-01 (non_local_jump): %d\n",(unsigned long)uVar1);
+ uVar1 = non_local_jump(0xfffffffb);
+ printf("CF-L3-01 (non_local_jump): %d\n",(unsigned long)uVar1);
+ uVar1 = cpp_exception(5);
+ printf("CF-L3-02 (cpp_exception): %d\n",(unsigned long)uVar1);
+ uVar1 = cpp_exception(0xfffffffb);
+ printf("CF-L3-02 (cpp_exception): %d\n",(unsigned long)uVar1);
+ uVar1 = large_jump_table(0,10,5);
+ printf("CF-L3-03 (large_jump_table): %d\n",(unsigned long)uVar1);
+ conditional_func_ptr(0,5,0);
+ printf("CF-L3-04 (conditional_func_ptr): done\n");
+ uVar1 = state_machine(1,0);
+ printf("CF-L3-05 (state_machine): %d\n",(unsigned long)uVar1);
+ uVar1 = fsm_func_table(2,1);
+ printf("CF-L3-06 (fsm_func_table): %d\n",(unsigned long)uVar1);
+ local_18 = 0x100000000;
+ local_10 = 0x300000002;
+ uVar1 = computed_goto(local_18,2);
+ printf("CF-L3-07 (computed_goto): %d\n",(unsigned long)uVar1);
+ uVar1 = obfuscated_cf(5);
+ printf("CF-L3-08 (obfuscated_cf): %d\n",(unsigned long)uVar1);
+ uVar1 = opaque_predicate(5);
+ printf("CF-L3-09 (opaque_predicate): %d\n",(unsigned long)uVar1);
+ uVar1 = overlapped_code(5, 0, 0);
+ printf("CF-L3-10 (overlapped_code): %d\n",(unsigned long)uVar1);
+ return;
+}
+
+// Function: main @ 0x102db0
+int main(void)
+{
+ test_control_flow_l1();
+ test_control_flow_l2();
+ test_control_flow_l3();
+ return 0;
+}
+
+// Function: _fini @ 0x102dd8
+void _fini(void)
+{
+ return;
+}
+

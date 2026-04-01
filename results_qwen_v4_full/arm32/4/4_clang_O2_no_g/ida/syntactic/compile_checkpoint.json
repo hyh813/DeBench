@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 9,
+  "source_file": "decompiled/ida_out/arm32/4/4_clang_O2_no_g.c",
+  "fixed_file": "results_qwen_v4_full/arm32/4/4_clang_O2_no_g/ida/syntactic/fix_4_clang_O2_no_g.c"
+}

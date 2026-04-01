@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/4/4_gcc_Os_no_g/angr/syntactic/bin/4_gcc_Os_no_g_fixed",
+  "stdout": "RETURN VALUES TEST\n\nCALL-L2-01: 42\nCALL-L2-02: 20\nCALL-L2-03: 7\nCALL-L2-04: -1265745920\nCALL-L2-05: 10\nCALL-L2-06: 0\nCALL-L2-07: 40\nCALL-L2-08: 60\nPARAM-L3-05: 21\nCALLING CONVENTIONS TEST\n\nCALL-L1-01: 15\nCALL-L1-02: 50\nCALL-L1-03: 6\nCALL-L1-04: 15\nCALL-L1-05: 15\nCALL-L1-06: 100\nCALL-L1-07: 21\nCALL-L1-08: 15\nCALL-L1-09: 10\nCALL-L1-10: 33\nVARARGS: 0\nNO ARGS: 42\nMANY ARGS: 36\nMIXED ARGS: 114\nPARAM-L2-03: -1460204150\nCALL-L1-11: 50\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

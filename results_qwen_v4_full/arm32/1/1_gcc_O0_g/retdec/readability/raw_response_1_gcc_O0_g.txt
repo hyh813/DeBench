@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. For example, `loop_break` uses `v1`, `v2`, `v3` instead of `index`, `found`, `array_size`. Function parameters retain source names which is positive.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are preserved from source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), clearly indicating purpose. This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (switch case values 10, 20, 30). String literals stored as hex-encoded globals (`g1`, `g2`, `g3`) rather than readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Global variables `g4`-`g7` appear without clear purpose. Redundant type casts present (`(int32_t)(bool)(x > 0)`). Some compiler artifacts remain visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical failures: `if_elseif_chain` uses broken switch with incorrect fall-through, `switch_fallthrough` uses goto labels instead of proper switch, `loop_multi_exit` is extremely convoluted with nested while loops instead of nested for loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved from source, but many functions are semantically broken. `call_func_ptr` and `conditional_func_ptr` return just `x` without calling the function pointer.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple goto labels disrupt flow (`lab_0x10a64`, `lab_0x112f8`, `lab_0x11360`). `switch_fallthrough` and `loop_break` have particularly poor linearization.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `loop_multi_exit` has massive code duplication with identical logic repeated 3+ times. `if_elseif_long` repeats similar switch patterns unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`/`uint32_t` consistently, but some mismatches exist (`goto_backward` takes `uint32_t` but source uses `int`). Custom type `int33_t` is unusual.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Array initialization broken (`arr = {5, 0, 0, 0, 0}` is invalid C syntax). 2D array handling in `loop_multi_exit` uses pointer arithmetic instead of proper array indexing.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int32_t (*)(int32_t))idx`, `(int32_t)&funcs`, `(int32_t)arr`. Pointer arithmetic opaque in `loop_break` (`*(int32_t *)((int32_t)&v3 - 28 + 4 * v2)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments. Only auto-generated metadata (address ranges, line ranges). No explanation of algorithm intent or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Duff's device completely lost in `duffs_device`. State machine patterns not identified. Loop idioms not recognized (e.g., `loop_for_fixed` optimized to formula but not documented).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions presented confidently without warnings. `call_func_ptr` returns `x` without indicating function pointer call was lost. No UNREACHABLE markers where appropriate.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Global variable usage opaque (`g4`, `g5`, `g6`, `g7` assigned without explanation). Callback relationships lost.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in one file. Test functions grouped (`test_control_flow_l1/2/3`). Source organization partially preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile: invalid array initialization syntax (`arr = {5, 0, 0, 0, 0}`), struct initialization issues in `non_local_jump`, function pointer array handling broken.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (3+6+4+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (6+5+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+6+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.44/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **`call_func_ptr` completely broken**: Returns `x` instead of calling function pointer `f(x)` - semantic failure
+- **`duffs_device` pattern lost**: Switch-case fall-through structure completely destroyed, only returns `n`
+- **`loop_multi_exit` unreadable**: Nested for loops transformed into convoluted while loops with pointer arithmetic
+- **Invalid C syntax**: Array initialization `arr = {5, 0, 0, 0, 0}` will not compile
+- **`switch_fallthrough` uses goto**: Intentional fall-through replaced with explicit goto labels, losing semantic intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved from source code, clearly indicating purpose despite semantic failures in implementation
+
+### Most Needs Improvement:
+- **Semantic Transparency (2/10 average)** - No comments, no idiom recognition, no anomaly indication, no contract recovery; broken code presented confidently
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and preserve function pointer calls** - `call_func_ptr` and `call_func_ptr_array` must emit actual indirect calls, not just return parameters
+2. **Recognize switch fall-through patterns** - Analyze case block continuity to recover intentional fall-through vs. broken decompilation
+3. **Add confidence annotations** - Flag functions where decompilation confidence is low (e.g., `// DECOMPILATION UNCERTAIN: function pointer call not resolved`)

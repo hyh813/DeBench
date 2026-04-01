@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `a0`, `v0`, `flag1`, and `cur`. Despite the source being compiled with `-g` (debug info), semantic names like `x`, `result`, or `key` are not recovered.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: High-level test functions like `param_fake_branch`, `param_opaque_predicate`, and `main` retain their original names. However, many low-level helpers (e.g., `sub_401030`, `sub_401130`) remain generic addresses.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers are present (e.g., `90` for the XOR key, `10`, `20`) without named constants to explain their purpose, though they are used in a way that makes their role inferable.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise pollutes the code, including Position-Independent Code (PIC) thunks (`__x86.get_pc_thunk.bx`), stack canary checks (`_ccall(..., 20)`), and redundant casts, which obscure the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: The decompiler successfully transforms tail recursion into loops (e.g., `param_tail_call_optimized`) and simplifies complex opaque predicates into standard `do-while` loops, making the execution path easy to follow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The `test_obf_opt_edge` function is a monolith containing inlined logic for almost all test cases. This destroys the modularity present in the source, making it hard to isolate specific test behaviors.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom with minimal forward jumps. Loop structures are well-formed, and early returns are used appropriately where applicable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code (like the fake branches in `param_fake_branch`) has been eliminated, and constant propagation (e.g., `call_fake_branch` returning `10`) simplifies the output effectively.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are often generic `unsigned int` or `int` regardless of the source's specific usage (e.g., `char` vs `int`). Signedness is frequently incorrect (e.g., `param_fake_branch` takes `unsigned int` vs source `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are not recovered; instead, the code uses raw pointer arithmetic and generic `struct_0` definitions with `padding_0` and `field_XX` offsets (e.g., `jmp_buffer` usage is raw stack access).
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code contains unsafe casts, such as `*((int *)_ccall(...))` for stack checks and `CONCAT` operations for 128-bit math emulation, which are not standard C and indicate type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of obfuscated sections (like the opaque predicates).
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: The decompiler successfully identifies and simplifies the GCD algorithm in `param_opaque_predicate` and converts tail recursion to iteration, showing good pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The removal of the "fake branches" in `param_fake_branch` is done silently without flagging that code was eliminated or that the source contained potentially obfuscating control flow.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirements for `setjmp`/`longjmp` usage are implicit and unexplained).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Calls to library functions or helpers are often opaque (e.g., `sub_401130` for `setjmp`), making it difficult to understand the relationship between the code and standard C library functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat list of functions. While the main functions are grouped, the lack of logical separation (e.g., separating signal handlers from logic) reduces organization.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code uses pseudo-operations like `_ccall`, `CONCAT`, and `__x86.get_pc_thunk`, making it impossible to compile without significant manual modification or a custom preprocessor.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Overall = (5.0 × 0.30) + (7.0 × 0.25) + (3.7 × 0.20) + 
+          (2.8 × 0.15) + (3.3 × 0.10)
+Overall = 1.5 + 1.75 + 0.74 + 0.42 + 0.33
+Overall = 4.74
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.7/10
+
+### Critical Defects (Bullet List)
+- Variable names are generic (`a0`, `v0`, `flag1`) despite debug symbols being available in the source.
+- Stack canary checks (`_ccall`) and PIC thunks (`__x86.get_pc_thunk`) are inlined as noise, obscuring business logic.
+- Composite types (structs) are not recovered; data is accessed via raw offsets and generic `struct_0`.
+- The `test_obf_opt_edge` function is a monolith due to aggressive inlining, destroying modularity.
+- Code uses non-standard pseudo-ops (`CONCAT`, `_ccall`) rendering it non-compilable.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Control Flow Naturalness (8/10)**
+- **Why?** The decompiler successfully flattened tail recursion into loops and simplified complex opaque predicates into readable `do-while` structures.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Variable Naming Quality (3/10)**
+- **Why?** The failure to recover meaningful variable names from the debug info (e.g., `x`, `result`, `key`) forces the reader to track generic `v0`/`v1` variables manually.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Utilize Debug Symbols**: Prioritize loading DWARF debug information to restore original variable and function names instead of generating generic `a0`/`v0` identifiers.
+2. **Abstract Compiler Artifacts**: Detect and hide stack canary checks and PIC thunks behind macros or helper functions to reduce visual noise.
+3. **Recover Composite Types**: Implement type recovery to reconstruct `struct` types (like `jmp_buf`) based on standard library usage patterns instead of raw pointer arithmetic.

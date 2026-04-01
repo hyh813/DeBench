@@ -1,0 +1,8 @@
+Testing fake branch...
+
+fake_branch result: 10
+opaque_predicate result: 56
+instruction_substitution result: 10
+string_encryption result: 0
+tail_call_optimized result: 500500
+non_tail_call result: 630

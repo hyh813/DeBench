@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-1/5-1_clang_O3_no_g/ida/syntactic/bin/5-1_clang_O3_no_g_fixed",
+  "stdout": "Testing C++ features\nMember func result: 4704\nConstructor result: 21\nVirtual func result: 42\nMultiple inheritance: 71\nDiamond inheritance: 650\nOperator overload: 22\nTemplate func: 39\nTemplate class: 16\nLambda: 85\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are predominantly generic (e.g., `iVar1`, `uVar2`, `a_local`, `b_local`). The `_local` suffix added to parameters (e.g., `int a_local`) in simple functions like `cdecl_func` is redundant noise that obscures the direct mapping to the original parameters `a` and `b`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the original source (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), accurately reflecting their purpose and matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: While integer literals like `5` and `10` are clear, the floating-point constant `3.14` is decompiled as a raw hex value `0x40091eb851eb851f` in `test_calling_conventions`, significantly hindering readability of the arithmetic intent.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with repetitive `WARNING: Unknown calling convention` comments. Additionally, the decompiler introduces unused local variables (e.g., `int a_local;` in `cdecl_func`) that map to register copies but serve no semantic purpose in the high-level view.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with proper `for` and `while` loops. The `switch` statement in `ret_multi_branch` is converted to a chained `if-else` structure, which is acceptable and readable, though not the original construct.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are recovered perfectly with 1:1 mapping to the source. There is no inlining or outlining of functions; the granularity matches the original source exactly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps. Early returns are preserved correctly, and the flow is easy to follow without complex spaghetti logic.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is moderate redundancy due to the `-O0` compilation, such as the explicit loading of parameters into local variables before use (e.g., `int a_local;`), which adds unnecessary lines to simple functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: While basic types like `int` and `char*` are correct, the decompilation fails to recover high-level floating-point operations in `func_mixed_args`, instead exposing low-level `__aeabi_dadd` calls and `undefined8` types. Entry points like `_start` use generic `undefined4` types.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structures like `LargeStruct`, `SmallStruct`, and `SmallPoint` are correctly recovered and used in function signatures. Access patterns like `s.data[i]` are preserved, maintaining the original structure layout visibility.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer types are generally respected, and casts are mostly accurate (e.g., `(int *)0x0`). There are no obviously dangerous or incorrect casts introduced by the decompiler that would lead to undefined behavior analysis errors.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to automated warnings like `WARNING: Unknown calling convention` or `WARNING: Removing unreachable block`. There are no semantic comments explaining the logic, algorithms, or the purpose of complex operations like the varargs handling.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like `va_list` usage in `varargs_func` are recognizable, though the implementation details (`args.__ap = local_c`) are low-level. The "mixed calling conventions" test is not explicitly identified as a pattern, just a sequence of calls.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler consistently warns about unknown calling conventions, which is accurate but repetitive. However, it fails to flag the raw hex floating-point literal `0x40091eb851eb851f` as a potential double precision constant, leaving it as a magic number.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., `p != NULL` checks are just code, not documented contracts) or postconditions. The function signatures do not convey any semantic guarantees beyond the types.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and clear. The relationship between `callback_func` and the function pointer parameter in `param_func_ptr` is preserved and readable, showing the callback mechanism clearly.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the logical grouping of functions found in the source. Test functions are grouped together, and helper functions appear in a coherent order, matching the source file structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile standalone due to the presence of `undefined4` types, reliance on compiler intrinsics (`__aeabi_*`), and the specific `__return_storage_ptr__` parameter injection for struct returns, which are Ghidra-specific artifacts.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- **Floating Point Logic Loss**: In `func_mixed_args`, the simple arithmetic `x + len + d + ll` is exploded into low-level `__aeabi_dadd` and `__aeabi_l2d` library calls, completely obscuring the original logic.
+- **Literal Corruption**: The double literal `3.14` is represented as raw hex `0x40091eb851eb851f`, making it impossible to read the intended value without external tools.
+- **Variable Naming Noise**: Parameters are redundantly copied to local variables with `_local` suffixes (e.g., `a_local`), adding clutter to simple functions like `cdecl_func`.
+- **Type Precision**: Use of `undefined4` and `undefined8` in function signatures (e.g., `_start`, `func_mixed_args`) degrades type safety and readability.
+- **Comment Spam**: Excessive `WARNING: Unknown calling convention` comments clutter the output without adding value to the understanding of the logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler successfully preserved all original function names from the symbol table, making the high-level purpose of every unit immediately clear.
+
+**Most Needs Improvement:** Type Precision (scored 4/10)
+- **Why?** The failure to abstract soft-float library calls into arithmetic operators and the presence of generic `undefined` types significantly degrades the semantic accuracy of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Aggregate Soft-Float Intrinsics**: Detect patterns of `__aeabi_dadd`, `__aeabi_d2iz`, etc., and lift them back into high-level arithmetic operators (`+`, `-`, `*`) and casts.
+2.  **Recover Floating-Point Literals**: Improve constant propagation to recognize hex values representing IEEE 754 doubles/floats and display them as their decimal equivalents (e.g., `3.14`).
+3.  **Optimize Parameter Mapping**: Eliminate the redundant "parameter to local variable" copy step (e.g., `int a_local;`) when the variable is only used once or immediately, mapping parameters directly to their usage.

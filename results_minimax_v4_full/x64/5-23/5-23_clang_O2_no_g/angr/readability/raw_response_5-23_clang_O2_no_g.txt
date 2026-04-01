@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `v0`, `v1`, `idx`, `ptr`. No semantic meaning is recovered - e.g., `param_macro_constants` takes `a0` instead of `size`, and `param_asm_clobber` uses `ptr` and `a1` instead of `arr` and `n`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions (`test_preprocessing_features`, `test_asm_features`, `main`) and param/call functions are correctly named. However, many helper functions use generic `sub_XXXX` naming (e.g., `sub_401020`, `sub_40102c`), and wrapper functions like `sub_4011b6` that just call `param_macro_functions()` lack descriptive names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1025` (should be `MAX_SIZE+1`), `0x200` (should be `512`), and `57072` (should be `0xDEF0`) appear without explanation. The value `30` for `sysconf(_SC_PAGESIZE)` is unexplained. Some constants like `64` are correct but lack symbolic names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. The `uint128_t` type appears as a custom construct, and some unusual constructs like `CONCAT` macro usage in SIMD code, but overall manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Uses natural if-else constructs and proper for loops. The `param_asm_clobber` function correctly recovers a loop structure. At `-O0`, control flow should be straightforward, and the decompiler delivers this.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (mostly 10-30 lines). Good separation between test functions and implementation functions. The `call_` wrapper functions properly separate caller from callee.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in functions like `param_dynamic_code` and `param_memory_protection` are appropriate. Some complexity in `call_asm_privileged` but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or significant redundancy. The `test_preprocessing_features` and `test_asm_features` functions have repeated printf patterns but that's expected from the source structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` - mostly correct for AMD64. However, loses precision: should be `size_t` for `sysconf` and `mmap` returns, `int*` for array parameters instead of `unsigned long`. The parameter `a0` in `param_macro_constants` should be `int` not `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. The code uses raw pointer arithmetic like `ptr + idx * 4` instead of array subscripting. The `uint128_t` appears but seems like a decompiler artifact rather than recovered type. Array parameters like `arr` in `param_asm_clobber` are treated as raw pointers.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `param_asm_simd` function has unusual signature with `long long` parameters that should be `int*`. Pointer arithmetic like `ptr + idx * 4` is present but not obviously unsafe. Function pointer casting in `param_dynamic_code` (`ptr(a0)`) is concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled code whatsoever. The original source has extensive comments explaining macro behavior, assembly constraints, and test expectations - all lost. This is critical for understanding preprocessor and assembly code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible but not named. The atomic operations use `atomic_exchange_add` which is correct. The SIMD operations show `AddV` which appears to be a decompiler-recognized intrinsic. However, no explicit naming of patterns like "stringize macro", "token paste", or "include guard".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. The indirect function call in `param_dynamic_code` (`ptr(a0)`) should be flagged as uncertain. The `CONCAT` macro usage in SIMD code is unusual. No indication of potential issues with the dynamic code generation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The `param_asm_clobber` function implicitly requires `n > 0` and valid pointer, but this is not indicated. The `param_memory_protection` has complex flow with error codes that should have documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `test_preprocessing_features` calls individual test functions). However, no documentation of who calls what, no indication of callback relationships, and global variable usage (like `global_var` in `param_memory_clobber_demo`) is not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing test functions together, ASM test functions together, main and test entry points at the end. Static functions like `my_func` are properly scoped. Minor issue: some helper functions (`sub_401020`, etc.) are interleaved with main functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has extern declarations for global variables (`g_403fe8`, etc.) and string tables. Should compile with standard libc. The `uint128_t` type may need definition. Missing includes would need to be added for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`a0`, `v0`, `idx`, `ptr`) - loses all semantic meaning from original source
+- No comments recovered - critical for understanding preprocessor behavior and assembly constraints
+- Type precision lost - should be `size_t`, `int*`, etc. but uses generic `unsigned long`, `unsigned long`
+- No struct/union recovery - all treated as raw pointer arithmetic
+- Magic numbers unexplained: `1025` should be `MAX_SIZE+1`, `57072` should be `0xDEF0`
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- At `-O0`, control flow is correctly recovered as natural if-else and for loops without goto spaghetti
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- Zero comments in output. For preprocessor and assembly code, comments are essential to explain macro expansion, assembly constraints, and semantic intent that cannot be recovered from binary alone.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` in `param_macro_constants` is compared to 1024 and used in arithmetic - should be named `size` or `max_size`
+2. **Recover preprocessor constants**: Detect magic numbers that match macro definitions (1024=MAX_SIZE, 16=BUFFER_COUNT) and replace with symbolic names
+3. **Add semantic comments for assembly**: Document constraint meanings (e.g., "r" means register, "memory" clobber indicates possible modification) and flag uncertain indirect calls

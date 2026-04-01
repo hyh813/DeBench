@@ -1,0 +1,23 @@
+=== Testing preprocessing features ===
+
+PASS: macro_constants - 64
+PASS: macro_functions - 30
+PASS: conditional_compile - 32
+PASS: multi_branch_compile - 57122
+PASS: macro_recursion - 116
+PASS: stringize - 19
+PASS: token_paste - 60
+LOG: Values: 10, 20, 30
+PASS: variadic_macro - 60
+PASS: macro_override - 16
+PASS: include_guard - 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:52
+PASS: test_preprocessing_features - 382
+=== Testing ASM features ===
+
+PASS: asm_basic - 15
+PASS: asm_clobber - -1631719120
+PASS: asm_multi_insn - -1
+PASS: asm_simd - -4
+PASS: asm_atomic - 25
+PASS: call_asm_privileged - 77

@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 13,
+  "source_file": "decompiled/ida_out/arm32/2/2_clang_O1_g.c",
+  "fixed_file": "results_qwen_v4_full/arm32/2/2_clang_O1_g/ida/syntactic/fix_2_clang_O1_g.c"
+}

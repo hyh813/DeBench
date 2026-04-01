@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses entirely generic variable names (v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12) throughout. Compare to source which uses semantic names like `x`, `arr`, `n`, `result`, `mem`, `head`, `temp`. The decompiled code is nearly impossible to follow due to these meaningless names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions and main logic functions retain correct names (double_value, local_vars, heap_basic, test_stack_memory). However, CRT/startup functions use generic names (function_9d0, function_a40, function_a70). The core functions are named correctly, but infrastructure functions are not.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (20, 42, 100 appear in test output), but many address literals like `0x14020`, `0x2550`, `0x13fe0` are unexplained. The magic number `3092` in `*(int64_t *)&global_func_ptr = 3092;` is completely opaque. Mixed clarity.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__asm_sbfiz`, `__asm_ubfx`, `__asm_sbfx`, `__asm_dmb` intrinsics exposed; unnecessary casts throughout; `__stack_chk_fail` calls; complex bit manipulation expressions like `v3 & 0xffffffff`. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops are properly recovered (while loops in heap_basic), but others have awkward patterns. The `vla_stack` function has convoluted control flow with complex bounds checking. At -O0, control flow should be more natural. Some goto-like patterns present.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The test functions are large but that's appropriate for their purpose. No obvious inlining issues since -O0 was used. Good granularity overall.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with few forward jumps. Some complex nesting in vla_stack and alloca_usage. The linked_list_heap has goto-like jumps (lab_0x12bc, lab_0x12cc). Acceptable but not perfect.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling present in large_stack_frame but it's manageable. The code is reasonably clean without obvious redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses int32_t, int64_t, uint32_t in some places but also generic `int` types. The `n` parameter in many functions is correctly uint32_t. However, function parameters like `int32_t * p` lose the original intent. Some type erosion present.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The Point struct is completely lost - heap_struct uses `malloc(8)` with raw pointer arithmetic. The Node struct is lost - uses `malloc(16)` with manual field offsets. The TreeNode struct is lost - uses `malloc(24)`. All composite types are represented as raw memory with no field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t *)(v10 + (int64_t)(4 * ((int32_t)(n < 0) + n) / 2))` - complex pointer arithmetic; `(int64_t *)v3` cast in free(); `(int32_t *)mem` after malloc. Many casts between int/pointer types without safety comments.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some source line information present ("Line range: 8 - 10"), but comments are sparse and mostly auto-generated. No explanation of algorithm intent, no recovery confidence indicators. The "From module: /work/3.c" comments are useful but minimal.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Memory operations (malloc/free) are not labeled as any pattern. The linked list creation could be marked as "singly-linked list construction" but isn't. No pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The dangling_pointer function has clear undefined behavior (accessing after free) but no warning. The double_free case has no indication of the bug. Code presents everything as confident when it shouldn't.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The NULL checks in functions like `if (mem == NULL)` are present but not explained as contracts. No documentation of what functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., `heap_nested((int32_t **)&v1)`), but relationships to external code aren't documented. The callback mechanism in global_func_ptr isn't explained. Some relationships clear but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - stack functions together, heap functions together, test functions together. Static functions properly marked. Global variables declared at top. Good organization matching source structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes many standard headers but some missing (alloca.h not included, strings.h not included). The code has `int32_t` without stdint.h in some places. Some stubs needed. Generally compilable with minor fixes.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (v1-v15) making code nearly impossible to follow
+- All struct types (Point, Node, TreeNode) lost - represented as raw malloc with pointer arithmetic
+- No anomaly indication for undefined behavior (dangling_pointer, double_free)
+- Excessive compiler intrinsics (__asm_sbfiz, __asm_ubfx) exposed without explanation
+- No pattern recognition or algorithm identification
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are appropriately sized and cohesive. The decompiler maintained good function boundaries matching the original source organization.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The generic v1, v2, v3 naming completely obscures variable purpose. The decompiler should infer names from usage patterns (e.g., "arr" from array indexing, "n" from loop bounds, "mem" from malloc results).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Detect array indexing to suggest "arr", loop counters to suggest "i/j/n", malloc results to suggest "mem/ptr"
+2. **Recover struct types from allocation sizes**: malloc(8) for Point, malloc(16) for Node, malloc(24) for TreeNode should trigger struct reconstruction
+3. **Flag undefined behavior**: Mark dangling pointer dereferences, double-free calls, and other UB with clear warnings rather than presenting as normal code

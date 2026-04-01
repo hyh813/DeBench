@@ -1,0 +1,11 @@
+Test: obfuscation and optimization edge cases
+10
+Obf/L4/03/D: 20
+Obf/L4/04/D: 225
+Obf/L4/05/D: 102
+Opt/L4/01: 500500
+Opt/L4/01: 5050
+Opt/L4/02: 72
+Opt/L5/01/Lto: 20
+Edge/L3/01/D: 1
+Edge/L3/02/D: 41

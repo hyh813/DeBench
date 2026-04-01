@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_clang_Os_g/ida/syntactic/bin/7_clang_Os_g_fixed",
+  "stdout": "=== Testing Obfuscation, Optimization, and Edge Cases ===\nOpaque predicate: 10\nOpaque predicate result: 20\nInstruction substitution: 225\nString encryption: 0\nTail call optimized: 500500\nNon-tail call: 5050\nVectorized loop: 60\nLink time optimization: 20\nDivision by zero: 2\nNull pointer deref: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation defined: 48\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

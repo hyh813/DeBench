@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `result`, and `v3`. There is no attempt to infer semantic meaning from usage (e.g., `v1` is used as the input parameter `x` in `double_value` but is not named as such).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `test_data_types_l1` are perfectly preserved from the source, likely due to the presence of debug symbols (`-g`). This is the strongest aspect of the decompilation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers and masks that obscure the original logic, such as `& 0xfffffffe` in `double_value` (which forces an even result) or `0x3000` returned by `process_float`. Struct offsets like `v2 + 8` are used instead of field names.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including redundant casts `(int64_t)`, unnecessary bitwise masks (`& 0xffffffff`), and compiler intrinsics like `__asm_ubfx` and `__asm_mrs` that interrupt the flow of C code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While the general flow is preserved, logic is often expressed awkwardly. For example, `process_char` uses `v4 != 64 && v4 >= 64` instead of the clearer `v4 > 64` (which maps to `c >= 'A'`). Loops are manually constructed with `while` and incrementers rather than `for` loops.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully mapped the source functions 1:1 without inlining (expected for `-O0`). The granularity matches the source perfectly, with no monolithic functions or artificial fragmentation.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but complex floating-point functions like `__addtf3` contain numerous `goto` labels (e.g., `lab_0x26e4`) that disrupt linear reading significantly.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy, such as `int32_t v2 = v1;` followed by operations on `v2`, or `result = v8; return result;`. These artifacts likely stem from the lack of optimization in the source binary (`-O0`).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type recovery is poor. Function signatures incorrectly list parameters as `void` (e.g., `int64_t process_int(void)`), and 32-bit integers are often widened to `int64_t`. The distinction between `int` and `long` is lost.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite types are completely lost. Struct access like `p->y` in `struct_simple` is decompiled to raw pointer arithmetic `*(int32_t *)(v2 + 4)`. No struct definitions or field names are recovered.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on explicit casts like `(int64_t)` and pointer arithmetic `(int32_t *)(v2 + 8)`. While this reflects the underlying assembly, it removes the type safety guarantees of the original C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output is devoid of any semantic annotation beyond the raw code.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. Bitfields in `struct_bitfields` are converted to ARM intrinsics `__asm_ubfx` rather than C bitfield syntax. String operations are manual pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler confidently presents incorrect code without warning. For instance, `process_float` returns a constant `0x3000` instead of the calculation `f * 1.5f + 0.5f`, with no indication of failure or uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic for `array_oob` (intentional out-of-bounds access) is decompiled without noting the undefined behavior or potential anomaly.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function names are preserved, the loss of type information in signatures (e.g., `void` arguments) obscures the calling conventions. The relationship between `test_data_types_l1` and the functions it calls is visible only by name matching.
+
+**17. Module Organization:** Score: 7/10
+Justification: The functions are listed in an order that roughly corresponds to the source file, and helper functions like `__addtf3` are grouped at the end. The logical grouping of test functions is maintained.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile as-is. Function signatures are incorrect (missing parameters), and it uses non-standard intrinsics (`__asm_ubfx`) and compiler-internal function names (`__addtf3`) that lack proper headers or context.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 9 + 4 + 3) / 4 = 4.5
+L2_avg: (5 + 8 + 6 + 4) / 4 = 5.75
+L3_avg: (3 + 1 + 5) / 3 = 3.0
+L4_avg: (1 + 2 + 2 + 1) / 4 = 1.5
+L5_avg: (5 + 7 + 2) / 3 = 4.67
+
+Overall = (4.5 × 0.30) + (5.75 × 0.25) + (3.0 × 0.20) + 
+          (1.5 × 0.15) + (4.67 × 0.10)
+Overall = 1.35 + 1.4375 + 0.6 + 0.225 + 0.467
+Overall = 4.08
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Function Signature Corruption**: Parameters are missing (e.g., `int64_t process_int(void)`), making the API unusable.
+- **Total Loss of Composite Types**: Structs and unions are replaced by raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 8)`), destroying data layout context.
+- **Floating Point Logic Failure**: Functions like `process_float` and `process_double` return incorrect constants (`0x3000`) or nonsensical calls to `__addtf3`, completely failing to recover the math.
+- **Bitfield Obfuscation**: Bitfields are converted to low-level `__asm_ubfx` intrinsics instead of C bitfield syntax.
+- **Variable Naming**: Universal use of generic names (`v1`, `v2`) renders the logic difficult to follow.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The debug symbols (`-g`) allowed the decompiler to perfectly preserve the original function names, which is the only thing making this output navigable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (1/10)**
+- **Why?** The complete failure to recover `struct`, `union`, or `enum` types reduces complex data structures to meaningless pointer offsets, which is a critical failure for understanding the program's data model.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Type Recovery from Debug Info**: Utilize DWARF debug information (available via `-g`) to recover function signatures, parameter types, and composite type definitions (structs/unions) instead of defaulting to `void` and raw pointers.
+2.  **Improve Floating Point Analysis**: The handling of floating-point operations is currently broken; ensure that FP register moves and operations are mapped to standard C operators rather than constants or incorrect internal function calls.
+3.  **Map Architecture Intrinsics to C Syntax**: Replace ARM64-specific intrinsics like `__asm_ubfx` (Unsigned Bit Field Extract) with equivalent C bit-shifts or recover the original bitfield syntax to improve readability.

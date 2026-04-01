@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `ptr`, `p`, `v10`, `v11`). Only `result`, `index`, `idx`, and `flag1` provide any semantic hint. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (e.g., `test_cpp_member_func`, `test_cpp_virtual_func`, `template_max<int>`, `Container<int>::push`). The C++ name demangling is accurate, preserving class membership and template parameters.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4` (string length), `40`/`80` (array offsets), `9` (bounds check), `42` (exception value), and `1001` (multiplier) appear without explanation. Some literals like `10` in output formatting are inferable, but most lack context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The struct typedefs with generic names (`struct_0`, `struct_1`) add noise but don't significantly impede reading. No obvious dead code or redundant casts observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper if-else and loop structures. However, `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0))` which is a computed goto for vtable dispatch - technically correct but obscures the virtual call semantics.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly match the original source. Each test function is separate, template instantiations are properly extracted as individual functions, and class methods are correctly decomposed. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. The computed goto in virtual dispatch is the main disruption. No excessive forward jumps or deep nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. Some register spill code exists but is minimal. Loop unrolling is not excessive for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int`, `unsigned int`, `double` are correct. However, many pointers are generic `void*` or `char*` instead of specific types. The `arg_0`, `a0`, `a1` parameters lack proper type information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: RTTI structures partially recovered with generic field names (`field_0`, `field_8`). However, class structures like `Base`, `Derived`, `SimpleClass`, `LifecycleClass` are not properly recovered - the decompilation shows raw pointer arithmetic instead of struct member access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic throughout (`ptr[40]`, `&ptr[40]`), void pointer casts, indirect function calls via `*(p)->field_8(p)`. No alignment or bounds checking annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments present. Function signatures are the only documentation. No explanation of virtual dispatch, exception handling mechanics, or complex operations. The header comment identifying it as "Angr Decompilation" is the only context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ idioms like virtual function dispatch, exception throwing/catching, and RTTI dynamic_cast are present in the code but not explicitly identified or labeled. A knowledgeable reader can recognize them, but the decompiler doesn't highlight these patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code or uncertainties. The computed goto for virtual calls, the complex exception handling code, and the RTTI operations are presented without any warnings about their complexity or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had no explicit contracts either, but the decompiler could have inferred some (e.g., "requires: idx < size" for array access).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat visible through the code structure (e.g., `test_cpp_oo_features` calls other test functions). However, there's no explicit documentation of the call graph or global variable usage.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in a reasonable order roughly matching the source file. However, there's no clear logical grouping - all functions are in a single flat list rather than organized by feature or class.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has many `extern` declarations and incomplete struct definitions. The RTTI structures are typedef'd but not fully defined. Would require significant patching to compile - missing complete class definitions, proper headers, and linkage.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable names are almost entirely generic (`v0`, `v1`, `ptr`, `p`) - original semantic names like `value`, `data`, `size` are completely lost
+- Class/struct recovery is severely lacking - original classes like `Base`, `Derived`, `SimpleClass` are not reconstructed; code uses raw pointer arithmetic instead of member access
+- No comments explaining complex C++ idioms (virtual dispatch, exception handling, RTTI operations)
+- Type precision is poor - many `void*` and `char*` instead of specific types
+- Build compatibility is poor - incomplete struct definitions and many extern declarations would require extensive patching
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler accurately recovered almost all function names from the binary, including C++ name mangling for templates (`template_max<int>`), class methods (`Container<int>::push`), and destructors.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The decompiler uses generic single-letter variable names throughout, making it extremely difficult to track the purpose of each variable. At -O0 optimization, the original variable names should be preserved in debug info.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from debug symbols**: At -O0 with debug info (`-g`), variable names like `value`, `name`, `data`, `size` should be recoverable from DWARF debugging information
+2. **Recover class/struct layouts**: Instead of showing `ptr[40]`, reconstruct the actual struct with named fields (`obj->data[obj->size]`)
+3. **Add explanatory comments for C++ idioms**: Document virtual dispatch patterns, exception handling mechanics, and RTTI operations to help analysts understand complex constructs

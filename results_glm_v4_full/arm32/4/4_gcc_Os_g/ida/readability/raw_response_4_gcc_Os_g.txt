@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Most variables are generic (`v0`, `v1`, `a1`, `a2`), obscuring semantic meaning. While `argc`, `argv`, and `p_large` are recovered, the prevalence of `temp`-style names makes tracking data flow difficult (e.g., `v5` in `func_mixed_args`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The majority of user-defined function names (`cdecl_func`, `test_calling_conventions`, `ret_large_struct`) are recovered perfectly from symbols. However, some functions like `sub_103E8` remain unnamed, and library functions are prefixed with `__imp_`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Extensive constant propagation (e.g., `return 15` instead of `cdecl_func(5, 10)`) and magic numbers (e.g., `0x80u` for struct size) obscure the original logic. While `0x104B0` is an address, the inlining of test results makes the code look like hardcoded data rather than a test suite.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains Hex-Rays specific artifacts like `LODWORD`, `HIDWORD`, `JUMPOUT`, and `__fastcall` attributes on ARM. While these are standard for this decompiler, they reduce readability and portability compared to standard C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally readable, but there are significant failures. `test_parameter_passing` incorrectly chains the return value of `printf` into `call_ptr_array` as arguments. Additionally, `ret_multi_branch` transforms a `switch` statement into a mathematical formula (`10 * op + 10`), which is clever but structurally divergent.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are generally kept at a reasonable size and correspond well to the source structure. There is no artificial fragmentation, though `test_calling_conventions` is large, matching the source.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom. However, `test_calling_conventions` uses a `do-while` loop for struct initialization where the source used a `for` loop, and `ret_large_struct` contains a long block of sequential assignments that interrupt the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Significant redundancy is present in struct handling. `ret_large_struct` manually copies 16 fields instead of showing a struct assignment or `memcpy`. `func_struct_byval` also contains verbose, unrolled logic for struct access.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `char*`) and composite types (`LargeStruct`) are mostly accurate. However, `long long` is mapped to `__int64`, and `va_list` is treated as a raw memory block (`va_list varg_r1`) rather than an opaque type, losing semantic context.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs like `LargeStruct`, `SmallStruct`, and `SmallPoint` are correctly defined and used. Field access (e.g., `s.data[0]`) is accurate, which is a strong point of this decompilation.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are unsafe casts and confusing pointer arithmetic. In `func_mixed_args`, the expression `(int)((double)(int)&v5[x] + ...)` involves casting a pointer calculation to an integer, which is a dangerous misrepresentation of the source's simple arithmetic `x + len`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and mostly limited to decompiler warnings (e.g., "local variable allocation has failed"). There are no comments explaining the logic of algorithms or the purpose of complex transformations like the `switch` optimization.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms are often missed. `varargs_func` uses raw pointer arithmetic `*((int *)&varg_r1 + v1++)` instead of the `va_arg` macro. The `switch` statement in `ret_multi_branch` is lost to a math expression.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags failures with comments like "local variable allocation has failed, the output may be wrong!" and lists "FAILED to decompile" functions at the end. This helps the user identify unreliable sections.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if (!p) return -1;` in `func_struct_byptr` is present but not explicitly marked as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear, and external library calls are prefixed with `__imp_`. However, the cross-reference is broken in `test_parameter_passing` where arguments to `call_ptr_array` are confused with previous function returns.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, mostly in the order they appear in the binary. The separation of user code and runtime/library code (like `__aeabi_` functions) is clear.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard constructs like `__int64`, `LODWORD`, `HIDWORD`, and `JUMPOUT`. It also uses `__fastcall` on ARM, which is not standard C. It would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Argument Recovery Failure:** In `test_parameter_passing`, the decompiler incorrectly passes the return value of `printf` and uninitialized variables (`v1`, `v2`) as arguments to `call_ptr_array`.
+- **Signature Mismatch:** `call_ptr_array` is decompiled with 4 arguments (`int a1...a4`) when the source defines it with 0 arguments.
+- **Logic Obfuscation:** `func_mixed_args` generates invalid pointer arithmetic `(int)&v5[x]` instead of the correct addition `x + len`.
+- **Idiom Loss:** `varargs_func` uses raw pointer arithmetic on `va_list` instead of `va_arg`, reducing readability.
+- **Constant Propagation:** Test functions like `call_cdecl` return hardcoded constants (`15`) instead of showing the function call logic, hiding the intent of the test suite.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Structs (`LargeStruct`, `SmallStruct`) are accurately defined with correct field names and access patterns, providing a solid foundation for understanding data structures.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.25/10)
+- The decompiler fails to recognize high-level idioms (like `va_arg` or `switch` statements) and produces confusing pointer arithmetic, making the "why" of the code difficult to discern.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Stack Tracking for Local Arrays:** Fix the analysis of functions with local stack arrays (like `call_ptr_array`) to prevent hallucinating arguments and misidentifying caller/caller relationships.
+2.  **Enhance Varargs Recovery:** Detect the `va_list` usage pattern and emit standard `va_arg` macros instead of raw pointer arithmetic.
+3.  **Refine Mixed-Type Arithmetic:** Improve the type engine to handle mixed integer/pointer/float operations without resorting to nonsensical casts like `(int)&v5[x]`.

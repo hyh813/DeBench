@@ -1,0 +1,85 @@
+### === LEVEL1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables use cryptic names like `uVar1`, `iVar2`, `puVar4`, `param_1`. While `param_1` indicates a parameter, it doesn't reveal purpose. Only a few meaningful names like `global_counter` and `__ptr` (for malloc results) are preserved. The original's `arr`, `p`, `head` are lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions are correctly named (`double_value`, `local_vars`, `heap_basic`, `heap_calloc`, `linked_list_heap`), but many critical functions have generic names like `FUN_001011cc` (should be `heap_realloc`), `FUN_0010132c` (should be `heap_array`), and `FUN_0010171c` (should be `dangling_pointer`). The naming is inconsistent.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are meaningful - `0x2a` (42), `0x14` (20), `0x10` (16) are used appropriately. Some magic numbers like array sizes (`0x28`, `0x10`) could be better explained, but the decompiler correctly preserves constant values from the binary.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy compiler artifacts present: `CONCAT44`, `CONCAT17` macros, `__stack_chk_fail`, `DataMemoryBarrier`, multiple "WARNING: Removing unreachable block" comments. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is well preserved. Loops use while constructs, conditionals are clear. The `large_stack_frame` function has complex loop structure due to optimization, but it's still recognizable as a loop filling a buffer.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly maintained. The `alloca_usage_constprop.0` appears to be an inlined version extracted as a separate function, which is appropriate. Function sizes are reasonable (not monolithic).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error handling. No excessive goto or forward jumps that would disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is present in functions like `heap_basic` and `vla_stack` but follows expected patterns for the computation. Some duplicate code between `heap_calloc` and `FUN_001011cc` (likely calloc).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined1` instead of proper types. Parameters like `ulong param_1` are sometimes correct but often generic. Function pointers use `undefined8` instead of proper signatures. Some improvement with `uint`, `int` in certain contexts.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types like `Point` and `Node` are completely lost. The `linked_list_heap` function manually manages linked list nodes with raw pointer arithmetic: `*(int **)(__ptr + 2)` instead of `node->next`. The original's `struct Node { int data; struct Node *next; }` is not recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present, like `(undefined4 *)` conversions. Pointer arithmetic is generally correct but uses raw offsets. The `heap_struct` function incorrectly frees before using the allocated memory (`free(__ptr)` before `param_1 * 3`), which is a semantic error.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). No meaningful comments explaining algorithm intent, recovered contracts, or decompilation confidence. The original's test case comments are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list traversal, tree traversal) but not explicitly named or documented. The decompiler doesn't identify "this is a linked list" or "this implements a binary tree."
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present like "WARNING: Could not recover jumptable at 0x00101d00. Too many branches" for `call_global_callback`. However, many issues are silently handled without clear indication to the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original's safety checks like `if (n <= 0 || n > 1000) return -1` are present in code but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. It's unclear which functions call `double_value` or how `global_func_ptr` is used across the codebase. External references like `extern_global_var` are marked but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (stack functions together, heap functions together) but there's no explicit module structure. The original's section comments (3.1 Stack Memory, 3.2 Heap Memory) are lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard library functions (`malloc`, `free`, `memset`, `memcpy`) that are universally available. External declarations are present. The code would compile with minimal stubs for missing globals.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is cryptic (`uVar1`, `iVar2`, `puVar4`) - should infer names from usage like `arr` from malloc size patterns
+- Composite types completely lost - `Node` and `Point` structs are manual pointer arithmetic
+- Many functions have generic names (`FUN_001011cc`) instead of semantic names
+- No struct field recovery - uses `*(int **)(__ptr + 2)` instead of `node->next`
+- Comments are only auto-generated warnings, no meaningful documentation
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, loops and conditionals are well preserved and readable
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Cryptic single-letter variable names obscure all semantic meaning; impossible to track purpose without cross-referencing source
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `puVar4` used in loop as array iterator should be named `arr` or `ptr`)
+2. Recover struct types from allocation sizes and field access patterns (malloc(0x10) with field offsets suggests `Node` struct)
+3. Add semantic function naming by analyzing cross-references and string constants (FUN_001011cc is called from test_heap_memory with "heap_realloc" string)

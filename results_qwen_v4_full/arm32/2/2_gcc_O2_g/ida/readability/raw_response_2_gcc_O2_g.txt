@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Simple functions preserve names (`result`, `data`, `next`), but complex functions like `binary_tree_sum` use cryptic `v1`-`v58` variables. `test_array_types` has 23 generic parameters (`a1`-`a23`) that obscure the function's purpose entirely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but runtime helpers degraded to `sub_103A0`, `sub_11718`. Test functions kept names but lost semantic parameter information.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `0x19`, `0x7FF` in floating-point functions lack explanation. Test functions show constant-folded values (`_printf_chk(1, "DT-L1-01... %c\n", 97)`) instead of original expressions, obscuring test intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Register annotations clutter code (`v4; // r0`, `[sp-4h] [bp-4h]`). Inline assembly blocks (`__asm { POP {R4-R6,PC} }`) and 6 failed external function decompilations add significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions use natural `if/return` patterns, but `binary_tree_sum` converts clean recursion into 200+ lines of nested `do-while` loops. `enum_switch` uses array indexing instead of switch statement.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: `binary_tree_sum` exploded from ~10 lines to 200+ lines. Test functions (`test_array_types`, `test_composite_types`) became monolithic with constant folding, losing original modular structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but `binary_tree_sum` has excessive forward references and deep nesting. `test_array_types` with 23 parameters disrupts linear reading significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `binary_tree_sum` repeats similar pointer dereference patterns across nested loops. Floating-point helper functions (`_muldf3`, `_subdf3`) contain redundant bit manipulation code that obscures intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`__int16`, `__int64`, `float`), but `ptr_single` uses `_DWORD *` instead of `int *`. `process_long` returns `int` instead of `long`, and `process_ld` returns `double` instead of `long double`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names preserved (`Point3D`, `Rect`, `Widget`) with field access (`p->x`, `r->position.x`). However, `struct_bitfields` degrades to raw byte manipulation (`(*(_BYTE *)f & 1)`), losing bitfield semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)`, `(unsigned __int8 *)`, `(void *)size`. `ptr_void` uses type-based casting that could cause undefined behavior. `opaque_handle_create` casts int to void* without justification.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers with addresses exist. One warning comment ("positive sp value has been detected") in `_start`. No algorithm explanations or API documentation recovered from original source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns visible (linked list traversal, struct field access), but recursive tree traversal completely obscured in `binary_tree_sum`. Switch-on-enum pattern not recognized in `enum_switch`.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Six functions marked "FAILED to decompile" with clear indicators. However, severely garbled `binary_tree_sum` has no warning despite being clearly broken. Type mismatches go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. NULL checks exist in code (`if (!head) return 0`) but aren't explained as contracts. Original source comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships undocumented. `ptr_func_simple` and `ptr_func_complex` don't indicate expected function signatures. Test function structure lost due to constant folding.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in source order but no file organization. No header declarations, no static function scoping preserved. All functions in single output without module boundaries.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six external functions failed (`__imp_puts`, `__imp___printf_chk`, etc.) requiring stubs. No dependency documentation. Metadata claims "Compilation Result: Yes" but this is optimistic given failed decompilations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):     (4+4+5+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type System):    (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):       (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):     (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────────
+Overall Score:                                    = 4.89/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **`binary_tree_sum` completely garbled**: 200+ lines of nested loops instead of simple 10-line recursion, making the function practically unreadable
+- **Test functions constant-folded**: `test_data_types_l1`, `test_array_types` show pre-computed results instead of actual function calls, losing test semantics
+- **Variable names degraded to `v1`-`v58`**: Complex functions lose all semantic variable naming, requiring manual reverse engineering
+- **`test_array_types` has 23 parameters**: Clearly incorrect decompilation that obscures function signature
+- **Six external functions failed**: `__imp_puts`, `__imp___printf_chk`, etc. marked as FAILED without recovery attempts
+
+### Best Quality Aspect:
+- **Composite Type Recovery (7/10)** - Struct names (`Point3D`, `Rect`, `Widget`) and field access patterns (`p->x`, `r->position.x`) preserved well, maintaining semantic clarity for composite types.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero contract information recovered; original source comments explaining preconditions, test expectations, and API contracts completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve recursive function structure**: Detect recursion patterns and maintain recursive calls instead of converting to iterative loops with excessive state variables
+2. **Recover source comments**: Extract and preserve original source comments (especially test case documentation) from debug symbols when `-g` flag is present
+3. **Improve test function handling**: Avoid constant-folding test functions; preserve actual function calls to maintain test semantics and enable verification

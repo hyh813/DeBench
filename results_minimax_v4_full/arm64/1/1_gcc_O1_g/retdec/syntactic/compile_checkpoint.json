@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 46,
+  "source_file": "decompiled/retdec_out/arm64/1/1_gcc_O1_g.c",
+  "fixed_file": "results_minimax_v4_full/arm64/1/1_gcc_O1_g/retdec/syntactic/fix_1_gcc_O1_g.c"
+}

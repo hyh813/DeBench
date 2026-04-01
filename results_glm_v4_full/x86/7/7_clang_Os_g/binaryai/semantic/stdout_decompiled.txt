@@ -1,0 +1,16 @@
+Testing obfuscation and optimization
+
+Opaque predicate: 10
+20
+e1
+126
+7a314
+5050
+72
+20
+1
+29
+30
+2000000000
+10
+43

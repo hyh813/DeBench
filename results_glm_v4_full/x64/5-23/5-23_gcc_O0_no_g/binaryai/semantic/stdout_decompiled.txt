@@ -1,0 +1,8 @@
+=== Testing Preprocessing Features ===
+macro_constants: 64
+macro_functions: 30
+conditional_compile: 32
+multi_branch_compile: 57122
+macro_recursion: 116
+stringize: 19
+token_paste: 60

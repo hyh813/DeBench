@@ -1,0 +1,11 @@
+Running obfuscation and optimization tests...
+
+10
+35
+225
+-1097800104
+500500
+5050
+72
+Link time optimization: 20
+Division by zero test: 1

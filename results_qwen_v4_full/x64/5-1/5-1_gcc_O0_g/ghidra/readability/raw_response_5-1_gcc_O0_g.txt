@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names like `iVar1`, `lVar1`, `this_local` obscuring semantic meaning. Some test functions preserve original names (`capture_by_value`, `capture_by_ref`) but class internals lose all semantic naming.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`). Class methods show proper scope (`SimpleClass::getValue`), but template helpers have verbose cryptic names (`__uniq_ptr_data<const_test_cpp_smart_ptr...>`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x1234`, `0x1f`, `0x32` appear without explanation. Some hex values match source constants but lack named constant recovery. Array sizes shown as hex (`0x14` instead of 20).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in every function. Thunk functions for virtual dispatch add verbosity. Debug artifacts from `-O0 -g` compilation present throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is reasonably natural for `-O0` compilation. Try/catch blocks marked with comments. Stack checks interrupt flow but are expected for debug builds.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: 203 functions from 540 LOC source indicates excessive fragmentation. Template instantiation creates many helper functions. Smart pointer operations split across numerous small functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Exception handling introduces some forward jumps. Lambda closure code separated from main test function.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiation creates significant redundancy (multiple `get<0,...>`, `get<1,...>` variants). Similar helper functions for int/double container types not consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but struct fields use generic notation (`obj._40_4_`, `obj._32_8_`, `obj.field_0x20`). Template types become extremely verbose (`unique_ptr<int,_test_cpp_smart_ptr()::<lambda(int*)>_>`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with warnings ("Struct 'DiamondDerived': ignoring overlapping field 'super_MiddleB'"). Lambda closures become `anon_struct_16_2_484633fb` with generic field names (`__capture_by_value`, `__capture_by_ref`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(void**)`, `(undefined8 *)`). Pointer arithmetic visible in diamond inheritance code. Generally safe but lacks const-correctness annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: DWARF prototypes shown but no semantic explanation of what code does. Warnings about unresolved variables present. No algorithm or intent documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns (virtual dispatch, smart pointers) visible but not explicitly identified. Template instantiation patterns not explained. Lambda closure mechanism shown but not named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings flag struct field issues and unresolved locals. Try/catch handlers marked with comments. "WARNING: Subroutine does not return" for exception paths.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Stack canary checks present but not contextualized.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear but virtual dispatch relationships obscured by vtable manipulation. Template instantiation relationships not explicit. Inheritance chains visible through `super_` prefixes.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Static functions not properly scoped. No header file separation between interface and implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone - missing standard library implementations. External dependencies (`operator_new`, `__cxa_throw`) not declared. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5×0.10 + 7×0.10 + 6×0.05 + 5×0.05) / 0.30 = 5.5/10
+Level 2 (Structural):  (7×0.08 + 5×0.07 + 7×0.05 + 5×0.05) / 0.25 = 6.0/10
+Level 3 (Type):        (6×0.08 + 5×0.07 + 6×0.05) / 0.20 = 5.7/10
+Level 4 (Semantic):    (4×0.05 + 5×0.03 + 6×0.03 + 3×0.04) / 0.15 = 4.3/10
+Level 5 (Contextual):  (6×0.04 + 5×0.03 + 4×0.03) / 0.10 = 5.1/10
+
+Overall = (5.5×0.30) + (6.0×0.25) + (5.7×0.20) + (4.3×0.15) + (5.1×0.10)
+        = 1.65 + 1.50 + 1.14 + 0.65 + 0.51
+        = 5.45/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Struct field names lost**: `obj._40_4_`, `obj._32_8_`, `obj.field_0x20` should be `shared_data`, vtable pointers with semantic names
+- **Lambda closure structure opaque**: `anon_struct_16_2_484633fb` with generic field names obscures capture mechanism
+- **Diamond inheritance warning ignored**: "ignoring overlapping field 'super_MiddleB'" indicates incomplete type recovery
+- **Template helper explosion**: 203 functions from 540 LOC source creates navigation nightmare
+- **No semantic comments**: DWARF prototypes shown but zero explanation of algorithm intent or C++ feature being tested
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test function names preserved accurately (`test_cpp_member_func`, `test_cpp_virtual_func`) and class method scope properly maintained (`SimpleClass::getValue`)
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error condition documentation despite C++ exception handling and RAII patterns being central to the code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct field semantics from DWARF debug info** - Map `obj._40_4_` to actual field names like `shared_data` using available debug symbols from `-g` flag
+2. **Consolidate template instantiation helpers** - Group related template functions and add comments explaining instantiation relationships rather than emitting 200+ fragmented functions
+3. **Add semantic comments for C++ idioms** - Annotate virtual dispatch, RAII patterns, and lambda captures with explanatory comments since the decompiler has DWARF type information available

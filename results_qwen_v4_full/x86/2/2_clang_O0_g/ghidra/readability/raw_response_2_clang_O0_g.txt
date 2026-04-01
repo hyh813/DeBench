@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `sum`, `i`, `len`, `current` are descriptive, but generic names like `local_5`, `local_8`, `iVar1`, `cVar1` obscure purpose. Test functions particularly suffer from auto-generated names (`local_528`, `in_stack_ffffffe0`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only a few generic names like `FUN_00011030` for internal functions.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x2c` (array stride in `array_2d_stack`), `0x191d` (bitfield value), and `0x32` (hex for 50 in `enum_switch`) lack explanation. String literals in printf preserved well.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Repeated "WARNING: Unknown calling convention" messages clutter output. Compiler thunk functions (`__i686.get_pc_thunk.bx`) present but mostly isolated. Function bodies themselves are relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for`/`while` constructs in most cases. Switch statement properly recovered in `enum_switch`. However, `process_ll` shows unnatural bit manipulation instead of simple `x * x`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Helper functions (`complex_callback`, `double_value`) preserved as separate functions. Test functions are large but cohesive, matching original structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Loop structures are linear. Some test functions have scattered initialization but overall flow is traceable without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `volatile_access` incorrectly optimized to `*p + *p` losing the two-read semantics. No dead code in function bodies, but semantic redundancy from source (printf patterns) preserved.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types mostly preserved (int, char, short, long). However, `longlong`/`longdouble` syntax is non-standard. Critical failure: `process_ld` returns `longdouble*` instead of `longdouble`, completely broken signature.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types excellently recovered with field names (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`). However, bitfield struct `Flags` lost field names showing `f._0_4_`, `f._4_4_` instead of `flag1`, `flag2`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)handle`, `(undefined4)`, `(undefined2)`. `ptr_diff` shows manual pointer arithmetic `(int)p1 - (int)p2 >> 2`. Volatile semantics completely lost in `volatile_access`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: All original source comments completely lost. Only decompiler warnings present ("WARNING: Unknown calling convention"). No algorithm explanations, no parameter documentation, no semantic guidance.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and graph traversal (`graph_traverse`) patterns present in code structure but never explicitly identified or named by decompiler.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for calling conventions and unreachable blocks. However, critical anomalies like `process_ld` broken signature and `volatile_access` semantic loss are NOT flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). Null checks exist in code (`if (node->next == (Node *)0x0)`) but not documented as contracts. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and visible. Global data references shown as `DAT_0001312c`. Callback relationships visible in `ptr_func_simple`/`ptr_func_complex`. No explicit call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 69 functions in single output file. Original organization by test category (data types, arrays, pointers, composites) lost. Functions ordered by address, not logical grouping.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. However, struct type definitions (`Point3D`, `Rect`, `Widget`, etc.) must be provided externally. External dependencies not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+6+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+4+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.07/10
+```
+
+### Overall Readability Score: **6.1/10**
+
+### Critical Defects:
+- **`process_ld` completely broken**: Returns `longdouble*` instead of `longdouble`, parameters wrong, body returns `in_EAX` instead of computed value
+- **`volatile_access` semantic loss**: Shows `*p + *p` instead of two separate volatile reads, losing the critical volatile semantics
+- **`process_ll` over-complicated**: Simple `x * x` transformed into complex bit manipulation with `CONCAT44` and shifts
+- **Bitfield struct field names lost**: `Flags` struct shows `f._0_4_`, `f._4_4_` instead of `flag1`, `flag2`, `flag3`, `value`
+- **All source comments lost**: Zero documentation recovered despite extensive original comments explaining each test case
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most function names preserved accurately from source, making code navigation and understanding significantly easier than typical decompilation output.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete loss of all source documentation means readers must infer purpose from code alone, dramatically increasing cognitive load for understanding test intentions.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug symbols (`-g` flag) when available, especially for function purposes and test case descriptions.
+2. **Flag semantic anomalies more aggressively** - `process_ld` broken signature and `volatile_access` optimization should trigger high-confidence warnings.
+3. **Improve bitfield field name recovery** - Use debug info to recover original bitfield member names instead of generic `._0_4_` notation.

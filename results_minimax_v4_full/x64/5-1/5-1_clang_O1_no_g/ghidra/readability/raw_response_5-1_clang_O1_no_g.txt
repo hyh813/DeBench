@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables are named with generic patterns like `local_24`, `local_20`, `puVar1`, `lVar2`, `iVar4`, `param_1`, `param_2`. These provide no semantic meaning - for example, `local_24` should be named `name` based on the string "Test" stored there, and `puVar1` should be `obj` or `instance`.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+Justification: Test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) are correctly named and match source. However, internal functions use generic patterns like `FUN_00102020`, and member functions lack proper C++ method naming conventions (e.g., `Base::virtual_func` instead of `Base.getValue()`).
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers throughout lack explanation - `0x14` (20), `0x32` (50), `0x2a` (42), `0x125c` (4704), `0x1e` (30), `0x28` (40), `0x96` (150), `0xfa` (250). At -O0, these should be recoverable as named constants. String literals like "Test" are preserved.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Excessive auto-generated warnings clutter output: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". These add noise but don't impede understanding of core logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Control flow is mostly natural with recognizable loops (e.g., `do { ... } while` in constructor) and conditionals. At -O0, the flow closely matches source. Minor issues like computed jumps in virtual function thunks are expected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized - test functions are separate, member functions extracted correctly. Template instantiations properly separated (`template_max<int>`, `template_max<double>`). Good granularity overall.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns in destructors are appropriate. Some complex virtual inheritance offset calculations create non-linear patterns but are manageable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant dead code or obvious redundancy. Loop unrolling in constructor initialization is minimal and appropriate for -O0. Code is clean.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Uses generic types `undefined4`, `undefined8`, `undefined*` instead of specific types like `int`, `size_t`, `bool`. Function parameters use `undefined` instead of proper types. Const correctness is lost. At -O0, types should be more precise.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Class names recovered (`Base`, `Derived`, `MultiDerived`, `DiamondDerived`) but struct/class member access uses raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`). Field names lost - should be `data`, `size`, `multiplier`.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Some unsafe operations present - extensive use of void pointer arithmetic, implicit casts between pointer types. Virtual function calls use indirect function pointers without type safety. However, no severe violations like buffer overflows.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention") rather than meaningful documentation. No explanation of algorithm intent, preconditions, or non-obvious logic. Test function purposes not documented.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some C++ patterns recognized (virtual function calls via vtable, `__dynamic_cast`, `__cxa_throw`) but not explicitly named or documented. Template instantiation recognized but not explained as such.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Generic warnings present for "Unknown calling convention" but no specific flags for indirect virtual calls that couldn't be resolved, or complex virtual inheritance offset calculations that are error-prone.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants recovered. Bounds checking in `Container::get` not documented. Exception safety contracts not indicated.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function names indicate relationships (e.g., `Base::virtual_func`, `Derived::virtual_func`). Virtual dispatch through vtables not explicitly documented. Caller/callee relationships not specified.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions grouped logically by class. Test functions grouped together. However, no clear namespace structure, no header file separation, and all functions in single output.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: Code will not compile standalone - missing standard library declarations (`std::ios_base::Init`, `operator new`, `operator delete` are mangled). External dependencies (`__cxa_throw`, `__dynamic_cast`) not stubbed. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 5) / 4 = 4.25
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (4 + 6 + 6) / 3 = 5.33
+L4_avg = (4 + 5 + 5 + 3) / 4 = 4.25
+L5_avg = (5 + 6 + 3) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (7.50 × 0.25) + (5.33 × 0.20) + (4.25 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.875 + 1.066 + 0.638 + 0.467
+        = 5.32/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- Variable names are entirely generic (`local_24`, `puVar1`, `iVar4`) providing no semantic meaning about their purpose
+- Type precision severely degraded - using `undefined4`/`undefined8` instead of `int`/`size_t` at -O0
+- Magic numbers throughout without explanation (e.g., `0x125c` should be constant `EXPECTED_SUM`)
+- No meaningful comments - only auto-generated warnings
+- Build system compatibility failure - code won't compile without extensive stubs
+
+### Best Quality Aspect
+**Function Decomposition (8/10)** - Test functions properly separated, member functions extracted correctly, template instantiations properly distinguished
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - Generic names like `local_X`, `iVarX` completely obscure variable purpose; at -O0, decompiler should infer names from usage patterns (e.g., `local_24` used with string "Test" should be `name`)
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `local_24` stores "Test" string → name as `name`; `puVar1` used with `LifecycleClass::instance_count` → name as `obj` or `instance`
+2. **Replace magic numbers with named constants**: Detect compile-time constants and suggest meaningful names based on context (e.g., `0x14` = sizeof(LifecycleClass), `0x32` = 50)
+3. **Improve type precision at -O0**: Use debug info (`-g`) to recover `int`, `size_t`, `bool` instead of `undefined4`/`undefined8`

@@ -1,0 +1,121 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v2`, `v3`, `targeta`, `idxa`) instead of semantic names like `temp1`, `temp2`, `temp3` from source. Parameter names (`a`, `b`, `c`, `x`, `op`) are preserved well, but internal variables lose meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). A few helpers like `sub_4BC` are generic, but core test functions match source exactly.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers in switch cases (10, 20, 30) are contextually clear. However, `x >= 1` is used instead of `x > 0`, and array sizes aren't named constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Redundant parameter copies present (`targeta = target`, `idxa = idx`, `statea = state`). Stack variable declarations (`[sp+0h] [bp-4h]`) add visual noise but don't impede understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops (for/while/do-while) and switches recovered well. `goto_forward` and `goto_backward` successfully converted to if-else and for-loop. Duff's device uses goto labels but remains functional.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source. No inappropriate inlining or fragmentation. Helper functions (`double_value`, `triple_value`) properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. `duffs_device` has forward goto labels (`LABEL_4`, `LABEL_6`) disrupting flow. Early returns used appropriately in most functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Repeated parameter copy pattern (`targeta = target`) across multiple functions. No dead code observed. O0 compilation means no loop unrolling artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: `if_else` returns `bool` instead of `int` (semantic change). `op_shl`/`op_shr` use `char b` instead of `int b`. Most int types preserved correctly.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered as stack arrays (`_DWORD v3[5]`). Matrix in `loop_multi_exit` flattened to 1D array (`v4[4 * i + j]`). No complex structs in this codebase.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer casts present but necessary (`((int (__fastcall *)(int))v3[idxa])(v4)`). No dangerous pointer arithmetic. Implicit conversions minimal.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical deficiency**: Zero comments explaining logic. Original source had extensive documentation (test cases, purpose, difficulty ratings). Only decompiler header comments present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, switches) recognized. Duff's device not identified by name. State machine pattern in `state_machine`/`fsm_func_table` not explicitly noted.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 8 functions marked "FAILED to decompile" at end. `computed_goto` has inline assembly noted. No warnings about type mismatches or potential issues in recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). Original test validation comments completely absent. No parameter validation hints.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls preserved accurately. Global `jump_buffer` referenced correctly. Callback relationships visible through function pointer arrays.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Original L1/L2/L3 logical grouping lost. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: 8 external functions failed decompilation (`printf`, `setjmp`, `longjmp`, etc.). Would need library stubs. Generally compilable with modifications.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 6.75 | 30% | 2.025 |
+| L2: Structural Intelligibility | 7.25 | 25% | 1.813 |
+| L3: Type System Fidelity | 6.67 | 20% | 1.334 |
+| L4: Semantic Transparency | 3.50 | 15% | 0.525 |
+| L5: Contextual Coherence | 6.33 | 10% | 0.633 |
+
+**Overall Readability Score: 6.3/10**
+
+---
+
+### Critical Defects
+
+- **Zero semantic comments**: Original source had extensive documentation (test cases, purpose, difficulty); decompiled code has none
+- **Generic variable names**: `v2`, `v3`, `targeta` obscure semantic meaning vs. original `temp1`, `temp2`, `temp3`
+- **Type precision errors**: `if_else` returns `bool` instead of `int`; `op_shl`/`op_shr` use `char` instead of `int` for shift amount
+- **Redundant parameter copies**: Pattern `targeta = target` repeated across 10+ functions without necessity
+- **Lost logical grouping**: Original L1/L2/L3 section organization not preserved in output
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)**
+- Most original function names preserved accurately, making code navigation and identification straightforward
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation makes understanding intent require reverse-engineering from code alone
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover and preserve source comments**: Integrate debug symbol comments or infer documentation from function behavior patterns
+2. **Infer semantic variable names**: Use data-flow analysis to name variables based on usage (e.g., `v2` used in size calculation → `size_temp`)
+3. **Add contract annotations**: Automatically detect and document preconditions (null checks, range validation) and postconditions from control flow patterns

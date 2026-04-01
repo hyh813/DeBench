@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version:
+```c
+long long param_strcpy(char *a0, char *a1){
+    strcpy(a0, a1);
+    return strlen(a0);
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a0`, `a1` instead of semantic names `dst`, `src`. Throughout the codebase, variables like `v0`, `v1`, `v2`, `ptr`, `result` obscure their actual purposes (e.g., `v14` in `param_malloc_free` holds the computed sum).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (e.g., `param_strcpy`, `call_strcpy`, `param_strlen`), but many remain as `sub_XXXXX` format (e.g., `sub_4024c2`, `sub_402520`). The naming is inconsistent - some semantic names exist but many are still mechanical addresses.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for error returns without explanation. Some constants like `42` are meaningful in context. The number `18` in `param_fread_fwrite` (string length of "BinBench Test Data") is unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Generally clean output. Some unusual constructs like `v6 >> 31 | 42` in `call_fopen_fclose` appear to be bit manipulation artifacts, but overall minimal compiler artifacts like register spilling visible.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `param_strcpy` have natural flow, but complex functions show issues. In `param_malloc_free`, there's heavy loop unrolling with SIMD operations that obscures the original `for` loop. Some goto statements present (e.g., `goto g_407010` in `sub_402020`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate. Each function has single responsibility. The `param_*` wrapper functions and `call_*` test functions are properly separated. No 500-line monoliths observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but some have forward jumps. The `param_fread_fwrite` function has multiple early returns that disrupt linear flow. Some computed jumps in complex functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Significant loop unrolling in `param_malloc_free` and `param_memset` with SIMD operations (InterleaveLOV, AddV) that should be commented or abstracted. The original simple loop is nearly unrecognizable.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results. `param_strcpy` uses `char *` correctly, but return type is `long long` instead of original `int`. Many functions use `unsigned long long` where `int` would be more appropriate. Some `void*` where more specific types exist.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct definitions recovered (e.g., `struct sockaddr`, `struct FILE`), but field names are generic. In `param_shmget_shmat`, the struct `struct_0` with `field_0` and `field_5` doesn't reveal it's actually a shared memory pointer. The `ThreadData` struct in pthread functions is lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations. In `param_scanf`: `*((int *)((char *)&v0 + 4))` is confusing pointer arithmetic. The `param_strchr_strstr` function has duplicate variable `ptr` declarations. Some type-confused function pointers in thread functions.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. The only comments are auto-generated like "Other Possible Types" annotations. No explanation of algorithm logic, preconditions, or return value semantics.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (strcpy, strlen, strcmp, memcpy, printf, pthread_create) are correctly identified. Some patterns like mutex lock/unlock are recognized. However, no explicit naming of design patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some "Other Possible Types" annotations present (e.g., in `call_strcpy`: "Other Possible Types: unsigned int"). However, indirect calls and unresolved references are not flagged. Some suspicious code like `v6 >> 31 | 42` has no explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (like -1, -2, -3) are not explained. The semantic meaning of return values is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are somewhat clear through code structure. `call_strcpy` calls `param_strcpy`. However, no explicit documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - standard library functions (strcpy, strlen, etc.) in one area, system calls in another, thread functions together. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Marked as "Compilation Result: Yes" in metadata. External declarations present (e.g., `extern unsigned long long g_406fe0`). Some stubs needed but code is largely compilable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`a0`, `a1`, `v0`, `v1`, `v2`, `v14`) throughout, obscuring semantic purpose
+- Loop unrolling in `param_malloc_free` and `param_memset` with SIMD operations makes original logic nearly unrecognizable
+- No comments explaining algorithm logic, preconditions, or return value semantics
+- Type precision issues: return type `long long` instead of `int`, inconsistent use of `unsigned long long`
+- Magic number `4294967295` used repeatedly without explanation for error returns
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions have appropriate granularity with clear separation between wrapper functions (`param_*`) and test functions (`call_*`). Each function has single responsibility matching the original source structure.
+
+**Most Needs Improvement:** Comment Quality (scored 2/10)  
+The decompiled code has almost no comments. There's no explanation of what functions do, their preconditions/postconditions, or the meaning of complex constructs. This makes understanding the code significantly harder than necessary.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as loop indices should be named `i`, `j`, `index`; buffer pointers should be `buffer` or `dst`/`src` based on how they're used with string functions
+2. **Comment loop unrolling and SIMD operations**: When detecting optimized loops, add comments like "// Original loop: for(i=0; i<n; i++) ptr[i] = i*10"
+3. **Recover function contracts**: Add comments like "// Returns: string length or -1 on error" based on return value patterns

@@ -1,0 +1,125 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2` instead of semantic names like `a`, `b`, `c`, `temp1`, `sum`, `count`. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`, and `loop_while` uses `iVar1` instead of `count`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retain original names (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`), but internal helper functions are named generically (`FUN_00011030`, `FUN_000112f5`, `FUN_00011455`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x15`, `0x3e9`, `0x12`, `0x240b`). Original source used decimal values with comments explaining expected results; decompiled code uses hex literals with no context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__i686.get_pc_thunk.bx`, `__x86.get_pc_thunk.bx`, `deregister_tm_clones`, and runtime initialization code. Some functions have redundant checks (e.g., `infinite_loop` checks `*param_1 == 1` five times).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `sequential_ops` recover well, but complex patterns degrade significantly. `loop_for_fixed` becomes bit manipulation instead of a loop, `switch_fallthrough` becomes nested if-statements, and `goto_backward` transforms into complex arithmetic instead of recognizable loop structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved with reasonable sizes, but test functions are bloated with repetitive printf calls. Some compiler-generated functions appear (`FUN_000112f5`) that weren't in original source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `duffs_device` uses multiple goto labels that disrupt flow, and `infinite_loop` has confusing repeated condition checks that break linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `infinite_loop` and `loop_external_state` contain nearly identical redundant condition checks (5 similar if-statements). `loop_for_fixed` has complex bit-shift operations that could be simplified to a formula.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of specific types. Some type mismatches exist: `if_else` returns `bool` instead of `int`, `if_elseif_chain` uses `uint` instead of `int`. Function pointers use generic `code *` type.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in this code, but function pointer arrays are recovered (`funcs[]`, `ops[]`). `jmp_buf` referenced but not fully reconstructed. Array handling sometimes shown as pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (e.g., `(undefined4 *)`, `(undefined *)0x0`). Function pointer calls use generic types. Some integer conversions without explicit casting, but no severe buffer overflow patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Complete absence of comments. Original source had extensive documentation explaining each function's purpose, test cases, and expected behavior. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized, but Duff's device only partially recovered with goto labels. State machine patterns not explicitly identified. No algorithm naming or pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings despite issues. `computed_goto` test function incorrectly passes string pointer. Some functions show unusual behavior but aren't flagged. No uncertainty indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original source had test validation comments (e.g., "输入5,7,3应返回21") that are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage (`jump_buffer`) not clearly indicated. Callback relationships visible through function pointer types but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output preserving original structure. Static functions properly identified. No logical grouping enhancement or header file separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. External dependencies declared (`printf`, `longjmp`, `_setjmp`). Some platform-specific artifacts (`__i686.get_pc_thunk.bx`) would need cleanup for portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.01/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information compared to original `a`, `b`, `c`, `sum`, `count`
+- **Zero comments recovered**: Original source had extensive documentation explaining purpose, test cases, and expected behavior—all lost
+- **Control flow transformations obscure logic**: `loop_for_fixed` becomes bit manipulation, `switch_fallthrough` becomes nested if-statements
+- **Type mismatches introduce confusion**: `if_else` returns `bool` instead of `int`, inconsistent signed/unsigned usage
+- **Magic numbers without context**: Hex literals like `0x3e9`, `0x240b`, `0x12` appear without explanation
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)**
+- Most core test functions retained their original semantic names (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`), making function identification straightforward despite other issues.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)**
+- Complete absence of documentation is the most severe degradation; original source had comprehensive comments explaining each function's purpose, test validation, and expected behavior—all lost in decompilation.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns**: Analyze how variables are used (e.g., loop counters, accumulators, condition checks) to suggest semantic names like `count`, `sum`, `index` instead of `iVar1`, `uVar2`.
+
+2. **Recover and preserve source comments when debug symbols available**: Since compilation used `-g` flag, leverage debug information to recover original comments or at least add decompilation confidence annotations for complex transformations.
+
+3. **Improve control flow pattern recognition for optimized constructs**: Better detect loop unrolling, switch-to-if transformations, and arithmetic optimizations to either reconstruct original patterns or add explanatory comments about the transformation.

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/7/7_clang_Os_no_g/angr/syntactic/bin/7_clang_Os_no_g_fixed",
+  "stdout": "Testing optimization and security features:\n\nfake_branch: 10\nopaque_predicate: 35\ninstruction_substitution: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables are `v1`, `v2`, `v3`, etc. No semantic meaning recovered - original names like `a`, `b`, `c`, `x`, `n`, `sum`, `i`, `target` are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `goto_forward`, etc. The decompiler preserved every function name exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some magic numbers retained without explanation (e.g., `0x65` for 101, `0x12` for 18, `0xFFFFFFFF` for -1). The formula `10 * a1 + 10` in `if_elseif_chain` obscures the original return values of 10, 20, 30.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some SIMD vector instructions visible in `loop_continue` and `goto_backward` due to optimization, but these are expected at -O0. No redundant casts or debug instrumentation cluttering the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: **CRITICAL BUGS FOUND**: `single_if` uses `a1 << (a1 > 0)` which is semantically wrong (bit shift instead of multiplication). `loop_while` and `loop_dowhile` use `while (v3 > 0x12)` which is incorrect - should check `x != 0`. Loop unrolling in `loop_for_fixed` obscures the original for-loop structure.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: All 45+ functions from source are properly decomposed and preserved. Test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are all present with appropriate granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. The `switch` statements used for `loop_break` and `switch_fallthrough` are clever reconstructions that maintain readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is present but mathematically correct. Common subexpression elimination is reasonable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed type precision - parameters use `int`/`unsigned int`, but return types vary between `__int64` and `int`. Function pointers have imprecise types like `__int64 (__fastcall *)(_QWORD)` instead of proper signatures. Original `int` types mostly preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. Arrays accessed directly via indexing (`dword_1A00[a1]`, `dword_19AC[a1 - 1]`) without reconstructing the original `int arr[] = {10, 20, 30, 40, 50}` or matrix definitions.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(unsigned int)`, `(int)`, `LODWORD()` conversions. Function pointer type confusion in `call_func_ptr_array` where the switch case handles different function behaviors. No bounds checking visible in array accesses.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in any decompiled functions. Only the file header comment from IDA Pro present. Original source had extensive comments explaining each function's purpose and test cases - none recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized implicitly (switch for jump tables in `switch_small`, `switch_large`), but no explicit naming or documentation of patterns like "Duff's device" in `duffs_device` or state machine patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **No warning about critical bugs**: The incorrect logic in `single_if` (bit shift vs multiplication), `loop_while`, and `loop_dowhile` is presented as confident output. No flags for suspicious control flow or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. Original source had implicit contracts (e.g., "requires: n > 0" for factorial) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication of which functions call which, or the callback relationships in `process_with_callback` and `call_func_ptr`.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - all CF-L1 functions together, then CF-L2, then CF-L3. Test functions at the end. Single file organization is reasonable for decompiled output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code would compile syntactically but contains semantic errors in logic. No external dependencies documented. The bugs in several functions would cause runtime incorrectness.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **`single_if` BUG**: Uses `a1 << (a1 > 0)` (bit shift) instead of `a1 * 2` (multiplication) - produces wrong results
+- **`loop_while`/`loop_dowhile` BUG**: Uses `while (v3 > 0x12)` instead of `while (x != 0)` - completely wrong loop condition
+- **Variable naming**: All generic (`a1`, `v1`, `v2`) with no semantic recovery
+- **No comments**: Zero documentation of algorithm intent or test cases
+- **No anomaly warnings**: Incorrect logic presented without any flags
+
+**Best Quality Aspect:** Function Naming (scored 10/10)  
+- Every function name matches the original source exactly - `sequential_ops`, `single_if`, `if_else`, `nested_if_deep`, `loop_for_fixed`, etc.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)  
+- Zero comments, no pattern recognition, no anomaly detection, and critically - the decompiler presents incorrect logic (bugs in `single_if`, `loop_while`, `loop_dowhile`) without any warnings
+
+**Top 3 Recommendations:**
+1. **Add semantic inference for variable names**: Analyze usage patterns (e.g., `a1 - 10` compared against array indices) to infer meaningful names like `target` or `index`
+2. **Detect and flag control flow anomalies**: The `a1 << (a1 > 0)` pattern in `single_if` is clearly wrong - flag as suspicious
+3. **Recover loop constructs from backward jumps**: The formula in `loop_for_fixed` should be recognized as unrolled loop and commented accordingly

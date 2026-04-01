@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_gcc_Os_no_g/angr/syntactic/bin/7_gcc_Os_no_g_fixed",
+  "stdout": "Test output\n\ncall_fake_branch: 10\ncall_opaque_predicate: 35\ncall_instruction_substitution: 225\ncall_string_encryption: 973767736\n",
+  "stderr": "*** stack smashing detected ***: terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

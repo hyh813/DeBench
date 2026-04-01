@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `iVar1`, `local_XX`), providing no semantic context about their role (e.g., `sum`, `len`, `i` in source).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most function names (`process_char`, `array_1d_stack`) are recovered accurately from symbols, but critical functions like `process_float`, `process_double`, and `enum_switch` are renamed to generic `FUN_` addresses.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x2c` (array stride 44) and `0x20` (ASCII shift) are used without explanation; while `0x20` is inferable, array strides obscure the matrix logic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Code contains significant artifacts like `unaff_retaddr` used to access constants in `process_float` and `CONCAT44` macros for 64-bit math, which clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The `switch` statement in `enum_switch` is decompiled into a raw jump table lookup (`*(undefined4 *)(unaff_retaddr + ...)`), completely destroying the high-level logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 8/10
+Justification: Code reads mostly top-to-bottom using `do-while` loops for iterations, which is natural for unoptimized code, with minimal confusing jumps.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No dead code or loop unrolling artifacts are present; the logic is concise despite the low-level type representations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Severe type degradation: `process_float` returns `longdouble` instead of `float`, `process_ll` uses `undefined8` and splits parameters, and `array_string` returns `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely flattened; `Point3D` access `p->x + p->y + p->z` becomes `param_1[1] + *param_1 + param_1[2]`, losing all semantic structure.
+
+**11. Type Safety:** Score: 4/10
+Justification: Extensive use of `undefined4` and `undefined8` types, along with manual pointer arithmetic like `*(int *)(param_1 + iVar2 * 4)`, removes type safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex logic or recovered types.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms like the `switch` statement are missed (replaced by jump table lookup), and matrix diagonal access is reduced to raw pointer offsets.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the bizarre `unaff_retaddr` access pattern in float functions as valid code without flagging it as a potential analysis failure or anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the non-null check in `array_complex_index` is implicit).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are readable because most function names were preserved, allowing the call graph to be understood despite the type confusion.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure, which helps in navigating the decompiled code.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: Code will not compile due to Ghidra-specific types (`undefined4`, `undefined8`, `CONCAT44`) and the `unaff_retaddr` variable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- **Control Flow Loss**: The `switch` statement in `enum_switch` is reduced to an opaque jump table lookup (`FUN_00011a55`).
+- **Type Confusion**: `process_float` and `process_double` are decompiled with incorrect signatures and logic using `unaff_retaddr` to fetch constants.
+- **Struct Flattening**: Composite types like `Point3D` and `Rect` are completely lost, replaced by raw array indexing (e.g., `param_1[3]`).
+- **Return Value Loss**: `array_string` is decompiled as returning `void` instead of `int`, dropping the function's result.
+- **Parameter Count Mismatch**: `process_ll` is decompiled with two parameters (`param_1`, `param_2`) instead of one, breaking the API.
+
+**Best Quality Aspect:** Code Linearization (Score: 8/10)
+- Despite type issues, the execution flow within functions is linear and uses standard loop constructs, making it easy to trace step-by-step.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The complete failure to recover structs (flattening to arrays) makes understanding data layouts and field access extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Struct Recovery**: Detect and reconstruct struct definitions from stack offsets and access patterns (e.g., `param_1[0]`, `param_1[1]` -> `struct.field_a`, `struct.field_b`).
+2. **Enhance Constant Propagation**: Fix the analysis that causes constants in floating-point functions to be accessed via `unaff_retaddr` offsets; they should be inlined as immediate literals.
+3. **Switch Statement Recovery**: Improve the pattern matching for jump tables to reconstruct high-level `switch` statements instead of raw memory lookups.

@@ -1,0 +1,15 @@
+Obfuscation test starting...
+Fake branch result: 10
+Opaque predicate passed
+Instruction substitution result
+String encryption result: 81
+Tail call optimized
+Non-tail call completed
+Vectorized loop executed
+Link time optimization applied
+Division by zero result: 1
+Null pointer deref result: 41
+Buffer overflow result: 30
+Integer overflow result: 2000000000
+Undefined behavior result: 10
+Implementation defined result: 43

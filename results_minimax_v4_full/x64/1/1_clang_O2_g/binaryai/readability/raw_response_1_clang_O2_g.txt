@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use completely generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `uVar3` throughout. The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count`, `target`, `n`. For example, in `sequential_ops`, parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names accurately match the original source: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`. Minor issues include `FUN_00101020` for unknown functions and some internal functions like `deregister_tm_clones`. The core test functions are correctly named.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Test functions embed magic numbers directly (e.g., `0x15` for 21, `0x14` for 20) without named constants. However, these are mostly inferable from context. Constants like `0x33` (51) and `0x65` (101) appear without explanation. The decompiler doesn't recover `#define` statements from the source.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: The output is relatively clean without obvious compiler artifacts like register spilling or debug instrumentation. Some type mismatches exist (e.g., `undefined4 *param_1` in `duffs_device`) but are manageable. No significant noise pollution from frame pointer manipulation.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+Justification: Several functions show severe control flow distortion. `loop_for_fixed` uses a mathematical formula `(param_1 - 2) * (param_1 - 1) / 2 + param_1 - 1` instead of a loop. `loop_continue` has an extremely complex 80-line structure that doesn't resemble the original continue-based logic. `goto_backward` and `recursion_factorial` are heavily obfuscated with complex loop structures. At -O0, these should be much more readable.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Functions are appropriately sized with reasonable granularity. Each function handles its specific task without obvious over-fragmentation. The test functions are properly separated. Minor issues with some functions being slightly large (e.g., `test_control_flow_l2` has 40+ lines).
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom with acceptable linearity. Some forward jumps exist in complex functions like `loop_continue` and `recursion_factorial`. The nesting depth is manageable in most functions.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Some loop unrolling is present in `loop_continue` and recursive functions, but it's not excessively commented or abstracted. The mathematical formula in `loop_for_fixed` is a form of strength reduction that could be better explained. Some duplicate expressions exist but are manageable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic types like `int`, `uint`, `undefined4`, `undefined8` throughout. At -O0, types should be more precise. The original used `int` consistently, but the decompiler introduces `uint`, `byte`, `bool` inconsistently. Function pointers use generic `code *` type instead of proper function signatures.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: No struct recovery is visible. The `loop_break` function uses raw pointer arithmetic with `*(int *)(&DAT_00103108 + ...)` instead of recovering the original array `int arr[] = {10, 20, 30, 40, 50}`. The `matrix` in `loop_multi_exit` is similarly lost. Composite types are completely flattened to pointer arithmetic.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe operations present. The `duffs_device` uses `undefined4 *` for what should be `int *`. Function pointers use `code *` which loses type safety. There are implicit conversions between signed and unsigned (e.g., `param_1` as `int` vs `uint`). The `large_jump_table` returns `undefined [16]` which is concerning.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments in the decompiled code except for the auto-generated header. No explanation of algorithms, no documentation of non-obvious logic, no decompilation confidence indicators. The original had extensive comments explaining each test case. Zero useful comments for understanding the code.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Basic patterns like switch statements are recognized. The `duffs_device` shows switch-case with goto labels (labeled `switchD_00101a86_caseD_X`). However, no explicit pattern naming (e.g., "This implements Duff's device"). State machines are partially recognized but not named as such.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Some anomalies are flagged: `<EXTERNAL>` marks external library functions, `UNRECOVERED_JUMPTABLE` indicates unresolved function pointer calls. However, the indirect recursion functions are not clearly marked as problematic. Some suspicious code is presented confidently without warnings.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition, postcondition, or invariant documentation. The original had no explicit contracts either, but the decompiler could have inferred some (e.g., "requires: n >= 0" for factorial). Error conditions are not documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are clear and traceable. The call graph can be inferred from the code. However, there's no documentation of which functions call which, no indication of global variable usage, and no callback relationship documentation. The test functions call the target functions but this isn't explicitly documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically: initialization functions first, then test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`), then helper functions. Static functions are properly scoped. The organization follows a reasonable pattern even if it doesn't match the original source file structure.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: The code should compile with minimal stubs for external functions (`puts`, `printf`, `_setjmp`, `longjmp`). Dependencies are not documented. Some functions have unusual return types (`undefined [16]` in `large_jump_table`) that would cause compilation issues. The `<EXTERNAL>` functions need proper declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 7) / 4 = 5.50
+L2_avg = (4 + 7 + 6 + 5) / 4 = 5.50
+L3_avg = (5 + 3 + 5) / 3 = 4.33
+L4_avg = (2 + 5 + 6 + 2) / 4 = 3.75
+L5_avg = (5 + 7 + 6) / 3 = 6.00
+
+Overall = (5.50 × 0.30) + (5.50 × 0.25) + (4.33 × 0.20) + 
+          (3.75 × 0.15) + (6.00 × 0.10)
+        = 1.65 + 1.375 + 0.866 + 0.5625 + 0.6
+        = 5.05/10
+```
+
+### Overall Readability Score: 5.1/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`param_1`, `iVar1`, `uVar2`) instead of semantic names from the source
+- **Control flow distortion**: `loop_for_fixed` uses a mathematical formula instead of loop; `loop_continue` is 80+ lines of complex code
+- **No comments**: Zero useful comments explaining algorithms, patterns, or intent
+- **Type precision**: Uses generic types (`undefined4`, `uint`, `code *`) instead of precise types
+- **Composite type loss**: Arrays like `int arr[]` and `int matrix[3][4]` are lost to raw pointer arithmetic
+
+### Best Quality Aspect
+**Function Naming (8/10)** - Most function names accurately match the original source, making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement
+**Variable Naming (2/10)** - The generic variable names (`param_1`, `iVar1`, `uVar2`) make it extremely difficult to understand what each variable represents. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, comparison) to generate semantic names like `sum`, `count`, `index`, `target`
+2. **Recover loop constructs**: Recognize mathematical formulas that represent loop behavior (e.g., n*(n-1)/2 is sum of 0 to n-1) and reconstruct the original loop structure
+3. **Add algorithm comments**: Include basic comments explaining what each function does, especially for complex patterns like Duff's device, state machines, and recursive functions

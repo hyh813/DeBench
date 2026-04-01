@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `result`. The original source has meaningful names like `value`, `name`, `data`, `size`, `multiplier` but these are completely lost. For example, in `_Z20test_cpp_member_funcv`, the string "Test" is stored in `str` as hex `0x74736554` with no semantic connection to the original `name` member.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ function names are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), which is good. However, many internal helper functions remain as `function_2150`, `function_2160` with no semantic meaning. Parameter names like `a1`, `a2` provide no indication of purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code contains numerous unexplained magic numbers: `0x74736554` (string "Test"), `40` (stack canary offset), `20` (g1=20), `0x2a7d` (6781 decimal), `0x3ff8000000000000` (1.0 double). No constants or enums are recovered from the original source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts pollute the output: `__readfsqword(40)` for stack canary, `__stack_chk_fail()` calls, `__asm_movsd`, `__asm_movsd_9`, `__asm_cvttsd2si` for floating-point operations, and numerous thunk functions (`_ZThn16_*`, `_ZTv0_n24_*`). These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow structures (if/else, returns) are preserved and readable. However, some patterns are unusual - for example, the template_max function uses complex bit manipulation for comparison that obscures the simple `a > b ? a : b` logic. At -O0, this level of complexity is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The original test functions are preserved as separate entities, which is good. However, class methods are scattered throughout the file rather than grouped by class. The thunk functions (virtual dispatch adapters) create unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The exception handling code has some unusual flow with `_Unwind_Resume` but overall structure is traceable. Some computed jumps in virtual function dispatch add complexity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists but is minimal. The main issue is that the decompiler doesn't simplify or abstract away the complex pointer arithmetic used for vtable access, making the code appear more complex than necessary.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: The decompiler correctly uses `int64_t` and `int32_t` for ARM64 architecture. However, const-correctness is lost - all `const` qualifiers from the original are missing. Function parameters are often generic `int64_t*` instead of proper class types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler recovers vtable structures (`struct vtable_59a0_type`, etc.) which is good. However, class data members are accessed through raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)`) rather than reconstructed struct types with meaningful field names. The original `SimpleClass` with `value` and `name` members is completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns exist: `(int64_t)a1` casts, `(int32_t)(float32_t)` double-casts, pointer arithmetic like `v1 + 4`, `v1 + 8`, `a1 - 24`. The template_swap function has a critical bug where it assigns the same uninitialized `v1` to both `*a1` and `*a2`, losing the swap logic entirely.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some useful comments exist: "From module: /work/5-1.cpp", "Line range: 41 - 50", "Demangled: test_cpp_member_func()". However, these are source-location focused rather than explaining the decompiled logic. No comments explain what the complex operations do.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of C++ idioms. The RAII patterns in smart pointers, virtual dispatch mechanisms, exception handling, and lambda capture are not identified or named. The complex vtable and thunk mechanisms are presented as raw code without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious or uncertain code. The broken template_swap function that doesn't actually swap is presented without warning. The complex virtual inheritance pointer adjustments are not flagged as requiring manual verification.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are recovered. The original source has clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through the code (e.g., `_Z20test_cpp_member_funcv()` calls `strlen`). However, there's no documentation of which functions call which, global variable usage is not clearly marked, and virtual dispatch relationships are not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are organized by address range rather than logically grouped. The original source's clear separation into test functions and class methods is not reflected. Related virtual functions are scattered rather than grouped by class.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code cannot compile standalone - it references undefined functions like `__printf_chk`, `__cxa_throw`, `_Znam`, `_Znwm`, etc. No header declarations or dependency documentation is provided. The code is labeled as "Retargetable Decompiler" output but lacks the infrastructure to actually be retargeted.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v1`, `a1`, `result`) losing all semantic meaning from original source
+- **Broken template_swap**: The function assigns uninitialized `v1` to both `*a1` and `*a2`, completely breaking the swap logic - this is a semantic error, not just a readability issue
+- **No class structure recovery**: Class data members accessed through raw pointer arithmetic (`*(int32_t *)(v1 + 4)`) instead of named struct fields
+- **Excessive noise**: Compiler artifacts (`__stack_chk_fail`, thunks, asm blocks) overwhelm the actual logic
+- **No type safety**: Unsafe casts and pointer arithmetic throughout, losing const-correctness and specific type information
+
+### Best Quality Aspect: Type Precision (scored 6/10)
+- The decompiler correctly uses `int64_t` and `int32_t` for ARM64 architecture, showing awareness of the target platform's type sizes
+
+### Most Needs Improvement: Variable Naming Quality (scored 2/10)
+- Generic single-letter variable names make it nearly impossible to track data flow or understand what values represent, completely obscuring the original source's meaningful identifiers like `value`, `name`, `data`, `size`
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: When a variable is used as an index, name it `index` or `i`; when it's used to access struct members, derive the field name
+2. **Recover class/struct types**: Instead of `*(int32_t *)(v1 + 4)`, emit `result->value` based on vtable analysis and constructor patterns
+3. **Flag semantic anomalies**: The broken template_swap function should be marked with a warning since it produces incorrect results compared to the original logic

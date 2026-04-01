@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/3/3_clang_O2_no_g/retdec/syntactic/bin/3_clang_O2_no_g_fixed",
+  "stdout": "`\nMEM-L1-01 (local_vars): 20\nMEM-L1-02 (local_array): 10\nMEM-L1-03 (local_struct): 15\nMEM-L1-04 (address_of_local): 42\nMEM-L1-05 (address_of_array): 2\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

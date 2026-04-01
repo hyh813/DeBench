@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `param_2`, `uVar1`, and `local_XX`. No semantic names (e.g., `sum`, `i`, `arr`) were recovered from the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `test_data_types_l1`, and `array_2d_stack` are perfectly recovered from the source symbols, making the high-level flow easy to trace.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure logic; e.g., `0x1a` and `0xbf` in `process_char` replace the clear range check `c >= 'A' && c <= 'Z'`, and float constants like `0x3fc00000` are used instead of `1.5f`.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The decompiler output is extremely noisy, particularly in `test_array_types` where a 3D array initialization is expanded into hundreds of lines of individual stack variable assignments (`local_c = 1; local_10 = 1; ...`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple loops are often converted into verbose `do-while` structures with manual decrementing (e.g., `param_2 = param_2 + -1`), and loops like `array_2d_stack` are aggressively unrolled into long arithmetic expressions, destroying the original loop logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and correspond to the source structure. The size of the functions is reasonable, and the decomposition matches the original modular design.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the preference for `do-while` loops over `for` loops and the manual management of loop counters add slight friction to linear reading.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: There is significant redundancy; fixed loops in `array_2d_stack` and `array_3d` are unrolled into massive sums of array indices, and the 3D array initialization is repeated 125 times instead of using a loop or array literal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: High-level types are lost; `float` and `double` operations are replaced by calls to software intrinsics (`__mulsf3`, `__adddf3`) using `undefined` types, and `short` operations are obscured by bit shifts.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; `struct_simple` accesses fields via array indexing (`param_1[1]`, `param_1[2]`) rather than member access (`p->y`, `p->z`), completely losing semantic field names.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code is littered with unsafe casts to `undefined*` and `undefined4`, and the use of Ghidra-specific macros like `CONCAT44` indicates a lack of type safety and standard C compliance.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The output is raw code without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are obscured; the "uppercase check" in `process_char` is transformed into unsigned arithmetic, and "summing an array" is transformed into unrolled addition.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While `UNRECOVERED_JUMPTABLE` correctly flags an unresolved function pointer, the aggressive loop unrolling and type loss are presented confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (`printf`, `puts`) and internal functions are clear and easy to follow, preserving the call graph structure.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, matching the source file's organization, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to Ghidra-specific types (`undefined4`, `code`) and macros (`CONCAT44`, `SBORROW4`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Loss of High-Level Types:** Float/Double operations replaced by compiler intrinsics (`__mulsf3`, `__adddf3`) and `undefined` types.
+- **Loss of Composite Types:** Structs accessed via array offsets (`param_1[1]`) instead of field names (`p->y`).
+- **Excessive Redundancy/Unrolling:** Loops like `array_2d_stack` and `array_3d` are unrolled into massive arithmetic expressions, obscuring the algorithmic intent.
+- **Stack Variable Explosion:** Array initialization in `test_array_types` expanded into hundreds of individual variable assignments (`local_c = 1; local_10 = 1;...`).
+- **Non-Compilable Artifacts:** Use of Ghidra-specific macros (`CONCAT44`) and types (`undefined4`, `code`).
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully recovered symbol names for most functions, making the high-level flow easy to follow.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3.0/10)
+- The inability to recover basic types (float, struct) and the reliance on `undefined` types significantly hinders understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover Floating-Point Operations:** Detect patterns of `__mulsf3`/`__adddf3` calls and replace them with standard C operators (`*`, `+`) and correct types (`float`, `double`).
+2. **Recover Struct Definitions:** Analyze pointer arithmetic patterns (e.g., `param_1[1]`, `param_1[2]`) to reconstruct struct layouts and replace array indexing with member access (`->field`).
+3. **Preserve Loop Structures:** Avoid unrolling fixed-size loops in the decompiler view; keep them as `for` or `while` loops to maintain algorithmic clarity.

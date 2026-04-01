@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, flag1, result, ptr, p) with zero semantic meaning. No variable indicates its purpose (e.g., `instance_count`, `capture_by_value` completely lost).
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Mangled C++ names preserved (_Z20test_cpp_member_funcv) but not demangled. Some helper functions use cryptic names (sub_400854, $a.27). Template functions partially recovered (template_max<int>).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (42, 100, 200, 4700, 703) without explanation. String literals like "Test" preserved but format strings replaced with global references (g_401201).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe angr-specific artifacts (armg_calculate_condition calls), excessive register save/restore patterns (v12 = v13, v11 = v14), and unnecessary goto statements pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Excessive goto usage instead of structured loops/conditionals. armg_calculate_condition calls create unreadable conditional logic. Many functions just `return;` with no actual flow.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure: 10+ test functions are empty (`return;` only). Functions like test_cpp_constructor, test_cpp_virtual_func have no implementation recovered despite source having substantial logic.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Forward jumps (LABEL_400aac, LABEL_400c76) disrupt top-to-bottom reading. Register prologue/epilogue code (v4 = v5, v3 = v6) appears at function start unnecessarily.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate register saves across functions. armg_calculate_condition called multiple times with identical parameters in exception handling code without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Widespread void* usage instead of proper class types (Container<int>::push uses void* ptr). Integer types all generic `unsigned int` instead of int32_t, size_t. Const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes reduced to generic structs (struct_0, struct_1) with meaningless field names (field_0, field_4). Original class hierarchy (Base, Derived, MultiDerived) not recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer casts throughout (*(ptr)->field_4(ptr, *(ptr)->field_4)). Function pointers use void* signatures. No bounds checking recovered for array accesses.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of C++ mechanisms (vtable, exception handling, RTTI). No decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: virtual dispatch shown as raw pointer dereference, exception handling as __cxa_* calls without context, RAII patterns lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for empty functions, unresolved calls, or suspicious patterns. armg_calculate_condition calls appear without explanation of what they represent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception safety guarantees not indicated. No null checks or bounds validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Virtual function calls not clearly identified as such. Global variables use opaque names (g_411ed8, g_411eec). Call graph relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related test functions not grouped. Runtime initialization functions (_init, _start, _fini) mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Requires numerous external symbols (__cxa_throw, operatornew, __dynamic_cast). armg_calculate_condition is angr-specific and won't compile standalone. Significant stubbing required.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+3+4+2)/4 = 2.75  × 0.30 = 0.825
+Level 2 (Structural):   (2+3+3+4)/4 = 3.00  × 0.25 = 0.750
+Level 3 (Type System):  (3+3+3)/3   = 3.00  × 0.20 = 0.600
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50  × 0.15 = 0.225
+Level 5 (Contextual):   (3+4+3)/3   = 3.33  × 0.10 = 0.333
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 2.73/10
+```
+
+**Overall Readability Score: 2.7/10**
+
+### Critical Defects:
+- **10+ test functions completely empty** (`return;` only) despite having substantial source logic
+- **C++ semantics not recovered**: virtual dispatch, exceptions, RTTI shown as raw memory operations
+- **angr-specific artifacts** (armg_calculate_condition) make code non-portable and unreadable
+- **Zero variable semantic naming**: all variables are v0, v1, flag1, result with no meaning
+- **Class hierarchy lost**: Base, Derived, MultiDerived reduced to generic struct_0/struct_1
+
+### Best Quality Aspect: **Literal Clarity (4/10)**
+- Some string literals preserved ("Test") and numeric constants match expected values, allowing partial semantic inference despite other failures.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding C++ mechanisms (vtables, exceptions, templates) impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ semantic constructs**: Implement vtable recognition, exception handling patterns (__cxa_*), and RTTI recovery to restore object-oriented semantics rather than raw memory operations.
+
+2. **Implement semantic variable naming**: Use data-flow analysis to infer variable purposes from usage patterns (e.g., variables used in instance_count context should be named accordingly).
+
+3. **Eliminate analyzer-specific artifacts**: Remove or document angr-specific calls (armg_calculate_condition) and replace with standard C/C++ constructs or clear comments explaining the transformation.

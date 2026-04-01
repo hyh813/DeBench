@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: The decompiler consistently uses generic `_local` suffixes for all parameters (e.g., `x_local`, `a_local`, `b_local`) and numbered temporaries (`temp1`, `temp2`, `temp3`). While loop variables like `i`, `j`, `sum`, `count` are appropriately named, the pervasive use of generic local variants obscures variable purpose. For example, in `sequential_ops`, variables `a_local`, `b_local`, `c_local` should be named `a`, `b`, `c` to match source.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`, `duffs_device`, `recursion_factorial`, `tail_recursion`, `state_machine`, `fsm_func_table`, etc. The decompiler recovered all function names with 100% accuracy.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers lack explanation: `0xf` (15) in `switch_small` case 0, `0x14` (20) for case 1, `0x3e9` (1001) in `infinite_loop`, `0x65` (101) in `loop_external_state`. The test calls use hex like `0x3039` (12345) and `0x2694` (9876) without context. Constants like `100`, `200`, `300` in source are correctly preserved as decimal.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Moderate noise present but manageable. Warnings include "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable". These are informational but clutter output. No redundant casts or debug instrumentation observed. The noise level is acceptable for decompiled code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is mostly natural and idiomatic. Loops correctly use `for` and `do-while` constructs. Switch statements are properly recovered. However, `goto_backward` is rendered as a `for` loop (semantically equivalent but loses the goto structure), and `switch_fallthrough` uses awkward goto labels (`LAB_00010a64`, `LAB_00010a78`) instead of clear fall-through notation. At -O0, this is acceptable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition - all original functions preserved as separate entities with correct boundaries. No inlining or outlining artifacts. Function sizes are appropriate (e.g., `sequential_ops` is 4 lines, `loop_nested` is 12 lines). Parameter lists match original signatures exactly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal disruption. Early returns and breaks used appropriately. Some switch statements create multiple exit points, which is expected. The `switch_fallthrough` has goto labels that slightly disrupt linear flow, but overall readability is good.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpression elimination artifacts are minimal. The `duffs_device` shows some complex expression handling but is recognizable. Loop unrolling is not excessive. Overall clean code without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` throughout instead of more specific types like `int32_t` or `size_t`. Function pointer types are rendered as `_func_int_int`, `_func_int_int_int` which is adequate but not precise. Signed/unsigned distinction is mostly preserved (e.g., `(uint)(0 < x)` in `if_else`). No const correctness recovered.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are correctly recovered (e.g., `int arr[5]`, `int matrix [3] [4]`). However, no struct reconstruction - the decompiler uses flat arrays rather than reconstructing struct types. The matrix in `loop_multi_exit` is properly represented as 2D array. No union vs struct distinction needed in this code.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts observed. Pointer arithmetic is handled correctly (e.g., `src_local = src_local + 1`). Function pointer calls use proper signatures. No buffer-overflow-prone patterns. Minor issue: `opaque_predicate` returns `x << 1` which loses the original conditional logic structure but is type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated warnings ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention"). No explanation of algorithms, no recovered contracts, no documentation of non-obvious logic. The decompilation provides no semantic context about what functions do.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are implicitly recognizable: `duffs_device` is clearly a Duff's device (switch inside do-while), `state_machine` and `fsm_func_table` show state machine patterns, `computed_goto` shows computed jump. However, these are not explicitly labeled or documented as recognized idioms - the code structure simply happens to be readable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged with warnings: "WARNING: Could not recover jumptable at 0x000127f0. Too many branches" in `__aeabi_idiv`, unreachable blocks flagged. However, these read as technical warnings rather than helpful annotations. The `computed_goto` has "WARNING: Treating indirect jump as call" which is useful but presented as a warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. No error condition documentation. The decompilation provides zero semantic contract information about what functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in test functions (e.g., `test_control_flow_l1` calls all the L1 functions), but there's no documentation of relationships. No indication of which functions call `recursion_factorial` as a callback. No global variable usage documentation. Relationships are implicit in code structure but not explicit.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All 77 functions decompiled into a single monolithic output. No logical grouping (test functions, control flow L1, L2, L3 functions are all mixed). No static function scoping indicated. No header-like API declarations. The organization is purely alphabetical by address.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The metadata indicates "Compilation Result: Yes", suggesting it compiles. However, external dependencies (libc functions like `printf`, `puts`, `memset`, `setjmp`, `longjmp`) are not declared. Some helper functions like `__aeabi_idiv` are compiler intrinsics. Moderate patching would be needed for standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `_local` suffixes throughout, obscuring parameter roles
+- No comments or documentation explaining function purposes, algorithms, or contracts
+- Magic numbers like `0x3e9`, `0x65`, `0xf` lack explanatory constants
+- Cross-reference relationships not documented (callers/callees, callbacks)
+- Module organization is a single flat file with no logical grouping
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Every single function name perfectly matches the original source, demonstrating excellent symbol recovery
+
+**Most Needs Improvement:** Comment Quality & Contract Recovery (scored 2.5/10 combined)  
+- The decompiled code provides zero semantic context about what functions do, their preconditions/postconditions, or how they relate to each other
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Instead of generic `_local` suffixes, analyze how variables are used (e.g., `temp1 = a + b` suggests `sum`, loop counters should be `i`, `j`, `n` based on context)
+2. **Add semantic comments**: Include brief descriptions of what each function does, its parameters' purpose, and return value semantics
+3. **Document cross-references**: Add comments showing which functions call which, callback relationships, and global variable usage patterns

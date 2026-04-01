@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: The decompiler uses generic names like `v0`, `v1`, `v2`, `v3`, `v4` in test functions (`test_preprocessing_features`, `test_asm_features`), making it difficult to track purpose. However, some variables like `sum`, `i`, `page_size`, `exec_mem`, `counter` are well-named based on usage. This creates a mixed result where semantic meaning is lost for many temporaries.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names match the original source exactly: `param_macro_constants`, `param_macro_functions`, `param_conditional_compile`, `param_asm_basic`, `param_dynamic_code`, etc. The naming is action-oriented and semantically accurate, clearly reflecting each function's purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: While some literals are clear (1024, 512, 64 in macro constants), many magic numbers remain unexplained: `57072` (0xDEF0 decimal), `30` (sysconf _SC_PAGESIZE), `7` (mmap PROT_READ|WRITE|EXEC), `34` (MAP_PRIVATE|MAP_ANONYMOUS), `1` and `3` (mprotect protections). The decompiler failed to recognize these as named constants.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. No register spilling, redundant casts, or debug instrumentation visible. The "FAILED to decompile" messages for external functions (memcpy, strlen, etc.) are appropriate and don't impede readability of the main code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with idiomatic if-else statements and for loops. The conditional compilation (#ifdef) branches are correctly collapsed to single implementations. Loop constructs in `param_asm_clobber` and `param_asm_simd` are properly recovered as for loops rather than goto-based structures.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity closely matches the source. Small wrapper functions like `call_macro_constants` are properly separated from implementation functions like `param_macro_constants`. Each function has a clear single responsibility with reasonable parameter lists.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `param_dynamic_code` and `param_memory_protection`. No deep nesting issues observed; the maximum nesting is 2-3 levels.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling is present in `param_asm_simd` where SIMD intrinsics are replaced with scalar for loops - this is an expected optimization artifact at -O0 for ARM64. Dead code from conditional compilation branches is properly eliminated. Some expression duplication exists but is manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Type precision is excellent. The decompiler correctly recovered `int size`, `int x`, `int y`, `int *arr`, `size_t n`, `void *dst`, `const void *src`, `int *counter`, `int increment`. The `size_t` type is properly used for memory sizes. Minor issue: some places use generic `int` where `uint32_t` might be more precise.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: The original source has minimal struct usage (mostly basic types). The decompiler handles arrays correctly (e.g., `int a[4]`, `int b[4]`, `int result[4]` in `call_asm_simd`). No complex composite types were present to recover, so the score reflects the absence of degradation rather than excellent recovery.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The code is type-safe with no obvious unsafe casts. Pointer arithmetic is correct (e.g., `arr[i]`). Function pointer types are properly typed. The atomic operations use `_aarch64_ldadd4_acq_rel` with appropriate signatures. No buffer-overflow-prone patterns are present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: The decompiled code contains no comments except for the file header indicating it was decompiled by IDA Pro. There are no explanations of algorithm logic, no documentation of non-obvious transformations, and no indication of decompilation confidence levels. This is a significant gap.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognized: atomic operations are identified via `_aarch64_ldadd4_acq_rel`, conditional compilation branches are collapsed. However, the SIMD intrinsics are replaced with generic loops without comment, the macro recursion is reduced to simple addition without indicating the original pattern, and stringization macros are not identified as such.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler properly indicates "FAILED to decompile" for external library functions (memcpy, strlen, __libc_start_main, etc.). However, there is no indication of the conditional compilation collapse in `param_conditional_compile` or `param_multi_branch_compile` - the code simply shows the optimized result without noting the eliminated branches.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The error handling in functions like `param_dynamic_code` (returning -1 on failure) is present but not explained. No documentation of expected input constraints or return value guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls (e.g., `param_macro_constants` calls from `call_macro_constants`). However, there is no documentation of the call graph, no indication of which functions are public vs. static, and no cross-reference comments showing who calls what.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are organized in a logical order matching the source file structure: preprocessing functions first, then assembly-related functions, then test functions, then main. Static functions like `my_func`, `header_func` are properly placed near their usage. The overall structure is coherent.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code uses standard library functions (printf, puts, mmap, munmap, mprotect, sysconf, memcpy) without including headers. The code would require adding `#include <stdio.h>`, `#include <unistd.h>`, `#include <sys/mman.h>`, `#include <string.h>` to compile. External function declarations are implicit rather than documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `v2`, `v3`, `v4`) in test functions, obscuring which test case each value represents
+- Magic numbers like `57072` (0xDEF0), `30` (sysconf page size), `7` (mmap flags) are unexplained
+- Complete absence of comments leaves algorithm rationale undocumented
+- No indication that conditional compilation branches were collapsed in `param_conditional_compile` and `param_multi_branch_compile`
+- Missing standard library includes prevent standalone compilation
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.7/10)  
+Types are precise and match the original source almost perfectly. Integer types, pointers, and size_t are all correctly recovered. No type safety issues were found.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.5/10)  
+The combination of no comments, poor idiom recognition (SIMD reduced to loops without explanation), and missing anomaly indication creates a significant gap in understanding the decompiled code's relationship to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables like `v0`, `v1` in test functions should be named based on what they represent (e.g., `test_result_1`, `macro_constants_result`) by analyzing the call chain
+2. **Recognize and annotate system constants**: Detect magic numbers that correspond to system constants (PROT_*, MAP_*, _SC_*) and replace with meaningful names or add explanatory comments
+3. **Add decompilation metadata comments**: Include comments indicating when conditional compilation branches were collapsed, when optimizations like loop unrolling occurred, and confidence levels for indirect calls

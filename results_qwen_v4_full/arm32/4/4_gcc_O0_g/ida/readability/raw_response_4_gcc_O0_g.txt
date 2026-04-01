@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v4` in `test_calling_conventions` are generic and obscure their purpose (should be `cdecl_result`, `stdcall_result`, etc.), though some names like `sum`, `i`, `val`, `ptr` are reasonable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`cdecl_func`, `varargs_func`, `func_struct_byptr`), but some runtime functions use generic names (`sub_10408`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals replaced with symbolic references (`aCallL206`, `asc_125F4`) losing readability; magic numbers like `0x70u` in memcpy and `0x80000000` in float helpers lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations (`[sp+4h] [bp-8h]`), `BYREF` markers, and incorrect `__cdecl` on ARM add visual noise; 9 failed decompilations marked but float helper functions are excessively verbose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops and conditionals recovered naturally (for loops in `func_struct_byval`), but `ret_multi_branch` converts switch to chained if-else and `call_order_dep` simplifies undefined behavior to constant `(2, 2)`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well; each test function remains separate with appropriate size; no inappropriate inlining or monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Test functions read top-to-bottom naturally with sequential printf calls; float helper functions (`__aeabi_dadd`) have excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `ret_large_struct` has severe redundancy with `v2` through `v13` temporary variables for array copying; this register-spilling artifact obscures the simple loop logic from source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double, `__int64`), function pointer types recovered (`int (*)(int)`), but `__cdecl` annotation on ARM is architecturally incorrect and `void*` used for generic pointers.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery—`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData` all preserved with field names (`.data`, `.x`, `.y`, `.a`, `.b`) intact.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(_DWORD *)p`, `(unsigned __int8 *)str`, `*(_DWORD *)ret_opaque_handle(0)`) but explicitly marked; no buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments—only auto-generated headers with addresses; helpful warnings exist (`positive sp value has been detected`) but no algorithm explanations or parameter documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (printf, strlen, memcpy), va_list handling recovered correctly, but no higher-level pattern identification (calling convention differences not explained).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: 9 failed decompilations clearly marked (`FAILED to decompile: __imp_puts`), stack warnings present, but architecture mismatch (`__cdecl` on ARM) and undefined behavior in `call_order_dep` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Null checks preserved in code (`if ( p )`, `if ( !pp || !*pp )`) but no explicit precondition/postcondition documentation; error conditions visible but not documented.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable, callback relationships visible (`callback_func`), but no call graph documentation and string references use opaque symbolic names.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source structure, but single output file with no header generation; static functions not clearly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external imports failed (`__imp_printf`, `__imp_memcpy`, etc.); would require significant stubs and type definitions; architecture-specific annotations need correction.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+6)/4 = 6.0  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (7+8+6)/3 = 7.0    × 0.20 = 1.40
+Level 4 (Semantic):    (4+6)/2 = 5.0      × 0.15 = 0.75
+Level 5 (Contextual):  (6+4+6+6+4)/5 = 5.2 × 0.10 = 0.52
+─────────────────────────────────────────────────────
+Overall Score:                              6.16/10
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects:
+- **Variable `v0`-`v10` in test functions** should be named after their semantic purpose (e.g., `cdecl_result`, `varargs_sum`)
+- **`ret_large_struct` has excessive redundancy** with v2-v13 temporaries instead of a simple loop
+- **String literals replaced with symbols** (`aCallL206`, `asc_125F4`) losing immediate readability
+- **`__cdecl` annotation on ARM** is architecturally incorrect and misleading
+- **9 external functions failed to decompile** requiring manual stub creation
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) recovered with accurate field names and layouts matching original source.
+
+### Most Needs Improvement: **Comment Quality & Presence (4/10)**
+- Almost no explanatory comments beyond auto-generated headers; non-obvious logic (varargs handling, struct copying) lacks documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Variables used in printf contexts should inherit format string context (e.g., `v0` after `call_cdecl()` → `cdecl_result`)
+2. **Eliminate register-spilling redundancy** - Recognize array copy patterns and recover original loop structure instead of generating v2-v13 temporaries
+3. **Add architecture-aware calling convention annotations** - Detect ARM target and suppress x86-specific `__cdecl` annotations that are misleading

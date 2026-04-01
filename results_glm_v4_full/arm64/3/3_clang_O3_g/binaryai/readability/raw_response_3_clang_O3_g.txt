@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `uVar1`, `lVar1`, `local_810`). While `global_counter` is recovered, local variables like `i`, `n`, or `arr` in the source are reduced to meaningless names, requiring significant effort to track their purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from the binary symbols (e.g., `local_vars`, `heap_basic`, `test_stack_memory`). The names accurately reflect the source's intent, making the high-level structure easy to navigate.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals are recovered intact and are highly readable (e.g., `"MEM-L1-01 (local_vars): %d\n"`). Integer constants are often represented in hex (e.g., `0x2a` instead of `42`), which is slightly less intuitive but precise.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiled output is heavily polluted with compiler artifacts, specifically `CONCAT44` and `CONCAT17` macros in functions like `large_stack_frame` and `vla_stack`. References to `stack0x00000000` and complex pointer arithmetic obscure the actual logic significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple functions like `local_vars` are clean, but complex stack operations result in unnatural control flow. For example, `large_stack_frame` contains a massive, unrolled `do-while` loop with bit-shifting logic that bears little resemblance to the original simple `for` loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions. There is no artificial splitting or merging of functions, and the granularity matches the original source perfectly.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps. However, functions like `vla_stack` utilize labels (e.g., `LAB_00100c80`) for control flow, which slightly disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is a mix of optimization and redundancy. While `local_array` is simplified to `return param_1 * 5` (which is semantically accurate), `large_stack_frame` contains massive redundancy due to the decompiler's failure to abstract the loop, resulting in repetitive code blocks.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are mostly correct, but the decompiler frequently defaults to `undefined`, `undefined4`, or `undefined8` when it cannot precisely determine the type, reducing type safety and clarity.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is very poor. In `heap_nested`, the `Node` struct fields are accessed via raw pointer arithmetic (e.g., `*(undefined4 **)(__ptr + 2)`) instead of semantic field access (e.g., `head->next`), completely obscuring the data structure.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is as type-safe as the original C, but the decompiler introduces explicit casts to `undefined*` types which are technically unsafe. However, it does not introduce arbitrary type confusion beyond what is present in the binary.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output consists solely of code, making it difficult to understand the "why" behind complex operations like the stack frame manipulation.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard library idioms like `malloc`, `free`, `fork`, and `printf` are clearly recognized and preserved. However, higher-level patterns like the linked list creation in `linked_list_heap` are not explicitly identified or abstracted.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag potential issues or anomalies. For instance, the complex stack manipulation in `vla_stack` is presented as standard code without any warning that it might be a decompilation artifact or difficult to interpret.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions (like `if (arr == NULL)`) are preserved as code, but there is no explicit documentation of function contracts or preconditions in comments or annotations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls and global variable accesses are clear. For example, calls to `global_var_access` and usage of `global_counter` are direct and easy to trace, providing good context for data flow.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in memory address order rather than logical grouping. Helper functions and test functions are intermixed, making it harder to find related functionality compared to the source's logical sections.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not compilable due to the use of Ghidra-specific macros like `CONCAT44` and references to `stack0x00000000`. It would require significant manual refactoring to even attempt compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Struct fields accessed via raw pointer offsets (e.g., `__ptr + 2`) instead of field names, losing all semantic meaning of data structures.
+- Heavy use of `CONCAT` macros and stack pointer arithmetic (e.g., `&stack0x00000000`) creates severe noise that obscures logic.
+- Generic variable names (`param_1`, `uVar1`) make tracking data flow difficult in non-trivial functions.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered all function symbols from the binary, making the high-level API and control flow easy to navigate.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover structs, replacing field access with pointer arithmetic, is the single biggest barrier to understanding the data manipulation in this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve struct recovery algorithms to map pointer arithmetic offsets back to named struct fields, especially for heap-allocated objects.
+2. Abstract or hide low-level stack manipulation details (like `CONCAT` macros) behind cleaner variable assignments or array accesses.
+3. Implement variable renaming heuristics to infer names from context (e.g., `i` for loop counters, `n` for size parameters) instead of defaulting to `param_1`.

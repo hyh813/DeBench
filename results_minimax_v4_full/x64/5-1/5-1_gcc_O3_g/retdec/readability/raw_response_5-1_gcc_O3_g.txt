@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic numbered names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`) throughout. For example, `int64_t v1 = __readfsqword(40)` should be named `stack_cookie` based on its usage for stack canary checking. The variable `int64_t str = 0x74736554` clearly holds string data "Test" but is named generically.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions are properly demangled (e.g., `test_cpp_exception()`, `test_cpp_member_func()`), but many utility functions use generic numbered names like `function_1130`, `function_1140`. Class methods show mixed results - some demangled like `_ZN4Base12virtual_funcEi` for `Base::virtual_func(int)`, others remain as mangled symbols.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `__readfsqword(40)` for stack canary, `0x74736554` for string "Test", `0x3ff8000000000000` for 1.5, `0x4004000000000000` for 3.0. String literals like `"12RTTIDerivedA"` appear without explanation of their RTTI purpose. Only vtable structures `g14` and `g15` have minimal structure.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts include: inline assembly for stack canaries (`__readfsqword(40)`), floating-point operations using `__asm_movsd`, excessive type casting `(int128_t)(int32_t)(float32_t)`, and unnecessary conversions. Many functions are empty stubs containing only `return;` statements.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow structure is preserved, but many functions are empty stubs (e.g., `test_cpp_member_func()`, `test_cpp_constructor()`, `test_cpp_virtual_func()` all just return). Exception handling is convoluted with `__cxa_throw` followed by `_Unwind_Resume` pattern that obscures try-catch semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function count is maintained, but numerous thunk functions created for virtual dispatch (e.g., `_ZTv0_n24_N7MiddleA4funcEv`). Functions like `test_cpp_member_func` are incomplete stubs. Parameter passing uses awkward `result` pointer pattern instead of return values.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Exception handling has some non-linearity with `_Unwind_Resume`. Overall flow is mostly linear but disrupted by exception patterns and empty function stubs.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some code duplication exists between template instantiations (`template_max<int>` vs `template_max<double>`). No dead code elimination visible. Loop unrolling not present at -O0 level. Redundancy is manageable but not optimized.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` and `int32_t` appropriately for ARM64. However, generic `int` appears in some places. Function pointers lack proper signatures (e.g., `void (*func)(int64_t *)`). `int128_t` used incorrectly for floating-point operations. Mixed results between precise and generic types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partially recovers vtable structures (`struct vtable_3c70_type`) with generic field names (`e0`, `e1`, `e2`). Global variables like `g14`, `g15` hold vtable pointers but lack proper structure. No class structure recovery visible - all data accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(int64_t)` conversions everywhere, `(int32_t *)` casts for pointer arithmetic. Pointer arithmetic like `*(int64_t *)(v1 - 24)` is error-prone. Type-confused function pointers present. No bounds checking visible in array operations like `*(int32_t *)(4 * (int64_t)v3 + v1) = a2`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments provide source file mapping (`// From module: /work/5-1.cpp`) and line ranges. Demangled names provided. However, comments lack meaningful explanation of algorithm logic, purpose, or intent. Auto-generated metadata only, no explanatory content.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified or named. C++ idioms like RAII, virtual dispatch, exception handling are not recognized or labeled. The decompiler doesn't identify the virtual function table pattern or exception mechanism.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code or potential issues. Empty function stubs are presented without indication they may be incomplete. Indirect calls and unresolved symbols not flagged. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant information recovered. No documentation of error conditions or expected input ranges. Function contracts completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships not clearly documented. Some class relationship hints via vtable structures but no explicit call graph. Global variable usage not transparent. Virtual dispatch relationships not clearly indicated.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output file with arbitrary function ordering. No logical grouping of related functions. No namespace or class structure organization. Functions appear in address order rather than semantic relationship.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has proper includes (`#include <stdint.h>`, `#include <stdio.h>`). Some function prototypes declared. However, requires significant patching to compile - missing definitions, undefined references to libc functions. Not standalone-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v1`-`v6`) obscuring semantic purpose (e.g., `stack_cookie`, `string_data`)
+- **Empty function stubs**: 10+ functions are completely empty (`return;` only), making analysis impossible
+- **Type safety**: Excessive unsafe casts and pointer arithmetic without bounds checking
+- **No semantic recovery**: No recognition of C++ idioms (RAII, virtual dispatch, exceptions)
+- **Noise pollution**: Heavy inline assembly and compiler artifacts cluttering code
+
+### Best Quality Aspect: Type System Fidelity (5.0/10)  
+Types are partially precise with `int64_t`/`int32_t` used appropriately for ARM64, and some struct recovery attempted for vtables.
+
+### Most Needs Improvement: Lexical Clarity (3.75/10)  
+Variable and function naming is the primary blocker - generic numbered names make the code nearly incomprehensible without constant reference to source.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `v1` used in `__readfsqword(40)` should be named `stack_cookie`; string literals should be decoded and named
+2. **Recover complete function bodies**: Many functions are empty stubs - ensure decompilation captures full logic, not just canaries
+3. **Add semantic annotations**: Label C++ idioms (virtual function tables, exception handling, RAII patterns) to aid understanding

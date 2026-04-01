@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All stack variables use generic names like `local_2c`, `local_14`, `iVar1`, `pvVar1`, `uVar1`. The original source used meaningful names like `obj`, `result`, `r1`, `ptr1`, `ptr2`. These auto-generated names make it extremely difficult to track variable purpose across the 2242-line decompiled output.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.). However, operator overloads are incorrectly rendered as `Point::operator_` and `Point::operator__` instead of `operator+` and `operator==`/`operator++`. Member functions like `SimpleClass::getValue` are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `0x1234` (class ID), `0x2a` (42 decimal - thrown exception), `0x32` (50), `0x96` (150), `0xfa` (250). String literals like "Test", "Base", "Derived" are preserved. The magic numbers obscure their semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present: `__thiscall` annotations, `undefined4` types, `undefined *` pointers. However, no excessive debug instrumentation or register spilling artifacts. The code is reasonably clean despite compiler-specific decorations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source patterns. Loops are properly recognized (e.g., `for (local_c = 0; local_c < param_1; local_c = local_c + 1)`). Conditionals are clear. At `-O0` optimization, no restructuring artifacts are expected, and the decompiled flow matches the source well.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source - each test function is separate (e.g., `test_cpp_member_func`, `test_cpp_constructor`). Member functions are properly extracted as separate functions. No monolithic functions or over-fragmentation. Parameter lists are appropriate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. No forward jumps into loop bodies. Early returns are used appropriately. No deep nesting (>4 levels) observed. The code flows naturally.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or significant redundancy observed. Loop unrolling is minimal (appropriate for `-O0`). Common subexpression elimination artifacts are not present. The code is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types are somewhat generic. Uses `int` instead of `int32_t`, `undefined4` for many return types, `void *` in places. However, pointer types are correctly indicated, and string types are `char *`. Const correctness is partially preserved. At `-O0`, more precise types could be recovered.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct recovery is good. `SimpleClass` has `value` at offset 0 and `name` at offset 4. `Point` has `x` and `y` at offsets 0 and 4. `Container<int>` and `Container<double>` are properly template-instantiated with correct sizes. `Base`, `Derived` with vtables are recognized. Field names are mostly preserved.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with correct pointer arithmetic. Some generic `void*` casts present but not dangerous. Virtual function calls use proper vtable access patterns. No major buffer-overflow-prone patterns or undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. No explanation of algorithms, no documentation of what functions do, no preconditions/postconditions. Only the function signatures are present. This makes understanding the code much harder than necessary.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are recognized: virtual function calls via vtable (`***local_3c` pattern), smart pointer operations, exception throw/catch. However, these are not explicitly named or documented. The complex internal implementation of smart pointers is exposed rather than abstracted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication present. Uncertain calls are not flagged. No warnings about indirect calls that couldn't be resolved. Everything is presented confidently even when the decompilation might be ambiguous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No preconditions (e.g., "requires: ptr != NULL"), no postconditions, no invariants documented. The decompiled code provides no guidance on expected input/output behavior.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within each test function. However, relationships with external code (other test functions, the main driver) are not documented. No indication of who calls whom or the call graph.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by test case, matching the source organization. Test functions are together, member functions are grouped by class. However, the extensive internal implementation details of smart pointers and STL components clutter the output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code compiles (as noted in metadata: "Compilation Result: Yes"). External dependencies like `operator_new`, `printf`, `strlen` are properly declared as external. Minimal patching needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`local_2c`, `iVar1`, `pvVar1`) making it nearly impossible to track variable purpose
+- Operator overloads incorrectly rendered as `operator_` and `operator__` instead of `operator+`, `operator==`
+- Multiple magic numbers without explanation (`0x1234`, `0x2a`, `0x32`, `0x96`, `0xfa`)
+- Virtually no comments explaining algorithms, contracts, or intent
+- No anomaly indication for uncertain decompilation decisions
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.0/10)  
+Control flow is natural, function decomposition matches source, code linearizes well, and no redundancy - the decompiler correctly recovered the program structure.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)  
+The decompiled code lacks comments, pattern recognition, anomaly indication, and contract recovery. This forces analysts to reverse-engineer intent from raw code rather than receiving helpful interpretive guidance.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `local_2c` used as `SimpleClass*` should be named `obj` or `instance`. Variables used as loop counters with bounds checking should be named appropriately.
+2. **Recover operator overload names**: Detect operator patterns (e.g., `Point::operator+` returning new Point) and render as `operator+` instead of generic `operator_`.
+3. **Add semantic annotations**: Include comments explaining magic numbers, contract hints (preconditions/postconditions), and flag uncertain decompilation decisions with confidence indicators.

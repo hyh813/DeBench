@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_clang_O3_g/ida/syntactic/bin/6_clang_O3_g_fixed",
+  "stdout": "Testing Standard Library Functions\nstrlen: 8\nstrcmp: 0\ncall_strlen: 12\ncall_memcpy: 90\nmemcmp: 0\nValue: 42, Name: Test\nprintf: 22\nsscanf: 579\nfopen: 42\nfread/fwrite: 42\nmalloc: 90\nmemset: 0\nstrchr/strstr: 15\nTesting System Calls\nsyscall: 42\nstat: -2\nfork/exec: 42\npipe: 42\nsocket: 42\nshm: -1\nsignal: 42\nTesting Thread Concurrency\npthread_create: 49\npthread_join: 0\nmutex: -3\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

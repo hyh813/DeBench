@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `lVar2`, `param_1`, `__ptr`). While `global_counter` is recovered, local variables like `local` in `address_of_local` are optimized away, and loop counters lack semantic names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; for example, `0x2a` (42) and `0x14` (20) are used directly instead of the original constants or expressions. The mix of hex and decimal literals (e.g., `0x3c` vs `60`) adds confusion.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from aggressive analysis, such as `undefined4` casts and complex pointer arithmetic like `(&stack0xfffffffffffffff8 + lVar3 * 2 + lVar1 + 8)` which obscures the simple array access logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted by optimization artifacts. The `large_stack_frame` loop is unrolled into 16 assignments per iteration, and `test_stack_memory` inlines function calls (e.g., `local_vars(5)` becomes `0x14`), destroying the procedural flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. The granularity is appropriate, with no monolithic functions or incorrect splitting of logic.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `linked_list_heap` contains labels like `LAB_001016ba` and `goto`-like logic that disrupt the top-to-bottom reading experience.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler is very aggressive in removing "redundancy," to a fault. It successfully eliminates intermediate variables (e.g., in `local_vars`), but this often removes the semantic steps present in the source code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded. Specific types like `Point` or `Node` are lost, replaced by generic `undefined4`, `undefined8`, or `void*`. Signedness is often lost or converted to generic integers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed completely. `Point`, `Node`, and `TreeNode` are not reconstructed. Instead, struct fields are accessed via raw pointer arithmetic (e.g., `*(undefined4 **)(__ptr + 2)` instead of `node->next`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe casts and pointer arithmetic. Accessing struct fields via byte offsets (e.g., `__ptr + 8`) without type definitions makes the code fragile and hard to verify.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The code is presented as-is without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like linked lists or tree traversals are obscured. The logic is present in `linked_list_heap`, but without struct recovery, it looks like generic pointer manipulation rather than a specific idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The decompiler confidently presents the heavily optimized/inlined code as the exact logic, failing to indicate that `tree_heap_traversal` was completely constant-folded.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not highlighted as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are generally clear where not inlined. Global variables like `global_counter` are correctly identified and accessed across functions.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the source file's logical grouping. Functions appear in a logical order, and static scope is respected.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined8` which would require definition or replacement (e.g., `uint32_t`) to compile. External functions are correctly declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Avg: (3 + 9 + 5 + 5) / 4 = 5.5
+L2 Avg: (4 + 9 + 6 + 8) / 4 = 6.75
+L3 Avg: (3 + 2 + 4) / 3 = 3.0
+L4 Avg: (1 + 3 + 1 + 1) / 4 = 1.5
+L5 Avg: (8 + 9 + 6) / 3 = 7.66
+
+Overall = (5.5 × 0.30) + (6.75 × 0.25) + (3.0 × 0.20) + (1.5 × 0.15) + (7.66 × 0.10)
+Overall = 1.65 + 1.6875 + 0.6 + 0.225 + 0.766
+Overall = 4.93
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet List)
+- **Aggressive Inlining**: In `test_stack_memory`, function calls like `local_vars(5)` are replaced with the constant result `0x14`, erasing the program's logic flow.
+- **Struct Recovery Failure**: Composite types (`Point`, `Node`, `TreeNode`) are completely lost, replaced by raw pointer arithmetic (e.g., `*(undefined4 **)(__ptr + 2)`).
+- **Constant Folding**: `tree_heap_traversal` is reduced to a single `return 0x3c;`, completely hiding the tree creation and traversal algorithm.
+- **Loop Unrolling**: The loop in `large_stack_frame` is unrolled into 16 assignments per iteration, making it significantly harder to read than the source `for` loop.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** Ghidra successfully preserved all original function names from the source, making the high-level purpose of each code block immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The failure to recover `struct` definitions for `Point`, `Node`, and `TreeNode` turns readable object-oriented code into obscure pointer math, which is critical for a memory operations test suite.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Disable Aggressive Inlining for Test Harnesses**: Add heuristics to detect functions that primarily call other functions (like `test_...`) and preserve the call structure rather than replacing calls with constant results.
+2. **Improve Struct Recovery Heuristics**: Implement pattern matching for `malloc` sizes followed by immediate field assignments to reconstruct `struct` layouts instead of defaulting to `undefined` arrays.
+3. **Preserve Loop Semantics**: Avoid unrolling loops in the decompiled view (like in `large_stack_frame`) unless strictly necessary for correctness, as it degrades readability significantly compared to a standard `for` loop.

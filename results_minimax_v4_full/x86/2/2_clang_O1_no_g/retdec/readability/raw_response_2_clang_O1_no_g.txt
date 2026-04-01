@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use `v1`, `v2`, `v3`, `result`. The original source uses meaningful names like `arr`, `n`, `sum`, `ptr` but these are completely lost. Even loop indices are `v1`, `v2` rather than `i`, `j`, `k`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match the original source exactly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, some utility functions have generic names like `function_1040`, `function_1050`. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: global variables initialized with `0x60ceb73a`, `1038` without context. String format offsets like `0x22b7`, `0x1d28` are unexplained. Array strides like `44`, `100`, `20` used without explaining they're for 2D/3D array layouts. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Architecture mismatch: original states arm64 but decompiled code shows x86 patterns (`__x86_get_pc_thunk_bx`). Some redundant variable assignments in complex functions. Dead code not eliminated in test functions. However, no obvious debug instrumentation or register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are converted to while loops with manual index management (e.g., `array_1d_stack` uses `v1++` pattern instead of `for` loop). Some goto-like patterns in complex nested loops. At `-O0` this transformation is unnecessary and reduces readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain original granularity - small helper functions (`process_char`, `ptr_single`) stay separate. However, test functions like `test_array_types` (~200 lines) and `test_composite_types` (~300 lines) are monolithic and could be split. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Complex functions like `array_3d` and `test_array_types` have nested while loops that disrupt linear flow. Some forward jumps in boundary checks. Generally manageable but not optimal.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling in `array_3d` and `test_array_types` - the same nested loop pattern repeated 3 times. Some dead code in test setup sections. The decompiler didn't recognize and abstract these patterns.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good. Defines `float32_t`, `float64_t`, `float80_t`. However, `process_char` takes `int32_t a1` instead of `char`. `process_bool` takes `uint32_t` which is correct. Some parameter types don't match original (e.g., `process_short` should take `int16_t` but uses `int16_t a1, int16_t a2` which is correct).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct/union type definitions recovered. All composite types accessed via raw pointer arithmetic: `*(int32_t *)a1 + *(int32_t *)(a1 + 4) + *(int32_t *)(a1 + 8)` for struct with 3 int fields. No field names. No typedef recovery. This is the worst aspect.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)`, `(char *)`, `(float32_t *)`, `(uint32_t)` everywhere. Pointer arithmetic like `4 * v1 + a1` is error-prone. Function pointers not properly typed - `ptr_func_simple` takes `int32_t a1` instead of function pointer. No `const` correctness in decompiled output.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled code. Only address ranges like `// Address range: 0x1200 - 0x1216` which provide no semantic value. Original source had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some recognizable patterns: linked list traversal in `linked_list`, binary tree recursion in `binary_tree_sum`. However, no explicit naming or comments identifying these as data structure patterns. The algorithm intent is inferable but not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The architecture mismatch (arm64 source vs x86 decompiled) not flagged. Indirect function calls not resolved but no warning. Potential undefined behavior in `array_oob` (intentional out-of-bounds) not noted.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information recovered. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariant documentation. The original source had clear expectations for each function - completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in code (e.g., `main` calls `test_data_types_l1`, `test_array_types`). However, no documentation of call graph, who calls whom, or callback relationships. Global variable `g3` used as parameter but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped by category (data types, arrays, pointers, composite types) matching original source organization. All in single file which is acceptable for decompiled output. Static functions properly marked.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`. Function prototypes declared. However, some missing prototypes (e.g., `complex_callback` used in `ptr_func_complex` but not defined). Would require patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- **Composite type recovery completely absent**: All structs/unions reduced to raw pointer arithmetic with no type definitions or field names
+- **Variable naming is universally generic**: All parameters `a1, a2...` and locals `v1, v2...` lose all semantic meaning from source
+- **No comments or documentation**: Zero explanation of algorithms, contracts, or intent
+- **Type safety severely compromised**: Excessive unsafe casts, function pointers not properly typed
+- **Architecture mismatch not flagged**: Source states arm64 but decompiled shows x86 patterns
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Most function names match the original source exactly, making it easy to locate specific test cases.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+The complete loss of struct/union definitions is the most severe readability issue - all semantic information about data structures is destroyed.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Use field offset analysis to reconstruct composite types with meaningful field names based on access patterns
+2. **Infer variable names from usage**: Analyze how parameters and locals are used (e.g., `a1` used as array index → name it `index` or `i`)
+3. **Add semantic comments**: Document preconditions, postconditions, and algorithm intent based on control flow and data flow analysis

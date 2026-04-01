@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `ptr`, `addr`, `p`. For example, in `heap_basic`, the parameter `a0` should be `n` based on usage pattern `for (int i = 0; i < n; i++)`. The decompiler makes no attempt to infer semantic names from usage.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered their original names (e.g., `double_value`, `local_vars`, `heap_basic`, `global_var_access`), but many remain as generic address-based names like `sub_400b24`, `sub_400c48`. The mix is inconsistent - some test functions have proper names while helper functions don't.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers like `4294967295` (0xFFFFFFFF for error returns), `17179869180`, `1073741823`. Constants like `0x40000000` appear without explanation. The decompiler makes no attempt to identify these as error codes or meaningful constants from the original source.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: redundant register copies (`v0 = v2; v1 = v3;`), unnecessary goto statements, spurious condition calculations like `arm64g_calculate_condition`, and dead code patterns. The output includes unsupported IR operations like `unsupported_Iop_ZeroHI64ofV128()` and `unsupported_Iop_NarrowUn16to8x8()`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: While basic loops and conditionals are present, many use goto labels (e.g., `goto LABEL_400e84`). The `register_tm_clones` function has an extremely convoluted conditional expression that is nearly unreadable. At -O0, such goto-based control flow is unexpected and indicates decompilation issues.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, but some are too large (e.g., `test_heap_memory` at ~200 lines). The parameter lists expose implementation details (e.g., passing `unsigned long` when original used `int`). Some functions like `alloca_usage` and `vla_stack` are nearly identical due to compiler optimization merging.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but forward jumps exist (e.g., `goto g_413f20`, `goto global_func_ptr`). The `large_stack_frame` function has complex nested loops that disrupt linear reading. Some computed goto statements break flow entirely.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy exists: duplicate function calls (`memcpy(v0, v1, v2)` called twice in `sub_400c4c`), redundant register saves/restores, and dead code from the optimization process. Loop unrolling in `heap_basic` and `vla_stack` creates massive duplicated code blocks without explanation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are mixed - some correct (`unsigned int`, `unsigned long long`), but many are imprecise. Parameters like `unsigned long a0` should be `int n` based on usage. The decompiler uses `char*` extensively where original had proper pointer types. No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered with generic names (`struct_0`, `struct_1`, `struct_2`) but field names are all generic (`field_0`, `field_8`, `field_10`). The original `Point` struct became `struct_3` with meaningless fields. Original `Node` struct lost its `next` pointer semantics, becoming just `field_8`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without bounds (`*((int *)((char *)addr + 4 * ...))`), incorrect pointer arithmetic in `memop_memmove` using `&a0->field_1`, and function pointer type confusion (`goto global_func_ptr` where `global_func_ptr` is `unsigned long long`). The dangling pointer test actually returns `*(ptr)` after free - dangerous code presented without warning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like "do not return" for `abort()` and `__stack_chk_fail()`. No explanation of algorithm logic, no recovery of original variable meanings, no indication of decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like malloc/free are recognized, but no explicit naming. The linked list traversal pattern in `linked_list_heap` could be identified but isn't. Memory leak pattern in `memory_leak` is present but not flagged. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some awareness shown with "do not return" comments, but critical anomalies not flagged: the `dangling_pointer` function returns `*(ptr)` after `free(ptr)` - undefined behavior not indicated. The `double_free` function is presented without warning. No uncertainty markers for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had explicit NULL checks (`if (arr == NULL) return -1`) that are partially preserved but not documented as contracts. No error handling documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some `extern` declarations present for external functions (`extern_global_var`, `extern_function`), but relationships are incomplete. The callback pattern in `set_global_callback`/`call_global_callback` is visible but not documented. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output file with no logical grouping. The original source had clear sections (stack memory, heap memory, static memory, memory operations) but decompiled output is flat. Static functions not properly scoped with `static` keyword.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone - requires stubs for many external functions (`__libc_start_main`, `__gmon_start__`, `register_tm_clones`). The `main` function has nested calls (`test_memory_op_functions(test_static_global(...))`) that would need restructuring. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v0`, `v1`, `a0`, `ptr`) with no semantic inference from usage patterns
+- Struct field names lost entirely (`field_0`, `field_8` instead of `data`, `next`)
+- No comments explaining any algorithm, contract, or decompilation uncertainty
+- Dangerous undefined behavior in `dangling_pointer()` (returning freed pointer) presented without warning
+- Excessive noise from IR operations, register artifacts, and redundant code
+
+**Best Quality Aspect:** Function Decomposition (6/10)  
+Functions are properly separated and some maintain their original names, providing basic structural organization.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (2/10)  
+The combination of meaningless variable names and complete lack of explanatory comments makes the code nearly unusable for analysis, even though the original source was well-structured and documented.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array index → `i`/`index`, size parameter → `n`/`size`, pointer to data → `data`/`ptr`) to generate semantic names instead of generic `v0`, `v1`
+2. **Recover struct field semantics**: Match struct layouts against common patterns (Node with next pointer → `data`, `next` fields) and add field name comments when exact recovery isn't possible
+3. **Add explanatory comments for non-trivial logic**: Document loop unrolling, indirect calls, potential undefined behavior, and decompilation confidence levels to help analysts understand code limitations

@@ -1,0 +1,15 @@
+Test obfuscation and optimization features:
+Obf level 4 (opaque predicate): 10
+Obf level 4 (opaque predicate): 20
+Obf level 4 (instr. subst.): 225
+Obf level 4 (string encrypt): 148
+Opt level 4 (tail call): 500500
+Opt level 4 (no tail call): 5050
+Opt level 4 (vectorize): 72
+Opt L5 (LTO): 20
+Edge L3 (div by zero): 1
+Edge L3 (null deref): 41
+Edge L3 (buffer overflow): 30
+Edge L3 (int overflow): 2000000000
+Edge L4 (undefined beh.): 10
+Edge L4 (impl. defined): 43

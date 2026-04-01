@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v1`, `v2`, `v3`, `temp`, `result` instead of semantic names. For example, in `param_thread_local_storage`, variables `v6`, `v7`, `v8`, `v9` track `total_initial` and `total_final` but this is completely opaque.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions preserved original names (`param_strcpy`, `call_strcmp`, `param_signal_handling`), but helper functions use generic names like `function_13c0`, `function_14d0`. Thread functions like `thread_compute`, `thread_sum` are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are hex-encoded UTF-8 (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95..."` for Chinese text). Magic numbers like `42`, `127`, `0xffffffff` appear without explanation. Some constants like `AF_INET`, `SOCK_STREAM` are preserved.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`if (*(int64_t *)g2 == *(int64_t *)g2) { __stack_chk_fail(); }`) appear in nearly every function. ARM64 assembly intrinsics (`__aarch64_cas4_acq_rel`, `__asm_stlr`) exposed directly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive use of goto labels (`lab_0x2c58_2`, `lab_0x2fd4`, `lab_0x3178`) instead of natural loops. `param_pthread_join`, `param_mutex_lock`, and `param_thread_local_storage` all use goto-based loop reconstruction that obscures the original for/while structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Main functions have appropriate granularity, but many helper functions (`function_13c0` through `function_1790`) are single-line wrappers that should be inlined. Thread functions are appropriately separated.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. `param_atomic_ops` has multiple goto targets that require jumping back and forth. The pattern `goto lab_0x2fd4` appears repeatedly, breaking top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. Loop unrolling not recognized - `thread_increment` shows manual iteration instead of recognizing the for-loop pattern. Some dead code paths remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Critical type degradation: `param_strlen(int64_t a1)` loses `const char*` semantics. `param_memcpy(char *dst, int32_t *src, int64_t n)` has inconsistent pointer types. Many `void*` converted to `int64_t*` losing semantic meaning.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`e0`, `e1`, `e2`...). `struct stat`, `struct sockaddr`, `struct shmid_ds` all have meaningless field names. `ThreadData` struct not recovered - uses raw offset arithmetic instead.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts: `(int64_t *)dst`, `(int32_t *)&v1`, `(char *)&g36`. Pointer arithmetic on `int64_t` types. `param_strlen` has a critical bug where it uses uninitialized local `str` instead of parameter `a1`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments present ("From module: /work/6.c", "Address range: 0x1914"). No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library patterns (`strcpy`, `strcmp`, `memcpy`) recognized and called directly. However, producer-consumer pattern in `param_condition_variable` not identified. Thread synchronization patterns not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies marked (`// UNREACHABLE` after `_exit`), but critical semantic errors not flagged. `param_linux_syscall` uses wrong syscall numbers (`SYS_mpx`, `SYS_setpgid` instead of `SYS_open`, `SYS_close`) without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions inferred. Error return values (-1, -2, -3) not explained. Stack overflow protection not documented as such.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`atomic_counter`, `shared_counter`, `signal_received`) used without explaining their shared nature. Thread callback relationships implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by source file but no logical organization. Test functions (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`) properly separated. No header file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers and compiles. However, ARM64-specific intrinsics (`__aarch64_cas4_acq_rel`) require specific compiler support. Some function prototypes mismatch implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 5 + 4) / 4 = 5.0
+Level 2 (Structural):  (4 + 6 + 4 + 5) / 4 = 4.75
+Level 3 (Type):        (5 + 4 + 5) / 3 = 4.67
+Level 4 (Semantic):    (2 + 3 + 3 + 2) / 4 = 2.5
+Level 5 (Contextual):  (5 + 6 + 7) / 3 = 6.0
+
+Overall = (5.0 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + (2.5 × 0.15) + (6.0 × 0.10)
+        = 1.50 + 1.19 + 0.93 + 0.38 + 0.60
+        = 4.6/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **`param_strlen` bug**: Uses uninitialized local `str` instead of parameter `a1` - functionally broken
+- **Goto-based loops**: `param_pthread_join`, `param_mutex_lock`, `param_thread_local_storage` use goto labels instead of natural loop constructs
+- **Generic variable names**: `v1`, `v2`, `v3` throughout obscure semantic meaning (e.g., `total_initial`, `total_final` in TLS function)
+- **Struct field names lost**: All struct fields named `e0`, `e1`, `e2` losing semantic information
+- **No documentation**: Zero comments explaining algorithm purpose, preconditions, or error conditions
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code includes proper headers and compiles with minimal modification despite ARM64 intrinsics
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.5/10 average)** - Complete absence of comments, no contract documentation, and critical semantic errors (wrong syscalls, broken strlen) go unflagged
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover loop constructs from backward jumps** - Replace goto-based patterns with natural for/while loops, especially in thread synchronization functions
+2. **Infer variable names from usage context** - Variables used in size calculations should be named `size`, `count`, `length`; pointer arithmetic should suggest `buffer`, `array`, `offset`
+3. **Add semantic validation and anomaly flagging** - Detect and warn about critical issues like uninitialized variable usage, wrong syscall numbers, and type mismatches between parameters and usage

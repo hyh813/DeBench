@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**Justification: Variables use generic decompiler-generated names like `iVar1`, `piVar2`, `__ptr`, `pvVar1` which provide type hints but lose semantic meaning. The original names like `arr`, `i`, `result`, `leak`, `p1`, `p2` are completely lost. Many variables show "Unresolved local var" with DWARF debug info fragments instead of meaningful names.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names are correctly recovered from symbols: `double_value`, `local_vars`, `local_array`, `heap_basic`, `test_stack_memory`, `test_heap_memory`, `test_static_global`, `memory_leak`, `dangling_pointer`. The decompiler preserved the original function naming almost perfectly.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x41` (65), `0x32` (50). The original source uses meaningful values like `42` for the "answer to life" pattern and `10` for counter initialization. These are presented as raw hex in decompiled output.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Heavy pollution from "WARNING" messages ("Removing unreachable block", "Unknown calling convention"), "Unresolved local var" comments with DW_OP debug fragments, and auto-generated annotations. The code is buried under compiler/debugger artifacts that impede reading.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: At -O0, control flow is well-preserved. Loops use do-while constructs correctly, conditionals are natural, and early returns are used appropriately. Minor issues include some awkward pointer arithmetic in loop conditions but overall flow matches source closely.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Each test function remains separate and cohesive. The original granularity is preserved - no inlining or outlining artifacts. Functions like `test_stack_memory`, `test_heap_memory` remain as logical test organizers with appropriate call graphs.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some complex pointer arithmetic in loops (e.g., `piVar2 = piVar2 + 1`) creates slight non-linearity, but overall structure is traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Some loop initialization patterns are slightly verbose due to pointer arithmetic, but no severe redundancy that would make code unmaintainable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic `int` and `undefined4` types throughout. The original uses specific types like `size_t`, `uint32_t`, `Point*`, `Node*`, `TreeNode*`. Function pointers use `_func_int_int *` which is a decompiler convention, not the original signature.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: `Point` struct is completely lost in `local_struct` - returns `x * 3` instead of reconstructing `p.x + p.y`. `Node` and `TreeNode` are partially recovered but with generic field access (`*piVar2`, `piVar2[1]`). The original clearly uses `->data`, `->next`, `->left`, `->right`.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe patterns: raw pointer arithmetic (`(int *)((int)__ptr + -4)`), casting to/from `void*` without explicit casts, integer type mixing. The original code uses proper typed pointers and explicit casts.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Comments are almost entirely auto-generated noise: "Unresolved local var", DW_OP debug fragments, "WARNING: Unknown calling convention". No useful explanation of algorithm intent, preconditions, or non-obvious logic. The original had extensive comments explaining each test case.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No recognition of patterns like linked list traversal, tree operations, or memory pool patterns. The original source explicitly tests these patterns. The decompiled code shows the mechanics but doesn't identify the patterns.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some warnings present: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Subroutine does not return". However, critical anomalies like the intentional bugs (memory_leak, dangling_pointer, double_free, heap_overflow) are not flagged as such.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: No recovery of preconditions, postconditions, or invariants. The original source has explicit checks (e.g., `if (n <= 0 || n > 1000) return -1;`) that are preserved but not documented as contract requirements.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+Justification: Function call relationships are visible through direct calls but not documented. Global variable usage (e.g., `global_counter`, `file_scope_static`) is visible but relationships to other source files aren't explained. No indication of who calls whom.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped logically (test functions together, heap functions together, static functions together) but presented in a single flat listing. The original had clear section comments (// MEM-L1-01, // HEAP-L2-01, etc.) that are lost.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: Code uses standard library functions (malloc, free, memset, memcpy) but external declarations are implicit. No documentation of dependencies (the original includes `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<unistd.h>`, `<sys/wait.h>`). The code would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 3 + 3) / 4 = 4.75
+L2_avg = (8 + 9 + 7 + 7) / 4 = 7.75
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (2 + 3 + 5 + 1) / 4 = 2.75
+L5_avg = (3 + 6 + 3) / 3 = 4.00
+
+Overall = (4.75 × 0.30) + (7.75 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (4.00 × 0.10)
+        = 1.425 + 1.9375 + 0.934 + 0.4125 + 0.4
+        = 5.11/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- Variable naming uses generic decompiler conventions (`iVar1`, `piVar2`, `__ptr`) instead of semantic names (`arr`, `i`, `leak`, `p1`, `p2`)
+- Composite types lost: `Point` struct not reconstructed in `local_struct` (returns `x*3` instead of `x + x*2`)
+- Comments are entirely auto-generated noise (DW_OP fragments, warnings) with no useful algorithm explanation
+- Magic numbers everywhere (`0x2a`, `0x14`, `0xf`) without named constants
+- No contract/precondition recovery despite explicit validation in source
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - Nearly all function names are correctly preserved from symbols, making it easy to identify which test case each function implements.
+
+### Most Needs Improvement
+**Comment Quality & Presence (2/10)** - The decompiled code has zero useful comments explaining algorithm intent, test case purpose, or non-obvious logic. All comments are auto-generated decompiler artifacts.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `i` or `index`; when used as result, name it `result`; when storing malloc'd pointer, name it after the data structure (`arr`, `node`, `tree`)
+2. **Recover struct layouts from allocation sizes**: When `malloc(8)` is followed by field accesses, reconstruct the struct definition (e.g., `malloc(8)` for Point with two ints)
+3. **Replace magic numbers with constants**: Detect repeated literal values and suggest meaningful names (e.g., `0x2a` → `42` with comment about purpose)

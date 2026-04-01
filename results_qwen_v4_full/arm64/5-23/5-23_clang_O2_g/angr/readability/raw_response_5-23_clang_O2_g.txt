@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v0, v1, a0, a1, ptr) with no semantic meaning. Original names like `size`, `result`, `counter` are completely lost, making it difficult to understand variable purposes without tracing usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined function names are preserved (param_macro_constants, call_macro_constants), but helper/runtime functions use mechanical names (sub_4007b4, sub_4008a4). Original naming intent is partially maintained for main functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without context: `0x400` (should be MAX_SIZE), `0x200` (MAX_SIZE/2), `57072` (0xDEF0 platform constant). Original macro constants like MAX_SIZE=1024, BUFFER_COUNT=16 are not recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization code (_init, _start, _fini, deregister_tm_clones) clutters output. Unsupported operations like `unsupported_Iop_ZeroHI128ofV128()` and stack frame setup (v0 = &v1) add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural if/else flow, but complex functions like `call_asm_privileged` use confusing `arm64g_calculate_condition` chains instead of clear conditionals. Some functions use goto (register_tm_clones).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but many caller functions are constant-folded to trivial returns (call_macro_constants returns 64 directly). Runtime functions are over-fragmented into sub_XXXX helpers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `call_asm_privileged` and `test_asm_features` have complex conditional chains with forward references that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Several functions have redundant operations: `sub_4007b4` calls memcpy twice, `call_weak_fn` calls __gmon_start__ twice, `frame_dummy` calls register_tm_clones twice. No dead code elimination performed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are overly generic (unsigned long long, unsigned int) without recovering original typedefs. Pointer types lack specificity. Original `int` return types often become `unsigned long long`, losing signedness semantics.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original code had minimal struct usage, so limited impact. Array parameters are correctly identified (unsigned int *pos, unsigned int *index). No struct recovery needed but none attempted for potential stack structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic appears without proper type information (ptr += 1 in param_asm_clobber). Platform-specific intrinsics (__aarch64_ldadd4_acq_rel) have unclear type signatures. Some unsafe casts implicit in generic types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No explanation of magic numbers, no recovery of original macro semantics, no indication of what optimizations occurred. Only one "Failed to decompile" note exists.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro patterns completely unrecognized—constant folding hides original macro behavior. No identification of common patterns like "macro constant substitution" or "conditional compilation branch selection."
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One function explicitly marked as failed (__aarch64_ldadd4_acq_rel), but other anomalies like `arm64g_calculate_condition` calls go unexplained. No warnings about potential decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "size must be positive"), no postconditions, no error handling contracts. Original comments about expected values (期望：64) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables use opaque names (g_401213, g_40122e). String literals replaced with global references instead of inline strings, obscuring printf format relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by memory address rather than logical grouping. Related functions (param_* and call_*) not grouped together. No separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Cannot compile standalone—depends on external symbols (__aarch64_ldadd4_acq_rel, arm64g_calculate_condition, sysconf, mmap). Platform-specific intrinsics require ARM64 environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (5+7+5)/3 = 5.67    × 0.20 = 1.134
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75  × 0.15 = 0.4125
+Level 5 (Contextual):  (5+5+4)/3 = 4.67    × 0.10 = 0.467
+
+Overall Score: 4.74/10 ≈ 4.7/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (v0, v1, a0, a1) losing all semantic meaning from original source
+- **Magic numbers not recovered** (0x400 instead of MAX_SIZE, 57072 instead of 0xDEF0 constant)
+- **Zero comments** explaining logic, macros, or decompilation confidence
+- **String literals replaced with global references** (g_401213) instead of inline strings in printf calls
+- **Platform-specific intrinsics unexplained** (arm64g_calculate_condition, __aarch64_ldadd4_acq_rel) without documentation
+
+### Best Quality Aspect:
+- **Composite Type Recovery (7/10)** - Array parameters correctly identified with proper pointer types, though original code had minimal struct usage limiting this dimension's impact.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any comments means readers cannot understand macro semantics, magic number meanings, or decompilation confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro constant names** by analyzing comparison patterns (e.g., `if (0x400 >= a0)` should suggest `MAX_SIZE` constant with value 1024)
+2. **Add semantic comments** for constant-folded functions indicating original behavior (e.g., "// Original: returns BUFFER_COUNT * 4 = 64 when size > MAX_SIZE")
+3. **Inline string literals** in printf calls instead of replacing with global variable references (g_401213 → "PP-L2-01: %d (期望：64)\n")

@@ -1,0 +1,11 @@
+=== Testing C++ OO Features ===
+
+Name length: 4704
+Constructor test: 21
+Virtual function: 42
+Multiple inheritance: 71
+Diamond inheritance: 650
+Operator overload: 22
+Template function: 40
+Template class: 16
+Lambda: 85

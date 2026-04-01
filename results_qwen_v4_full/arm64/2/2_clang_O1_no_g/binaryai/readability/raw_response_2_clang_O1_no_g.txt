@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `lVar3`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Some runtime functions have generic names (`FUN_00100620`) but core logic functions match source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x20` (should be `32` for char conversion), `0x41` (should be `'A'`), `0x2c`, `0x1b8` for array offsets. No named constants recovered from original code.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some redundant variable assignments (`iVar1 = param_1 + 0x20` then conditional reassignment) but no excessive debug instrumentation or dead code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For loops converted to do-while patterns with manual decrement (`uVar2 = uVar2 - 1; ... while (uVar2 != 0)`). At `-O0` this restructuring is unexpected and reduces readability.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well; test functions remain separate. No inappropriate inlining or over-fragmentation. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some complex functions (`__addtf3`, `__multf3`) have excessive branching but core logic is linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant variable assignments present but no significant dead code. Loop unrolling not present (appropriate for `-O0`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types often degraded to generic `int`. Long double becomes `undefined8`. Float operations use `undefined4`. Bool preserved in `process_bool` but pointer types frequently become `void*` or `undefined*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct/union types lost. `Point3D` accessed as `param_1[0], param_1[1], param_1[2]`. `Widget`, `Node`, `Graph` all reduced to pointer arithmetic. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(undefined4*)`, `(int**)*param_1`). Function pointers degraded to `code*`. Pointer arithmetic without type safety throughout struct access functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in decompiled output. Original had extensive documentation explaining each function's purpose, test scenarios, and expected behavior.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion not labeled. No pattern recognition for common data structure operations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Long double operations silently converted to `__multf3`, `__addtf3` library calls with no warning. No flags for type degradation or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. Error conditions like array bounds checks not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no call graph documentation. Global variable usage (`DAT_00102ebf` for strings) not explained. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure. No file organization or header declarations. All code in single output block.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`printf`, `puts`, `__libc_start_main`) undeclared. Would require significant stubbing and type definitions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+7)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type System): (5+2+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.88/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **All struct/union types lost** - `Point3D`, `Widget`, `Node`, `Graph` accessed via raw pointer arithmetic (`param_1[0]`, `param_1 + 8`)
+- **Zero comments** - Original had extensive documentation; decompiled has none
+- **Generic variable names** - `param_1`, `iVar1`, `uVar2` instead of `sum`, `len`, `current`
+- **Magic numbers everywhere** - `0x2c`, `0x1b8`, `0x20` instead of struct offsets and character constants
+- **Long double type completely lost** - Becomes `undefined8` with library call fallback
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`)
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze access patterns to reconstruct struct layouts with field names (e.g., `param_1[0]` + `param_1[1]` + `param_1[2]` → `struct { int x, y, z; }`)
+2. **Infer variable names from usage context** - Variables used in summation loops should be named `sum`, loop counters should be `i`, `j`, `k`
+3. **Add decompilation confidence annotations** - Flag type degradation (`// DEGRADED: long double → undefined8`), unresolved references, and magic number suggestions

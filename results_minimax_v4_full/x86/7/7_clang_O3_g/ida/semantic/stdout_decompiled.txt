@@ -1,0 +1,16 @@
+test_obf_opt_edge called
+
+opaque predicate (param): 10
+opaque predicate (call): 20
+instruction substitution: 225
+string encryption (param): 84
+tail call (param): 500500
+non-tail call (param): 5050
+vectorized loop: 72
+LTO (call): 20
+division by zero: 1
+null pointer deref: 41
+buffer overflow: 30
+integer overflow: 2000000000
+undefined behavior: 10
+implementation-defined: 43

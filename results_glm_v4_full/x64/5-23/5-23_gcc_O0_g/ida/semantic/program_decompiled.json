@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_O0_g/ida/syntactic/bin/5-23_gcc_O0_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\nAPP201: 64\nAPP202: 30\nAPP203: 32\nAPP204: 57122\nAPP301: 116\nAPP302: 19\nAPP303: 60\nLOG: Values: 10, 20, 30\nAPP304: 60\nAPP305: 16\nAPP306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:23\nAPP307: 382\n=== Testing ASM Features ===\nASM401: 15\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

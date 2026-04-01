@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `cVar1`) with zero semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_2`), but some have optimization suffixes (`.constprop.0`) and initialization functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show constant-folded expected values (`0x15`, `0x14`) instead of actual function calls. Magic numbers like `0x3e9` (1001) and `0x65` (101) appear without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary artifacts present (`in_FS_OFFSET`, `__stack_chk_fail`), loop unrolling in `loop_for_fixed` creates excessive code, and optimization suffixes clutter function names.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple patterns recovered well (`sequential_ops`, `goto_forward`), but complex loops show unrolling artifacts (`loop_for_fixed`, `loop_continue`), and `switch_fallthrough` not perfectly reconstructed.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Helper functions preserved (`double_value`, `op_*`), but test functions are constant-folded showing expected values instead of actual function call logic, losing semantic value.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `loop_multi_exit` and `duffs_device` use label-based jumps (`LAB_00101b57`, `switchD_00101c5f_caseD_7`) that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `loop_for_fixed` and `loop_continue` show aggressive loop unrolling with 8+ similar conditional blocks. `nested_if_deep` has redundant variable assignments (`cVar1 = '\0'` then `cVar1 = '\x01'`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `op_div` returns `undefined [16]`, `state_idle` returns `bool` (source: `int`), `nested_if_deep` returns `char` (source: `int`). Mixed signed/unsigned (`uint param_1` vs `int param_1`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source. Function pointer arrays partially recovered (`call_func_ptr_array`, `large_jump_table`), but `jmp_buf` referenced without full type definition.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` indicates uncertain function pointer signatures. Stack canary checks present (positive), but parameter type mismatches in `call_func_ptr` and `conditional_func_ptr`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized, but state machine pattern in `state_machine` not identified, Duff's device in `duffs_device` not named or explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` marks some unresolved indirect calls, optimization suffixes indicate transformations, but no explicit warnings about recovery confidence or uncertain logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`), no postconditions inferred, error conditions not documented despite being present in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but not documented. Global variables (`jump_buffer`, `completed_0`, `DAT_00103008`) referenced without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order (L1 tests, L2 tests, L3 tests grouped). Static functions properly scoped, but no header file structure or explicit module boundaries.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared (`puts`, `__printf_chk`, `__stack_chk_fail`), but requires stubs for runtime support. Stack canary code needs proper initialization. Would need moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+6+4)/4 = 5.50  × 0.25 = 1.38
+Level 3 (Type):        (4+6+5)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+6)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  4.94/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original source having extensive documentation for each function
+- **Test functions constant-folded** showing expected values instead of actual function call logic
+- **Type inconsistencies** (`op_div` returns `undefined [16]`, `state_idle` returns `bool` instead of `int`)
+- **Loop unrolling artifacts** in `loop_for_fixed` and `loop_continue` create excessive redundant code
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved (`sequential_ops`, `nested_if_2`, `switch_fallthrough`), making function identification straightforward despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all the original documentation explaining function purpose, test cases, and difficulty levels.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `n`)
+2. **Recover and preserve source comments** from debug symbols when `-g` flag is present in compilation
+3. **Detect and annotate optimization artifacts** (loop unrolling, constant folding) with explanatory comments rather than emitting raw expanded code

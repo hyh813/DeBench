@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/1/1_clang_O1_no_g/angr/syntactic/bin/1_clang_O1_no_g_fixed",
+  "stdout": "CF-L1 messages\nCF-L1-01 (sequential_ops): 0\nCF-L1-02 (single_if): 0\nCF-L1-02 (single_if): 0\nCF-L1-03 (if_else): 0\nCF-L1-03 (if_else): 0\nCF-L1-04 (nested_if_2): 0\nCF-L1-04 (nested_if_2): 0\nCF-L1-04 (nested_if_2): 0\nCF-L1-05 (nested_if_deep): 0\nCF-L1-06 (if_elseif_chain): 0\nCF-L1-07 (if_elseif_long): 0\nCF-L1-08 (switch_small): 0\nCF-L1-09 (switch_large): 0\nCF-L1-10 (switch_default): 0\nCF-L1-11 (switch_fallthrough): 0\nCF-L1-12 (loop_for_fixed): 0\nCF-L1-13 (loop_while): 0\nCF-L1-14 (loop_dowhile): 0\nCF-L1-15 (loop_nested): 0\nCF-L1-16 (loop_break): 0\nCF-L1-16 (loop_break): 0\nCF-L1-17 (loop_continue): 0\nCF-L1-18 (goto_forward): 0\nCF-L1-18 (goto_forward): 0\nCF-L1-19 (goto_backward): 0\nCF-L1-20 (ternary_op): 0\nCF-L1-20 (ternary_op): 0\nCF-L2 messages\nCF-L2 message\ntest1\ntest2\ntest2\ntest2\ntest3\ntest3\ntest4\ntest5\ntest6\ntest7\ntest8\ntest9\ntest10\ntest11\ntest12\ntest12\ntest13\nCF-L3 messages\nCF-L3-01 (non_local_jump): 0\nCF-L3-01 (non_local_jump): 0\nCF-L3-02 (cpp_exception): 0\nCF-L3-02 (cpp_exception): 0\nCF-L3-03 (large_jump_table): 0\nCF-L3-04 (conditional_func_ptr): 0\nCF-L3-05 (state_machine): 0\nCF-L3-06 (fsm_func_table): 0\nCF-L3-07 (computed_goto): 0\nCF-L3-08 (obfuscated_cf): 0\nCF-L3-09 (opaque_predicate): 0\nCF-L3-10 (overlapped_code): 0\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

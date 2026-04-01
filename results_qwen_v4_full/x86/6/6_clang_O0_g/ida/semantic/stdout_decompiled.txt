@@ -1,0 +1,29 @@
+=== Standard Library Functions ===
+strcpy: 8
+strcmp: 0
+strlen: 12
+memcpy: 0
+memcmp: -1
+Value: 42, Name: Test
+printf: 22
+scanf: 579
+fopen_fclose: 42
+fread_fwrite: 42
+malloc_free: 90
+memset: 0
+strchr_strstr: 15
+=== System Calls ===
+linux_syscall: 42
+win32_api: 42
+fork_exec: 42
+pipe_communication: 42
+socket_create: 42
+shmget_shmat: 42
+signal_handling: 42
+=== Thread Concurrency ===
+pthread_create: 49
+pthread_join: 465
+mutex_lock: 42
+condition_variable: 42
+atomic_ops: 42
+thread_local_storage: -3

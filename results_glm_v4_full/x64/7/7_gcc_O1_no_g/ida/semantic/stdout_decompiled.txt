@@ -1,0 +1,15 @@
+Test: Opaque Predicate
+param_opaque_predicate(5) = 10
+param_string_encryption() = 20
+param_instruction_substitution(10) = 225
+param_string_encryption() = 89
+param_tail_call_optimized(1000, 0) = 500500
+param_non_tail_call(100) = 5050
+param_vectorized_loop(...) = 72
+param_link_time_optimization(5) = 20
+param_division_by_zero(0) = 1
+param_null_pointer_deref(0) = 41
+param_buffer_overflow_heap(20) = 30
+param_integer_overflow(INT_MAX, 1) = 2000000000
+param_undefined_behavior(5) = 10
+param_implementation_defined() = 47

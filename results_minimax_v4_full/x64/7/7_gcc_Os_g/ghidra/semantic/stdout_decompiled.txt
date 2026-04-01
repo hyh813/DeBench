@@ -1,0 +1,5 @@
+=== Test OBF_OPT_EDGE ===
+
+Opaque predicate result (param): 10
+Opaque predicate result (call): 20
+Instruction substitution result: 225

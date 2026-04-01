@@ -1,0 +1,102 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `a`, `b`, `c`. Local variables use cryptic names like `v1`, `v2`, `v3`, `result`. For example, `sequential_ops(int64_t a1, int64_t a2, int64_t a3)` should have parameters `a`, `b`, `c` to match source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. all match the original source exactly. Minor deduction for some helper functions with generic names like `function_1080`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `0x100000000` appears extensively for 32-bit multiplication emulation without explanation. The jump table data in `g5` (`"\x0f\x05\x32\x02\x01\x1b\x03;4\x02"`) is completely opaque. Offset `40` for `__readfsqword` is unexplained. Only the test string constants are meaningful.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from bit manipulation artifacts: `& 0xffffffff`, `& 0xfffffffe`, `& 0xfffffffc` appear on nearly every operation. The pattern `0x100000000 * x >> 32` is repeated constantly. Stack protection checks (`__stack_chk_fail`) and `__readfsqword` calls add clutter. These are compiler artifacts that obscure the original logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - loops become while loops, conditionals are clear. However, `loop_for_fixed` uses a while loop with manual increment instead of idiomatic for loop. Some switch statements recovered as switch, others as if-else chains. At -O0, more natural structures expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good function granularity maintained - each test function remains separate. However, `test_control_flow_l1` is ~260 lines, which is quite large. The decomposition is faithful to source but some test wrapper functions could be better organized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps exist in `loop_break` (goto for early exit) and `loop_multi_exit`, but these are manageable. No severe disruption to linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The repeated pattern `(0x100000000 * result >> 32) * (0x100000000 * v1 >> 32) & 0xffffffff` for multiplication is redundant - could be abstracted. Some common subexpression elimination artifacts present. Loop unrolling not present (expected at -O0).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` parameters are promoted to `int64_t` everywhere (e.g., `int sequential_ops` becomes `int64_t sequential_ops`). This is common in 64-bit decompilation but loses precision. Some correct types like `uint32_t` for array indices. The original used `int` for all parameters, but decompiled uses mixed `int64_t`, `int32_t`, `uint32_t`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The decompiler recovered `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` for setjmp/longjmp. These are compiler-generated structures that weren't in the original source but are correctly inferred. No custom structs in original source to recover.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant type safety issues from bit manipulation. The pattern `& 0xffffffff` applied to signed `int64_t` values could cause undefined behavior. The multiplication emulation `(0x100000000 * x >> 32)` is error-prone. Excessive casting between 32-bit and 64-bit representations creates unsafe code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x12c6 - 0x12d2`). No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The code is completely devoid of meaningful comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable - switch statements partially recovered, state machine in `state_machine` function is identifiable. However, no explicit naming of patterns (e.g., "State machine pattern" not indicated). The Duff's device is somewhat recognizable but heavily obfuscated by bit manipulation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The decompiler doesn't indicate:
+- Indirect calls that couldn't be resolved
+- Unusual stack layouts
+- Potential undefined behavior in the bit manipulation patterns
+- The fact that `recursion_factorial` has wrong signature (takes no parameters)
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation. The code provides no guidance on what inputs are valid or what outputs mean.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No cross-references documented. No indication of:
+- Which functions call which others
+- Global variable usage
+- Callback relationships
+- The relationship between test functions and tested functions
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably grouped:
+- Runtime helper functions at start (`_init`, `function_1080`, etc.)
+- Test entry functions at end (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`)
+- Related state functions grouped (`state_idle`, `state_processing`, `state_done`, `state_error`)
+- Static helper functions near their usage
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has proper includes and function prototypes. However:
+- `recursion_factorial` signature is wrong (takes no parameters, should take 1)
+- `loop_while` has wrong signature (takes 4 params, should take 1)
+- Intrinsics like `__readfsqword`, `__asm_hlt`, `__asm_rep_movsd_memcpy` need proper headers
+- Would require moderate patching to compile
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` instead of semantic names from source
+- Excessive bit manipulation noise (`& 0xffffffff`, `& 0xfffffffe`) obscures logic
+- No comments explaining algorithms or intent
+- Type precision lost - all `int` parameters become `int64_t`
+- Function signatures incorrect (e.g., `recursion_factorial` takes 0 params, should be 1)
+- No anomaly indication for suspicious patterns or unresolved calls
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- Function names match original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Lexical Clarity (scored 4.5/10)  
+- Variable naming is nearly unusable with generic names, and literal clarity is poor with unexplained magic numbers and opaque data
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a parameter `a1` is used as loop bound in `loop_for_fixed`, name it `n`. When `a1, a2, a3` are used in arithmetic, use short semantic names like `a, b, c`.
+2. **Eliminate redundant bit manipulation noise**: The `& 0xffffffff` pattern applied to every operation is excessive. At -O0, these should be minimized or explained with comments.
+3. **Add algorithm documentation**: Include comments explaining what each function does, especially for non-obvious patterns like state machines, Duff's device, and recursive functions.

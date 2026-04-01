@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`param_1`, `iVar1`, `uVar2`, `local_808`). No semantic meaning is recovered (e.g., `arr` becomes `__ptr`, loop counters become `iVar1`/`iVar2`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`). Action verbs present in test functions. Good recovery given binary analysis constraints.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x2a`, `0x14`, `0xffffffff`, `0x3c`). Original constants like `42` become `0x2a`, array sizes become hex values obscuring intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (unreachable block warnings, `undefined4` types). However, excessive runtime library functions (`__sync_*` variants) clutter the output without clear purpose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops transformed to do-while with complex conditions (`iVar3 != 0` instead of `i < n`). Many functions constant-folded (`tree_heap_traversal` returns `0x3c` directly), losing original structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, `linked_list_heap` became a 100+ line monolith with nested allocation logic that should be decomposed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but optimization artifacts create awkward patterns (e.g., `heap_realloc` has interleaved initialization statements instead of loops).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive optimization created redundancy - `test_stack_memory` duplicates `large_stack_frame` logic inline. Loop unrolling not recognized as such.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined1`, `void*` everywhere. `size_t` becomes `uint`, `int*` becomes `undefined4*`. Signed/unsigned distinctions lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point` struct completely lost (`heap_struct` just does `param_1 * 3`). `Node` struct lost (`heap_nested` uses raw pointer arithmetic `__ptr[1]` for `next` field).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)__ptr + iVar1 * 2`), pointer arithmetic without bounds checking. Function pointer types degraded to `code *` losing signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block"). No algorithm explanations, no parameter documentation, no semantic hints.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Memory allocation patterns (`malloc`/`free` pairs) not identified. Linked list traversal in `linked_list_heap` not recognized as such. No design pattern detection.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present (unreachable blocks, indirect call recovery issues in `call_global_callback`). However, critical issues like `dangling_pointer` UB not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 > 0` requirements). NULL checks present but not documented as contracts. Error return values (`0xffffffff`) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`global_counter`, `file_scope_static`) referenced without context. Callback mechanism in `set_global_callback` opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 112 functions in single output. No logical grouping (stack/heap/static functions mixed). Runtime library functions (`__sync_*`) interspersed with user code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubs for external symbols (`extern_global_var`, `extern_function`). Type mismatches would prevent compilation. Missing header dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.64/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point` and `Node` structs reduced to pointer arithmetic (`__ptr[1]` instead of `node->next`)
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information
+- **Optimization mismatch**: Source claims `-O0` but binary was compiled with `-O3`, causing aggressive constant folding that obscures original logic
+- **Test functions constant-folded**: `test_stack_memory` prints hardcoded values instead of calling actual functions, hiding real behavior
+- **Type system degraded**: `undefined4`, `undefined1` types throughout make type reasoning impossible
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, forcing all composite access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct pattern detection** - Analyze consistent field access patterns (`__ptr[0]`, `__ptr[1]`) to reconstruct struct definitions with inferred field names
+2. **Add optimization level detection** - Detect aggressive optimization and annotate constant-folded code with "OPTIMIZED: original computation folded" warnings
+3. **Recover variable semantics from usage** - Analyze how variables are used (loop counters, array indices, pointers) to suggest meaningful names like `i`, `index`, `buffer_ptr`

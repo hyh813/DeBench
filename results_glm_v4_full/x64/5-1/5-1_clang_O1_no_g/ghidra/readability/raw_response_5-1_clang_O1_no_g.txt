@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_24`, `puVar1`, and `sVar1`, which completely obscure the original object-oriented semantics (e.g., `local_24` represents a `SimpleClass` object).
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: While member functions like `Base::virtual_func` and `Container<int>::push` are correctly recovered and named, several functions remain generic (e.g., `FUN_00102020`), and the logic inside test functions is often reduced to `return constant`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `return 0x16` in `test_cpp_operator_overload`), with no comments explaining that these are pre-calculated results of complex logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The decompiled output contains significant noise, including `undefined` types, `CONCAT44` macros for register recombination, and verbose casts like `(*(code *)**(undefined8 **)param_1)()` for virtual calls.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While standard loops are recovered as `do-while`, exception handling is not reconstructed as `try-catch` blocks; instead, `test_cpp_exception` abruptly ends with a `__cxa_throw` call, breaking the logical flow.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler successfully separates individual member functions (e.g., `Container<int>::push`, `Derived::virtual_func`) and identifies thunks, maintaining a good granularity of methods despite the optimization.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the inlining of logic into `test_cpp_oo_features` creates a massive function with mixed logic, and the lack of structured exception handling disrupts the flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations, showing no artificial redundancy; however, the *complete* elimination of logic (replacing functions with single `return` statements) hinders readability of the original intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While some types like `Base *` and `int` are preserved, many pointers are degraded to `undefined8` or `void *`, and class instances are often treated as raw byte arrays (e.g., `char local_24 [36]`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: C++ classes (`SimpleClass`, `Point`, `Container`) are not reconstructed as structs; instead, their data is flattened into raw stack variables or pointer arithmetic, completely losing the object-oriented structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as casting `undefined8` pointers to function pointers for virtual calls (`(*(code *)*local_20)`) and using `CONCAT44` macros to manipulate register splits.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to generic warnings like "Unknown calling convention" or "Removing unreachable block," providing no insight into the high-level algorithms or C++ semantics being used.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are missed; virtual function calls appear as raw pointer dereferences, templates are invisible (optimized away), and smart pointer usage is reduced to raw `new`/`delete` calls or constants.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags potential issues like "Subroutine does not return" for `__cxa_throw` and "Unknown calling convention," which helps identify areas where the control flow might be unusual.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds checking logic in `Container::get` is present but not explicitly documented as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Virtual table references (e.g., `PTR_virtual_func_001059c8`) are explicit, and calls to `operator_new`/`operator_delete` clearly indicate memory management operations, maintaining some context.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order rather than logical grouping; while class methods are named with scopes, the overall file lacks the modular structure of the original source.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific macros (`CONCAT44`, `undefined8`) and lacks the necessary struct definitions, making it impossible to compile without significant manual modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Composite Type Loss**: C++ classes (`SimpleClass`, `Point`, `Container`) are not reconstructed; they are flattened into raw stack arrays (e.g., `char local_24 [36]`) or optimized away.
+- **Exception Handling**: `try-catch` blocks are not recovered; `test_cpp_exception` only shows the `__cxa_throw` mechanism, missing the control flow logic of the handlers.
+- **Variable Naming**: Extensive use of generic names (`local_24`, `puVar1`) obscures the semantic meaning of variables that originally represented objects and specific data members.
+- **Optimization Artifacts**: Constant propagation results in functions returning magic numbers (e.g., `return 0x16`) with no indication of the original logic, making the code appear trivial.
+
+**Best Quality Aspect:** Function Decomposition (Score: 7/10)
+- The decompiler successfully identified and separated individual member functions (e.g., `Base::virtual_func`, `Container<int>::push`) from the binary, preserving the method names and scopes where symbols were available.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The complete absence of reconstructed C++ class/struct definitions makes understanding the data layout, object relationships, and member access patterns extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance C++ Class Recovery**: Implement analysis to reconstruct class definitions from vtables and constructor/destructor patterns, rather than leaving objects as raw stack arrays.
+2.  **Exception Handling Reconstruction**: Utilize unwind information (.eh_frame) to identify and reconstruct `try-catch` blocks, restoring the high-level control flow obscured by low-level exception handling routines.
+3.  **Variable Naming Inference**: Infer variable names based on usage context and type information (e.g., naming a `char[36]` passed to `strncpy` as `name_buffer`) to improve semantic clarity.

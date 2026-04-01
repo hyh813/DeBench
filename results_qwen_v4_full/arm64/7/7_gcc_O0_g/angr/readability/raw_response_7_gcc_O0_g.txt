@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a0`, `a1`) with no semantic meaning. Some functions have slightly better names like `cur`, `i`, `j`, `ptr`, `flag1-4`, but these are exceptions. Original names like `result`, `encrypted`, `decrypted` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but many helper functions use mechanical names (`sub_400874`, `sub_4009b0`, `$x`). Runtime functions like `decrypt_string` kept their names, showing partial recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `305419896` (0x12345678), `4294967294` (UINT_MAX-1). The original `0xDEADBEEF` is completely eliminated. No constants recovered for signal numbers (8, 11).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Every function has stack frame setup noise (`v0 = &v1; v0 = &v3;`). Stack canary checks add verbosity (`if (v6 == *((long long *)&__stack_chk_guard))`). Some functions have redundant calls (`call_string_encryption` calls `param_string_encryption()` twice).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for` constructs, but `param_opaque_predicate` uses complex bit manipulation instead of clean boolean logic. The GCD while-loop is preserved but with awkward variable swapping (`flag2 = v5`). Some functions use `goto` for tail calls.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable sizes. However, `call_string_encryption` and `call_non_tail_call` have duplicate return statements. Helper functions like `frame_dummy` and `register_tm_clones` are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack frame initialization disrupts flow in every function. The `param_opaque_predicate` function has complex nested conditionals that could be flattened. No severe goto chains observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple functions call the same function twice before returning (`call_string_encryption`, `call_non_tail_call`, `sub_400874`, `sub_400a88`). Stack canary checks repeated in every function that has local buffers. Bit manipulation patterns repeat without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` types often become `unsigned int` or `unsigned long long`. The `param_fake_branch(int x)` becomes `param_fake_branch(unsigned int a0)`. Pointer types degraded to `char *` universally. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct in `param_implementation_defined` completely lost—replaced with raw arithmetic operations on `v0`. No struct/union recovery visible. Array parameters become `unsigned long` pointers losing size information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts visible (`& 4294967295` masking). Pointer arithmetic unclear in `param_vectorized_loop` (`__ROL__(i, 2) & 18446744073709551612`). Signal handler signatures use `unsigned int` instead of `int`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments explaining obfuscation techniques—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. Bit manipulation for signed arithmetic (`| a0 >> 31) & 4294967294`) not explained as sign-extension handling.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Division by zero in `param_division_by_zero` not flagged as potentially dangerous. Null pointer dereference in `param_null_pointer_deref` has no warning. Buffer overflow functions show no anomaly indicators despite intentional UB.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 != 0` for division). No postconditions inferred. Signal handler contracts not recovered. The `/* do not return */` annotation is the only contract hint present.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible but global variables use opaque names (`g_4016b8`, `g_412f50`, `$d`). String literals not recovered—replaced with global references. Callback relationships (signal handlers) not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by address, not logical grouping. Related functions (`param_*` and `call_*` pairs) scattered. No header file structure. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies undeclared (`__libc_start_main`, `__gmon_start__`). Global variables referenced but not defined. Would require significant stubbing to compile. Some function signatures mismatch expected libc interfaces.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.56/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`result`, `encrypted`, `decrypted`)
+- **Zero comments** despite original source having extensive documentation explaining obfuscation techniques
+- **Bitfield struct completely lost** in `param_implementation_defined`—replaced with incomprehensible arithmetic
+- **Magic numbers everywhere** without explanation (4294967295, 305419896, signal numbers 8/11)
+- **Duplicate function calls** in wrapper functions (`call_string_encryption` calls target twice)
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** — Function boundaries correctly preserved with reasonable granularity; `param_*` and `call_*` pairs properly separated despite optimization level O0
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** — Complete absence of any documentation; decompiler provides zero semantic guidance despite complex obfuscation patterns that desperately need explanation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement pattern-based variable renaming** — Detect common patterns (loop counters, accumulators, flags) and assign semantic names (`i`, `sum`, `is_valid`) instead of `v0`, `v1`, `v2`
+2. **Add decompilation confidence annotations** — Flag uncertain reconstructions with comments like `// DECOMPILER: Bit manipulation may represent signed division` to guide manual review
+3. **Recover and preserve string literals** — Instead of `&g_4016b8`, display actual string content `"=== 测试混淆、优化与边界情况 ==="` with a comment noting it's from read-only data section

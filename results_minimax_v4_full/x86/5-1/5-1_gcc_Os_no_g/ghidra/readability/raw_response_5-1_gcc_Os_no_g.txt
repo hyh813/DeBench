@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_10`, `local_14`, `local_30`, `puVar1`, `iVar1`, `iVar2`. For O0 code, this is extremely poor - no semantic names like `result`, `obj`, `value` were recovered despite being clearly present in source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`). However, some internal functions remain as `FUN_00011030`, and many compiler thunks have auto-generated names. The public API functions are well-recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x3e9` (1000), `0x125c` appear without explanation. The comment `/* try { // try from 00011303 to 00011307 has its CatchHandler @ 00011308 */` shows some exception handling was detected, but constants aren't named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from `__x86.get_pc_thunk.bx` injections, "WARNING: Unknown calling convention" messages, and numerous thunk functions. Dead code blocks marked for removal clutter output. The actual user code is buried in compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/else and loops are recognizable. However, `call_virtual_func` shows "WARNING: Could not recover jumptable" indicating broken control flow. Some forward jumps present but manageable. The exception handling shows try/catch structure in comments.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many small functions extracted (good), but includes numerous compiler thunks (virtual, non-virtual) that aren't user code. Some source functions like `SimpleClass::compute` appear missing or inlined. The template functions are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some early returns present. The `test_cpp_smart_ptr` function shows complex nested structure with try/catch but still traceable. No severe spaghetti code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor variants (virtual thunk, non-virtual thunk, regular) create redundancy. Some duplicate patterns in `~MiddleA` and `~MiddleB`. Not catastrophic but could be consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4`, `undefined1`, `undefined**` instead of proper types. `int` is used generically. Some specific types like `double`, `longdouble` preserved. No const correctness. The `Container<int>` and `Container<double>` templates show type differentiation.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible - all access is raw pointer arithmetic like `*(int *)(this + 0x28)`. The `Container` template shows raw array `int local_3c[10]` but no field names. Class layouts completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic explicit but type-unsafe: `*(int *)(this + 0x28)`. Some unsafe operations like `*(undefined ***)this = &PTR_func_00015c94`. Mixed void* usage. Not catastrophic but many potential issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Useful comments like `/* try { // try from 00011303 to 00011307 has its CatchHandler @ 00011308 */` and `/* WARNING: Subroutine does not return */`. However, many "WARNING" comments are noise. Some function purpose comments present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Virtual function calls shown as indirect calls but not explained as vtable pattern. Template instantiation recognized (`template_max<int>`, `template_max<double>`) but not explained as such. Exception handling partially recognized.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warnings: "WARNING: Unknown calling convention -- yet parameter storage is locked", "WARNING: Could not recover jumptable", "WARNING: Removing unreachable block". Uncertainty is communicated, though some issues could be better explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postconditions recovered. No contract information. The `__stack_chk_fail_local` indicates stack protection but no contracts. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible (`test_cpp_member_func()` calls `strncpy`, `strlen`). Virtual dispatch shown via vtable pointers. But relationships not documented - no comments explaining who calls what or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by class (Base, Derived, MultiDerived, etc.). But no namespace structure. Static functions not distinguished. File organization lost - all 96 functions in one listing.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile - many undefined symbols: `operator_new`, `operator_delete`, `__cxa_allocate_exception`, `__cxa_throw`, `std::` functions. External dependencies not documented. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable names are completely generic (`local_10`, `iVar1`, `puVar1`) - no semantic recovery for O0 code
+- No struct/class field recovery - all composite types lost, replaced with raw pointer arithmetic
+- Many source functions completely missing or reduced to constant return values (e.g., `test_cpp_multiple_inheritance` returns 0x47 directly)
+- Severe compiler artifact noise (thunks, get_pc_thunk, warnings) obscuring actual code
+- Binary architecture mismatch: labeled as x86 but source was arm64
+
+**Best Quality Aspect:** Function Naming (scored 7/10)  
+The public test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) are correctly named and recognizable, preserving the API-level structure.
+
+**Most Needs Improvement:** Variable Naming (scored 2/10)  
+For O0 debug-compiled code, variable names should be nearly perfect. The complete failure to recover any semantic variable names (like `result`, `obj`, `value`, `size`) severely impacts readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At O0, use stack frame analysis and data flow to recover names like `result` (used in return), `obj` (this pointer), `size` (array bounds)
+2. **Recover struct/class layouts**: Analyze vtable pointers and field access patterns to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+3. **Filter compiler artifacts**: Automatically hide or collapse thunk functions, get_pc_thunk injections, and other compiler-generated code that isn't user source

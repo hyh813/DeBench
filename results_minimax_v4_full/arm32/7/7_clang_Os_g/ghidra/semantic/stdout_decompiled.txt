@@ -1,0 +1,16 @@
+Test output
+
+Value: 10
+Value: 35
+Value: 225
+Value: 0
+Value: 500500
+Value: 5050
+Value: 0
+Value: 20
+Value: 1
+Value: 41
+Value: 30
+Value: 2000000000
+Value: 10
+Value: 44

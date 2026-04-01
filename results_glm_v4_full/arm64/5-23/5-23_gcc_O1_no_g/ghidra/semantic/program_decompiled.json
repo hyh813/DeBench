@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_gcc_O1_no_g/ghidra/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "Testing preprocessing features...\nMacro constants: 64\nMacro functions: 30\nConditional compile: 32\nMulti-branch compile: 57122\nMacro recursion: 116\nStringize: 19\nToken paste: 60\nLOG: Values: 10, 20, 30\nVariadic macro return: 60\nMacro override: 16\nInclude guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:28\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:28\nBuilt-in macros result: 382\nTesting ASM features...\nASM basic: 15\nASM clobber: 330\nASM multi-insn: 42\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

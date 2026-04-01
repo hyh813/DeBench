@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`) instead of semantic names like `a`, `b`, `sum`, `count` from source. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`, and `loop_for_fixed` uses `iVar1/iVar2` instead of `i/sum`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`). However, some helpers lost names (`FUN_00101020`) and test functions are preserved well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x3e9`, `0x65`, `0x1f` for shift masking). Hex values like `0xffffffff` used for -1. Some literals clear (10, 100) but no named constants recovered from original source comments.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__stack_chk_fail`) and frame pointer references (`in_FS_OFFSET`) present but don't severely impede reading. WARNING comments about unreachable blocks are helpful noise indicators.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For-loops often recovered as do-while constructs (e.g., `loop_for_fixed`). Switch statements sometimes become if-else chains (`switch_small` uses `CSWTCH_55` jump table reference). Goto mostly eliminated but `duffs_device` has complex label recovery with `switchD_` labels.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly; helper functions remain separate (`double_value`, `triple_value`, `op_add`). No inappropriate inlining. Function sizes are reasonable and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but `loop_multi_exit` and `duffs_device` have forward jump labels (`LAB_00101adc`, `switchD_00101bdf_caseD_7`). Early returns used appropriately in simpler functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant temporary variables (`iVar1`, `iVar2` patterns) but no obvious dead code. At -O0 compilation, loop unrolling not present. Duplicate expressions in some conditionals.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers are generic `int` rather than `int32_t`. Some return types wrong (`if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char`). Function pointers degraded to `code *`. Shift operations use `byte` for second parameter correctly.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Stack arrays recovered (`aiStack_28[6]`, `local_78[8]`) but with generic names. Function pointer arrays recovered (`local_28[3]`, `local_68[10]`). No complex structs in this code but no struct naming for stack layouts.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts visible (`(int)param_1`, `(ulong)uVar4`, `(uint)(param_1 >> 0x1f)`). Function pointer calls have warnings ("Could not recover jumptable"). Stack canary checks present for safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost NO useful comments in decompiled code. Only auto-generated WARNING comments about unreachable blocks. Original source had extensive documentation (test validation, difficulty ratings); decompiled has none. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop patterns recognized (for/while/do-while). Switch statements sometimes identified. No design pattern identification. `duffs_device` fall-through logic obscured. No algorithm naming (e.g., "factorial calculation").
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments for unreachable blocks present. "Could not recover jumptable" and "Treating indirect jump as call" warnings appear for function pointer calls. Stack check failure warnings included. Inconsistent coverage across functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No invariants recognized. Original had test validation comments with expected values; decompiled has none.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graphs. Global variable usage not explained (`jump_buffer`). Callback relationships visible (`process_with_callback`) but not named. No API relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat arbitrary order. Test functions grouped together but helper functions scattered. No header file structure. Original had clear sections (L1/L2/L3); decompiled is flatter.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has Ghidra-specific types (`undefined8`, `code *`). Would need significant modification to compile standalone. External dependencies not clearly documented (`__printf_chk`, `__stack_chk_fail`). Architecture mismatch (x86 vs original ARM64).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+8+6+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.54/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` throughout instead of semantic names like `sum`, `count`, `result`
+- **Zero semantic comments**: Original source had extensive documentation; decompiled code has only auto-generated WARNING comments
+- **Type precision degraded**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`
+- **No contract recovery**: No preconditions/postconditions documented despite original having test validation comments
+- **Architecture mismatch**: Binary shows x86 but original was ARM64, indicating potential analysis issues
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`), maintaining semantic identity.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation; original source had extensive comments explaining purpose, test cases, and difficulty levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., loop counters → `i`, accumulators → `sum`, return values → `result`)
+2. **Recover and preserve source comments** when debug symbols (-g) are available, especially test validation and API documentation
+3. **Improve type recovery accuracy** for return types and function signatures, particularly for functions returning integers that were misidentified as bool/char

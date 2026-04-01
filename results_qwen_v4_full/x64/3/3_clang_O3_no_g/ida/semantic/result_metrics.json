@@ -1,0 +1,460 @@
+{
+  "execution_status": "success",
+  "quality_status": "partial",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/3.c",
+  "drivers": [
+    "test_stack_memory",
+    "test_heap_memory",
+    "test_static_global",
+    "test_memory_op_functions"
+  ],
+  "trace_health": {
+    "status": "unavailable",
+    "usable_for_structural_evidence": false,
+    "original": {
+      "run_status": "unknown",
+      "usable": false,
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0,
+      "call_count": 0,
+      "parsed_entry_count": 0,
+      "parsed_exit_count": 0,
+      "parsed_print_count": 0,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [
+        "no_calls_captured"
+      ],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "unknown",
+      "usable": false,
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0,
+      "call_count": 0,
+      "parsed_entry_count": 0,
+      "parsed_exit_count": 0,
+      "parsed_print_count": 0,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [
+        "no_calls_captured"
+      ],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "partial",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": true,
+    "stdout_exact_match": false,
+    "raw_stdout_exact_match": false,
+    "stdout_nonempty_original": true,
+    "stdout_nonempty_decompiled": true,
+    "stdout_case_match_ratio": 0.9545,
+    "stable_case_total": 44,
+    "stable_case_matched": 42,
+    "original_stable_case_total": 44,
+    "decompiled_stable_case_total": 44,
+    "stable_case_ids": [
+      "HEAP-L2-01",
+      "HEAP-L2-02",
+      "HEAP-L2-03",
+      "HEAP-L2-04",
+      "HEAP-L2-05",
+      "HEAP-L2-06",
+      "HEAP-L3-01",
+      "HEAP-L3-02",
+      "HEAP-L3-03",
+      "MEM-L1-01",
+      "MEM-L1-02",
+      "MEM-L1-03",
+      "MEM-L1-04",
+      "MEM-L1-05",
+      "MEM-L2-01",
+      "MEM-L2-02",
+      "MEM-L2-03",
+      "MEM-L2-04",
+      "MEMOP-L2-01",
+      "MEMOP-L2-02",
+      "MEMOP-L2-03",
+      "MEMOP-L2-04",
+      "MEMOP-L2-05",
+      "MEMOP-L2-06",
+      "MEMOP-L3-01",
+      "MEMOP-L3-02",
+      "STM-L1-01",
+      "STM-L1-02",
+      "STM-L1-03",
+      "STM-L1-04",
+      "STM-L2-01",
+      "STM-L2-02",
+      "STM-L2-03",
+      "STM-L2-04",
+      "STM-L2-05",
+      "STM-L2-06",
+      "STM-L2-07",
+      "STM-L2-08",
+      "STM-L2-09",
+      "STM-L3-01",
+      "STM-L3-02"
+    ],
+    "unstable_case_ids": [
+      "HEAP-L3-04",
+      "HEAP-L3-05",
+      "HEAP-L3-06"
+    ],
+    "original_exit_code": 0,
+    "decompiled_exit_code": 0,
+    "original_signal": null,
+    "decompiled_signal": null,
+    "original_run_issue": "ok",
+    "decompiled_run_issue": "ok",
+    "comparisons_total": 44,
+    "comparisons": [
+      {
+        "test_id": "MEM-L1-01",
+        "occurrence": 1,
+        "original": "MEM-L1-01 (local_vars): 20",
+        "decompiled": "MEM-L1-01 (local_vars): 20",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L1-02",
+        "occurrence": 1,
+        "original": "MEM-L1-02 (local_array): 10",
+        "decompiled": "MEM-L1-02 (local_array): 10",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L1-03",
+        "occurrence": 1,
+        "original": "MEM-L1-03 (local_struct): 15",
+        "decompiled": "MEM-L1-03 (local_struct): 15",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L1-04",
+        "occurrence": 1,
+        "original": "MEM-L1-04 (address_of_local): 42",
+        "decompiled": "MEM-L1-04 (address_of_local): 42",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L1-05",
+        "occurrence": 1,
+        "original": "MEM-L1-05 (address_of_array): 2",
+        "decompiled": "MEM-L1-05 (address_of_array): 2",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L2-01",
+        "occurrence": 1,
+        "original": "MEM-L2-01 (large_stack_frame): 0",
+        "decompiled": "MEM-L2-01 (large_stack_frame): 0",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L2-02",
+        "occurrence": 1,
+        "original": "MEM-L2-02 (vla_stack): 10",
+        "decompiled": "MEM-L2-02 (vla_stack): 10",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L2-03",
+        "occurrence": 1,
+        "original": "MEM-L2-03 (alloca_usage): 15",
+        "decompiled": "MEM-L2-03 (alloca_usage): 15",
+        "matched": true
+      },
+      {
+        "test_id": "MEM-L2-04",
+        "occurrence": 1,
+        "original": "MEM-L2-04 (stack_alias): 20",
+        "decompiled": "MEM-L2-04 (stack_alias): 20",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L2-01",
+        "occurrence": 1,
+        "original": "HEAP-L2-01 (heap_basic): 10",
+        "decompiled": "HEAP-L2-01 (heap_basic): 10",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L2-02",
+        "occurrence": 1,
+        "original": "HEAP-L2-02 (heap_calloc): 0",
+        "decompiled": "HEAP-L2-02 (heap_calloc): 0",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L2-03",
+        "occurrence": 1,
+        "original": "HEAP-L2-03 (heap_realloc): 50",
+        "decompiled": "HEAP-L2-03 (heap_realloc): -3",
+        "matched": false
+      },
+      {
+        "test_id": "HEAP-L2-04",
+        "occurrence": 1,
+        "original": "HEAP-L2-04 (heap_array): 15",
+        "decompiled": "HEAP-L2-04 (heap_array): 15",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L2-05",
+        "occurrence": 1,
+        "original": "HEAP-L2-05 (heap_struct): 15",
+        "decompiled": "HEAP-L2-05 (heap_struct): 15",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L2-06",
+        "occurrence": 1,
+        "original": "HEAP-L2-06 (heap_nested): 0",
+        "decompiled": "HEAP-L2-06 (heap_nested): 0",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L3-01",
+        "occurrence": 1,
+        "original": "HEAP-L3-01 (linked_list_heap): 100",
+        "decompiled": "HEAP-L3-01 (linked_list_heap): 100",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L3-02",
+        "occurrence": 1,
+        "original": "HEAP-L3-02 (tree_heap_traversal): 60",
+        "decompiled": "HEAP-L3-02 (tree_heap_traversal): 60",
+        "matched": true
+      },
+      {
+        "test_id": "HEAP-L3-03",
+        "occurrence": 1,
+        "original": "HEAP-L3-03 (memory_leak): 2",
+        "decompiled": "HEAP-L3-03 (memory_leak): 2",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L1-01",
+        "occurrence": 1,
+        "original": "STM-L1-01 (global_var_access): 1",
+        "decompiled": "STM-L1-01 (global_var_access): 1",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L1-01",
+        "occurrence": 2,
+        "original": "STM-L1-01 (global_var_read): 2",
+        "decompiled": "STM-L1-01 (global_var_read): 2",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L1-02",
+        "occurrence": 1,
+        "original": "STM-L1-02 (global_array_access): 5",
+        "decompiled": "STM-L1-02 (global_array_access): 5",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L1-03",
+        "occurrence": 1,
+        "original": "STM-L1-03 (static_local): 1",
+        "decompiled": "STM-L1-03 (static_local): 1",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L1-03",
+        "occurrence": 2,
+        "original": "STM-L1-03 (static_local): 2",
+        "decompiled": "STM-L1-03 (static_local): 2",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L1-04",
+        "occurrence": 1,
+        "original": "STM-L1-04 (call_static_func): 11",
+        "decompiled": "STM-L1-04 (call_static_func): 11",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-01",
+        "occurrence": 1,
+        "original": "STM-L2-01 (access_extern_global): 123",
+        "decompiled": "STM-L2-01 (access_extern_global): 123",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-02",
+        "occurrence": 1,
+        "original": "STM-L2-02 (call_extern_func): 15",
+        "decompiled": "STM-L2-02 (call_extern_func): 15",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-03",
+        "occurrence": 1,
+        "original": "STM-L2-03 (read_const_data): 153",
+        "decompiled": "STM-L2-03 (read_const_data): 42",
+        "matched": false
+      },
+      {
+        "test_id": "STM-L2-04",
+        "occurrence": 1,
+        "original": "STM-L2-04 (access_bss_var): 0",
+        "decompiled": "STM-L2-04 (access_bss_var): 0",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-04",
+        "occurrence": 2,
+        "original": "STM-L2-04 (access_bss_buffer): 0",
+        "decompiled": "STM-L2-04 (access_bss_buffer): 0",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-05",
+        "occurrence": 1,
+        "original": "STM-L2-05 (global_struct_access): 30",
+        "decompiled": "STM-L2-05 (global_struct_access): 30",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-06",
+        "occurrence": 1,
+        "original": "STM-L2-06 (file_static): 50",
+        "decompiled": "STM-L2-06 (file_static): 50",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-07",
+        "occurrence": 1,
+        "original": "STM-L2-07 (global_func_ptr): 10",
+        "decompiled": "STM-L2-07 (global_func_ptr): 10",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-08",
+        "occurrence": 1,
+        "original": "STM-L2-08 (global_heap_store): 100",
+        "decompiled": "STM-L2-08 (global_heap_store): 100",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L2-09",
+        "occurrence": 1,
+        "original": "STM-L2-09 (static_complex_init): 15",
+        "decompiled": "STM-L2-09 (static_complex_init): 15",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L3-01",
+        "occurrence": 1,
+        "original": "STM-L3-01 (tls_access): 20",
+        "decompiled": "STM-L3-01 (tls_access): 20",
+        "matched": true
+      },
+      {
+        "test_id": "STM-L3-02",
+        "occurrence": 1,
+        "original": "STM-L3-02 (init_order_test): 20",
+        "decompiled": "STM-L3-02 (init_order_test): 20",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L2-01",
+        "occurrence": 1,
+        "original": "MEMOP-L2-01: 65",
+        "decompiled": "MEMOP-L2-01: 65",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L2-02",
+        "occurrence": 1,
+        "original": "MEMOP-L2-02: 50",
+        "decompiled": "MEMOP-L2-02: 50",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L2-03",
+        "occurrence": 1,
+        "original": "MEMOP-L2-03: H",
+        "decompiled": "MEMOP-L2-03: H",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L2-04",
+        "occurrence": 1,
+        "original": "MEMOP-L2-04: -1",
+        "decompiled": "MEMOP-L2-04: -1",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L2-05",
+        "occurrence": 1,
+        "original": "MEMOP-L2-05: 0",
+        "decompiled": "MEMOP-L2-05: 0",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L2-06",
+        "occurrence": 1,
+        "original": "MEMOP-L2-06: 1",
+        "decompiled": "MEMOP-L2-06: 1",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L3-01",
+        "occurrence": 1,
+        "original": "MEMOP-L3-01: 0x4030201",
+        "decompiled": "MEMOP-L3-01: 0x4030201",
+        "matched": true
+      },
+      {
+        "test_id": "MEMOP-L3-02",
+        "occurrence": 1,
+        "original": "MEMOP-L3-02: 10",
+        "decompiled": "MEMOP-L3-02: 10",
+        "matched": true
+      }
+    ]
+  },
+  "function_level": {
+    "status": "unavailable",
+    "segment_count": 4,
+    "segment_callseq_match_ratio": null,
+    "feature_function_match_ratio": null,
+    "call_evidence_segment_count": 0,
+    "call_evidence_unavailable_count": 4,
+    "segment_print_match_ratio": null,
+    "segment_print_evidence_count": 0,
+    "segment_print_unavailable_count": 4,
+    "normalized_io_match_ratio": 0.0,
+    "io_matched_pairs": 0,
+    "io_compared_pairs": 0,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": []
+  },
+  "low_level": {
+    "status": "unavailable",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": null,
+    "token_count_original": 0,
+    "token_count_decompiled": 0
+  }
+}

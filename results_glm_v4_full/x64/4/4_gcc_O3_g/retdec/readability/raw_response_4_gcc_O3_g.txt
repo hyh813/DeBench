@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`a1`, `a2`, `v1`, `v2`), providing no semantic hint about their purpose (e.g., `count`, `sum`, `args`). While `result` is used for returns, local variables in complex functions like `varargs_func` are indistinguishable.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from the debug symbols (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`), matching the original source exactly and providing clear semantic context.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Integer constants (e.g., `15`, `42`, `100`) are preserved clearly. String literals are correctly extracted, though stored as hex-encoded global variables (e.g., `\xe6\xb5\x8b...`) which is a minor inconvenience but accurate.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with compiler artifacts and decompiler fallbacks. Stack canary checks (`__readfsqword(40)`) appear in almost every function, and standard arithmetic is often replaced by low-level `__asm_` intrinsics (e.g., `__asm_movdqu`, `__asm_paddq`), severely impacting readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple functions are readable, complex logic like `varargs_func` is obfuscated. The loop is implemented with `goto` labels (`lab_0x14e0`) and manual pointer arithmetic instead of a clean `for` loop with `va_arg`, making the flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. The decompiler did not artificially split or merge functions, preserving the original modular structure effectively.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the use of `goto` for loop exits and the insertion of stack-checking `if` statements in the middle of logic disrupt the linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but the decompiler introduces redundancy through verbose type casting (e.g., `& 0xffffffff`) and the expansion of simple operations into complex intrinsic chains.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type recovery is poor. Basic `int` types are inflated to `int64_t`. Crucially, floating-point `double` parameters are misidentified as `int128_t` and handled via SIMD intrinsics (`__asm_cvtsi2sd`), completely losing the high-level type semantics.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are entirely lost. `LargeStruct` and `SmallStruct` parameters are replaced by `int128_t` or `int32_t` raw values. Accessing struct members is replaced by raw SIMD instructions (`__asm_paddq`, `__asm_movdqu`), rendering the data structure invisible.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts between `int128_t`, pointers, and integers. The use of `__asm_` intrinsics bypasses C type checking entirely, and pointer arithmetic on `void*` (e.g., `*(int32_t *)(a1 + 4)`) is prevalent instead of struct member access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata (Address range, Line range) and offer no insight into the algorithm's logic. There are no comments explaining the complex `__asm_` blocks or the purpose of the generic variables.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed. The `va_list` pattern in `varargs_func` is not recognized; instead, it is decompiled to raw stack pointer manipulation. Struct initialization and return are not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The presence of `__asm_` blocks implicitly signals that the decompiler could not lift the code to standard C, but there are no explicit warnings or comments explaining *why* (e.g., "SIMD operation detected").
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred. For example, the null check in `func_struct_byptr` is present as `if (a1 == 0)` but not documented as a requirement for the function.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are accurate and use the recovered names, making the call graph easy to understand. Global variable usage (strings) is clear, though the hex encoding obscures the content slightly.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file organization mirrors the source, with functions appearing in a logical order. Helper functions and main test functions are grouped correctly.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is. It relies on non-standard `__asm_` intrinsics and specific `__readfsqword` calls that are not valid standard C or portable GCC/Clang intrinsics without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects (Bullet List)
+- **Struct Erasure**: `LargeStruct` and `SmallStruct` are completely replaced by `int128_t` and SIMD intrinsics (`__asm_movdqu`), destroying data layout visibility.
+- **Floating Point Loss**: `double` parameters in `func_mixed_args` are treated as `int128_t` and manipulated with `__asm_cvtsi2sd`, obscuring the arithmetic logic.
+- **Arithmetic Obfuscation**: Simple multiplication in `stdcall_func` is represented as `(0x100000000 * a2 >> 32) * ...`, which is unnecessarily complex.
+- **Varargs Obscured**: The `va_list` pattern is not recovered, replaced by manual stack walking and `goto` loops in `varargs_func`.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, providing high-level context despite the low-level code degradation.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (1/10)
+- **Why?** The failure to recover structs is the most critical issue; it turns high-level data structure manipulations into unreadable bit-twiddling and SIMD operations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve ARM64 Vector/Floating Point Lifting**: Detect when SIMD registers are used for scalar `double` values or struct copies and map them to standard C types (`double`, `struct`) instead of emitting `__asm_` intrinsics.
+2.  **Simplify Arithmetic Patterns**: Recognize complex bit-shift sequences that result from compiler codegen for simple multiplication or division and simplify them back to `*` and `/` operators.
+3.  **Recover Standard Library Idioms**: Implement specific pattern matching for `va_list` usage (stack walking, `va_start`, `va_arg`) to emit standard variable argument logic instead of raw pointer arithmetic.

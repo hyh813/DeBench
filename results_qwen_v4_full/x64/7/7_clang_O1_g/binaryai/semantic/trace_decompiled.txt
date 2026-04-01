@@ -1,0 +1,14 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=1042697064,Arg2=1042697080,Arg3=-1151226408|rax=0x576ebb618900,rbx=0x7ffc3e264b68,rcx=0x576ebb61add8,rdx=0x7ffc3e264b78,rsi=0x7ffc3e264b68,rdi=0x1,r8=0x0,r9=0x7ea759b5f380
+TRACE_ENT|1|param_tail_call_optimized|1|Arg0=1000,Arg1=0,Arg2=0,Arg3=0|rax=0x1,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x0,rdi=0x3e8,r8=0x1,r9=0x0
+TRACE_EXT|1|param_tail_call_optimized|1|1
+TRACE_ENT|2|param_non_tail_call|1|Arg0=100,Arg1=1042696272,Arg2=0,Arg3=0|rax=0x1,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x7ffc3e264850,rdi=0x64,r8=0x1,r9=0x0
+TRACE_EXT|2|param_non_tail_call|1|5050
+TRACE_ENT|3|param_division_by_zero|1|Arg0=5,Arg1=1042696272,Arg2=0,Arg3=0|rax=0x0,rbx=0x20,rcx=0x0,rdx=0x0,rsi=0x7ffc3e264850,rdi=0x5,r8=0x1,r9=0x0
+TRACE_EXT|3|param_division_by_zero|1|2
+TRACE_ENT|4|param_division_by_zero|1|Arg0=0,Arg1=0,Arg2=0,Arg3=2|rax=0x2,rbx=0x20,rcx=0x2,rdx=0x0,rsi=0x0,rdi=0x0,r8=0x1,r9=0x0
+TRACE_EXT|4|param_division_by_zero|1|-1
+TRACE_ENT|5|param_null_pointer_deref|1|Arg0=1042696704,Arg1=1042696272,Arg2=0,Arg3=0|rax=0x0,rbx=0x20,rcx=0x0,rdx=0x0,rsi=0x7ffc3e264850,rdi=0x7ffc3e264a00,r8=0x1,r9=0x0
+TRACE_EXT|5|param_null_pointer_deref|1|42
+TRACE_ENT|6|param_null_pointer_deref|1|Arg0=0,Arg1=0,Arg2=965295099,Arg3=42|rax=0x2a,rbx=0x2a,rcx=0x2a,rdx=0x4c2fa95f39893bfb,rsi=0x0,rdi=0x0,r8=0x1,r9=0x0
+TRACE_EXT|6|param_null_pointer_deref|1|-1
+TRACE_EXT|0|test_obf_opt_edge|0|2

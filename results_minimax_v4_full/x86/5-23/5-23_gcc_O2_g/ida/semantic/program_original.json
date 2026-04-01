@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/5-23/5-23_gcc_O2_g/ida/semantic/native_x86_bin/5-23_gcc_O2_g_native",
+  "stdout": "=== 测试预处理与条件编译 ===\nPP-L2-01: 64 (期望: 64)\nPP-L2-02: 30 (期望: 30)\nPP-L2-03: 32 (期望: 32)\nPP-L2-04: 57122 (期望: 0xDF22)\nPP-L3-01: 116 (期望: 116)\nPP-L3-02: 19 (期望: 11+5+行号长度)\nPP-L3-03: 60 (期望: 60)\nLOG: Values: 10, 20, 30\nPP-L3-04: 60 (期望: 60)\nPP-L3-05: 16 (期望: 16)\nPP-L3-06: 500 (期望: 500)\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Mar 27 2026, time=13:38:36\nPP-L3-07: 382 (期望: 100+行号+0+1+2)\n=== 测试内联汇编与底层特性 ===\nASM-L4-01: 15 (期望: 15)\nASM-L4-02: -1067500743 (期望: 15)\nASM-L4-03: 42 (期望: 42)\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

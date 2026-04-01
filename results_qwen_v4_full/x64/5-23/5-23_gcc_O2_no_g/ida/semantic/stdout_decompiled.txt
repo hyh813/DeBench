@@ -1,0 +1,20 @@
+Testing preprocessing features:
+PP_L20: 64
+PP_L21: 30
+PP_L22: 32
+PP_L23: 57122
+PP_L30: 116
+PP_L31: 19
+PP_L32: 60
+LOG: Values: 10, 20, 30
+PP_L33: 60
+PP_L34: 16
+PP_L35: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:32
+PP_L36: 382
+Testing ASM features:
+ASM_L40: 15
+ASM_L41: 0
+ASM_L42: 42
+ASM_L43: 36
+ASM_L44: 30

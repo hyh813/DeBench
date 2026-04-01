@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `flag1`, `result`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`), but many helper functions use mechanical names (`sub_400744`, `sub_400830`). Function names that exist accurately reflect original purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (UINT_MAX), `9223372036854775807` (INT64_MAX), `0x5A` shown as `90`. Some literals clear (`10`, `20`, `225`) but most obscure logic intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `arm64g_calculate_condition` calls obscure simple comparisons, frame pointer manipulation visible (`v0 = &v1` patterns), redundant variable assignments throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses `goto` and `do-while` patterns instead of natural `if-else` and `for` loops. `param_opaque_predicate` has complex condition calculations instead of the original's clear boolean logic. At `-O0`, this restructuring is unacceptable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but critical failures exist: `param_fake_branch` takes no parameters and returns uninitialized `v0`. Some `call_*` functions are over-optimized to constants (returns `10` directly instead of calling `param_fake_branch(10)`).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt flow (`LABEL_400c50` in `param_vectorized_loop`). `param_opaque_predicate` has multiple conditional branches that could be linearized. Reads poorly top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `arm64g_calculate_condition` called multiple times with same parameters in `param_opaque_predicate`. Constant folding in `call_*` functions removes original logic entirely, making verification impossible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation: `unsigned long long` used where `int` suffices, `void*` instead of specific pointer types (`char*`, `int*`). Original `const char *str` becomes generic pointer. Signed/unsigned distinctions often lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Original `param_implementation_defined` had a bitfield struct with named fields (`a`, `b`, `c`) that is completely lost. All composite types reduced to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(unsigned int)v0`, `(char *)cur`, pointer OR operations (`&v0 | 1`). `param_null_pointer_deref` takes `unsigned int *` but original took `int *`. Risk of undefined behavior patterns present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments like `/* do not return */`. No algorithm explanations, no documentation of obfuscation patterns, no decompilation confidence indicators. Original source had extensive comments explaining each technique.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern in `decrypt_string` not recognized. Bit manipulation idioms (`x & 0xF` for modulo) not documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical anomalies silently ignored: `param_fake_branch` returns uninitialized value, `param_buffer_overflow_stack` and `param_buffer_overflow_heap` return `v0` without using parameters. No warnings about broken decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `a0 != 0` for normal path). No postconditions inferred. Error handling contracts completely missing.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but globals named generically (`g_401104`, `g_401120`, `$d.1`). No call graph documentation. String references lost to opaque global names instead of showing actual string content.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Original had clear section headers (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies present (`signal`, `strlen`, `__libc_start_main`) but not documented. Some globals undefined (`$d.1`, `g_411ff8`). Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (3+5+4+5)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **`param_fake_branch` is completely broken** - takes no parameters, returns uninitialized `v0`, original logic (fake branch conditions) entirely lost
+- **`param_buffer_overflow_stack` and `param_buffer_overflow_heap` broken** - both return uninitialized `v0` without using their `x` parameter
+- **Variable names are all generic** (`v0`, `v1`, `a0`) making semantic tracking impossible
+- **`arm64g_calculate_condition` calls obscure simple comparisons** that should be direct `if` statements
+- **No comments explaining obfuscation patterns** despite original source having extensive documentation of each technique
+
+### Best Quality Aspect: Function Naming Quality (scored 6/10)
+- Core function names were preserved from original source, allowing identification of test purposes despite other degradation.
+
+### Most Needs Improvement: Semantic Transparency (scored 2.25/10 average)
+- Complete absence of comments, no anomaly warnings for broken functions, and no contract documentation makes the code practically unusable for understanding obfuscation techniques.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag broken decompilations** - `param_fake_branch` returning uninitialized value should trigger a critical warning with confidence indicator
+2. **Recover high-level control structures from -O0 binaries** - At debug optimization level, `if-else` and `for` loops should be recoverable without `arm64g_calculate_condition` abstraction
+3. **Preserve string literals and constant meanings** - Replace magic numbers like `4294967295` with `UINT_MAX` and show actual string content instead of `$d.1` references

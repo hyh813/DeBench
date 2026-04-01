@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (a1, a2, a3) and locals use v1, v2, etc. with zero semantic meaning recovered. Original names like `temp1`, `temp2`, `sum`, `count` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved correctly (sequential_ops, single_if, nested_if_2, loop_for_fixed). Some helper functions remain generic (sub_1030, sub_1090).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (0x65, 0x32, 100, 101, 0x12345678). No constants recovered; values like `100 * a1 + 100` obscure original intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register variable annotations present (v1, v2 with register hints), unnecessary type casts, and some assembly blocks (`__asm { jmp dword ptr [ebx+8] }`) that should be eliminated.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical failures: `single_if` uses bit shift `a1 << (a1 > 0)` instead of if-statement, `loop_for_fixed` converted to mathematical formula losing loop structure, `switch_fallthrough` uses goto labels instead of proper fall-through semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable sizes. Original function structure mostly maintained without excessive inlining or fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but switch_fallthrough uses goto LABEL_5 pattern. Some functions have forward jumps that disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments common (v1 = a1; v2 = v1 patterns). Some optimization artifacts create unnecessary intermediate variables.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic int types without precision markers (no int32_t). Inconsistent signed/unsigned usage (some functions use `unsigned int a1` where original used `int`). Function pointer types partially recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as pointer arithmetic (`*(_DWORD *)(a1 + 4 * v3++)`). No struct recovery visible. Matrix access in loop_multi_exit uses raw pointer iteration.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Questionable casts in function pointer handling. Some implicit conversions between signed/unsigned without warnings. `_DWORD *` usage obscures actual types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers present. Zero explanatory comments for non-trivial logic. No algorithm descriptions or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Original patterns (factorial recursion, digit counting loops, state machines) obscured by optimization artifacts. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite critical issues: architecture mismatch (ARM64→x86), semantic errors in single_if/if_else, failed decompilations listed without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "a3 > 0" for duffs_device). No postconditions or error condition documentation. Parameter constraints not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph information. Global variable usage (funcs_18EC, jump_buffer) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping. Test functions mixed with implementation. No header file structure or API documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six functions marked "FAILED to decompile" (printf, longjmp, etc.). External dependencies not documented. Code will not compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+4+6)/4 = 5.0   × 0.30 = 1.50
+Level 2 (Structural):  (3+7+6+6)/4 = 5.5   × 0.25 = 1.38
+Level 3 (Type):        (5+5+5)/3   = 5.0   × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.5   × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.73/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Semantic corruption**: `single_if` returns `a1 << (a1 > 0)` which is mathematically wrong (should double positive values)
+- **Control flow loss**: `loop_for_fixed` converted to formula `(((a1-2)*(a1-1))>>1)+a1-1` losing original loop semantics
+- **Variable naming**: Zero semantic names recovered; all parameters are `a1`, `a2`, `a3`
+- **Test functions broken**: Print hardcoded expected values instead of actually calling functions
+- **Architecture mismatch**: Original ARM64 compiled code decompiled as x86 without warning
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names mostly preserved correctly, making identification possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero explanatory comments; decompiler provides no guidance on non-trivial transformations or confidence levels
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Preserve original control flow structures** at -O0 optimization level; avoid converting loops to mathematical formulas when original loop structure is recoverable
+3. **Add decompilation confidence annotations** flagging transformations that may have altered semantics (especially for bit-shift optimizations and formula substitutions)

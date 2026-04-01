@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names like `size`, `x`, `y`, `result` from source. Only `__len`, `__addr` show minimal semantic hinting.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly preserved from source (`param_macro_constants`, `call_asm_basic`, `param_token_paste`). Names clearly indicate purpose and match original intent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: All macros evaluated to magic numbers (0x400 instead of MAX_SIZE, 0x40 instead of BUFFER_COUNT*4, 0xdef0 instead of platform constant). No constant recovery attempted.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is relatively clean without compiler artifacts. Runtime support functions (`deregister_tm_clones`, `__do_global_dtors_aux`) present but don't pollute main logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures recovered naturally - if/else, do-while loops from assembly converted properly. `param_asm_clobber` shows clean loop recovery from inline assembly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each function has appropriate size and single responsibility. No monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps disrupting flow. Loop constructs use standard do-while patterns.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or redundant expressions observed. `param_simd_intrinsics` and `param_asm_simd` have identical bodies (expected from source fallback paths).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic `undefined4`, `int` instead of precise types like `int32_t`, `size_t`. Lost const-correctness (`const char*` became generic pointers).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code to evaluate. Array handling adequate (`local_18[4]` recovered correctly). Pointer arithmetic preserved where needed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns like `undefined4` for pointer parameters in `param_asm_atomic`. `__atomic_fetch_add_4` signature loses type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments about unreachable blocks. No algorithm explanations, no macro semantics recovered, no API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns completely lost (SQUARE, MAX, ADD_16 all evaluated). No recognition that `param_1 * 3 + 1` was originally `(x+1) + (x*2)` from macro override.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments about unreachable blocks in runtime functions. Assembly-to-C conversion not flagged as transformed code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1` range in `param_macro_constants`). Error conditions in mmap/mprotect not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names. `global_var` referenced but not clearly documented as external. Test function relationships inferable.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source structure. Preprocessing tests grouped, assembly tests grouped. Logical flow preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires stubs for printf, puts, mmap, sysconf, __atomic_fetch_add_4. External dependencies not documented. Would need moderate patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+3+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+8+8+8)/4 = 8.00 × 0.25 = 2.000
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                              6.088 ≈ 6.1/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects
+- **Macro semantics completely lost**: All `#define` constants (MAX_SIZE, BUFFER_COUNT) evaluated to magic numbers (0x400, 0x40) with no recovery attempt
+- **Variable names generic**: `param_1`, `iVar1`, `uVar1` obscure semantic meaning that source had (`size`, `result`, `counter`)
+- **No comment recovery**: Original extensive comments about preprocessing behavior, expected values, and test purposes completely absent
+- **Type precision degraded**: `undefined4` used for pointer parameters, losing const-correctness and specific integer widths
+- **Conditional compilation invisible**: No indication that `param_conditional_compile` had an alternate DEBUG_MODE branch that was compiled out
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making code navigation and purpose identification straightforward despite other readability losses.
+
+### Most Needs Improvement
+- **Literal Clarity (3/10)** - Complete failure to recover macro constants; every magic number (0x400, 0x40, 0xdef0, 0x11a) should have associated symbolic names or comments explaining origin.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Macro constant recovery**: Analyze repeated literal values across functions and suggest symbolic constant names (e.g., detect 0x400 used in size comparisons → suggest MAX_SIZE)
+2. **Variable name inference from usage patterns**: Analyze how parameters are used (comparison vs. arithmetic vs. pointer) to suggest semantic names (`size` for comparison operands, `counter` for loop variables)
+3. **Preprocessing metadata preservation**: When debug symbols available, recover original macro definitions and conditional compilation branches as comments indicating "this branch was compiled with DEBUG_MODE undefined"

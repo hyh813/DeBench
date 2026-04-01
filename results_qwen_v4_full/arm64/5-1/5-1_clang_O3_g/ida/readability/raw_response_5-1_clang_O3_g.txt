@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `result`, `exception`). The string buffer `v1[31]` in `test_cpp_member_func` should be named `name` based on source usage pattern.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions recovered well from mangled names (`test_cpp_member_func`), but utility functions remain generic (`sub_D60`, `sub_137C`, `sub_1464`). Partial demangling achieved.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate without explanation (4700, 1001, 130, 30, 200, 14). These are optimization-folded constants that obscure original computation logic (e.g., `4700` hides `10 + 34 + 4660`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__fastcall` calling conventions, register hints (`// x0`, `// w22`), stack annotations (`[xsp+Ch] [xbp-24h]`). Some noise but not overwhelming.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions collapsed to single `return` statements due to aggressive optimization. Remaining functions (Container, RTTI) show reasonable if/else but lack original loop structures.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation—each test function and class method is distinct. Container<int> methods properly separated. However, many functions are trivial due to constant folding.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally in decompiled portions. No excessive jumps or goto statements in recovered logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but this is because optimization eliminated most logic. RTTI code shows some redundant type checks that could be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results—`Container<int>` and `Container<double>` recovered well, but many types degraded to `_QWORD*`, `_DWORD*`, `__int64`. Lost distinction between `size_t` and `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures partially recovered (Container has `size` and `data` fields), but vtables shown as raw pointers (`&off_11D58`). Most class layouts lost to optimization.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(_QWORD *)`, `(__int64)`, function pointer casts (`void (__fastcall **)(void *)`). RTTI code has particularly problematic pointer arithmetic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments—only function headers and register annotations. No algorithm explanations, no recovery of original Chinese comments explaining test purposes.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms completely unrecognized. RAII patterns, virtual dispatch, template instantiation not identified or explained. Lambda capture semantics lost.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("positive sp value has been detected, the output may be wrong!", "FAILED to decompile" for 20 functions). Helpful but inconsistent coverage.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts (`__cxa_throw`, `__cxa_begin_catch`) failed to decompile entirely.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Virtual dispatch shown (`obj->_vptr$Base`) but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no clear module structure. Related test functions not grouped. No namespace recovery.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 20 functions failed to decompile (library functions like `printf`, `strlen`, `__cxa_throw`). Would require extensive stubs and linking to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+6+3+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):   (5+7+7+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type System):  (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):     (3+3+6+2)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):   (5+5+3)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.74/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Constant folding eliminated all test logic** - Functions like `test_cpp_member_func()` return `4704` directly instead of showing object construction and method calls
+- **Variable names are generic** - `v1[31]` should be `name`, `exception` should indicate exception type being thrown
+- **Magic numbers unexplained** - Values like `4700`, `1001`, `130`, `30` hide original computations
+- **20 library functions failed to decompile** - Critical C++ runtime functions (`__cxa_throw`, `__dynamic_cast`, `printf`) missing
+- **Type degradation** - Class vtables reduced to raw pointers (`&off_11D58`) losing semantic meaning
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Each test function and class method properly separated with appropriate granularity; Container<int> methods correctly identified as distinct functions
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or exception contracts documented; critical for understanding C++ exception handling behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant-folded logic** - When functions return compile-time constants, attempt to reconstruct original computation from debug symbols or pattern matching
+2. **Infer semantic variable names** - Use usage patterns to name `v1[31]` as `name` when used with `strlen()` and string literals
+3. **Document C++ runtime calls** - Provide stubs or documentation for failed decompilations of `__cxa_*` functions with explanation of their exception handling semantics

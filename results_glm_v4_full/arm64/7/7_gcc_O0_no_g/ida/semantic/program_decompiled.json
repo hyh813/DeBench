@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_O0_no_g/ida/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "Testing obfuscation, optimization, and edge cases:\n  Fake branch result: 10\n  Opaque predicate result: 20\n  Instruction substitution result: 225\n  String encryption result: 44\n  Tail call optimized result: 500500\n  Non-tail call result: 5050\n  Vectorized loop result: 44\n  Link-time optimization result: 20\n  Division by zero result: 2\n  Null pointer dereference result: 41\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

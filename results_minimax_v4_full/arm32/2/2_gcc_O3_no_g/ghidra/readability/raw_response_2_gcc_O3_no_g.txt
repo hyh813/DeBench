@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `param_1`, `param_2`, `iVar1`, `piVar2`, `local_14`, `local_64`. The original source had meaningful names like `x`, `c`, `arr`, `n`, `str` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellent - they match the original source almost exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The verb choices accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show computed values clearly (e.g., `0xf` for 15, `0x2d` for 45), but magic numbers like `0x41` (ASCII 'A'), `0x20` (32 for case conversion), `0x1a` (26 letters) are unexplained. The decompiler doesn't annotate these as ASCII or bit operations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", stack_chk_fail references, __gmon_start__ calls. The float/double functions (`__muldf3`, `__addsf3`) are 100+ lines of raw floating-point emulation code that should be abstracted.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is preserved (if/while/do-while), but `array_2d_stack` and `array_3d` are completely unrolled into 10 and 125 separate array accesses respectively. At -O0 this is excessive - the original had clear for loops. Some pointer arithmetic makes loops harder to recognize.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity generally matches source, but `binary_tree_sum` is ~200 lines of unrolled code vs ~10 lines in source. The floating-point library functions (`__muldf3`, `__addsf3`) are 100+ lines each and should be abstracted as library calls.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `array_3d` has 125 consecutive array element additions disrupting linear flow. `array_2d_stack` has 10 sequential additions. These should be loops but are fully unrolled, making the code read as a long list of operations rather than an algorithm.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Massive redundancy from loop unrolling - `array_3d` has 125 nearly identical lines: `param_1[1] + *param_1 + param_1[2] + ...`. This is the most severe readability issue. The decompiler should recognize this pattern and reconstruct the loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used where source had `char`, `short`, `long`, `long long`. Uses `uint`, `undefined4`, `undefined8`, `ushort`, `byte` but loses signed/unsigned distinction for many variables. Const/volatile qualifiers are lost (`const_param` just shows `int *param_1`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union/enum types recovered. `struct_simple` receives `int *param_1` instead of `Point3D *p`. Field access is via array indexing: `*param_1 + param_1[1] + param_1[2]` instead of `p->x + p->y + p->z`. All composite type information is completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe operations: raw pointer arithmetic (`param_1 + -4`), function pointers cast to `code *`, no bounds checking on array access. The `ptr_const` function shows `*param_1 << 1` which should be `*param_1 + *param_1` to avoid overflow, but the type system doesn't catch this.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comment at file level. No function-level comments explaining purpose, parameters, or return values. The warning comments ("WARNING: Could not recover jumptable") are useful but not explanatory.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognizable (linked list traversal in `linked_list`, binary tree in `binary_tree_sum`), but not explicitly named or documented. The decompiler doesn't say "this is a linked list traversal" - you have to infer it from the pointer chasing.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage: "WARNING: Could not recover jumptable", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", "WARNING: Treating indirect jump as call". However, these are generic and don't explain the actual impact on analysis.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_oob` has undefined behavior (the original source even notes this is a negative test). No contract information recovered whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships documented. We don't know what calls `process_char` or `double_value`. No global variable usage transparency. The code is presented in isolation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in a single file matching the original single-C-file structure. However, no logical grouping or section headers. The test functions are interspersed with the functions they test.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code requires linking against libc (`puts`, `__printf_chk`), libm (`__mulsf3`, `__addsf3`), and has undefined references to `__stack_chk_fail`, `__gmon_start__`. The floating-point library functions should be recognized as library calls, not inlined.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable names are all generic (`param_1`, `iVar1`, `local_64`) - completely loses semantic meaning from source
+- Composite types (structs, unions, enums) not recovered - all become raw pointer arithmetic
+- `array_3d` function has 125 nearly identical lines from loop unrolling - should be a simple loop
+- No type definitions recovered - `Point3D *p` becomes `int *param_1`
+- No comments explaining any function purpose or algorithm
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names match the original source almost perfectly: `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`. This is the strongest area of the decompilation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+All struct, union, and enum types are completely lost. The decompiler treats everything as raw memory accesses (`param_1[0]`, `param_1[1]`, `param_1[2]`) rather than named fields (`p->x`, `p->y`, `p->z`). This is a fundamental loss of semantic information.
+
+**Top 3 Recommendations:**
+1. Recover struct/union layout definitions with field names from memory access patterns
+2. Detect loop unrolling patterns (like the 125-element array_3d) and reconstruct loops
+3. Infer variable names from usage patterns - e.g., `param_1` used as array with index should be named `arr` or `array`

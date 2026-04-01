@@ -1,0 +1,11 @@
+Testing obfuscation and optimization...
+Obf L402D: 10
+Obf L403D: 20
+Obf L404D: 225
+Obf L405D: 0
+Opt L401: 500500
+Opt L401_0: 5050
+Opt L402: 336924692
+Opt L501 LTO: 20
+Edge L301D: 2
+Edge L302D: 41

@@ -1,0 +1,99 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_c` instead of semantic names like `size`, `counter`, `exec_mem`, `page_size` from the original source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`) likely due to `-g` debug symbols, matching original source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers replace macros (`0x400` for MAX_SIZE, `0x40` for BUFFER_COUNT*4, `0xdef0` for platform constant) with no explanation; string literals become `DAT_` references.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts; some unnecessary temporaries (`iVar1`, `uVar2`) but no register spilling noise or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures translate well to idiomatic C (if/else, do-while loops); `param_asm_clobber` correctly recovers loop from assembly without goto spaghetti.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries preserved exactly matching source; no inappropriate inlining or fragmentation; each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally; early returns used appropriately; nesting depth stays reasonable (max 3-4 levels in `param_memory_protection`).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Constant folding applied appropriately (e.g., `call_macro_constants` returns `0x40` directly); no dead code or duplicate expressions observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` replaces specific types (`size_t`, `int32_t`); `undefined4` return types appear; pointer types generally correct but `__atomic_fetch_add_4` uses `undefined4` for pointer parameter.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code to evaluate; basic pointer/array distinctions preserved; `int *param_1` correctly identified in `param_asm_clobber`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(void *)0x0`, `(undefined4 *)mmap(...)`); pointer arithmetic in `param_asm_clobber` is safe; no obvious buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output despite original having extensive documentation about macro behavior, preprocessing, and assembly semantics; complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Common patterns recognizable (array sum loop, memory copy, atomic operations) but not explicitly identified or named; assembly-to-C translation is accurate but unlabeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No warnings about uncertain recovery areas; `DAT_` references indicate unresolved strings but no explanation; assembly recovery appears confident without caveats.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions/postconditions documented; error paths exist (`if (__addr != (void *)0xffffffff)`) but not labeled as error handling; return value semantics unclear.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear and traceable; global variable `global_var` visible; `DAT_` references obscure string relationships; call graph inferable from code.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order matching source; related functions grouped (preprocessing tests together, asm tests together); no arbitrary scattering.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared but `DAT_` references need resolution; would need stubs for `__atomic_fetch_add_4`, `sysconf`, `mmap`; moderate patching required to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Avg Score | Weight | Contribution |
+|-------|-----------|--------|--------------|
+| L1: Lexical Clarity | 6.00 | 30% | 1.80 |
+| L2: Structural Intelligibility | 8.25 | 25% | 2.06 |
+| L3: Type System Fidelity | 6.67 | 20% | 1.33 |
+| L4: Semantic Transparency | 4.25 | 15% | 0.64 |
+| L5: Contextual Coherence | 7.00 | 10% | 0.70 |
+
+**Overall Readability Score: 6.53/10**
+
+### Critical Defects:
+- **Zero comments** despite original having extensive documentation about macro semantics and preprocessing behavior
+- **Magic numbers everywhere**: `0x400`, `0x40`, `0xdef0`, `0x117` replace named constants without explanation
+- **Generic variable names**: `param_1`, `iVar1`, `uVar1` obscure semantic meaning (should be `size`, `result`, `counter`)
+- **String literals as DAT_ references**: `puts(&DAT_00011283)` instead of actual string content
+- **Type degradation**: `undefined4` return types and `__atomic_fetch_add_4(undefined4 param_1)` loses pointer semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols (`-g` flag) enabled perfect function name recovery, preserving original semantic intent completely.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all context about macro expansion, preprocessing behavior, and assembly semantics that the original source carefully documented.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from debug info**: When `-g` symbols are available, annotate magic numbers with their original macro names (e.g., `// MAX_SIZE = 0x400`)
+2. **Preserve string literals inline**: Instead of `DAT_` references, embed actual string content where possible for immediate readability
+3. **Add decompilation confidence annotations**: Flag areas where recovery is uncertain (e.g., `// RECOVERED: assembly loop pattern`) and document transformation decisions

@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a0`, and `a1`, providing no semantic context (e.g., `sum`, `count`, `target` are lost).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from the debug symbols (e.g., `sequential_ops`, `loop_break`), accurately reflecting the original source intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers like `1717986919` (for division by 10) and `4294967295` (UINT32_MAX/-1) are used without explanation, and string literals are opaque pointers (e.g., `&g_403060`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is relatively clean of compiler artifacts like redundant stack frames, though frequent masking with `& 4294967295` adds visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic control flow is readable, but complex patterns like Duff's device (`duffs_device`) are reduced to a web of gotos, and `switch_fallthrough` is awkwardly flattened.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function granularity matches the source well; helper functions like `op_add` and `state_idle` are correctly separated, and no monolithic inlining occurred.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Several functions like `duffs_device` and `switch_fallthrough` rely on forward/backward gotos (`LABEL_401469`), disrupting top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: No obvious dead code or loop unrolling artifacts clutter the logic, though the compiler's strength reduction (division to multiplication) makes the logic denser.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct (`unsigned int`, `unsigned long long`), but signedness is often inferred as unsigned (e.g., parameters in `sequential_ops`), and `int` returns are sometimes masked.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: The local array `matrix[3][4]` in `loop_multi_exit` is flattened into individual stack variables `v0` through `v11`, completely losing the array structure.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts appear safe and consistent with the architecture; no dangerous type confusion is evident in the decompiled output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of magic numbers, leaving complex optimizations unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like division-by-constant (implemented as magic multiplication) are not annotated, and Duff's device is not identified as a known pattern.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Unusual constructs like the computed goto (`goto (&v0)[a1]`) are presented without warning or explanation of their non-standard nature.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `n > 0` in `duffs_device` is lost).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Function calls are clear, but string references are opaque global addresses, making it hard to see what is being printed without looking up the address.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped, but runtime startup code (`_init`, `frame_dummy`) is intermixed with the test functions, reducing logical separation.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code relies on undefined global variables (`g_403060`) and runtime functions (`__printf_chk`) and will not compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 3 + 7) / 4 = 5.5
+L2_avg: (6 + 8 + 5 + 7) / 4 = 6.5
+L3_avg: (7 + 3 + 8) / 3 = 6.0
+L4_avg: (1 + 2 + 2 + 1) / 4 = 1.5
+L5_avg: (4 + 6 + 1) / 3 = 3.67
+
+Overall = (5.5 × 0.30) + (6.5 × 0.25) + (6.0 × 0.20) + 
+          (1.5 × 0.15) + (3.67 × 0.10)
+Overall = 1.65 + 1.625 + 1.2 + 0.225 + 0.367
+Overall = 5.067
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **Array Flattening**: The `matrix[3][4]` array in `loop_multi_exit` is destructured into 12 separate variables (`v0`-`v11`), destroying the data structure semantics.
+- **Magic Numbers**: Compiler optimizations like division by 10 (`i * 1717986919 >> 34`) are presented literally without comments explaining the underlying operation.
+- **Opaque Literals**: String constants are replaced with pointers to global data segments (e.g., `&g_403060`), making the output text unreadable.
+- **Control Flow Obfuscation**: Duff's device is decompiled into a spaghetti of labels and gotos, failing to reconstruct the structured loop.
+- **Missing Documentation**: Complete absence of comments or annotations for complex logic (e.g., computed gotos, state machines).
+
+### Best Quality Aspect
+- **Function Naming (Score: 9/10)**
+- **Why?**: The decompiler successfully preserved the original function names from the debug symbols, making the high-level purpose of each unit immediately identifiable.
+
+### Most Needs Improvement
+- **Semantic Transparency (Score: 1.5/10)**
+- **Why?**: The lack of comments, idiom recognition, and anomaly indication turns the code into a raw logic puzzle, failing to convey the "why" behind the "what."
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Stack Arrays**: Implement pattern matching to detect contiguous stack variable initializations and accesses (like `v0`..`v11`) and reconstruct them as local arrays.
+2.  **Annotate Compiler Optimizations**: Detect common strength reduction patterns (e.g., multiplication by magic constants for division) and annotate them with the original operation (e.g., `/* x / 10 */`).
+3.  **Inline String Literals**: Replace references to global string data pointers with the actual string literal content at the usage site to improve readability.

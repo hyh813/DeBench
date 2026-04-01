@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`. Local variables use cryptic names like `iVar1`, `piVar2`, `puVar3`. For example, `array_1d_stack` uses `int *param_1, int param_2` instead of `int *arr, int n`. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`. However, some internal functions like `FUN_00011594` and `FUN_0001179c` are not recovered. Main API is well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The code is littered with unexplained magic numbers: `0xbfU` and `0x1a` in process_char (should be 'A'-1 and 26), `0x10000` in process_short for 16-bit truncation, `0x2c` (44 bytes) stride in array_2d_stack, `0x14` (20 bytes) offset in struct_deep. Float constants like `0x3fc00000` are unexplained. Test functions print hardcoded values like `0x61` ('a') without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: unresolved external functions (`call_weak_fn`, `__gmon_start__`), `UNRECOVERED_JUMPTABLE` markers, complex floating-point library functions (`__muldf3`, `__adddf3`, `__mulsf3`) inlined unnecessarily, `undefined4`, `undefined8` types throughout, and dead code patterns in test functions with unused local variables.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural (do-while loops), but some transformations are awkward: `process_char` uses `(byte)(param_1 + 0xbfU) < 0x1a` instead of simple range check, `process_short` uses `(param_2 + param_1) * 0x10000 >> 0x16` for 16-bit truncation instead of `short` cast. The `array_2d_stack` uses complex pointer arithmetic with fixed stride `0x2c` instead of 2D array indexing.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Each test function (`test_data_types_l1`, `test_array_types`, etc.) is separate from the functions it tests. Minor issues: some internal helper functions like `FUN_00011594` (float/double library function) are not properly identified and separated from application logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Early returns in `array_1d_stack` and `ptr_increment` are appropriate. Some complexity in `array_complex_index` with nested conditionals for bounds checking. The `enum_switch` uses lookup table which is efficient but slightly harder to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal. Some common subexpression patterns in test functions but they're data setup, not logic. The floating-point library functions are duplicated but that's necessary for the math operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type precision is inconsistent. Basic types like `char`, `int` are correct, but `process_float` returns `void` instead of `float`, `process_double` takes `undefined4` parameters instead of `double`, `process_ll` returns `undefined8` instead of `long long`. `ptr_triple` uses `undefined4 *` instead of `int ***`. `ptr_offset` returns `undefined4` instead of `int`. `ptr_void` uses `uint *` instead of `void *`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is severely degraded. `struct_simple` uses `int *param_1` with array indexing `param_1[1] + *param_1 + param_1[2]` instead of `Point3D *p` with `p->x + p->y + p->z`. `struct_nested` uses raw offsets: `param_1[3] + *param_1`. `struct_deep` uses hardcoded offsets: `*(int *)(param_1 + 0x14) + *(int *)(param_1 + 8)`. `struct_with_ptr` uses `param_1[1]` for next pointer instead of `node->next`. No enum names recovered (uses `STATE_IDLE`, `STATE_RUNNING` as numeric values).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: `array_complex_index` uses unsafe pointer arithmetic with computed offsets, `ptr_void` has unsafe casts between `uint*`, `byte*`, and `int*`, `ptr_triple` has incorrect pointer type handling (`undefined4 *param_1` instead of `int ***`). The bit-field handling in `struct_bitfields` uses manual bit manipulation instead of proper field access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments. Only auto-generated markers like `// Function: process_char @ 0x105c8` and data section references like `&DAT_00012453`. No explanation of algorithms, no documentation of preconditions/postconditions, no indication of decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The linked list traversal in `linked_list` and `doubly_linked_list` is not recognized as such. Binary tree traversal in `binary_tree_sum` is not identified. No recognition of common patterns like pointer chasing, array iteration, or state machines.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some indicators of problems: `UNRECOVERED_JUMPTABLE` in `ptr_func_simple`, but no flagging of suspicious patterns. No warnings about potential undefined behavior (like the out-of-bounds access in `array_oob`). No indication of indirect call resolution failures. The `opaque_handle_create` function is empty but no comment explaining why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contracts recovered. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariants documented. The `array_complex_index` has bounds checking logic but no comments explaining the boundary conditions. No documentation of error return values.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear (test functions call the functions they test), but not documented. No indication of who calls each function (`// Called by:`). No documentation of global variable usage. Callback relationships (like `ptr_func_simple` taking function pointer) are not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: data type functions, array functions, pointer functions, struct functions, test functions. Static functions are properly marked. However, the file is a single monolithic output - no separation into logical sections or headers.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is. Issues include: undefined types (`undefined4`, `undefined8`, `bool`, `code`, `EVP_PKEY_CTX`), unresolved external functions (`printf`, `puts`, `memset`, `abort`), missing type definitions. The test functions have complex stack layouts that won't compile. No dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `param_2`, `iVar1`, `piVar2`) making code nearly impossible to follow
+- Composite types (structs, unions, enums) are completely lost - all replaced with raw pointer arithmetic and magic offsets
+- No comments explaining any logic, algorithms, or decompilation confidence
+- Type precision is severely degraded (`undefined4`, `undefined8`, `void` return types where `float`, `long long` expected)
+- Magic numbers everywhere without explanation (0xbfU, 0x10000, 0x2c, 0x14, etc.)
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Most function names match original source exactly, making it easy to identify what each function does
+
+**Most Needs Improvement:** Type System Fidelity (scored 4.3/10)  
+- Composite type recovery is nearly absent (structs become raw pointer arithmetic), type precision is severely degraded, and type safety issues abound
+
+**Top 3 Recommendations:**
+1. Recover struct/union types from field access patterns - use array indexing like `param_1[2]` to infer struct fields with 3 int members
+2. Add meaningful variable names by analyzing usage patterns (e.g., loop counter, array pointer, size parameter)
+3. Replace magic numbers with named constants where meaning can be inferred (0x10000 → (1 << 16) for 16-bit mask, 0x2c → 11*sizeof(int) for matrix stride)

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `result`) with no semantic meaning. Original source had meaningful names like `sum`, `i`, `n`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: User functions retain original names (`process_char`, `array_1d_stack`, `struct_simple`) but runtime helpers use address-based names (`sub_4003f8`, `sub_400498`). Mixed quality across codebase.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `65`, `255`, `26`, `4294967295` replace `'A'`, `'Z'`, character ranges. Floating-point constants appear as raw bit patterns (`0x3f000000`, `2576980378`).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifacts: `vvar_36{r64|4b}`, `cc_op`, `cc_dep1`, `cc_ndep` variables from register tracking. Runtime functions (`__muldf3`, `__adddf3`) expanded to 300+ lines of bit manipulation noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive `goto` usage replaces natural loops. Simple conditionals become `armg_calculate_condition()` calls. Original `for`/`while` loops converted to `do-while` with manual counter management.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Runtime library functions bloat to hundreds of lines (`__muldf3` is 400+ lines). User functions reasonable size but lack proper structure. No recovery of inlined helpers.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps with labels (`LABEL_4004bc`, `LABEL_401870`) disrupt reading flow. Deep nesting in runtime functions with non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repeated `armg_calculate_condition()` patterns throughout. Runtime functions contain massive duplicated bit-manipulation logic that should be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type loss: `char`, `short`, `int`, `long`, `float`, `double`, `long long` all become `unsigned int`. Pointer types degraded to `unsigned int*`. No const/volatile preservation.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs become `struct_0`, `struct_1` with `field_0`, `field_4` - all semantic field names (`x`, `y`, `z`, `data`, `next`, `width`, `height`) lost. Unions not distinguished from structs. Bitfields reduced to manual bit operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int*)`, `(char*)`, `(void*)`). Pointer arithmetic on `unsigned int` instead of proper types. Function pointer signatures lost (`ptr_func_simple` takes `unsigned int*` instead of proper function pointer type).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and scenarios. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition: linked list traversal, tree recursion, array summation all appear as raw operations. No identification of common algorithms or data structure patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about problematic code. Complex floating-point runtime functions presented without indicating they're compiler-generated helpers. No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original null checks and bounds validation not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but globals use opaque names (`g_4024c3`, `g_413008`). Callback relationships unclear. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. No header file structure. Related functions not organized by category (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies declared but many runtime functions incomplete or incorrect. Would require extensive stubbing and modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+2)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+4+4+3)/4 = 3.50 × 0.25 = 0.88
+Level 3 (Type):        (2+2+3)/3   = 2.33 × 0.20 = 0.47
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 2.92/10
+```
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **Complete type erasure**: All distinct C types (`char`, `short`, `float`, `double`, `long long`) collapsed to `unsigned int`
+- **Zero semantic comments**: Original 830 LOC with extensive documentation reduced to comment-free output
+- **Runtime function bloat**: Compiler helper functions (`__muldf3`, `__adddf3`) expanded to 300-400 lines each
+- **Struct field names lost**: All struct/union fields renamed to `field_0`, `field_4` losing all semantic meaning
+- **Control flow degradation**: Natural loops converted to `goto`/`do-while` with `armg_calculate_condition()` calls
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- User-defined function names were preserved from debug symbols (`process_char`, `array_1d_stack`, `struct_simple`), providing some anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation means a reverse engineer must infer all semantics from opaque variable names and complex bit operations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols**: The `-g` flag was present during compilation but type metadata wasn't utilized - leverage DWARF debug info for precise type recovery.
+2. **Recognize and collapse runtime library patterns**: Detect compiler-generated helper functions (`__muldf3`, `__adddf3`) and replace with readable expressions (`a * b`, `a + b`).
+3. **Infer variable names from usage context**: Analyze variable usage patterns to suggest semantic names (loop counters → `i`, accumulators → `sum`, pointers → `current`/`head`).

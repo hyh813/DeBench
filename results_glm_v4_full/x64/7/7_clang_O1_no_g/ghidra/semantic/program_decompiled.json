@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_clang_O1_no_g/ghidra/syntactic/bin/7_clang_O1_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization edge cases\n\nOpaque predicate result: 10\nInstruction substitution: 20\nString encryption length: 225\nTail call optimized: 35\nNon-tail call result: 500500\nVectorized loop sum: 5050\nDivision by zero caught: -2073143230\nNull pointer dereference test:\nBuffer overflow test: 30\nInteger overflow result: 41\nUndefined behavior result: 30\nImplementation defined: 2000000000\nAll tests completed!\nFinal status: 47\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

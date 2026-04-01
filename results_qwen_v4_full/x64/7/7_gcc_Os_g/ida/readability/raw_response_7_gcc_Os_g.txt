@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`) requiring significant effort to track purpose. Original source had semantic names like `result`, `p1`, `p2`, `p3`, `div2`, `mod16`, `mul15` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`), matching original source. However, helper functions use generic names (`sub_1020`, `sub_1030`) and metadata inconsistency (claims Ghidra but header says IDA Pro).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: signal constants `8` and `11` (should be `SIGFPE`, `SIGSEGV`), `0x28u` (stack canary offset), `90` (should be `'Z'` or `0x5A`), `0x20u` (buffer size). Original used character literals and named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__fastcall`/`__cdecl` calling conventions, `__readfsqword(0x28u)` stack canary checks, type casts like `(__sighandler_t)`. 13 library functions marked "FAILED to decompile" creating visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recovered as `while`/`for` constructs (e.g., `param_opaque_predicate`, `param_vectorized_loop`). Tail recursion in `param_tail_call_optimized` properly converted to iteration. However, `decrypt_string` has awkward loop: `for ( i = v6; *i; *(i - 1) = v9 )` obscures the XOR operation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity preserved appropriately, but critical logic lost: `param_fake_branch` reduced to `return x;` (fake branch conditions eliminated), `param_buffer_overflow_stack` returns just `a1` (overflow logic removed). Constant folding in `call_*` functions hides original computation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. No excessive `goto` usage. Minor disruption in `decrypt_string` where loop body assignment `*(i - 1) = v9` appears after increment, confusing the XOR decryption flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Aggressive constant folding: `call_fake_branch` returns `10` directly, `call_tail_call_optimized` returns `500500`, `call_link_time_optimization` returns `20`. While efficient, this obscures the original test logic and expected value verification.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of specific types (`int32_t`). Some signed/unsigned confusion: `param_buffer_overflow_stack` changed from `int x` to `unsigned int a1`. Pointer types generally correct but function pointers use generic `(__sighandler_t)` casts.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Critical failure: bitfield struct in `param_implementation_defined` completely lost—function just returns constant `47`. No struct definitions recovered. Array parameters handled correctly (`int *a, int *b, int *c`) but composite type semantics erased.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(__sighandler_t)div_zero_handler`, `(__int64)` conversions throughout. `param_null_pointer_deref` passes literal `0` instead of `NULL` (technically valid but unclear). No buffer overflow warnings despite vulnerable patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output. Original source had extensive documentation: obfuscation technique explanations, expected values ("期望：10"), test scenario markers ("[SCENE-CRYPTO]"). No decompilation confidence indicators or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition: GCD algorithm in `param_opaque_predicate` not identified, tail recursion optimization not noted, string XOR decryption pattern not labeled. Original code's obfuscation techniques (opaque predicates, instruction substitution) completely unmarked.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end ("FAILED to decompile: free @ 0x4210"). Warning present for `_start` ("positive sp value has been detected"). However, **critical semantic losses not flagged**: `param_fake_branch` losing fake branch logic, `param_buffer_overflow_stack` losing overflow behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expected values in comments ("期望：10", "期望：225", "期望：500500"). Error conditions (division by zero returns -1, null pointer returns -1) not documented in decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code structure. Global variables identifiable (`encrypted_0`, `jmp_buffer`, `segv_buffer`, `div_zero_caught`). No call graph documentation or callback relationship explanations. Signal handler connections not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Static functions properly identified (`deregister_tm_clones`, `register_tm_clones`). No header file structure, no namespace organization, no logical grouping comments between sections.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: **13 library functions failed decompilation** (free, malloc, signal, strlen, etc.). Compiler-specific annotations (`__fastcall`, `__readfsqword`) prevent portability. External dependencies not documented. Will not compile standalone without significant stubbing and modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+6+7+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              5.39/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects
+- **Zero comments** despite original having extensive documentation explaining obfuscation techniques and expected values
+- **Variable names completely generic** (`v0`-`v7`) losing all semantic meaning from original (`result`, `p1`, `p2`, `div2`, `mod16`)
+- **Semantic logic lost** in `param_fake_branch` (fake branch conditions eliminated) and `param_buffer_overflow_stack` (overflow behavior removed)
+- **Bitfield struct completely unrecovered** in `param_implementation_defined`—returns constant `47` instead of computing from struct fields
+- **13 library functions failed decompilation** preventing standalone compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`), maintaining semantic connection to original code purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe deficit; original source had extensive documentation explaining obfuscation techniques, test scenarios, and expected values that would be invaluable for understanding the decompiled logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments explaining obfuscation techniques and expected test values.
+2. **Infer semantic variable names from usage patterns** - Variables used in specific contexts (e.g., `v2` in GCD loop should be `gcd_result`, `v3` in boolean check should be `is_identity`) should receive meaningful names.
+3. **Flag semantic loss explicitly** - When optimization eliminates code (fake branches, overflow checks), add warnings like `// WARNING: Original fake branch condition optimized away` to alert analysts to logic changes.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a1`, `a2`, `temp_1`) with no semantic meaning. Only a few variables like `thread_return`, `newthread`, and `buffer` provide hints about purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcmp`, `param_mutex_lock`). Helper functions like `thread_compute` and `signal_handler` are appropriately named, though some entry points use generic names (`sub_2020`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive magic numbers throughout: `0x2A` (42), `0xFFFFFFFFLL` (-1), `4294967293LL`, syscall numbers (2, 3, 10, 14 for signals). Signal numbers 10/14 should be `SIGUSR1`/`SIGALRM`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(__int64)`, `(_DWORD *)`), stack frame annotations (`[rsp+0h] [rbp-28h]`), and 59 "FAILED to decompile" entries pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered as if/else and loops. Signal handling uses do-while with break appropriately. Fork/exec branching is recognizable despite optimization artifacts.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well. Thread helpers (`thread_compute`, `thread_sum`, `thread_increment`) properly separated. Some functions are lengthy but maintain single responsibility.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Several functions use goto patterns (`LABEL_6` in `param_mutex_lock`, `param_atomic_ops`). Forward jumps disrupt top-to-bottom reading flow unnecessarily.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Duplicate error handling patterns across functions. Some redundant type casts and variable assignments from compiler artifacts not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types (`__int64`, `_DWORD`, `_QWORD`) instead of precise types. Some proper types preserved (`FILE*`, `pthread_t`, `size_t`), but pointer types often degraded.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct stat` partially recovered with `st_size`, `st_dev`. `ThreadData` struct lost (accessed as array). `sockaddr` accessed via pointer arithmetic (`addr.sa_data[6]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD *)thread_return`, `(char *)&v3 + 4`. HIDWORD/LODWORD usage for 64-bit splitting creates type confusion. Pointer arithmetic on typed pointers throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. No algorithm descriptions, no decompilation confidence indicators. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). pthread patterns partially identified. Signal handling and producer-consumer patterns not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 59 functions marked "FAILED to decompile" at end. No inline warnings for suspicious patterns (HIDWORD usage, stack manipulation). Silent failures in complex logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: ptr != NULL"). Error return values not explained. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used without context or declaration visibility.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order. No file/module separation - all code in single output. Related functions grouped but no namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 59 external functions failed to decompile. Would require extensive stubbing. Architecture mismatch (original ARM64, decompiled x64). Many dependencies unresolved.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+3+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (7+7+5+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.89/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **59 functions failed to decompile** including core libc functions (`strcpy`, `printf`, `malloc`, `pthread_create`)
+- **Variable names are generic** (`v0`, `v1`, `a1`) obscuring semantic purpose throughout
+- **Magic numbers everywhere** - signal numbers (10, 14), error codes (4294967293LL), syscall numbers (2, 3) unexplained
+- **Type degradation** - precise types replaced with `__int64`, `_DWORD`, `_QWORD` losing type safety
+- **No comments or documentation** - zero explanation of algorithms, contracts, or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names largely preserved (`param_strcpy`, `call_mutex_lock`, `param_signal_handling`), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no comments explaining non-trivial logic, making complex functions like signal handling and thread synchronization extremely difficult to understand.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size`, `length`, `count`)
+2. **Replace magic numbers with named constants** - detect syscall numbers, signal numbers, and error codes, suggesting symbolic names
+3. **Add decompilation confidence annotations** - mark uncertain reconstructions, unresolved indirect calls, and type ambiguities inline rather than only in a failure list

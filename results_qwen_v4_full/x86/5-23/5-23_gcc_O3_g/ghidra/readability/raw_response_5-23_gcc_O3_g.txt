@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters preserve original names (`size`, `x`, `y`, `counter`, `increment`), but local variables are generic (`iVar1`, `iVar2`, `__len`, `__addr`). The decompiler fails to infer semantic names like `page_size` or `exec_mem` from usage patterns in `param_dynamic_code`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`param_macro_constants`, `call_asm_clobber`, `test_preprocessing_features`). Action-oriented naming clearly indicates purpose, matching source exactly for most user-defined functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical loss of macro semantics - `MAX_SIZE` (1024) becomes `0x400`, `BUFFER_COUNT * 4` (64) becomes `0x40`. Magic hex numbers like `0xdef0`, `0x11a`, `0x32` appear without explanation, obscuring the original constant definitions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `get_pc_thunk_*` injection warnings, stack canary checks (`__stack_chk_fail_local`), and "Unresolved local var" comments. The `call_asm_multi_insn` function has 32 lines of explicit `dst[0] = '\0'` through `dst[0x1f] = '\0'` initialization that should be `memset`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures recovered well - `for` loops in `param_asm_clobber` and `param_asm_multi_insn` are idiomatic. However, aggressive constant folding makes `call_macro_constants` return `0x40` directly instead of calling `param_macro_constants(2048)`, losing call relationship clarity.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; each original function remains separate. However, `call_*` wrapper functions are constant-folded to direct returns, losing the semantic relationship of "this calls param_* with specific arguments."
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally with proper if/else/for structures. Stack canary checks at function ends (`if (iVar1 == *(int *)(in_GS_OFFSET + 0x14))`) create minor disruption but are recognizable security patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Severe redundancy in `call_asm_multi_insn` with 32 explicit zero-initializations instead of `memset(dst, 0, 32)`. The `test_asm_features` function duplicates array initialization logic that should be abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`, `char*`), but array types degrade to pointers in some contexts. `call_include_guard` returns `undefined4` instead of `int`, showing type inconsistency. Signed/unsigned distinctions are lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays correctly sized (`char src[10]`, `char dst[32]`, `int arr[5]`). No complex structs in this code to evaluate, but stack arrays are properly recovered with bounds information.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(void *)((int)dst + 1)` in `param_asm_multi_insn` casts pointer to int for arithmetic. `LOCK()/UNLOCK()` pseudo-functions hide actual atomic operation semantics, potentially misleading about thread safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No semantic comments explaining what `param_dynamic_code` does (dynamic code generation) or why `mmap` uses specific flags (7 = PROT_READ|WRITE|EXEC).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Atomic operations recognized as `LOCK()/UNLOCK()` which is good, but no identification of patterns like "self-modifying code" in `param_dynamic_code` or "memory protection workflow" in `param_memory_protection`.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for unresolved variables and calling conventions. Stack canary failures properly noted with "WARNING: Subroutine does not return". However, the critical loss of macro semantics is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). Error returns (-1, -2, -3) in `param_memory_protection` lack explanation of what each value means.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible but string references use opaque `DAT_000121f4` instead of showing format strings inline. Global variable `global_var` is referenced but its purpose isn't documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 58 functions in single output with no logical grouping. Helper functions (`__do_global_dtors_aux`, `deregister_tm_clones`) mixed with user code. No separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__printf_chk`, `mmap`, `sysconf`) without declarations. `DAT_000121f4` style references need resolution. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5 + 9 + 4 + 5) / 4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7 + 7 + 7 + 5) / 4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6 + 7 + 6) / 3 = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (4 + 5 + 7 + 4) / 4 = 5.00 × 0.15 = 0.750
+Level 5 (Contextual):  (6 + 5 + 4) / 3 = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.87/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Macro semantics completely lost**: `MAX_SIZE`, `BUFFER_COUNT`, `DEBUG_MODE` all folded to magic numbers (0x400, 0x40) with no indication of original meaning
+- **Excessive zero-initialization noise**: `call_asm_multi_insn` has 32 lines of `dst[n] = '\0'` instead of `memset`
+- **String literals externalized**: Format strings referenced as `DAT_000121f4` instead of inline, requiring cross-reference lookup
+- **Type inconsistency**: `call_include_guard` returns `undefined4` while similar functions return `int`
+- **Constant folding obscures call relationships**: `call_macro_constants` returns `0x40` directly instead of showing it calls `param_macro_constants(2048)`
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Literal Clarity (4/10)** - Complete loss of macro constant semantics; magic hex numbers replace all named constants, requiring manual reverse-engineering to understand values like 0x400 = MAX_SIZE
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Macro constant recovery**: Detect constant-folded values and cross-reference with common patterns (powers of 2, page sizes) to suggest named constant recovery
+2. **Aggregate initialization simplification**: Recognize sequential array zero-initialization patterns and emit `memset()` or `{0}` initialization
+3. **Inline string literal recovery**: Keep short format strings inline rather than externalizing to DAT_ references, improving immediate readability

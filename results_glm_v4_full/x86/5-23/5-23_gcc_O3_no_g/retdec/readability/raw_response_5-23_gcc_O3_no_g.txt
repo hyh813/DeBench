@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are universally generic (`a1`, `a2`, `a3`) and locals are generic (`v1`, `v2`). Global variables are named `g1` through `g12`, completely obscuring their semantic purpose as string literals or constants.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the source symbols (e.g., `param_macro_constants`, `param_asm_basic`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Critical magic numbers are replaced by nonsensical pointer casts; `MAX_SIZE` (1024) becomes `(int32_t)"loneTable"` and `512` becomes `(int32_t)&g2`, rendering the logic incomprehensible.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Functions are polluted with Position Independent Code (PIC) artifacts like `__x86_get_pc_thunk_bx(v1)` and stack canary checks (`__readgsdword`), which are compiler noise not present in the source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally recognizable, but the `MAX` macro expansion results in a complex signed-overflow check expression `(v1 < 0 == ((v1 ^ a1) & (a2 ^ a1)) < 0 ...)` instead of a simple `a1 > a2`.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries and granularity match the source perfectly; there is no inappropriate inlining or outlining of logic.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns; loop structures are recovered well (e.g., in `param_asm_clobber`).
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Most dead code is removed, but some redundant assignments persist in the SIMD and atomic functions where the decompiler models intermediate register states explicitly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Integer types are generally correct (`int32_t`), but pointers are frequently cast to `int32_t` for arithmetic, losing the distinction between addresses and integers. SIMD types are mapped to `int128_t`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays are handled correctly (e.g., `int32_t v2[5]` implied by access patterns), though no complex structs were present in this specific source to test recovery depth.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent unsafe casts of pointers to integers (e.g., `(int32_t)"loneTable"`) and the use of integer types for pointer arithmetic degrade type safety significantly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like the `MAX` macro check) unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Failed to recognize standard patterns; the `MAX` macro is not simplified, and the atomic operation is not identified as such, appearing as a standard addition.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided for suspicious or failed recoveries, such as the self-modifying code in `param_dynamic_code` being reduced to a constant return, or the loss of atomicity.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-atomic nature of the decompiled `param_asm_atomic` is not flagged against the source's atomic intent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow despite the poor variable naming.
+
+**17. Module Organization:** Score: 9/10
+Justification: The file structure mirrors the source, with functions appearing in a logical order and helper functions grouped appropriately.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: While standard C functions are declared, the reliance on pseudo-intrinsics like `__asm_movaps` and `__readgsdword` would require specific headers or stubs to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Constant `1024` replaced with string pointer cast `(int32_t)"loneTable"`, destroying logic clarity.
+- Atomic operation `lock xadd` decompiled to non-atomic C assignment `*v1 = *v1 + a2`, creating a misleading race condition.
+- Self-modifying code execution in `param_dynamic_code` completely lost; logic reduced to `return a1 + 5`.
+- `MAX` macro decompiled to complex overflow-safe expression instead of simple comparison.
+- Excessive compiler noise (`__x86_get_pc_thunk_bx`) polluting function bodies.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names, making high-level navigation trivial.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The replacement of integer constants with pointer casts and global addresses makes the code logic nearly impossible to decipher at the statement level.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve constant propagation to prevent replacing magic numbers with addresses of unrelated data objects (e.g., `1024` vs `"loneTable"`).
+2. Detect and flag atomic instructions (like `lock xadd`) to preserve semantic intent, potentially using intrinsic functions or comments.
+3. Implement pattern matching to simplify compiler-generated overflow checks back into standard comparison operators (e.g., `a > b`).

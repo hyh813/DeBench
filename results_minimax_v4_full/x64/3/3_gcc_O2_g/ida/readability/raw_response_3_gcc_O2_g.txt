@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `i`, `j`, `result`. The decompiler makes no attempt to infer semantic meaning from usage patterns - for example, in `local_array`, the variable `v1` should be named `i` (loop counter) and `v2` should be `arr` (the array pointer). This is particularly problematic at -O0 where the original variable names are often preserved in debug symbols.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `test_stack_memory`, etc. The only generic names are CRT startup stubs (`sub_1020` through `sub_1110`) which are not part of the original source. The test functions are particularly well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals are clear like `42` (the answer to everything), `10`, `20`, but others are unexplained magic numbers. In `heap_realloc`, the values `0x200000001LL` and `0x400000003LL` appear without explanation (these represent initialized array contents). The stack canary offset `0x28u` is unexplained. However, simple arithmetic results like `20`, `10`, `15` are correctly computed and shown.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. No excessive register spilling artifacts, no debug instrumentation remnants. The `__readfsqword(0x28u)` for stack canary is a minor artifact but expected on x86_64. The code is mostly readable without significant noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - loops are properly recognized as `while` or `do-while` constructs. For example, in `local_array`, the loop `do { *v2++ = v1; v1 += n; } while (v2 != (int*)&v5)` correctly represents the original for-loop. At -O0, there's minimal optimization distortion. Some complex conditions in VLA handling (`vla_stack`) are awkward but that's due to the complexity of the pattern, not poor decompilation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - none are monolithic. The original source's function boundaries are preserved. Each function has a single responsibility (e.g., `heap_basic` allocates and frees, `linked_list_heap` creates and destroys a list). Parameter lists match the original. The test functions properly call sub-functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately (e.g., in `heap_basic`: `if (!v1) return -1;`). Some complexity in VLA/alloca handling creates non-linear patterns, but this is unavoidable given the complex stack manipulation involved.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundant code observed. Dead code from optimization is minimal at -O0. Loop unrolling is not present (as expected at -O0). The code is clean without duplicate expressions or unnecessary operations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Type precision is mixed. Integer types are generic `int` rather than `int32_t` or `size_t`. Pointers are properly typed as `int*`, `char*`, `void*`. However, the decompiler uses `_DWORD*`, `_QWORD*` which are IDA-specific types rather than standard C types. Function pointer types are reasonably accurate (e.g., `int (*f)(int)`). The `n` parameter is correctly typed as `int` matching the original.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types are partially recovered. The `Node` and `TreeNode` structures are recognized but with generic field names (`data`, `next`, `left`, `right`). The `Point` struct is not recovered in `heap_struct` - instead it uses `void*` and computes `3 * x` directly without showing the struct fields. In `global_struct_access`, the return value `30` is hardcoded rather than showing `global_point.x + global_point.y`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety issues present. In `memop_memcpy`, there's an unsafe cast: `*(_DWORD *)((char *)memcpy(dst, src, n) + (n & 0xFFFFFFFFFFFFFFFCLL) - 4)` - this pointer arithmetic is error-prone. In `memop_unaligned_access`, direct cast from `buf + 1` to `int*` is potentially undefined behavior. However, most memory operations are reasonably safe with proper NULL checks.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments present in the decompiled code. There's no explanation of algorithms, no documentation of preconditions/postconditions, no indication of what the magic numbers represent. The only comments are the header indicating it was "Decompiled by IDA Pro 9.1 with Hex-Rays" and some occasional register annotations. At -O0 with debug symbols available, more context could be recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms are recognized but not named. The linked list pattern in `linked_list_heap` is clearly a linked list traversal and creation, but it's not explicitly labeled as such. The memory leak pattern in `memory_leak` is present (malloc without free) but not flagged. The tree creation in `tree_heap_traversal` is recognizable but not named. No explicit pattern naming like "singleton", "factory", "visitor".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies are silently handled. The `stack_alias` function returns constant `20` without showing the pointer aliasing logic - this is a significant semantic loss. The dangling pointer in `dangling_pointer` is shown but not flagged as dangerous. The "positive sp value has been detected" warning in `_start` is present but not explained. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit contracts recovered. Preconditions like "n > 0" in `alloca_usage` are converted to early returns but not documented as preconditions. Postconditions (e.g., "returns heap-allocated value") are not indicated. The error return values (-1, -2) are present but their meaning is not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - `test_stack_memory` calls `local_vars`, `local_array`, etc. Global variable usage is visible (`global_counter`, `global_array`, `file_scope_static`). However, callback relationships like `set_global_callback` setting `global_func_ptr` which is later called could be more explicitly documented. The relationship between `create_tree_node` and `tree_heap_traversal` is implicit but not stated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - stack functions together, heap functions together, static/global functions together, memory operation functions together. This matches the original source organization. However, the decompiled output is a single flat file rather than showing logical grouping or header declarations.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile with minimal modifications. Standard library functions are properly declared (`malloc`, `free`, `memset`, etc.). The main issues would be the IDA-specific types (`_DWORD`, `_QWORD`, `_BYTE`) which would need to be replaced with standard C types. External declarations for `extern_global_var` and `extern_function` are handled correctly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 7) / 4 = 5.50
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (6 + 5 + 6) / 3 = 5.67
+L4_avg = (3 + 5 + 4 + 3) / 4 = 3.75
+L5_avg = (6 + 7 + 8) / 3 = 7.00
+
+Overall = (5.50 × 0.30) + (7.50 × 0.25) + (5.67 × 0.20) + 
+          (3.75 × 0.15) + (7.00 × 0.10)
+        = 1.65 + 1.875 + 1.134 + 0.5625 + 0.70
+        = 5.92/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is nearly useless**: Generic names like `v0`, `v1`, `v2` throughout make tracking variable purpose extremely difficult. At -O0 with debug symbols, this is a major failure.
+- **Struct recovery is incomplete**: The `Point` struct in `heap_struct` is completely lost - the decompiler shows `malloc(8u)` and computes `3 * x` directly without showing struct field assignment (`p->x = x; p->y = x * 2`).
+- **No comments or documentation**: Zero explanation of algorithms, preconditions, or semantic intent. The original source had extensive comments that are completely lost.
+- **Magic numbers unexplained**: Values like `0x200000001LL`, `0x400000003LL` in `heap_realloc` appear without context. The stack canary `0x28u` is unexplained.
+- **Anomalies not flagged**: The `stack_alias` function returns constant `20` losing the pointer aliasing semantics entirely. The dangling pointer pattern is shown but not warned about.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (Level 2)** scored highest at 8/10
+- **Why?** At -O0, function boundaries are preserved perfectly. Each function has clear single responsibility matching the original source. Test functions properly call sub-functions. No inlining or outlining artifacts.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (Level 1)** scored lowest at 2/10
+- **Why?** At -O0 with debug symbols (`-g` flag), the compiler preserves variable names in the binary. The decompiler should leverage debug info to recover meaningful names like `arr`, `n`, `i`, `counter` instead of generic `v0`, `v1`, `v2`. This is a fundamental failure to use available information.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from debug symbols**: At -O0 with `-g`, variable names are available in DWARF debug info. The decompiler should use these to name variables like `arr`, `n`, `i`, `out` instead of generating generic names.
+
+2. **Recover struct types and field names**: When malloc is called with `sizeof(Point)` (8 bytes for two ints), the decompiler should recognize this as a struct allocation and show field assignments rather than computing the result directly.
+
+3. **Add semantic comments and anomaly warnings**: Include comments explaining preconditions ("requires: n > 0"), postconditions ("ensures: returns middle element"), and flag dangerous patterns like dangling pointers, memory leaks, and aliasing issues.

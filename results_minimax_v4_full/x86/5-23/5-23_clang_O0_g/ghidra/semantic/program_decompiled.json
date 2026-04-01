@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/5-23/5-23_clang_O0_g/ghidra/syntactic/bin/5-23_clang_O0_g_fixed",
+  "stdout": "Testing preprocessing features...\nMacro constants test: 64\nMacro functions test: 30\nConditional compile test: 32\nMulti-branch compile test: 57122\nMacro recursion test: 116\nStringize test: 19\nToken paste test: 60\nLOG: Values: 10, 20, 30\nVariadic macro test: 60\nMacro override test: 16\nInclude guard test: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:04\nBuiltin macros test: 382\nTesting asm features...\nAsm basic test: 15\nAsm clobber test: 67305990\nAsm multi-insn test: 42\nAsm SIMD test: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

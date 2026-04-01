@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout, making it extremely difficult to track their semantic purpose. For example, in `heap_basic`, variables `v7`, `v8`, `v9`, `v10` obscure their roles as loop indices and result values. Only a few parameters like `n`, `buf`, `src` are descriptive.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `double_value`, `local_vars`, `local_array`, `heap_basic`, `memory_leak`). Test functions are also well-named. Minor issues include some internal functions like `sub_9B0` with no meaningful name, but overall recovery is excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals from printf statements are perfectly preserved ("MEM-L1-01 (local_vars): %d\n"). However, vector initialization constants like `0x1000000010LL`, `0x400000004LL` appear as magic numbers without explanation. The `0xBu` for __dmb barrier is unexplained. Mixed results - some literals clear, others opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from multiple sources: register names mixed in comments (w0, x0, x19, x20, x21), extensive vector intrinsics (vmovn_s16, vaddq_s32, vshlq_n_s32) that clutter logic, many type casts, and 19 failed function decompilations listed at the end. The vector operations in `large_stack_frame` are particularly noisy.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if/else, while loops) are correctly recovered. However, `JUMPOUT(0)` appears as a goto-like construct, and the vectorized loops in functions like `large_stack_frame` use do-while patterns that obscure the original for-loops. At -O0, this level of transformation is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. No obvious outline artifacts (functions that are just basic block collections). Function sizes are reasonable (e.g., `heap_basic` is ~40 lines, `linked_list_heap` is ~50 lines). Parameter lists are clean without exposing implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with early returns used appropriately in error checking (e.g., `if (!v2) return -1;`). Some forward jumps exist in complex functions like `vla_stack` but are manageable. The flow is mostly natural.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is extensively present in vectorized functions (e.g., `heap_basic`, `vla_stack`, `alloca_usage`) but NOT commented or abstracted - the decompiler shows the unrolled loops directly. This creates significant visual noise. Some common subexpression elimination artifacts visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of specific types: `int32x4_t` for vectors, `size_t` for memory sizes, `uint8_t` for byte access. However, generic `int` and `void*` still appear frequently. Function pointer types are properly typed (e.g., `int (*f)(int)`). Minor type erosion but mostly accurate.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Key structs are well-recovered: `Node` with `data` and `next` fields, `TreeNode` with `data`, `left`, `right`, and `Point` with `x`, `y`. Field names are preserved. The decompiler correctly identifies nested structure allocations. Good reconstruction quality.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate casts between related types (e.g., `(int32x4_t *)malloc(...)`). Pointer arithmetic is present but correct. Some unsafe patterns in `memop_unaligned_access` using `*(_DWORD *)(buf + 1)` but this is intentional for the test case. No severe type safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in the decompiled output. Only auto-generated headers showing decompiler attribution. No explanation of algorithm logic, no @param/@return documentation, no indication of decompilation confidence. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly named or identified. While the code implements linked lists, trees, and memory operations, these patterns are not highlighted or documented. The decompiler doesn't recognize or label common idioms like "linked list traversal" or "binary tree creation."
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The failed decompilations are listed at the end (19 functions including memcpy, memmove, malloc, free, etc.), but this is a separate list rather than inline warnings. No inline flags for suspicious code patterns, indirect calls that couldn't be resolved, or potential undefined behavior. The `dangling_pointer` function shows dangerous code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No implicit preconditions, postconditions, or invariants are documented. Error conditions are handled but not explained. The original source had no formal contracts either, but the decompiler could infer things like "requires: n > 0" for `alloca_usage` or "ensures: returns heap-allocated value" - none of this is present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - you can see `test_stack_memory()` calls `local_vars()`, `large_stack_frame()`, etc. Global variable usage is transparent (`global_counter`, `global_array`). Callback relationships in `set_global_callback`/`call_global_callback` are traceable. However, no explicit cross-reference comments.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching the source organization: stack memory functions together, heap functions together, static/global functions together, memory operation functions together. Static functions are properly scoped. The organization mirrors the original source file structure well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code would not compile standalone due to many undefined symbols (external functions like `puts`, `malloc`, `free`, `memset` are called but not declared). No header includes or dependency documentation. 19 library functions failed to decompile. Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v10` pattern throughout, making semantic tracking extremely difficult
+- No comments whatsoever - all original source comments completely lost
+- Loop unrolling from vectorization is not commented or abstracted, creating massive visual noise
+- 19 library functions failed to decompile, leaving gaps in the code
+- No anomaly warnings for dangerous patterns like `dangling_pointer` accessing freed memory
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function names match original source almost perfectly, making it easy to locate specific functionality
+
+**Most Needs Improvement:** Comment Quality (2/10)  
+- Zero useful comments; the decompiler provides no semantic guidance, algorithm explanations, or decompilation confidence indicators
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v2->n128_i32[n/2]` suggests `v2` is an array, `v7` used as loop index) to generate semantic names like `arr` or `i`
+2. **Comment loop unrolling automatically**: When vectorization creates expanded code patterns, add a comment like "// Loop unrolled for SIMD" to reduce visual noise
+3. **Add inline anomaly warnings**: Flag suspicious patterns like dangling pointers, potential memory leaks, or undefined behavior with comments like "// WARNING: accessing freed memory"

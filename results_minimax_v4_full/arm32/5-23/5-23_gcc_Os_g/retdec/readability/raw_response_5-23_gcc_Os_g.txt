@@ -1,0 +1,118 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses extremely generic variable names (`v1`, `v2`) throughout, obscuring their semantic purpose. For example, in `param_asm_clobber`, `v1` is used as loop index and `v2` as array element, but neither reveals their roles. This is a severe degradation from the original source which had meaningful names like `arr`, `n`, `result`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Many function names are preserved from the source (e.g., `param_variadic_macro`, `call_asm_clobber`, `param_asm_atomic`). However, some are missing entirely (e.g., `param_macro_constants`, `param_conditional_compile`) and the compiler-generated `__sync_fetch_and_add_4` is exposed rather than being recognized as an atomic operation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiled code contains numerous unexplained magic numbers: `7` for mmap PROT_READ|PROT_WRITE|PROT_EXEC, `34` for MAP_PRIVATE|MAP_ANONYMOUS, `1` for PROT_READ, `3` for PROT_READ|PROT_WRITE. The hex-encoded Chinese strings (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`) are also unclear without decoding. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation. Some minor noise from the hex-encoded strings but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper while loops and conditionals. The `param_asm_clobber` function correctly uses a while loop. At -O0, the flow should be close to source and it generally is, though some early returns could be cleaner.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe decomposition failures. Many functions from the original source are completely missing: `param_macro_constants`, `call_macro_constants`, `param_macro_functions`, `call_macro_functions`, `param_conditional_compile`, `param_multi_branch_compile`, `param_macro_recursion`, `param_stringize`, `param_token_paste`, `param_macro_override`, `param_include_guard`. The decompiled output only covers ~40% of the original functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The `call_asm_multi_insn` function has some nesting but remains followable. No severe non-linearity issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy detected. The code is relatively clean in this regard. Minor duplication in the test functions but acceptable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good type precision with `int32_t` used consistently, appropriate for ARM64. The `uint32_t` for parameter `n` in `param_asm_clobber` is correct. Minor issue: `mmap` return type should be `void*` not `int32_t*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct types were needed in the decompiled functions since the original used mostly primitive types. The array handling is done via pointer arithmetic which is acceptable but loses some clarity.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several type safety issues exist: incorrect pointer casting in `mmap` return (`int32_t *` vs `void *`), potential integer overflow in `param_variadic_macro` returning `x + 50` instead of the correct `count * 10 + x`. The `call_asm_simd` has undefined behavior with uninitialized `v1`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present - only source file references and line ranges (e.g., "From module: /work/src/5-23.c"). No explanation of algorithm logic, no indication of decompilation confidence, no documentation of the preprocessing features that were lost. The comments are auto-generated metadata only.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified. The inline assembly patterns are not recognized (converted to C loops). The atomic operation pattern (`__sync_fetch_and_add_4`) is exposed as a compiler builtin rather than being recognized as the original inline assembly.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The decompiled code has several issues that should be indicated: missing functions, incorrect return value in `param_variadic_macro`, uninitialized variable usage in `call_asm_simd`, and the invalid C syntax `arr = {1, 0, 0, 0, 0};`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 64") that are completely lost. No error handling contracts recovered for functions like `mmap` that can fail.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are present in the code (e.g., `test_preprocessing_features` calls `call_variadic_macro`). However, there's no documentation of which functions call which, global variable usage is not explained, and the relationships to the missing functions are completely opaque.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably in a single file. However, the organization doesn't reflect the original source's clear separation between preprocessing tests and assembly tests. The missing functions create gaps in the logical structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code has multiple compilation issues: invalid C syntax `arr = {1, 0, 0, 0, 0};` and `dst = {0, 0, ...};`, uses `__printf_chk` which requires glibc, incorrect pointer types for `mmap` return. The code would not compile as-is.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+3+7)/4 = 4.75
+L2_avg = (7+3+8+7)/4 = 6.25
+L3_avg = (8+5+6)/3 = 6.33
+L4_avg = (4+4+3+2)/4 = 3.25
+L5_avg = (5+6+2)/3 = 4.33
+
+Overall = (4.75 × 0.30) + (6.25 × 0.25) + (6.33 × 0.20) + 
+          (3.25 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.5625 + 1.266 + 0.4875 + 0.433
+        = 5.17/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+
+- **Missing Functions**: Over 60% of original functions are completely missing from decompiled output (macro constants, conditional compilation, token pasting, include guards, etc.)
+- **Invalid C Syntax**: `arr = {1, 0, 0, 0, 0};` and similar initializer expressions are invalid C and won't compile
+- **Incorrect Logic**: `param_variadic_macro` returns `x + 50` instead of correct `count * 10 + x` (should be 60, not 60 for input 10,20,30)
+- **Uninitialized Variables**: `call_asm_simd` uses uninitialized `v1` in return calculation `2 * v1 + v1 + result[0]`
+- **Generic Variable Names**: `v1`, `v2` used throughout instead of descriptive names, making code flow extremely difficult to trace
+
+### Best Quality Aspect (Single Dimension)
+- **Type Precision (L3)** scored highest at 8/10
+- **Why?** The decompiler correctly uses `int32_t` for most variables, appropriate for ARM64 architecture, and maintains signed/unsigned distinction where needed.
+
+### Most Needs Improvement (Single Dimension)
+- **Function Decomposition (L2)** scored lowest at 3/10
+- **Why?** The decompiler failed to recover the majority of functions from the original source. Over a dozen test functions (macro constants, conditional compilation, stringize, token paste, etc.) are completely absent from the decompiled output.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover Preprocessor Output**: The decompiler completely missed all preprocessor-related code. It should recognize macro expansions and conditional compilation blocks, even if it can only show the compiled result.
+
+2. **Fix Invalid C Syntax**: The array initializer syntax `arr = {1, 0, 0, 0, 0};` is invalid C. Decompilers should generate `memcpy(arr, (int[]){1,0,0,0,0}, sizeof(arr))` or use a loop.
+
+3. **Improve Variable Naming**: Use data flow analysis to infer semantic names. For example, `v1` in `param_asm_clobber` is clearly a loop index and should be named `i` or `index`.

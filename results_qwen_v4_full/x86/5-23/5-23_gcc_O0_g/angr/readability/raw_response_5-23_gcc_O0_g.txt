@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) obscuring semantic meaning. Original source used meaningful names like `size`, `counter`, `exec_mem`, `result` which are largely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions recovered well (`param_macro_constants`, `param_asm_basic`, `main`), but initialization routines remain opaque (`sub_401030`, `sub_401040`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE=1024), `0x200` (512), `57072` (0xDF22) appear without constant names. String literals ("Hello World", "1.2.3") preserved correctly.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.ax()` calls in every function, stack canary checks (`__stack_chk_fail_local`), and spurious struct definitions with padding fields clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else and for-loops, but initialization code contains problematic `goto` statements (`goto v1->field_34`, `goto ptr[2]`) that obscure logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but fragmented helper functions (`sub_401030` through `sub_401160`) appear to be initialization stubs that could be consolidated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but forward jumps in initialization routines and computed gotos disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed; stack canary checks repeat across functions but are necessary safety mechanisms rather than true redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `unsigned int` used throughout instead of specific types (`int32_t`, `size_t`). SIMD operations correctly use `uint128_t`, but pointer types lack specificity.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are decompiler artifacts with generic names (`struct_0`, `field_0`, `padding_0[52]`). Original source had no complex structs in main functions, making these spurious.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe pointer casts present (`(char *)&ptr[2965]`), pointer arithmetic without bounds checking, and stack canary checks indicate potential safety concerns not documented.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macros, assembly, and test expectations—all semantic context lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithm patterns identified. Atomic operations recognized as `atomic_exchange_add` but macro expansion patterns (SQUARE, MAX) not documented as such.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but stack canary failures and undefined symbols (`_ccall`) not explained as decompiler limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expectations (e.g., "期望: 64") completely absent.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `g_402088` without semantic meaning or usage context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. No header file structure or API declarations to indicate module boundaries.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains undefined external symbols (`_ccall`, `AddV`), platform mismatch (original ARM64, decompiled as X86), and requires extensive stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+3)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+6+7)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.74/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Compiler artifact pollution**: `__x86.get_pc_thunk.ax()` calls in every function add noise without semantic value
+- **Zero documentation**: All original comments explaining macro behavior, assembly intent, and test expectations completely lost
+- **Generic variable naming**: `v0`, `v1`, `a0`, `a1` obscure parameter purposes (e.g., `size`, `counter`, `increment`)
+- **Spurious struct definitions**: `struct_0` with `padding_0[52]` fields are decompiler artifacts, not original source structures
+- **Platform mismatch**: Original ARM64 code decompiled as X86, causing instruction semantics confusion
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test functions (`param_macro_constants`, `param_asm_basic`, `call_macro_constants`) were correctly recovered with original names intact
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding macro expansions, assembly intent, and test expectations nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate thunk calls**: Recognize `__x86.get_pc_thunk.*` as PIC setup and remove from decompiled output or comment as compiler artifact
+2. **Recover constant semantics**: Detect magic numbers that match common patterns (0x400=1024, 0x200=512) and suggest named constant recovery
+3. **Preserve source annotations**: When debug symbols (-g) are available, extract and embed original comments and variable names from DWARF information

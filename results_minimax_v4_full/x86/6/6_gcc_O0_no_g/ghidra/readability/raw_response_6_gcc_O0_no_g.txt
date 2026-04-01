@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related functions)
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_30`, `uVar1`, `iVar1`. The parameter `param_1` should be `dst` and `param_2` should be `src` based on strcpy usage. The return value from strlen is computed but not captured, showing naming confusion.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions retain their original names (`param_strcpy`, `call_strcpy`, `param_strcmp`). However, some internal functions like `FUN_00011030` remain cryptic. The naming is inconsistent between well-named public functions and auto-generated internal names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x12345` (used in syscall), `0x2a` (42 decimal), and `0xffffffff` appear without explanation. String literals are referenced via cryptic addresses like `&DAT_00014015`. The constant `O_RDONLY` is not resolved to its numeric value (0).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including stack canary checks (`__stack_chk_fail_local`), injected `get_pc_thunk_bx` functions, and warnings about unreachable blocks. These add ~200+ lines of noise that obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else and while loops. The `param_strcpy` function has a critical bug - it calls strlen but doesn't return the result. Other functions like `param_signal_handling` have nested while loops that are readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Good separation between test wrapper functions (`call_*`) and implementation functions (`param_*`). However, some functions like `param_pthread_join` are 80+ lines with complex loop logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with early returns for error conditions. The `param_strcpy` function is perfectly linear. Some functions like `param_fread_fwrite` have deeper nesting (4+ levels) but remain traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks are repeated in nearly every function (boilerplate). Some redundant strlen calls in `param_fread_fwrite` (called twice for the same string). No major dead code, but some optimization artifacts remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many `undefined4` types instead of proper types like `int`. The `param_strcpy` function is declared `void` but should return `int`. Some proper types like `size_t`, `ssize_t`, `pthread_t` are used correctly. The second parameter of strcpy should be `const char*` but is `char*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. Raw pointer arithmetic used throughout. Some array declarations like `local_38 [10]` are recovered for stack buffers. The `ThreadData` struct in pthread functions is not recovered - fields accessed via array indices like `param_1[2]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: `param_malloc_free` has `__ptr[param_1 + 0x3fffffff]` which is clearly wrong (should be `param_1 - 1`). The `thread_sum` function accesses struct fields via array indexing without type safety. Some correct pointer usage but mixed with unsafe patterns.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Auto-generated comments like "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection" dominate. No useful comments explaining the code logic. The decompilation header mentions it's from Ghidra 12.0 but no algorithm or intent documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcpy, strlen, strcmp, memcpy, printf) are correctly recognized. pthread functions are identified. However, no design patterns or algorithm patterns are named or documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings about unreachable blocks and injected functions. The critical bug in `param_strcpy` (missing return value) is not flagged. No indication of decompilation confidence for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No error handling contracts. The function should document that `dst` must be large enough to hold `src`, but no such contract exists.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (strcpy, strlen). No documentation of which functions call `param_strcpy` or what uses the return value. Global variables like `signal_received`, `shared_counter` are used but their relationships not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - standard library tests, system calls, thread tests. Static functions properly scoped. However, all functions in one flat namespace rather than organized by category.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Missing `#include` statements. The return type mismatch in `param_strcpy` (void vs int) would cause compilation failure. Many undefined types like `undefined4`, `EVP_PKEY_CTX`.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- `param_strcpy` returns `void` but should return `int` (strlen result) - this is a semantic bug
+- Variable names are all generic (`param_1`, `param_2`, `local_30`) losing semantic meaning
+- `param_malloc_free` has incorrect array access: `__ptr[param_1 + 0x3fffffff]` should be `__ptr[param_1 - 1]`
+- No const-correctness on string parameters (second param of strcpy should be `const char*`)
+- Heavy compiler noise (~300 lines of injected functions and warnings) obscures actual code
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Most functions retain their original descriptive names from the source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Nearly all variables use generic names (param_1, local_30, uVar1) that completely obscure their semantic purpose. The decompiler could infer better names from usage patterns (e.g., param_1 is dst because it's the first argument to strcpy).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer parameter names from function signatures**: `param_1` in `strcpy(param_1, param_2)` should be named `dst` and `param_2` should be `src`
+2. **Fix return type inference**: When a function computes a value (strlen result) but doesn't return it, flag this as a potential bug or optimization artifact
+3. **Reduce compiler artifact noise**: Move injected functions like `get_pc_thunk_bx` to a separate "compiler support" section rather than interleaving them with user code

@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `ptr`, `p`, `result`, `cur` that convey no semantic meaning. The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count` which are completely lost. Even stack canary is named `v4` instead of `stack_chk_guard` in some places.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are correctly demangled from C++ mangled names (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`, `_Z12template_maxIiET_S0_S0_` → `template_max<int>`). Class methods like `Base::virtual_func`, `Container<int>::push` are properly recovered. Minor deduction for some internal functions with generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants are correctly identified (e.g., `GLIBC_2.4::__stack_chk_guard`, exception value `42`), but many remain as magic numbers (e.g., `0x21e98`, `0x116d4` for exception type info, `0x11684` for typeid comparison). Format string pointers like `0x114d8` are not labeled as such.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: many undefined externals (`g_22008`, various `g_` prefixed globals); empty stub functions (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance` all return without doing anything); confusing exception handling with goto statements; and numerous type_info related declarations that clutter output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling uses excessive goto statements creating spaghetti-like flow. The `call_virtual_func` uses computed goto (`goto *((int *)*((int *)arg_0))`) which is unusual. Many functions are completely empty, making control flow assessment impossible. At -O0, we should see natural if/else and loop constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries generally match original source. However, many test functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`) while `test_cpp_oo_features` contains all the logic - this is misleading.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but exception handling code has multiple goto jumps disrupting flow. Empty functions create artificial breaks in the code flow. Some forward jumps present in the control flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code or duplicate expressions. However, the empty functions suggest the decompiler failed to recover actual logic rather than successfully eliminating redundancy. Template instantiations are properly separated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `unsigned int` for many variables where original had `int`, `size_t`. The `call_virtual_func` parameter `class Base *arg_0` is correctly typed, but many local variables use imprecise types. Stack canary is correctly identified as `unsigned int`. Some confusion between pointer and integer types in RTTI code.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler created artificial struct definitions for RTTI (`struct_0`, `struct_1`) that don't match original classes. Original classes `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB` with virtual functions are not recovered - instead we see raw memory operations. The `Container` template class members are partially recovered but with void* this pointers.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: casting between pointers and integers in RTTI code (`(int)(*(ptr))[4]`); pointer arithmetic in template container implementations; the `call_virtual_func` uses raw pointer dereferencing for vtable access. No bounds checking visible in array operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original source had extensive comments explaining each test case (e.g., "CPP-L3-01: 类成员函数", "测试: 虚表(vtable)机制"). No explanation of what each test function does or what the expected results are.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The original uses RAII (smart pointers), polymorphism (virtual functions), template instantiation, lambda expressions - none of these idioms are recognized or named. Exception handling patterns not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code or uncertainties. Empty functions are presented as if they were correctly decompiled. Indirect calls (vtable calls) are not flagged as uncertain. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expectations (e.g., "期望: 10 + 34 + 4660 = 4704") which are completely lost. No documentation of what functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external dependencies are declared (e.g., `extern unsigned int GLIBC_2.4::__stack_chk_guard`), but relationships between functions are not documented. No indication of which functions call which, or the call graph. Virtual function relationships not clearly shown.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by class (Base, Derived, Container, etc.) but the file is a single monolithic output. No logical separation into sections or clear organization matching the original source's comment-based sections.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile as-is due to: many undefined externals; empty function bodies; missing class definitions; incorrect type_info structures. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Most test functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, etc.) - the actual logic is only in `test_cpp_oo_features`
+- Variable names are all generic (`v0`, `v1`, `ptr`, `result`) with no semantic meaning
+- Composite types not recovered - original classes become void* manipulations
+- No comments explaining what code does or expected results
+- Exception handling uses goto creating unreadable spaghetti code
+- Type precision is poor - uses unsigned int where original had specific types
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- C++ name demangling is excellent; function names match original source exactly
+
+**Most Needs Improvement:** Semantic Transparency (scored 2/10)  
+- Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code unusable for understanding
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover function bodies for all test functions, not just the main dispatcher - empty functions suggest decompilation failure
+2. Infer variable names from usage patterns (e.g., `v0` used as `strlen` argument should be named `str` or `name`)
+3. Add comments explaining what each test validates and expected results, matching original source documentation

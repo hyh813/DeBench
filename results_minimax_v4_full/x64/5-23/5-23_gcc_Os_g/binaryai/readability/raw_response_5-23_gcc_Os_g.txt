@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` throughout. Local variables are cryptic: `iVar1`, `uVar2`, `lVar1`, `uVar1`. Only `result` and `sum` are descriptive. The original had meaningful names like `size`, `x`, `y` but these were lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`. These match the original source almost exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x200` (512), `0x40` (64), `0x400` (1024), `0xdef0`, `0xdf22` appear without explanation. However, some values like `0x1e` for page size and `7` for PROT_READ|PROT_WRITE|PROT_EXEC can be inferred from context. The original had named constants (MAX_SIZE, BUFFER_COUNT) that are lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. Stack canary checks (`__stack_chk_fail`) are present but expected at -O0. Type annotations like `undefined4`, `undefined8` are Ghidra artifacts but don't severely impede readability. No redundant casts or debug instrumentation observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are properly recovered as `for` loops (e.g., `param_asm_clobber`). Conditionals use idiomatic `if` statements. The `param_asm_multi_insn` shows a simple `for` loop instead of goto-based assembly, which is appropriate. At -O0, control flow should closely match source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is isolated. No monolithic functions observed. Parameter counts match original (e.g., `param_asm_clobber(long param_1,int param_2)` matches `int *arr, int n`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_dynamic_code` and `param_memory_protection` are appropriate. No excessive forward jumps disrupting flow. Some nesting in conditional chains but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling is minimal (SIMD functions use explicit element-by-element operations which is appropriate for readability). Some duplicate patterns in `param_asm_simd` and `param_simd_intrinsics` but both are kept as separate functions as in source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8` instead of proper types like `int`, `size_t`, `int32_t`. Parameters like `param_1` declared as `undefined4` instead of `int`. The original had specific types (`int`, `size_t`, `int *`) that are lost. Some proper types like `long`, `int` used in later functions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery visible. Arrays are accessed via pointer arithmetic (e.g., `*(int *)(param_1 + uVar2 * 4)`). The original had `int arr[]` which is lost. Global variables like `global_var` are referenced but not typed as part of any struct.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic is explicit (`param_1 + uVar2 * 4`). The atomic functions use `LOCK()`/`UNLOCK()` macros which obscure the actual atomic operations. No `restrict` or `_Atomic` annotations. However, no obvious type-confused function pointers or buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. The original source had extensive comments explaining macro behavior, assembly constraints, and test expectations. None of this semantic information is recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicitly recognized (loops, conditionals) but not explicitly named or documented. The inline assembly patterns (LOCK, UNLOCK) are shown as macros but their purpose isn't explained. The original's macro expansion semantics are completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The dynamic code generation in `param_dynamic_code` (self-modifying code) is presented as normal code without warning. The indirect function call `(*(code *)__addr)(param_1)` could be flagged as suspicious but isn't.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had error handling (checking `MAP_FAILED`, return -1) but these are shown as normal code flow without contract documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `test_preprocessing_features` calls all the `call_*` functions. Global variable `global_var` is referenced in `param_memory_clobber_demo`. However, no documentation of call graph or usage patterns.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: preprocessing test functions (0x101209-0x10131a), asm test functions (0x101496-0x101870), test runners (0x10136d, 0x10188a). Matches source organization of preprocessing section and asm section.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions (`mmap`, `munmap`, `mprotect`, `sysconf`, `__printf_chk`) are declared as external. Would need standard library stubs to compile standalone. Some type mismatches (`undefined4` vs `int`) would require patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `param_2`, `iVar1`, `uVar2`) losing semantic meaning from original source
+- Type precision severely degraded: `undefined4`/`undefined8` instead of `int`/`size_t`
+- No comments or documentation recovered - original's extensive macro/assembly explanations completely lost
+- No struct/union recovery - all composite types reduced to pointer arithmetic
+- No anomaly indication for suspicious patterns like self-modifying code
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from source (`param_macro_constants`, `param_asm_basic`, `param_dynamic_code`), making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The decompiled output has zero comments. The original source had rich semantic information about macro behavior, assembly constraints, test expectations, and algorithm explanations that is completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns**: Analyze how parameters are used (e.g., `param_1 > 0x400` suggests `size` or `max_size`) to infer meaningful names instead of generic `param_N`
+2. **Add semantic comments for complex patterns**: Document macro expansions, assembly constraint meanings, and preprocessor conditionals that affected code generation
+3. **Improve type precision**: Use `-O0` debug info to recover exact types (`int`, `size_t`) instead of generic `undefined4`/`undefined8`

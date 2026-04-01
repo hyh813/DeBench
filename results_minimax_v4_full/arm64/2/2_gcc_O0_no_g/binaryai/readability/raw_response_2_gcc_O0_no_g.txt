@@ -1,0 +1,98 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2` instead of source names (`x`, `c`, `arr`). Local variables use cryptic names like `local_8`, `local_4`, `iVar1`, `uVar1`. At -O0, the decompiler should preserve or infer meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All 55 functions perfectly match their source names (e.g., `double_value`, `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`). Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40`, `0x5b`, `0x20` in `process_char` (ASCII boundaries) are unexplained. Some constants like `0xc` (struct size) and `0x28` (40 bytes for 10-element array) are inferable but not named. No enum value recovery.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; includes `___stack_chk_guard` checks, `undefined4`/`undefined8` type aliases, and some register variable names (`in_register_00005028`). These don't significantly impede understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Uses natural for/while loops matching source. Minor issue: `process_bool` has inverted logic (`(int)param_1 < 1` instead of `param_1 > 0`). At -O0, control flow should closely match source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity. Each function has single responsibility (e.g., `array_1d_stack` sums array, `ptr_increment` traverses). Test functions properly separated from logic. No over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Generally reads top-to-bottom. One forward jump in `array_complex_index` for bounds checking. Early returns used appropriately. No excessive nesting.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy at -O0. Loop unrolling not present (expected at this optimization level). Clean, non-duplicated expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most types accurate (`int`, `short`, `long`). Issues: `char` becomes `byte`, `long long` becomes `long`, `const` qualifier lost in `const_param`, `volatile` lost in `volatile_access`. Function pointers use generic `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs partially recovered but field names lost. `struct_simple` uses `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Nested structs like `Rect` and `Style` reduced to flat pointer arithmetic. Union vs. struct distinction maintained but member names lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several safety issues: (1) `process_bool` has inverted logic - `(int)param_1 < 1` doesn't match `x > 0`; (2) `ptr_diff` has precedence bug: `param_1 - param_2 >> 2` evaluates as `param_1 - (param_2 >> 2)` instead of `(param_1 - param_2) >> 2`; (3) `process_ld` returns `void` instead of `long double`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. Zero explanation of algorithms, magic numbers, or non-obvious logic. This is a critical gap for readability.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition. Linked lists, binary trees, graphs, state machines (enum_switch) not identified or named. Missed opportunity to label common data structures.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code. The `process_bool` logic error, `ptr_diff` precedence bug, and `process_ld` return type issue are not flagged. No warnings about undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Missing: null checks, bounds validation requirements, return value guarantees.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No indication of which functions call `double_value`, callback relationships unclear (e.g., `complex_callback` usage). Global variable usage not explicit.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Good logical grouping - test functions grouped together (`test_data_types_l1`, `test_array_types`, etc.), data type functions separated from pointer functions. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Uses undefined types (`undefined4`, `undefined8`, `undefined`), external function declarations (`puts`, `printf`), and missing includes. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `local_8`, `iVar1`) instead of source names
+- `process_bool` has inverted boolean logic - `(int)param_1 < 1` instead of `param_1 > 0`
+- `ptr_diff` has operator precedence bug: `param_1 - param_2 >> 2` should be `(param_1 - param_2) >> 2`
+- `process_ld` returns `void` instead of `long double`
+- No comments, pattern recognition, or anomaly flags - zero semantic transparency
+- Struct field names lost (e.g., `p->x`, `p->y`, `p->z` become `param_1[0]`, `param_1[1]`, `param_1[2]`)
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names perfectly match the original source, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Semantic Transparency (1.0/10 avg)  
+Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code opaque despite correct function names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used in `x * 2` should suggest `x` or `input_value`
+2. Add comments explaining magic numbers (e.g., `// 0x40 = 'A' boundary`)
+3. Flag semantic anomalies like the `process_bool` logic error and `ptr_diff` precedence issue
+4. Recover struct field names by analyzing memory layout and access patterns
+5. Add basic contract documentation (e.g., `// requires: n > 0` for array functions)

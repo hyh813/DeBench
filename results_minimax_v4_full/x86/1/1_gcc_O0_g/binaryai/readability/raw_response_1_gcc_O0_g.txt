@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use cryptic names (`local_8`, `local_c`, `local_10`). For example, in `sequential_ops`, parameters should be `a, b, c` but are `param_1, param_2, param_3`. In `loop_for_fixed`, variables should be `sum, i` but are `local_c, local_8`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `duffs_device`, etc.). The decompiler preserved the original function naming which is excellent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., loop bounds like `local_8 < param_1`), but magic numbers persist: `0x3e9` (1001) for loop limit, `0x65` (101), and hex values like `0x14` (20), `0x1e` (30) for return values. Context helps but constants aren't named.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts for -O0. Stack canary checks appear (`*(int *)(in_GS_OFFSET + 0x14)`) but are expected. No redundant casts or debug instrumentation. Relatively clean output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for`/`while`, conditionals use `if-else`, and switch statements are properly recognized. The `switch_fallthrough` shows proper goto-based fallthrough recovery. At -O0, control structures should be nearly perfect and they are.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each source function is decompiled as a separate function with appropriate granularity. No over-fragmentation or monoliths. Parameter lists are reasonable (though generic names).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns and breaks used appropriately. Some forward jumps in `switch_fallthrough` but they're necessary for fallthrough semantics.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling in Duff's device is properly structured with labels. Common subexpressions not duplicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` throughout instead of specific types. Parameters typed as `int` or `undefined4`. No `int32_t`, `uint64_t`, or `size_t` recovery. Function pointers use generic `code*` type. At -O0, types should be more precise.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The 2D array in `loop_multi_exit` is flattened into individual variables (`local_40[0]`, `local_30`, `local_2c`, etc.) instead of `int matrix[3][4]`. Arrays like `local_24[4]` lose their semantic purpose.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: generic `code*` function pointers, `(undefined4 *)` casts, `(int)` casts throughout. Function pointer calls like `(*local_1c[param_1])(param_2)` lack type safety. Some pointer arithmetic without bounds.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithms, no documentation of non-obvious logic, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device is partially recognized with goto labels (`_L143`, `_L145`, etc.) but not explicitly named or explained as a known idiom. State machine patterns in `state_machine` and `fsm_func_table` are structurally present but not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. Indirect calls that couldn't be resolved are not flagged. No warnings about suspicious code patterns or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The code presents itself as definitive when some semantics may be uncertain.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call which, callback relationships, or global variable usage. Each function is isolated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear roughly in source order (test functions first, then helper functions). But no logical grouping comments, no static function scoping indication, no module structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal issues. External functions like `FUN_000110c0` (printf wrapper) are called but not defined - would need stubs. No header declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 6 + 7) / 4 = 6.0
+L2_avg = (8 + 9 + 8 + 9) / 4 = 8.5
+L3_avg = (6 + 3 + 5) / 3 = 4.67
+L4_avg = (1 + 5 + 1 + 1) / 4 = 2.0
+L5_avg = (4 + 6 + 7) / 3 = 5.67
+
+Overall = (6.0 × 0.30) + (8.5 × 0.25) + (4.67 × 0.20) + 
+          (2.0 × 0.15) + (5.67 × 0.10)
+        = 1.80 + 2.125 + 0.934 + 0.30 + 0.567
+        = 5.73/10
+```
+
+**Overall Readability Score:** 5.73/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters (`param_1/2/3`) and locals (`local_8/c/10`) use generic cryptic names instead of semantic names like `a, b, c` or `sum, i, count`
+- **No comments**: Zero documentation explaining algorithms, control flow logic, or decompilation confidence
+- **No struct recovery**: Composite types like `int matrix[3][4]` are flattened into individual variables (`local_40[0]`, `local_30`, etc.)
+- **Type imprecision**: Uses generic `int` and `undefined4` instead of specific types; function pointers use `code*` 
+- **No anomaly indication**: Indirect calls and uncertain patterns not flagged
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2)** scored highest at 9/10
+- **Why?** Each source function is correctly separated with appropriate granularity. No over-fragmentation or monoliths. Function boundaries match the original source perfectly.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (L4)** scored lowest at 2.0/10
+- **Why?** Zero comments, no idiom recognition, no anomaly flags, and no contract recovery. The decompiled code provides no interpretive guidance to the analyst.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `param_1` → `a`, `local_8` → `sum` when used in specific patterns (e.g., accumulation suggests `sum`, loop bounds suggest `count`)
+2. **Add minimal comments**: At minimum, document switch-case fallthrough, complex control flow, and indicate confidence level for indirect calls
+3. **Recover composite types**: Detect array initialization patterns (consecutive local_XX assignments) and reconstruct as `int arr[] = {1,2,3,4}` instead of individual variables

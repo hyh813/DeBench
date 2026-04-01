@@ -1,0 +1,106 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (v2, v3, v4, v5, targeta, xa, idxa). The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` which were completely lost. Loop variables `i`, `j` are acceptable but the pervasive use of single-letter prefixed variables makes tracking purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (sequential_ops, single_if, if_else, nested_if_2, loop_for_fixed, loop_while, etc.). The decompiler preserved the semantic intent in function naming, which is excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1000` in infinite_loop, `8` in duffs_device calculations, and case values in switch statements appear without explanation. No named constants were recovered. The literal `0x12345678` in opaque_predicate remains unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. No obvious dead code from register spilling or debug instrumentation. Some unnecessary casts exist but don't significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are natural - for/while loops are properly recovered, switch statements used appropriately. The goto in duffs_device is legitimate (required for that idiom). At -O0, the control flow closely matches the original source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function from the original is preserved as a separate function with appropriate granularity. No monolithic functions created. The decomposition matches the original 40+ functions across three test levels.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps disrupting flow. The code is easy to follow sequentially.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or duplicate expressions observed. Loop unrolling in duffs_device is recognized as a pattern. Code is clean without obvious redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most integers are generic `int`. The original used specific types but these were lost. Some improvement with `volatile int*` for flag pointers and `unsigned int` in a few places. At -O0, more type precision was expected.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays are handled (int arr[4], int dst[8]). No struct recovery visible - the matrix in loop_multi_exit became `_OWORD dest[3]` with memcpy, losing the 2D structure. Composite types are largely flattened.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some function pointer casts present (e.g., `(int (*)(int))double_value`) but necessary for the pattern. No obvious buffer overflow patterns. Minor type safety issues that don't cause immediate concern.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the decompilation header comment exists. No comments explaining algorithm logic, non-obvious operations, or recovered intent. Zero useful comments for understanding decompiled functions.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Duff's device is recognized and labeled with LABEL_* goto targets. State machines are properly recovered as switch statements. Some patterns visible but not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly marks 8 functions as "FAILED to decompile" (memcpy, _setjmp, __libc_start_main, etc.). However, no uncertainty flags or warnings for potentially problematic decompiled code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of assert statements or validation logic. The code provides no guidance on expected input ranges or contract requirements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. No indication of which functions call which. Global variable usage not explained. The code is completely isolated without context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are in a single file matching the original single-file structure. Order roughly follows original (test functions at end). Static functions properly scoped. Reasonable organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library. External functions (printf, memcpy, setjmp) are called but not declared - would need headers. Minor patching needed but fundamentally compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation:
+- Level 1: (3+9+5+8)/4 = 6.25 × 0.30 = 1.875
+- Level 2: (8+9+8+8)/4 = 8.25 × 0.25 = 2.0625
+- Level 3: (6+5+7)/3 = 6.0 × 0.20 = 1.2
+- Level 4: (2+6+5+2)/4 = 3.75 × 0.15 = 0.5625
+- Level 5: (3+7+7)/3 = 5.67 × 0.10 = 0.567
+
+**Overall Readability Score:** 6.27/10
+
+### Critical Defects:
+- Variable naming is universally generic (v2, v3, v4, targeta, xa) - original meaningful names like temp1, temp2, sum, count completely lost
+- Zero comments explaining algorithm logic, making comprehension solely dependent on reader deducing intent
+- No struct/union recovery - 2D matrix became flat _OWORD array with memcpy, losing semantic structure
+- No contract or precondition documentation - functions provide no guidance on valid input ranges
+- Type precision severely degraded - original specific types became generic int throughout
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names accurately match the original source (sequential_ops, single_if, loop_for_fixed, etc.), making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement: Variable Naming (3/10)
+The pervasive use of generic variable names (v2, v3, v4, targeta, xa, idxa) makes tracking data flow extremely difficult. At -O0, the compiler preserves local variable names in debug info, so these should be recoverable.
+
+### Top 3 Recommendations:
+1. **Infer variable names from debug symbols**: At -O0, local variable names are preserved in DWARF debug info. The decompiler should use these to name variables like `temp1`, `sum`, `count` instead of generating v2, v3.
+
+2. **Recover struct types from memory access patterns**: The 2D matrix in loop_multi_exit should be reconstructed as `int matrix[3][4]` rather than `_OWORD dest[3]` with pointer arithmetic.
+
+3. **Add semantic comments for non-trivial logic**: Document the purpose of functions, explain magic numbers, and indicate recovered intent (e.g., "// Computes: (a + b) * 2 - c").

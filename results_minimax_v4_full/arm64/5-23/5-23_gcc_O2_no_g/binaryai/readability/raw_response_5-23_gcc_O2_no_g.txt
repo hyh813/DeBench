@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `param_1`, `param_2`, `uVar1`, `lVar1`, `iVar2`, `lVar3`. These provide no semantic meaning - `param_1` should be `size`, `param_2` should be `y`, and `uVar1` should be `result`. The decompiler uses a pattern of prefixing with type (u=undefined, i=int, l=long) plus a number, which is completely unhelpful for analysis.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions are correctly named (e.g., `param_macro_constants`, `call_asm_basic`, `param_dynamic_code`) matching the source. However, several helper functions have cryptic names like `FUN_00100810`, `FUN_00100bcc`, `FUN_0010126c` that provide no semantic value. The core functions being tested are well-recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers are inlined but mostly correct (e.g., `0x40` = 64, `0x200` = 512). However, constants like `0xdef0`, `0xdf22`, `0x1e` (for _SC_PAGESIZE) lack explanation. The decompiler correctly computed `MAX_SIZE/2` as `0x200` but provides no indication these are macro-derived values. String literals like "LOG: Values: %d, %d, %d\n" are preserved.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No obvious register spilling debris, redundant casts, or debug instrumentation. The code is relatively clean for a decompilation. Some stack frame setup is present but not excessive.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is mostly natural. Loops use do-while constructs correctly (e.g., `param_asm_clobber`). Conditional compilation branches are correctly collapsed to single paths. Minor issue: some loops could be more idiomatic (for vs. do-while), but overall flow is traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions remain properly decomposed - each test function is separate. No obvious inlining artifacts or over-fragmentation. Function sizes are appropriate (20-50 lines max). Parameter counts are reasonable. The decompiler correctly kept `call_*` wrapper functions separate from `param_*` implementations.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., in `param_dynamic_code` when mmap fails). No excessive forward jumps or goto abuse. The nested conditionals in `param_memory_protection` are slightly complex but follow logical nesting.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling present in `call_asm_simd` but it's minimal. Common subexpressions are reasonably handled. The main redundancy is the repeated `__printf_chk` calls in `test_preprocessing_features` which matches the source's repetitive printf pattern.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are mostly correct (int, long, undefined4, undefined8). However, `undefined4` and `undefined8` are overly generic - should be `int` and `long` or `size_t`. Pointer types are correct (long for pointers on ARM64). The decompiler correctly uses `int` for most function parameters but uses `undefined8` for some return types where `int` would suffice.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Not much struct/union usage in this source code. The decompiler correctly handles the simple arrays (e.g., `int arr[]` becomes pointer arithmetic). No struct recovery needed for this particular file. What exists is handled correctly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is handled correctly (e.g., `param_1 + lVar1 * 4` for array access). Function pointer types are reasonable. Minor issue: mixing `undefined4*` with `int*` in some places (e.g., `param_memory_protection`). Overall acceptable for decompiled code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present in the decompiled code. No explanation of macro origins, no documentation of what `0x1e` means (sysconf _SC_PAGESIZE), no indication that `0x40` comes from `BUFFER_COUNT * 4`. The decompiler provides no guidance for understanding the code's intent. This is a major readability failure.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized but not named. The atomic operations use `__aarch64_ldadd4_acq_rel` which is correct for ARM64 LSE atomics. The conditional compilation is correctly collapsed. However, there's no explicit labeling of "macro expansion", "conditional compilation branch", or "atomic operation".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertainties or anomalies. The decompiler doesn't flag that `param_builtin_macros` has hardcoded values for `__FILE__`, `__LINE__`, `__DATE__`, `__TIME__` that won't match runtime. No warnings about the indirect function calls or the complex inline assembly that was replaced.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_dynamic_code` should have "requires: param_1 is valid input" but nothing is indicated. No documentation of error return meanings (-1 for mmap failure, -2 for mprotect failure).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication that `call_macro_constants` calls `param_macro_constants`. No documentation of which functions are test helpers vs. test targets. Global variable `global_var` is used but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions. Static functions are properly scoped. The order roughly matches the source file structure. Minor issue: some helper functions (`FUN_00100bcc`) are interleaved unexpectedly.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code appears to compile (metadata says "Compilation Result: Yes"). External functions are declared (memcpy, mmap, sysconf, mprotect). Dependencies are standard libc. Minor issues with some type mismatches but overall compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `uVar1`, `lVar1`) providing zero semantic meaning
+- No comments explaining macro origins, constant meanings, or algorithm intent
+- No indication that literals like `0x1e` represent sysconf page size or `0xdef0` is a platform constant
+- Anomaly indication completely absent - hardcoded `__FILE__`, `__LINE__` values not flagged
+- Cross-references undocumented - relationship between `call_*` and `param_*` functions unclear
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly separated with appropriate granularity. The decompiler correctly kept test wrapper functions separate from implementation functions, matching the source structure.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The generic `param_1`, `param_2`, `uVar1` naming pattern makes it nearly impossible to track variable purpose without extensive cross-referencing. Combined with the complete absence of comments, this makes the code extremely difficult to analyze.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` compared to `0x400` should suggest `size` or `max_size`. Variables used in arithmetic with constants should be named accordingly.
+2. **Add semantic comments for macro/constant origins**: When inlining constants like `0x200` or `0x40`, add comments indicating "derived from MAX_SIZE/2" or "derived from BUFFER_COUNT*4"
+3. **Flag runtime-dependent values**: Mark hardcoded `__FILE__`, `__LINE__`, `__DATE__`, `__TIME__` values as "compile-time constants that won't match runtime" to prevent confusion

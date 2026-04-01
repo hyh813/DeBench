@@ -1,0 +1,118 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source function is straightforward:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version:
+```c
+int param_strcpy(char *a0, char *a1)
+{
+    return (unsigned int)((stpcpy(a0, a1) & 4294967295) - a0);
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`) and local variables use `v0`, `v1`, etc. The original parameters `dst` and `src` are completely lost. No semantic meaning can be derived from these names.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: While the target function `param_strcpy` retained its name, wrapper functions use generic names like `sub_402f91`, `sub_402f80`. The original descriptive names like `call_strcpy`, `test_standard_library_functions` are replaced with addresses.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for masking without explanation. String literals are referenced via external pointers (`&g_405390`) without showing actual content. Some constants like `42` for success are clear from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unusual constructs like `CONCAT` macros for vector operations in other functions, but the target function is relatively noise-free.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: The `param_strcpy` function has straightforward linear flow. However, the decompiler used `stpcpy` instead of `strcpy` + `strlen` - this is a GCC optimization even at -O0. The control flow is natural but the semantic transformation is significant.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized. The original test functions (`call_strcpy`, `param_strcpy`) are preserved as separate functions. Some inlining occurred but decomposition is reasonable.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The target function reads top-to-bottom with no jumps. Early returns and simple sequential logic throughout. Very linear code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions in `param_strcpy`. The `stpcpy` optimization actually reduces redundancy compared to separate `strcpy` + `strlen` calls.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameter `a1` should be `const char *` but is `char *` - const-correctness lost. Return type is `int` but wrapped in `(unsigned int)` cast. Mixed precision: some functions show `unsigned long long` while source uses `int`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex struct types in this specific function. However, other functions show partial struct recovery (e.g., `struct FILE` as empty, `sockaddr` with `sin_family`). Basic types preserved but field names lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The `param_strcpy` function has no obvious type safety violations. However, the `&g_405390` references and some pointer arithmetic in other functions show potential issues. No severe violations in target function.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the entire decompiled output. Zero documentation for algorithm logic, parameter purposes, or return value meanings. Completely undocumented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The `stpcpy` pattern (returns pointer to end of destination) wasn't recognized as an optimization of `strcpy` + `strlen`. No pattern naming (e.g., "GCC optimization: stpcpy chaining"). Other functions show no recognition of standard patterns like pthread usage.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The platform mismatch (source: arm64, output: AMD64) isn't indicated. The `__cxa_finalize()` call at unusual address isn't flagged. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL, src != NULL"). No postconditions (e.g., "ensures: return == strlen(dst)"). No contract information recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: External function calls are present (`strcpy`, `strlen`, `stpcpy`) but relationship to other functions isn't documented. No indication of who calls `param_strcpy` or what it calls.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions are organized by address (0x402xxx, 0x403xxx, 0x404xxx) rather than logically. The original grouping by test category (standard library, system calls, threads) is lost. Single monolithic output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone - requires extensive extern declarations (`extern unsigned long long g_407e00;`). Dependencies on libc functions not documented. Missing standard includes.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are completely generic (`a0`, `a1`, `v0`, `v1`) - no semantic meaning
+- No comments whatsoever - zero documentation for any function
+- Const-correctness lost (`char *a1` instead of `const char *a1`)
+- Function naming uses addresses (`sub_402f80`) instead of semantic names
+- Magic number `4294967295` used without explanation
+- Platform mismatch (arm64 source → AMD64 output) not indicated
+
+**Best Quality Aspect:** Code Linearization (9/10)  
+The target function reads top-to-bottom with no confusing jumps or control flow distortions. The linear execution flow is preserved.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The complete absence of comments makes it impossible to understand function purposes, parameter meanings, or algorithmic decisions without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` is used as source string (passed to strcpy/stpcpy) - should be named `src` or `source`
+2. **Add semantic comments**: Document what each function does, parameter purposes, and return value meanings
+3. **Recover const-correctness**: Detect when parameters aren't modified and mark them `const` to match source semantics

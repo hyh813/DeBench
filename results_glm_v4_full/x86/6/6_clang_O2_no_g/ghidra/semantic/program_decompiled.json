@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_O2_no_g/ghidra/syntactic/bin/6_clang_O2_no_g_fixed",
+  "stdout": "System Call Tests\nstrlen: 8\n0\ncall_strlen: 12\ncall_strcmp: 90\n0\nValue: 42, Name: \ncall_printf: 18\ncall_scanf: 579\ncall_fopen_fclose: 42\ncall_fread_fwrite: 42\ncall_malloc_free: 90\ncall_memset: 0\ncall_strchr_strstr: 15\nSystem Call Tests\n42\ncall_win32_api: 42\ncall_fork_exec: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

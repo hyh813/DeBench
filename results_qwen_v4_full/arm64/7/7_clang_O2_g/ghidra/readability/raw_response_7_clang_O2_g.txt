@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar3`, `pbVar4`) with no semantic meaning. Many are marked "Unresolved local var" losing original names like `result`, `p1`, `p2`, `p3`, `encrypted`, `decrypted`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `param_opaque_predicate`), but helper functions use generic names (`FUN_00100730`, `FUN_001008bc`). Action verbs are missing from most names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x5a`, `0x14`, `0xe1`, `0x7a314`, `0x13ba`). Some are pre-computed return values instead of expressions (e.g., `call_fake_branch` returns `10` directly instead of showing the call).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "Unresolved local var" comments, "WARNING: Unknown calling convention" messages, and "WARNING: Removing unreachable block" annotations clutter the code without adding semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical semantic loss—`param_fake_branch` collapses to `return x;` eliminating the fake branch conditions entirely. GCD loop in `param_opaque_predicate` uses do-while instead of original while, and vectorized loop is extremely complex with manual unrolling.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved correctly, but `param_fake_branch` is oversimplified (lost all internal logic). `param_vectorized_loop` is excessively large (150+ lines) due to SIMD expansion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but vectorized loop has multiple nested loops with `goto LAB_00100c50` disrupting flow. Most functions use appropriate early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Vectorized loop contains massive redundancy from SIMD unrolling (8 parallel accumulators `iVar10`, `iVar12`, `iVar13`... `iVar20`). No abstraction of repeated patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char`, `size_t`, `unsigned int`), but many variables marked unresolved. Pointer types sometimes degraded (`int *p` becomes generic in some contexts). Signed/unsigned mostly correct.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` marked as "Unresolved local var: anon_struct_4_3_4e909822 bitfield". Arrays partially recovered but field names lost. No struct reconstruction for complex types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(ulong)local_40`, `(int)((ulong)*(undefined8 *)piVar8 >> 0x20)`). Pointer arithmetic in vectorized loop is complex and error-prone. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated noise ("Unresolved local var", "WARNING") with zero semantic value. No algorithm explanations, no documentation of opaque predicate logic, no decryption pattern identification.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. Vectorized loop pattern not recognized as SIMD expansion.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (unresolved vars, unreachable blocks), but critical semantic losses not indicated (fake branches eliminated, opaque predicates simplified). No warning about optimization-induced transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero preconditions, postconditions, or invariants documented. No indication that `param_fake_branch` should preserve input when fake conditions are false. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`param_division_by_zero(5)`), but global variable relationships unclear (`div_zero_caught`, `jmp_buffer` usage not explained). Signal handler connections not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping. Helper functions (`deregister_tm_clones`, `register_tm_clones`) mixed with test functions. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies present (`signal`, `setjmp`, `longjmp`, `strncpy`, `strlen`) without declarations. Would require significant stubbing to compile standalone. `EVP_PKEY_CTX` type undefined.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.80/10
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects:
+- **`param_fake_branch` completely loses fake branch logic** - returns just `x` instead of showing the `x*x < 0` and `strlen(str) < 0` conditions
+- **All variables use generic names** (`iVar1`, `uVar3`, `pbVar4`) with no semantic meaning recoverable
+- **Opaque predicate logic obscured** - GCD algorithm present but `p1`, `p2`, `p3` semantics lost
+- **Vectorized loop unreadable** - 150+ lines of manual SIMD unrolling with no abstraction
+- **Zero semantic comments** - only auto-generated warnings, no algorithm or intent documentation
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test function names were preserved from debug symbols (`param_fake_branch`, `param_opaque_predicate`, `param_vectorized_loop`), providing some semantic anchor points.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or behavioral contracts documented anywhere, making it impossible to understand expected vs. actual behavior without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve conditional logic even when optimization eliminates it** - Flag eliminated branches as "OPTIMIZED_OUT: condition always false" rather than removing entirely
+2. **Implement pattern recognition for common algorithms** - Identify GCD, XOR decryption, bit manipulation idioms and add explanatory comments
+3. **Infer variable names from usage context** - Variables used in length checks should be named `len`/`size`, XOR operations should hint at `key`/`encrypted`

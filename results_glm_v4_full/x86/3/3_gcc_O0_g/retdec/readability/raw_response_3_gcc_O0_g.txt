@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`), obscuring semantic meaning. While `mem` is used for heap pointers, loop counters and base registers are indistinguishable.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered (e.g., `heap_basic`, `local_array`), matching the original source exactly due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are replaced by numeric offsets (e.g., `printf((char *)(v1 + 0x1824))`), making the output text unreadable. Magic numbers for struct offsets (e.g., `+4`, `+8`) are used without explanation.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts, specifically `__x86_get_pc_thunk_ax(v1)` calls in almost every function, which severely impedes readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Loops are reconstructed but often split into an `if` condition followed by a `while` loop (e.g., `local_array`), which is clunky compared to the original `for` loops.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are preserved perfectly with 1:1 mapping to the source. No inlining or outlining occurred, maintaining the original granularity.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but stack canary checks (`if (v3 != __readgsdword(20))`) inserted at the end of functions interrupt the return flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no loop unrolling or dead code typical of high optimizations, but the repetitive PIC boilerplate (getting the PC base) adds redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Pointer arithmetic is frequently performed on integers (e.g., `(int32_t)mem + 4`), degrading the distinction between pointers and integers and losing semantic type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; `Point` and `Node` structures are accessed via raw pointer offsets (e.g., `*(int32_t *)(v6 + 4)`) rather than field names.
+
+**11. Type Safety:** Score: 3/10
+Justification: Frequent unsafe casts between pointers and integers (`int32_t`) are present, which is dangerous and obscures the memory access patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Only metadata comments (module name, line range) are present. There are no comments explaining the logic, algorithms, or the purpose of complex arithmetic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls (`malloc`, `free`) are recognized, but higher-level data structure patterns like linked list traversal are not identified or abstracted.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag intentional bugs in the source (e.g., `double_free`, `dangling_pointer`) or suspicious pointer arithmetic, presenting them as valid code.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: Preconditions like null checks are preserved in the code logic, but they are not explicitly documented as contracts or assertions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Global variable accesses are obfuscated by PC-relative offset arithmetic (e.g., `v2 + (int32_t)&g17 + 256`), making it difficult to identify which global is being used.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping, scattering related test functions (e.g., stack vs. heap tests) throughout the file.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on non-standard intrinsics like `__x86_get_pc_thunk_ax` and `__asm_hlt`, making it unlikely to compile without significant modification or a compatible environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.25
+L2_avg: 6.75
+L3_avg: 3.33
+L4_avg: 3.50
+L5_avg: 4.00
+
+Overall = (4.25 × 0.30) + (6.75 × 0.25) + (3.33 × 0.20) + 
+          (3.50 × 0.15) + (4.00 × 0.10)
+Overall = 1.275 + 1.6875 + 0.666 + 0.525 + 0.4
+Overall = 4.55 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet Points)
+- **String Literals Lost:** String constants are replaced with numeric offsets (e.g., `0x1824`), making print statements incomprehensible.
+- **Struct Types Not Recovered:** Composite types like `Point` and `Node` are completely missing, replaced by raw pointer arithmetic (e.g., `offset + 4`).
+- **PIC Artifacts:** Excessive Position Independent Code boilerplate (`__x86_get_pc_thunk_ax`) clutters every function.
+- **Global Access Obfuscation:** Global variables are accessed via complex PC-relative arithmetic, hiding the actual variable being referenced.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, providing the only clear semantic anchors in the code.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (2/10)**
+- **Why?** The failure to reconstruct `struct` definitions reduces complex data manipulation to obscure pointer math, which is the single biggest barrier to understanding the heap and linked list logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover String Literals:** Map data section references back to their actual string values instead of outputting raw offsets.
+2.  **Struct Type Reconstruction:** Analyze pointer access patterns (e.g., consistent `+4`, `+8` offsets) to synthesize and define struct types.
+3.  **Abstract PIC Boilerplate:** Hide or simplify Position Independent Code prologues (like `__x86_get_pc_thunk_ax`) to focus on the actual function logic.

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Variables are consistently named `v1`, `v2`, `a1`, which is standard but lacks semantic meaning (e.g., `g7` instead of `global_counter`). However, `mem` is used appropriately for heap allocations, preventing a lower score.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `local_vars`, `heap_basic`, and `linked_list_heap` are perfectly recovered from the symbol table, matching the original source exactly and clearly reflecting purpose.
+
+**3. Literal Clarity:** Score: 9/10
+Justification: Magic numbers from the source (e.g., `10`, `42`, `2048`) are preserved accurately. String literals are recovered, though some are represented as hex escape sequences in the global variable section (e.g., `\xe5\xad\x90`), which is a minor encoding issue.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but there are minor artifacts like the loop condition `i > -10` in `local_array` instead of the source's `i < 10`, which adds slight cognitive noise without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is recognizable, but loop structures are sometimes inverted (e.g., decrementing loops instead of incrementing) and `goto` is used in `linked_list_heap` for cleanup, which is valid but less idiomatic than the source's structured flow.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the original source with perfect granularity. No inlining or outlining occurred, preserving the original modular structure exactly as intended at `-O0`.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. While there are `goto` labels for error handling (e.g., `lab_0xd20`), they are placed logically and do not significantly disrupt the linear reading flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or obvious redundancy. The decompiler successfully abstracted away the stack frame manipulations typical of `-O0` builds, presenting clean logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are precise, correctly using `int32_t` for `int` and `int32_t*` for pointers on the ARM64 platform. Signed/unsigned distinctions are handled correctly (e.g., `uint32_t` for array indices).
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct types like `Point` and `Node` are not recovered; instead, the code uses raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)` instead of `head->next`), significantly degrading readability of data structures.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are generally safe and accurate. There are no dangerous or confusing type puns that would lead to undefined behavior interpretation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The only comments are address ranges (e.g., `// Address range: 0x55c - 0x568`), which offer no semantic value.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard patterns like `malloc`/`free` are visible, but higher-level idioms like "linked list traversal" or "tree creation" are not explicitly identified or labeled, leaving the reader to infer them from the pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication of potential issues, such as the memory leak in `memory_leak` or the dangling pointer in `dangling_pointer`. The code presents these as standard logic without flags.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: Preconditions (e.g., `malloc` failure checks) are present in the code but are not documented as contracts or assertions. The reader must deduce safety guarantees from the control flow.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and clear, but global variable usage is obscured by generic names (`g1`, `g2`), making it harder to track state dependencies across functions without cross-referencing addresses.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly matching the source file's order. Helper functions and test functions are distinct, maintaining a coherent module structure.
+
+**18. Build System Compatibility:** Score: 9/10
+Justification: The code includes standard headers and uses standard types. It is syntactically correct C and would likely compile with minimal adjustments (e.g., fixing the `unknown_ffff0fc0` prototype if needed).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Composite types (structs) are not recovered; `Node` and `Point` are accessed via raw pointer offsets (e.g., `v1 + 4`).
+- Global variables lost their semantic names, becoming generic `g1`, `g2`, etc., obscuring global state tracking.
+- Loop conditions are sometimes inverted (e.g., `i > -10` vs `i < 10`), adding unnecessary cognitive load.
+- Complete lack of semantic comments or annotations explaining logic or identifying data structures.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names from the symbol table, making the high-level flow of the program immediately understandable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The failure to reconstruct `struct` definitions forces the reader to interpret raw pointer arithmetic, which is the single biggest barrier to understanding the data manipulation logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct type recovery to group related pointer offsets into named fields (e.g., detect `*(ptr+4)` and `*(ptr)` as a struct).
+2. Normalize loop conditions to standard forms (e.g., prefer `i < N` incrementing loops over `i > -N` decrementing loops) to match source idioms.
+3. Infer global variable names from usage patterns or debug info to replace generic `g1`, `g2` names with meaningful identifiers like `global_counter`.

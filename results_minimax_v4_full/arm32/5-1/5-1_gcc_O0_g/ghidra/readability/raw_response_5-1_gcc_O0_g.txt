@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `iVar3`, `r1`, `r2`, `r3`, `this_local`, `param_1`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are mostly lost. Only `obj` and a few others retain semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are semantically accurate and match the original source - `SimpleClass::getValue`, `SimpleClass::setValue`, `LifecycleClass::getData`, `Base::virtual_func`, `Derived::virtual_func`, `call_virtual_func`. Member functions and operators are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` (4660), `0x14` (20), `0x1e` (30), `0x2a` (42) are used without explanation. The original source had clear constants like `0x1234` for class ID but decompiler doesn't explain their meaning. Some hex values obscure the actual numeric values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Heritage AFTER dead removal", "WARNING: Struct ignoring overlapping field". Many unused `this_local` variables clutter the code. Extensive auto-generated warnings make reading difficult.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops, conditionals, and return statements are clear. Exception handling uses goto patterns which is expected. Virtual function calls through vtable are properly shown. At -O0, the control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each class method is properly separated into its own function. Template instantiations are separate functions. Smart pointer internals are well-decomposed. No monolithic functions; good granularity with each function having single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns and breaks are used appropriately. Some nested conditionals but nothing excessive. The code flows logically from setup to return.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Template instantiations (Container<int> vs Container<double>) are separate but this is expected. Some duplicate patterns in smart pointer implementations but manageable. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `int` used generically, `size_t` appears in some places, `bool` for booleans, `char*` for strings, `pointer` for void*. The original had specific types like `int*`, `size_t`, `bool` which are partially preserved. Some type information is lost.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Good struct reconstruction - `SimpleClass` with `value` and `name` fields, `LifecycleClass` with `data` and `size`, `Base`/`Derived` with proper fields. Inheritance is shown with `super_BaseA`, `super_BaseB`. `DiamondDerived` has overlapping field warnings but structure is understandable.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some pointer arithmetic but mostly safe. No major undefined behavior risks. Virtual function calls properly use vtable. Minor issues with some casts but nothing dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated WARNING comments. DWARF original prototype comments are useful but sparse. No algorithm explanation or decompilation confidence indicators. No comments explaining non-obvious logic. The comments don't help understand the code.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ patterns are recognized - virtual function calls through vtable, smart pointer RAII patterns, template instantiation, exception handling with __cxa_throw. Design patterns like RAII are implicitly present. Could be more explicit about pattern names.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged with WARNING comments (unreachable blocks, unknown calling conventions, struct overlapping). However, warnings are generic rather than specific. No indication of indirect call resolution failures or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. No error condition explanations. The decompiler doesn't recover any contracts or assertions from the original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear. Virtual dispatch is shown through vtable pointers. Inheritance relationships are visible through `super_*` fields. However, no explicit documentation of who calls whom or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single monolithic file. No logical grouping by class or feature. No namespace structure preserved. The original had clear class definitions which are scattered in decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many undefined symbols: `operator_new`, `operator_delete`, `__cxa_throw`, `__cxa_allocate_exception`, various std:: types. Would require extensive patching with stubs for standard library functions to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is generic (`iVar1`, `r1`, `this_local`) losing semantic meaning from original source
+- Excessive noise from WARNING comments about unreachable blocks and unknown calling conventions
+- No contract or assertion recovery - preconditions/postconditions are completely absent
+- Magic numbers like `0x1234`, `0x14`, `0x2a` used without explanation
+- Single monolithic file with no logical grouping or namespace structure
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Each class method is properly separated into its own function with good granularity. Template instantiations and smart pointer internals are well-decomposed.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Generic variable names like `iVar1`, `iVar2`, `r1`, `r2`, `param_1` completely obscure the semantic purpose that was clear in the original source (`value`, `name`, `data`, `size`, `multiplier`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `iVar1` used as `value` in SimpleClass should be named accordingly
+2. Add meaningful comments explaining magic numbers and constants (e.g., "0x1234 = CLASS_ID")
+3. Recover and document preconditions/postconditions from function behavior and error handling patterns

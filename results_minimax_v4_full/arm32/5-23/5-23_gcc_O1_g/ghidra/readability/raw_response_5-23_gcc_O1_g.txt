@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Extensive use of generic names like `iVar1`, `piVar2`, `piVar3` obscures variable purpose. Many variables show "Unresolved local var" annotations (e.g., `int result@[DW_OP_breg0(r0): +10; DW_OP_stack_value]`). Only parameters like `size`, `x`, `y`, `arr`, `n` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are nearly perfectly preserved from source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`, `param_dynamic_code` all match exactly. The decompiler correctly identified all 18 test functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025), `0x200` (512), `0x40` (64), `0xdef0` appear without explanation. The value `0x1e` for `sysconf(_SC_PAGESIZE)` is unexplained. However, return values like `0x40` (64) match expected outputs from source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with 15+ "WARNING" comments about unreachable blocks and unknown calling conventions. Extensive "Unresolved local var" annotations with raw DWARF opcodes (`DW_OP_breg0`, `DW_OP_lit3`, etc.) pollute the code. These artifacts make reading difficult.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with if-else and while loops. The `param_asm_clobber` function correctly recovered a do-while loop. At -O0, control flow should be nearly identical to source, and the decompiler mostly achieved this.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test function is separate (e.g., `param_macro_constants`, `param_asm_basic`). No monolithic functions observed. Function sizes are reasonable (10-30 lines each).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns are used appropriately. No goto statements or confusing forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (appropriate for -O0). The `param_asm_simd` shows a simple loop without redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` for most integers. The parameter `size_t n` in `param_asm_multi_insn` is correctly typed as `size_t`. However, `int *arr` could be more specific. No `int32_t` or `uint64_t` precision recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct types were recovered, which is acceptable since the source uses minimal struct definitions. The code uses raw pointers and arrays without struct wrappers, so this is not a significant loss.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts observed. Pointer arithmetic in loops (e.g., `piVar3 = piVar3 + 1`) is standard. The atomic operations use proper built-in functions. Minor concern: `__printf_chk` format string handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly decompiler-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") rather than helpful explanations. The comment "Unresolved local var" with DWARF info is noise, not useful documentation. No explanation of macro semantics or assembly behavior.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The decompiler doesn't recognize the inline assembly patterns, macro expansions, or the conditional compilation logic. Each function is treated in isolation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present for "Unknown calling convention" and "Removing unreachable block". However, the inline assembly in `param_asm_basic` was silently replaced with `return x + 10` without flagging that inline asm was removed. Mixed results.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition recovery. No documentation of expected input ranges (e.g., "requires: size > 0") or return value guarantees. The decompiler provides no semantic contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `param_asm_atomic(&counter,5)`). However, no documentation of who calls each function or what globals they access. The relationship between `call_*` wrapper functions and `param_*` implementations is implicit, not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions, then test runners. Static functions like `my_func` are properly scoped. However, all 99 functions (including library stubs) are in one file.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code will not compile as-is. Uses `__printf_chk` which requires linking libgcc or adding declaration. The atomic operation stubs (`__sync_fetch_and_add_4`) are included but reference undefined `SUB_ffff0fc0`. Needs significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`iVar1`, `piVar2`, `piVar3`) with extensive "Unresolved local var" annotations
+- Severe noise pollution from 15+ WARNING comments and raw DWARF debug info in comments
+- Inline assembly code silently replaced with C equivalents without flagging the transformation (e.g., `param_asm_basic` lost its `__asm__` block)
+- No comment explaining macro semantics - the preprocessor transformations are completely opaque
+- Build system compatibility issues: undefined `__printf_chk` and broken atomic operation stubs
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are nearly perfectly preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+**Most Needs Improvement:** Noise Reduction (scored 3/10)  
+The decompiled output is cluttered with WARNING comments, unreachable block notifications, and raw DWARF opcode annotations that make reading the actual code difficult. These artifacts should be filtered or moved to a separate metadata section.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Filter noise artifacts**: Move WARNING messages and DWARF debug info to a separate metadata section rather than polluting the source code view
+2. **Recover inline assembly indicators**: When inline assembly is removed, add a comment like "// Original contained inline assembly" rather than silently replacing it
+3. **Improve variable naming inference**: Use data flow analysis to infer better variable names from usage patterns (e.g., if a variable is used as loop counter, name it `i` or `index`)

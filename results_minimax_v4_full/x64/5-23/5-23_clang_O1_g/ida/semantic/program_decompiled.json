@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_clang_O1_g/ida/syntactic/bin/5-23_clang_O1_g_fixed",
+  "stdout": "test string\nparam_macro_functions: 64\ncall_macro_functions: 30\nparam_conditional_compile: 32\nparam_multi_branch_compile: 57122\ncall_macro_recursion: 116\nparam_stringize: 19\nparam_token_paste: 60\nLOG: Values: 10, 20, 30\ncall_variadic_macro: 60\ncall_macro_override: 16\nparam_include_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:46\ncall_builtin_macros: 382\nTesting ASM features:\n\nparam_asm_basic: 15\ncall_asm_clobber: 994395594 5 5 20 0 3000400020001\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

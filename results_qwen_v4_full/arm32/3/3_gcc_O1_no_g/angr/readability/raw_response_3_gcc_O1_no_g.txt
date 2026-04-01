@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `ptr`, `a0` instead of semantic names from source (e.g., `arr`, `local`, `p`). In `local_array`, the loop variable should be `i` but is `v7`; in `heap_basic`, the array pointer is just `ptr` losing the `arr` semantics.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained names (`double_value`, `local_vars`, `heap_basic`) but runtime functions are generic (`sub_10598`, `call_weak_fn`). Some names are misleading: `stack_alias` takes no parameters but source requires two pointer parameters.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (should be `-1`), `0xfffffff8` (alignment mask), `4294905792` (undefined). No constants recovered; `42` in `address_of_local` is clear but `0x32` in `heap_realloc` is not.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition` calls (20+ occurrences), stack canary checks (`__stack_chk_guard`), and redundant variable assignments (`v1 = v2; v0 = v3`). These are analyzer artifacts, not original code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements replace natural loops (e.g., `local_array` uses `do-while` with `goto` instead of `for`). `armg_calculate_condition` calls obscure simple boolean expressions throughout.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but some have incorrect signatures (`global_array_access` has 4 parameters instead of 1). `heap_realloc` returns `unsigned int [5]` which is invalid C syntax.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt flow (`LABEL_106e0`, `LABEL_10bd5`). Deep nesting in `tree_heap_traversal` with multiple conditional branches makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Redundant condition checks appear throughout (`armg_calculate_condition` called multiple times with same arguments). Stack canary checks duplicated in every function with stack variables.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of `int`, `size_t`, or proper pointer types. `double_value` takes `unsigned int` but source uses `int`. Function pointers lose signature information (`global_func_ptr` is `struct_0 *` not `int (*)(int)`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`). `Node` struct incorrectly split into `struct_0`, `struct_1`, `struct_2`, `struct_3`. `Point` struct lost entirely in `local_struct` (optimized to `a0 * 3`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Critical use-after-free in `heap_basic` (returns `ptr[a0 + ...]` after `free(ptr)`). Multiple unsafe casts (`(char *)ptr + v0`). `heap_realloc` has invalid array return type. Pointer arithmetic errors throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated annotations like `/* do not return */`. No algorithm explanations or API contracts documented.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list creation in `linked_list_heap` not identified as such. Memory allocation patterns (`malloc`/`free` pairs) not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code. Use-after-free in `heap_basic` not flagged. `stack_alias` logic completely lost (returns constant 20) without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks). Error return values (`-1`, `-2`) not explained. Null pointer checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. `test_stack_memory` calls known functions but no call graph. Global variables declared `extern` but usage not traced.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`_init`, `_start`, `_fini`) mixed with application code. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile standalone. `armg_calculate_condition` undefined. Invalid syntax (`unsigned int [5]` return type). Missing includes and type definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+5+4+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              3.66/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Use-after-free bug** in `heap_basic`: returns `ptr[a0 + ...]` after `free(ptr)` - introduces undefined behavior not in source
+- **`stack_alias` logic lost**: Returns constant `20` instead of implementing pointer aliasing logic from source
+- **`armg_calculate_condition` noise**: 20+ occurrences of analyzer artifacts obscuring simple boolean expressions
+- **Type degradation**: All integers become `unsigned int`, losing signed/unsigned semantics and causing potential bugs
+- **Invalid C syntax**: `heap_realloc` returns `unsigned int [5]` which doesn't compile
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core application functions retained their original names (`double_value`, `local_vars`, `heap_basic`), providing some semantic anchor points for understanding the code's purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments; no algorithm explanations, no API contracts, no decompiler confidence indicators, making it extremely difficult to understand intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate analyzer artifacts**: Remove or comment `armg_calculate_condition` calls and replace with native C boolean expressions
+2. **Recover semantic variable names**: Use data-flow analysis to infer names from usage patterns (e.g., loop counters → `i`, array pointers → `arr`)
+3. **Flag semantic discrepancies**: Add warnings when decompiled logic diverges from detectable source patterns (e.g., `stack_alias` returning constant vs. implementing aliasing)

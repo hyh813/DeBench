@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/x64/2/2_gcc_Os_g/ghidra/syntactic/bin/2_gcc_Os_g_fixed",
+  "stdout": "",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false
+}

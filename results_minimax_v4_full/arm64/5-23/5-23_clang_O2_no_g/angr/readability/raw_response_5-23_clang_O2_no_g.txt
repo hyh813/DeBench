@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of original names like `size`, `x`, `y`. Local variables are `v0`, `v1`, `v2` - completely obscuring their semantic purpose as `result`, `counter`, or `ptr`. Only `global_var` was recovered meaningfully.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Main test functions like `param_macro_constants`, `call_conditional_compile`, `param_asm_basic` correctly match source names. However, utility functions use mechanical names like `sub_4007b4`, `sub_4008a4` with addresses instead of semantic names.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Some constants recovered: `0x400` (1024), `0x200` (512), `64` are correct but unexplained. The magic number `57072` (0xDEF0) in `param_multi_branch_compile` lacks explanation. String literals like `"LOG: Values: %d, %d, %d\n"` preserved correctly.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts. Some unnecessary stack frame setup (`v0 = &v1`) but no debug instrumentation or redundant casts. Clean decompilation overall.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural - if-else statements, loops, and returns are properly structured. At `-O0`, the flow closely matches source. Example: `if (0x400 >= a0) return 0x200; else return 64;` is clear.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching source. Each test function (`param_*`, `call_*`) is separate. The 780 LOC output vs 709 source is reasonable overhead.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive goto or computed jumps disrupting flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or significant redundancy. Some loop unrolling in `param_asm_clobber` but it's handled reasonably.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Uses `unsigned int` and `unsigned long long` for parameters, but original source used `int`. The unsigned conversion changes semantics for negative numbers. Function return types vary between `int`, `unsigned long long`, and `long long` inconsistently.
+
+### 10. Composite Type Recovery
+**Score: 9/10**
+Justification: Source had minimal struct usage. The few cases like `param_asm_clobber` correctly handle pointer types. No composite type reconstruction needed, so this scores well by default.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe with proper pointer usage. However, `param_asm_clobber` has complex register manipulation with potential type confusion. The `arm64g_calculate_condition` calls suggest unresolved analysis.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments in decompiled output. Original source had extensive documentation explaining preprocessor behavior, macro expansion, and assembly semantics - all completely lost. This is critical for understanding the test cases.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: No pattern recognition. The preprocessor macro tests (`SQUARE(x)`, `MAX(a,b)`) are just shown as computed values without indicating they were macro expansions. The inline assembly patterns aren't identified as such.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No anomaly flags. The `arm64g_calculate_condition` calls suggest unresolved indirect calls or condition analysis, but no warnings are provided. The "Failed to decompile" message for `__aarch64_ldadd4_acq_rel` is noted but not highlighted in the function using it.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_asm_atomic` should indicate it requires a valid pointer and alignment, but this is absent.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are traceable through the code (`main` calls `test_preprocessing_features`). However, no explicit documentation of call graphs or global variable usage. External dependencies like `mmap`, `printf` are declared but relationships aren't summarized.
+
+### 17. Module Organization
+**Score: 4/10**
+Justification: Functions are listed in address order (0x400780, 0x4007a0, etc.) rather than logical grouping. The original had clear sections: preprocessing tests, assembly tests, but this organization is lost.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Has `extern` declarations for external functions. However, won't compile standalone - missing standard library definitions, and the "Failed to decompile" function leaves a gap. Requires moderate patching to build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 7 + 6 + 8) / 4 = 6.0
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.0
+L3_avg = (6 + 9 + 7) / 3 = 7.33
+L4_avg = (2 + 4 + 3 + 2) / 4 = 2.75
+L5_avg = (6 + 4 + 6) / 3 = 5.33
+
+Overall = (6.0 × 0.30) + (8.0 × 0.25) + (7.33 × 0.20) + 
+          (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.80 + 2.00 + 1.47 + 0.41 + 0.53
+        = 6.21/10
+```
+
+### Overall Readability Score: 6.2/10
+
+### Critical Defects
+- **Variable naming**: Parameters `a0`, `a1`, `a2` and locals `v0`, `v1`, `v2` completely obscure semantic meaning - should infer names from usage patterns
+- **No comments**: All preprocessor and assembly explanations from source are lost; critical for understanding macro expansion behavior
+- **No anomaly indication**: Indirect calls and failed decompilation (`__aarch64_ldadd4_acq_rel`) not flagged to analyst
+- **Type unsigned conversion**: Parameters converted to `unsigned int`/`unsigned long` changing signed semantics from original
+- **Module organization**: Functions listed by address rather than logical grouping; original section structure (PP-L2, ASM-L4) lost
+
+### Best Quality Aspect: Structural Intelligibility (8.0/10)
+Control flow is natural, function decomposition matches source granularity, and code reads linearly without spaghetti patterns. At -O0, the decompiler preserved the logical structure well.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+Complete absence of comments, no pattern recognition for macros or idioms, no anomaly warnings, and no contract documentation. This is the biggest gap between decompiled and source readability.
+
+### Top 3 Recommendations
+1. **Recover variable names from usage**: Analyze how parameters/locals are used (e.g., `a0` compared to `0x400` should suggest `size` or `max_size`)
+2. **Add semantic comments**: Document preprocessor expansion results, assembly patterns, and macro origins - this is critical for educational/test code
+3. **Flag unresolved analysis**: Mark indirect calls, failed decompilations, and condition analysis failures with warnings so analysts know what to verify manually

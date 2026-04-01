@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_clang_O0_g/ida/syntactic/bin/5-23_clang_O0_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\nPpL201: 64\nPpL202: 30\nPpL203: 32\nPpL204: 57122\nPpL301: 116\nPpL302: 19\nPpL303: 60\nLOG: Values: 10, 20, 30\nPpL304: 60\nPpL305: 16\nPpL306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:13\nPpL307: 382\n=== Assembly Features Test ===\nAsmL401: 15\nAsmL402: 15\nAsmL403: -1\nAsmL404: 36\nAsmL405: 30\nAsmL406: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

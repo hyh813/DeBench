@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `lVar2` with no semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`). Only runtime functions use generic names (`FUN_00101020`). Good verb choices maintained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x20`, `0xbf`, `0x2c`, `0x1b8` appear without explanation. Test functions show constant-folded hex values (`0x61`, `0x400c000000000000`) instead of computed results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler runtime functions (`_init`, `deregister_tm_clones`, `__do_global_dtors_aux`) add noise. Warning comments about unreachable blocks present but don't obscure core logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use `do-while` instead of natural `for` constructs. `process_char` condition `0x19 < (byte)((char)param_1 + 0xbfU)` obscures the original `'A' && c <= 'Z'` logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; no monolithic functions. Test functions became complex due to constant folding but remain cohesive single-purpose units.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `do-while` loops with manual index management disrupt natural flow. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions contain redundant stack initialization code. No significant dead code in core logic functions. Loop patterns are consistent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `process_ll` returns `long` instead of `long long`. `process_ld` body is completely missing. Pointer types degraded to `undefined8*`, `long`. Generic `int` used where `int32_t` would be precise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - all structs accessed via pointer arithmetic (`param_1[1] + *param_1 + param_1[2]` instead of `p->x + p->y + p->z`). No struct/union definitions recovered. Bitfields completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`undefined4*`, `undefined8*`). Function pointers reduced to generic `code*`. Pointer arithmetic replaces proper field access, risking undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler metadata comments present. Zero algorithm explanations, no documentation of non-obvious logic like the character range check transformation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal, array summation, and tree recursion patterns not identified or named. No design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings for unreachable blocks in runtime functions. However, `process_ld` missing body not flagged. Type mismatches silently accepted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions or error condition documentation. Bounds checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Callback relationships unclear (`ptr_func_simple` shows `code*` without signature). Global variable usage not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order, not grouped by category (data types, arrays, pointers, composites). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions (`printf`, `puts`) referenced but not declared. Missing struct definitions prevent compilation. Would require significant patching to build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (5+7+6+7)/4 = 6.25  × 0.25 = 1.563
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────
+Overall Score:                                  4.76/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Struct/union types completely lost** - All composite types accessed via raw pointer arithmetic (`param_1[1]`, `param_1 + 0x2c`) instead of field names
+- **`process_ld` function body missing entirely** - Returns void with no implementation, original had `long double` computation
+- **Variable names provide zero semantic information** - `param_1`, `iVar1`, `uVar2` require manual tracing to understand purpose
+- **Magic numbers without explanation** - `0x2c`, `0x1b8`, `0xbf` obscure array strides and character range logic
+- **Test functions constant-folded** - Actual function calls replaced with pre-computed values, losing test semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify purpose at a glance
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all field access reduced to pointer arithmetic, destroying semantic clarity
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union pattern recognition** - Detect consistent offset patterns (e.g., `+0`, `+4`, `+8`) and propose named struct types with field recovery
+2. **Add semantic variable naming inference** - Analyze usage patterns to suggest names like `array_ptr`, `element_count`, `sum` instead of `param_1`, `param_2`, `iVar1`
+3. **Recover high-level loop constructs** - Transform `do-while` with manual index management back to `for` loops with clear iteration semantics

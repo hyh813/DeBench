@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_gcc_O1_no_g/ghidra/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "Preprocessing Test\nMACRO_CONST = 64\nMACRO_FUNC(30) = 30\nCONDITIONAL_COMP = 32\nMULTI_BRANCH = 57122\nMACRO_RECURSION = 116\nSTRINGIZE = 19\nTOKEN_PASTE = 60\nLOG: Values: 10, 20, 30\nVARIADIC: 50\nMACRO_OVERRIDE = 16\nINCLUDE_GUARD = 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:03\nBUILTIN_MACROS = 266\n\n=== ASM Features Test ===\nparam_asm_basic returned: 15\nparam_asm_clobber returned: 0\nparam_asm_multi_insn returned: 0\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `local_8`, `piVar3`, `uVar1`). In `varargs_func`, names like `piVar5` and `piVar4` provide no semantic hint about their role in iterating variadic arguments.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `ret_large_struct` are perfectly recovered, likely from symbol tables. They accurately reflect the source's intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Due to compiler optimization (constant folding), function calls are replaced by magic numbers (e.g., `return 0xf` in `call_cdecl` instead of `cdecl_func(5, 10)`). While accurate to the binary, this obscures the source logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, such as the `CONCAT44` macro in `ret_large_struct` and references to `register0x00000008` in `varargs_func`, which represent implementation details rather than high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Most functions are simple, but `varargs_func` and `param_ptr_array` contain complex pointer arithmetic loops that are difficult to map back to standard `for` loops. `ret_multi_branch` is optimized into a mathematical formula (`param_1 * 10 + 10`), which is readable but structurally different from the source `switch`.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions maintain appropriate granularity matching the source. There are no monolithic functions, and the separation of concerns (e.g., distinct functions for each calling convention test) is preserved.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, `varargs_func` contains a `do-while` loop with nested `if` conditions and pointer manipulation that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents clean logic without obvious dead code or redundant assignments, though this is largely due to the compiler's optimizations rather than decompiler cleanup.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Significant type confusion exists. In `func_mixed_args`, parameters are reordered and retyped (Source: `int, char*, double, long long` vs Decompiler: `double, int, char*, long`), likely due to ARM64 register file separation. Structs are often replaced by pointers or integers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are largely lost. `LargeStruct` and `SmallStruct` are not reconstructed; `func_struct_byval` takes an `int*` and accesses offsets like `param_1[0x1e]`, and `ret_small_struct` returns a `ulong` instead of a struct.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe casts and pointer arithmetic. For example, accessing a struct via `param_1[0x1e]` (array indexing on a pointer) is unsafe and loses the bounds checking implied by struct types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are mostly auto-generated warnings (e.g., "WARNING: Removing unreachable block") and do not explain the logic, algorithms, or the purpose of complex pointer manipulations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. `varargs_func` is not recognized as a variadic function but rather as pointer arithmetic. Struct returns are not recognized, replaced by bit-packing or hidden pointers.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The use of `register0x00000008` acts as a flag that something unusual is happening (accessing registers directly), but it is not explained as a varargs implementation detail.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For instance, the contract that `func_struct_byptr` requires a non-null pointer is present in the logic (`if (param_1 != ...)`), but not explicitly documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names are recovered, the call graph is very clear. It is easy to see which test functions call which implementation functions.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered logically, generally matching the source flow. Related test functions are grouped together in the output.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without modification. The `CONCAT44` macro is undefined, and `register0x00000008` is not valid C syntax for a variable declaration.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Type/Order Mismatch**: In `func_mixed_args`, parameters are reordered (`double` appears first) compared to the source (`int` first), confusing the function signature.
+- **Lost Struct Semantics**: `LargeStruct` and `SmallStruct` are completely lost; `func_struct_byval` treats the struct as a raw `int*` array.
+- **Obscured Varargs**: `varargs_func` logic is hidden behind raw pointer arithmetic on `register0x00000008` instead of using `va_list` concepts.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- **Why?** The decompiler successfully recovered symbol names for almost all functions, making the high-level purpose of the code immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- **Why?** The failure to reconstruct `LargeStruct` and `SmallStruct` reduces complex data manipulation operations to confusing pointer arithmetic and array indexing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve AAPCS64 Parameter Analysis**: Correctly map mixed floating-point and integer parameters to their source order rather than register order.
+2.  **Enhance Struct Recovery**: Detect patterns of passing pointers to stack-allocated memory or register packing to recover struct-by-value and struct-return semantics.
+3.  **Recognize Varargs Patterns**: Identify standard `va_list` implementations (stack walking or register access) and represent them using standard `va_start`/`va_arg` idioms.

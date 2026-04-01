@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic stack offsets like `local_28`, `uStack_24`, and `pvVar1`, completely obscuring the original semantic intent (e.g., `obj`, `result`, `data`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully demangled C++ symbols, resulting in accurate names like `Container<int>::push` and `Base::virtual_func`, which clearly reflect the original source functionality.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are often represented as hex integers (e.g., `0x74736554` for "Test") or raw stack initializations, and struct member access relies on magic offsets (e.g., `this + 0x28`) rather than named constants.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with `undefined` types (e.g., `undefined4`, `undefined **`) and compiler-specific artifacts like `CONCAT44` macros, which significantly impedes readability despite the `-O0` optimization level.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While basic loops are recovered as `do-while` structures, the complex control flow for exception handling (try/catch blocks) is entirely missing, reducing `test_cpp_exception` to just a throw statement.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler correctly separates template instantiations and class methods into distinct functions (e.g., `Container<int>::push` vs `Container<double>::push`), maintaining good granularity.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps, though the verbose stack manipulations in `-O0` code make the flow denser than necessary.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little code redundancy; the verbosity stems from the lack of optimization (register spilling) rather than decompiler artifacts like duplicated blocks.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: High-level types are frequently degraded to generic `void*`, `int*`, or `undefined4`, and specific C++ types like `bool` or `size_t` are often replaced with `int` or `uint`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered; members are accessed via raw pointer arithmetic and offsets (e.g., `*(int *)(this + 0x28)`) rather than field names, effectively treating C++ objects as raw byte arrays.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, such as casting `void*` to `int*` to access class members and using `code ***` for vtable lookups, which obscures type safety boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of complex pointer arithmetic, leaving the user to decipher the C++ semantics manually.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: C++ idioms like virtual dispatch are visible only as raw vtable dereferences (`(***(code ***)param_1)()`), and RTTI checks appear as string comparisons rather than `typeid` or `dynamic_cast` constructs.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the missing exception handling logic and inlined class structures as standard code without any warnings or flags indicating potential reconstruction failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the null checks or size constraints present in the original source are not explicitly documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clearly visible, and the relationship between a class and its methods is maintained via naming conventions, but the data member relationships are lost due to the lack of struct recovery.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are logically grouped by class (e.g., all `Container` methods are adjacent), and the overall order of functions roughly follows the source structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to the use of Ghidra-specific types (`undefined`, `CONCAT44`), missing headers, and `__thiscall` conventions on ARM64.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Class structures (e.g., `SimpleClass`, `LifecycleClass`) are completely unrecovered; logic is reduced to raw stack memory manipulation and offsets.
+- Exception handling control flow is missing; `test_cpp_exception` only shows the `throw` path, omitting the `try/catch` blocks.
+- Struct fields are accessed via magic numbers (e.g., `this + 0x28`) instead of named member variables.
+- String literals are often obfuscated as hex integers (e.g., `0x74736554`).
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- The decompiler successfully demangled C++ symbols, preserving the original function names and namespaces, which is crucial for navigating the code.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to reconstruct class definitions and struct layouts turns high-level object-oriented code into low-level pointer arithmetic, which is the single biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance C++ Class Recovery:** Utilize vtable analysis and debug information to reconstruct class layouts with named fields instead of offset-based access.
+2.  **Reconstruct Exception Handling:** Implement analysis to identify landing pads and personality routines to rebuild `try/catch` blocks in the control flow graph.
+3.  **Improve String Literal Recovery:** Detect stack-initialized string constants and convert them back to string literals (e.g., convert `local_28 = 0x74736554` to `char local_28[] = "Test";`).

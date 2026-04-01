@@ -1,0 +1,23 @@
+Testing standard library functions
+strcmp result: 8
+strcmp result: 0
+strlen result: 12
+memcpy result: 90
+memcmp result: -1
+Value: 42, Name: TestName
+printf result: 26
+sscanf result: 579
+fopen result: 42
+fread/fwrite result: 42
+malloc result: 90
+memset result: 0
+strchr/strstr result: 15
+Testing system calls
+syscall result: 42
+stat result
+fork/exec result: 42
+pipe result: 42
+socket result: 42
+shm result: 42
+signal result
+Testing thread concurrency

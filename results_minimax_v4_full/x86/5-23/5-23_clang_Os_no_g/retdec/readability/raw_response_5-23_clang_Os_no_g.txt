@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`. Parameters retain their generic `a1`/`a2` naming with no semantic recovery. For example, in `param_macro_constants`, the parameter `a1` should be `size` based on the original source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names are correctly recovered (e.g., `my_func`, `param_asm_basic`, `call_asm_atomic`), but many have generic names like `function_1040`, `function_1050`, `function_1060`. The core test functions like `param_macro_constants` are preserved, but helper functions are not named meaningfully.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xdef0`, `0xdf22`, `0x1ce4` appear without explanation. String literals are accessed via obscure pointer arithmetic (e.g., `v1 + 3457`) with no recovery of actual string content. Constants like `64`, `30`, `32` are used directly without naming them as `BUFFER_COUNT * 4` or similar.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some `__asm__` pseudo-operations for SIMD (e.g., `__asm_movaps`) but these are expected for inline assembly recovery. No significant dead code or redundant casts observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - loops are properly recovered as while/for constructs, conditionals are straightforward. At `-O0` optimization, the flow closely matches source. Minor complexity in some SIMD-related code but acceptable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity. The decompiler correctly separated helper functions like `call_asm_clobber` from `param_asm_clobber`. No excessive inlining or outlining artifacts visible. Function sizes are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some pointer arithmetic in string handling creates minor non-linearity but nothing severe. The code is mostly followable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Loop unrolling is minimal at `-O0`. Common subexpression elimination artifacts are not prominent. Clean code without duplicate logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` appropriately for most cases. Some parameters use `uint32_t` correctly (e.g., `param_asm_clobber`). However, some pointer types could be more specific - many are just `int32_t*` without const correctness. Overall acceptable precision.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. The code uses raw pointer arithmetic extensively (e.g., `*(int32_t *)(4 * v1 + a1)`). The original source had no complex structs either, so this is partially expected, but some grouping could be recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(int32_t)&g10` treating address as value). Pointer arithmetic appears correct. No severe type safety violations that would cause undefined behavior, but some questionable patterns like mixing pointer and integer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x1234 - 0x124a`). No algorithm explanations, no recovery of original comments about preprocessing behavior, no documentation of what macros did. Very sparse.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. Standard patterns like loops and conditionals are identified but not named or highlighted. The preprocessing macro expansions are not recognized as such - they're just shown as computed values.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags visible. The decompiler doesn't indicate uncertainty about indirect calls, unusual stack layouts, or potential undefined behavior. Code is presented confidently even where resolution may be uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No preconditions (e.g., "requires: ptr != NULL"), no postconditions, no invariant documentation. The original source had no explicit contracts either, but decompiler could infer some.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Global variable usage is visible through the `g1`-`g11` references. However, no explicit documentation of call relationships or callback patterns. The relationships can be inferred but aren't explicitly stated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (preprocessing functions together, asm functions together). However, the file is essentially monolithic with no header separation. Static functions are properly marked. Organization is acceptable but not excellent.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has includes for standard headers but some are missing (e.g., `<string.h>` for `memcpy`, `<stdatomic.h>`). Function declarations are present but some are incorrect (e.g., `param_dynamic_code` has wrong signature). Requires moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`a1`, `a2`, `v1`, `v2`) with no semantic recovery
+- String literals are completely lost - accessed via pointer arithmetic without content recovery
+- No comments explaining preprocessing behavior, macro expansions, or inline assembly semantics
+- No anomaly indication for potentially problematic code patterns
+- Type safety issues: mixing pointer addresses with integer values (e.g., `(int32_t)&g10`)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- At `-O0` optimization, the decompiler correctly recovered loop constructs and conditional logic, making the execution flow easy to follow
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The decompiler makes almost no effort to infer semantic names for variables. Parameters like `a1` should be `size`, `x`, or `counter` based on usage patterns. Local variables `v1`, `v2` should be named according to their purpose (e.g., `result`, `index`, `sum`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how parameters and local variables are used to suggest semantic names (e.g., `a1` compared against `1024` → suggest `size` or `max_size`)
+2. **Recover string literal content**: Instead of showing `v1 + 3457`, attempt to recover and display the actual string content from the data section
+3. **Add semantic comments for preprocessing**: When macro expansions are detected (e.g., `64` from `BUFFER_COUNT * 4`), add comments explaining the original macro semantics

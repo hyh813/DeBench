@@ -1,0 +1,85 @@
+### === LEVEL1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic names like `acStack_2c`, `local_d`, `local_8`, `puVar1`, `sVar1`, `iVar1`, `dVar2`, `local_10`, `iStack_c` which completely obscure semantic purpose. Original source has meaningful names like `value`, `name`, `data`, `size`, `instance_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions correctly named like `test_cpp_member_func`, `test_cpp_constructor`, `Base::virtual_func`, `Derived::virtual_func`, `template_max_int_`. However, many have cryptic names like `FUN_00100eb0`, `FUN_0010123c`, and template instantiations use mechanical suffixes (`_int_`, `_double_`) rather than C++ syntax.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x125c` (4704), `0x3e9` (1000), `0x15` (21), `0x1f` (31), `0x96` (150), `0xfa` (250). These should be named constants matching source like `instance_count * 1000 + 21`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. Stack canary checks (`___stack_chk_guard`) present but don't significantly impede readability. Some register handling visible but manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if/else and loops. The unusual virtual call syntax `***(code ***)param_1` is awkward but readable. At -O0, structure closely matches source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions reasonably sized and separated. However, `test_cpp_oo_features` bundles all test printing inline, and some template instantiations could be better organized.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns used appropriately. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code. Some duplicate virtual function implementations across derived classes (e.g., multiple `MultiDerived::funcB` versions), but this is compiler artifact, not decompiler failure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types: `undefined4`, `undefined8`, `undefined1`, `long`, `int`. Original uses `int`, `char`, `size_t`, `bool` - these specific types not recovered. Template type parameters lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. Raw pointer arithmetic everywhere: `*(int *)(this + 8)` instead of `this->multiplier`, `*(int *)(this + 0x28)` instead of `this->size`. Original struct layouts completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The virtual function call pattern `***(code ***)param_1` is type-unsafe. Pointer arithmetic like `this + *(long *)(*(long *)this + -0x18)` is error-prone. Not severe but concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments. Only function signatures provide minimal context. No explanation of algorithms, magic numbers, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms partially recognized (virtual function calls, constructors, destructors) but not explicitly named or documented. Template instantiations identified but not clearly explained as C++ templates.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The decompiler doesn't indicate uncertainty about indirect calls or unusual patterns. The virtual function call resolution should be flagged as potentially uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had bounds checking in `getData()` and `Container::get()` but these contracts not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships clear from function names (e.g., `Base::virtual_func`), but overall call graphs and relationships not documented. Template instantiation relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions somewhat grouped but not well organized. Related functions like template instantiations scattered. External library functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code won't compile. Uses undefined types (`undefined4`, `undefined8`), has unresolved externals, missing includes. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`acStack_2c`, `local_8`, `iVar1`) losing all semantic meaning from source (`value`, `name`, `data`, `size`)
+- No struct/union recovery - all composite types replaced with raw pointer arithmetic (`*(int *)(this + 8)`)
+- No comments explaining algorithms, magic numbers, or C++ idioms
+- Type precision severely degraded - `undefined4`/`undefined8` instead of `int`/`size_t`/`bool`
+- Build system incompatible - uses undefined types preventing compilation
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+At -O0, the decompiled control flow closely matches source with natural if/else and loop structures.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic variable names like `acStack_2c`, `local_d`, `puVar1` completely obscure the semantic purpose that was clear in the original source (`value`, `name`, `data`, `size`, `instance_count`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `acStack_2c` used with `strncpy("Test")` should be named `name` or `name_buffer`
+2. Recover struct types from pointer arithmetic patterns - `*(int *)(this + 8)` repeated across multiple functions indicates a struct field
+3. Add comments explaining C++ idioms like virtual function calls and template instantiations, plus flag uncertain indirect calls as anomalies

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `result`, `temp`) with no semantic recovery. For example, `sequential_ops` uses no intermediate variable names despite original having `temp1`, `temp2`, `temp3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions preserved original names (`sequential_ops`, `single_if`, `recursion_factorial`), but helper functions have generic names (`sub_1030`, `computed_goto_0`, `non_local_jump_0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u` (stack canary offset) and `100 * (x + 1)` in `if_elseif_long` lack explanation. Some constants are inferable but not documented.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations (`// eax`, `// edx`) and `__readgsdword(0x14u)` calls present. Some compiler artifacts remain but don't completely obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow recovered (if/else, loops), but `recursion_factorial` converted to iterative loop and `loop_break` transformed to switch statement—semantic changes from original source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. However, tail recursion optimization in `tail_recursion` changed the recursive structure to a loop.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `duffs_device` has complex goto-based structure with labels (`LABEL_4`, `LABEL_8`, `_L187`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_multi_exit` has redundant case handlers with goto labels. `if_elseif_long` oversimplified to `100 * (x + 1)` losing original branch structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved but no distinction between `int32_t`, `size_t`, or unsigned variants. Function pointer types mostly correct but generic.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered (`funcs[3]`, `ops[10]`, `src[8]`), but no struct/union recovery visible. All composite types use raw array syntax.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer arrays and computed goto with inline assembly (`__asm { jmp [esp+edx*4+2Ch+targets] }`) present potential safety issues without warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations, no documentation of non-obvious logic like Duff's device or state machine patterns.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine pattern visible in `state_machine` and `fsm_func_table` but not explicitly identified. Duff's device structure present but unnamed.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("FAILED to decompile: __libc_start_main", "bad sp value at call"), but not comprehensive. No warnings about optimization transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Functions like `duffs_device` require `n > 0` but this isn't indicated in decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, but callback relationships not well documented. `process_with_callback` doesn't indicate the callback contract.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation functions without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 functions failed to decompile (`__libc_start_main`, `__longjmp_chk`, etc.). External dependencies not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.10/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `result` should be named semantically** (e.g., `accumulator`, `counter`, `factorial_result`) based on usage patterns
+- **`recursion_factorial` transformed from recursive to iterative** despite -O0 compilation—decompiler applied optimization recovery incorrectly
+- **`test_control_flow_l1/2/3` have hardcoded expected values** instead of actual function calls, losing test semantics
+- **No comments explaining complex patterns** like Duff's device, state machines, or computed goto
+- **Architecture mismatch** (source: ARM64, decompiled: x86) indicates potential binary mismatch
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most test functions preserved their original semantic names (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist to explain algorithm intent, non-obvious transformations, or decompiler confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add decompiler confidence annotations** indicating when transformations were applied (e.g., "// DECOMPILER: Tail recursion optimized to loop")
+3. **Recover and preserve test function semantics** by detecting printf patterns with function calls rather than hardcoding expected values

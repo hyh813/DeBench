@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/5-23/5-23_gcc_O3_no_g/angr/syntactic/bin/5-23_gcc_O3_no_g_fixed",
+  "stdout": "ASM test\nASM basic: 15\nASM clobber: 15\nASM multi: 42\nASM SIMD: 36\nAtomic result: 30\nResult: 1973940224\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

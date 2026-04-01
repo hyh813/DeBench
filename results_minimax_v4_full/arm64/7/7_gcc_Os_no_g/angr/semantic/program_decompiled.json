@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_Os_no_g/angr/syntactic/bin/7_gcc_Os_no_g_fixed",
+  "stdout": "Test: Obfuscation optimizations and edge cases\n\nValue: 10\nOpaque predicate result: 20\nInstruction substitution result: 225\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

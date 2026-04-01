@@ -1,0 +1,8 @@
+Testing Standard Library:
+call_strcpy: 14
+call_strcmp: 0
+call_strlen: 12
+call_memcpy: 90
+call_memcmp: -1
+Value: 42, Name: Test
+call_printf: 22

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v1`, `v2`, `g1`-`g53` are generic and obscure purpose; however, some parameters like `dst`, `src`, `filename`, `thread_count` retain semantic meaning from original source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved (`param_strcpy`, `call_strcpy`, `thread_compute`) but 137 functions include many opaque wrappers like `function_c4c`, `function_c58` that add no semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals stored as hex-encoded globals (`g23 = "=== \xe5\x1e..."`); magic numbers like `42`, `100`, `255` appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive wrapper functions for standard library calls (e.g., `function_d90` for `strcpy`); generic struct fields (`e0`, `e1`, `e2`) create significant noise pollution.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else/while constructs, but complex functions like `param_pthread_join` use goto labels (`lab_0x273c`, `lab_0x2954`) disrupting readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions are reasonably sized, but 137 detected functions includes excessive library wrappers that fragment the codebase unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with early returns, but goto-based loop reconstruction in functions like `param_mutex_lock` interrupts natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create significant redundancy (each libc call has a wrapper); thread functions show duplicate patterns without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t`, `char*` appropriately in most places, but excessive generic `int32_t*` where specific pointer types would improve clarity.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered (`struct _IO_FILE`, `struct stat`) but all fields named generically (`e0`, `e1`, `e2`...) losing all semantic meaning from original source.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)`, `(char *)`, `(void *)`; pointer arithmetic visible in `param_memset`, `param_malloc_free` without safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments beyond address/line metadata; no algorithm explanations, decompilation confidence indicators, or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`), but no higher-level pattern identification (producer-consumer, mutex protection patterns not named).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible in code but no call graph documentation; global variable usage (`g5`, `g6` for signal handling) not explained or linked to purpose.
+
+**15. Module Organization:** Score: 5/10  
+Justification: All code in single file with some logical grouping (test functions together), but no header separation or namespace organization.
+
+**16. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdio.h`, `pthread.h`, `stdlib.h`); metadata indicates successful compilation; external dependencies documented through includes.
+
+**17. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly flags; some `UNREACHABLE` markers present but no uncertainty indicators for indirect calls or ambiguous decompilation regions.
+
+**18. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; error conditions not documented; no invariant recognition for shared state (`g8`, `g10`, `g12`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+6+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (6+6+6+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type System):  (6+4+4)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):     (2+5+3+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):   (4+5+7+3+2)/5 = 4.20 × 0.10 = 0.42
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.74/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects
+- **Global variables `g1`-`g53`** have no semantic meaning; should be named by usage (e.g., `signal_received`, `shared_counter`, `atomic_counter`)
+- **Struct fields all generic** (`e0`, `e1`, `e2`...) losing critical semantic information from original `ThreadData`, `sockaddr_in` structures
+- **137 wrapper functions** for standard library calls create noise without adding value
+- **Zero documentation** - no comments explaining algorithm intent, error conditions, or decompilation confidence
+- **Goto-based control flow** in complex functions (`param_pthread_join`, `param_mutex_lock`) instead of natural loop constructs
+
+### Best Quality Aspect
+- **Build System Compatibility (7/10)** - Code includes proper headers and metadata indicates successful compilation, making it immediately usable for analysis
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding non-trivial logic extremely difficult; even basic function purpose comments are missing
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover semantic variable names from usage patterns** - Analyze how `g5`, `g6` are used in signal handling to name them `signal_received`, `signal_number`
+2. **Eliminate unnecessary library wrapper functions** - Inline trivial wrappers like `function_d90` (strcpy) directly at call sites
+3. **Add decompilation confidence annotations** - Mark uncertain regions, indirect calls, and type ambiguities with comments for analyst awareness

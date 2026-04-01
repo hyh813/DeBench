@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are consistently named `param_1`, `param_2`, etc., instead of the original semantic names like `a`, `b`, `count`, or `str`. Despite the `-g` flag indicating debug symbols were present, the decompiler failed to map them to the variables.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are recovered perfectly from the symbol table, accurately reflecting the original source structure.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Integer constants are often represented in hex (e.g., `0xf` instead of `15` in `call_cdecl`), which requires mental conversion. The pervasive use of `undefined4` and `undefined8` for types acts as "magic literals" obscuring data width.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with low-level ABI calls like `__aeabi_dadd` and `__aeabi_l2d` which should have been lifted into high-level arithmetic operators (e.g., `+`, floating-point casts).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Simple functions like `cdecl_func` have natural flow, but `varargs_func` contains an empty loop body where logic should be, and `test_calling_conventions` has inlined constant calculations that obscure the original function calls.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped correctly to their original boundaries. The granularity is appropriate, though some complex logic inside functions like `func_mixed_args` is obfuscated by library calls.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. There are no excessive `goto` statements or spaghetti control flow structures, which is expected for `-O0` compilation.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Some constant propagation occurred (e.g., `call_cdecl` returning `0xf`), which simplifies reading but hides the call structure. However, redundant casts associated with the ABI calls remain.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Severe type degradation is evident. 64-bit types like `double` and `long long` are split into pairs of `undefined4` (e.g., `param_3, param_4`), and return types are frequently incorrect (e.g., `void` for `varargs_func` which returns `int`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Large structures like `LargeStruct` are completely lost. `func_struct_byval` accepts scattered integers (`param_1`...`param_4`) instead of a struct pointer or value, destroying the semantic context of the data.
+
+**11. Type Safety:** Score: 4/10
+Justification: Splitting 64-bit values into 32-bit parameters creates a type-unsafe view of the code. The use of `undefined4` everywhere removes type safety guarantees, making it impossible to verify correct pointer arithmetic or data sizes.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. No algorithm explanations, API contracts, or warnings about uncertain logic are provided.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are missed. The `varargs_func` implementation (using `va_list`, `va_start`, `va_arg`) is decompiled into an empty loop, completely failing to recognize the variable argument idiom.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the empty loop in `varargs_func` and the split parameters in `func_mixed_args` as valid code without any warning flags or "UNCERTAIN" markers, misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the non-null requirement for `param_2` in `func_mixed_args` is checked but not explicitly stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are generally clear. `cdecl_func` is correctly shown being called by `call_cdecl` and `mixed_conventions_test`, maintaining the call graph visibility.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in a logical order that roughly follows the source file's structure (calling conventions, then parameters, then return values), making it easy to locate related code.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile standalone due to the use of non-standard types like `undefined4`, `undefined8`, and `code`. It requires significant patching or specific Ghidra headers to be buildable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.25
+L2_avg: 7.50
+L3_avg: 3.00
+L4_avg: 1.75
+L5_avg: 6.67
+
+Overall = (6.25 × 0.30) + (7.50 × 0.25) + (3.00 × 0.20) + 
+          (1.75 × 0.15) + (6.67 × 0.10)
+Overall = 1.875 + 1.875 + 0.600 + 0.2625 + 0.667
+Overall = 5.28/10
+```
+
+### Overall Readability Score: **5.3/10**
+
+### Critical Defects
+- **Variable Naming**: Parameters are generic (`param_1`) despite debug symbols (`-g`) being available in the source metadata.
+- **Varargs Failure**: `varargs_func` logic is completely lost (empty loop) and return type is incorrect (`void` instead of `int`).
+- **Type Splitting**: 64-bit types (`double`, `long long`) in `func_mixed_args` are incorrectly split into 32-bit `undefined4` chunks.
+- **Struct Loss**: Large struct parameters in `func_struct_byval` are not recovered; the function signature is reduced to scattered integers.
+- **ABI Noise**: Low-level soft-float calls (`__aeabi_dadd`, etc.) clutter the code instead of being represented as arithmetic operators.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- The decompiler successfully recovered the original function names from the binary, preserving the high-level organization and intent of the test suite.
+
+### Most Needs Improvement
+- **Type System Fidelity (3/10)**
+- The inability to recover 64-bit types, composite structures, and correct return types makes the data flow nearly impossible to follow in complex functions.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Varargs Analysis**: Implement specific pattern matching for `va_start`/`va_arg` sequences to recover variable argument lists and loop bodies instead of generating empty loops.
+2.  **Merge Split Parameters**: For 32-bit architectures (or mixed ABI), analyze register pairs and stack slots to reconstruct 64-bit integers and floating-point values rather than leaving them as separate `undefined4` parameters.
+3.  **Utilize Debug Symbols**: Prioritize loading DWARF debug information (indicated by the `-g` flag) to map parameter names (`a`, `b`) and return types accurately, avoiding generic `param_1` naming.

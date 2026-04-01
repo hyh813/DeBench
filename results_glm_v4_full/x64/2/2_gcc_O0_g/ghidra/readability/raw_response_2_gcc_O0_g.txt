@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Debug symbols allowed recovery of names like `x_local` and `c_local`, but the automatic `_local` suffix adds noise. In test functions, variables like `cVar1` and `uVar4` are generic, and unused stack variables (e.g., `int x_local` in `double_value`) clutter the scope.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`double_value`, `process_char`, `array_1d_stack`) are perfectly recovered from the debug symbols, matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals and character constants are preserved well, but integer literals are often represented in hex (e.g., `0x14` instead of `20`, `0x2a` instead of `42`) which reduces readability compared to the source. The condition `('@' < c) && (c < '[')` is semantically correct but less readable than `c >= 'A' && c <= 'Z'`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The decompiler introduces significant noise by declaring unused local variables for every function parameter (e.g., `int x_local` in `double_value`), a common artifact of `-O0` stack analysis. Additionally, `undefined` types appear in low-level functions like `_start`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: Control flow is perfectly reconstructed with idiomatic `for` loops and `if` statements. The structure matches the source exactly, as expected with `-O0` optimization, making execution paths easy to follow.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are preserved 1:1 with the source. There is no inlining or outlining, and the granularity is appropriate, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom with no confusing forward jumps or computed branches. Loop structures are cleanly represented.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While there is no dead code, the presence of unused local variables (e.g., `p_local` in `ptr_single`) represents a form of redundancy that forces the reader to track variables that are never actually used, a typical issue with unoptimized code decompilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `char`, `float`) are accurate, but `volatile` qualifiers are lost (e.g., `volatile_access` signature uses `int *` instead of `volatile int *`). Additionally, `process_ld` incorrectly returns `longdouble *` instead of `long double`, likely due to an x86_64 ABI calling convention misunderstanding.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structures (`Point3D`, `Rect`, `Widget`) are recovered with full field names and correct nesting, thanks to debug symbols. However, bitfields in `struct_bitfields` are flattened into bitwise operations (`*(ushort *)f >> 6`), losing the high-level semantic field names (`flag1`, `value`).
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer types are generally correct. The flattening of bitfields into raw memory accesses is technically safe but low-level. The incorrect return type for `process_ld` (pointer vs value) is a significant type safety issue for that specific function.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are sparse and mostly limited to warnings like "WARNING: Unknown calling convention". There are no explanatory comments for algorithms or data structures, leaving the reader to infer logic solely from code.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Standard library calls (`printf`, `puts`) are recognized. While the code structure makes patterns (like linked list traversal in `linked_list`) obvious, the decompiler does not explicitly label or annotate these common idioms.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags potential issues, such as "Unknown calling convention" for `process_ld` and "Globals starting with '_' overlap smaller symbols". These warnings are helpful for debugging the decompilation itself.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `arr` not be `NULL` in `ptr_single` is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are direct and use the recovered names, making the call graph easy to understand. The relationship between `test_...` functions and their implementation is clear.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure. Related functions (e.g., all array tests) are grouped together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types like `undefined8`, `undefined1`, and `code`, which are not valid standard C. This prevents the code from compiling without significant modification to replace these types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.4/10
+
+**Critical Defects:**
+- **Lost Type Qualifiers**: The `volatile` qualifier is missing from the `volatile_access` function signature, obscuring memory access semantics.
+- **Incorrect Return Type**: `process_ld` returns `longdouble *` instead of `long double`, likely due to an x86_64 ABI analysis error.
+- **Unused Variable Noise**: Every function contains unused local variables (e.g., `x_local`, `p_local`) that clutter the code, a common `-O0` artifact.
+- **Bitfield Flattening**: The `Flags` struct bitfields are converted to raw bitwise shifts/masks, losing the semantic field names (`flag1`, `value`).
+- **Non-compilable Types**: Usage of `undefined8` and `code` types prevents compilation.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Debug symbols enabled perfect recovery of all original function names, making the high-level flow immediately understandable.
+
+**Most Needs Improvement:** Build System Compatibility (scored 3/10)
+- **Why?** The reliance on Ghidra-specific synthetic types (`undefined8`, `code`) renders the output non-compilable and requires significant cleanup to be usable as C source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Filter Unused Stack Variables**: In `-O0` mode, analyze liveness to suppress the declaration of local variables that are merely copies of parameters and never read.
+2. **Improve ABI Analysis for Floats**: Correctly handle `long double` return values on x86_64 (often returned on stack or in XMM registers depending on OS) to avoid incorrect pointer types.
+3. **Recover Bitfield Semantics**: When debug info is present or patterns are obvious, reconstruct bitfield syntax (`struct { unsigned int flag1 : 1; }`) instead of defaulting to bitwise masking operations.

@@ -1,0 +1,8 @@
+=== Testing Preprocessing Features ===
+Macro constants result: 64
+Macro functions result: 30
+Conditional compile result: 32
+Multi-branch compile result: 57122
+Macro recursion result: 116
+Stringize result: 19
+Token paste result: 60

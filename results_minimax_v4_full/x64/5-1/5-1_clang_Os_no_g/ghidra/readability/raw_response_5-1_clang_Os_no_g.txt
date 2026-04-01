@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `local_24` (should be `name`), `sVar1`, `iVar1`, `puVar1` are generic compiler-generated names. The original source uses semantic names like `value`, `data`, `size`, `multiplier`, but these are completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, etc.). Template instantiations like `template_max<int>` and class methods like `Container<int>::push` are accurately recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `0x1234` (should be CLASS_ID), `0x14` (size), `0x32` (50 loop iterations), `0x28` (offset). The expected return values like 4704, 42, 71 are hardcoded as hex without context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise includes `/* WARNING: Unknown calling convention */` (appears 12+ times), `/* WARNING: Removing unreachable block */`, `builtin_strncpy` (non-standard), and mangled names like `operator_new__`, `operator_delete__`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most test functions are simple return statements with computed values. The `test_cpp_constructor` has a natural do-while loop. However, `call_virtual_func` has issues: `/* WARNING: Could not recover jumptable */` and `/* WARNING: Treating indirect jump as call */`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity - test functions are small and focused (~10-20 lines). Template functions properly separated. Member functions correctly associated with their classes. No obvious over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom. `test_cpp_member_func` has setup code (buffer initialization) before return, but flow is clear. No excessive forward jumps disrupting readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (the `test_cpp_constructor` loop is appropriate). Code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `int`, `double`, `size_t` are correct, but return types use `undefined4`/`undefined8` (e.g., `test_cpp_virtual_func` returns `undefined8` instead of `int`). Pointers are properly typed. Signed/unsigned mostly correct.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class names recovered (`Container<int>`, `RTTIDerivedA`) but struct layouts lost. Data accessed via pointer arithmetic: `*(int *)(this + 0x28)` for size field, `*(int *)(this + (long)iVar1 * 4)` for data array. No explicit struct definitions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Pointer arithmetic like `this + 0x28` and `this + (long)iVar1 * 4` is potentially unsafe. No bounds checking visible. However, no type-confused function pointers or obvious buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Sparse but present. Function headers like `/* test_cpp_member_func() */` exist. Try-catch structure partially indicated: `/* try { // try from 0010132c to 0010133f has its CatchHandler @ 00101342 */`. Most comments are auto-generated warnings rather than explanatory.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Template instantiation recognized and named. Virtual function calls flagged with warnings. Exception handling structure partially indicated. No explicit pattern naming (e.g., "vtable dispatch" not documented).
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Good anomaly flagging - multiple warnings for unknown calling conventions, unreachable blocks, indirect jump recovery failures. The warning `/* WARNING: Subroutine does not return */` on `__cxa_throw` is accurate.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear - `test_cpp_oo_features()` calls all test functions. Template instantiations properly associated. Virtual dispatch indicated (though with warnings). Some external dependencies unclear.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Good logical grouping - test functions together, template functions together, member functions grouped by class. Static vs. non-static properly indicated. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Would require patching. Uses non-standard `operator_new__`, `operator_delete__`, `builtin_strncpy`. Return types like `undefined4`/`undefined8` need fixing. External dependencies (libstdc++) not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming completely generic (`local_24`, `sVar1`, `iVar1`, `puVar1`) - original semantic names like `value`, `data`, `size` lost
+- Composite type recovery poor - struct layouts accessed via raw pointer arithmetic (`this + 0x28`) instead of named fields
+- Magic numbers everywhere without explanation (`0x1234`, `0x14`, `0x32`, `0x28`)
+- Significant noise from warnings (`/* WARNING: Unknown calling convention */` appears 12+ times)
+- Non-standard function names (`operator_new__`, `builtin_strncpy`) hinder compilation
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names match original source exactly, including template instantiations and class methods.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic compiler-generated names like `local_24`, `sVar1`, `puVar1` completely obscure the semantic purpose of variables. Original names like `value`, `name`, `data`, `size`, `multiplier` should be recoverable from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `local_24` used with `strncpy("Test")` and `strlen()` should be named `name`
+2. Recover struct/union layouts from pointer arithmetic - `this + 0x28` for size field should become `this->size`
+3. Replace magic numbers with named constants where meaning is inferable from context (e.g., `0x1234` → `CLASS_ID`)
+4. Reduce warning noise by making decompiler hints optional or collapsible
+5. Standardize runtime function names (`operator_new__` → `operator new`)

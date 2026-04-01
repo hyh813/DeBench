@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `result`), obscuring semantic meaning like `exception_obj` or `derived_instance`. In `test_cpp_exception`, `v1` holds the allocated exception object, providing no hint of its purpose.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Function identifiers are mangled C++ symbols (e.g., `_Z18test_cpp_exceptionv`), which are unreadable without external knowledge. However, the decompiler provides demangled names in comments (e.g., `// Demangled: test_cpp_exception()`), which salvages some usability.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved perfectly (e.g., `"=== 测试C++面向对象特性 ==="`), but magic numbers related to sizes (e.g., `4` in `__cxa_allocate_exception(4)`) lack the context of `sizeof(int)` found in the source.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with stack canary checks (e.g., `if (*(int64_t *)g19 != *(int64_t *)g19) __stack_chk_fail();`) inserted after almost every function logic block, significantly disrupting the reading flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Exception handling logic in `test_cpp_exception` is reduced to spaghetti code with arbitrary labels (`lab_0x1840`, `lab_0x1848`) and `goto` statements, completely obscuring the original `try-catch` structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separates distinct test functions and class methods rather than inlining them into a monolithic `main`, maintaining a reasonable granularity that matches the source structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most functions read top-to-bottom, the exception handling and RTTI logic involve non-linear jumps and conditional checks that break the natural reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Due to `-O0` compilation, there is significant redundancy, such as explicit stack pointer adjustments and repeated memory accesses that could have been abstracted away (e.g., `*(int64_t *)g19 != *(int64_t *)g19`).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Primitive types are accurately recovered as `int64_t`, `int32_t`, and `float64_t` appropriate for the ARM64 architecture, with correct pointer distinctions (`int64_t *`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: C++ classes are not reconstructed; instead, only vtables are emitted as anonymous structs (e.g., `struct vtable_13868_type`). The actual class definitions (`SimpleClass`, `Base`) with their data members and methods are completely lost.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code relies heavily on `int64_t` for object pointers (the `this` pointer), effectively treating objects as raw data blobs rather than typed instances, which removes the type safety guarantees of the original C++ code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: The inclusion of demangled function names, source line ranges (e.g., `// Line range: 398 - 425`), and class hierarchy comments (e.g., `// RTTIDerivedA (base classes: RTTIBase)`) is excellent and critical for understanding.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms like RAII (smart pointers), virtual dispatch, and exception handling are not recognized; they are presented as low-level library calls (e.g., `_ZNSt10unique_ptr...D2Ev`) and control flow jumps.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about the complexity of the recovered exception flow or the potential ambiguity of indirect calls, leaving the user to interpret the `goto` logic blindly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `test_cpp_rtti` that objects be dynamically allocated is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Virtual table calls are visible (e.g., `g2` usage), but the relationship between a vtable struct and the class methods it points to is implicit and requires manual tracing of addresses.
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is logically organized into sections (Structures, Classes, Prototypes, Functions), and the grouping of vtables and their related methods is relatively coherent.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard headers and defines custom types, but the heavy use of mangled names and compiler intrinsics (`__asm_fcmpe`) might require specific flags or environment tweaks to compile cleanly.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- C++ Class structures (`SimpleClass`, `Base`, `Derived`) are completely lost; only vtables remain.
+- Exception handling logic is decompiled into unreadable `goto` spaghetti code.
+- Variable names are generic (`v1`, `a1`), losing all semantic context of the original source.
+
+**Best Quality Aspect:** Comment Quality & Presence (scored 8/10)
+- The demangled names and line range comments are the only bridge back to the high-level source logic.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct class definitions with their members and methods makes this C++ code look like disjointed C procedural code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Reconstruct C++ class definitions (structs with methods) rather than just emitting vtable structs.
+2. Pattern-match exception handling tables (`__cxa_begin_catch`, `__cxa_throw`) to regenerate `try-catch` blocks instead of `goto` labels.
+3. Infer variable names from type information (e.g., rename `a1` to `this` in member functions) and usage context.

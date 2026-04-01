@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `param_2`, `iVar1`, and `local_XX`, completely losing the semantic intent of names like `x`, `arr`, `n`, or `sum` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `process_int`, `array_1d_stack`, `struct_bitfields`), matching the source exactly and providing clear context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure logic; `process_char` uses `0xbf` and `0x1a` for the ASCII range check, and `array_2d_stack` uses hardcoded offsets like `0xb` and `0x6e` instead of loop bounds.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Code contains compiler artifacts like stack canary checks (`___stack_chk_guard`), hardened printf calls (`__printf_chk`), and generic `undefined` types, which add noise to the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is heavily optimized; `process_char` uses an unsigned range check optimization, and `array_2d_stack` replaces a nested loop with pointer arithmetic and hardcoded bounds, deviating significantly from the source structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source; no aggressive inlining obscured the boundaries, maintaining good granularity and cohesion (e.g., `binary_tree` wrapper is preserved).
+
+**7. Code Linearization:** Score: 7/10
+Justification: Generally reads top-to-bottom, but `do-while` loops are frequently used where `for` loops existed in the source, and pointer arithmetic replaces array indexing in some array functions.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Optimizations like constant propagation in `test_data_types_l1` (arguments baked in) and loop unrolling in `array_2d_stack` are visible, removing the original redundancy but adding complexity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type degradation; `process_ld` returns `void` instead of `long double`, `process_double` returns `undefined1 [16]`, structs are flattened to `int*`, and function pointers are generic `code*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely flattened to pointer arithmetic (e.g., `struct_simple` takes `int *` and accesses `param_1[0]`, `param_1[1]`); no field names or struct definitions are recovered.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent unsafe casts (e.g., `(int *)*param_1`, `(undefined8 *)`) and type punning in unions reflect the binary reality but reduce perceived safety and readability.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: Almost entirely devoid of semantic comments; only compiler warnings like "Subroutine does not return" or "Globals starting with '_' overlap" are present.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Compiler idioms like the range check in `process_char` are not annotated as "Check if A-Z", and bitfields in `struct_bitfields` are shown as shifts/masks rather than field access.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Does not flag optimized patterns (like hardcoded loop bounds in `array_2d_stack`) or type mismatches (like `void` return for `long double`) as anomalies or potential decompiler errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No contracts or preconditions are inferred or documented (e.g., null checks are implicit in the code, not stated).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and named (e.g., `double_value` called in `test_pointer_types`), making the call graph clear despite the lack of comments.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered by address, which loosely preserves the source's logical grouping (e.g., all array tests together), though explicit module boundaries are missing.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: Code uses Ghidra-specific types (`undefined`, `code`) and invalid return types (`undefined1 [16]`), preventing compilation without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 6) / 4 = 5.25
+L2_avg = (5 + 8 + 7 + 7) / 4 = 6.75
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 3 + 4 + 1) / 4 = 2.25
+L5_avg = (8 + 7 + 3) / 3 = 6.00
+
+Overall = (5.25 * 0.30) + (6.75 * 0.25) + (3.67 * 0.20) + 
+          (2.25 * 0.15) + (6.00 * 0.10)
+Overall = 1.575 + 1.6875 + 0.734 + 0.3375 + 0.6
+Overall = 4.934
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet List)
+- **Type Recovery Failure**: `process_ld` returns `void` instead of `long double`, and `process_double` returns `undefined1 [16]`, making the output unusable for those types.
+- **Struct Flattening**: Composite types like `Point3D` are completely flattened to `int*` with array indexing (e.g., `param_1[0]`), losing all semantic structure.
+- **Optimized Idioms**: The range check in `process_char` (`0xbfU`, `0x1a`) and loop bounds in `array_2d_stack` (`0x6e`) are obscure magic numbers that obscure the original logic.
+- **Variable Naming**: All variables are generic (`param_1`, `local_XX`), requiring constant cross-referencing with the source to understand usage.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully recovered all function symbols from the binary, providing exact matches to the source names which significantly aids navigation.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The complete failure to recover struct definitions, reducing complex data structures like `Point3D` or `Widget` to raw pointer arithmetic, destroys the high-level design of the program.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Floating Point Type Recovery**: Enhance the analysis of software floating-point library calls (like `__multf3`) and register usage to correctly identify `long double` and `double` return types instead of defaulting to `void` or `undefined`.
+2.  **Reconstruct Struct Definitions**: Implement pattern matching to detect sequential array accesses on a pointer (e.g., `param_1[0]`, `param_1[1]`) and reconstruct them as struct fields with inferred types.
+3.  **Annotate Compiler Idioms**: Detect common optimization patterns like unsigned range checks (`(x + C) < C`) and annotate them with the likely original logic (e.g., `x >= 'A' && x <= 'Z'`) to improve literal clarity.

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `v4`, `result`, etc. The original source has meaningful names like `packet_size`, `sum`, `i`, but these are completely lost. Even loop indices use `v4` instead of `i`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: About half the functions retain meaningful names from the source (`double_value`, `process_int`, `array_1d_stack`, `linked_list`), but many test helper functions are either inlined with hardcoded values or given generic names like `function_1020`, `function_1064`. The original's semantic function names are partially preserved.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers: `0xfffffffe` (masking), `0x100000000` (multiplication), `44`, `40`, `12` (struct/array offsets), `0x2710` (10000). The original source uses meaningful constants like `STATE_RUNNING`, `MAX_VERTICES` - all lost in decompilation.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution: unnecessary `& 0xffffffff` masks throughout, complex bit manipulation expressions like `2 * v1 & 0xfffffffe`, inline assembly calls (`__asm_movi`, `__asm_ubfx`, `__asm_bfi`), and the floating-point library functions (`__addtf3`, `__multf3`) are 600+ lines of incomprehensible decompiled code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are recognizable, but expressed awkwardly. For example, `process_char` uses complex boolean expressions: `((int32_t)v2 + 191) % 256` instead of simple `c + 32`. At `-O0` this should be much cleaner. Some goto-like patterns from assembly remain.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The original has many small, focused functions (830 LOC with ~50 functions). The decompiled version inlines test logic directly - for example, `test_data_types_l1` has hardcoded expected values instead of calling functions. Some functions are merged or split incorrectly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with acceptable flow. Some forward jumps in complex functions like `array_3d` with nested while loops. Not terrible but could be cleaner.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant masking operations (`& 0xffffffff` applied repeatedly). Loop unrolling is present in `array_3d` but not commented. Overall manageable but not optimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Original has char, short, int, long, long long, float, double, long double, _Bool - all become `int64_t` or `int32_t`. No distinction between signed/unsigned in many places. `float` and `double` functions return `int64_t` instead of proper floating-point types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions recovered. Instead of `p->x + p->y + p->z`, we get `*(int32_t *)(v2 + 4) + (int32_t)v2 + v3`. Unions are completely lost - `union_type` uses raw pointer manipulation. No enum recovery (values hardcoded as integers).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout: `(int32_t)v2`, `*(int32_t *)(v2 + 8)`, `(int64_t)*(int32_t *)`. Pointer arithmetic is error-prone. No const correctness. Function pointers treated as `int64_t`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Original source has extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "ARR-L1-01: 一维int数组"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals are recognized, but no higher-level patterns identified. Original contains state machines (enum_switch), linked lists, binary trees, graphs - these data structures are not recognized or named.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertain or problematic areas. The decompiler presents everything as confident output even when the code is clearly wrong (e.g., `process_double` returning a string pointer instead of performing division).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original has clear contracts like "requires: ptr != NULL" - completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. Original shows clear caller/callee relationships through comments. No documentation of which functions call `double_value` or the callback relationships.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic file with 3378 lines. Original is well-organized with sections: "2.1 基础数据类型", "2.2 数组类型", "2.3 指针类型", "2.4 复合类型". No logical grouping in decompiled output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many undefined external functions: `__printf_chk`, `__libc_start_main`, `__cxa_finalize`, `__gmon_start__`, `__stack_chk_fail`. Would require significant stubs to compile. No header file structure.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- All variables use generic names (`v1`, `v2`, `result`) losing original semantic names like `sum`, `i`, `packet_size`
+- No struct/union recovery - all composite types replaced with raw pointer arithmetic (`*(int32_t *)(v2 + 8)`)
+- No type precision - all floating-point types lost, become `int64_t`
+- No comments or documentation recovered from original source
+- Severe noise from compilation artifacts (masking operations, inline assembly)
+- Function decomposition broken - test functions inlined with hardcoded values instead of calling actual functions
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 5/10)  
+- Basic loop and conditional structures are recognizable, even if expressed awkwardly
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every variable uses generic numbered names making it impossible to track purpose without extensive analysis
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `v1` is used as array index in a loop from 0 to n, name it `i` or `index`. When `v2` is added to a pointer, name it `offset`.
+2. **Recover struct definitions**: Analyze memory access patterns like `*(int32_t *)(ptr + 8)` and reconstruct `struct Point { int x; int y; int z; }` with field names.
+3. **Preserve type precision**: Detect floating-point operations and restore `float`/`double` return types instead of defaulting to `int64_t`. Recognize `_Bool` vs `int`.

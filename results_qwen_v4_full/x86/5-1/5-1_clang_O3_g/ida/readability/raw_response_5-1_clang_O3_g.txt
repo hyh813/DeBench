@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7` with no semantic meaning. For example, in `test_cpp_member_func()`, variables `s`, `v2-v6` should be named `name`, `r1`, `r2`, `r3`, `result` based on source usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions recovered with mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), but many are generic (`sub_1030`, `sub_1130`, `sub_11AC`). The mangled names are technically accurate but not human-readable without demangling.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `1001`, `130`, `200`, `14` appear without explanation. In `test_cpp_rtti()`, values `130`, `30`, `200`, `14` should be documented as they represent computed test results from the original logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`__usercall`, register annotations like `@<eax>`, `@<ebx>`), but not excessive. However, 18 functions completely failed to decompile, showing as "FAILED to decompile" entries which is noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions are optimized to single return statements (e.g., `test_cpp_virtual_func()` returns `42` directly), losing all original control flow. Exception handling in `test_cpp_exception()` shows raw `__cxa_throw` calls instead of try-catch blocks.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable, but critical logic is lost - `test_cpp_member_func()` should show object construction and method calls but instead computes `strlen(s) + 4700`. Template functions are properly separated by type instantiation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom within functions, but the optimization has collapsed complex logic into single expressions. No excessive goto usage observed in recovered code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions in recovered portions. However, this is because the decompiler optimized away the actual computation rather than eliminating redundancy properly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type recovery - some functions show proper types (`int`, `double`, `size_t`), but many use generic `_DWORD`, `_BYTE`, `_WORD`. Pointer types often degraded to `void*` (e.g., `operator new(4u)` returns `_DWORD*` instead of proper class pointers).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - class structures are NOT recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>` all appear as raw pointer operations. No struct definitions with field names exist in the decompiled output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (e.g., `(_DWORD *)operator new(4u)`, `(struct type_info *)&\`typeinfo for'int`). Raw pointer arithmetic used where class member access should occur. Exception handling uses raw `__cxa_*` functions without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only auto-generated type annotations and one warning ("positive sp value has been detected, the output may be wrong!"). No algorithm explanations, no documentation of what functions actually compute.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns recognized. Virtual function calls appear as raw vtable pointer dereferences (`*obj->_vptr$Base`). RTTI operations show as `__dynamic_cast` calls without explaining the type hierarchy being traversed.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 18 failed decompilations are explicitly listed at the end, which is good transparency. However, within recovered code, there's no indication of uncertainty about the constant-folding optimizations that collapsed actual logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost (no indication of what exceptions functions may throw). Class invariants not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships unclear. Virtual dispatch shown as raw vtable access without indicating which classes implement which methods. Inheritance relationships not documented in the output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order (test functions grouped, template instantiations together), but no namespace or class grouping visible. Static members like `LifecycleClass::instance_count` referenced but not defined in context.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 external functions failed to decompile (`operator new`, `__cxa_*`, `printf`, etc.). Code references undefined symbols and would not compile standalone without significant stubbing and library linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Class structures completely lost** - No `SimpleClass`, `LifecycleClass`, `Base`, `Derived` struct definitions recovered; all appear as raw pointer operations
+- **Test functions optimized to constants** - Functions like `test_cpp_virtual_func()` return `42` directly instead of showing actual computation logic
+- **18 external functions failed to decompile** - Critical runtime functions (`operator new`, `__cxa_throw`, `__dynamic_cast`, `printf`) missing entirely
+- **Variable names all generic** - `v0`, `v1`, `v2` etc. provide no semantic information about their purpose
+- **Architecture mismatch** - Source metadata says `arm64` but decompiled code shows x86 calling conventions (`__cdecl`, `eax`, `ebx`)
+
+### Best Quality Aspect: **Noise Reduction (6/10)**
+- While not excellent, the recovered code doesn't have excessive compiler artifacts beyond what's expected; the main issue is missing logic rather than noise pollution.
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- Zero recognition of C++ OOP patterns - virtual tables, inheritance, polymorphism all appear as raw pointer operations without any semantic explanation of what's happening.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions from vtable layouts** - Analyze vtable pointers to reconstruct class hierarchies with field names and method tables
+2. **Preserve computation logic over constant folding** - Even at -O0, show actual operations rather than pre-computed return values to maintain educational/debug value
+3. **Add semantic annotations for C++ constructs** - Label vtable dereferences as "virtual call", mark `__cxa_*` calls as "exception handling", document RTTI operations with type hierarchy information

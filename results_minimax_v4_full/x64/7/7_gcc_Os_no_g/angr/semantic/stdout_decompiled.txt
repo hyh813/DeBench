@@ -1,0 +1,6 @@
+Test 0: Opaque predicate
+
+Test 1: Call opaque predicate: 10
+Test 2: Instruction substitution: 35
+Test 3: Constant folding: 225
+Test 4: String encryption: 1132140216

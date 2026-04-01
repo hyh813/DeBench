@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/2/2_gcc_O0_no_g/ida/syntactic/bin/2_gcc_O0_no_g_fixed",
+  "stdout": "",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false
+}

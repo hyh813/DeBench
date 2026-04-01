@@ -1,0 +1,39 @@
+{
+  "eval_id": "7_clang_O0_no_g",
+  "overall_score": 5.98,
+  "levels": {
+    "L1_lexical_clarity": 5.75,
+    "L2_structural_intelligibility": 8.5,
+    "L3_type_system_fidelity": 7.0,
+    "L4_semantic_transparency": 1.0,
+    "L5_contextual_coherence": 7.67
+  },
+  "dimensions": {
+    "1_variable_naming_quality": 3.0,
+    "2_function_naming_quality": 10.0,
+    "3_literal_clarity": 3.0,
+    "4_noise_reduction": 7.0,
+    "5_control_flow_naturalness": 6.0,
+    "6_function_decomposition": 10.0,
+    "7_code_linearization": 10.0,
+    "8_redundancy_elimination": 8.0,
+    "9_type_precision": 3.0,
+    "10_composite_type_recovery": 10.0,
+    "11_type_safety": 8.0,
+    "12_comment_quality": 1.0,
+    "13_idiom_recognition": 1.0,
+    "14_anomaly_indication": 1.0,
+    "15_assertion_contract_recovery": 1.0,
+    "16_cross_reference_clarity": 8.0,
+    "17_module_organization": 10.0,
+    "18_build_system_compatibility": 5.0
+  },
+  "tokens": {
+    "prompt": 12939,
+    "completion": 5891,
+    "total": 18830
+  },
+  "time_cost_seconds": 44.1,
+  "schema_version": 1,
+  "raw_response_file": "raw_response_7_clang_O0_no_g.txt"
+}

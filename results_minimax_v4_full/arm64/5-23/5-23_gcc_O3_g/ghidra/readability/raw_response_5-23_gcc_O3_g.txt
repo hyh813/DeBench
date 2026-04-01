@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar1`, `uVar2`, `param_1`, `param_2`, `extraout_var`, `local_8`). The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment` - all lost in decompilation. Only `__len` and `__addr` partially indicate purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions perfectly match source names (`param_macro_constants`, `param_asm_basic`, `param_asm_atomic`, etc.). However, some internal helper functions remain unnamed (`FUN_00100810`, `FUN_00100bcc`). The core functionality is well-identified.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants recovered (0x200 for MAX_SIZE, 0x40 for BUFFER_COUNT*4), but many magic numbers remain unexplained (0x22 for MAP flags, 7 for PROT_READ|WRITE|EXEC, 0x1e for _SC_PAGESIZE). The value `0xdf22` for multi_branch_compile result lacks context about the default platform branch.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy pollution from DWARF annotations (`/* Unresolved local var: int result@[DW_OP_breg0(x0): +10; DW_OP_stack_value] */`), "WARNING" comments about unknown calling conventions, unreachable blocks, and overlapping globals. These 50+ noise comments severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else constructs. Loop unrolling in `param_asm_clobber` shows 4-element vectorized operations, which is expected at -O3. The flow is readable despite some optimization artifacts.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is well-preserved - each test function remains separate as in source. The original 700+ LOC is distributed across ~25 meaningful functions. Minor issue: some internal functions like `FUN_00100bcc` could be named.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `param_dynamic_code`). No excessive goto or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling in `param_asm_clobber` is present but handled reasonably - it processes 4 elements at a time via 64-bit loads. No obvious dead code. Some redundant stack frame operations from -O3 but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int` for integers (appropriate for ARM64), `int*` for pointers, `void*` for generic pointers, `size_t` for memory sizes. Some degradation from original `uint32_t`/`uint64_t` specificity, but types are reasonable. `undefined8`/`undefined4` used for unknown types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original source had minimal struct usage (mostly C primitives). The decompiler correctly handles arrays (`int arr[5]`, `char src[10]`) and pointers. No struct recovery needed for this particular file.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is correct (`arr + (ulong)(((uint)n >> 2) - 1) * 4`). Function signatures use proper types. Stack canary (`__stack_chk_guard`) detected and handled appropriately.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Technical comments present (DWARF info, calling convention warnings) but provide no semantic value. No explanation of what macros expanded to, no documentation of assembly behavior, no recovery of original preprocessor logic. "WARNING: Unknown calling convention" is noise, not insight.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. Could have identified: atomic operations (`__aarch64_ldadd4_acq_rel`), memory protection patterns (mmap/mprotect/munmap), SIMD operations. These are present but unnamed.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Some useful warnings present ("Unknown calling convention", "Removing unreachable block", "Globals starting with '_' overlap smaller symbols"). However, these are generic Ghidra warnings, not specific to this code's anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No precondition/postcondition recovery. Could have noted: `param_asm_clobber` requires `n > 0`, `param_dynamic_code` requires successful mmap, etc. Error return values (-1, -2, -3) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`main` calls `test_preprocessing_features` and `test_asm_features`). However, no documentation of call graph, no indication which functions are internal vs. external, no global variable usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions roughly ordered by address (matching source file order). Static functions like `my_func` correctly identified. Minor: could group preprocessing vs. asm functions more clearly.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard libc functions (`printf_chk`, `mmap`, `mprotect`, `munmap`, `sysconf`). Should compile with glibc. No explicit dependency documentation. Stack protector detected (`__stack_chk_guard`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming is nearly useless - `iVar1`, `param_1`, `uVar1` everywhere instead of semantic names like `size`, `counter`, `increment`
+- Excessive DWARF noise comments (`/* Unresolved local var: ... */`) clutter every function
+- No recovery of macro semantics - preprocessor constants like MAX_SIZE, BUFFER_COUNT lost as magic numbers
+- No comment explaining what inline assembly did (atomic operations, SIMD, memory protection)
+- Function `FUN_00100bcc` is completely unnamed - appears to be a duplicate of `call_variadic_macro`
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered almost all function names from the source, making it easy to identify which test case each function implements.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names like `iVar1`, `param_1`, `uVar1` completely obscure the semantic purpose of variables. The original source used meaningful names (`size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`) that were entirely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `if (0x400 < size)` → `size`, `__atomic_fetch_add(counter, increment)` → `counter`, `increment`) to recover semantic names
+2. **Eliminate DWARF annotation noise**: Remove or collapse `/* Unresolved local var: ... */` comments - they provide no value to human readers
+3. **Recover preprocessor constant values**: When detecting magic numbers used in comparisons or arithmetic, check if they match known macro expansions (0x200 → MAX_SIZE, 0x40 → BUFFER_COUNT*4) and suggest recovered constant names

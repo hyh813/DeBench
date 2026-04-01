@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:2/10  
+Justification: Variables use extremely generic names like `local_28`, `local_24`, `iVar1`, `param_1`, `uVar1`, `puVar1`. The original source had meaningful names like `value`, `name`, `data`, `size`, `x`, `y` which are completely lost. These cryptic names make tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func` correctly match original source names. Member functions like `Base::virtual_func`, `Derived::virtual_func` are properly named. Only minor issues with some internal functions like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers like `0x74736554` (encoded "Test" string), `0x2a` (throw 42), `0x2bf` (703 expected result) can be inferred from context. However, some constants like `0x14` (20 bytes), `0x96` (150) lack explanatory comments.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from external function stubs that just call themselves recursively (e.g., `operator_new`, `strlen`, `strcmp`, `printf`). These self-referential declarations clutter the output and obscure actual code logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Uses do-while loops appropriately in some places (e.g., `test_cpp_constructor`). However, exception handling uses raw `__cxa_throw`/`__cxa_begin_catch` patterns that are harder to follow than try-catch blocks. At -O0, control flow should be more straightforward.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Test functions properly separated from member functions. Member functions like `Container<int>::push`, `Container<int>::get` are correctly extracted. Some functions like `test_cpp_oo_features` are large but this mirrors the original monolithic structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, virtual function calls like `(***(code ***)param_1)(param_1,param_2)` and complex vtable patterns disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling in `test_cpp_constructor` is present but manageable. Code is relatively clean without obvious redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `undefined4`, `undefined`, `int` throughout. Does recognize `size_t` for strlen and `int*` for some pointers. However, most integers are generic `int` or `undefined4` rather than precise types like `int32_t` or `uint64_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. Instead uses raw pointer arithmetic like `*(int *)(this + 0x28)` for what should be `this->size` or `this->data[idx]`. All composite type structure is lost, forcing readers to manually decode field offsets.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Mostly type-safe with correct pointer types for function calls. Minor issues with some pointer arithmetic patterns. No severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only minimal comments present - just the decompiler header and function names. No explanation of algorithm logic, no recovery confidence indicators, no documentation of non-obvious patterns. Original source comments are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns are visible (virtual function calls via vtable, `__cxa_throw` for exceptions) but not explicitly identified or named. Template instantiation is partially recognized (`template_max_int_`, `template_swap_int_`) but not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code or indirect calls that couldn't be resolved. Virtual function calls are shown as raw vtable dereferences without indicating uncertainty. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Original assertions and contracts from source are completely lost. No recovery of error handling contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible within code but relationships aren't explicitly documented. No clear indication of which functions call which, or the callback relationships in virtual function dispatch.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped in a single large file rather than logically separated. External stubs mixed with actual code. No namespace or class structure organization visible in output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has extensive external dependencies (operator_new, printf, __cxa_* functions) that would require significant stubs. No clear dependency documentation. Would not compile standalone without substantial work.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is extremely generic (`local_28`, `iVar1`, `param_1`) losing all semantic meaning from original source
+- No struct/union recovery - all composite types reduced to raw pointer arithmetic like `*(int *)(this + 0x28)`
+- Massive noise from external function stubs that just call themselves recursively
+- No comments explaining algorithm logic or recovery confidence
+- Type precision severely degraded - mostly `undefined4` and generic `int` instead of precise types
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Test functions and class member functions are correctly named matching the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic stack variable names like `local_28`, `iVar1`, `puVar1` completely obscure the semantic purpose that was clear in the original source with names like `value`, `name`, `data`, `size`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `strlen(local_28)` suggests it's a string; `piVar1[2]` suggests it's an array) to generate semantically meaningful names
+2. **Recover struct definitions**: Instead of showing `*(int *)(this + 0x28)`, recover the struct layout and show `this->size` with proper field names
+3. **Filter external library stubs**: Remove or collapse self-referential external function declarations that add no value (operator_new calling itself, strlen calling itself, etc.)

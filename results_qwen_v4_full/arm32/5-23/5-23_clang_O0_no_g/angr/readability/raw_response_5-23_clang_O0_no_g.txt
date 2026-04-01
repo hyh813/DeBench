@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `a0`, `a1`) obscuring semantic meaning; some better names exist (`len`, `result`, `idx`, `ptr`) but original names like `size`, `counter`, `increment` are lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_macro_functions`); only startup helpers have generic names (`sub_4004ec`, `sub_4005c8`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x400`, `0x200`, `57072`, `0x800`); original constants `MAX_SIZE=1024`, `BUFFER_COUNT=16` not recovered as named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including redundant function calls in `call_*` wrappers and unnecessary `goto` statements in initialization functions; frame pointer manipulation mostly cleaned.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow but several use `goto` instead of proper conditionals (`call_weak_fn`, `deregister_tm_clones`); loop structures recovered well in `param_asm_clobber`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well; however `call_*` functions have redundant duplicate calls (assign then return same call) indicating decompiler artifact.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `goto` labels (`LABEL_4005ec`, `LABEL_400618`) disrupt flow in several initialization functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in `call_*` functions that call target twice (e.g., `call_macro_constants` calls `param_macro_constants(0x800)` twice); this is clear decompiler error.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy type degradation to `unsigned int` and `int`; original `size_t`, `const char*`, `void*` distinctions lost; pointer arithmetic uses generic `unsigned int` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source code; arrays handled reasonably; no complex composite types to recover in this preprocessing-focused code.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic visible (`ptr + idx * 4`); atomic operations preserved (`__atomic_fetch_add_4`); no egregious type confusion but casts implicit.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output; original source had extensive documentation explaining macros, conditionals, and expected values; complete semantic information loss.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions correctly recovered as inline code (e.g., `ADD_16(x)` → `x + 16`); no higher-level pattern recognition or algorithm identification present.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious patterns; duplicate function calls in `call_*` functions not highlighted; architecture mismatch (ARMEL vs arm64) not documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented; error conditions (e.g., `mmap` failure returns) not clearly marked; original expected values lost.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables referenced as opaque (`g_401551`, `g_412008`); no call graph documentation or relationship explanations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (preprocessing tests together, assembly tests together); original section organization partially preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies visible (`printf`, `mmap`, `sysconf`) but not documented; architecture-specific code paths merged; would require stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):   (6+7+6+4)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):         (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):     (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):   (5+7+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.38/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects:
+- **Zero comments** in decompiled output despite extensive original documentation explaining macro semantics and expected values
+- **Redundant function calls** in all `call_*` wrapper functions (calls target twice: once for assignment, once for return)
+- **Magic numbers** throughout (`0x400`, `0x200`, `57072`) without recovery of original constant names (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Generic variable names** (`v0`, `v1`, `a0`, `a1`) obscure parameter semantics (`size`, `x`, `y`, `counter`)
+- **Goto statements** in initialization functions where simple if-else would be clearer
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most semantic function names preserved from source, making high-level code navigation possible despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic documentation about macro behavior, expected values, and preprocessing transformations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant names from usage patterns** - Detect repeated literals (`1024`, `16`, `64`) and suggest named constants based on comparison contexts
+2. **Eliminate redundant call artifacts** - Fix the pattern where `call_*` functions invoke their target twice instead of storing and returning once
+3. **Generate semantic comments from binary metadata** - Extract debug symbols (`-g` flag was used) to restore function purposes, parameter meanings, and expected return values

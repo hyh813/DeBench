@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_Os_g/ghidra/syntactic/bin/7_clang_Os_g_fixed",
+  "stdout": "Test output\n\nValue: 10\nValue: 35\nValue: 225\nValue: 0\nValue: 500500\nValue: 5050\nValue: 0\nValue: 20\nValue: 1\nValue: 41\nValue: 30\nValue: 2000000000\nValue: 10\nValue: 44\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `result`) instead of semantic names like `count`, `sum`, `overflow_arg_area`. Only `va` and `overflow_arg_area` in varargs functions show meaningful naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Minor issues with auto-generated names like `sub_1020` and `init_proc`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Heavy constant folding replaced computations with magic numbers (e.g., `call_cdecl()` returns `15` directly instead of `cdecl_func(5, 10)`). String literals use opaque references (`aCallL206`, `asc_23EB`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: SIMD operations in `func_struct_byval` (`_mm_add_epi64`, `_mm_loadu_si128`) are compiler artifacts from optimization. Register variables (`v1`, `v2`, `v3`) clutter varargs functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals recovered, but test functions lost actual control flow due to constant folding. Varargs loop structure is recoverable but verbose with manual overflow handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well. However, test functions collapsed to constant returns (`call_cdecl()` returns 15) losing the actual call structure that should be preserved.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Varargs functions have complex variable shuffling (`v11 = v3`, `v12 = v1`) that disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding created redundancy by computing values at compile-time then displaying as literals. SIMD vectorization in struct functions adds unnecessary complexity for simple summation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double). Some degradation with `__int64` instead of specific types. Function pointer types reasonably recovered (`int (*callback)(int)`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`) with field names preserved (`data`, `x`, `y`). Field access uses proper syntax (`p->x * p->y`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(_DWORD *)p`, `(__m128i)-1LL`). Pointer arithmetic mostly correct but varargs handling uses raw pointer manipulation (`overflow_arg_area = &v10[v7]`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated warnings ("positive sp value has been detected", "local variable allocation has failed"). No explanation of algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms (varargs, struct passing) present but not identified. No recognition of calling convention patterns or parameter passing patterns that were the test's purpose.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some failures flagged ("FAILED to decompile: printf", "FAILED to decompile: strlen"). Stack issues noted but many optimization artifacts not identified as such.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `p != NULL` in `func_struct_byptr`). Null checks present but not documented as contracts. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Test functions don't show which functions they're testing (constants replaced actual calls).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order. No clear module boundaries documented. Related functions (calling convention tests) not grouped with metadata.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six external functions marked "FAILED to decompile" (printf, strlen, etc.). Cannot compile standalone without significant stubbing. Dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.65/10
+```
+
+### Overall Readability Score: **5.65/10**
+
+### Critical Defects:
+- **Constant folding destroyed test semantics**: Functions like `call_cdecl()` return `15` directly instead of showing `cdecl_func(5, 10)` call, losing the calling convention test purpose
+- **Generic variable naming**: `v0`, `v1`, `v2` throughout varargs functions instead of `arg0`, `arg1`, `sum`, `count`
+- **No semantic comments**: Zero explanation of calling convention patterns being tested despite this being the code's primary purpose
+- **SIMD optimization artifacts**: `_mm_add_epi64` operations in `func_struct_byval` obscure simple integer summation logic
+- **External dependency failures**: 6 critical functions (printf, strlen, etc.) failed to decompile, breaking compilation
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) recovered with accurate field names and proper access syntax
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- No semantic comments explaining the calling convention test patterns, which is the entire purpose of this code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant folding for test code**: Preserve actual function calls instead of computing results at decompile time to maintain test semantics
+2. **Infer variable names from usage patterns**: Variables used in loops with `count` should be named `counter`, accumulation variables should be `sum`
+3. **Add semantic annotations for calling conventions**: Detect and document calling convention patterns (`__cdecl`, `__fastcall`) with explanatory comments about parameter passing

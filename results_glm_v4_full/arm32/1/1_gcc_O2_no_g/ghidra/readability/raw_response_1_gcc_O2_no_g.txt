@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `iVar1`, `local_28`) and lack semantic meaning (e.g., `sum` became `iVar1`, `arr` became `local_28`). This is likely due to missing debug symbols (`no_g` in binary path), but significantly hinders readability.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `sequential_ops`, `duffs_device`, and `loop_complex_cond` are perfectly preserved from the source, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0x14` (20) and `0x1e` (30) appear in `test_control_flow_l1` instead of the original decimal values. While some constants like `100` remain, the use of hex for simple integers in test functions adds unnecessary translation burden.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but artifacts like `SBORROW4` (signed borrow) in `loop_complex_cond` and `undefined4` types act as noise that obscures the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple loops are recovered well, complex structures fail significantly. `duffs_device` is decompiled into a mess of `goto` labels and `while(true)` loops instead of the structured switch/do-while hybrid, and `loop_complex_cond` uses obscure flag-checking macros (`SBORROW4`) instead of the original logical operators.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions match the source granularity well. Helper functions like `double_value` and `op_add` remain separate, and there is no monolithic inlining of logic that would make the code unreadable.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most functions read top-to-bottom. However, `duffs_device` and `indirect_recursion_a` contain non-linear jumps (`goto switchD_...`) that disrupt the reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized code efficiently. For example, `sequential_ops` is reduced to a single expression `(a+b)*2-c`, which is cleaner than the source's 3-step variable assignment, accurately reflecting the compiler's optimization.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: The decompiler relies heavily on generic types like `undefined4` and `uint` even where `int` is clearly intended (e.g., `undefined4 switch_small(uint param_1)`). This reduces type safety and clarity.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays are correctly identified (e.g., `int local_28 [6]`), and stack layouts for local variables are accurate. No complex structs were present in the source to test deeper recovery, but basic arrays are handled well.
+
+**11. Type Safety:** Score: 7/10
+Justification: Function pointers are typed as `code *`, which is a generic safe type. However, the use of `undefined4` implies implicit casting that the user must mentally track, slightly reducing safety perception.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are mostly limited to warnings like "WARNING: Could not recover jumptable". There are no explanatory comments for complex logic like `duffs_device` or the `SBORROW4` macro, leaving the user to decipher the intent alone.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard loops are recognized, but specific patterns are missed. `duffs_device` is not identified as such, and `recursion_factorial` is presented as a loop (which is the optimized form) without noting the transformation from recursion.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags issues with "WARNING: Could not recover jumptable" and "WARNING: Removing unreachable block", which accurately communicates where the analysis might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants. For example, the check `if (n <= 0) return -1;` in `duffs_device` is present but not highlighted as a contract, and parameter constraints (like `idx` bounds) are not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Direct function calls are clear, but indirect calls via function pointers (e.g., in `call_func_ptr_array`) are opaque, showing only `(*apcStack_18[param_1])` without linking to the specific target functions (`double_value`, etc.) in the display.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and test functions (`test_control_flow_l1`, etc.) are distinct from implementation functions. The order roughly follows the source structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses non-standard types like `undefined4` and macros like `SBORROW4` which are specific to the decompiler's environment. It would require significant patching (replacing types, removing macros) to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- **Duff's Device Reconstruction**: The function `duffs_device` is decompiled into spaghetti code with `goto` labels (`switchD_00010e24_caseD_2`) instead of the structured switch/loop hybrid, making it nearly unreadable.
+- **Variable Naming**: Generic names like `iVar1`, `param_1`, and `local_28` obscure the semantic meaning of variables like `sum`, `a`, or `arr`.
+- **Type Precision**: Overuse of `undefined4` instead of concrete types like `int` forces the reader to infer types from usage.
+- **Complex Condition Logic**: `loop_complex_cond` uses the `SBORROW4` macro to represent a multi-condition loop, which is significantly harder to understand than the original `&&` operators.
+- **Indirect Call Resolution**: Function pointer arrays are not resolved to their likely targets, leaving opaque `(*apcStack_18[idx])` calls.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler successfully preserved all original function names from the binary symbols, providing immediate high-level context for every code block.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 5/10)
+- **Why?** The failure to reconstruct structured control flow in complex cases like `duffs_device` and the reliance on low-level flag macros for conditions significantly degrades the readability of the optimized binary.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Pattern Matching for Duff's Device**: Implement specific pattern recognition to detect the "switch inside do-while" structure and reconstruct it as valid C code (or a close approximation) rather than falling back to a web of gotos.
+2.  **Macro/Flag Simplification**: Replace low-level flag logic (like `SBORROW4` used for complex comparisons) with equivalent high-level logical operators (e.g., `a < b && c < 10`) to improve semantic transparency.
+3.  **Type Propagation**: Aggressively replace `undefined4` with `int` or `uint32_t` when usage patterns (arithmetic, comparison) clearly indicate a standard integer type.

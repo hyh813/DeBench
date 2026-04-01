@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all local variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v13`, `v14`. Parameters are named `a0`, `a1`, `a2` etc. Only a few like `idx`, `i`, `len`, `result`, `ptr` are descriptive. The source had meaningful names like `count`, `args`, `sum`, `x`, `y`, `str` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly named: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, internal utility functions use generic names like `sub_401030`, `sub_401080`. The main API functions match source names well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used for -1 without explanation. Printf format strings are broken - values not passed (e.g., `printf("CALL-L1-01: %d\n");` missing argument). Some constants like `15`, `50`, `6` appear without context. The source's expected values are computed at compile time but not documented.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. The `func_mixed_args` function contains extensive `[D] unsupported_<class 'pyvex.expr.GetI'>()` artifacts and `[D] PutI(...)` constructs that make code unreadable. Weird pointer casts like `*((char **)&v0[0]) = &v1;` obscure logic. Many "Other Possible Types" annotations add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper if-else and while/do-while loops. The `varargs_func` uses a do-while loop correctly. Some goto in startup code (`_start`, `frame_dummy`) is standard for C runtime. At -O0, loop structures should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized. Test wrapper functions (e.g., `call_cdecl`) correctly separate from implementation (`cdecl_func`). The main test functions call multiple sub-functions as expected. No 500-line monoliths. Function granularity matches source organization.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Early returns present in `func_struct_byptr`, `param_double_ptr`. Some forward jumps in error handling paths. The `register_tm_clones` has complex nested conditionals that disrupt linear flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy in test functions where values are stored to `v3` before printf. The `func_mixed_args` has repeated `[D] PutI` patterns. Loop unrolling not present at -O0 which is good. Some duplicate expressions but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters mostly `unsigned int` when source uses `int`. Function pointers like `param_func_ptr` use `unsigned int *a0` instead of proper function pointer type. The `ret_small_struct` has bizarre type `unsigned int [2]` which is incorrect. Mixed precision throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Source's `LargeStruct` and `SmallStruct` completely lost. Generic struct definitions created with names like `struct_0`, `struct_1` with fields `field_0`, `padding_0`. The `SmallPoint` struct from source not recovered - instead uses raw pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations in `func_mixed_args` with the `[D]` artifacts. Pointer arithmetic in `func_struct_byptr` is correct. The `param_double_ptr` has correct NULL checks. Some type confusion but no severe safety violations that would cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in entire decompiled output. Source had extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定", "// 测试: 参数从右到左压栈"). No documentation of what each function tests or expected behavior.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C patterns like varargs (va_list, va_start, va_arg, va_end) are somewhat recognizable in `varargs_func` though obscured. No explicit naming of patterns. The source's calling convention tests are not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears in `func_mixed_args` but provides no useful description of what couldn't be resolved. No indication of decompilation confidence. Silent failures in some areas.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Source had explicit contracts like "// 测试: 参数从右到左压栈，调用者清理栈". No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are clear (e.g., `main` calls `test_calling_conventions`). External dependencies declared with `extern`. However, no documentation of which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - startup code first, then calling convention functions, parameter passing, return values, then test wrappers. Static functions properly identified. Matches source's section organization (4.1, 4.2, 4.3).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for global variables like `g_403ff4`, `g_4020a8`. Missing printf argument issue would cause compilation warnings. Some stub functions needed. Not standalone compilable without fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All locals are `v0`-`v14`, parameters are `a0`-`aN` - completely generic
+- **No comments**: Zero documentation of function purpose, test scenarios, or expected behavior
+- **Noise artifacts**: `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `[D] PutI(...)` completely obscure `func_mixed_args`
+- **Broken printf**: Format strings like `printf("CALL-L1-01: %d\n");` missing value arguments
+- **Type loss**: Structs `LargeStruct`, `SmallStruct`, `SmallPoint` not recovered; generic `struct_0` used instead
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are appropriately sized with good separation between test wrappers and implementations. Matches source organization well.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+Zero comments throughout. Source had extensive documentation explaining each test case's purpose, expected values, and calling convention details.
+
+### Top 3 Recommendations:
+1. **Recover variable names from usage patterns**: `v0` used as sum → `sum`; `a0` used as count → `count`
+2. **Remove or properly annotate decompilation artifacts**: The `[D] unsupported_*` constructs should either be resolved or clearly flagged with explanation
+3. **Add semantic comments**: Document what each test function validates (e.g., "// Tests cdecl calling convention: right-to-left stack args, caller cleans stack")

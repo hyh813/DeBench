@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_clang_O3_no_g/ida/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing preprocessing features:\n\nPPL201: 64\nPPL202: 30\nPPL203: 32\nPPL204: 57122\nPPL301: 116\nPPL302: 19\nPPL303: 60\nLOG: Values: 10, 20, 30\nPPL304: 60\nPPL305: 16\nPPL306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:22\nPPL307: 382\nTesting ASM features:\n\nASML401: 15\nASML402: 15\nASML403: 42\nASML404: 36\nASML405: 30\nASML406: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

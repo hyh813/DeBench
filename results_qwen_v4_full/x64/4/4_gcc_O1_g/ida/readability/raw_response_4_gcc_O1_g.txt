@@ -1,0 +1,123 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names (`v0`, `v1`, `v2`, `temp`) instead of semantic names. Parameter names partially preserved (`a`, `b`, `x`, `y`) but locals like `v3`, `v4` in `varargs_func` obscure their roles as loop counters and accumulators.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `func_struct_byval`), but runtime functions use generic names (`sub_1020`, `sub_1030`). Test functions like `test_calling_conventions` maintain clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x28u` (stack canary offset), `0x2F` (gp_offset threshold), and `17` (loop bound) lack explanation. Computed results (15, 50, 33) are clear but appear as constants due to optimization.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts: `__readfsqword(0x28u)` for stack canary, `__printf_chk` instead of `printf`, explicit type casts (`(__int64 *)`, `(_DWORD *)`). Stack variable declarations (`[rsp+0h] [rbp-10h]`) add visual noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow uses natural if/else and for loops. However, `varargs_func` has complex loop structure with manual `va_arg` handling that obscures the simple summation logic from source.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical issue: caller functions are constant-folded (`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`). This destroys the call relationship and semantic intent of testing calling conventions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack variable handling disrupts flow. Functions like `test_calling_conventions` have complex local variable declarations that interrupt logical reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. However, `varargs_func` and `param_varargs` are nearly identical (both handle variadic arguments), suggesting missed consolidation opportunity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - some types preserved (`int`, `char*`, `LargeStruct`), but many degraded to `__int64`, `void*`. `func_mixed_args` returns `__int64` instead of `int`. Function pointer types partially recovered but cast to generic `(__int64 (__fastcall *)(_QWORD))`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structs partially recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`) but field names lost in decompilation output. `ret_small_struct` shows warning "local variable allocation has failed" indicating incomplete recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `*(_DWORD *)v3`, `(__int64 *)((char *)args[0].reg_save_area + ...)`. Pointer arithmetic visible in struct iteration. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code. Original source had extensive comments explaining each test case (CALL-L1-01, PARAM-L1-01, etc.). Only compiler warnings present ("positive sp value has been detected").
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Standard C idioms (variadic functions, struct passing, function pointers) not identified or labeled. Calling convention differences not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("local variable allocation has failed", "positive sp value has been detected"). External functions marked as "FAILED to decompile" (7 functions). However, no explanation of why or how to resolve.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present (`if (!p) return -1`) but not labeled as contracts. No parameter validation documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Constant-folding destroys call graph visibility (e.g., `call_cdecl` doesn't show it calls `cdecl_func`). Global variables referenced but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear sections (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions marked "FAILED to decompile" (`__libc_start_main`, `puts`, `strlen`, etc.). Would require stubs to compile. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+4+6+7)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.896 ≈ 4.9/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+---
+
+### Critical Defects
+
+- **Constant folding destroyed call relationships**: `call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`, losing the test's semantic purpose
+- **No comments recovered**: Original source had extensive documentation (CALL-L1-01, PARAM-L1-01, etc.) completely absent in decompilation
+- **Generic variable names**: Locals named `v0`, `v1`, `v2` instead of semantic names like `sum`, `count`, `index`
+- **Type degradation**: Function pointers cast to generic `(__int64 (__fastcall *)(_QWORD))` losing signature information
+- **7 external functions failed**: `puts`, `strlen`, `__printf_chk` etc. not decompiled, requiring stubs for compilation
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Most original function names preserved (`cdecl_func`, `varargs_func`, `func_struct_byval`), maintaining semantic identity despite optimization
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source's extensive test case explanations (CALL-L1-01 through CALL-L3-05) entirely lost
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve call relationships despite constant folding**: Even when results are computable at compile time, maintain the original call structure for semantic clarity (e.g., show `return cdecl_func(5, 10)` not `return 15`)
+
+2. **Recover and insert source comments**: When debug symbols (`-g`) are available, extract and preserve original comments, especially test case labels and documentation
+
+3. **Infer semantic variable names from usage patterns**: Variables used in accumulation should be named `sum`, loop counters should be `i`, and pointer parameters should reflect their purpose (e.g., `str` not `s`)

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `a0`, `a1`, `a2` instead of original names like `a`, `b`, `c`. Local variables are named `v0`, `v1`, `v2`, `v3`, `v4` with register hints (e.g., `unsigned int v0;  // eax`), completely obscuring their semantic purpose like `temp1`, `temp2`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered like `sequential_ops`, `recursion_factorial`, `double_value`, `triple_value`, `state_idle`, `state_processing`. However, many functions use mechanical address-based names like `sub_401030`, `sub_401040`, `sub_4010a0` that provide no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout. The value `4294967295` (unsigned -1) appears frequently without explanation. Complex expressions like `*((int *)(v0 + 19281 + a0 * 4 - 12224))` for jump tables are opaque. Some constants like `1001` in `infinite_loop` are inferable but most literals lack clarity.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution throughout. Includes: register annotations on every variable (`// eax`, `// edx`), spurious struct definitions like `typedef struct struct_0 { char padding_0[40]; unsigned int field_28; } struct_0;`, complex pointer arithmetic `*((int *)&v16[4 * v18])`, and `_ccall` invocations. The code is cluttered with decompilation artifacts that impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures are present but often awkward. `loop_for_fixed` uses do-while instead of for-loop. `switch_large` and `if_elseif_long` use computed goto patterns like `goto v0 + 19281 + *((int *)(v0 + 19281 + a0 * 4 - 12224));`. `loop_break` uses goto for early exit. At -O0, these transformations are unnecessary and reduce readability.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good preservation of original function boundaries. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) remains separate. Functions like `recursion_factorial` and `double_value` are properly extracted. Minor issue: some test wrapper functions are large but this matches source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with acceptable flow. Early returns present in functions like `single_if` and `if_else`. Some forward jumps in switch implementations but manageable. The code doesn't have severe spaghetti code issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious duplication. Loop unrolling is minimal at -O0. Some repeated patterns in test functions but these match the original source structure. Overall clean from redundancy perspective.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation evident - original `int` parameters become `unsigned int` in decompiled code (e.g., `int sequential_ops` → `int sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`). Function pointers are properly typed in some cases like `int (*f)(int)` but generic in others. Some type information preserved but signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor composite type recovery. The decompiler creates spurious struct definitions like `typedef struct struct_0 { char padding_0[20119]; struct struct_1 *field_4e97; } struct_0;` which are artifacts. Original arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` are not recovered as arrays but as individual stack variables.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present but not critical. Pointer arithmetic like `*((int *)(a0 + v0 * 4))` in `process_with_callback` is borderline. No severe type-confused function pointers. Stack canary checks (`__stack_chk_fail_local`) are properly detected. Overall moderate type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only register annotations like `// eax`, `// edx`, `// ebx` appear throughout. No algorithm explanations, no recovery confidence indicators, no API contracts. Comments are noise rather than helpful.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicitly visible but not explicitly named. State machine logic in `state_machine` and `fsm_func_table` is recognizable but not labeled. Recursion in `recursion_factorial` is clear. No explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious or uncertain code. The decompiler presents everything with equal confidence. Indirect calls and computed jumps are not marked as potentially problematic. No warnings about unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original assertions like `if (x < 0) return -1;` are recovered but not explained as validation contracts. No documentation of error handling expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `recursion_factorial(a0 - 1)`, `call_func_ptr(double_value, 5)`). However, no explicit documentation of who calls what, global variable usage is unclear, and callback relationships aren't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions organized by memory address order (sub_401030, sub_401040, etc.) rather than logical grouping. However, related functions like state handlers (`state_idle`, `state_processing`, `state_done`, `state_error`) are grouped together. Original test organization partially preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has `extern` declarations for globals but lacks standalone compilation readiness. Many stub functions needed (`frame_dummy`, `register_tm_clones`). Dependencies on runtime functions (`__stack_chk_fail_local`) not documented. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`, `v1`, `a0`, `a1` instead of semantic names like `temp1`, `sum`, `count`
+- Type precision lost - original `int` parameters become `unsigned int`, losing sign semantics
+- No useful comments - only register annotations that add no value
+- Spurious struct definitions like `struct_0` with `padding_0` fields are decompilation artifacts
+- Complex computed goto expressions for switch statements are unreadable
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- The decompiler preserved the original function boundaries well. Each test function and helper function remains separate, maintaining the logical structure from the source.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- The decompiled code has almost no useful comments. Only register location hints exist, providing zero insight into algorithm logic, recovery confidence, or API contracts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as loop counter, name it `i` or `index`; when accumulating sum, use `sum`; when storing array size, use `n` or `size`
+2. **Recover type signedness correctly**: Analyze comparison operations to determine if parameters should be `int` vs `unsigned int`; check arithmetic operations for overflow patterns
+3. **Add meaningful comments**: Include algorithm explanations, flag uncertain recoveries, document jump table structures, and explain complex pointer operations

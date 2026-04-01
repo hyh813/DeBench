@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all local variables use generic names like `local_1c`, `local_24`, `iVar1`, `param_1` with no semantic meaning. Even at `-O0` with debug symbols, the decompiler failed to recover meaningful names like `capture_by_value` or `result`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods retain names (`SimpleClass::getValue`). However, lambda operators show `TEMPNAMEPLACEHOLDERVALUE` and some internal functions use `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234`, `0x32` (50), `0x14` (20), `0x1e` (30) appear without explanation. Some hex values correspond to class IDs but aren't documented as constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__cxa_throw`, `__uniq_ptr_impl`, `get_pc_thunk_bx` injections, and numerous `WARNING:` comments about unreachable blocks that clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals are recognizable, but exception handling appears as `/* try { // try from...has its CatchHandler */` comments rather than proper try/catch blocks. Virtual calls use indirect function pointers.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe template instantiation bloat—`test_cpp_smart_ptr` spawns 50+ helper functions (`__uniq_ptr_impl`, `_Tuple_impl`, `_Head_base`). Original 12 test functions become 219 total functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions, but forward references to stack variables (`in_stack_0000000c`) and indirect call patterns disrupt natural reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive template code duplication—`template_max<int>` and `template_max<double>` are separate functions, and STL unique_ptr implementation repeats across multiple type specializations without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—`undefined4`, `undefined8`, `type*`, `void*` replace precise types. `std::unique_ptr` becomes verbose template soup. Original `int`, `size_t`, `double` often lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with field offsets visible (`this + 4`, `this + 8`), but field names lost. Virtual table layouts visible but not named. Struct fields all generic offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(undefined4 **)`, `(type *)`, `(int **)`. Pointer arithmetic obscures type boundaries. No const-correctness preserved on recovered types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings (`WARNING: Unknown calling convention`) rather than semantic explanations. No algorithm documentation or logic explanations present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms completely unrecognized—RAII patterns, virtual dispatch, smart pointer semantics all appear as raw pointer operations. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present (`WARNING: Removing unreachable block`, `Unknown calling convention`), but they're generic and don't explain the underlying issue or suggest manual review.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition/postcondition recovery. No documentation of null checks, bounds validation, or error conditions. Exception contracts not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships traceable through direct calls. Inheritance visible through constructor chaining (`Base::Base((Base *)this)`). Virtual dispatch relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 219 functions in single output without logical grouping. No separation between test code, class implementations, and STL internals.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile—missing headers, undefined types (`undefined4`, `type*`), Ghidra-specific constructs, and incomplete STL recovery prevent standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+4+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.58/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- Variable `local_1c`, `local_24`, `iVar1` should recover debug symbol names like `result`, `capture_by_value` at `-O0`
+- Lambda operators show `TEMPNAMEPLACEHOLDERVALUE` instead of meaningful names
+- Template instantiation creates 50+ helper functions bloating the output 6x
+- Type degradation to `undefined4`, `type*` loses all type safety information
+- Exception handling reduced to comments rather than proper try/catch blocks
+- Code will not compile without extensive manual修复
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names and class method names were preserved reasonably well from debug symbols
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero recovery of preconditions, postconditions, or error handling contracts despite debug build
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols at -O0**: Variable names from DWARF debug info should be recovered instead of generic `local_XX` names
+2. **Template consolidation**: Recognize template instantiations and present them as parameterized functions rather than duplicating code
+3. **C++ idiom recognition**: Implement pattern detection for RAII, smart pointers, and exception handling to restore high-level semantics

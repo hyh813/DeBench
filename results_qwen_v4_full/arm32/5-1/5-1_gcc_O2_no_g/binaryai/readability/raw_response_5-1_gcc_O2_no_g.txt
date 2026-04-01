@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `puVar1`, `local_c`, `acStack_2c` with no semantic meaning. Original variables like `value`, `name`, `data`, `size` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`), but class methods use generic patterns (`FUN_0001092c`) and many external stubs have meaningless names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x2a`, `0x47`, `0x28a`) with no explanation. Expected return values (4704, 21, 42) are replaced with hex constants that obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs show infinite recursion patterns (`operator_new` calls itself). Stack canary checks (`__stack_chk_fail`) and compiler artifacts present throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions return constant values instead of actual logic (e.g., `test_cpp_virtual_func` returns `0x2a` directly). Original control flow completely lost.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are separated but many are just constant returns. Multiple destructor variants for same class (4+ `DiamondDerived::~DiamondDerived` versions) indicate poor decomposition.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with forward jumps only for error handling. However, the simplified logic makes linearity misleading about actual complexity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor thunks for same class create redundancy. External function stubs duplicate functionality unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined1` throughout. No const-correctness. Original types (`int`, `size_t`, `char*`) degraded to generic integers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: NO class/struct definitions recovered. All object access through raw pointer arithmetic (`*(int *)(this + 4)`, `*(int *)(this + 0x28)`). Vtable access completely opaque.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Extensive unsafe casts (`undefined4*`, `int*`, `void*`). Pointer arithmetic without bounds checking. Type-confused operations throughout (e.g., treating vtable pointers as integers).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms (RAII, virtual dispatch, template instantiation) not recognized. No design patterns identified. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Confidently presents incorrect logic (constant returns instead of actual computation). No flags for unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Exception handling logic lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but inheritance relationships unclear. Virtual dispatch not documented. Class hierarchy completely lost in decompilation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. No header file structure. Static members not properly scoped.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: External stubs have infinite recursion (won't link). Missing type definitions. Would require extensive modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+5)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+4+6+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+2+2)/3   = 2.33 × 0.20 = 0.466
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (3+4+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.18/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Constant return values**: Test functions return hardcoded constants (`0x2a`, `0x47`, `0x28a`) instead of actual computation logic
+- **No class/struct recovery**: All C++ classes lost; object access through raw pointer arithmetic (`*(int *)(this + 4)`)
+- **Generic variable names**: `iVar1`, `puVar1`, `local_c` convey zero semantic meaning
+- **Infinite recursion stubs**: External function wrappers call themselves (`operator_new` calls `operator_new`)
+- **No type definitions**: `undefined4`, `undefined8` used instead of recovered struct/class types
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Code generally reads top-to-bottom without excessive jumps, though this is misleading given the lost logic
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments; decompiler provides no guidance about uncertain regions or recovered patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures** - Analyze vtable layouts and object memory patterns to reconstruct class definitions with field names
+2. **Preserve original function logic** - Don't optimize away computations into constant returns; maintain actual control flow even at -O0
+3. **Add decompilation confidence annotations** - Flag uncertain regions (indirect calls, type ambiguities) with comments to guide manual review

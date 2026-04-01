@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameters are renamed to generic `a1`, `a2`, `a3` instead of the original `a`, `b`, `c`. While standard for decompilers, it loses the semantic hint of the original names. Local variables in other functions (e.g., `v1`, `v2`) are purely generic.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `sequential_ops`, `single_if`, and `duffs_device` are perfectly preserved from the source, likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 7/10
+Justification: Magic numbers like `2` in `sequential_ops` are clear, but other functions contain unexplained constants like `0x14u` (stack guard offset) and `0x12345678` (in `opaque_predicate`), which lack context.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The target function `sequential_ops` is clean, but the overall output contains compiler artifacts like `__readgsdword(0x14u)` for stack canaries and `__asm { jmp ... }` blocks in thunk functions, which adds noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: `sequential_ops` is perfectly linear. However, `switch_small` was decompiled into a chained `if-else` structure rather than a `switch` statement, and `duffs_device` results in a complex `goto` web, which, while accurate, is harder to read than the original structured loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct boundaries and granularity. The decompiler did not erroneously merge or split functions, maintaining the original modularity (e.g., `double_value` remains separate).
+
+**7. Code Linearization:** Score: 8/10
+Justification: `sequential_ops` reads naturally top-to-bottom. However, `duffs_device` and `computed_goto` involve non-linear jumps (`goto _L174`) that disrupt the reading flow, though this is inherent to the source logic.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully optimized `sequential_ops` from the source's verbose 3-step variable assignment into a single expression `2 * (a1 + a2) - a3`, improving readability without losing meaning.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: While `sequential_ops` uses correct `int` types, the function `op_or` has a significant type error: it takes `__int64 a1` instead of two `int` arguments, merging the parameters into a single 64-bit container.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Stack arrays like `int arr[]` in `loop_break` are correctly recovered as `_DWORD v2[9]` with proper initialization sequences, preserving the structure even if field names are generic.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is generally safe, but the type confusion in `op_or` (treating two `int`s as `__int64`) represents a potential type safety issue where the decompiler masks the original function signature.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like `duffs_device` or the state machine transitions lacks explanatory text, leaving the user to deduce the algorithm purely from code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard loops and conditionals are recognized, but specific patterns like "Duff's Device" are not explicitly identified; they are just rendered as raw control flow with labels.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Inline assembly blocks are marked with `__asm`, and failed decompilations are listed at the end. However, the type mismatch in `op_or` is not flagged as an anomaly or uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `n > 0` in `duffs_device` is lost).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `state_machine` and its handlers is visible through the switch logic.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and helper functions (like `double_value`) are placed near their usage or in a coherent order.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses non-standard intrinsics like `__readgsdword` and `__asm` blocks, making it impossible to compile on a different platform without significant modification or stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 10 + 7 + 7) / 4 = 7.5
+L2_avg = (8 + 9 + 8 + 9) / 4 = 8.5
+L3_avg = (7 + 8 + 8) / 3 = 7.67
+L4_avg = (1 + 5 + 6 + 1) / 4 = 3.25
+L5_avg = (8 + 8 + 5) / 3 = 7.0
+
+Overall = (7.5 × 0.30) + (8.5 × 0.25) + (7.67 × 0.20) + 
+          (3.25 × 0.15) + (7.0 × 0.10)
+Overall = 2.25 + 2.125 + 1.534 + 0.4875 + 0.7
+Overall = 7.0965
+```
+
+**Overall Readability Score:** 7.1/10
+
+### Critical Defects
+- **Type Merging in `op_or`**: The decompiler incorrectly merged two `int` arguments into a single `__int64` parameter, obscuring the function signature.
+- **Loss of `switch` Structure**: `switch_small` and `switch_default` were decompiled as `if-else` chains, losing the semantic intent of a dispatch table.
+- **Missing Comments**: Complex algorithms like Duff's Device lack any explanatory comments, making them significantly harder to understand than the source.
+- **Non-portable Artifacts**: Usage of `__readgsdword` and `__asm` blocks reduces portability and adds noise.
+
+### Best Quality Aspect
+- **Function Naming Quality (Score: 10/10)**
+- **Why?** The decompiler perfectly preserved all original function names (e.g., `sequential_ops`, `duffs_device`), likely due to the presence of debug symbols, making the codebase immediately navigable.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (Score: 1/10)**
+- **Why?** The complete absence of comments, especially for complex control flow patterns like Duff's Device or state machines, forces the user to reverse-engineer the intent from the raw logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Type Recovery for Register-Passed Arguments**: Fix the logic that merges adjacent integer arguments (e.g., in `op_or`) into a larger integer type (like `__int64`) when they should remain distinct parameters.
+2.  **Preserve High-Level Control Flow**: Enhance the pattern matching to recover `switch` statements even when optimized into jump tables or conditional jumps, rather than defaulting to `if-else` chains.
+3.  **Generate Algorithmic Annotations**: Automatically detect known complex patterns (like Duff's Device) and insert comments or annotations identifying them by name to aid comprehension.

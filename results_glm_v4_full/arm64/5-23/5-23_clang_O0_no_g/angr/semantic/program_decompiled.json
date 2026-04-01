@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_clang_O0_no_g/angr/syntactic/bin/5-23_clang_O0_no_g_fixed",
+  "stdout": "test_macro_constants: -754342600\ntest_macro_functions: 64\ntest_conditional_compile: 30\ntest_multi_branch_compile: 32\ntest_macro_recursion: 57122\ntest_stringize: 116\ntest_token_paste: 19\ntest_variadic_macro: 60\nLOG: Values: 10, 20, 30\ntest_macro_override: 60\ntest_include_guard: 16\ntest_builtin_macros: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:38\n\ntest_asm_basic: 1180458136\ntest_asm_clobber: 15\ntest_asm_multi_insn: -661842973\ntest_asm_simd: 42\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 7\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

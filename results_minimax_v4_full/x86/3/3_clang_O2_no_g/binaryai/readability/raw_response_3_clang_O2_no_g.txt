@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `pvVar1`, `puVar1`, `local_800`, `aiStack_24`. These obscure semantic meaning - for example, `param_1` should be `x` or `n` based on usage, and `local_800` should be `large_buf` or similar. The original source has meaningful names like `arr`, `head`, `p`, `n` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions are correctly named (`local_vars`, `heap_basic`, `linked_list_heap`, `memop_memset`, etc.) matching source. However, several internal functions use cryptic addresses: `FUN_00011030`, `FUN_00011f75`, `FUN_00012025`, `FUN_00012155`. These should be `static_helper`, `global_var_access`, `global_heap_store` respectively.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0xffffffff` (-1), `0x3c` (60). For example, `address_of_local` returns `0x2a` without explaining it's the decimal value 42. No constants or enums recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from compiler artifacts including: 15+ external function stubs (`printf`, `malloc`, `free`, etc.), initialization code (`_init`, `_start`, `__do_global_ctors_aux`), register thunks (`__i686_get_pc_thunk_bx`), and TLS registration. These 200+ lines obscure the actual test functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is mostly natural with recognizable `if-else`, `while`, `do-while` constructs. Example: `large_stack_frame` uses proper `do-while` loop. Minor awkwardness in `vla_stack` and `alloca_usage` due to complex stack frame setup, but logic is traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines). Each test function (`test_stack_memory`, `test_heap_memory`, etc.) correctly calls sub-functions. No excessive inlining or fragmentation. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `if (__ptr == 0) return -1`). Some forward jumps in complex functions like `linked_list_heap` but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present in `large_stack_frame` (unrolled by 8), `heap_basic`, `heap_array`, `memory_leak` - but not commented or abstracted. Some dead code from register spills in complex functions like `vla_stack`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `undefined4` instead of `int`, `byte` instead of `char`, `uint` instead of `size_t`. Function parameters like `int param_1` should be `int x` or `int n`. Pointer types often shown as `undefined4*` instead of proper types. Signed/unsigned confusion common.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `Point` struct (with x, y fields) lost - `heap_struct` shows raw pointer arithmetic instead of `Point* p = malloc(sizeof(Point))`. `Node` struct (data, next) lost in `linked_list_heap`. `TreeNode` struct lost. All shown as `undefined4*` with manual field offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: extensive use of `undefined4*` casts, manual pointer arithmetic without bounds checking (e.g., `*(int *)((int)__ptr + iVar3 * 2 + -8)`), type-confused function pointers shown as `code*`. Some buffer-overflow-prone patterns in loop-unrolled code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. No explanation of algorithms, no documentation of preconditions/postconditions, no indication of decompilation confidence. The original source has extensive comments (MEM-L1-01, HEAP-L2-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some recognizable patterns: linked list creation/traversal in `linked_list_heap`, tree creation in `tree_heap_traversal`, memory operations (malloc/free). However, no explicit naming or documentation of these patterns. Caller should recognize them from structure alone.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function has clear undefined behavior (access after free) but no warning. `double_free` and `heap_overflow` also have issues but no indication. No confidence indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0"), no postconditions (e.g., "ensures: return is middle element"), no invariants. Error handling present but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are traceable (`main` calls `test_stack_memory`, etc.), but relationships not explicit. Global variables like `global_counter`, `global_array`, `file_scope_static` used but not documented which functions access them. Callback relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions loosely grouped by category (stack functions at 0x112c0, heap at 0x11640, static at 0x121b0, memory ops at 0x123d0). However, noise functions interspersed. Static vs extern functions not clearly distinguished.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. External function stubs are recursive (e.g., `int printf(char *__format,...) { return printf(__format); }`). Missing type definitions (`Point`, `Node`, `TreeNode`). Missing global variable declarations (`extern_global_var`). Would require extensive patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`param_1`, `iVar1`, `local_800`) losing all semantic meaning from source
+- Composite types (`Point`, `Node`, `TreeNode`) completely lost - shown as raw pointer arithmetic
+- No comments or documentation explaining any function's purpose or algorithm
+- Severe noise pollution from 200+ lines of compiler stubs and initialization code
+- Magic numbers everywhere without explanation (0x2a, 0x14, 0xf, 0x800)
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+The decompiler correctly recovers loop constructs (`for`, `while`, `do-while`) and conditional logic. At -O0, the control flow structure closely matches the source.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The complete absence of comments means no explanation of what functions do, no documentation of preconditions/postconditions, no indication of algorithm intent, and no warnings about suspicious patterns like dangling pointers.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types** from allocation sizes and field access patterns - `malloc(8)` followed by field writes to offsets 0 and 4 clearly indicates `struct { int x; int y; }`
+2. **Add semantic comments** explaining function purpose, e.g., "// Creates linked list with 5 nodes, returns sum of all data fields"
+3. **Name variables from usage** - if a parameter is used as array index, name it `index` or `i`; if used in multiplication, name it `multiplier` or similar

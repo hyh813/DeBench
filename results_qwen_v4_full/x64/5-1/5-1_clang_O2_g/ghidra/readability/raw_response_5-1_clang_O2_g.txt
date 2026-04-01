@@ -1,0 +1,108 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables marked as "Unresolved local var: SimpleClass obj@[???]" with no semantic names. Generic names like `local_24`, `iVar1`, `puVar1` dominate, making purpose inference impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use generic names (`FUN_00101020`). Template functions correctly named (`template_max<int>`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`) with no explanation. These are pre-computed results that obscure the actual computation logic from source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive "Unresolved local var" comments clutter every function. Compiler initialization code (`_init`, `_GLOBAL__sub_I_5_1_cpp`) included without clear separation from user code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions reduced to single `return` statements with constants—actual control flow (loops, conditionals, try-catch) completely optimized away. `test_cpp_exception` shows throw without catch structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations properly separated (`Container<int>::push`, `Container<double>::get`), but test functions lack internal structure. Class methods recovered but class definitions missing.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom within functions, but this is because logic is missing. `test_cpp_rtti` has reasonable linear flow with conditional checks.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. However, this is because optimization eliminated the code entirely rather than decompiler cleaning it up.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int`, `double`, `char[]`), but class types lost. `undefined4*`, `undefined8`, `long*` used where specific types should exist. Pointer arithmetic on vtables unclear.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—no class definitions recovered (`SimpleClass`, `LifecycleClass`, `Base`, `Derived` all missing). Only Container member functions show DWARF prototypes. Struct layouts completely absent.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(undefined4 *)__cxa_allocate_exception(4)`, `(long)&PTR__RTTIBase_00103d78`. Virtual calls treated as `(**obj->_vptr_Base)()` without proper vtable structure.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are decompiler warnings ("WARNING: Unknown calling convention", "Unresolved local var") not semantic documentation. No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost—RAII (smart pointers), virtual dispatch, exception handling, lambda captures all reduced to constants or raw operations. No pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Decompiler does flag issues ("WARNING: Could not recover jumptable", "Unresolved local var"), which is honest about limitations. However, doesn't explain impact on semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts lost (try-catch blocks optimized away). No null checks or bounds validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but class inheritance relationships lost. Virtual dispatch shown as raw vtable access (`**obj->_vptr_Base`). No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but no namespace or class structure. RTTI functions scattered. Template instantiations separate but not linked to original template definitions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile standalone**—missing class definitions, undefined types (`EVP_PKEY_CTX`, `std::ios_base::Init`), external dependencies undocumented. Requires significant reconstruction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+5+6+7)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (4+2+6+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.04/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Class definitions completely missing**—`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Point`, `Container` not recovered
+- **Test functions return pre-computed constants** instead of showing actual logic (e.g., `test_cpp_member_func` returns `0x125c` instead of computing `r1 + r2 + r3`)
+- **All local variables marked "Unresolved"** with no semantic names recoverable
+- **Exception handling structure lost**—`test_cpp_exception` shows throw without try-catch blocks
+- **Virtual dispatch reduced to raw pointer arithmetic** without vtable structure explanation
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- The decompiler honestly flags unresolved variables and calling convention issues rather than presenting incorrect information confidently.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any C++ class definitions, making object-oriented semantics impossible to understand from decompiled output.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions from DWARF debug info** when `-g` flag is present—metadata exists but isn't being utilized for type reconstruction.
+2. **Preserve control flow for test functions** even when optimizer constant-folds results—show original computation path with comments indicating constant propagation.
+3. **Link template instantiations to original template definitions** and recover lambda capture structures from closure objects rather than showing `anon_class_16_2_b9b285fb`.
+
+---
+
+### Additional Notes:
+**Optimization Level Discrepancy**: Source metadata claims `-O0 -g` but binary was compiled with `-O2` (per decompiled binary path `5-1_clang_O2_g`). This explains why test functions are constant-folded. At true `-O0`, readability should be 8-10/10; at `-O2`, 5-7/10 is reasonable—but class recovery should still work with debug symbols.
+
+**Ghidra-Specific Issues**: The decompiler shows good function name recovery from symbols but fails at C++ semantic reconstruction. This is a known limitation—Ghidra excels at assembly-level analysis but struggles with high-level C++ constructs (classes, templates, exceptions, RTTI).

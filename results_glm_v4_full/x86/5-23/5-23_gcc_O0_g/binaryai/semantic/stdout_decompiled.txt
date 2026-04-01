@@ -1,0 +1,5 @@
+call_macro_constants: 64
+call_macro_functions: 30
+call_conditional_compile: 32
+call_multi_branch_compile: 57122
+call_macro_recursion: 116

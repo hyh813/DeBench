@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O2_no_g/ida/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "Obfuscated Testing Suite\n\nopaque predicate (call): 10\nopaque predicate (param): 20\ninstruction substitution: 225\nstring encryption: 131\ntail call optimization: 500500\nnon-tail call: 5050\nvectorized loop: 0\nlink-time optimization: 20\ndivision by zero: 2\nnull pointer dereference: 41\nbuffer overflow: 30\ninteger overflow: 2000000000\nundefined behavior: 10\nimplementation-defined: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `local_10`, `puVar4`, `uStack_40`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `multiplier`, `instance_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions well-recovered (`test_cpp_exception`, `test_cpp_virtual_func`), and class methods preserved (`Base::virtual_func`, `Container<int>::push`). However, many runtime helpers remain as `FUN_00011xxx`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0x125c`, `0x15d88`, `0x3e9`, `0x2bf`) without explanation. Original constants like `0x1234` for `getClassID()` lost. Some strings recovered ("Derived", "12RTTIDerivedA").
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local()`) add noise. Multiple `__x86_get_pc_thunk_*` functions and runtime helpers (`FUN_00011xxx`) clutter output. Expected at -O0 but excessive.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Exception handling uses goto labels (`LAB_000113b0`, `LAB_00011384`) instead of try/catch. Simple functions like `template_max_int_` are natural, but `test_cpp_exception` is nearly unreadable with complex branching.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions appropriately sized, class methods properly separated. However, multiple destructor variants per class (e.g., `MiddleA::~MiddleA` appears 5+ times) create fragmentation without clear purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. Exception handling and stack canary checks create non-linear flow with forward jumps. Acceptable for -O0 decompilation but could be improved.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in destructor implementations (same class has 4-5 variant functions). Similar vtable handling code repeated across classes. No consolidation of common patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `double`, `undefined4`) but const-correctness lost. Pointer types often generic (`undefined4 *`, `void *`). Template instantiations partially recovered (`Container_int_`, `template_max_int_`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures NOT recovered as structs—only pointer arithmetic visible (`*(int *)(this + 4)`, `*(int *)(this + 0x28)`). No field names, no struct definitions. Original had clear class definitions with named members (`value`, `name[32]`, `data`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`, `(undefined **)`). Pointer arithmetic on class objects without type safety. Function pointer calls through generic types (`(**(code ***)param_1)()`). Original C++ had strong type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. Only auto-generated function headers with addresses. Original had extensive comments explaining each test case, expected values, and C++ feature being tested.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized (`__thiscall` for member functions, template instantiations). Virtual function calls recognized through vtable. Exception handling visible but not named as such. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings despite suspicious code. Exception handling looks problematic but not flagged. Indirect calls not marked as uncertain. Stack canary checks present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. Original had clear expected return values in comments (e.g., "期望: 10 + 34 + 4660 = 4704").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Class inheritance visible through method names. Virtual dispatch partially recovered. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped but not by original source structure. Test functions mixed with class methods. No namespace or file organization recovered. Original had clear section organization with comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant work to compile. External dependencies not documented. Runtime helper functions (`FUN_00011xxx`) need implementation. Original compiled cleanly with `g++ -std=c++14 -O0 -g`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.48/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `local_10`, `puVar4`) losing all semantic meaning from original (`capture_by_value`, `multiplier`, `instance_count`)
+- **No struct/class recovery**—objects accessed via pointer arithmetic (`*(int *)(this + 4)`) instead of named fields
+- **Zero comments** despite original having extensive documentation of expected values and test purposes
+- **Exception handling decompiled to goto spaghetti** instead of recognizable try/catch blocks
+- **Multiple redundant destructor variants** per class (4-5 versions) without clear differentiation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Test function names (`test_cpp_exception`, `test_cpp_virtual_func`) and class method names (`Base::virtual_func`, `Container<int>::push`) were well-recovered, preserving semantic intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Complete absence of documentation makes understanding test purposes and expected values impossible without referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ exception handling as try/catch blocks** instead of raw goto labels—pattern is recognizable from stack unwinding calls and typeinfo references.
+2. **Infer variable names from usage context**—variables used in size checks should be named `size`/`length`, loop counters as `i`/`idx`, return values as `result`.
+3. **Reconstruct class layouts as structs with field names**—analyze consistent offset patterns across methods to recover `value`, `name[32]`, `data`, `size` fields instead of raw pointer arithmetic.

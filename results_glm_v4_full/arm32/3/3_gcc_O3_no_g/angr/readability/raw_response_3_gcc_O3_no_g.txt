@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `ptr`), providing no semantic hint about their role in the logic, such as distinguishing between a loop counter and a data pointer.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level function names from the source (`local_vars`, `heap_basic`, `test_stack_memory`) are preserved accurately, though some compiler artifacts like `.constprop.0` suffixes and generic names like `sub_10598` reduce the score.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers, most notably `4294967295` (representing `-1` or `UINT32_MAX`) and raw hex addresses, which obscures the original intent of error codes or specific values.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The pervasive use of `armg_calculate_condition` calls to represent flag logic acts as severe noise, interrupting the reading flow and making simple conditional checks look like complex function invocations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is mechanical, relying heavily on `goto` labels (e.g., `LABEL_10b4e`) and `do-while` loops to represent standard `for` loops, which makes tracing execution paths difficult.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Function boundaries generally correspond to the source, but aggressive inlining (e.g., `test_stack_memory` printing constant results) flattens the structure, making it harder to see the original modular test design.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code mostly reads top-to-bottom, the frequent use of forward jumps (`goto`) to handle error conditions or optimized logic paths disrupts linear readability.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully reflects the compiler's optimization; redundant intermediate variables are eliminated (e.g., `local_vars` is reduced to a single expression), resulting in concise code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generalized to `unsigned int` or `void*`, losing the distinction between `int`, `size_t`, and specific pointer types, and signed integers are frequently represented as large unsigned values (e.g., `-1` as `4294967295`).
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are recognized but reconstructed with generic names like `struct struct_0` and fields named `field_0`, `field_4`, completely losing the semantic meaning of members like `data` or `next`.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is not inherently unsafe, but the lack of precise types (e.g., using `unsigned int` for pointers) and the presence of implicit casts in arithmetic operations require careful mental tracking by the reader.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic; the only comments present are standard decompiler artifacts like `/* do not return */`, offering no insight into the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls like `malloc` and `free` are recognized, but higher-level patterns like linked list traversal or tree operations are obscured by the generic variable names and low-level control flow.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag potential issues or uncertainties; for example, the `armg_calculate_condition` calls are presented as standard code rather than being highlighted as a decompilation artifact or complex logic reconstruction.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions like `if (!ptr) return ...` are visible in the code, but they are not explicitly documented as contracts (e.g., "requires ptr != NULL"), leaving the reader to infer the safety guarantees.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are direct and easy to follow, and `extern` declarations are present, making it relatively clear how functions interact with each other and global symbols.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions ordered roughly by address, lacking the logical grouping found in the source (e.g., all stack tests together), which makes navigating the codebase harder.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile standalone due to undefined symbols like `armg_calculate_condition` and missing standard type definitions, requiring significant patching to build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.0
+L2_avg: 5.75
+L3_avg: 5.0
+L4_avg: 2.5
+L5_avg: 4.66
+
+Overall = (4.0 × 0.30) + (5.75 × 0.25) + (5.0 × 0.20) + 
+          (2.5 × 0.15) + (4.66 × 0.10)
+        = 1.2 + 1.4375 + 1.0 + 0.375 + 0.466
+        = 4.4785
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects (Bullet Points)
+- **Noise Pollution:** The `armg_calculate_condition` intrinsic is used extensively to represent flag logic, making simple `if` statements unreadable.
+- **Variable Naming:** Variables are reduced to generic names (`v0`, `v1`, `ptr`), stripping all semantic context (e.g., loop counters vs. data pointers).
+- **Type Information:** Signed integers are displayed as large unsigned values (e.g., `-1` becomes `4294967295`), and struct fields are generic (`field_0`, `field_4`).
+- **Control Flow:** Natural loops are replaced by `do-while` constructs and `goto` labels, obscuring the original high-level logic.
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**
+- **Why?** The decompiler successfully preserved the original names for most user-defined functions (e.g., `heap_basic`, `local_vars`), making it easy to locate specific logic blocks despite the poor internal variable naming.
+
+### Most Needs Improvement
+- **Noise Reduction (2/10)**
+- **Why?** The insertion of `armg_calculate_condition` throughout the code to handle ARM condition flags is the single biggest barrier to readability, turning simple logic into opaque function calls.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Resolve Condition Flags:** Implement a pattern matching pass to convert `armg_calculate_condition` calls back into native C comparison operators (e.g., `==`, `<`, `!=`) to restore natural `if` statements.
+2.  **Enhance Type Recovery:** Utilize debug information (DWARF) if available, or improve heuristic analysis to recover signedness and distinguish between `int` and `size_t` to avoid magic numbers like `4294967295`.
+3.  **Improve Struct Field Naming:** Leverage type libraries or cross-reference analysis to rename struct fields from `field_0` to meaningful names based on usage context (e.g., detecting a pointer field and naming it `next`).

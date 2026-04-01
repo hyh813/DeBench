@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v6`, `v17`) with no semantic meaning. While `result` and `flag2` appear occasionally, the majority of names obscure the variable's purpose, requiring significant mental effort to track data flow.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully recovered symbol names for most user-defined functions (e.g., `param_fake_branch`, `call_opaque_predicate`), which aligns perfectly with the source. However, library and helper functions retain generic names like `sub_10514` or `call_weak_fn`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent without explanation (e.g., `90` for the XOR key instead of `0x5A`, `32` for buffer size). String literals are often replaced by global memory addresses (e.g., `0x22058`), obscuring the actual data content being manipulated.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with low-level artifacts, specifically `armg_calculate_condition` calls which represent IR-level condition flag checks. These function calls act as severe noise, completely disrupting the readability of control flow logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural, relying heavily on `goto` statements and labels (e.g., `LABEL_10762`) instead of standard `if/else` or `loop` constructs. The logic is further obfuscated by the `armg_calculate_condition` calls, making it nearly impossible to follow the intended execution path.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Functions generally map 1:1 with the source code, maintaining appropriate granularity. However, the internal structure of these functions is so degraded by the lifting process that the benefit of this decomposition is minimal.
+
+**7. Code Linearization:** Score: 2/10
+Justification: The code does not read linearly; execution jumps frequently via `goto` labels. The presence of forward jumps and the spaghetti-like structure in functions like `param_opaque_predicate` make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler incorrectly applies aggressive optimization, eliminating code that should be present in `-O0` builds (e.g., the entire logic of `param_fake_branch` and `param_buffer_overflow_stack` is reduced to `return v0`). Conversely, it retains redundant IR-level checks that add no value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are often imprecise; `int x` in the source becomes `unsigned int a0` in `param_instruction_substitution`. Function signatures sometimes miss arguments entirely (e.g., `param_fake_branch()` is decompiled without arguments despite taking `int x`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are not recovered. Arrays are flattened into individual scalar variables (e.g., in `call_vectorized_loop`, the array `int a[]` is expanded into `result=1, v1=2, v2=3...`), destroying the data structure semantics.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains implicit type confusion common in low-level lifting, such as treating pointers as integers in `armg_calculate_condition` arguments. The lack of distinct types for signed vs. unsigned variables (e.g., `param_instruction_substitution`) creates potential safety ambiguities.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and mostly limited to standard library annotations like `/* do not return */`. There are no comments explaining the complex logic, the purpose of the `armg_` functions, or the recovered algorithms.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard C idioms or the specific obfuscation patterns in the source. For example, the "Fake Branch" obfuscation in `param_fake_branch` is not preserved as a branch but optimized away, and standard loops are not reconstructed.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication that the decompilation might be incorrect or that code has been aggressively stripped. The missing logic in `param_buffer_overflow_stack` is presented confidently as just `return v0`, which is misleading for a `-O0` binary.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic involving `setjmp`/`longjmp` in `param_division_by_zero` is present but not explained as an error-handling contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to other defined functions are clear and use the correct names. However, calls to standard library helpers or compiler intrinsics (like `__aeabi_idiv`) are not contextualized well.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While the order roughly follows the binary layout, there is no logical grouping or indication of which functions belong to which specific "test" category defined in the source.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on undefined functions like `armg_calculate_condition` and uses compiler-specific intrinsics (`__aeabi_idiv`) without headers or definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- **Logic Elimination Error**: `param_fake_branch` and `param_buffer_overflow_stack` are reduced to `return v0`, stripping all logic present in the `-O0` source.
+- **IR Pollution**: Pervasive use of `armg_calculate_condition` calls destroys control flow readability.
+- **Array Flattening**: Arrays are expanded into individual scalar variables (e.g., in `call_vectorized_loop`), losing structural context.
+- **Missing Arguments**: Function signatures often omit parameters (e.g., `param_fake_branch()`), breaking the interface contract.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully recovered symbol names from the binary, allowing the user to map the decompiled output back to the specific source functions being tested.
+
+**Most Needs Improvement:** Idiom Recognition (scored 1/10)
+- The decompiler failed to recognize basic C control flow constructs and the specific obfuscation patterns intended for analysis, replacing them with low-level IR artifacts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **IR-to-High-Level Lifting**: Implement a robust pass to pattern-match `armg_calculate_condition` sequences and convert them back into standard C `if`, `while`, and `for` statements.
+2.  **Optimization Awareness**: Detect `-O0` compilation characteristics (e.g., preserved dead code, stack canaries) and disable aggressive dead-code elimination passes to preserve the full logic of the function.
+3.  **Array Recovery**: Improve stack variable analysis to identify contiguous scalar variables initialized or accessed in loops and reconstruct them as array types.

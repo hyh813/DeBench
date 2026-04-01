@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic auto-generated names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `index`, `pos`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` which are completely lost. Even register hints like `// r0`, `// r4` don't provide semantic meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from the original source - `param_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `call_asm_privileged`, etc. all match exactly. This is likely due to debug symbols (-g flag) in the compilation. Minor deduction for some helper functions like `__sync_fetch_and_add_4` having strange implementations.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x400` (1024), `0x200` (512), `64`, `57072` (0xDEF0), `57122` (0xDF22) appear without any named constants. The original source had `MAX_SIZE`, `BUFFER_COUNT` which are completely lost. Only `__LINE__` value (279, 282) shows some recovery.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise present including register hints (`// r0`, `// r4`, `// r12`, `// lr`), stack frame comments (`// [bp-0x4]`, `// [bp-0x8]`), and condition code dependencies (`// cc_dep1`, `// cc_dep2`). The `__sync_fetch_and_add_4` and related functions have severe decompilation artifacts with meaningless `do { } while (4294905792());` loops.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have readable if-else structures. However, `call_asm_privileged` has extremely convoluted control flow with many goto statements and `armg_calculate_condition` calls that obscure the logic. The `param_asm_clobber` loop structure doesn't match the original assembly semantics clearly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function decomposition closely matches the original source - each test case (`call_macro_constants`, `call_asm_basic`, etc.) is properly separated. Functions are appropriately sized with clear single responsibilities. Minor issue: some atomic helper functions are unnecessarily exposed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `param_dynamic_code` and `param_memory_protection`. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy found: `call_variadic_macro` calls `param_variadic_macro(10, 20, 30)` twice; `call_builtin_macros` calls `param_builtin_macros(100)` twice; `test_preprocessing_features` calls `call_builtin_macros()` twice. This is a major readability issue.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `unsigned int` for parameters, proper pointer types (`unsigned int *a0`). The original used `int` for most parameters which is preserved. Some loss of signed/unsigned distinctions in return types. Function signatures are mostly accurate.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: The original source uses mostly primitive types and arrays, not complex structs. Array parameters are correctly typed as pointers. No struct recovery needed for this particular code, so this dimension is not heavily tested.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with proper pointer usage. Pointer arithmetic (e.g., `a0 + 1`, `index + 1`) is used correctly for array traversal. No obvious buffer overflow patterns or unsafe casts. Minor concern: some functions like `param_asm_clobber` have confusing pointer manipulation that could be unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only register hints (`// r0`, `// lr`) and stack frame annotations (`// [bp-0x4]`) exist. No explanation of what functions do, no documentation of the preprocessor constant values, no algorithm explanations. The original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified. The inline assembly patterns, atomic operations, and memory protection code could benefit from pattern recognition but none is provided. The preprocessor macro expansions are not flagged as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies are flagged. The strange `do { } while (4294905792());` patterns in atomic functions should be flagged as decompilation issues. The indirect call resolution in `call_asm_privileged` with complex condition calculations should be marked as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 64", "期望: 15") which are completely lost. Error return values (-1, -2, -3) in `param_dynamic_code` and `param_memory_protection` are not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No function call relationships are documented. The original source clearly showed `call_*` functions calling `param_*` functions, but this relationship isn't highlighted. No indication of which functions are test helpers vs. main logic.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - preprocessing test functions together, assembly test functions together, helper functions at the end. This matches the original source organization well. Static functions are properly indicated.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external functions like `__printf_chk`, `__stack_chk_guard`, `global_var`. Would require linking against libc and would need header declarations to compile standalone. Some functions like the atomic helpers have broken implementations that wouldn't compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable names are all generic (`a0`, `a1`, `v0`, `v1`, `ptr`, `index`) losing all semantic meaning from original (`size`, `x`, `y`, `result`, `arr`, `n`)
+- Redundant function calls: `call_variadic_macro` and `call_builtin_macros` each call their param functions twice
+- Magic numbers everywhere (`0x400`, `0x200`, `64`, `57072`) without named constants (original had `MAX_SIZE`, `BUFFER_COUNT`)
+- Atomic operation functions (`__sync_fetch_and_add_4`, etc.) have completely broken decompilation with meaningless `do { } while (4294905792());` loops
+- No comments explaining any code logic, preprocessor behavior, or expected results
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are almost perfectly preserved from the original source due to debug symbols, making it easy to identify each test case's purpose.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All parameter and local variable names are generic auto-generated names that completely obscure their semantic purpose, making it very difficult to understand what each variable represents without referring back to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `a0` used in comparison with `0x400` should suggest `size` or `max_size`
+2. Eliminate redundant function calls - detect when the same function is called with identical arguments multiple times and consolidate
+3. Recover preprocessor macro values as named constants - detect magic numbers that correspond to known macro definitions and replace with constant names (e.g., `0x400` → `MAX_SIZE`)

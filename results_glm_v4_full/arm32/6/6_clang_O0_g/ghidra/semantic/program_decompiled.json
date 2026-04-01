@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_clang_O0_g/ghidra/syntactic/bin/6_clang_O0_g_fixed",
+  "stdout": "Testing standard library functions:\n  call_strcpy() = 8\n  call_strcmp() = 0\n  call_strlen() = 12\n  call_memcpy() = -1224729750\n  call_memcmp() = 2\nValue: 42, Name: Test\n  call_printf() = 22\n  call_scanf() = 579\n  call_fopen_fclose() = 42\n  call_fread_fwrite() = 42\n  call_malloc_free() = 90\n  call_memset() = 0\n  call_strchr_strstr() = 15\nTesting system calls:\n  call_linux_syscall() = 42\n  call_win32_api() = 42\n  call_fork_exec() = -1\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

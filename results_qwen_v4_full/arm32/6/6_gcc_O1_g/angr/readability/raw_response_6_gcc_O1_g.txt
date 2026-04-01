@@ -1,0 +1,99 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2`, `ptr` obscuring semantic meaning. A few exceptions exist (`dst`, `len`, `fp`, `count`, `result`) but the majority require manual inference to understand purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`), but many helper functions use mechanical names (`sub_10ca8`, `sub_10fc8`, `sub_112bf`). Thread functions recovered well but atomic operation helpers are unnamed.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (appears as -1 repeatedly), `42` (test success code), signal numbers as literals (10, 14 instead of SIGUSR1, SIGALRM), socket constants (2, 1, 0 instead of AF_INET, SOCK_STREAM). No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler/decompiler artifacts: `__stack_chk_guard` checks in nearly every function, `armg_calculate_condition` calls obscuring simple conditionals, redundant register save/restore patterns (`v3 = v4; v2 = v5; v1 = v6; v0 = v7;`), and numerous `__sync_synchronize()` stub calls.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy reliance on `goto` statements with labels (LABEL_11008, LABEL_115c5, etc.) instead of structured loops/conditionals. `armg_calculate_condition` calls wrap simple comparisons, making logic harder to follow. Some do-while loops recovered but often with awkward termination conditions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Thread functions properly separated (`thread_sum`, `thread_increment`, `consumer_thread`), but several functions are incomplete or empty (`sub_112bf`, `sub_12497`, `sub_12499`). Some functions have excessive parameters (8 parameters in `sub_112bf`). Function sizes are reasonable but cohesion varies.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt top-to-bottom reading flow. Deep nesting in functions like `param_thread_local_storage` with multiple goto targets. Loop structures often use backward jumps with manual counter management instead of clean for/while constructs.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary checks duplicated in nearly every function. Some caller functions call the same function twice unnecessarily (`call_strcpy` calls `param_strcpy` then returns the result of calling it again). Dead code patterns in atomic operation stubs with infinite loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - nearly everything is `unsigned int` instead of proper types (`size_t`, `ssize_t`, `pid_t`, `FILE*`, `pthread_t`). Pointer types often lose const-correctness (`char*` instead of `const char*`). Function return types frequently wrong (should be `void*` for thread functions).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs defined but with generic field names (`field_0`, `field_4`, `field_74`, `padding_1`). `FILE` struct is empty (`typedef struct FILE {}`). `sockaddr` partially recovered. `ThreadData` struct not recovered - uses raw `struct_0` with manual offset calculations instead.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without proper typing (`ptr + 1` on void-like pointers), function pointers degraded to generic integers, implicit casts throughout. Stack canary XOR checks indicate potential buffer overflow concerns not addressed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output. Only auto-generated function headers with register annotations (`// r0`, `// [bp-0x4]`). No algorithm explanations, no API contract documentation, no decompiler confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `memcpy`, `pthread_create`). Thread patterns partially identified (producer/consumer pattern visible but not named). Signal handling pattern not explicitly identified. No design pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for incomplete functions (`sub_112bf` has empty body). `armg_calculate_condition` calls are decompiler artifacts but not explained. No warnings about unresolved indirect calls or uncertain type recovery. Code presents incomplete information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred (e.g., "ensures: return value is heap-allocated"). Error conditions not documented. Return value semantics unclear without referring to original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`signal_received`, `atomic_counter`, `shared_counter`) but usage patterns not explained. No call graph documentation. Callback relationships (thread entry functions) not explicitly marked.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output file with no logical grouping. Test functions mixed with implementation functions. No header file structure or API declarations. Static functions not properly scoped. Original source's section organization (6.1, 6.2, 6.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies present (pthread, libc) but not documented. Several functions incomplete or empty requiring stubs. Atomic operation functions have infinite loop stubs (`do { } while (4294905792());`). Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 6 + 3 + 3) / 4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4 + 5 + 4 + 4) / 4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (3 + 4 + 3) / 3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (2 + 4 + 2 + 2) / 4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (4 + 3 + 4) / 3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────────────
+Overall Readability Score: 3.68/10
+```
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `signal_number`, `signal_received`, `iteration_count`)
+- **Magic number `4294967295`** appears 30+ times representing `-1` error code - should be recovered as constant
+- **`armg_calculate_condition`** calls obscure simple comparisons - should be simplified to standard C conditionals
+- **Struct fields** all generic (`field_0`, `field_4`, `padding_1`) losing semantic meaning from original `ThreadData` struct
+- **Signal numbers as literals** (10, 14) instead of `SIGUSR1`, `SIGALRM` constants
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original semantic names (`param_strcpy`, `thread_compute`, `signal_handler`), showing the decompiler can recover some meaningful identifiers from debug symbols.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means readers must reverse-engineer all logic without any guidance on algorithm intent or non-obvious patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement magic number detection** - Recognize common error codes (-1 as 4294967295), signal constants, and socket family values, replacing them with named constants or comments.
+2. **Recover struct field semantics** - Use data flow analysis to infer field purposes (e.g., `ThreadData.start`, `ThreadData.end`, `ThreadData.result`) instead of generic `field_N` names.
+3. **Simplify condition expressions** - Replace `armg_calculate_condition` wrapper calls with direct C comparison operators, and convert goto-based loops to standard for/while constructs where pattern matches are clear.

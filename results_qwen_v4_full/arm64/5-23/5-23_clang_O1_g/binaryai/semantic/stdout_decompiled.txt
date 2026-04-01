@@ -1,0 +1,23 @@
+Testing preprocessing features:
+
+param_macro_constants returned: 64
+call_macro_functions returned: 30
+call_conditional_compile returned: 32
+call_multi_branch_compile returned: 57122
+call_macro_recursion returned: 116
+call_stringize returned: 19
+call_token_paste returned: 60
+LOG: Values: 10, 20, 30
+call_macro_override returned: 60
+call_include_guard returned: 16
+call_builtin_macros returned: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:39
+param_builtin_macros returned: 382
+Testing assembly features:
+
+call_asm_basic returned: 15
+call_asm_clobber returned: 15
+call_asm_multi_insn returned: 42
+call_asm_simd returned: 336662027
+call_asm_atomic returned: 30
+call_asm_privileged returned: 77

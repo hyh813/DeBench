@@ -1,0 +1,11 @@
+Testing obfuscation, optimization, and edge cases:
+  Fake branch result: 10
+  Opaque predicate result: 20
+  Instruction substitution result: 225
+  String encryption result: 44
+  Tail call optimized result: 500500
+  Non-tail call result: 5050
+  Vectorized loop result: 44
+  Link-time optimization result: 20
+  Division by zero result: 2
+  Null pointer dereference result: 41

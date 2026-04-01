@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `arg_0`), providing no semantic context about their role in the C++ objects or logic.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Ghidra successfully demangled C++ symbols (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`) and correctly identified thunks, which is the strongest aspect of this decompilation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals like `"Test"` are recovered, but magic numbers (e.g., `31`, `20`, `50`) are used without context, and floating-point logic is obscured by macros.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including repetitive stack canary setup (`v0 = &v1;`) in every function and compiler intrinsics like `__ROL__` and `arm64g_calculate_condition`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often broken or missing; many functions are empty stubs, and floating-point comparisons use low-level condition macros instead of logical operators.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: While thunks are correctly separated, the main logic of high-level test functions (e.g., `test_cpp_operator_overload`) is completely missing, reducing them to empty `return` statements.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code is difficult to read linearly due to exception handling mechanisms (`_Unwind_Resume`) interrupting flow and the prevalence of empty function bodies.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: Redundant stack guard checks and variable initializations clutter the code, and logic that should be present (like loop bodies or arithmetic operations) is often absent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Function signatures for templates are precise (e.g., `template_max<int>`), but class definitions are recovered as empty structs, and member variables are accessed via raw pointer arithmetic (e.g., `ptr[40]`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Classes like `Base` and `Derived` are defined with empty bodies `{ }`, completely losing the private members (`value`, `multiplier`) defined in the source.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as `(char *)a0 + (*(a0))[24]`, and treats object memory as raw byte arrays rather than typed structures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually non-existent, with only `/* do not return */` appearing occasionally; there is no explanation of the missing logic or complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: C++ idioms like thunks (`thunk to DiamondDerived::func()`) and exception handling (`__cxa_throw`) are recognized, but higher-level patterns like RAII or smart pointer usage are lost.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents empty functions and opaque logic without any warnings or uncertainty indicators, misleading the user about the completeness of the analysis.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic is too fragmented to infer any contracts reliably.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the relationship between class methods and their data is severed due to empty class definitions, making object-oriented context hard to follow.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in memory address order, which is standard for disassemblers, but does not reflect the logical grouping of the source files.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific macros (`arm64g_calculate_condition`) and relies on implicit external declarations, making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Functions `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`, and `test_cpp_smart_ptr` are decompiled as empty `void func() { return; }`, completely losing the source logic.
+- Class definitions (e.g., `Base`, `Derived`, `SimpleClass`) are recovered as empty structs, losing all member variables and rendering the code semantically meaningless.
+- Heavy use of generic variable names (`v0`, `v1`, `ptr`) obscures the data flow of the C++ objects.
+- Floating-point comparison logic is obfuscated by the `arm64g_calculate_condition` macro instead of being expressed as standard C++ operators.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully demangled C++ mangled names and correctly identified virtual function thunks, preserving the high-level API surface.
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)
+- The decompiler fails to report that the analysis failed for most function bodies, presenting empty stubs as valid code which is highly misleading.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  Improve control flow analysis to recover function bodies for C++ test cases, specifically addressing why logic is dropped in favor of empty returns.
+2.  Enhance type recovery to populate class definitions with member variables based on constructor/destructor usage patterns, rather than leaving them empty.
+3.  Replace architecture-specific condition macros (like `arm64g_calculate_condition`) with high-level semantic C++ comparisons to improve readability of floating-point and boolean logic.

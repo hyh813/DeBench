@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_O3_g/ida/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "test_obf_opt_edge called\n\nopaque predicate (param): 10\nopaque predicate (call): 20\ninstruction substitution: 225\nstring encryption (param): 84\ntail call (param): 500500\nnon-tail call (param): 5050\nvectorized loop: 72\nLTO (call): 20\ndivision by zero: 1\nnull pointer deref: 41\nbuffer overflow: 30\ninteger overflow: 2000000000\nundefined behavior: 10\nimplementation-defined: 43\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

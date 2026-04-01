@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic register names like `v0`, `v1`, `a0`, and `ptr`. While `ptr` is acceptable, names like `v0` and `v1` provide no semantic context regarding their role (e.g., `sum`, `index`, `len`).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level user functions retain their original names (e.g., `double_value`, `process_int`, `test_data_types_l1`), which is excellent. However, runtime and helper functions are reduced to generic names like `sub_4006e4` or `$x`.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and compiler artifacts. For example, `double_value` uses `4294967294` (0xFFFFFFFE) instead of the simple `* 2` operation found in the source, and `process_char` uses raw ASCII math (`25 >= ((a0 & 255) - 65 & 255)`) instead of character literals `'A'` and `'Z'`.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompilation is heavily polluted with low-level IR artifacts. Calls to `arm64g_calculate_condition`, `__ROL__`, and `__stack_chk_fail` are embedded directly in the logic, obscuring the high-level intent of the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Simple `for` loops are often converted into `do-while` loops with pointer arithmetic (e.g., `array_1d_stack`), which is harder to read. Furthermore, conditional logic is expressed using complex flag calculations (e.g., `if (25 >= ((a0 & 255) - 65 & 255))`) rather than clear logical operators.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decomposition generally follows the source structure, with separate functions for `test_data_types_l1`, `test_array_types`, etc. However, some functions like `__addtf3` are massive monoliths of low-level bit manipulation that should ideally be abstracted or recognized as library calls.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While many functions read linearly, the use of `goto` in places like `register_tm_clones` and the complex branching in `__addtf3` disrupt the flow. The reliance on `do-while` loops for array iteration also makes the code less linear than the original `for` loops.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler fails to simplify arithmetic expressions. For instance, `process_int` contains `((a0 * 2 | a0 >> 31) & 4294967294) + 1` instead of the source's `x * 2 + 1`. This redundancy forces the reader to manually simplify the logic to understand the intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: There are critical failures in type recovery. `process_float` is decompiled with no parameters (void), and `process_double` returns a pointer to a string literal (`"PTR-L2-07 (ptr_void): %d\n"`) instead of a double value. Most integers are generic `unsigned int` or `unsigned long long` regardless of the source's specific `int`, `short`, or `long` types.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structures are recovered but with completely generic field names. For example, `Point3D` becomes `struct struct_0` (or just treated as `unsigned int *`) with fields accessed via array indices (e.g., `a0[1]`, `a0[2]`) rather than semantic names like `.y` or `.z`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on explicit casts and raw pointer arithmetic. For example, `ptr_void` casts `void*` to `int*` or `char*` explicitly, which is correct, but the surrounding code often treats memory as raw byte arrays (`unsigned long long`), losing the type safety boundaries present in the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output is purely raw code without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. A simple `switch` statement in `enum_switch` is decompiled into a chain of `if-else` statements. String length calculation in `array_string` is a manual loop rather than being recognized as a standard idiom (though the loop is accurate).
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents broken code (like `process_double` returning a string) with high confidence, offering no warning or indication that the result might be erroneous or that the analysis failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For example, `array_complex_index` checks bounds in the source, but the decompiled version's complex `arm64g_calculate_condition` logic does not clearly communicate the "requires: x < w && y < h" contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls to other user-defined functions are clear (e.g., calls to `printf` are mapped to `__printf_chk`). However, the relationship between struct definitions and their usage is lost due to the generic struct naming.
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions are listed in a logical order that roughly matches the source file, grouping test functions together. However, the lack of header separation or namespace grouping makes it a flat list.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. `process_float` is missing arguments, `process_double` has an invalid return type for the context, and functions like `arm64g_calculate_condition` are non-standard compiler intrinsics that do not exist in standard C environments.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.25
+L2_avg: 4.50
+L3_avg: 3.00
+L4_avg: 1.50
+L5_avg: 4.00
+
+Overall = (3.25 × 0.30) + (4.50 × 0.25) + (3.00 × 0.20) + 
+          (1.50 × 0.15) + (4.00 × 0.10)
+        = 0.975 + 1.125 + 0.600 + 0.225 + 0.400
+        = 3.325
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects
+- **Type Signature Failure**: `process_float` is decompiled as taking no arguments, completely breaking the function's usability.
+- **Semantic Corruption**: `process_double` returns a pointer to a string literal (`"PTR-L2-07..."`) instead of performing floating-point arithmetic.
+- **IR Pollution**: The code is cluttered with VEX IR artifacts like `arm64g_calculate_condition` and `__ROL__`, making it read like assembly rather than C.
+- **Literal Obfuscation**: Simple arithmetic like `x * 2` is obfuscated into bitwise operations like `(a0 * 2 | a0 >> 31) & 4294967294`.
+- **Struct Erasure**: Struct fields are accessed via raw array offsets (e.g., `a0[2]`) instead of named members, destroying semantic context.
+
+### Best Quality Aspect
+- **Function Naming (Score: 7/10)**
+- The decompiler successfully preserved the names of most high-level user-defined functions (e.g., `double_value`, `process_int`), which provides at least a basic entry point for understanding the code.
+
+### Most Needs Improvement
+- **Type Precision (Score: 2/10)**
+- The decompiler failed spectacularly at recovering basic function signatures for floating-point operations and composite types, rendering those specific functions completely unreadable and incorrect.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Floating-Point Analysis**: The handling of `float` and `double` arguments/returns is currently broken; fix the lifting logic for floating-point registers and calling conventions.
+2.  **Suppress IR Artifacts**: Implement a post-processing pass to replace low-level VEX helpers (like `arm64g_calculate_condition`) with standard C control flow operators (`&&`, `||`, `!`).
+3.  **Enhance Constant Folding**: Simplify arithmetic expressions involving bitwise operations that clearly represent standard math (e.g., recognize `(x * 2 | x >> 31) & 0xFFFFFFFE` as `x * 2`).

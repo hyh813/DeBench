@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_clang_Os_no_g/ghidra/syntactic/bin/7_clang_Os_no_g_fixed",
+  "stdout": "test_obf_opt_edge\n\nValue: 10\nOpaque: 14\ne1\n153\n7a314\n13ba\n0\n20\n2\n41\n1e\n2000000000\n10\n48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

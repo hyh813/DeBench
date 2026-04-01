@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_gcc_O2_no_g/ghidra/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "Testing obfuscation optimizations:\n\nopaque predicate: 10\ncall opaque predicate: 20\ninstruction substitution: 225\nstring encryption: 59\ntail call: 500500\nnon-tail call: 5050\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

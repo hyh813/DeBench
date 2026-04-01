@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names (`v0`, `v1`, `v2`, `i`, `cur`) with no semantic meaning. Parameters are `a0`, `a1`, `a2` - completely non-descriptive. Compare to source where variables like `temp1`, `temp2`, `sum`, `count` clearly indicate purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: The main control flow test functions (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`) are correctly named matching source. However, many helper functions use generic addresses (`sub_10430`, `sub_104f4`) and utility functions like `call_weak_fn` lack semantic clarity.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (unsigned representation of -1) appears frequently without explanation. No named constants recovered. String literals in printf are just raw addresses (`0x12aa8`). The source's clear return values like `-1` for "not found" are obscured.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output. Stack canary checks (`__stack_chk_guard`) are legitimate compiler artifacts at -O0. Some redundant variable assignments exist (e.g., `v0 = a0(a1); return a0(a1);` in `call_func_ptr`) but don't severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops (`for`, `while`, `do-while`) are correctly recovered. However, `switch_fallthrough` loses the fall-through semantics - decompiled as separate if-else branches. Some goto patterns in computed jumps. At -O0, control flow should be nearly perfect but some switch reconstruction is flawed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated matching source granularity. Each control flow test function is独立. No obvious over-fragmentation. Parameter counts match original (e.g., `sequential_ops` has 3 parameters).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `loop_multi_exit` but manageable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code. Some duplicate expressions (e.g., `tail_recursion` calls itself twice redundantly) but minimal. Loop unrolling not present at -O0 which is correct.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: CRITICAL FAILURE: All parameters and return types are `unsigned int` when source uses `int`. This completely loses sign information. Function pointers declared as `unsigned int *` instead of proper function signatures. The source's negative return values (-1, -2) become large unsigned values (4294967295).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. Arrays in source like `int arr[] = {10, 20, 30, 40, 50}` are flattened to individual variables (`v2=10, v3=20, v4=30...`). Matrix `int matrix[3][4]` becomes scattered variable assignments. All composite type structure lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. Function pointer calls use raw addresses without type checking. Pointer arithmetic in array access (`a0 + v1 * 4`) is manual. However, no buffer overflow-prone patterns are egregious. The main issue is the unsigned/signed confusion making arithmetic semantics unclear.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only mechanical register location comments (`// r0`, `// [bp-0x4]`) present. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. The source's clear intent is completely undocumented in decompiled output.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals recognized. But design patterns (state machine in `state_machine`, function pointer table in `large_jump_table`) not identified or named. The source's explicit state machine structure is reduced to a trivial ternary expression.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. Indirect calls not resolved are presented silently. The `computed_goto` function has unexplained address constants (`74856`, `74864`) with no warning. Undefined behavior possibilities not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No invariant recognition. Source's explicit error handling (e.g., "if x<0 return -1") becomes just code without explanation of the contract or validation logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some `extern` declarations visible for library functions. But no clear call graph documentation. Relationships between functions (e.g., `double_value`, `triple_value` used as callbacks) not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some logical grouping visible (test functions together, helper functions together). But no namespace structure, no header declarations, no clear module boundaries.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has `extern` declarations but many undefined symbols. Won't compile standalone. References to `GLIBC_2.4::__stack_chk_guard`, `armg_calculate_condition` (seems like Angr internals) would fail. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- ALL integer types are `unsigned int` instead of `int`, losing sign semantics and making negative return values meaningless (4294967295 instead of -1)
+- Variable names are completely generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning
+- No struct/array recovery - `int arr[] = {10,20,30,40,50}` becomes 5 separate scalar variables
+- No comments explaining algorithm intent or decompilation confidence
+- Switch fall-through semantics lost in `switch_fallthrough` function
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly separated and maintain the original granularity. Each control flow test function stands independently with correct parameter counts.
+
+**Most Needs Improvement:** Type Precision (scored 3/10)  
+The complete loss of signed integer types fundamentally breaks semantic understanding. Every function returning negative values in source shows as large unsigned values in decompiled output, making error handling logic incomprehensible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer signed/unsigned from usage**: Analyze how variables are used in comparisons and arithmetic to recover `int` vs `uint32_t` types. Negative constants in source should remain negative in output.
+2. **Recover array/struct types**: Detect sequential memory allocations and common access patterns to reconstruct arrays and structures rather than flattening to individual variables.
+3. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., "this variable holds the loop counter" → name it `i` or `index`) rather than generic `v0`, `v1`.

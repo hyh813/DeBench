@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, etc.) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions preserved names (`call_cdecl`, `test_calling_conventions`) but many helpers renamed to `function_770`, `function_780`. Critical issue: function signatures lost parameters (e.g., `cdecl_func(void)` instead of `cdecl_func(int a, int b)`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xffffffff`, `0xfffffffe` appear without explanation. String literals stored as hex-encoded globals (`g7`, `g8`) with no readable content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bit-masking operations (`& 0xffffffff`, `& 0xfffffffe`) throughout. Stack canary checks (`__stack_chk_fail()`) and redundant variable tracking obscure actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops expressed as verbose while-loops with manual counter management instead of clean for-loops. Many functions return constant-folded values (e.g., `call_cdecl()` returns 15 directly) hiding actual computation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries are clear and sizes reasonable, but parameter lists are broken (most show `void` instead of actual parameters). Function cohesion is lost due to signature degradation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with recognizable structure. Forward jumps for error handling (`__stack_chk_fail()`) are present but don't severely disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate bit-masking patterns throughout. Varargs handling code is nearly identical in `varargs_func` and `param_varargs` with no abstraction. Constant folding hides actual computation logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost everything degraded to `int64_t` or `int32_t`. Lost `char*`, `void*`, and specific struct types. Function signatures show `cdecl_func(void)` instead of `cdecl_func(int a, int b)` - critical parameter type loss.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct definitions completely lost (`LargeStruct`, `SmallStruct`, `TestIntPair` not recovered). All struct access done through raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 4)`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout. Function pointers degraded to `int64_t`. Pointer arithmetic without type safety (e.g., `func_mixed_args` shows `(float64_t)str` which is semantically wrong).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each test case, calling conventions, and expected behavior. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified despite being standard C. Calling convention patterns not documented. No recognition of test harness patterns or parameter passing idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about lost parameter information. Type degradation not flagged. Constant folding (functions returning pre-computed values) not indicated as optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions. Error conditions not explained. Original had clear test expectations that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. 25 global variables (`g1`-`g25`) with no explanation of purpose. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with prototypes at top (good practice). However, no logical grouping comments separating calling conventions, parameter passing, and return value sections.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers and has function prototypes. Would require significant modification to compile (missing struct definitions, incorrect signatures). Some globals undefined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.64/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Function signatures completely broken**: `cdecl_func(void)` should be `cdecl_func(int a, int b)` - parameters lost entirely
+- **All variable names generic**: `v1`, `v2`, `v3` convey zero semantic meaning vs. original `count`, `sum`, `args`
+- **Struct types completely lost**: `LargeStruct`, `SmallStruct` definitions missing; accessed via raw pointer arithmetic
+- **Zero documentation**: No comments explaining logic, test purposes, or decompilation confidence
+- **Constant folding hides logic**: Functions like `call_cdecl()` return `15` directly instead of showing `cdecl_func(5, 10)` computation
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Code generally reads top-to-bottom with recognizable loop structures, making basic execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding intent impossible; original source had extensive explanatory comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter signatures from calling convention analysis** - Analyze register/stack usage at function entry to reconstruct parameter types and counts
+2. **Infer variable names from usage patterns** - Variables used in loop counters should be named `i`, `count`; accumulators should be `sum`, `total`
+3. **Add decompilation confidence annotations** - Flag areas where type information is uncertain, parameters are inferred, or constant folding occurred

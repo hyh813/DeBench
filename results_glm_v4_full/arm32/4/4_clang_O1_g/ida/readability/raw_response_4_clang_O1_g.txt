@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameters (`a`, `b`, `count`) are preserved from source, but local variables are generic (`v1`, `v2`, `v4`, `v5`). For example, in `varargs_func`, `v1` represents the accumulator `sum` and `v2` is the current argument, losing the semantic context of the original `sum` and loop variable.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: User-defined function names are recovered perfectly (e.g., `cdecl_func`, `test_calling_conventions`), matching the source exactly. Only runtime helpers use generic names like `sub_3F0` or `init_proc`.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals are recovered accurately (e.g., `"CALL-L1-01: %d\n"`). While magic numbers like `15` or `50` appear in `test_calling_conventions` due to compiler constant propagation, they are clear values, though they obscure the original function call logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with numerous compiler runtime library functions (e.g., `__aeabi_drsub`, `__floatunsidf`, `__subdf3`) that are not part of the user's source code. Additionally, the `__fastcall` attribute is incorrectly applied to almost every function on this ARM target, which is semantic noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally readable, but optimization artifacts complicate logic. For instance, `ret_multi_branch` uses a mathematical formula `10 * op + 10` instead of the original `switch` statement, and `param_double_ptr` uses a boolean flag (`v5`) to flatten nested `if` statements, requiring more effort to parse.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; there are no monolithic functions. The decompiler correctly separates user logic from runtime helpers, though the presence of the latter in the main view affects organization.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom. However, functions like `param_double_ptr` have slightly non-linear logic due to the reordering of null checks into a flag variable (`v5`), which disrupts the natural flow of the original nested conditions.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler optimized away redundant calculations (e.g., `call_cdecl` returns `15` directly). While this makes the code concise, it removes the structural context of the calling convention tests, making it harder to verify the original intent of the test harness.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate for the architecture. `int`, `char *`, and `double` are used correctly. The use of `__int64` for 64-bit integers on the 32-bit ARM target is technically precise, even if it differs from the source's `long long`.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Structures are recovered perfectly with correct field names and types. For example, `LargeStruct` contains `long long data[16]` and `SmallStruct` has `int x` and `int y`, matching the source definitions exactly.
+
+**11. Type Safety:** Score: 6/10
+Justification: Necessary but unsafe-looking casts are present for 32-bit architecture constraints, such as `COERCE_DOUBLE(__PAIR64__(v4, v5))` in `func_mixed_args`. While functionally correct for the ABI, these macros obscure type safety and look like dangerous bit-manipulation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and mostly limited to decompiler warnings (e.g., "local variable allocation has failed, the output may be wrong!"). There are no comments explaining the logic of the calling convention tests or the parameter passing patterns.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard C idioms like `va_list` usage in `varargs_func` are recognized and preserved. The hidden pointer pattern for returning structs (`SmallPoint *__return_ptr`) is also correctly identified, showing good understanding of ARM ABI idioms.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler flags potential issues with comments like "positive sp value has been detected" and "local variable allocation has failed". However, it does not flag the semantic anomaly of `test_calling_conventions` containing hardcoded constants instead of function calls (a result of optimization).
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, the null check in `param_complex_cast` is decompiled into code but not documented as a contract requirement (e.g., "requires: p != NULL").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard library calls like `printf` and `strlen` are correctly identified. The relationships between the test functions and the functions they test are preserved, even if the calls were optimized away in the test harness.
+
+**17. Module Organization:** Score: 5/10
+Justification: The user's functions are intermixed with a large amount of compiler-generated runtime support code (floating point emulation, libc startup). This makes it difficult to isolate the actual source logic from the infrastructure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Hex-Rays specific macros like `__PAIR64__` and `COERCE_DOUBLE`, and non-standard attributes like `__fastcall` on ARM. It would not compile without significant modification or inclusion of specific decompiler headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- **Incorrect Calling Convention Attributes:** The `__fastcall` attribute is applied to almost every function, which is incorrect for the standard ARM AAPCS calling convention used here.
+- **Excessive Runtime Noise:** The output includes dozens of floating-point helper functions (`__aeabi_...`) that clutter the view of the actual source code.
+- **Optimization Obfuscation:** In `test_calling_conventions`, function calls are replaced with hardcoded return values (e.g., `return 15`), completely hiding the logic of the calling convention tests.
+- **Non-Portable Macros:** Usage of `__PAIR64__` and `COERCE_DOUBLE` prevents the code from being compiled as standard C.
+
+**Best Quality Aspect:** Composite Type Recovery (Score: 10/10)
+- **Why?** Structures like `LargeStruct` and `SmallStruct` are recovered with perfect field names, types, and array sizes, requiring no manual reconstruction.
+
+**Most Needs Improvement:** Build System Compatibility (Score: 3/10)
+- **Why?** The reliance on decompiler-specific macros and incorrect attributes makes the output non-compilable and difficult to port to a standard C environment.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Filter Runtime Library Code:** Add an option to hide or group compiler-generated runtime support functions (like `__aeabi_*`) so they don't obscure the user's logic.
+2.  **Correct Calling Convention Attributes:** On ARM architectures, avoid applying `__fastcall` (an x86-centric concept) to standard functions; use the standard ARM calling convention or no attribute at all.
+3.  **Improve Macro Portability:** Replace internal representation macros like `__PAIR64__` with standard C unions or explicit bit-shifts that are valid and readable in standard C.

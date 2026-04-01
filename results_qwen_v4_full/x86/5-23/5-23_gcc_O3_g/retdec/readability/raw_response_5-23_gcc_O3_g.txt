@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `size`, `counter`, `increment`. Local variables are uniformly `v1`, `v2`, `v3` with no indication of purpose (e.g., `param_macro_constants` uses `v1` for the size comparison result).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved well (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions use mechanical names (`function_10b0`, `function_10c0`) and thunk functions (`__x86_get_pc_thunk_bx`) add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0xdef0`, `0xdf22`, `64`, `30`, `282`, `382`. Original constants like `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) are lost. String literals referenced via global offsets (`&g6 - 0x1dd0`) instead of inline.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts pollute code: `__x86_get_pc_thunk_*` functions (6 variants), `__readgsdword(20)` stack canary checks, `__stack_chk_fail_local()`. These appear in nearly every function, obscuring actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as `while` constructs (e.g., `param_asm_clobber`). However, `param_macro_constants` uses bizarre comparison chain: `v1 < 0 == ((v1 ^ a1) & (a1 ^ (int32_t)"loneTable")) < 0` instead of simple `if (size > MAX_SIZE)`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved. Call functions (`call_macro_constants`) correctly optimized to return constants (64, 30, etc.). No monolithic functions; granularity matches source intent.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Loop structures use standard `while` patterns. Some forward jumps in complex functions (`param_dynamic_code`) but generally traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across functions. Some redundant variable assignments (`int32_t result; return result;` in `function_117c`). No dead code removal for optimized-away branches.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but loses original specificity (`size_t` becomes `int32_t`, `const char*` becomes `char*`). Pointer types preserved but const-correctness lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in source to recover. Array handling uses pointer arithmetic (`*(int32_t *)(4 * i + (int32_t)&v2)`) which is accurate but verbose.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int32_t)"loneTable"`, `(char *)(v1 + ...)`). Pointer arithmetic without bounds checking. Stack canary provides some runtime safety but no compile-time guarantees.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation explaining macro behavior, assembly purpose, and expected values. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Assembly intrinsics preserved (`__asm_movaps`, `__asm_paddd`) but not explained. No recognition of common patterns (macro expansion, atomic operations, memory mapping). String "loneTable" appears to be misrecovered data.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about suspicious patterns. Assembly blocks not marked as special. The bizarre comparison in `param_macro_constants` not flagged as potentially incorrect recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or error handling documentation. Original comments about expected return values completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph clear through preserved names. Global variables opaque (`g1` through `g12` with hex addresses). No indication which globals correspond to which original constants or strings.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address range, not logical purpose. Original section comments (`// 5.2 预处理与条件编译`) completely lost. No header file separation between API and implementation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes some headers (`sys/mman.h`, `unistd.h`) but missing others. External function declarations present (`__printf_chk`, `__libc_start_main`). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+7+6)/3 = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+5)/3 = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.19/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects
+- **Variable `a1`, `a2`, `a3`** should be named `size`, `counter`, `increment` based on usage patterns and original source
+- **Global variables `g1`-`g12`** completely opaque; should recover constant names (MAX_SIZE, BUFFER_COUNT) or string references
+- **No comments** explaining macro expansion results, assembly semantics, or expected return values
+- **Compiler artifacts** (`__x86_get_pc_thunk_*`, `__readgsdword`) clutter every function without explanation
+- **Magic numbers** (0xdef0, 282, 382) appear without connection to original constants or line numbers
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Main function names preserved accurately from source, maintaining semantic meaning for `param_*` and `call_*` functions
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source had extensive comments explaining preprocessing behavior, assembly purpose, and expected values
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover constant semantics** - Analyze comparison patterns to infer original macro constants (e.g., `if (a1 > 1024)` should suggest `MAX_SIZE = 1024`)
+2. **Add decompiler confidence annotations** - Flag uncertain recoveries (e.g., `// DECOMPILER: comparison chain may be optimized conditional`)
+3. **Preserve source-level documentation** - When debug symbols available (`-g` flag), extract and embed original comments in decompiled output

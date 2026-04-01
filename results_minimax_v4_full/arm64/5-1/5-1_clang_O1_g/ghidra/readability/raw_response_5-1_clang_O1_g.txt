@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `local_38`, `iVar1`, `pvVar1`, `lVar3`, `uStack_2c`. The decompiler failed to recover meaningful names like `obj`, `result`, `r1`, `r2` from the original source. Many variables show "Unresolved local var" comments, indicating complete failure to recover semantics.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc.). Member functions like `Base::virtual_func`, `Derived::virtual_func`, `MultiDerived::funcA` are properly recovered. Minor issues with some internal thunks (e.g., `_ZThn16_N12MultiDerived5funcBEv`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x125c` (should be 4704), `0x14` (size), `0x1f` (71), `0x32` (50) appear without explanation. The original source has meaningful constants like `0x1234` for class ID, but these are not recovered. String literals like "Test" are partially visible but not connected to variable names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive warnings clutter output: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var" comments. These auto-generated artifacts make reading difficult. The code contains 1396 LOC vs 540 original, largely due to noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is mostly natural. The `do-while` loop in test_cpp_constructor is correctly recovered. Some awkward constructs like `do { ... } while (lVar3 != 0x14)` instead of cleaner for-loop, but overall flow is traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries are preserved. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Some thunks for multiple inheritance (e.g., `_ZThn16_N12MultiDerived5funcBEv`) are artifacts but necessary for correctness.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in destructor stubs are appropriate. Some forward references in test_cpp_oo_features but nothing severe enough to disrupt understanding.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in test_cpp_oo_features where multiple test functions are inlined. The decompiler correctly identifies loop unrolling in constructor initialization. Minor duplication but not severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types like `undefined4`, `undefined8`, `undefined1`, `undefined7` instead of `int`, `char*`, `size_t`. The parameter `x` in virtual functions should be `int` not `(ulong)(uint)x`. Const correctness is lost throughout.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct names recovered (Base, Derived, MultiDerived, Container<int>), but field names are lost. Accesses like `*(int *)((long)pvVar1 + lVar3)` instead of `obj.data[i]`. Virtual inheritance causes overlapping field warnings.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(char *)((ulong)&local_38 | 4)` for string access, `(long)pvVar1 + lVar3` for pointer arithmetic, `(ulong)(uint)x` for parameter conversion. No bounds checking comments. Raw memory operations throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF original prototypes are preserved (e.g., "DWARF original prototype: int virtual_func(Base * this, int x)"). However, these are auto-generated and don't explain algorithm logic. No documentation of what each test function computes or returns.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. RAII patterns (constructor/destructor pairs) not identified. Virtual dispatch through vtable not explained. Exception handling mechanism not documented as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for "Unresolved local var" and "Unknown calling convention", but these are generic. No explanation of why variables couldn't be resolved or what the implications are for analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that certain operations assume non-null pointers or valid indices. The contract of each function is completely opaque.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call graph documentation. Virtual dispatch relationships not explained. The connection between test_cpp_oo_features and individual test functions is implicit, not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions organized by address (00101914, 00101964, etc.) rather than logically grouped. Related functions (all test_cpp_* functions) should be grouped together. No namespace or class structure in output organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code uses undefined types (`undefined4`, `undefined8`) which won't compile. "WARNING: Unknown calling convention" indicates potential issues. External dependencies (operator_new, operator_delete) not properly declared. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming completely failed: `local_38`, `iVar1`, `pvVar1` instead of `obj`, `result`, `data`
+- Type precision severely degraded: `undefined4`, `undefined8` instead of `int`, `char[32]`
+- Magic numbers unexplained: `0x125c`, `0x14`, `0x32` without semantic meaning
+- Excessive noise: "WARNING: Unknown calling convention", "Unresolved local var" comments
+- No struct field recovery: `*(int *)((long)pvVar1 + lVar3)` instead of `obj.data[i]`
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Test function names and member function names were correctly recovered, preserving the semantic intent of the original code's API.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic register-based names like `local_XX`, `iVar1`, `uStack_XX` completely fail to convey semantic meaning, making it nearly impossible to understand what each variable represents without extensive cross-referencing.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from DWARF debug info**: The decompiler has access to debug information (evidenced by "DW_OP_breg31(sp)" comments) but doesn't use it to recover variable names like `obj`, `r1`, `result`.
+2. **Replace undefined types with inferred types**: Use the debug info to replace `undefined4` with `int`, `undefined8` with `void*`, etc.
+3. **Explain magic numbers**: When constants like `0x1234` appear, check if they match known enum values or named constants from the source and add comments explaining their meaning.

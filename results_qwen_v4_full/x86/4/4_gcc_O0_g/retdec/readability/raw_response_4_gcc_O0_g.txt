@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `temp`, `result`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `ptr`, `large`, but decompiled code loses all of this information.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `test_calling_conventions`), but helper functions use generic names (`function_1090`, `function_10a0`). Action verbs and purpose generally clear for user functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x4040cc5`, `0x4b400` in globals without explanation. Loop constants (16, 4) are inferable from context but not documented. String literals preserved but format strings unclear.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Every function contains `__x86_get_pc_thunk_*` calls that are compiler artifacts. Stack canary checks (`__readgsdword(20)`) inserted throughout. Many unnecessary intermediate variables (`v1`, `v2`) from register spilling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops often recovered as while-loops with manual increment. Some functions use unnatural patterns (e.g., `varargs_func` has complex pointer arithmetic instead of `va_arg`). At `-O0`, cleaner recovery expected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved from source. However, thunk calls fragment each function. Some functions like `test_calling_conventions` (0x16be-0x1998) are monolithic without sub-structure recovery.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward jumps into loop bodies. Stack canary checks at function ends create non-linear epilogue patterns. Deep nesting in some functions (>4 levels).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in nearly every function. Redundant variable assignments (`v3 = v7`, `v4 = v5`). No dead code elimination visible from debug build artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `int32_t` regardless of original type. `float64_t` used but `double` lost in `func_mixed_args`. Pointer types often generic (`char*`, `int32_t*`) instead of specific struct pointers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`) completely lost. Access done through pointer arithmetic: `*(int32_t *)((int32_t)p + 4) * *p` instead of `p->x * p->y`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. `func_struct_byval` takes `int32_t s` instead of struct, requiring pointer arithmetic. Function pointer types partially recovered but with address arithmetic: `(int32_t (*)(int32_t))(v2 + v3)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments (address ranges, line numbers like `// Line range: 15 - 15`). No semantic comments explaining algorithm purpose or non-obvious logic. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Standard C idioms (varargs, struct passing) not recognized or documented. `va_list` handling not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical failure** - Incorrect logic presented confidently without warnings. `fastcall_func` returns `v1 + a + v1` instead of `a + b + c`. `call_fastcall` passes wrong arguments `(3, &g5, &g5)` instead of `(1, 2, 3)`. No anomaly flags.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present (`if (p != NULL)`) but not documented as preconditions. No postcondition inference. Error conditions not documented (e.g., `func_struct_byptr` returns -1 on NULL).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`g1`, `g2`, `g3`, `g4`, `g5`) not explained. Callback relationships (`callback_func` → `param_func_ptr`) not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping beyond original order. No header file separation. Static functions not properly scoped. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has standard includes (`stdio.h`, `stdlib.h`, `string.h`). Custom types defined (`float64_t`, `float80_t`). Would require moderate patching to compile (missing struct definitions, thunk function implementations).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 7 + 5 + 4) / 4 = 4.75
+Level 2 (Structural):  (5 + 6 + 6 + 5) / 4 = 5.50
+Level 3 (Type):        (4 + 2 + 4) / 3     = 3.33
+Level 4 (Semantic):    (3 + 3 + 2 + 3) / 4 = 2.75
+Level 5 (Contextual):  (5 + 5 + 6) / 3     = 5.33
+
+Overall = (4.75 × 0.30) + (5.50 × 0.25) + (3.33 × 0.20) + 
+          (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.375 + 0.666 + 0.413 + 0.533
+        = 4.41/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **All struct types lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` completely unrecovered; access via pointer arithmetic obscures semantics
+- **Incorrect logic in `fastcall_func`** - Returns `v1 + a + v1` instead of `a + b + c`; decompiler confidently outputs wrong code
+- **Pervasive generic variable names** - `v1`, `v2`, `v3` throughout with no semantic meaning; original names like `count`, `sum`, `args` lost
+- **Compiler artifacts in every function** - `__x86_get_pc_thunk_*` calls and stack canary checks clutter all 91 functions
+- **No anomaly indication** - Wrong code presented without warnings; user cannot identify unreliable sections
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`cdecl_func`, `test_calling_conventions`, `param_varargs`), making high-level navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Anomaly Indication (2/10)** - Decompiler confidently outputs incorrect logic (e.g., `fastcall_func`, `call_fastcall` arguments) without any warning flags, which is dangerous for reverse engineering.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Detect struct field access patterns (`[bp-4]`, `[bp+8]`) and reconstruct struct definitions with field names based on usage context.
+2. **Add confidence indicators for uncertain recovery** - Flag functions with indirect calls, unusual calling conventions, or type ambiguities with comments like `// UNCERTAIN: calling convention not verified`.
+3. **Eliminate compiler thunk artifacts** - Recognize and remove `__x86_get_pc_thunk_*` patterns that are PIC-related boilerplate, not semantic code.

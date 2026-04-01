@@ -1,0 +1,170 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler extensively uses "Unresolved local var" annotations with cryptic addresses like `int a@[DW_OP_reg0(x0)]`, `int arr@[???]`, `int i@[???]`. Internal variables use auto-generated names like `iVar1`, `lVar1`, `uVar2`, `puVar3` that convey no semantic meaning. Compare to source where variables like `arr`, `i`, `leak` are clearly named - the decompilation lost all meaningful names.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Most function names are correctly recovered from symbols: `local_vars`, `local_array`, `heap_basic`, `memop_memset`, `global_var_access`. These match the original source exactly. Minor deduction for some generic names like `FUN_001008e0` in startup code, but core test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Magic numbers abound without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60). Complex expressions like `-(ulong)((uint)n >> 0x1f) & 0xfffffffc00000000 | uVar6 << 2` for malloc size calculation are opaque. The decompiler uses hex notation exclusively, obscuring decimal values.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution: "Unresolved local var" comments on every function, DWARF debug annotations (`@[DW_OP_reg0(x0)]`, `@[DW_OP_breg31(sp): 0]`), "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". CONCAT44/CONCAT17 macros clutter expressions. This noise makes reading extremely difficult.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Simple functions like `local_vars` correctly return `x * 2 + 10`. However, functions like `vla_stack` and `alloca_usage` have heavily unrolled loops with 8 iterations expanded inline, making control flow nearly impossible to follow. The original `for` loops are transformed into complex do-while constructs with manual index manipulation.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Most small functions are preserved: `local_vars`, `local_array`, `heap_basic` each remain separate. However, `test_stack_memory` contains 200+ lines of duplicated loop-unrolled code from `large_stack_frame` inlined directly. Function granularity is inconsistent - some too large due to inlining.
+
+### 7. Code Linearization
+**Score: 3/10**
+
+The loop unrolling in `vla_stack`, `alloca_usage`, `heap_basic`, `heap_array` creates massive linear code blocks (50+ lines of repetitive assignments). Forward jumps exist but the primary readability killer is the unrolled loops that make it impossible to read top-to-bottom.
+
+### 8. Redundancy Elimination
+**Score: 2/10**
+
+Massive redundancy from loop unrolling. In `vla_stack`, the pattern:
+```c
+iVar12 = iVar8 * 2;
+iVar13 = iVar9 * 2;
+// ... 15 more lines
+iVar8 = iVar8 + 8;
+```
+is repeated 8 times. Same pattern appears in `alloca_usage`, `heap_basic`, `heap_array`, `memory_leak`. No comments indicate this is loop unrolling - it's presented as if it were the original code.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Basic types preserved: `int`, `char`, `void*`. However, uses `undefined8`, `undefined4`, `undefined` for unresolved types. Function pointer types use `_func_int_int` which is a placeholder. No `int32_t`/`uint64_t` specificity - just generic `int`. Const correctness mostly lost.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Struct types `Node` and `TreeNode` are correctly recovered and used. However, `Point` struct fields are not named - accessed via pointer arithmetic. The decompiler shows `Point *p` but fields accessed as `p->x`, `p->y` without struct definition recovery. Array types partially recovered (`int[10] arr@[???]`).
+
+### 11. Type Safety
+**Score: 4/10**
+
+Significant type safety issues: extensive use of `undefined8*` casts, pointer arithmetic without bounds (e.g., `*(int *)((long)__ptr + (long)(n >> 1) * 4)`). Function pointers use placeholder types `_func_int_int*`. No `restrict` or alignment annotations. The dangling pointer in `dangling_pointer` is correctly shown but not flagged as dangerous.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Most comments are noise: "Unresolved local var", DWARF annotations, "WARNING: Removing unreachable block". No explanation of algorithms, no recovery confidence indicators, no @param/@return documentation. The few useful comments are boilerplate from the decompiler header.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms explicitly identified. Loop unrolling is present but not labeled - it's presented as if it were original code. Memory operations (malloc/free) are recognized but not explained as patterns. No "this implements X pattern" comments.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Generic warnings present: "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable". However, these don't explain what the actual anomaly is or its impact. The unresolved local vars are flagged but not explained. No indication of undefined behavior in `dangling_pointer`.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No precondition/postcondition recovery. No "requires: ptr != NULL" or "ensures: return is heap-allocated" comments. Error return values (-1, -2) are present but not documented as contract elements. The original source's safety checks are present but not explained.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are visible (`malloc`, `free`, `printf`), but relationships aren't documented. No "Calls: X, Y" or "Called by: Z" comments. The callback pattern in `set_global_callback`/`call_global_callback` works but isn't explained as a pattern.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are grouped logically: stack memory functions together, heap functions together, static/global functions together. Matches original source organization well. Static functions properly scoped. Single file output is appropriate.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Code uses undefined types (`undefined8`, `undefined4`) which won't compile. External dependencies (`puts`, `printf`, `malloc`, `free`, `memset`, `memcpy`, `fork`) are used but not declared. Needs significant patching: replace undefined types, add includes, declare extern functions. Won't compile as-is.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 2) / 4 = 3.75
+L2_avg = (4 + 6 + 3 + 2) / 4 = 3.75
+L3_avg = (5 + 6 + 4) / 3 = 5.0
+L4_avg = (2 + 3 + 5 + 2) / 4 = 3.0
+L5_avg = (5 + 7 + 3) / 3 = 5.0
+
+Overall = (3.75 × 0.30) + (3.75 × 0.25) + (5.0 × 0.20) + (3.0 × 0.15) + (5.0 × 0.10)
+        = 1.125 + 0.9375 + 1.0 + 0.45 + 0.5
+        = 4.01/10
+```
+
+### Overall Readability Score: 4.0/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable names completely lost**: All local variables show as "Unresolved local var" with DWARF offsets, making it impossible to track data flow
+2. **Massive loop unrolling not annotated**: Functions like `vla_stack`, `alloca_usage`, `heap_basic` have 8x loop unrolling presented as literal code, making them 50+ lines each
+3. **Magic numbers everywhere**: `0x2a`, `0x14`, `0xf`, `0x3c` used without decimal explanations; complex expressions like malloc size calculations are opaque
+4. **Noise comments overwhelm code**: "Unresolved local var", DWARF annotations, WARNING messages appear on every function
+5. **Won't compile**: Uses `undefined8`, `undefined4` types that don't exist in C; requires extensive patching
+
+---
+
+### Best Quality Aspect
+**Function Naming Quality (8/10)** - Most function names are correctly recovered from symbols and match the original source exactly (`local_vars`, `heap_basic`, `memop_memset`)
+
+---
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - Every local variable shows as "Unresolved" with cryptic DWARF annotations; this is the most severe readability issue as it makes tracking data flow nearly impossible
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`; when used as size, name it `size` or `count`. The decompiler has all this information in the DWARF data.
+
+2. **Annotate loop unrolling**: When detecting 8+ repeated patterns with incremental indices, add a comment like "/* Loop unrolled 8x - original: for(i=0; i<n; i++) */" instead of showing all iterations.
+
+3. **Replace magic numbers with decimal**: Convert `0x2a` to `42 // 0x2a` or at minimum show both hex and decimal. Add constant names where inferable (e.g., "/* MAX_SIZE */").
+
+4. **Eliminate DWARF noise**: Filter out `@[DW_OP_reg0(x0)]`, `@[DW_OP_breg31(sp): 0]` annotations - they add no value for understanding the code.
+
+5. **Add contract hints**: When seeing `if (ptr == NULL) return -1;`, add comment "/* requires: ptr != NULL */" or "/* ensures: return != -1 on success */".

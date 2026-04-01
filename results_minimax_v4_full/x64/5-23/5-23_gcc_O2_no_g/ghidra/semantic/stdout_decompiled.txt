@@ -1,0 +1,14 @@
+Testing preprocessing features:
+param_macro_constants(100) = 64
+call_macro_constants() = 30
+param_conditional_compile(10) = 32
+param_multi_branch_compile(100) = 57122
+param_macro_recursion(100) = 116
+param_stringize() = 19
+param_token_paste(5) = 60
+LOG: Values: 10, 20, 30
+param_variadic_macro(10, 20, 30) = 60
+param_macro_override(5) = 16
+param_include_guard() = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:32
+call_builtin_macros() = 382

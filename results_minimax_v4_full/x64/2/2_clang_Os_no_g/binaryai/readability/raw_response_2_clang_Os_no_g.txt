@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic decompiler-generated names like `param_1`, `param_2`, `iVar1`, `uVar2`, `lVar2`, `puVar1`. These obscure the semantic purpose - for example, `param_1` in `process_char` should be named `c`, and `iVar1` in loops should indicate it's a sum or index.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Minor issues include `FUN_00101020` and `UNRECOVERED_JUMPTABLE` for unresolved function pointers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (computed values like `0x61` for 'a', `0xb` for 11), but enum values show as raw integers (0,1,2,3) instead of `STATE_IDLE`, etc. Magic numbers like `0x2c`, `0x1b8`, `0x28` lack explanation. The switch in `enum_switch` uses a jump table without recovered case labels.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minor artifacts present: `process_ld` incorrectly returns void instead of long double; function pointer parameters use abstract `code *` type; some unusual signatures like `void processEntry _start`. No significant dead code or register spilling. The `processEntry` typo is notable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use while/do-while constructs appropriately. Some minor awkwardness: `array_2d_stack` uses do-while with manual index (`lVar2 = lVar2 + 0x2c`), and `array_3d` has deeply nested do-while loops. The `process_char` conditional is complex but accurate.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition matching original - each small function (double_value, process_char, etc.) remains separate. Test functions are appropriately large as they aggregate multiple test cases. Parameter lists are reasonable, though some expose implementation details (raw pointers instead of structs).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns present in array functions when n <= 0. No goto abuse. Some nested loops in array functions but manageable. Good flow for a decompiled output.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Test functions compute values at compile time which is efficient. Loop unrolling is minimal at -O0. Overall clean without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate: `int`, `uint`, `long`, `ulong`, `short`, `ushort`, `float`, `double`, `bool` correctly recovered. However, function pointers use abstract `code *` type, and `ptr_triple` uses `undefined8 *`. Some parameter types are generic (arm64 uses 64-bit pointers represented as `long`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure**: Struct types are not recovered. Functions like `struct_simple`, `struct_nested`, `struct_deep` use `int *` or `long` with manual field offsets (e.g., `param_1[1]`, `param_1[3]`, `*(int *)(param_1 + 0x14)`). Union partially recovered in `union_type` using `float *`. Bitfields correctly handled with bit operations. This loses all semantic meaning of composite types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety concerns: function pointers use generic `code *`; `ptr_triple` uses `undefined8 *`; manual pointer arithmetic in struct field access could be unsafe. No alignment annotations or restrict keywords. Not severe but could lead to undefined behavior if misused.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **No comments present** in the decompiled output. No explanation of algorithms, no documentation of non-obvious logic, no decompilation confidence indicators. The original source had extensive comments explaining each test case which are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns are visible in the code: linked list traversal (`while (current != NULL)`), binary tree recursion, graph adjacency list traversal. However, these are not explicitly named or identified as design patterns. A reader must recognize them manually.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Partial anomaly handling: `UNRECOVERED_JUMPTABLE` flag indicates unresolved function pointer in `ptr_func_simple`. However, `process_ld` is completely wrong (returns void instead of long double) with no warning. No indication of other potential issues like the array_oob boundary bug.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: **No contracts or pre/postconditions recovered**. No documentation of expected input ranges (e.g., "requires: n > 0"), no postconditions, no invariant recognition. The original source had clear expectations (e.g., array bounds) that are not communicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. External functions (puts, printf) marked as `<EXTERNAL>`. However, no documentation of call relationships (which functions call which), no global variable usage transparency, no callback relationship documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped matching source: data type functions first, then array functions, pointer functions, composite type functions, test functions, then main. Static functions properly scoped. Single file organization is reasonable for decompiled output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would need moderate patching to compile: abstract types like `undefined8`, `undefined4`, `code *` need replacement; external declarations for puts/printf needed; `process_ld` signature is wrong. Not standalone-ready but dependencies are minimal.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Struct/union types completely lost**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `UnionData`) are represented as raw pointers with manual field offsets, losing all semantic meaning
+- **No variable name recovery**: Generic names like `param_1`, `iVar1`, `lVar2` make code extremely difficult to follow
+- **No comments or documentation**: Original source's extensive explanations are completely absent
+- **`process_ld` function broken**: Returns void instead of long double with no anomaly warning
+- **Enum values not recovered**: Show as raw integers (0,1,2,3) instead of symbolic constants (STATE_IDLE, etc.)
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Function names mostly match the original source accurately, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompiled code has zero comments. Combined with poor variable naming and lost struct types, the code requires significant reverse-engineering effort to understand even simple functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Use field offset analysis and vtable patterns to reconstruct composite types with meaningful field names instead of array-index access
+2. **Add meaningful comments**: Include algorithm explanations, decompilation confidence indicators, and note any unresolved indirect calls or suspicious patterns
+3. **Improve variable naming**: Infer names from usage patterns (e.g., loop counters, accumulators, size parameters) and context (e.g., `param_1` used as array index → `index` or `i`)

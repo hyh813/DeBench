@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: While class member variables like `value` and `dataA` are recovered well, local variables in test functions are generic (`iVar1`, `iVar2`, `local_3c`). However, lambda captures (`capture_by_value`, `capture_by_ref`) are surprisingly accurate.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent due to preserved DWARF symbols (e.g., `SimpleClass::SimpleClass`, `test_cpp_virtual_func`). The only deductions are for verbose, mangled names of template helpers like `std::forward<const_(lambda_at_src_5_1_cpp:445:20)_&>`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals ("Test", "Base") are clear, but magic numbers abound. For example, `0x1f` (31) is used for buffer size limits without context, and `0x1234` appears as a hardcoded class ID without the original `getClassID` abstraction.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant Ghidra-specific artifacts, such as `WARNING: Unknown calling convention`, `try { // try from ... has its CatchHandler @ ...`, and `extraout_EDX` in return statements, which clutter the reading experience.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Standard loops and conditionals are natural. However, exception handling is flattened into runtime calls (`__cxa_throw`), hiding the `catch` block structure, and virtual function calls are explicit pointer dereferences (`(**obj->_vptr_Base)(obj,x)`), which is accurate but less idiomatic.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While user-defined classes are well-separated, standard library templates (like `std::unique_ptr`) are heavily inlined. Functions like `test_cpp_smart_ptr` become monolithic (100+ lines) because they include the full implementation of move constructors and deleters.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, the `try/catch` comments inserted by Ghidra and the abrupt termination of `test_cpp_exception` at `__cxa_throw` disrupt the linear flow of logic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: As expected with `-O0`, there is no compiler-induced redundancy like loop unrolling or dead code. The verbosity comes from the source structure itself rather than optimization artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types (`int`, `char*`) and class types are accurate. However, complex template types are verbose and messy (e.g., `unique_ptr<int,_(lambda_at_src/5-1.cpp:445:20),_void>`), and generic placeholders like `undefined4` and `pointer` are used instead of specific concrete types.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs for standard classes are recovered with correct field names. However, virtual inheritance layouts are exposed as raw pointer arithmetic (e.g., accessing `shared_data` via `*(undefined4 *)((int)&obj.super_MiddleA.dataA + (int)obj.super_MiddleA._vptr_MiddleA[-3])`), which is hard to read.
+
+**11. Type Safety:** Score: 6/10
+Justification: C++ semantics are preserved, but casts are often simplified to C-style or raw pointer math. For example, `this` pointer adjustments for multiple inheritance appear as `(MultiDerived *)&obj.super_BaseB`, which is safe but loses the semantic context of a polymorphic cast.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to DWARF prototypes and Ghidra warnings. There are no semantic comments explaining the logic (e.g., "Calculates diamond inheritance offset"), leaving the reader to interpret complex C++ RTTI mechanics unaided.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Low-level idioms like vtable lookups and `operator new` are visible. However, high-level C++ idioms like RAII, smart pointers, and lambdas are presented as raw structs and function pointers, obscuring their original design intent.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra clearly flags issues it cannot resolve, such as "WARNING: Unknown calling convention" and "WARNING: Struct ... ignoring overlapping field" for diamond inheritance, which is helpful for the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants. For instance, the null checks in `test_cpp_rtti` are explicit code but not documented as contracts, and the logic of `dynamic_cast` is presented as a library call rather than a type contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear due to accurate naming. Virtual dispatch is explicitly shown as vtable access, which, while low-level, accurately represents the cross-reference mechanism.
+
+**17. Module Organization:** Score: 6/10
+Justification: The output is a flat file. While functions are grouped by class, the sheer volume of inlined template helpers (e.g., tuple internals for `unique_ptr`) makes it difficult to distinguish between user code and library implementation.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not compilable. It relies on undefined types (`undefined4`), Ghidra-specific macros, and lacks necessary headers. The type definitions for `std` namespace components are incomplete or pseudo-code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- **Template Explosion:** `std::unique_ptr` internals are fully inlined with verbose, mangled type names (e.g., `__uniq_ptr_data<int,_std::default_delete<int>,_true,_true>`), turning simple logic into 50+ lines of boilerplate.
+- **Generic Local Variables:** Test functions use generic names (`iVar1`, `iVar2`, `local_3c`) instead of semantic names like `result` or `derived_ptr`, forcing the reader to track usage manually.
+- **Exception Handling Flattened:** The `try/catch` block in `test_cpp_exception` is reduced to a `__cxa_throw` call, completely hiding the control flow of the exception handlers.
+- **Virtual Inheritance Arithmetic:** Access to virtual base class members is shown as complex pointer arithmetic (e.g., `*(undefined4 *)((int)&obj... + (int)obj...[-3])`), obscuring the simple field access `obj.shared_data`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The preservation of DWARF debug symbols allows the decompiler to recover exact function signatures and names (e.g., `SimpleClass::getValue`), making the high-level structure easy to navigate.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.75/10)
+- **Why?** High-level C++ abstractions (smart pointers, lambdas, exceptions) are stripped away to their low-level implementation details (structs, function pointers, runtime calls), making it difficult to understand the original design intent without significant reverse engineering effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Abstract Standard Library Templates:** Detect and collapse common STL template instantiations (like `std::unique_ptr` or `std::tuple`) into simplified pseudo-types or aliases to reduce visual clutter.
+2.  **Recover Exception Control Flow:** Reconstruct high-level `try/catch/throw` blocks from `__cxa` runtime calls and personality routines instead of flattening them into unconditional jumps or library calls.
+3.  **Infer Local Variable Names:** Utilize debug information (if available) more aggressively to recover local variable names, or apply heuristic naming (e.g., `return_val`, `loop_counter`) for generic `iVar` patterns.

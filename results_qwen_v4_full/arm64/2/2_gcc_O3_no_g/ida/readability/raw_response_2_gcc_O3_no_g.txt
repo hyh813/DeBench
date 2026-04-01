@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with zero semantic meaning. For example, `process_char(__int64 result)` should have parameter named `c` for character, and `array_1d_stack` uses `v3`, `v4`, `v5` instead of `ptr`, `sum`, `i`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), but some initialization functions remain generic (`sub_6D0`, `init_proc`). Action verbs are implicit rather than explicit.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `65` and `32` in `process_char` (ASCII conversion), `0x19u` for range, `0x7FFF` for float exponents. Test functions constant-folded to expected values (e.g., `__printf_chk(1, "DT-L1-01...: %c\n", 97)`) obscuring actual computation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: SIMD intrinsics (`vaddq_s32`, `vld3q_f32`), architecture-specific types (`int32x4_t`, `__n128`), and excessive temporaries (`v1`-`v76` in `binary_tree_sum`). Long double functions (`_addtf3`, `_multf3`) are 500+ lines of register manipulation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions readable, but `binary_tree_sum` has 20+ levels of nested conditionals with `goto` labels (`LABEL_24`, `LABEL_27`). Loop recovery failed for optimized code—SIMD vectorization replaced natural `for` loops with manual unrolling.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated by original boundaries, but test functions lost actual logic (constant-folded to print expected values). `binary_tree` and `binary_tree_sum` should be one recursive function but are split awkwardly.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but complex functions have excessive forward jumps and label references. `enum_switch` uses `CSWTCH_62[a1]` jump table instead of readable `switch` statement.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `binary_tree_sum` repeats identical pointer dereference patterns 10+ times with different variable names (`v3`, `v6`, `v9`, `v13`...). SIMD loop unrolling creates verbose code without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types everywhere: `_DWORD*` instead of `int*`, `__int64` instead of `long`, `unsigned __int8` instead of `char`. Function pointer signatures degraded: `__int64 (__fastcall *a1)(_QWORD)` loses original `int (*f)(int)` signature.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—all structs lost. `Point3D` becomes `_DWORD *a1` with `a1[0]`, `a1[1]`, `a1[2]`. `Widget` nested structure becomes `*(_DWORD *)(a1 + 8) + *(_DWORD *)(a1 + 20)`. Bitfields manually extracted: `(*a1 & 1) + ((*a1 >> 1) & 3)`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int)(long)handle`, `(_DWORD *)*((_QWORD *)a1 + 1)`. Const/volatile semantics lost (`volatile_access` shows `2 * *a1` without volatile semantics). Pointer arithmetic without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated type annotations (`// x0`, `// [xsp+10h]`). No algorithm explanations, no decompiler confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion not labeled. State machine in `enum_switch` not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only external function failures noted (`FAILED to decompile: __libc_start_main`). Critical anomalies not flagged: O0 vs O3 optimization mismatch, constant-folded test functions, lost struct definitions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). No postconditions. No error condition documentation. `array_oob` intentional overflow not flagged as undefined behavior.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Callback in `ptr_func_simple` has degraded signature. No call graph documentation. Global variable usage not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no file separation. All 67 functions in single output. No header declarations or API boundaries indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 7 external functions failed to decompile requiring stubs. Architecture-specific types (`int32x4_t`, `__n128`) need ARM NEON headers. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+5+3)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.59/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **All variables generic** (`a1`, `v1`, `result`) with zero semantic meaning recovery
+- **Complete struct/union loss** - `Point3D`, `Widget`, `Node` all reduced to pointer arithmetic
+- **Zero comments** - no algorithm explanations or decompiler confidence indicators
+- **Test functions constant-folded** - actual computation logic replaced with expected values
+- **Optimization metadata mismatch** - claims -O0 but binary shows O3-level optimizations
+
+### Best Quality Aspect: Function Naming Quality (scored 7/10)
+- Most original function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`)
+
+### Most Needs Improvement: Comment Quality & Presence (scored 1/10)
+- Absolutely no meaningful comments recovered; only auto-generated type annotations present
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - infer names from usage patterns (e.g., loop counters → `i`, accumulators → `sum`, character params → `c`)
+2. **Recover composite type definitions** - analyze struct access patterns to reconstruct field names and layouts from pointer arithmetic
+3. **Add decompiler confidence annotations** - flag uncertain recoveries, optimization artifacts, and potential undefined behavior with inline comments

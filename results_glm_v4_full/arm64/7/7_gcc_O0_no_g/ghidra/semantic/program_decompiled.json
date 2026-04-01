@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_O0_no_g/ghidra/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "Fake branch test\n\nOpaque predicate: 2236294368\nOpaque result: 20\nInstruction substitution: 225\nString encryption: 0\nTail call: 15\nNon-tail call: 15\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

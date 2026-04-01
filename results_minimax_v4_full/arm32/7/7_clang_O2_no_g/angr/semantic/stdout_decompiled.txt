@@ -1,0 +1,5 @@
+Testing opaque predicates and optimizations...
+
+opaque_predicate result: 10
+fake_branch result: 35
+instruction_substitution result: 225

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`). For example, in `sequential_ops`, parameters should be `a`, `b`, `c` based on source, but are `a0`, `a1`, `a2`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered like `sequential_ops`, `single_if`, `if_else`, but many have cryptic addresses like `sub_401030`, `sub_401090`, `sub_4010cb`. The wrapper functions (thunks) that call the main functions have meaningless names while the actual logic functions are sometimes named correctly.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `1717986919` (division constant), and `1001` appear without explanation. The decompiler uses `4294967295` for -1 in unsigned arithmetic but doesn't annotate this as an error code. Constants like loop bounds are unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present like strange struct definitions with `padding_0` arrays and `field_4ed7` type artifacts. However, the core logic is relatively clean without excessive register spilling artifacts. The noise is manageable but present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - loops use while/do-while constructs, conditionals use if-else. However, some functions like `loop_for_fixed` have unusual arithmetic expressions that obscure the loop logic. At -O0, this should be cleaner. Example: `(a0 - 1) * (a0 - 2)` formula is confusing.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with single responsibilities. Each test function and logic function is separate. Minor issue: some wrapper functions (thunks) that just call other functions add unnecessary indirection.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but some forward jumps exist in complex functions like `loop_multi_exit` with labeled goto statements (`LABEL_401832`). The `duffs_device` function has a computed goto that's hard to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some common subexpression patterns but nothing severe. The loop unrolling in `loop_for_fixed` could be better abstracted but is manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int` consistently but loses sign information. Parameters like `single_if(unsigned int a0)` should be `int` based on source (handles negative numbers). Function pointers typed as `unsigned int*` instead of proper function signatures. Mixed signed/unsigned causes semantic loss.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. Many artificial structs like `struct_0 { char padding_0[20183]; }` that are decompiler artifacts. The actual data structures (arrays like `arr[] = {10, 20, 30, 40, 50}` in `loop_break`) are represented as string literals `"\n"` which is incorrect.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe patterns: direct function pointer calls `a0(a1)` without type safety, pointer arithmetic in `loop_break` treating string as pointer, and mixing of signed/unsigned in comparisons. The `call_func_ptr` uses `unsigned int*` for function pointer which is unsafe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithms, no documentation of non-obvious logic, no indication of decompilation confidence. This is a severe deficiency for a 961-line source file with complex patterns.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like switch statements are recognized, but design patterns (state machine, callbacks) are not explicitly named or documented. The `duffs_device` pattern is present but not identified as such. The callback pattern in `process_with_callback` is not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `loop_break` function incorrectly treats the array as a string `"\n"` which is a major semantic error, but there's no warning. Indirect calls and unresolved references are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` that require `n > 0` have no contract. The error returns (-1) have no explanation of what conditions trigger them.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code, but relationships aren't documented. No indication of which functions call `recursive_factorial`, no documentation of callback relationships, no global variable usage explanation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by type (test functions, logic functions, helper functions) but in a single monolithic file. The original source's clear section comments (CF-L1-01, CF-L1-02, etc.) are lost. Static function scoping is preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for some globals but incomplete. Many functions reference undefined symbols like `g_403050`, `_GLOBAL_OFFSET_TABLE_`. Would require significant patching to compile. The architecture mismatch (arm64 source vs x86 output) adds complexity.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 3 + 6) / 4 = 3.75
+L2_avg = (7 + 7 + 6 + 7) / 4 = 6.75
+L3_avg = (5 + 3 + 4) / 3 = 4.0
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 5 + 5) / 3 = 4.67
+
+Overall = (3.75 × 0.30) + (6.75 × 0.25) + (4.0 × 0.20) + (2.0 × 0.15) + (4.67 × 0.10)
+        = 1.125 + 1.6875 + 0.8 + 0.3 + 0.467
+        = 4.38/10
+```
+
+**Overall Readability Score:** 4.38/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` and locals use `v0`-`v7`, making code nearly impossible to trace
+- **No comments**: Zero documentation for 1871 lines of code, including complex patterns like Duff's device and state machines
+- **Type errors**: `loop_break` treats integer array `{10,20,30,40,50}` as string `"\n"` - severe semantic error
+- **Missing contracts**: Functions like `duffs_device` (requiring n>0) have no precondition documentation
+- **Anomaly silence**: Incorrect code presented without warnings (the array-as-string issue)
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- Core control structures (if-else, while, for loops) are correctly recovered
+- Most functions read logically top-to-bottom with recognizable patterns
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- Zero comments across entire 1871-line output
+- No explanation of algorithms, no decompilation confidence indicators, no documentation of recovered vs. uncertain constructs
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `a0`→`x` when used in `x > 0` comparisons, `temp1`→`sum` when accumulated in loops
+2. **Add comments for non-trivial patterns**: Identify Duff's device, state machines, callback patterns and add explanatory comments
+3. **Flag anomalies and semantic errors**: The array-as-string conversion in `loop_break` is a critical error that should be flagged with uncertainty indicators

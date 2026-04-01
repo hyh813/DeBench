@@ -1,0 +1,16 @@
+=== Antigravity Compiler Test Suite ===
+
+Result: 10
+Opaque predicate result: 20
+Instruction substitution: 225
+String encryption: 84
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop: 23
+LTO result: 20
+Division by zero: 1
+Null pointer deref: 4294967295
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 47

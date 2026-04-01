@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`) instead of semantic names like `count`, `sum`, `large`, `ptr`. Original `char *s` becomes `int32_t str`, losing type semantics.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `test_calling_conventions`, `varargs_func`), but helper functions are generic (`function_1090`, `function_113c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x12345678`, `0x3ed4`, `0x3ebf` appear without explanation. String literals referenced via offsets `(char *)(v1 + 2700)` instead of direct strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_bx`, `__readgsdword(20)`, `__stack_chk_fail_local`, stack canary checks throughout functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use `while` instead of `for` constructs. Some functions constant-folded (`call_cdecl` returns literal `15`). Complex expression in `ret_complex_expr` obscures original ternary logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes reasonable, but compiler runtime functions (`deregister_tm_clones`, `frame_dummy`) mixed with source. Some functions over-optimized losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks at function ends (`if (v2 == __readgsdword(20))`) disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack operations create redundancy. Constant folding removes some redundancy but obscures original computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but pointer types degraded (`char *s` → `int32_t str`). Custom `float64_t` typedef instead of `double`. Function pointers become `int32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types lost. `LargeStruct`, `SmallStruct` become raw pointer arithmetic. `func_struct_byval` has no struct parameter, operates on stack directly.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)str`, `(int32_t *)a1`. Pointer arithmetic on integers. `func_mixed_args` has 5 parameters instead of original 4, indicating type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except module/address/line metadata. No algorithm explanations, no contract documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs handling present but not identified as such. No design pattern recognition. Original calling convention tests not annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. Stack canary checks present but unexplained. No indication of decompilation uncertainty despite obvious type losses.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (NULL checks exist but not annotated). No postconditions or invariants. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable `g1` usage unexplained. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file ordered by address, not logical grouping. Original test function groupings not preserved explicitly.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has standard includes but custom typedefs (`float64_t`, `float80_t`). External function declarations present. Requires stubs for compiler runtime functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75
+Level 3 (Type):        (5+2+4)/3   = 3.67
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50
+Level 5 (Contextual):  (5+5+6)/3   = 5.33
+
+Overall = (4.25×0.30) + (5.75×0.25) + (3.67×0.20) + (2.50×0.15) + (5.33×0.10)
+        = 1.275 + 1.438 + 0.734 + 0.375 + 0.533
+        = 4.36/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` become raw pointer arithmetic with no type information
+- **Variable names all generic** - `v1`, `v2`, `a1`, `a2` instead of semantic names like `count`, `sum`, `ptr`
+- **No comments or documentation** - Zero algorithm explanations, no contract recovery, no decompilation confidence indicators
+- **Compiler artifacts pollute code** - `__x86_get_pc_thunk_*`, `__readgsdword(20)`, stack canary checks throughout
+- **Type degradation** - Pointers become `int32_t`, function signatures incorrect (`func_mixed_args` has 5 params instead of 4)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`cdecl_func`, `test_calling_conventions`, `varargs_func`), making navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types, forcing all composite data into raw pointer arithmetic, fundamentally breaking code understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from stack access patterns** - Detect repeated offset patterns (`a1`, `a1+4`, `a1+8`) and propose struct types with field names
+2. **Infer variable names from usage context** - Variables used in loop counters should be `i`, `count`; pointer dereferences should suggest `ptr`, `buffer`
+3. **Add decompilation confidence annotations** - Flag uncertain type recoveries, unresolved calls, and potential optimization artifacts with comments

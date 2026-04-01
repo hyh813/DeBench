@@ -1,0 +1,12 @@
+Test
+LibL10: 8
+LibL11: 0
+LibL12: 12
+LibL13: 10
+LibL14: -1
+Value: 42, Name: Test
+LibL15: 22
+LibL16: 579
+LibL17: 42
+LibL18: 42
+LibL19: 90

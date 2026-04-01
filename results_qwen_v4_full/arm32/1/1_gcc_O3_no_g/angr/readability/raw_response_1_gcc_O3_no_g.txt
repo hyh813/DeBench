@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1` with no semantic meaning. For example, `sequential_ops` uses `a0`, `a1`, `a2` instead of `a`, `b`, `c` from source, and `loop_for_fixed` uses `i` for the parameter but `v0`, `v1` for internal variables that should be `sum` and loop counter.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but many are generic (`sub_10454`, `sub_10530`, `non_local_jump.constprop.0`). Helper functions like `double_value`, `triple_value` are well-named, but test functions lost their descriptive prefixes.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (should be `-1`), `4294967294` (should be `-2`), `1717986919` (division optimization constant), and condition codes like `194`, `146`, `210` in `armg_calculate_condition` calls with no explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition` calls throughout (e.g., `if_else`, `if_elseif_chain`), stack canary checks (`GLIBC_2.4::__stack_chk_guard`), and register spill variables (`v0`, `v1` as `[bp-0x4]`, `[bp-0x8]`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many functions use `goto` instead of structured control flow (e.g., `if_elseif_long`, `switch_large` have complex goto chains). However, simple functions like `sequential_ops`, `ternary_op` recovered well. The `-O0` compilation should have preserved structure but decompiler introduced artificial complexity.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some functions have excessive parameters from register allocation (e.g., `switch_small` has 4 parameters when source has 1). Test functions like `test_control_flow_l1` became monolithic print statement sequences.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt reading flow (e.g., `LABEL_107d1`, `LABEL_107d2` in `if_elseif_long`). Deep nesting in `loop_complex_cond` with 10+ nested if statements instead of the original while loop with compound condition.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns from optimization recovery (e.g., `call_func_ptr_array` has stack canary check duplicated). However, no obvious dead code. The `recursion_factorial` was converted to iterative form which is acceptable optimization recovery.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything is `unsigned int` or `int`, losing all type distinctions. Source had `volatile int *` for `infinite_loop` and `loop_external_state`, but decompiled shows `unsigned int *`. No `size_t`, no proper signedness (negative returns shown as `4294967295`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays partially recovered (`int arr[]` in `loop_break` became switch statement). No struct recovery visible. Function pointer arrays in `call_func_ptr_array` and `large_jump_table` recovered as local variables but with stack canary pollution.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `goto a0` in `call_func_ptr` (function pointer as integer), `goto (&v0)[a0]` computed jumps, and `armg_calculate_condition` with magic condition codes. Signed/unsigned confusion throughout (negative values as large unsigned).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source. All the helpful documentation about test cases, expected values, and algorithm explanations completely lost. No decompiler-generated comments explaining uncertain recoveries.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognized (recursion converted to iteration in `recursion_factorial`), but state machines (`state_machine`, `fsm_func_table`) lost their semantic meaning. Switch fallthrough in `switch_fallthrough` partially recovered but obscured by condition calculations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that `armg_calculate_condition` calls are decompiler artifacts. No warnings about unresolved indirect calls or uncertain recoveries. Code presents incorrect logic confidently (e.g., `if_else` has broken logic with condition calculations).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No error condition documentation. Return value semantics lost (what does `-1` mean in each context).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships mostly preserved (test functions call target functions). Global variables like `jump_buffer` referenced but not clearly typed. Callback relationships in `process_with_callback` partially recovered but function pointer type degraded.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order (helpers before users). Test functions grouped together. However, no file organization visible - everything appears as single translation unit without header separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains external dependencies (`__printf_chk`, `__aeabi_idiv`, `__stack_chk_fail`) that need linking. ARM-specific intrinsics (`Clz`, `armg_calculate_condition`) won't compile on other platforms. Stack canary checks require specific runtime support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 3.697 ≈ 3.7/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `a2`** should be named `a`, `b`, `c` based on source function signatures
+- **`armg_calculate_condition` calls** obscure all conditional logic with magic condition codes (194, 146, 210, etc.)
+- **Negative return values** shown as unsigned (`4294967295` instead of `-1`), breaking semantic understanding
+- **Zero comments recovered** from original source documentation explaining test cases and expected behavior
+- **Control flow degradation** - simple if-else chains converted to complex goto ladders (e.g., `if_elseif_long`, `switch_large`)
+
+### Best Quality Aspect:
+- **Module Organization (6/10)** - Functions are grouped logically with test functions together and helper functions accessible, maintaining some structural coherence despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all source documentation, test case explanations, and expected value comments makes understanding function purposes extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover original variable names from debug symbols** - The `-g` flag was used during compilation but variable names weren't recovered (all show as `v0`, `a0`, etc.)
+2. **Replace `armg_calculate_condition` with readable conditionals** - This Angr artifact should be converted to standard C comparisons with comments explaining uncertain recoveries
+3. **Preserve signed/unsigned type distinctions** - Negative return values must be shown as signed integers, not large unsigned values that obscure error semantics

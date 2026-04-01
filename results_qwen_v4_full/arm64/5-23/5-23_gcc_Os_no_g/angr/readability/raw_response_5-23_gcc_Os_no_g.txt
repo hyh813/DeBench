@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) obscuring semantic purpose; original source had meaningful names like `size`, `counter`, `increment` that are lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`sub_400824`, `sub_40091c`) losing semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (1024), `57072` (0xDF22), and `4278190081` appear without explanation; printf format strings stored in opaque globals (`g_4012ae`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame setup (`v0 = &v1`) repeated in nearly every function; stack canary checks (`__stack_chk_guard`) add verbosity; `sub_400824` calls `memcpy` twice redundantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if-else/while structures, but `call_asm_privileged` uses confusing `arm64g_calculate_condition` chains instead of clear boolean logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; original structure largely preserved, though artifact functions like `sub_400824` appear without clear purpose.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally; `register_tm_clones` uses goto unnecessarily, and stack check returns at function ends slightly disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_simd_intrinsics` and `sub_400824` call same functions twice with identical arguments; constant folding is good (`call_macro_constants` returns 64 directly).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are generic (`unsigned long long`, `unsigned int`) with inconsistent return types; pointer/array distinction lost (e.g., `param_asm_clobber` uses `unsigned long ptr` instead of `int*`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source; arrays shown as pointer arithmetic (`*((int *)(ptr + v2 * 4))`); no struct/union reconstruction needed but stack variables properly separated.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts present without warnings; pointer arithmetic lacks type safety annotations; no indication of potential buffer issues in array operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; only one "Failed to decompile" note for `__aarch64_ldadd4_acq_rel`; magic numbers and algorithm intent completely undocumented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible; atomic operations shown as raw `__aarch64_ldadd4_acq_rel` calls without identifying as atomic patterns; macro expansions folded but not identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One decompilation failure noted; assembly-derived functions don't indicate their origin; no warnings about `arm64g_calculate_condition` artifacts or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`); no postconditions inferred; return value meanings unexplained; error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear, but global variables use opaque names (`g_4012ae`, `g_40142c`); no call graph documentation; printf string globals not linked to format content.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear mostly in address order; related test functions grouped reasonably; no logical grouping comments or namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared with `extern`; would need stubs for `mmap`, `sysconf`, `__printf_chk`; printf format strings in globals require recovery for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects
+- Variable names are generic (`v0`, `v1`, `a0`) losing all semantic meaning from original source (`size`, `counter`, `increment`)
+- Zero comments explaining magic numbers like `57072`, `4278190081`, or algorithm intent
+- Printf format strings stored in opaque globals (`g_4012ae`) instead of inline literals
+- `arm64g_calculate_condition` artifacts in `call_asm_privileged` obscure simple boolean logic
+- No function contracts or precondition documentation for safety-critical functions (memory operations, atomics)
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test functions preserved original descriptive names (`param_macro_constants`, `call_asm_basic`), maintaining semantic identity.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no documentation; decompiler provides no explanation of recovered logic, magic numbers, or algorithm intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** - Analyze how variables are used (size comparisons, loop counters, pointers) to suggest semantic names like `packet_size` instead of `v0`.
+2. **Recover and inline string literals** - Resolve global string references (`g_4012ae`) back to actual format strings for printf calls to restore readability.
+3. **Add semantic annotations for recovered patterns** - Identify and comment atomic operations, macro expansions, and assembly-derived code with explanatory notes about original intent.

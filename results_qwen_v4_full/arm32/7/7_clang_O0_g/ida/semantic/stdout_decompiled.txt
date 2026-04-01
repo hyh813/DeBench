@@ -1,0 +1,15 @@
+Test Results:
+Obf L402: 10
+Obf L403: 20
+Obf L404: 225
+Obf L405: 50
+Opt L401: 500500
+Opt L401_0: 5050
+Opt L402: 72
+Opt L501 Lto: 20
+Edge L301: 1
+Edge L302: 41
+Edge L303: 30
+Edge L304: 2000000000
+Edge L401: 10
+Edge L402: 44

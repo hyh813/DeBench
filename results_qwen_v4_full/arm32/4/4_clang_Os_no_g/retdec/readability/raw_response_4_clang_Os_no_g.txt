@@ -1,0 +1,107 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with zero semantic meaning. Original names like `count`, `sum`, `args`, `str`, `len` are completely lost, making it impossible to understand variable purposes without tracing usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `test_calling_conventions`), but helper functions degraded to `function_410`, `function_41c`. Core test functions remain identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g6 = "CALL-L2-06\xef\xbc\x9a..."`). Magic numbers like `0x51eb851f` (π approximation) and `0x40091eb8` appear without explanation. Numeric constants in function bodies lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler runtime artifacts included (`__aeabi_*` functions, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`). Frame pointer manipulation and initialization code bloat the output considerably.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops reconstructed as while-loops but with awkward pointer arithmetic (`v2 += 4`, `v3 = v4`). The `varargs_func` loop uses manual stack traversal instead of clean iteration. Some functions constant-folded entirely (`call_cdecl` returns 15 directly).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but aggressive constant folding destroyed call relationships (`call_cdecl`, `call_stdcall` no longer call their respective functions). Some functions like `test_calling_conventions` became fragmented print statements.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but with disruptive forward jumps in loop bodies. The `test_calling_conventions` function has scattered initialization code that breaks logical flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Runtime initialization code duplicated across multiple functions. No dead code elimination for unreachable compiler scaffolding. Loop patterns show redundant pointer arithmetic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int32_t`, `char*`, or `void*`. Original `double`, `long long`, and `size_t` types lost. `func_mixed_args` shows `(float64_t)(int64_t)` casts indicating type confusion. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct definitions (`LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `TestIntPair`) completely lost. Code uses raw pointer arithmetic: `*(int32_t *)(v2 + (int32_t)&v1)` instead of `s.data[i]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic on `int32_t` values (`*(int32_t *)a1`, `v2 += 4`). `func_struct_byptr` has undefined behavior with `a1 == 0 ? -1 : a1` before dereference. No null checks recovered properly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments explaining calling conventions and test purposes.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (manual stack traversal instead of `va_list`). Struct passing patterns lost. Function pointer callbacks not identified. No design pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about problematic reconstructions. The broken varargs implementation, lost struct types, and constant-folded functions have no anomaly flags. User receives no indication of decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions recovered (e.g., `p != NULL` checks in `func_struct_byptr` obscured). No postconditions. Original null checks exist but aren't documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible through direct calls, but constant folding destroyed many relationships. Global variable usage (`g6`, `g7`, etc.) not explained. No callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file with 94 functions. No logical grouping by test category (calling conventions vs. parameter passing vs. return values). Runtime functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (`stdio.h`, `stdlib.h`, `string.h`). Should compile with proper linking, but depends on external runtime functions (`__aeabi_*`, `__libc_start_main`). No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.99/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` definitions missing; code uses raw pointer arithmetic instead of field access
+- **Variable names entirely generic** - `a1`, `a2`, `v1`, `v2` provide zero semantic information about purpose
+- **Aggressive constant folding** - Functions like `call_cdecl()` return literal `15` instead of showing `cdecl_func(5, 10)` call
+- **Zero comments** - No documentation for any non-trivial logic, algorithms, or decompilation uncertainties
+- **Varargs handling broken** - Manual stack pointer arithmetic (`v2 += 4`) instead of recovered `va_list` pattern
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Most original function names preserved (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`), allowing identification of test purposes despite other degradation.
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments is unacceptable; even auto-generated confidence indicators would help users understand decompilation reliability.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover composite type definitions** - Analyze memory access patterns to reconstruct struct layouts with field names based on usage context (e.g., `data[i]` access patterns indicate array fields)
+
+2. **Preserve call relationships over constant folding** - At `-O0` optimization, avoid folding simple arithmetic calls; show `return cdecl_func(5, 10)` instead of `return 15` to maintain semantic transparency
+
+3. **Add decompilation confidence annotations** - Insert comments like `// DECOMPILE UNCERTAINTY: varargs implementation reconstructed from stack access pattern` to alert users to potentially unreliable reconstructions

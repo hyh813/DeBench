@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`a1`, `a2`, `v1`, `v2`, `str`, `str2`) with no semantic meaning. For example, `param_strcpy` uses `a1` instead of `dst` and `str2` (uninitialized) instead of `src`, making the function's purpose opaque.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions preserved (`param_strcpy`, `call_strcpy`, `test_standard_library_functions`), but helper functions are generically named (`function_2030`, `function_2040`). Some signatures are incorrect (`param_strcpy` takes 1 parameter instead of 2).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as global variables (`g4`, `g5`...) with hex-encoded Chinese characters. Magic numbers like `0xffffffff`, `42`, `0x100000000` appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from assembly intrinsics (`__asm_movdqa`, `__asm_pcmpeqb`, `__asm_movaps`, `__asm_xorps`), excessive casts, and sign-extension operations (`& 0xffffffff`, `>> 31`) throughout the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple functions use `goto` statements with labels (`lab_0x3450`, `lab_0x3ae0_2`) instead of natural loop constructs. `param_pthread_join` and `param_thread_local_storage` have particularly convoluted control flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Library wrapper functions properly extracted (`function_2090` for `strcpy`), but many functions have incorrect parameter counts. Some functions are overly complex due to failed optimization recovery.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple `goto` labels create non-linear execution paths that require manual tracing to understand.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bit-masking operations (`& 0xffffffff`) appear throughout. Some redundant type conversions from int64_t to int32_t and back could be eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion—everything is `int64_t` or `int32_t`. Original types like `char*`, `size_t`, `FILE*`, `pthread_t` are lost. `param_strcpy` signature shows `int64_t a1` instead of `char *dst, const char *src`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined with generic field names (`e0`, `e1`, `e2`...) losing all semantic meaning. `struct stat`, `struct sockaddr` fields are numbered instead of named (`st_size`, `sin_family`).
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout (`(char *)a1`, `(int64_t *)a1`, `(int32_t *)mem`). Pointer arithmetic on `int64_t` types creates potential undefined behavior. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of complex logic, algorithm intent, or decompilation uncertainty. Original source had extensive documentation that is completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls identified (`strcpy`, `strlen`, `pthread_create`), but higher-level patterns (producer-consumer, mutex protection, TLS) are not recognized or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Incorrect function signatures (wrong parameter counts) presented confidently without indication of potential errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original source's return value semantics (e.g., "returns 42 on success") are not preserved.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables named generically (`g33`, `g34`, `g35`...) making it impossible to understand their purpose without tracing all usage.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with no logical grouping beyond function definitions. No header file separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but some function signatures incompatible with standard headers. Assembly intrinsics (`__asm_movdqa`) may not compile on all platforms without specific compiler support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (2+3+2)/3   = 2.33 × 0.20 = 0.47
+Level 4 (Semantic):    (1+4+2+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 3.53/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_strcpy(int64_t a1)` should be `param_strcpy(char *dst, const char *src)` - missing second parameter entirely
+- **Type system collapse**: All variables degraded to `int64_t`/`int32_t`, losing `char*`, `FILE*`, `pthread_t` semantics
+- **Struct field anonymization**: All struct fields named `e0`, `e1`, `e2`... losing all semantic meaning
+- **Zero documentation**: No comments explaining logic, despite original source having extensive documentation
+- **Assembly intrinsics pollution**: `__asm_movdqa`, `__asm_pcmpeqb` blocks obscure high-level intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Main test function names were preserved from debug symbols (`param_strcpy`, `call_strcpy`, `test_standard_library_functions`), providing some anchor points for understanding.
+
+### Most Needs Improvement:
+- **Type Precision (2/10)** - Complete type erosion makes the code nearly unusable for analysis; `int64_t` used for everything including pointers, sizes, and return values.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter types from calling conventions** - Analyze how parameters are used (pointer dereference vs. arithmetic) to infer `char*` vs. `int` vs. `size_t`
+2. **Preserve struct field semantics from debug info** - When `-g` flag is present, extract field names from DWARF debug information instead of generic `e0`, `e1` naming
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: parameter count may be incorrect` to alert analysts

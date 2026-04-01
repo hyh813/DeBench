@@ -1,0 +1,24 @@
+Test Preprocessing Features
+
+MACRO-L1-01: 64
+MACRO-L1-02: 30
+MACRO-L1-03: 32
+MACRO-L2-01: 57122
+MACRO-L2-02: 116
+MACRO-L3-01: 19
+MACRO-L4-01: 60
+LOG: Values: 10, 20, 30
+MACRO-L4-02: 60
+MACRO-L4-03: 16
+MACRO-L4-04: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:17
+return: 382
+return: 382
+Test ASM Features
+
+ASM-L1-01: 15
+ASM-L1-02: 15
+ASM-L2-01: 42
+ASM-L3-01: 36
+ASM-L4-05: return: 15
+return: 15

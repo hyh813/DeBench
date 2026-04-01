@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `a1`. While `a0`/`a1` are standard for arguments, local variables like `v0` in `process_bool` obscure the semantic meaning (e.g., `is_positive`, `is_even`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `process_int`, and `array_string` are preserved perfectly from the source symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are used for type masking (e.g., `& 255` for char, `& 65535` for short) without explicit comments or named constants, forcing the reader to infer the intended type casts.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code contains significant lifting artifacts, such as `vvar_36{r64|4b}` in `array_3d` and `armg_calculate_condition` calls in library functions, which pollute the output and reduce readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Loop constructs are often represented as `do-while` loops (e.g., `array_1d_stack`) instead of `for` loops. Critically, `array_string` contains a logic error where the loop condition checks an uninitialized variable `v1`, creating an apparent infinite loop.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: User-defined functions are well-separated and correspond to the source. However, the inclusion of large, un-analyzed library functions like `__adddf3` and `__mulsf3` clutters the output.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the use of `do-while` for simple counting loops and the presence of forward jumps in complex logic (e.g., `__adddf3`) disrupt the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is unnecessary arithmetic redundancy, such as in `process_bool` where `v0 + -(v0) + (v0 <= 0)` is used to implement boolean logic, which is harder to read than the original logical operators.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; `char`, `short`, and `int` are all represented as `unsigned int` with bitwise masks. Pointers are often generic `void*` or `unsigned int*`, losing type safety and semantic context.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; fields are accessed via raw array offsets (e.g., `a0[1]` in `struct_simple` instead of `p->y`). This completely obscures the data structure layout.
+
+**11. Type Safety:** Score: 5/10
+Justification: While the pointer arithmetic is technically correct for the binary's execution, the lack of distinct types (e.g., treating a struct pointer as an int array) makes the code unsafe and difficult to reason about statically.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of complex bit manipulations. The output is raw code without semantic annotation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns are not recognized. For example, the bitfield access in `struct_bitfields` is left as raw shifts and masks (`v0 >> 6`, `3 & v0 >> 1`) rather than being mapped to the struct fields.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler does not flag potential issues, such as the suspicious logic in `array_string` or the fact that `volatile_access` seems to have been optimized away (losing the volatile semantic).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no documentation of preconditions (e.g., non-null pointers) or postconditions. The function signatures provide no hints about contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but the relationship between the user code and the included library functions (like `__mulsf3`) is not explained, making it hard to distinguish application logic from compiler runtime support.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat file. While they are grouped roughly by type (data types, arrays, pointers), there is no logical separation or module structure provided.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code contains invalid C syntax, such as `vvar_36{r64|4b}` and complex macro-like expressions (`armg_calculate_condition`), making it impossible to compile without significant manual cleanup.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 4 + 3) / 4 = 4.75
+L2_avg: (4 + 7 + 6 + 5) / 4 = 5.50
+L3_avg: (3 + 2 + 5) / 3 = 3.33
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (6 + 6 + 1) / 3 = 4.33
+
+Overall = (4.75 × 0.30) + (5.50 × 0.25) + (3.33 × 0.20) + 
+          (1.25 × 0.15) + (4.33 × 0.10)
+Overall = 1.425 + 1.375 + 0.666 + 0.1875 + 0.433
+Overall ≈ 4.09
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Logic Error in `array_string`**: The decompiled loop uses an uninitialized variable `v1` in the condition `while (*((char *)(a0 + v1)))`, creating an apparent infinite loop that does not match the source logic.
+- **Lost Floating Point Semantics**: Functions like `process_float` and `process_double` are reduced to calls to low-level software floating-point libraries (`__mulsf3`, `__adddf3`), completely obscuring the original arithmetic operations.
+- **No Struct Recovery**: Composite types are accessed via raw array offsets (e.g., `a0[1]` for the second field of a struct), losing all semantic information about data layout.
+- **Invalid C Syntax**: The output contains non-compilable artifacts like `vvar_36{r64|4b}` and `armg_calculate_condition`, rendering the code useless for direct compilation.
+- **Type Erasure**: Specific types like `short` and `char` are replaced by `unsigned int` with bitwise masks, making the code harder to read and type-unsafe.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function symbols (e.g., `process_char`, `linked_list`), which is the strongest link back to the source code's intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (1.25/10)**
+- **Why?** The decompiler fails to explain *what* the code is doing; it lacks comments, misses high-level idioms (like bitfields), and presents complex library calls without context, leaving the user to reverse-engineer the semantics from scratch.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Floating-Point Lifting**: Recognize and lift standard library floating-point operations (like `__mulsf3`) back into high-level arithmetic operators (e.g., `*`, `+`) to restore semantic clarity.
+2.  **Fix Struct Recovery**: Analyze memory access patterns to reconstruct `struct` definitions and replace array offsets (e.g., `a0[1]`) with member access (e.g., `p->y`).
+3.  **Improve Variable Liveness Analysis**: Correct the analysis of loop variables to prevent logic errors like the infinite loop in `array_string` and ensure variables used in conditions are properly updated.

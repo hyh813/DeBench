@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_O0_g/ghidra/syntactic/bin/6_clang_O0_g_fixed",
+  "stdout": "[TEST] Standard Library Functions Tests\n[OK] call_strcpy returned: 8\n[OK] call_strcmp returned: 0\n[OK] call_strlen returned: 12\n[OK] call_memcpy returned: 9\n[OK] call_memcmp returned: -1\nValue: 42, Name: Test\n[OK] call_printf returned: 22\n[OK] call_scanf returned: 579\n[OK] call_fopen_fclose returned: 42\n[OK] call_fread_fwrite returned: 42\n[OK] call_malloc_free returned: 90\n[OK] call_memset returned: 0\n[OK] call_strchr_strstr returned: 15\n[TEST] System Calls Tests\n[OK] call_linux_syscall returned: 42\n[OK] call_win32_api returned: 42\n[OK] call_fork_exec returned: 42\n[OK] call_pipe_communication returned: 42\n[OK] call_socket_create returned: 42\n[OK] call_shmget_shmat returned: 42\n[OK] call_signal_handling returned: 42\n[TEST] Thread Concurrency Tests\n[OK] call_pthread_create returned: 49\n[OK] call_pthread_join returned: 465\n[OK] call_mutex_lock returned: 42\n[OK] call_condition_variable returned: 42\n[OK] call_atomic_ops returned: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables use Ghidra's auto-generated names like `local_34`, `local_10`, `puVar1`, `sVar1`, `iVar1`, `dVar2`. These generic names provide no semantic meaning - `local_34` should be `name_buffer` based on its use as a 32-byte char array for "Test", and `local_18`/`local_14` should be `a` and `b` for the swap operation.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`), and some member functions recovered properly (`Base::virtual_func`, `Derived::virtual_func`). However, some functions remain as `FUN_00101020`, and thunk functions have cryptic names like `FUN_00101a00` without clear purpose indication.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers abound without explanation: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x125c` (4704). The value `0x3e9` is used for 1000 but not named. The string "Test" is correctly embedded but its purpose (as `name` member) is lost.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Relatively clean output with minimal compiler artifacts. Warnings about "Unknown calling convention" and "Removing unreachable block" are present but don't significantly impede reading. No excessive register spilling or debug instrumentation visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Basic control flow is preserved in simpler functions, but many functions are reduced to trivial returns due to constant folding. The `call_virtual_func` has a warning about indirect jump handling. At -O0, this level of inlining is unexpected - the binary appears to have been compiled with higher optimization.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: Severe decomposition failure. Functions like `test_cpp_member_func` are completely inlined to just `return (int)sVar1 + 0x125c;` losing all the object construction, `setValue`, and `compute` logic. Template functions are correctly separated, but the test driver functions lost all structural fidelity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. The linear flow is preserved where functions are not completely optimized away.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: No obvious redundant code or dead code present. The decompiled code is compact where it exists. Loop unrolling is minimal since most loops were already optimized away.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are reasonable - `int` for integers, `double` for floating point. However, extensive use of `undefined4`, `undefined8`, and `undefined*` types indicates type information loss. The `this` pointer handling shows `Base *param_1` but some return types are `undefined8` instead of proper class types.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No struct recovery is visible. The `SimpleClass` with its `value` (int) and `name` (char[32]) is completely lost - represented only as `char local_34[36]` on the stack. Class hierarchies are not reconstructed as structs; instead, raw pointer arithmetic is used throughout (e.g., `*(int *)(this + 8)` for `multiplier`).
+
+**11. Type Safety:** Score: 5/10
+Justification: Some unsafe operations present. The virtual function calls use raw pointer dereferencing: `(**(code **)(lVar1 + 8))(plVar3)`. Memory allocation uses `operator_new` without type safety. Some pointer arithmetic is potentially unsafe (e.g., `this + -0x10` in thunk functions).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Ghidra provides some auto-generated comments like "WARNING: Unknown calling convention" and "WARNING: Subroutine does not return". However, there's no explanation of what the functions do (e.g., "Creates SimpleClass with value=5, name='Test'"). The catch handler location comments are present but not helpful for understanding the exception flow.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Some C++ patterns are partially recognized - virtual function tables are implied through indirect calls, templates are identified. However, the exception handling pattern (try-catch) is completely lost - `test_cpp_exception` just shows a throw without the catch blocks. RAII patterns (constructors/destructors) are recognized but not connected to their purpose.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra does flag some anomalies: "WARNING: Could not recover jumptable", "WARNING: Unknown calling convention", "WARNING: Removing unreachable block". However, the critical anomaly - that functions are completely optimized away - is not flagged. The fact that `test_cpp_member_func` should create objects and call methods but doesn't is not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. The fact that `test_cpp_constructor` relies on `LifecycleClass::instance_count` being properly initialized is not indicated. No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Function calls are visible (e.g., `test_cpp_oo_features()` calls other test functions). Virtual dispatch is partially visible through vtable access patterns. However, the relationships between classes (inheritance) are not clearly documented, and the static member `LifecycleClass::instance_count` is used without explaining its purpose.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped reasonably - test functions together, member functions by class, template instantiations grouped. The decompiled output shows a logical ordering that somewhat matches the source organization, though all in one file.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile as-is. It uses undefined functions like `builtin_strncpy`, `__printf_chk`, `operator_new`, `operator_delete`. The `__thiscall` calling convention is not standard. External dependencies on libstdc++ are not declared. Significant patching would be required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Variable naming**: All variables use generic auto-generated names (`local_34`, `iVar1`, `puVar1`) providing zero semantic meaning
+- **Function decomposition failure**: Test functions like `test_cpp_member_func` are completely inlined to constant returns, losing all object creation, method calls, and logic
+- **No struct/class recovery**: Composite types are completely lost - `SimpleClass` with `value` and `name` fields is just `char local_34[36]`
+- **Type precision**: Extensive use of `undefined4`, `undefined8` types instead of proper class types
+- **Magic numbers**: Multiple unexplained constants like `0x125c`, `0x2a`, `0x47` without meaningful names
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)
+- The code that exists reads linearly from top-to-bottom without excessive jumps or confusing control flow disruptions
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- All class/struct information is completely lost. The decompiler should reconstruct `struct SimpleClass { int value; char name[32]; }` but instead shows raw memory operations
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover class/struct layouts**: Use vtable analysis and constructor patterns to reconstruct class member layouts with meaningful field names
+2. **Infer variable names from usage**: Analyze how variables are used (e.g., `local_34` used with `strncpy` and `strlen` should be named `name` or `name_buffer`)
+3. **Detect constant folding**: When functions are reduced to constants, add comments explaining what was optimized away (e.g., "// Function fully optimized to constant return value 4704")

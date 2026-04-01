@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_clang_O0_g/ghidra/syntactic/bin/5-23_clang_O0_g_fixed",
+  "stdout": "Testing macro constants: 64\nTesting macro functions: Testing conditional compile: Testing multi-branch compile: Testing macro recursion: Testing stringize: Testing token paste: LOG: Values: 10, 20, 30\nTesting variadic macro: Testing macro override: Testing include guard: file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:43\nTesting builtin macros: Testing ASM basic: 15\n15\n42\n36\n30\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

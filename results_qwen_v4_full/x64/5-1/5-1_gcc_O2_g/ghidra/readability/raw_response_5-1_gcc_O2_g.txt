@@ -1,0 +1,120 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`lVar1`, `sVar2`, `iVar1`, `puVar1`) obscuring their semantic purpose. Only `obj`, `a`, `b`, and `this` have meaningful names, making variable tracking difficult across functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names are preserved accurately (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods show recovery (`Base::virtual_func`, `Derived::getName`). However, some functions remain generic (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate without explanation (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`). These represent computed return values but lack context, requiring manual reverse-engineering to understand their meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_fail()`), frame pointer manipulation (`in_FS_OFFSET`), and 26+ lines of manual null-termination in `test_cpp_member_func` instead of proper `strncpy` recovery.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical control structures lost—`test_cpp_exception` shows only the throw path with no try-catch recovery. Many test functions collapse to single return statements, eliminating original logic flow entirely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions are over-optimized to constant returns. Class methods are properly separated, though some are fragmented into thunk variants (`virtual thunk`, `non-virtual thunk`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but stack check epilogues create artificial branching. The manual name initialization sequence (26 lines of `obj.name[X] = '\0'`) disrupts logical flow significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Severe redundancy in `test_cpp_member_func` and `test_cpp_oo_features` with repeated null-termination statements. This appears to be failed optimization recovery rather than original code structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered correctly (`int`, `double`, `long`), but generic types pollute the output (`undefined4`, `undefined8`, `undefined1`). Class pointers show some recovery (`Base *obj`, `SimpleClass obj`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures partially recovered with some field names (`obj.name`, `this->multiplier`, `this->size`). Diamond inheritance shows warnings about overlapping fields. Container template class recovers well with proper field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)*`, `(long *)*`, `(char **)*`). Pointer arithmetic on class objects without clear bounds checking. Several "WARNING" annotations indicate unresolved type issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF prototype comments exist for class methods, and WARNING comments flag decompilation issues. However, no semantic comments explain algorithm purpose or business logic intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic C++ idioms partially recognized (virtual functions, inheritance). Exception handling completely lost (no try-catch structure). Lambda expressions, smart pointers, and operator overloading semantics not recovered.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system present ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "Unresolved local var"). Anomalies are flagged appropriately, helping analysts identify uncertain regions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Stack canary checks exist but aren't documented as safety assertions. Exception contracts completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch unclear (`call_virtual_func` shows "Could not recover jumptable"). Class inheritance relationships partially shown through method naming conventions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Test functions and class implementations intermixed. No namespace or header separation recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires extensive external stubs (`__cxa_allocate_exception`, `operator_new`, `__printf_chk`, `__dynamic_cast`). Multiple undefined symbols prevent standalone compilation without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (6+6+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (5+4+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.12/10
+```
+
+### Overall Readability Score: **5.1/10**
+
+---
+
+### Critical Defects:
+- **Test functions optimized to constants**: `test_cpp_virtual_func`, `test_cpp_constructor`, `test_cpp_multiple_inheritance` return hardcoded values instead of showing actual computation logic
+- **Exception handling completely lost**: `test_cpp_exception` shows only throw path with no try-catch structure recovery
+- **Excessive noise in string initialization**: 26 lines of manual `obj.name[X] = '\0'` instead of proper `strncpy` recovery
+- **Magic numbers without context**: Return values like `0x125c`, `0x28a`, `0x2bf` require manual calculation to understand
+- **Lambda and smart pointer semantics lost**: `test_cpp_lambda` and `test_cpp_smart_ptr` show no closure or RAII pattern recovery
+
+---
+
+### Best Quality Aspect: **Anomaly Indication (7/10)**
+- Ghidra consistently flags uncertain regions with WARNING comments and "Unresolved local var" annotations, helping analysts identify where manual review is needed.
+
+---
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- No precondition/postcondition documentation, exception contracts completely lost, and safety assertions not documented despite stack canary checks being present.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement:
+
+1. **Recover high-level control structures from exception tables**: Use `.gcc_except_table` and `.eh_frame` sections to reconstruct try-catch blocks instead of showing raw `__cxa_throw` calls.
+
+2. **Implement pattern-based constant folding reversal**: Detect when test functions return computed constants and show the original computation (e.g., `return 0x2a` → `return 42` with comment showing `6+15+6+15`).
+
+3. **Improve string initialization recovery**: Recognize compiler-generated memset/loop patterns for array initialization and recover as single `strncpy` or `memset` calls instead of unrolling each byte assignment.

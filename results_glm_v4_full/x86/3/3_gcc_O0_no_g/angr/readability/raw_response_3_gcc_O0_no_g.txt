@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `v0`, `v1`, `a0`, and `ptr`. While `idx` and `i` appear for loops, semantic names like `x`, `n`, or `arr` from the source are lost, requiring significant effort to track data flow.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: User-defined function names like `double_value`, `local_vars`, and `heap_basic` are perfectly preserved. This is excellent, though standard library calls are obfuscated (e.g., `malloc` is `sub_4011f0`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; for example, error codes use `4294967295` (which is `-1` unsigned) instead of `-1`, and stack offsets like `20` appear without context. String literals are preserved, but numeric literals lack semantic replacement.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts, specifically `__x86.get_pc_thunk.ax()` calls before almost every global access. Stack canary checks (`__stack_chk_fail_local`) are also verbose, significantly cluttering the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with `for` loops and `if/else` blocks correctly identified (e.g., in `local_array` and `heap_basic`). However, Variable Length Array (VLA) logic in `vla_stack` contains pointer arithmetic and alignment checks that obscure the simple loop structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly with no inlining (expected for `-O0`). The granularity is appropriate, with each test function (e.g., `test_stack_memory`) remaining distinct.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom. While there are some forward jumps or complex pointer arithmetic in dynamic stack allocation functions, the general flow is linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code typical of higher optimizations. The redundancy present is mostly due to the verbose PIC setup rather than compiler optimizations duplicating logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are imprecise; `int` variables are frequently decompiled as `unsigned int`. The `Point` struct in `local_struct` is completely scalarized into registers, losing the type information entirely.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct recovery is poor. The `Node` and `TreeNode` structures are recovered as generic `struct_0` with fields named `field_0`, `field_4`, etc. The semantic meaning of fields like `data`, `next`, `left`, and `right` is lost.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, though the use of `unsigned int` for signed logic (e.g., returning `-1` as `4294967295`) is confusing. Pointer arithmetic for stack access is correct but low-level.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic like VLA allocation or PIC thunking is left unexplained, which is critical for understanding the generated code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic patterns like linked list traversal are visible as loops, but they are not explicitly identified or named. The `malloc`/`free` pattern is obscured by the obfuscated function names.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No anomalies are flagged. The decompiler confidently presents the PIC thunks and stack canary checks as standard code without indicating that these are compiler-generated artifacts or security mechanisms.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions like `if (arr == NULL) return -1;` are preserved as `if (!ptr) return 4294967295;`, but they are not documented as contracts or assertions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: Calls to standard library functions (`malloc`, `free`, `printf`) are replaced with generic addresses (`sub_4011f0`, `sub_401180`, `sub_401160`). This makes it extremely difficult to understand that `heap_basic` is performing memory allocation.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by address, which roughly groups related tests, but there is no logical separation or module structure (e.g., headers) provided in the output.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on undefined symbols (`sub_401...`) and compiler intrinsics (`__x86.get_pc_thunk`) that are not valid standard C without significant modification and stubbing.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Standard library calls (`malloc`, `free`, `printf`) are obfuscated as `sub_401...`, breaking semantic understanding of memory and I/O operations.
+- Position Independent Code (PIC) artifacts (`__x86.get_pc_thunk`) are inlined, cluttering global variable access (e.g., `global_var_access`).
+- Composite types (structs) are recovered with generic field names (`field_0`, `field_4`) instead of semantic names (`data`, `next`).
+- Signed integers are frequently displayed as unsigned, turning `-1` into `4294967295`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- User-defined function names are preserved exactly, making it easy to locate specific logic blocks from the source.
+
+**Most Needs Improvement:** Cross-Reference Clarity (scored 2/10)
+- The failure to resolve or rename standard library symbols makes the code significantly harder to read than necessary, as fundamental operations like memory allocation are hidden behind generic addresses.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Symbol Resolution:** Aggressively match and rename standard library function calls (e.g., `malloc`, `printf`) using signature matching or known address tables to restore semantic context.
+2. **PIC Abstraction:** Detect and abstract `__x86.get_pc_thunk` patterns into cleaner global variable access syntax or annotate them heavily to reduce visual noise.
+3. **Struct Field Heuristics:** Improve type recovery by using data flow analysis to infer struct field names based on usage context (e.g., a field used in a `next =` pointer chain should be named `next`).

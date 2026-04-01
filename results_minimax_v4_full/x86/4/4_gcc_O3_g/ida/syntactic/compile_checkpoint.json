@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 20,
+  "source_file": "decompiled/ida_out/x86/4/4_gcc_O3_g.c",
+  "fixed_file": "results_minimax_v4_full/x86/4/4_gcc_O3_g/ida/syntactic/fix_4_gcc_O3_g.c"
+}

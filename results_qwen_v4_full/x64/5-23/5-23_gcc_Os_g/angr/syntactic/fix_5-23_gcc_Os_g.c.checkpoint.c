@@ -1,0 +1,563 @@
+// Angr Decompilation of 5-23_gcc_Os_g
+// Platform: AMD64
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+
+
+/* CRT stub function _init removed by preprocessor */
+typedef struct { unsigned long long dummy; } struct_0;
+
+extern unsigned long long *g_403fe8;
+
+// Global variable definition
+unsigned int global_var = 0;
+
+// Simple atomic exchange add implementation
+void atomic_exchange_add(unsigned int *ptr, unsigned int val)
+{
+ *ptr += val;
+}
+
+
+
+
+
+// Function: main at 0x401100
+unsigned int main()
+{
+ unsigned long long v1; // rdi
+ unsigned long long v2; // rsi
+ unsigned long long v3; // rdx
+ unsigned long long v4; // rcx
+ unsigned long long v5; // r8
+ unsigned long long v6; // r9
+ unsigned long long v7; // rax
+
+ test_preprocessing_features();
+ test_asm_features(v1, v2, v3, v4, v5, v6, v7);
+ return 0;
+}
+
+
+
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+
+
+
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+
+
+
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+// Function: param_macro_constants at 0x401209
+unsigned long long param_macro_constants(unsigned int a0)
+{
+ if (0x400 >= a0)
+ return 0x200;
+ return 64;
+}
+
+
+// Function: call_macro_constants at 0x401221
+unsigned long long call_macro_constants()
+{
+ return 64;
+}
+
+
+// Function: param_macro_functions at 0x40122b
+long long param_macro_functions(unsigned long a0, unsigned int a1)
+{
+ return a0 * (a0 & 4294967295) + ((unsigned int)a0 < a1 ? a1 : a0 & 4294967295);
+}
+
+
+// Function: call_macro_functions at 0x40123c
+unsigned long long call_macro_functions()
+{
+ return 30;
+}
+
+
+// Function: param_conditional_compile at 0x401246
+int param_conditional_compile(unsigned int a0)
+{
+ return a0 * 3 + 2;
+}
+
+
+// Function: call_conditional_compile at 0x401251
+unsigned long long call_conditional_compile()
+{
+ return 32;
+}
+
+
+// Function: param_multi_branch_compile at 0x40125b
+int param_multi_branch_compile(unsigned int a0)
+{
+ return a0 * 5 + 57072;
+}
+
+
+// Function: call_multi_branch_compile at 0x401268
+unsigned long long call_multi_branch_compile()
+{
+ return 57122;
+}
+
+
+// Function: param_macro_recursion at 0x401272
+int param_macro_recursion(unsigned int a0)
+{
+ return a0 + 16;
+}
+
+
+// Function: call_macro_recursion at 0x40127a
+unsigned long long call_macro_recursion()
+{
+ return 116;
+}
+
+
+// Function: param_stringize at 0x401284
+unsigned long long param_stringize()
+{
+ return 19;
+}
+
+
+// Function: call_stringize at 0x40128e
+unsigned long long call_stringize()
+{
+ return 19;
+}
+
+
+// Function: my_func at 0x401298
+unsigned int my_func(unsigned int a0)
+{
+ return a0 * 10;
+}
+
+
+// Function: param_token_paste at 0x4012a0
+int param_token_paste(unsigned int a0)
+{
+ return a0 * 11 + 5;
+}
+
+
+// Function: call_token_paste at 0x4012ab
+unsigned long long call_token_paste()
+{
+ return 60;
+}
+
+
+// Function: param_variadic_macro at 0x4012b5
+int param_variadic_macro(unsigned int a0, unsigned int a1, unsigned int a2)
+{
+ __printf_chk(1, "LOG: Values: %d, %d, %d\n", a0, a1, a2);
+ return a0 + 50;
+}
+
+
+// Function: call_variadic_macro at 0x4012db
+int call_variadic_macro()
+{
+ return param_variadic_macro(10, 20, 30);
+}
+
+
+// Function: param_macro_override at 0x4012f0
+int param_macro_override(unsigned int a0)
+{
+ return a0 * 3 + 1;
+}
+
+
+// Function: call_macro_override at 0x4012fc
+unsigned long long call_macro_override()
+{
+ return 16;
+}
+
+
+// Function: param_include_guard at 0x401306
+unsigned long long param_include_guard()
+{
+ return 500;
+}
+
+
+// Function: call_include_guard at 0x401310
+unsigned long long call_include_guard()
+{
+ return 500;
+}
+
+
+// Function: param_builtin_macros at 0x40131a
+int param_builtin_macros(unsigned int a0)
+{
+ unsigned long long v2; // rax
+ unsigned long long v0; // [bp-0x10]
+
+ v0 = v2;
+ __printf_chk(1, "file=%s, func=%s, line=%d, date=%s, time=%s\n", "src/5-23.c", "param_builtin_macros", 279, "Jan 15 2026", "03:00:39");
+ return a0 + 282;
+}
+
+
+// Function: call_builtin_macros at 0x401362
+int call_builtin_macros()
+{
+ return param_builtin_macros(100);
+}
+
+
+// Function: test_preprocessing_features at 0x40136d
+char g_40206a[] = "Macro constants: %lu\n";
+char g_402092[] = "Macro functions: %lu\n";
+char g_4020ad[] = "Conditional compile: %lu\n";
+char g_4020c8[] = "Multi-branch compile: %lu\n";
+char g_4020e3[] = "Macro recursion: %lu\n";
+char g_402102[] = "Stringize: %lu\n";
+char g_40211e[] = "Token paste: %lu\n";
+char g_402148[] = "Variadic macro: %lu\n";
+char g_402163[] = "Macro override: %lu\n";
+char g_40217e[] = "Include guard: %lu\n";
+char g_402199[] = "Builtin macros: %lu\n";
+char g_4021b5[] = "All preprocessing tests complete\n";
+
+int test_preprocessing_features()
+{
+ unsigned long long v2; // rax
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = v2;
+ __printf_chk(1, &g_40206a);
+ __printf_chk(1, &g_402092, 64);
+ __printf_chk(1, &g_4020ad, 30);
+ __printf_chk(1, &g_4020c8, 32);
+ __printf_chk(1, &g_4020e3, 57122);
+ __printf_chk(1, &g_402102, 116);
+ __printf_chk(1, &g_40211e, 19);
+ __printf_chk(1, &g_402148, 60);
+ __printf_chk(1, &g_402163, call_variadic_macro() & 4294967295);
+ __printf_chk(1, &g_40217e, 16);
+ __printf_chk(1, &g_402199, 500);
+ return __printf_chk(1, &g_4021b5, call_builtin_macros() & 4294967295);
+}
+
+
+// Function: param_asm_basic at 0x401496
+int param_asm_basic(unsigned int a0)
+{
+ return a0 + 10;
+}
+
+
+// Function: call_asm_basic at 0x4014a6
+int call_asm_basic()
+{
+ return param_asm_basic(5);
+}
+
+
+// Function: param_asm_clobber at 0x4014b1
+unsigned int param_asm_clobber(unsigned long ptr, unsigned int a1)
+{
+ unsigned int v1; // eax
+ unsigned long long idx; // rcx
+
+ v1 = 0;
+ for (idx = 0; (unsigned int)idx < a1; idx = (unsigned int)idx + 1)
+ {
+ v1 += *((int *)(ptr + idx * 4));
+ }
+ return v1;
+}
+
+
+// Function: call_asm_clobber at 0x4014cb
+unsigned int call_asm_clobber()
+{
+ unsigned long ptr; // fs
+ char v0; // [bp-0x24]
+ unsigned long v1; // [bp-0x10]
+
+ v1 = *((long long *)(40 + ptr));
+ return param_asm_clobber(&v0, 5);
+}
+
+
+// Function: param_asm_multi_insn at 0x401508
+char param_asm_multi_insn(char *iter, char *cur, unsigned long long i)
+{
+ char v1; // al
+
+ for (; i; i -= 1)
+ {
+ v1 = *(cur);
+ *(iter) = *(cur);
+ iter += 1;
+ cur += 1;
+ }
+ return v1;
+}
+
+
+// Function: call_asm_multi_insn at 0x401523
+unsigned long long call_asm_multi_insn()
+{
+ char v0[8]; // [bp-0x3a]
+ char v1[2]; // [bp-0x32]
+ char v2[4]; // [bp-0x30]
+ char v3; // [bp-0x2c]
+
+ strncpy(v1, "Hello ASM", 9);
+ param_asm_multi_insn(&v2, &v0, 9);
+ if (v2 != 72)
+ return 4294967295;
+ return (v3 == 111 ? 42 : 4294967295);
+}
+
+
+// Function: param_asm_simd at 0x4015a1
+double param_asm_simd(long long ptr, long long p, long long addr)
+{
+ int v1; // xmm0
+
+ v1 = *(int*)ptr + *(int*)p;
+ *(int*)addr = v1;
+ return (unsigned long long)v1;
+}
+
+
+// Function: param_simd_intrinsics at 0x4015b5
+double param_simd_intrinsics(long long p, long long ptr, long long addr)
+{
+ int v1; // xmm0
+
+ v1 = *(int*)ptr + *(int*)p;
+ *(int*)addr = v1;
+ return (unsigned long long)v1;
+}
+
+
+// Function: call_asm_simd at 0x4015c6
+long long call_asm_simd()
+{
+ unsigned long long v0; // [bp-0x40]
+ unsigned long long v1; // [bp-0x38]
+ unsigned long long v2; // [bp-0x30]
+ unsigned long long v3; // [bp-0x28]
+ char v4; // [bp-0x20], Other Possible Types: unsigned int
+ unsigned int v5; // [bp-0x1c]
+ unsigned int v6; // [bp-0x18]
+ unsigned int v7; // [bp-0x14]
+
+ v0 = 8589934593;
+ v1 = 17179869187;
+ v2 = 25769803781;
+ v3 = 34359738375;
+ param_asm_simd(&v0, &v2, &v4);
+ return v5 + v4 + v6 + v7;
+}
+
+
+// Function: param_asm_atomic at 0x401656
+int param_asm_atomic(unsigned int *a0, unsigned int a1)
+{
+ atomic_exchange_add(a0, a1);
+ return *(a0) + a1;
+}
+
+
+// Function: param_atomic_c11 at 0x401663
+int param_atomic_c11(unsigned int *a0, unsigned int a1)
+{
+ atomic_exchange_add(a0, a1);
+ return *(a0) + a1;
+}
+
+
+// Function: call_asm_atomic at 0x401670
+long long call_asm_atomic()
+{
+ unsigned long ptr; // fs
+ unsigned int v0; // [bp-0x14]
+ unsigned long v1; // [bp-0x10]
+
+ v1 = *((long long *)(40 + ptr));
+ v0 = 10;
+ atomic_exchange_add(&v0, 5);
+ return v0 * 2 + 5;
+}
+
+
+// Function: param_dynamic_code at 0x4016c0
+unsigned long long param_dynamic_code(unsigned int a0)
+{
+ unsigned long v1; // rax
+ void* ptr; // rax
+ unsigned int v3; // r12d
+
+ v1 = sysconf(30);
+ ptr = mmap(NULL, v1, 7, 34, -1, NULL);
+ if (ptr == 0xffffffffffffffff)
+ return 4294967295;
+ *((unsigned int *)ptr) = 3229874313;
+ *((unsigned short *)&ptr[4]) = 49925;
+ v3 = ((unsigned int (*)(unsigned int))ptr)(a0);
+ munmap(ptr, v1);
+ return v3;
+}
+
+
+// Function: param_memory_protection at 0x40175a
+unsigned int param_memory_protection()
+{
+ unsigned long v3; // rbp
+ unsigned int *p; // rax
+ unsigned int v5; // r12d
+ unsigned int *v0; // [bp-0x20]
+ unsigned int *ptr; // [bp-0x20]
+
+ v3 = sysconf(30);
+ p = mmap(NULL, v3, 3, 34, -1, NULL);
+ if (p == 0xffffffffffffffff)
+ return 4294967295;
+ v0 = p;
+ *(p) = 42;
+ if (mprotect(p, v3, 1))
+ {
+ munmap(ptr, v3);
+ return 4294967294;
+ }
+ ptr = v0;
+ v5 = *(ptr);
+ if (!mprotect(ptr, v3, 3))
+ {
+ *(ptr) = 100;
+ munmap(ptr, v3);
+ return v5;
+ }
+ munmap(ptr, v3);
+ return 4294967293;
+}
+
+
+// Function: param_clobber_importance at 0x401812
+unsigned int param_clobber_importance(unsigned int a0, unsigned int a1)
+{
+ return (a0 + a1) * 2;
+}
+
+
+// Function: call_asm_privileged at 0x401826
+unsigned int call_asm_privileged()
+{
+ unsigned int v1; // r12d
+ unsigned int v2; // eax
+ unsigned int v3; // r8d
+
+ v1 = param_dynamic_code(10);
+ param_memory_protection();
+ v2 = param_clobber_importance(3, 7);
+ if (v1 != 15)
+ {
+ return v1;
+ }
+ else if (v3 == 42)
+ {
+ return (v2 == 20 ? 77 : v1);
+ }
+ else
+ {
+ return v1;
+ }
+}
+
+
+// Function: param_memory_clobber_demo at 0x401870
+extern unsigned int global_var;
+
+int param_memory_clobber_demo()
+{
+ return 50 + global_var;
+}
+
+
+// Function: test_asm_features at 0x40188a
+char g_4021de[] = "ASM basic: %d\n";
+char g_402225[] = "ASM clobber: %u\n";
+char g_402241[] = "ASM multi-instruction: %lu\n";
+char g_40225d[] = "ASM SIMD: %lu\n";
+char g_402279[] = "ASM atomic: %lu\n";
+char g_402295[] = "ASM privileged: %lu\n";
+
+int test_asm_features()
+{
+ unsigned long long v2; // rax
+ char *v3; // rsi
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = v2;
+ __printf_chk(1, &g_4021de);
+ call_asm_basic();
+ __printf_chk(1, v3);
+ __printf_chk(1, &g_402225, call_asm_clobber() & 4294967295);
+ __printf_chk(1, &g_402241, call_asm_multi_insn() & 4294967295);
+ __printf_chk(1, &g_40225d, call_asm_simd() & 4294967295);
+ __printf_chk(1, &g_402279, call_asm_atomic() & 4294967295);
+ return __printf_chk(1, &g_402295, call_asm_privileged() & 4294967295);
+}
+
+
+
+/* CRT stub function _fini removed by preprocessor */
+
+

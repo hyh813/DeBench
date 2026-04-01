@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality (10%)
+**Score: 5/10**
+Justification: Parameter names (a, b, c, x) match source exactly and are good. However, local variables use generic names like `v1`, `v2`, `v3`, `v4` throughout - e.g., in `loop_while` the variable `v2` is used without indication it's the digit count accumulator. This is a mixed result.
+
+### 2. Function Naming Quality (10%)
+**Score: 9/10**
+Justification: Nearly all function names perfectly match the source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `switch_small`, `loop_for_fixed`, `goto_forward`, `duffs_device`, etc. Only internal helpers like `sub_1020` are generic. Excellent recovery.
+
+### 3. Literal Clarity (5%)
+**Score: 4/10**
+Justification: Test functions like `test_control_flow_l1` have hardcoded expected values (e.g., `printf("CF-L1-01 (sequential_ops): %d\n", 21)`) instead of calling the functions. Magic numbers like `0xA` (10) in `switch_large` and `0x65` (101) in `multi_return` lack explanatory constants.
+
+### 4. Noise Reduction (5%)
+**Score: 3/10**
+Justification: Heavy compiler artifacts present. `loop_continue` and `goto_backward` use complex SSE intrinsics (`_mm_shuffle_epi32`, `_mm_mul_epu32`) instead of recognizable loop code. `loop_for_fixed` uses a mathematical formula rather than a loop. Test functions have inlined results rather than function calls.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness (8%)
+**Score: 5/10**
+Justification: Some control flows are natural (switch statements, if-else), but others are obfuscated: `single_if` uses `x << (x > 0)` instead of if statement; `if_else` uses `x > 0` directly as return value; `goto_forward` uses computed result instead of goto structure. SSE loop implementations in `loop_continue` and `goto_backward` are nearly unrecognizable.
+
+### 6. Function Decomposition (7%)
+**Score: 8/10**
+Justification: Original source was well-decomposed into separate functions, and decompiler preserved this. Functions like `sequential_ops`, `single_if` remain separate. Test functions were inlined by compiler (expected at -O0), but decompiler correctly identified them as functions.
+
+### 7. Code Linearization (5%)
+**Score: 7/10**
+Justification: Most code reads top-to-bottom. Early returns used appropriately in functions like `multi_return`. Minor forward jumps exist but don't severely disrupt flow. Generally good linearity.
+
+### 8. Redundancy Elimination (5%)
+**Score: 8/10**
+Justification: No obvious dead code or duplicate expressions. Loop unrolling in `loop_continue` and `goto_backward` is present but represents compiler optimization, not redundancy. Overall clean.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision (8%)
+**Score: 6/10**
+Justification: Basic types preserved (int, volatile int*, function pointers). However, no use of fixed-width types (int32_t, uint64_t). No const-correctness preserved. Function pointer types are correct (`int (*f)(int)`) but could be more precise.
+
+### 10. Composite Type Recovery (7%)
+**Score: 2/10**
+Justification: Arrays in `loop_break` and `loop_multi_exit` are represented as `unk_20D0` and `unk_20F0` - completely generic names with no semantic meaning. The original `int arr[] = {10, 20, 30, 40, 50}` is completely lost. No struct recovery at all.
+
+### 11. Type Safety (5%)
+**Score: 8/10**
+Justification: Generally type-safe code. Pointer arithmetic in loops is correct. Function pointer calls are properly typed. No obvious unsafe casts. Minor issues but overall safe.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence (5%)
+**Score: 3/10**
+Justification: Only minimal header comments present ("Decompiled by IDA Pro 9.1"). No algorithm explanations, no decompilation confidence indicators, no API contracts. The comment at `_start` ("positive sp value has been detected, the output may be wrong!") shows some awareness of issues but is insufficient.
+
+### 13. Idiom Recognition (3%)
+**Score: 6/10**
+Justification: Standard idioms recognized (switch-case, for/while loops, if-else). However, `duffs_device` is present but not named as such - it's just a switch with goto labels. State machine patterns in `state_machine` and `fsm_func_table` are recognized but not explicitly identified as state machines.
+
+### 14. Anomaly Indication (3%)
+**Score: 4/10**
+Justification: The `_start` function has a warning about positive sp value. However, indirect calls (e.g., `call_func_ptr(f)(x)`) are not flagged with uncertainty. The 7 "FAILED to decompile" functions at the end show some awareness but aren't integrated into the code flow.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 2/10**
+Justification: No precondition, postcondition, or invariant documentation. Functions like `duffs_device` that require `n > 0` have no contract indication. Error conditions in `large_jump_table` (division by zero check) aren't documented as preconditions.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 4/10**
+Justification: Function calls within test functions are clear. However, no documentation of which functions call `sequential_ops` or its dependencies. Global variable `jump_buffer` used by `non_local_jump` isn't documented as being setjmp-related.
+
+### 17. Module Organization (3%)
+**Score: 7/10**
+Justification: Functions are grouped logically - control flow L1 functions together, L2 functions together, etc. Static functions like `indirect_recursion_b` are properly scoped. Overall good organization matching source structure.
+
+### 18. Build System Compatibility (3%)
+**Score: 8/10**
+Justification: Code would compile as standalone. External dependencies (`puts`, `printf`, `_setjmp`, `longjmp`) are standard library functions. No compiler-specific hacks. The code is relatively portable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 9 + 4 + 3) / 4 = 5.25
+L2_avg = (5 + 8 + 7 + 8) / 4 = 7.00
+L3_avg = (6 + 2 + 8) / 3 = 5.33
+L4_avg = (3 + 6 + 4 + 2) / 4 = 3.75
+L5_avg = (4 + 7 + 8) / 3 = 6.33
+
+Overall = (5.25 × 0.30) + (7.00 × 0.25) + (5.33 × 0.20) + 
+          (3.75 × 0.15) + (6.33 × 0.10)
+        = 1.575 + 1.75 + 1.066 + 0.5625 + 0.633
+        = 5.59/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects
+- **Composite type recovery completely failed**: Arrays like `int arr[] = {10,20,30,40,50}` are represented as `unk_20D0` with no field names or element values
+- **SSE intrinsics obscure loop logic**: `loop_continue` and `goto_backward` use complex `_mm_*` intrinsics making them nearly unrecognizable as loops
+- **No comment infrastructure**: Zero algorithm explanations, no decompilation confidence markers, no API contracts
+- **Test functions hardcoded**: Instead of calling functions, test output shows hardcoded expected values
+- **Magic numbers unexplained**: Numbers like `0x65` (101), `0xA` (10) lack named constant explanations
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: Nearly all function names perfectly match the original source - this is excellent decompilation work
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: Arrays and structures are completely lost, reduced to generic `unk_*` labels with no semantic meaning
+
+### Top 3 Recommendations
+1. **Recover array contents**: When decompiling static arrays, attempt to recover element values and use descriptive names (e.g., `target_array` instead of `unk_20D0`)
+2. **Add comment infrastructure**: Include algorithm explanations, decompilation confidence markers for indirect calls, and API contracts (@param, @return)
+3. **Recognize loop idioms from SSE patterns**: When seeing shuffle/mul intrinsics in a loop pattern, attempt to recognize and reconstruct the original loop structure rather than showing raw intrinsics

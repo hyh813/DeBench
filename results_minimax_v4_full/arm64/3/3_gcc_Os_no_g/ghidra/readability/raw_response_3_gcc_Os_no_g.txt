@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `lVar1`, `uVar2`, `auStack_808`. The parameter to `double_value` should be named `x` based on source. Local arrays like `local_30` and `auStack_808` are cryptic. Only globals like `global_counter` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions preserve original names: `double_value`, `local_vars`, `local_array`, `heap_basic`, `test_stack_memory`. Internal functions like `FUN_001009b0` are unnamed but don't impede understanding of main functions. The function naming is generally excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals in printf statements are preserved correctly. However, magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048) lack explanations. The value `0x14` is used for 20 without comment. Some constants like array sizes are not named.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler warnings pollute output: "WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap", "WARNING: Could not recover jumptable". These 15+ warning comments obscure actual code logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops correctly use `do { } while` constructs. However, `vla_stack` and `alloca_usage` have convoluted pointer arithmetic for VLA/alloca that obscures the simple loop logic. The `stack_alias` function is incorrectly simplified to just return 0x14, losing parameter handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines). Test functions are properly separated. However, `test_stack_memory` embeds hardcoded expected values (0x14, 0xf, 0x2a) instead of calling functions and capturing returns, losing semantic connection to source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in null-check patterns. No excessive goto usage. Some forward jumps in complex functions but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal. Some repeated calculations in memory operation functions but within acceptable bounds for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4`, `undefined8`, `undefined1` instead of proper types (int, long, char). Mix of `int` and `undefined4` is inconsistent. Function pointers shown as `code *` is non-standard. `ulong` used for size_t. Some types like `int` and `void*` are correct.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - accessed via raw pointer arithmetic. `Node` struct for linked list uses raw `int*` with offset calculations (`*(int **)(__ptr + 2)`). `TreeNode` similarly lost. All field semantics (`data`, `next`, `left`, `right`) are gone.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int *)((long)__ptr + lVar1 * 4)` for array access. Pointer arithmetic without bounds checking throughout. Function pointer type mismatches possible in `call_global_callback`. No alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings as comments (unreachable blocks, jumptables). No algorithm explanation comments. No decompilation confidence indicators. No @param/@return documentation. Comments are purely noise.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified (linked list, tree, callback patterns all unrecognized). No algorithm patterns named. Memory operations (malloc/free pairs, VLA allocation) not recognized as standard idioms. Zero pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: unreachable blocks, jumptable recovery failure, indirect jump treatment. However, critical anomalies like `dangling_pointer` accessing freed memory are not flagged. No indication of undefined behavior in `double_free` and `heap_overflow`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition documentation (e.g., "requires: n > 0"). No postcondition recovery (e.g., "ensures: return is heap-allocated"). No invariant recognition. No error condition documentation. Completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear through direct invocation. Global variable usage somewhat transparent via naming. No callback relationship documentation. No call graph or "called by" annotations. Relationships partially visible but not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped: test functions together, heap functions together. Static functions properly marked. No header file structure recovered. Single flat file output. Basic organization present but primitive.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple undefined symbols require linking: `puts`, `__printf_chk`, `malloc`, `free`, `calloc`, `realloc`, `memset`, `memcpy`, `memmove`, `memcmp`, `fork`, `waitpid`. Type mismatches (undefined4 vs int) would cause compilation warnings. Won't compile standalone without significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `iVar1`, `lVar1`, `auStack_808` instead of semantic names like `x`, `arr`, `counter`
+- Composite types completely lost - `Point`, `Node`, `TreeNode` all accessed via raw pointer arithmetic without field names
+- `stack_alias` function incorrectly simplified to just `return 0x14`, losing parameter handling (`int *p1, int *p2`)
+- Excessive noise from 15+ "WARNING" comments obscuring actual code
+- No struct/union recovery - all composite types reduced to void* with manual offset calculations
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Original function names like `double_value`, `local_vars`, `heap_basic`, `test_stack_memory` are preserved accurately, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+- All struct types (`Point`, `Node`, `TreeNode`) are completely lost. The decompiler uses raw pointer arithmetic like `*(int **)(__ptr + 2)` instead of `node->next`, losing all semantic meaning of field names and structure relationships.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used in `x * 2` should suggest `x`; `auStack_808` used in loop indexing should suggest `buffer` or `array`
+2. Recover struct/union types by analyzing malloc sizes and field access patterns - malloc(0x10) followed by field accesses suggests a Node struct with specific fields
+3. Reduce warning noise - consolidate or hide compiler-generated warnings behind a toggle, focusing comments on semantic anomalies rather than analysis artifacts

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic decompiler names (`v0`, `v1`, `a1`, `result`, `v7`, `v8`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that were completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved (`param_fake_branch`, `call_opaque_predicate`), but some are generic (`sub_498`, `term_proc`). Names don't indicate parameter semantics despite original having descriptive parameters.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x20u`, `0x1251` appear without explanation. Original had `0xDEADBEEF` with context; decompiled shows `21 * a1` instead of original's instruction substitution pattern.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `LOBYTE()`, `HIDWORD()`, `__fastcall`, register comments (`// r0`, `// [sp+0h]`). These obscure the actual logic and add visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Some functions show natural loops (`param_opaque_predicate` GCD loop), but `param_fake_branch` is completely empty (should have two if-statements). Constant-folding in `call_*` functions removes actual control flow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `param_fake_branch()`, `param_buffer_overflow_stack()`, `param_buffer_overflow_heap()` are completely empty (`{ ; }`). These should contain logic but decompiler recovered nothing.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom reasonably well. Loop structures use do-while patterns that are traceable, though some have awkward variable reassignment patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminated actual function calls (`call_fake_branch` returns 10 directly). This is optimization artifact but removes semantic transparency about what the code does.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `size_t` recovered in some places, but many `int` where original had `unsigned int`, `char*`, `jmp_buf`. `__int64` used inconsistently. Lost `volatile` qualifiers on signal handlers.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct __jmp_buf_tag` referenced but not defined. Original `bitfield` struct in `param_implementation_defined` completely lost (function returns constant 44). Array types often become pointers.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts visible: `*(_DWORD *)a1`, `(__sighandler_t)`, `(unsigned __int8 *)`. Original had proper type safety; decompiled introduces potential undefined behavior patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present (`// [sp+0h]`, `// r0`). No algorithm explanations. Original had extensive comments about obfuscation techniques; all lost. Warning comment "positive sp value has been detected" is useful but rare.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. GCD algorithm in `param_opaque_predicate` not identified. String decryption loop not labeled. Original's obfuscation patterns (opaque predicates, fake branches) completely unrecognized.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good: 12 failed decompilations explicitly listed ("FAILED to decompile: __imp_raise"). Bad: Empty functions (`param_fake_branch`) not flagged as suspicious despite being obviously wrong.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original had clear expectations ("期望: 10", "期望: 20"); decompiled has no contract information. Signal handler contracts completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but 12 external imports failed. `param_string_encryption_encrypted` referenced but not defined. Call graph inferable but incomplete due to failed decompilations.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original had clear sections (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases); decompiled is flat list. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone - 12 external functions failed, undefined symbols (`param_string_encryption_encrypted`, `completed_0`, `off_578`). Requires significant stubbing and linking.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+4+7+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (3+3+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Empty function bodies**: `param_fake_branch()`, `param_buffer_overflow_stack()`, `param_buffer_overflow_heap()` contain only `{ ; }` - complete logic loss
+- **Constant folding overreach**: `call_fake_branch()` returns literal `10` instead of calling `param_fake_branch(10)`, destroying call semantics
+- **12 external functions failed**: Critical imports (`printf`, `signal`, `strlen`, `setjmp`, `longjmp`) not decompiled, breaking compilation
+- **Variable naming completely generic**: All variables are `v0`, `v1`, `a1`, `result` with zero semantic meaning
+- **Binary/source mismatch**: Decompiled from O3 ARM32 binary but source is O0 ARM64 - fundamental incompatibility
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- Explicitly lists 12 failed decompilations with function names, allowing analyst to know what couldn't be recovered
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero recovery of preconditions, postconditions, or expected values that were clearly documented in original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag empty functions that should contain logic** - Add confidence indicators when function body is suspiciously small compared to binary size
+2. **Preserve call semantics over constant folding** - Don't replace `call param_fake_branch(10)` with literal `10` even if optimizer did; show original structure
+3. **Recover variable names from debug symbols** - Source was compiled with `-g` flag; symbol table should provide original variable names (`result`, `str`, `encrypted`)

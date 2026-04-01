@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `local_4`, `local_8`, `uVar1`, `iVar1` instead of semantic names like `temp1`, `sum`, `count`, `result` from the original source, making purpose tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`), though some helpers use generic names (`FUN_00100930`, `FUN_00100abc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Decimal constants converted to hex without explanation (e.g., `0x14` instead of `20`, `0x3e9` instead of `1001`, `0xffffffff` instead of `-1`), obscuring original intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`), "WARNING: Removing unreachable block" annotations, and type casting noise (`undefined4`, `undefined8`) present throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic loops recovered well (for/while/do-while), but switch statements degraded to nested if-else chains (`switch_large` has 10+ nested levels), and fall-through uses goto labels (`LAB_00100fec`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with reasonable granularity; helper functions (`double_value`, `op_add`, etc.) remain separate and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `switch_fallthrough` and `duffs_device` use goto labels that disrupt flow; `switch_large` has excessive nesting depth.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `duffs_device` expanded into verbose nested if-else with repeated pointer operations; stack check code duplicated at end of many functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `ulong`) instead of `int`; `if_else` returns `bool` instead of `int`; function pointers use `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered adequately (`local_20[6]`, `local_38[12]`); function pointer arrays present but with generic element types; no complex structs in this codebase.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(ulong)(param_2 & 0x1f)`, `(long)local_40 * 4`); function pointer calls use generic `code *` type without signature safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm intent; only compiler warnings present ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable").
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns recovered well, but Duff's device not recognized (expanded to nested if-else); state machine pattern not explicitly identified; fall-through switch partially recognized with goto labels.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with warnings for unreachable blocks, jumptable recovery failures, and indirect jump treatment; stack check warnings present.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`); no postconditions inferred; error conditions not documented despite being present in logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in test functions, but global variable usage (`jump_buffer`, `completed_0`) not well documented; callback relationships visible but not explicitly annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order with test functions grouped, but helper functions scattered; no header file structure or logical module boundaries.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external symbols (`___stack_chk_guard`, `__libc_start_main`, `__gmon_start__`); would need stubs for many functions; computed goto is compiler-specific extension.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+8+5+6)/4 = 5.75
+Level 2 Average: (7+8+6+6)/4 = 6.75
+Level 3 Average: (5+7+6)/3 = 6.00
+Level 4 Average: (3+5+7+3)/4 = 4.50
+Level 5 Average: (6+6+5)/3 = 5.67
+
+Overall = (5.75 × 0.30) + (6.75 × 0.25) + (6.00 × 0.20) + (4.50 × 0.15) + (5.67 × 0.10)
+        = 1.725 + 1.6875 + 1.200 + 0.675 + 0.567
+        = 5.8545 ≈ 5.9/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- Variable names like `param_1`, `local_4`, `uVar1` should be inferred from usage (e.g., `local_8` in `loop_for_fixed` should be `sum`)
+- Switch statements converted to deeply nested if-else chains instead of recognizable switch-case structure
+- Magic hex literals (`0x14`, `0x3e9`, `0xffffffff`) replace clear decimal constants from source
+- No semantic comments explaining algorithm purpose or non-obvious logic
+- Type precision degraded (`undefined4`, `undefined8` instead of `int`, `bool` returned where `int` expected)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making high-level navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete absence of semantic comments explaining algorithm intent, preconditions, or non-obvious logic patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and data flow analysis (e.g., accumulator variables in loops should be named `sum`, `count`, `total`)
+2. **Recover switch-case structures** from nested if-else chains when comparison patterns indicate original switch statement
+3. **Add semantic comment generation** for recognized patterns (loops, state machines, Duff's device) with confidence indicators

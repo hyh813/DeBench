@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/6/6_clang_O1_g/binaryai/syntactic/bin/6_clang_O1_g_fixed",
+  "stdout": "Testing standard library functions...\nstrlen returned: 8\ncall_strlen: 0\ncall_strlen result: 12\ncall_memcpy result: 90\ncall_memcmp result: 4294967295\nValue: 42, Name: TestName\ncall_printf result: 26\ncall_scanf result: 3231121568\ncall_fopen_fclose result: 42\ncall_fread_fwrite result: 4294967293\ncall_malloc_free result: 90\ncall_memset result: 0\ncall_strchr_strstr result: 15\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 7\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

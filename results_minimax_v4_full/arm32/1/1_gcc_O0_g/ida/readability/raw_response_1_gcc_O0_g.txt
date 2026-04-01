@@ -1,0 +1,132 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 5/10**
+Justification: Main function parameters (a, b, c, x) are preserved from source, but test functions use generic numbered variables (v0, v1, v2...) which obscure their semantic meaning. The variable `xa` in `single_if` is a decompiler artifact - a copy of x that doesn't exist in the original.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `goto_forward`, `duffs_device`, etc. The decompiler achieved excellent function name recovery.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Some literals are correct (e.g., case values in switches), but `switch_small` returns wrong values (case 0 returns 15 instead of 15 - wait, let me verify: source has a=10,b=5 so case 2 should be 10*5=50, decompiled shows 50 - that's correct). However, string literals like `s` and `asc_12D6C` are auto-generated noise. Magic numbers like `0xA` (10) in bounds checks lack explanation.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant decompiler artifacts present: goto statements in `switch_fallthrough` and `duffs_device` instead of proper fallthrough; auto-generated labels like `LABEL_7`, `LABEL_8`; excessive type casts like `(int (*)(int))`; matrix initialization using raw hex values `0x200000001LL` instead of readable array literals.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is natural - loops correctly render as `for` and `while`, conditionals as `if-else`, switches as `switch-case`. However, `duffs_device` uses goto labels instead of the original do-while with fallthrough semantics, and `switch_fallthrough` similarly loses the elegant fallthrough pattern, replacing it with goto jumps.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized (most under 80 lines), each has single responsibility, and parameter lists match original. No over-fragmentation or monoliths observed. Good decomposition quality.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with only occasional forward jumps. The `switch_fallthrough` and `duffs_device` have more complex flow due to goto usage. Nesting depth is reasonable (max 2-3 levels).
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No obvious dead code or significant duplicate expressions. Loop unrolling in `duffs_device` is an expected artifact of -O0 compilation. Code is relatively clean.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Uses generic `int` instead of more specific types like `int32_t` or `size_t`. However, function pointer types are correctly preserved with signatures (e.g., `int (*f)(int)`), and `volatile` is correctly applied. Const correctness is not preserved but not critical at -O0.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: The 3x4 matrix in `loop_multi_exit` is correctly recovered as `int matrix[3][4]`. However, initialization uses raw hex values `*(_QWORD *)&matrix[0][0] = 0x200000001LL` instead of element-by-element initialization, losing semantic clarity.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe casts present: `(int (*)(int))double_value` appears repeatedly, `(int (*)(int, int))op_add` in jump tables. The QWORD casts for matrix initialization are questionable. These casts are necessary for function pointer tables but create type safety concerns.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only a header comment identifying the decompiler ("Decompiled by IDA Pro 9.1 with Hex-Rays") and binary path. No functional comments explaining algorithms, preconditions, or non-obvious logic. The comment "positive sp value has been detected, the output may be wrong!" shows some awareness of decompilation uncertainty.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are implicitly recognizable (switch-case for state machines, function pointer arrays for dispatch tables), but no explicit naming or documentation of patterns like "Duff's device", "state machine", or "jump table". The decompiler doesn't highlight these idioms.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: The decompiler correctly reports "FAILED to decompile" for 10 import functions (longjmp, puts, memset, etc.). However, it doesn't flag suspicious patterns like the matrix hex initialization or the computed goto using inline assembly `__asm { MOV PC, R3 }`.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit contracts either, but the decompiler could infer some (e.g., "n > 0" for `duffs_device` based on the early return check).
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+Justification: No explicit documentation of which functions call which. The test functions call the target functions, but this relationship isn't highlighted. No call graph or usage information provided.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions appear in a reasonable order (initialization, then test functions L1/L2/L3, then main). Static functions like `double_value`, `triple_value` are placed near their usage. However, the organization is driven by decompilation order rather than logical grouping.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Code uses standard library functions (puts, printf, memset) but these are referenced as external symbols without proper declarations. The code would require adding `#include <stdio.h>` and `#include <string.h>` plus linking against libc to compile. No dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 10 + 5 + 4) / 4 = 6.0
+L2_avg = (6 + 8 + 7 + 8) / 4 = 7.25
+L3_avg = (7 + 7 + 5) / 3 = 6.33
+L4_avg = (3 + 5 + 6 + 2) / 4 = 4.0
+L5_avg = (3 + 6 + 5) / 3 = 4.67
+
+Overall = (6.0 × 0.30) + (7.25 × 0.25) + (6.33 × 0.20) + 
+          (4.0 × 0.15) + (4.67 × 0.10)
+        = 1.80 + 1.81 + 1.27 + 0.60 + 0.47
+        = 5.95/10
+```
+
+**Overall Readability Score: 5.95/10**
+
+---
+
+### Critical Defects
+- **Variable naming in test functions**: Uses `v0, v1, v2...` instead of meaningful names, making test output hard to correlate with original source
+- **Loss of fallthrough semantics**: `switch_fallthrough` and `duffs_device` use goto labels instead of proper C fallthrough, losing the elegant original pattern
+- **Matrix initialization using hex**: `loop_multi_exit` uses `0x200000001LL` style initialization instead of readable array literals
+- **No comments or contracts**: Zero meaningful comments explaining algorithms, preconditions, or intent
+- **Type safety issues**: Excessive unsafe casts with function pointers throughout
+
+### Best Quality Aspect
+**Function Naming Quality (10/10)** - The decompiler achieved perfect function name recovery, matching every source function name exactly from `sequential_ops` to `duffs_device`.
+
+### Most Needs Improvement
+**Comment Quality & Presence (3/18 = 1.67/10)** - The decompiled code has almost no useful comments. At -O0 with debug symbols, the decompiler could recover significantly more context about function purpose, parameter meanings, and algorithm explanations.
+
+### Top 3 Recommendations
+1. **Recover variable names from debug symbols**: At -O0 with -g, variable names should be extracted from DWARF debug info rather than using generic `v0, v1, v2`
+2. **Preserve fallthrough semantics**: Detect Duff's device pattern and emit proper C switch with fallthrough comments instead of goto labels
+3. **Add semantic comments**: Include algorithm explanations, parameter purposes, and decompilation confidence notes (e.g., "indirect call target uncertain")

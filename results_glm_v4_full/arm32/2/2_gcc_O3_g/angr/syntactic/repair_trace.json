@@ -1,0 +1,2056 @@
+{
+  "file_name": "results_glm_v4_full/arm32/2/2_gcc_O3_g/angr/syntactic/fix_2_gcc_O3_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 86,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 157,
+        "stats": {
+          "Other": 44,
+          "Syntax Error": 28,
+          "Undeclared Identifier": 18,
+          "Redefinition": 28,
+          "Conflicting Types": 34,
+          "Invalid Operands": 4,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48011,
+        "completion_tokens": 2334,
+        "total_tokens": 50345
+      },
+      "time_cost": 43.697988510131836,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 146,
+        "stats": {
+          "Other": 40,
+          "Syntax Error": 24,
+          "Undeclared Identifier": 15,
+          "Redefinition": 28,
+          "Conflicting Types": 34,
+          "Invalid Operands": 4,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 3050."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48429,
+        "completion_tokens": 3027,
+        "total_tokens": 51456
+      },
+      "time_cost": 61.41678166389465,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Other": 33,
+          "Syntax Error": 20,
+          "Redefinition": 28,
+          "Conflicting Types": 34,
+          "Undeclared Identifier": 5,
+          "Invalid Operands": 4,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48808,
+        "completion_tokens": 2024,
+        "total_tokens": 50832
+      },
+      "time_cost": 29.901578426361084,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 106,
+        "stats": {
+          "Other": 25,
+          "Syntax Error": 12,
+          "Redefinition": 28,
+          "Conflicting Types": 34,
+          "Invalid Operands": 4,
+          "Undeclared Identifier": 2,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48910,
+        "completion_tokens": 1537,
+        "total_tokens": 50447
+      },
+      "time_cost": 30.2270987033844,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 5,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48842,
+        "completion_tokens": 1090,
+        "total_tokens": 49932
+      },
+      "time_cost": 17.748705863952637,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48930,
+        "completion_tokens": 7078,
+        "total_tokens": 56008
+      },
+      "time_cost": 149.0620367527008,
+      "phase": "compile",
+      "new_errors_introduced": 70
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48935,
+        "completion_tokens": 955,
+        "total_tokens": 49890
+      },
+      "time_cost": 24.14231824874878,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48929,
+        "completion_tokens": 5964,
+        "total_tokens": 54893
+      },
+      "time_cost": 139.09520435333252,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 25,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48941,
+        "completion_tokens": 10257,
+        "total_tokens": 59198
+      },
+      "time_cost": 214.84191751480103,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 25,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48936,
+        "completion_tokens": 3390,
+        "total_tokens": 52326
+      },
+      "time_cost": 69.72633218765259,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48907,
+        "completion_tokens": 4094,
+        "total_tokens": 53001
+      },
+      "time_cost": 109.50545644760132,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 126,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 26,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48928,
+        "completion_tokens": 704,
+        "total_tokens": 49632
+      },
+      "time_cost": 25.633225679397583,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 25,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48924,
+        "completion_tokens": 4289,
+        "total_tokens": 53213
+      },
+      "time_cost": 87.20875692367554,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 25,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48903,
+        "completion_tokens": 4299,
+        "total_tokens": 53202
+      },
+      "time_cost": 83.99664521217346,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 25,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48899,
+        "completion_tokens": 1831,
+        "total_tokens": 50730
+      },
+      "time_cost": 24.557584285736084,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48872,
+        "completion_tokens": 2313,
+        "total_tokens": 51185
+      },
+      "time_cost": 39.52101373672485,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 123,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48885,
+        "completion_tokens": 914,
+        "total_tokens": 49799
+      },
+      "time_cost": 17.81606888771057,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 124,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48879,
+        "completion_tokens": 799,
+        "total_tokens": 49678
+      },
+      "time_cost": 12.260897874832153,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 125,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 28
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48938,
+        "completion_tokens": 1450,
+        "total_tokens": 50388
+      },
+      "time_cost": 28.149039268493652,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 124,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 27
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 48935,
+        "completion_tokens": 2323,
+        "total_tokens": 51258
+      },
+      "time_cost": 43.1394829750061,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49006,
+        "completion_tokens": 1747,
+        "total_tokens": 50753
+      },
+      "time_cost": 38.268821477890015,
+      "phase": "compile",
+      "new_errors_introduced": 7
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 26
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 2160."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49093,
+        "completion_tokens": 2916,
+        "total_tokens": 52009
+      },
+      "time_cost": 55.454105854034424,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49082,
+        "completion_tokens": 3251,
+        "total_tokens": 52333
+      },
+      "time_cost": 66.82879257202148,
+      "phase": "compile",
+      "new_errors_introduced": 4
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49167,
+        "completion_tokens": 1955,
+        "total_tokens": 51122
+      },
+      "time_cost": 33.43550515174866,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49251,
+        "completion_tokens": 4694,
+        "total_tokens": 53945
+      },
+      "time_cost": 85.8021092414856,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 133,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 36,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49298,
+        "completion_tokens": 2377,
+        "total_tokens": 51675
+      },
+      "time_cost": 45.92873430252075,
+      "phase": "compile",
+      "new_errors_introduced": 5
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 128,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 24
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1934."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49234,
+        "completion_tokens": 1875,
+        "total_tokens": 51109
+      },
+      "time_cost": 29.25485610961914,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 128,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 30,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 24
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49226,
+        "completion_tokens": 2325,
+        "total_tokens": 51551
+      },
+      "time_cost": 60.4605131149292,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 24
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49169,
+        "completion_tokens": 5123,
+        "total_tokens": 54292
+      },
+      "time_cost": 113.86802172660828,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 122,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 25,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49186,
+        "completion_tokens": 2143,
+        "total_tokens": 51329
+      },
+      "time_cost": 46.421069622039795,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 120,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49168,
+        "completion_tokens": 1824,
+        "total_tokens": 50992
+      },
+      "time_cost": 43.6303505897522,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1978."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49169,
+        "completion_tokens": 1386,
+        "total_tokens": 50555
+      },
+      "time_cost": 29.415082931518555,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block fuzzy-matched 2 times. Provide more context."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49276,
+        "completion_tokens": 2636,
+        "total_tokens": 51912
+      },
+      "time_cost": 47.46594476699829,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49265,
+        "completion_tokens": 3467,
+        "total_tokens": 52732
+      },
+      "time_cost": 73.4188506603241,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49316,
+        "completion_tokens": 3802,
+        "total_tokens": 53118
+      },
+      "time_cost": 73.79009366035461,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 23,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49318,
+        "completion_tokens": 1336,
+        "total_tokens": 50654
+      },
+      "time_cost": 22.22151517868042,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 122,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 9,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 32,
+          "Undeclared Identifier": 23,
+          "Duplicate Label": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49330,
+        "completion_tokens": 2010,
+        "total_tokens": 51340
+      },
+      "time_cost": 34.944416761398315,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 118,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1952."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49317,
+        "completion_tokens": 2314,
+        "total_tokens": 51631
+      },
+      "time_cost": 40.51676559448242,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 122,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 27
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49285,
+        "completion_tokens": 1958,
+        "total_tokens": 51243
+      },
+      "time_cost": 29.76800799369812,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 118,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49305,
+        "completion_tokens": 3746,
+        "total_tokens": 53051
+      },
+      "time_cost": 77.63150453567505,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 118,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49262,
+        "completion_tokens": 1693,
+        "total_tokens": 50955
+      },
+      "time_cost": 25.476550579071045,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 113,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 18
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1948."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1988."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49314,
+        "completion_tokens": 2599,
+        "total_tokens": 51913
+      },
+      "time_cost": 49.65713858604431,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 117,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 28,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 18
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49365,
+        "completion_tokens": 4003,
+        "total_tokens": 53368
+      },
+      "time_cost": 58.03403663635254,
+      "phase": "compile",
+      "new_errors_introduced": 4
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 111,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 28,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 12
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49370,
+        "completion_tokens": 3809,
+        "total_tokens": 53179
+      },
+      "time_cost": 55.32052946090698,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 107,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 12
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49391,
+        "completion_tokens": 2320,
+        "total_tokens": 51711
+      },
+      "time_cost": 45.549673557281494,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 118,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49330,
+        "completion_tokens": 2110,
+        "total_tokens": 51440
+      },
+      "time_cost": 40.53710341453552,
+      "phase": "compile",
+      "new_errors_introduced": 11
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 122,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 28,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1973."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49359,
+        "completion_tokens": 4483,
+        "total_tokens": 53842
+      },
+      "time_cost": 78.73278760910034,
+      "phase": "compile",
+      "new_errors_introduced": 4
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 121,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 27,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1928."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49345,
+        "completion_tokens": 2609,
+        "total_tokens": 51954
+      },
+      "time_cost": 34.598167181015015,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 118,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 23
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49309,
+        "completion_tokens": 6851,
+        "total_tokens": 56160
+      },
+      "time_cost": 108.82165122032166,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 117,
+        "stats": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 22
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1946."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 49329,
+        "completion_tokens": 4428,
+        "total_tokens": 53757
+      },
+      "time_cost": 68.78663730621338,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 2603038,
+    "total_time_seconds": 2865.69,
+    "initial_state": {
+      "error_count": 157,
+      "error_types": {
+        "Other": 44,
+        "Syntax Error": 28,
+        "Undeclared Identifier": 18,
+        "Redefinition": 28,
+        "Conflicting Types": 34,
+        "Invalid Operands": 4,
+        "Duplicate Label": 1
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.2857,
+        "error_trajectory": [
+          157,
+          146,
+          125,
+          106,
+          5,
+          123,
+          123,
+          123,
+          125,
+          125,
+          123,
+          126,
+          125,
+          125,
+          125,
+          123,
+          123,
+          124,
+          125,
+          124,
+          130,
+          130,
+          127,
+          127,
+          127,
+          133,
+          128,
+          128,
+          121,
+          122,
+          120,
+          121,
+          121,
+          121,
+          121,
+          121,
+          122,
+          118,
+          122,
+          118,
+          118,
+          113,
+          117,
+          111,
+          107,
+          118,
+          122,
+          121,
+          118,
+          117
+        ],
+        "max_error_count": 157,
+        "min_error_count": 5
+      },
+      "effort": {
+        "initial_error_count": 157,
+        "lowest_error_count": 5,
+        "lowest_at_iteration": 5,
+        "error_reduction": 152,
+        "error_reduction_ratio": 0.9682
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 44,
+          "Syntax Error": 28,
+          "Undeclared Identifier": 18,
+          "Redefinition": 28,
+          "Conflicting Types": 34,
+          "Invalid Operands": 4,
+          "Duplicate Label": 1
+        },
+        "final_types": {
+          "Invalid Operands": 5,
+          "Syntax Error": 10,
+          "Other": 24,
+          "Redefinition": 28,
+          "Conflicting Types": 28,
+          "Undeclared Identifier": 22
+        },
+        "types_eliminated": [
+          "Duplicate Label"
+        ],
+        "types_introduced": []
+      },
+      "score": {
+        "effort_score": 48.41,
+        "stability_score": 35.71,
+        "total_score": 84.12,
+        "grade": "A-"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 7,
+    "type_breakdown": {
+      "Duplicate Label": {
+        "initial_count": 1,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 44,
+        "max_count": 44,
+        "final_count": "unknown"
+      },
+      "Invalid Operands": {
+        "initial_count": 4,
+        "max_count": 5,
+        "final_count": "unknown"
+      },
+      "Conflicting Types": {
+        "initial_count": 34,
+        "max_count": 34,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 28,
+        "max_count": 28,
+        "final_count": "unknown"
+      },
+      "Undeclared Identifier": {
+        "initial_count": 18,
+        "max_count": 28,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 28,
+        "max_count": 28,
+        "final_count": "unknown"
+      }
+    }
+  }
+}

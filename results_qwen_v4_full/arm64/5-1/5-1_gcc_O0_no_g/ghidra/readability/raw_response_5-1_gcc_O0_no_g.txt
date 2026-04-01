@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `local_8`, `aSStack_30` instead of semantic names (e.g., `result`, `stack_guard`, `obj`). At -O0, debug symbols should enable better name recovery.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), but helper functions use generic names (`FUN_00101840`, `FUN_00101abc`). Lambda operators have verbose auto-generated names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234`, `0x1f`, `0x32` appear without explanation. String literals referenced as `&DAT_001045e8` instead of showing actual content. Some values recoverable from context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`local_8 = ___stack_chk_guard`) appear in every function. Compiler runtime functions (`__cxa_finalize`, `register_tm_clones`) clutter output. Excessive for -O0 debug build.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else preserved, but `test_cpp_rtti` uses goto labels (`LAB_00102620`). Virtual calls shown as indirect `(*(code *)**(undefined8 **)param_1)` instead of method syntax.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original test functions preserved, but template instantiation creates excessive helper functions (50+ `__uniq_ptr_impl`, `_Tuple_impl` variants). Lambda operators properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but exception handling and RTTI code create non-linear flow with multiple labels. Stack check at function end disrupts return flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary code duplicated in every function. Template instantiation creates massive code duplication. Vtable initialization repeated in each constructor.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Class types preserved (`SimpleClass*`, `Base*`), but many fields degraded to `undefined4`, `undefined8`. Template types shown (`Container<int>`) but internal types often generic.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Classes recognized with names, but member access often through offset notation (`this + 8`, `this + 0x28`). Inheritance visible through constructor chaining but not explicitly documented.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(type *)`, `(int *)`. Vtable calls shown as raw pointer dereferences. Template code has type confusion (`unique_ptr` variants).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Function signatures commented with original names. Warning comments present ("WARNING: Subroutine does not return") but no algorithm explanations or semantic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized (constructors, virtual calls, lambdas). Smart pointer patterns visible but verbose. No design pattern identification or naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unreachable blocks and calling conventions. Try/catch handlers marked. However, indirect vtable calls not flagged as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Exception handling visible but contracts not inferred. Null checks not documented as requirements.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear with proper names. Inheritance shown through constructor chaining. Virtual dispatch visible but not explicitly documented as polymorphic calls.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output. Functions grouped somewhat logically by class. No header file separation or namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external runtime functions (`operator_new`, `__cxa_throw`, `strlen`). Would need significant stubs and type definitions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+6+6+4)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+6+4)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (5+5+6+3)/4 = 4.75 × 0.15 = 0.7125
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.15/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- Variable `local_8` should be named `stack_guard` based on usage pattern with `___stack_chk_guard`
+- Stack canary checks duplicated in every function create significant noise (should be filtered at -O0)
+- Vtable calls shown as `(*(code *)**(undefined8 **)param_1)` instead of method syntax `obj->virtual_func()`
+- Template instantiation creates 50+ helper functions that obscure main logic
+- String literals referenced as `&DAT_001045e8` instead of showing actual content
+- Type casts like `(undefined8 *)` and `(type *)` reduce type safety significantly
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test functions and class methods retain original semantic names, making core functionality identifiable
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation despite clear exception handling and null-check patterns in source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Filter compiler instrumentation** - Remove stack canary checks from decompiled output when they don't affect semantic understanding
+2. **Recover C++ method syntax** - Translate vtable indirect calls back to `obj->method()` syntax for virtual functions
+3. **Infer variable names from debug symbols** - At -O0 with `-g`, variable names should be recoverable from DWARF information instead of `local_8`, `iVar1`

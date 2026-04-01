@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, `uVar2`, and stack arrays like `auVar5`. No semantic meaning (e.g., `count`, `index`, `result`) is preserved or inferred.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `loop_continue`, and `duffs_device` are perfectly preserved from the source, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers such as `0x12` (18), `0x1e` (30), and `0xffffffff` (-1) without context. Constants like `1000` in `infinite_loop` are not replaced with named defines.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise from stack variables, e.g., `undefined1 auVar5 [16];` and `undefined1 auVar6 [16];`, which appear to be compiler-spilled register padding or alignment space, cluttering the variable list.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions like `sequential_ops` are clean, complex loops like `loop_continue` and `recursion_factorial` are destroyed by compiler unrolling and vectorization, resulting in massive blocks of arithmetic and bit-masking logic that obscure the original iteration.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. The decompiler did not fragment functions or merge them inappropriately, despite the internal complexity.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code reads linearly, but the "linearization" is often a result of loop unrolling (e.g., `goto_backward`), creating very long functions that are hard to parse mentally compared to the compact source loops.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler presents the compiler's unrolled code verbatim. For example, `loop_continue` contains repeated blocks of logic like `iVar2 = iVar2 + (~uVar1 & uVar10);` which should ideally be abstracted back into a loop structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often generic or incorrect, such as `undefined4`, `undefined8`, and `code *`. Signedness is sometimes lost (e.g., `uint` used for parameters that were `int` in source), and `bool` is used inconsistently.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Stack-allocated structures are not recovered; instead, they are represented as arrays of undefined bytes (e.g., `undefined1 auVar5 [16]`), forcing the reader to interpret raw offsets.
+
+**11. Type Safety:** Score: 5/10
+Justification: Unsafe casts are prevalent, such as `*(undefined4 *)(&DAT_00103280 + (long)(int)param_1 * 4)`, which treats data memory as a generic void pointer array rather than a typed lookup.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are sparse and mostly limited to warnings like `/* WARNING: Could not recover jumptable... */`. There are no comments explaining the *logic* of complex functions like the vectorized factorial.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: `duffs_device` is recognized reasonably well as a switch inside a loop. However, standard idioms like "sum of integers" or "factorial" are lost to the optimization, appearing only as complex math sequences.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler provides useful warnings for unrecoverable jumptables and overlapping globals (e.g., `/* WARNING: Globals starting with '_' overlap smaller symbols... */`), alerting the user to potential analysis errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., `n > 0` for factorial) or postconditions. The logic is presented as-is without semantic contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: There are no comments indicating which functions call which, or how global data is used. The user must rely entirely on the function names to guess relationships.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure (L1, L2, L3 tests grouped together), which aids navigation significantly.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile due to `undefined` types and the `code *` type. It requires significant manual cleaning (defining types, removing stack padding) to be buildable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Aggressive Loop Unrolling:** Functions like `loop_continue` and `recursion_factorial` are transformed into hundreds of lines of vectorized arithmetic, completely obscuring the original loop logic.
+- **Generic Variable Naming:** All variables are named `param_1`, `iVar1`, etc., making it impossible to track data flow without manual renaming.
+- **Type Information Loss:** Extensive use of `undefined` types and `undefined1` arrays for stack variables destroys type safety and context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function names from the symbol table, providing a high-level map of the binary's functionality.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on generic names like `param_1` and `iVar1` makes understanding the data flow in complex functions nearly impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Loop Pattern Recognition:** Implement analysis to detect and re-roll unrolled loops or vectorized sequences (e.g., recognizing the sum of integers pattern in `loop_continue`) to present them as standard `for` or `while` loops.
+2. **Semantic Variable Renaming:** Infer variable names from usage context (e.g., variables used as loop counters should be named `i` or `counter`, accumulators as `sum` or `result`).
+3. **Type Inference for Stack Variables:** Instead of emitting `undefined1` arrays for stack padding, attempt to identify active stack variables and define them with specific types and offsets, hiding the padding.

@@ -1,0 +1,16 @@
+Running obfuscated tests...
+
+Opaque predicate: 10
+GCD result: 20
+Instruction substitution: 225
+String len: 40
+Tail call result: 500500
+Non-tail call result: 5050
+Vector sum: 0
+LTO result: 20
+Division result: 2
+Null pointer result: 41
+Overflow result: 30
+Integer overflow: 2000000000
+UB result: 10
+Impl-defined: 48

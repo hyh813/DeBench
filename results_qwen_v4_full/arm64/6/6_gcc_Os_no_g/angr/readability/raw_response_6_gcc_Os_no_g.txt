@@ -1,0 +1,108 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `a0`, `a1`) losing semantic meaning from original names like `dst`, `src`, `buffer`, `write_data`. Some better names exist (`fp`, `sock`, `pid`, `idx`) but are exceptions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`), but helper functions use mechanical names (`sub_4013b4`, `sub_401804`). Thread functions well-named but system call wrappers degraded.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (unsigned -1), `4294967294` (unsigned -2), `4294967293` (unsigned -3) used for error codes without explanation. Socket constants as raw numbers (`socket(2, 1, 0)` instead of `AF_INET, SOCK_STREAM, 0`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_guard`, `__stack_chk_fail()`) repeated in nearly every function. Frame pointer manipulation (`v0 = &v1`) and register spilling artifacts present throughout. Some `MBusEvent-Imbe_Fence()` noise in atomic functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use `while(true)` with `break` instead of natural `for`/`while` constructs. Complex bit operations obscure simple comparisons (`arm64g_calculate_condition(211, v5, 0, 0)`). Some `goto` usage in `register_tm_clones`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity mostly matches source structure. Thread helper functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Some functions overly large (`param_thread_local_storage` with deep nesting).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions have forward jumps disrupting flow. `param_thread_local_storage` has significant non-linearity with multiple loop structures and conditional branches.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated across functions. Some call functions invoke themselves twice (`call_strcpy` returns `param_scanf()` twice in pattern). Redundant variable assignments from register allocation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to generic `unsigned long long`, `char *` instead of `size_t`, `int32_t`. `FILE *` and `pthread_t` preserved. Const-correctness lost (`const char *` becomes `char *`). Function signatures often lose parameter semantics.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct FILE`, `struct sockaddr`, `struct_0` for ThreadData) but field names generic (`field_0`, `field_8`, `padding_0`). TLS struct partially recovered with `field_10` instead of meaningful names like `tls_counter`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(unsigned int)`, `(char *)`). Pointer arithmetic without clear bounds. `void*` usage where specific types expected. Stack canary adds safety but also obscures logic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only function headers with addresses. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `memcpy`, `pthread_create`). Thread patterns partially identified. No design pattern naming or algorithm identification. Producer-consumer pattern not explicitly noted.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`). No warnings about indirect calls or potential issues. No uncertainty indicators for ambiguous code regions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). Error return values not explained. No postconditions inferred. Original source's explicit contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not explained (`signal_received`, `atomic_counter`). No call graph documentation. Callback relationships implicit only.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically (test functions together, thread functions together). No header file structure. Related functions adjacent but no explicit module boundaries.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies present (`pthread`, libc functions). Many `extern` declarations. Would need significant stubs for system functions. Metadata says "Compilation Result: Yes" but requires patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+5)/4 = 4.75
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50
+Level 3 (Type):        (5+5+5)/3   = 5.00
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50
+Level 5 (Contextual):  (5+6+5)/3   = 5.33
+
+Overall = (4.75 × 0.30) + (5.50 × 0.25) + (5.00 × 0.20) + 
+          (3.50 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.375 + 1.000 + 0.525 + 0.533
+        = 4.86/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` should be named based on usage (e.g., `dst`, `src`, `buffer_size`)
+- Magic numbers `4294967295`, `4294967294`, `4294967293` should be replaced with named error constants
+- Stack canary checks (`__stack_chk_guard`) add noise without semantic value
+- Control flow uses `while(true)` with `break` instead of natural `for` loops
+- No comments explaining algorithm intent or decompilation uncertainty
+- Type degradation: `const char *` becomes `char *`, losing const-correctness
+- Struct fields named `field_0`, `field_8` instead of semantic names like `start`, `end`, `result`
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`), maintaining some semantic connection to source code intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist; original source's extensive documentation completely lost, making non-trivial logic impossible to understand without reverse engineering.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Variable name inference from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_ptr`, used in loop bound → `count`) to generate semantic names instead of `v0`, `v1`.
+
+2. **Magic number detection and constant recovery** - Identify repeated numeric patterns (4294967295 = -1 unsigned) and replace with named constants or at least add inline comments explaining their meaning.
+
+3. **Control flow pattern recognition** - Detect `while(true) { if(cond) break; ... }` patterns and recover them as natural `for`/`while` loops; recognize `arm64g_calculate_condition` calls as simple comparisons and simplify.

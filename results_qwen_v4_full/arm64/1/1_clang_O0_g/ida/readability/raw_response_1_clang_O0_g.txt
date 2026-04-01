@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters preserved well (a, b, c, x, op, target) but local variables use generic names (v2, v3, v4, v5) obscuring purpose. For -O0 with debug info, expected better recovery like `temp1`, `temp2`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - all test function names preserved exactly (sequential_ops, single_if, nested_if_deep, switch_fallthrough, duffs_device). Only sub_880 is generic.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `305419896` in opaque_predicate unexplained; `0x80000000` in computed_goto lacks context. Common values (10, 100, 2) are self-explanatory from usage.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack variable annotations (`[xsp+8h] [xbp-8h]`) add visual noise. Unnecessary type casts (`(unsigned int)`, `(__int64)`) present but don't severely impede reading.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops (for/while/do-while) recovered excellently. switch_fallthrough converted to nested if-statements losing fall-through semantics. goto_forward/backward correctly restructured to if/for.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Perfect granularity matching source - each function maintains original boundaries. Helper functions (double_value, triple_value, op_add) properly separated.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. duffs_device has complex label structure (LABEL_4 through LABEL_11) but this is inherent to the pattern, not decompiler error.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Minor redundancy in single_if (`v2 = x;` then `return v2`). No dead code or excessive duplication. Loop structures clean without unrolling artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: recursion_factorial returns `__int64` instead of `int`. Excessive `(unsigned int)` casts on return values. Function pointer types degraded to `(__int64 (__fastcall **)(_QWORD))`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays handled correctly (dest[3], v4[10], matrix[3][4]). Stack arrays declared with BYREF annotation. No complex structs in this codebase to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer casts present but necessary for indirect calls. No introduced buffer overflow patterns. memcpy usage in loop_break obscures array semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments recovered. Original had extensive documentation (test cases, difficulty levels, scene tags). Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, switch). Duff's device structure visible but not named. State machine pattern in state_machine not identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (memcpy, _setjmp, printf). computed_goto has inline assembly `__asm { BR X8 }` with no explanation of why decompilation failed.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "n > 0" for duffs_device). Test case expectations from original source completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear but no call graph documentation. Global variables referenced (jump_buffer, off_13D30) without context. Callback relationships visible but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source (L1, L2, L3 groups). Helper functions near usage. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: 8 external functions failed decompilation (printf, memcpy, longjmp). Would need stubs. Inline assembly in computed_goto may not be portable across architectures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (7+9+8+8)/4 = 8.00 × 0.25 = 2.000
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.467
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+7+6)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────
+Overall Score:                                  6.69/10
+```
+
+**Overall Readability Score: 6.7/10**
+
+### Critical Defects
+- **Variable `v2`, `v3`, `v4`** should recover semantic names from debug info (-O0 -g compilation)
+- **switch_fallthrough** converted to nested if-statements, losing intentional fall-through semantics
+- **Zero comments recovered** despite extensive original documentation (test cases, difficulty ratings)
+- **Type casts excessive** - `(unsigned int)`, `(__int64)` on return values where original used `int`
+- **Magic number `305419896`** in opaque_predicate unexplained (should be `0x12345678`)
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - All 20+ test function names preserved exactly matching source, enabling immediate semantic understanding of purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of original documentation including test case expectations, difficulty levels, and algorithm explanations that were present in source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage debug symbols at -O0** - Extract variable names from DWARF debug info instead of generating generic `v2`, `v3` names when `-g` flag is present.
+2. **Detect and annotate fall-through patterns** - Recognize switch case fall-through by analyzing control flow continuity and add `// fall-through` comments.
+3. **Recover test harness metadata** - Parse printf strings and function call patterns to reconstruct test case documentation and expected values.

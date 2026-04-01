@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_clang_O3_g/ida/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "Testing obfuscation and optimization:\n\nobf_l40 = 10\nobf_l40 = 20\nobf_l40 = 225\nobf_l40 = 72\nopt_l40 = 500500\nopt_l40 = 5050\nopt_l40 = 72\nopt_l50 = 20\nedge_l30 = 2\nedge_l30 = 41\nedge_l30 = 30\nedge_l30 = 2000000000\nedge_l40 = 10\nedge_l40 = 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

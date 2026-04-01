@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_clang_O0_no_g/ida/semantic/native_arm32_bin/6_clang_O0_no_g_native",
+  "stdout": "=== 测试标准库函数调用 ===\nLIB-L1-01: 8 (期望: 8)\nLIB-L1-02: 0 (期望: 0)\nLIB-L1-03: 12 (期望: 12)\nLIB-L1-04: 90 (期望: 90)\nLIB-L1-05: -1 (期望: -1)\nValue: 42, Name: Test\nLIB-L1-06: 22 (期望: 22)\nLIB-L1-07: 579 (期望: 579)\nLIB-L1-08: 42 (期望: 42)\nLIB-L1-09: 42 (期望: 42)\nLIB-L1-10: 90 (期望: 90)\nLIB-L1-11: 0 (期望: 0)\nLIB-L1-12: 15 (期望: 15)\n=== 测试系统调用 ===\nSYS-L3-01: 42 (期望: 42)\nSYS-L3-02: 42 (期望: 42)\nSYS-L3-03: 42 (期望: 42)\nSYS-L3-04: 42 (期望: 42)\nSYS-L3-05: 42 (期望: 42)\nSYS-L3-06: 42 (期望: 42)\nSYS-L3-07: 42 (期望: 42)\n=== 测试线程与并发 ===\nTHR-L3-01: 49 (期望: 49)\nTHR-L3-02: 465 (期望: 465)\nTHR-L3-03: 42 (期望: 42)\nTHR-L3-04: 42 (期望: 42)\nTHR-L3-05: 42 (期望: 42)\nTHR-L3-06: 42 (期望: 42)\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

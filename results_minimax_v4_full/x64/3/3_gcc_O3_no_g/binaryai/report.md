@@ -1,0 +1,1875 @@
+# BinBench Evaluation Report
+
+**Generated:** 2026-03-18 08:08:48
+
+## 1. Test Object
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `src/3.c` |
+| Decompiled | `decompiled/BinaryAI_out/x64/3/3_gcc_O3_no_g.c` |
+| Decompiler | BINARYAI |
+| Architecture | x64 |
+| Compiler | gcc |
+| Optimization | O3 |
+| Debug | no |
+
+## 2. Evaluation Results
+
+| Dimension | Status |
+|-----------|--------|
+| Readability | ✅ Completed |
+| Syntactic | ❌ Failed |
+| Semantic | ⏭ Skipped |
+
+## 3. Detailed Results
+
+### 3.1 Readability Evaluation
+
+*No readability results found.*
+
+### 3.2 Syntactic Correctness Evaluation
+
+#### Repair Trace Log
+
+```json
+{
+  "file_name": "results_minimax_v4_full/x64/3/3_gcc_O3_no_g/binaryai/syntactic/fix_3_gcc_O3_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 25,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 245,
+        "stats": {
+          "Other": 3,
+          "Unknown Type": 15,
+          "Syntax Error": 10,
+          "Undeclared Identifier": 37,
+          "Argument Count Mismatch": 52,
+          "Member Access Error": 120,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15424,
+        "completion_tokens": 315,
+        "total_tokens": 15739
+      },
+      "time_cost": 11.454023361206055,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 219,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Undeclared Identifier": 34,
+          "Argument Count Mismatch": 52,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15469,
+        "completion_tokens": 792,
+        "total_tokens": 16261
+      },
+      "time_cost": 14.63750672340393,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 209,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Undeclared Identifier": 23,
+          "Argument Count Mismatch": 52,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15498,
+        "completion_tokens": 549,
+        "total_tokens": 16047
+      },
+      "time_cost": 12.36661696434021,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 203,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Undeclared Identifier": 17,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15553,
+        "completion_tokens": 678,
+        "total_tokens": 16231
+      },
+      "time_cost": 15.72855257987976,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 203,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Undeclared Identifier": 17,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15590,
+        "completion_tokens": 486,
+        "total_tokens": 16076
+      },
+      "time_cost": 19.228140830993652,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 203,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Undeclared Identifier": 17,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15616,
+        "completion_tokens": 506,
+        "total_tokens": 16122
+      },
+      "time_cost": 12.133120775222778,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 203,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Undeclared Identifier": 17,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15628,
+        "completion_tokens": 556,
+        "total_tokens": 16184
+      },
+      "time_cost": 30.233163118362427,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 203,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Undeclared Identifier": 17,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15719,
+        "completion_tokens": 603,
+        "total_tokens": 16322
+      },
+      "time_cost": 12.825069904327393,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 201,
+        "stats": {
+          "Other": 4,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Undeclared Identifier": 15,
+          "Member Access Error": 121,
+          "Invalid Operands": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15740,
+        "completion_tokens": 695,
+        "total_tokens": 16435
+      },
+      "time_cost": 31.30117392539978,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 199,
+        "stats": {
+          "Other": 5,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Member Access Error": 121,
+          "Invalid Operands": 10,
+          "Undeclared Identifier": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 15860,
+        "completion_tokens": 691,
+        "total_tokens": 16551
+      },
+      "time_cost": 13.774227380752563,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 191,
+        "stats": {
+          "Other": 5,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 52,
+          "Member Access Error": 121,
+          "Invalid Operands": 10,
+          "Undeclared Identifier": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16095,
+        "completion_tokens": 1036,
+        "total_tokens": 17131
+      },
+      "time_cost": 19.937714099884033,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 138,
+        "stats": {
+          "Other": 5,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Member Access Error": 121,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16256,
+        "completion_tokens": 1859,
+        "total_tokens": 18115
+      },
+      "time_cost": 42.46358275413513,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16816,
+        "completion_tokens": 2029,
+        "total_tokens": 18845
+      },
+      "time_cost": 34.86521291732788,
+      "phase": "compile",
+      "new_errors_introduced": 22
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16891,
+        "completion_tokens": 1865,
+        "total_tokens": 18756
+      },
+      "time_cost": 45.07440185546875,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 16966,
+        "completion_tokens": 1995,
+        "total_tokens": 18961
+      },
+      "time_cost": 28.98260474205017,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17041,
+        "completion_tokens": 2079,
+        "total_tokens": 19120
+      },
+      "time_cost": 25.536415815353394,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17116,
+        "completion_tokens": 1979,
+        "total_tokens": 19095
+      },
+      "time_cost": 31.2023503780365,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17191,
+        "completion_tokens": 1657,
+        "total_tokens": 18848
+      },
+      "time_cost": 17.287452697753906,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17266,
+        "completion_tokens": 2376,
+        "total_tokens": 19642
+      },
+      "time_cost": 31.034765481948853,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17341,
+        "completion_tokens": 2107,
+        "total_tokens": 19448
+      },
+      "time_cost": 36.53313136100769,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17416,
+        "completion_tokens": 2101,
+        "total_tokens": 19517
+      },
+      "time_cost": 33.33895945549011,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17491,
+        "completion_tokens": 1937,
+        "total_tokens": 19428
+      },
+      "time_cost": 21.530463457107544,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 2028,
+        "total_tokens": 19517
+      },
+      "time_cost": 25.246870517730713,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 1555,
+        "total_tokens": 19044
+      },
+      "time_cost": 20.137609004974365,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 2180,
+        "total_tokens": 19669
+      },
+      "time_cost": 24.73530411720276,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 1695,
+        "total_tokens": 19184
+      },
+      "time_cost": 19.09652805328369,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 1615,
+        "total_tokens": 19104
+      },
+      "time_cost": 18.872589588165283,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 1777,
+        "total_tokens": 19266
+      },
+      "time_cost": 22.051339626312256,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 1886,
+        "total_tokens": 19375
+      },
+      "time_cost": 25.03956651687622,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 2463,
+        "total_tokens": 19952
+      },
+      "time_cost": 30.424256324768066,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 2223,
+        "total_tokens": 19712
+      },
+      "time_cost": 27.185954570770264,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 2629,
+        "total_tokens": 20118
+      },
+      "time_cost": 33.14757943153381,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 122,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 17489,
+        "completion_tokens": 2085,
+        "total_tokens": 19574
+      },
+      "time_cost": 37.610857009887695,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 154,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 138,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18849,
+        "completion_tokens": 872,
+        "total_tokens": 19721
+      },
+      "time_cost": 18.32578182220459,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1842,
+        "total_tokens": 20716
+      },
+      "time_cost": 30.395171642303467,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 2001,
+        "total_tokens": 20875
+      },
+      "time_cost": 39.401172161102295,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1805,
+        "total_tokens": 20679
+      },
+      "time_cost": 30.780012845993042,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1803,
+        "total_tokens": 20677
+      },
+      "time_cost": 29.856871843338013,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1899,
+        "total_tokens": 20773
+      },
+      "time_cost": 37.5642364025116,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1892,
+        "total_tokens": 20766
+      },
+      "time_cost": 34.15390491485596,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1720,
+        "total_tokens": 20594
+      },
+      "time_cost": 22.321017503738403,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18874,
+        "completion_tokens": 1687,
+        "total_tokens": 20561
+      },
+      "time_cost": 40.50472855567932,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 155,
+        "stats": {
+          "Other": 3,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 139,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 18873,
+        "completion_tokens": 1771,
+        "total_tokens": 20644
+      },
+      "time_cost": 25.880192756652832,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 106,
+        "stats": {
+          "Other": 9,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 84,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 20013,
+        "completion_tokens": 997,
+        "total_tokens": 21010
+      },
+      "time_cost": 15.940907955169678,
+      "phase": "compile",
+      "new_errors_introduced": 8
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 78,
+        "stats": {
+          "Other": 9,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 56,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 20066,
+        "completion_tokens": 1815,
+        "total_tokens": 21881
+      },
+      "time_cost": 44.85674834251404,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 64,
+        "stats": {
+          "Other": 19,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 32,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 20082,
+        "completion_tokens": 715,
+        "total_tokens": 20797
+      },
+      "time_cost": 25.398960828781128,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 59,
+        "stats": {
+          "Other": 32,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 14,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 20269,
+        "completion_tokens": 2020,
+        "total_tokens": 22289
+      },
+      "time_cost": 34.41114664077759,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 53,
+        "stats": {
+          "Other": 32,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 8,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 21648,
+        "completion_tokens": 1284,
+        "total_tokens": 22932
+      },
+      "time_cost": 22.010914087295532,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 53,
+        "stats": {
+          "Other": 32,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Member Access Error": 8,
+          "Invalid Operands": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22054,
+        "completion_tokens": 709,
+        "total_tokens": 22763
+      },
+      "time_cost": 12.00341248512268,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 49,
+        "stats": {
+          "Other": 32,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Invalid Operands": 10,
+          "Member Access Error": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22068,
+        "completion_tokens": 1055,
+        "total_tokens": 23123
+      },
+      "time_cost": 23.308499574661255,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 964190,
+    "total_time_seconds": 1312.13,
+    "initial_state": {
+      "error_count": 245,
+      "error_types": {
+        "Other": 3,
+        "Unknown Type": 15,
+        "Syntax Error": 10,
+        "Undeclared Identifier": 37,
+        "Argument Count Mismatch": 52,
+        "Member Access Error": 120,
+        "Invalid Operands": 8
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.0408,
+        "error_trajectory": [
+          245,
+          219,
+          209,
+          203,
+          203,
+          203,
+          203,
+          203,
+          201,
+          199,
+          191,
+          138,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          154,
+          155,
+          155,
+          155,
+          155,
+          155,
+          155,
+          155,
+          155,
+          155,
+          106,
+          78,
+          64,
+          59,
+          53,
+          53,
+          49
+        ],
+        "max_error_count": 245,
+        "min_error_count": 49
+      },
+      "effort": {
+        "initial_error_count": 245,
+        "lowest_error_count": 49,
+        "lowest_at_iteration": 50,
+        "error_reduction": 196,
+        "error_reduction_ratio": 0.8
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 3,
+          "Unknown Type": 15,
+          "Syntax Error": 10,
+          "Undeclared Identifier": 37,
+          "Argument Count Mismatch": 52,
+          "Member Access Error": 120,
+          "Invalid Operands": 8
+        },
+        "final_types": {
+          "Other": 32,
+          "Syntax Error": 1,
+          "Argument Count Mismatch": 1,
+          "Incompatible Pointer Type": 1,
+          "Invalid Operands": 10,
+          "Member Access Error": 4
+        },
+        "types_eliminated": [
+          "Undeclared Identifier",
+          "Unknown Type"
+        ],
+        "types_introduced": [
+          "Incompatible Pointer Type"
+        ]
+      },
+      "score": {
+        "effort_score": 40.0,
+        "stability_score": 47.96,
+        "total_score": 87.96,
+        "grade": "A"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 8,
+    "type_breakdown": {
+      "Undeclared Identifier": {
+        "initial_count": 37,
+        "max_count": 37,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 10,
+        "max_count": 10,
+        "final_count": "unknown"
+      },
+      "Member Access Error": {
+        "initial_count": 120,
+        "max_count": 139,
+        "final_count": "unknown"
+      },
+      "Incompatible Pointer Type": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Argument Count Mismatch": {
+        "initial_count": 52,
+        "max_count": 52,
+        "final_count": "unknown"
+      },
+      "Unknown Type": {
+        "initial_count": 15,
+        "max_count": 15,
+        "final_count": "unknown"
+      },
+      "Invalid Operands": {
+        "initial_count": 8,
+        "max_count": 10,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 3,
+        "max_count": 32,
+        "final_count": "unknown"
+      }
+    }
+  }
+}
+```
+
+### 3.3 Semantic Fidelity Evaluation
+
+*No semantic analysis report found.*
+

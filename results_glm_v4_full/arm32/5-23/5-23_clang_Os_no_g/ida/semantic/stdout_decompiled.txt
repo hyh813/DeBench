@@ -1,0 +1,21 @@
+=== Preprocessing Test ===
+PpL 201: 64
+PpL 202: 30
+PpL 203: 32
+PpL 204: 57122
+PpL 301: 116
+PpL 302: 19
+PpL 303: 60
+LOG: Values: 10, 20, 30
+PpL 304: 60
+PpL 305: 16
+PpL 306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:24
+PpL 307: 382
+=== ASM Test ===
+Asm L401: 15
+Asm L402: 15
+Asm L403: 42
+Asm L404: 36
+Asm L405: 30
+Asm L406: 77

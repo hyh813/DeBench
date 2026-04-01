@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `a0`, `a1`, `a2`, `idx`, `ptr`. Parameters are named `a0`, `a1` etc. with no semantic meaning. Compare to source where variables like `sum`, `i`, `c`, `x` are meaningful.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"DT-L1-01 (process_char): %c\n"` are preserved, but numeric constants lack explanation. Magic number `65` and `32` in `process_char` (ASCII 'A' and offset to 'a') are unexplained. Enum values use auto-generated `CSWTCH.61` instead of symbolic names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant VEX IR artifacts present: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears in `process_ld` and `test_data_types_l1`. Construct `goto a0;` in `ptr_func_simple` is actually a miscompiled function pointer call. Register annotations like `// rax`, `// [bp-0x8]` add noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops correctly recovered as `for`/`while` constructs. However, `ptr_func_simple` uses `goto a0;` instead of proper function pointer invocation syntax. Some `goto` statements in startup code (`sub_401020`) represent longjmp but appear as unstructured jumps.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity closely matches source - each test function and helper is separate. Functions like `double_value`, `process_int`, `array_1d_stack` are appropriately sized. Parameter counts match original (e.g., `array_2d_stack` takes 1 param, `array_vla` takes 2).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns present but appropriate. Loop constructs are natural. Only minor disruption from forward jumps in error handling paths in `array_complex_index`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `array_3d` (manually unrolled 5x5x5 iteration) but it's manageable. No obvious dead code. Common subexpression elimination artifacts are minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - pointers are `unsigned long` instead of proper pointer types. Function pointers like in `ptr_func_simple` and `struct_func_ptr` use `unsigned long` instead of proper function pointer signatures. `int` should be signed but often appears as `unsigned int`. `void*` is used correctly in `ptr_void`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Mixed results. Some structs recovered with generic names (`struct_0`, `struct_1`) but proper field offsets. `linked_list` correctly recovers self-referential `Node` structure. `struct_with_ptr` properly identifies `Node* next` field. However, field names are generic (`field_0`, `field_8`) rather than semantic (`data`, `next`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns - pointer arithmetic using `unsigned long` indices (e.g., `ptr + idx * 4`). Function pointer calls via `goto` are type-unsafe. Array access without bounds checking in `array_oob` (the intentional bug is preserved but not flagged). Some correct pointer typing in `ptr_single`, `ptr_double`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled functions. Only auto-generated register annotations like `// rax`, `// [bp-0x8]`. No algorithm explanations, no decompilation confidence indicators, no API contracts. The source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable - linked list traversal in `linked_list`, binary tree recursion in `binary_tree_sum`. However, no explicit pattern naming or documentation. The enum switch uses auto-generated `CSWTCH.61` without recognizing it as enum dispatch.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with `[D] unsupported_<class 'pyvex.expr.GetI'>()` in long double functions. However, the `goto a0;` function pointer call is not flagged as anomalous. No warnings about the intentional buffer overflow in `array_oob`. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error return values (e.g., `array_complex_index` returns -1 for bounds errors). The source had no formal contracts but semantic expectations are not captured.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and resolve correctly. Global variables declared as `extern`. However, no documentation of call relationships (who calls whom). Callback relationships (e.g., `complex_callback` passed to `ptr_func_complex`) not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped - test functions first, then data type functions, array functions, pointer functions, composite functions. However, all in single file with no header separation. Static functions not distinguished from public.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple `extern` declarations needed for global variables (`g_403fb0`, `g_403fb8`, etc.). Won't compile standalone due to missing definitions. Type mismatches (unsigned vs signed) would cause warnings. String format functions need proper prototypes.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- Variable naming is nearly all generic (`v1`, `v2`, `a0`, `a1`) - completely obscures variable purpose
+- Function pointer calls rendered as `goto a0;` instead of proper call syntax (`return f(x)`)
+- No comments whatsoever in decompiled functions - source's extensive documentation completely lost
+- Type precision severely degraded - pointers as `unsigned long`, function pointers as `unsigned long`
+- VEX IR artifacts (`[D] unsupported_<class...>`) pollute float/long double functions
+
+### Best Quality Aspect: Function Naming (scored 10/10)
+- Nearly every function name perfectly matches the original source: `double_value`, `process_int`, `array_1d_stack`, `linked_list`, `binary_tree_sum`
+
+### Most Needs Improvement: Variable Naming & Comments (both 2/10)
+- Variables are all generic single letters/numbers making code flow extremely difficult to trace
+- Zero meaningful comments - source had extensive documentation explaining each test case
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `idx` used as loop counter should be `i`; `ptr` used in array traversal should be named after the array purpose
+2. **Fix function pointer rendering**: `goto a0;` should be `return ((int (*)(int))a0)(x);` or similar proper function pointer invocation
+3. **Recover comments from debug symbols**: Since compiled with `-g`, DWARF info may contain source comments that could be extracted

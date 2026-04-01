@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`, `a4`) and internal variables use `v1`, `v2`, `v3`, etc. For example, `sequential_ops(int64_t a1, int64_t a2, int64_t a3)` should have meaningful names like `a`, `b`, `c`. The original source had clear variable names like `temp1`, `temp2`, `temp3` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Mixed results - main test functions like `sequential_ops`, `single_if`, `if_else` are correctly recovered with their original names. However, helper functions use cryptic auto-generated names like `function_1030`, `function_1040`, `function_1d72`, `function_1d85`. The standard library functions `_setjmp` and `longjmp` are properly identified.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers. For example, `0x66666667` (division constant), `0x100000000` (multiplication trick), and pervasive `& 0xffffffff` masks obscure the logic. The original source had clear arithmetic: `temp1 = a + b; temp2 = temp1 * 2;` but decompiled shows `2 * (a2 + a1) - a3 & 0xffffffff`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with extensive inline assembly intrinsics (`__asm_pshufd`, `__asm_movdqa`, `__asm_pmuludq`, etc.) scattered throughout functions like `loop_continue`, `goto_backward`, `recursion_factorial`. These SSE/AVX intrinsics make the code nearly unreadable and are artifacts of the decompiler not properly abstracting vector operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is significantly degraded. The `single_if` function uses an incomprehensible ternary expression: `v1 >= 0 != v1 != 0 ? a1 & 0xffffffff : (int64_t)(v1 << (int32_t)(v1 >= 0 == (v1 != 0)))`. The original simple `if (x > 0) { x = x * 2; }` is completely obscured. The `infinite_loop` uses goto labels instead of proper while loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is generally appropriate. The main test functions are properly separated. However, some functions like `test_control_flow_l1` are quite large (inline test calls). The parameter lists expose too many implementation details (e.g., `loop_modify_var` has 4 parameters when original had 1).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but has problematic forward jumps. The `infinite_loop` function has a `lab_0x16c0` label that disrupts flow. Some nested conditions create deep nesting (3-4 levels) that reduces readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from repeated bit masking operations (`& 0xffffffff` appears hundreds of times). Loop unrolling in `loop_continue` and `recursion_factorial` is not commented or abstracted - instead, raw SSE intrinsics are exposed. The division constant `0x66666667` is repeated without explanation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t` consistently which is appropriate for arm64. However, the original used `int` (32-bit) which would be more accurate. Function pointer types are not properly typed - `int64_t (*f)(int)` becomes `int64_t a3` parameter. Signed/unsigned distinctions are sometimes lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structures are recovered: `struct __jmp_buf_tag` for setjmp/longjmp, `struct _TYPEDEF___sigset_t`. However, the matrix in `loop_multi_exit` is not recovered as an array - it uses `&g11` with manual pointer arithmetic. The original `int matrix[3][4]` is completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns observed. Extensive use of `& 0xffffffff` casts suggests type confusion between 32-bit and 64-bit values. The `loop_while` function uses `0x100000000 * a1 >> 32` for division which is error-prone. Function pointers are passed as raw integers (`int64_t a3` for callback).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments only show address ranges (e.g., `// Address range: 0x116c - 0x1174`) which are useless for understanding the code. No explanation of algorithms, intent, or non-obvious logic. The original had extensive comments explaining each control flow pattern - none are recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The state machine in `state_machine` is not labeled as such. Duff's device in `duffs_device` is not recognized - it returns `(uint64_t)(a3 + 7) / 8 % 0x20000000` which is completely wrong (should copy memory). No pattern names or explanations provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or uncertainties. The `duffs_device` function produces incorrect results but is presented with full confidence. Indirect calls that couldn't be resolved are not flagged. The `call_virtual_func` just returns a constant without indicating it's a stub.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear test cases with expected outputs (e.g., `// 测试验证: 输入5,7,3应返回21 (5+7)*2-3=21`) which are completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat visible through the code structure but not explicitly documented. The callback relationship in `process_with_callback` is not clearly explained - the function pointer parameter `a3` has no indication it's a callback. Global variable usage is not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by type (test functions, helper functions, operators) but the organization is arbitrary. Static functions like `double_value`, `triple_value` are not properly scoped with comments indicating they're helpers. The single monolithic file makes it difficult to understand the structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has many compilation issues: undefined references to `__asm_*` functions, incomplete structure initializers, and missing standard library integration. The inline assembly intrinsics like `__asm_movd_1` are not valid - they appear to be decompiler artifacts. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+1. Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) - original names like `temp1`, `temp2`, `sum`, `count` are lost
+2. Control flow is severely degraded - simple `if` statements become incomprehensible ternary expressions with bit manipulation
+3. SSE/AVX intrinsics (`__asm_pshufd`, `__asm_movdqa`) pollute simple functions like `loop_continue`, making them unreadable
+4. `duffs_device` produces incorrect results - returns `(a3 + 7) / 8 % 0x20000000` instead of performing memory copy
+5. No comments explaining algorithms, test cases, or expected behavior - original test validations are completely lost
+
+**Best Quality Aspect:** Function Naming Quality (6/10)  
+The main test functions (`sequential_ops`, `single_if`, `if_else`, etc.) are correctly recovered with their original names, providing a foundation for understanding.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every parameter and internal variable uses generic names (`a1`, `a2`, `v1`, `v2`, etc.), making it extremely difficult to track data flow and understand function logic. At -O0, the decompiler should easily recover meaningful variable names from debug symbols.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from debug symbols**: At -O0, variable names like `temp1`, `temp2`, `sum`, `count` should be recoverable. The decompiler should use these instead of generic `v1`, `v2`.
+2. **Abstract SSE intrinsics**: Functions like `loop_continue` should show a clear loop with `continue` statement, not raw `__asm_pshufd` calls. The intrinsics obscure the simple logic.
+3. **Recover test case comments**: The original source has extensive test validation comments (e.g., `// 测试验证: 输入5,7,3应返回21`). These should be preserved as they document intended behavior.

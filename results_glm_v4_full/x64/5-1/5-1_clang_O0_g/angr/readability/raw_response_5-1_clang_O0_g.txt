@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `idx`). Struct members are reduced to `field_0`, `field_8`, etc., completely losing semantic meaning like `value` or `name`.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: While some functions retain demangled names (e.g., `test_cpp_member_func`), many definitions use mangled C++ symbols (e.g., `_ZN11SimpleClassC2EiPKc`) or generic placeholders (e.g., `sub_402020`), requiring manual decoding to understand intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals (e.g., `"Test"`) are preserved and readable. However, magic numbers (e.g., `5`, `10`, `0x1234`) are used directly without being mapped back to named constants defined in the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts typical of `-O0` builds, such as redundant register moves (`v1 = v3;`) and explicit stack frame handling (`unsigned long long v1; // [bp+0x0]`), which obscures the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Due to the `-O0` optimization, the control flow is largely linear and matches the source structure (loops and conditionals are distinct). However, exception handling logic is fragmented into landing pads (e.g., `sub_402927`), making it hard to follow.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: The user code is buried under a massive amount of inlined standard library internals (e.g., `std::tuple`, `std::__uniq_ptr_impl`). This fragmentation makes it extremely difficult to isolate the actual test logic from boilerplate.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Within individual functions, the code reads mostly top-to-bottom. There are no excessive backward jumps or spaghetti logic, which is a positive trait of unoptimized code decompilation.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is significant redundancy from the lack of optimization, such as variables being loaded and stored immediately without modification (e.g., `v1 = v3; return v1;`), which adds cognitive load.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types (int, char, void*) are generally accurate. However, high-level C++ types like `std::unique_ptr` are represented as raw structs with generic fields, losing the specific type semantics and safety guarantees.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor. Classes like `SimpleClass` are rendered as generic `struct_0` with fields named `field_0`, `padding_4`, etc. The semantic layout is there, but the meaning is completely lost.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts to access vtables and object members (e.g., `*((char **)ptr) = &g_408878;`), which accurately reflects the binary but results in type-unsafe C code that is hard to reason about.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually non-existent except for register annotations (e.g., `// rax`). There are no comments explaining the logic, algorithms, or the purpose of complex C++ runtime constructs.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: C++ idioms are not recognized. Virtual function calls are represented as raw pointer dereferences through vtables rather than method calls, and smart pointer operations look like manual struct manipulation.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no indication of anomalies or potential issues. Complex or suspicious code (like the indirect calls for virtual functions) is presented as standard C code without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. The contracts implied by the C++ type system (e.g., constructor invariants) are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but the use of mangled names in the definitions makes tracing the call graph mentally taxing. The relationship between base and derived classes is obscured by pointer arithmetic.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat list of hundreds of functions. There is no logical grouping separating the test functions from the runtime or standard library implementations.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on external global variables (e.g., `g_408fe8`) and specific memory layouts. It would not compile standalone without significant manual intervention to define headers and stubs.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Struct fields are generic (`field_0`, `field_8`) instead of semantic names (`value`, `name`), making data structures opaque.
+- Standard Library types (`std::unique_ptr`, `std::tuple`) are not recognized, exposing verbose internal implementation details.
+- Function definitions use mangled C++ symbols (`_ZN...`) instead of readable names.
+- Virtual function calls are represented as raw pointer dereferences rather than semantic method invocations.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)
+- The lack of compiler optimization (`-O0`) preserved the original control flow structures (loops, if-else), making the execution path relatively easy to trace within functions.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover class definitions and field names turns the rich object-oriented structure of the source into a collection of generic memory blobs, which is the single biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Integrate C++ RTTI/Debug information to recover original class definitions and field names instead of generating generic `struct_0`.
+2. Aggressively demangle C++ symbols in function definitions and cross-references to improve readability.
+3. Implement pattern matching to recognize standard library types (like `std::unique_ptr` or `std::string`) and abstract their internal implementations.

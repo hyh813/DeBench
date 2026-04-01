@@ -1,0 +1,125 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `puVar3`) with zero semantic meaning recovered. For example, `sequential_ops` parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`sequential_ops`, `nested_if_deep`, `duffs_device`, `recursion_factorial`). This is the decompiler's strongest aspect.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x14` (should be 20), `0x3e9` (1001), `0xffffffff` (-1). Test functions print hardcoded values instead of computing them.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "WARNING: Could not recover jumptable" messages pollute output. Runtime functions (`__aeabi_idiv`, `__libc_start_main`) included unnecessarily.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recover well (`sequential_ops`), but complex ones degrade: `duffs_device` uses goto labels (`LAB_00010c90`), `loop_multi_exit` has spaghetti-like label jumps instead of nested loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions are bloated with hardcoded printf calls. `test_control_flow_l1` is 80+ lines of repetitive print statements.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto labels disrupt reading flow in `loop_multi_exit`, `indirect_recursion_a`, and `duffs_device`. Forward jumps into middle of logic blocks break top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions have extreme redundancy (20+ nearly identical `__printf_chk` calls). Some optimization artifacts like loop unrolling in `__aeabi_idiv` (30+ boolean variables) are excessive.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4` instead of `int`, `bool` instead of `int` (`if_else` returns bool but should return 0/1 int), `uint` instead of `int` in `if_elseif_long`. Signedness often wrong.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Function pointer arrays recovered (`apcStack_3c[10]`), but no struct definitions visible. `__jmp_buf_tag` referenced but not defined. Pointer arithmetic present in `process_with_callback`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `state_done(void)` takes no params but source has `int event`. `call_func_ptr` shows `UNRECOVERED_JUMPTABLE` with void* function pointer. Cast warnings suppressed.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only compiler warnings present ("WARNING: Subroutine does not return"). No algorithm explanations, no parameter documentation, no logic hints.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. `duffs_device` fall-through switch not identified as Duff's Device optimization. `recursion_factorial` converted to loop without noting tail-recursion optimization.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Could not recover jumptable", "Treating indirect jump as call") but inconsistent. `non_local_jump.constprop.0` renamed without explanation of const propagation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). No postconditions. No error condition documentation. Test functions don't verify actual function behavior.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph. `call_func_ptr_array` shows function array but no indication these are callbacks. Global `jump_buffer` referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 77 functions in single output. No logical grouping (test functions mixed with implementation). Runtime functions (`_init`, `_start`, `_fini`) mixed with user code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code references external functions (`__printf_chk`, `puts`, `__aeabi_idiv`) without declarations. Would need significant stubbing to compile standalone. Architecture mismatch (ARM32 vs arm64 metadata).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+9+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+6+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+2+5+1)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.68/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` throughout—zero semantic recovery despite clear usage patterns
+- **Test functions broken**: `test_control_flow_l1` prints hardcoded expected values instead of actually calling functions and printing results
+- **Type signature errors**: `if_else` returns `bool` instead of `int`, `state_done` missing `int event` parameter
+- **No comments whatsoever**: Zero documentation of logic, algorithms, or decompilation confidence
+- **Architecture mismatch**: Metadata claims arm64 but binary is ARM 32-bit (evident from `__aeabi_idiv` calls)
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (9/10)**
+- Function names preserved perfectly from source symbols, making function identification trivial
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)**
+- Complete absence of any explanatory comments makes understanding complex functions like `duffs_device` and `__aeabi_idiv` extremely difficult
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns**: Analyze how variables are used (e.g., `param_1 * 2` in doubling function) to suggest semantic names like `multiplier` or `input_value`
+
+2. **Add decompilation confidence annotations**: Insert comments indicating uncertainty levels (e.g., `// CONFIDENCE: LOW - indirect call target unresolved`) especially for functions with jumptable warnings
+
+3. **Recover test function semantics**: Instead of hardcoding expected values, reconstruct actual function calls with proper argument passing to create verifiable test code

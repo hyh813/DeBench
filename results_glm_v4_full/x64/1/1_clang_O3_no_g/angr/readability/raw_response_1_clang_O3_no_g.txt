@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `a0`, `v1`, `v2`, and `v3`, completely losing semantic meaning (e.g., `sum`, `i`, `flag` from the source). This forces the reader to reverse-engineer variable purposes from usage.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully recovered original function names like `sequential_ops`, `loop_for_fixed`, and `recursion_factorial` from symbol tables. However, wrapper functions like `sub_401169` add noise without semantic value.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and masks, such as `4294967295` (UINT_MAX) and `1717986919` (magic constant for division), without named constants or comments explaining their purpose.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, including pseudo-C intrinsics like `AddV`, `InterleaveLOV`, and `CONCAT` which represent SIMD operations rather than standard C logic. Redundant masking like `& 4294967295` appears frequently.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural; for example, `call_func_ptr` uses `goto a0` instead of an indirect function call. Loops are frequently replaced by complex vectorized operations or obscure mathematical formulas (e.g., `loop_for_fixed`).
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While main logic functions are present, they are often wrapped in trivial `sub_XXXX` functions (e.g., `sub_401169` calling `sequential_ops`), which clutters the call graph without adding value.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is difficult to read linearly due to aggressive optimization artifacts. Functions like `recursion_factorial` are exploded into massive blocks of vectorized pseudo-code that obscure the simple recursive logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The compiler successfully eliminated redundancy (e.g., unrolling loops), but the decompiler presents these as complex, unreadable expressions (like the closed-form sum in `loop_for_fixed`) rather than abstracting them back to understandable logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are mechanically precise for the machine state (e.g., `uint128_t` for SIMD registers), but this precision harms readability. Standard types like `int` are often replaced with `unsigned int` or `unsigned long` inconsistently.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: No complex structs were present in the analyzed snippets to evaluate recovery. Global data like `g_403280` are treated as raw arrays/pointers rather than structured types.
+
+**11. Type Safety:** Score: 2/10
+Justification: The decompilation contains unsafe representations, such as `goto a0` where `a0` is a function pointer, which is not valid C and obscures the function call semantics.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, except for failure messages like "Failed to decompile function duffs_device". There is no explanation of algorithms or optimization artifacts.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler failed to recognize standard idioms. `recursion_factorial` is displayed as SIMD vector math rather than a loop or recursion. `loop_for_fixed` is a math formula rather than a summation loop.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Failures are explicitly marked (e.g., "Failed to decompile", "Unsupported jumpkind"), which is good. However, the bizarre `goto a0` for function pointers is not flagged as an anomaly or decompilation error.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Global variables are referenced by address (e.g., `g_403280`), but their relationship to the original logic (e.g., a jump table) is not documented, making it hard to understand the data flow.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are generally ordered logically, and related functions (like the state machine handlers) are grouped together, which aids navigation despite the poor code quality.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It uses non-standard extensions (`uint128_t`), pseudo-intrinsics (`AddV`), and invalid syntax (`goto a0` to a variable).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.0
+L2_avg: 4.25
+L3_avg: 4.0
+L4_avg: 2.25
+L5_avg: 4.0
+
+Overall = (4.0 × 0.30) + (4.25 × 0.25) + (4.0 × 0.20) + 
+          (2.25 × 0.15) + (4.0 × 0.10)
+Overall = 1.2 + 1.0625 + 0.8 + 0.3375 + 0.4
+Overall = 3.8
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects
+- **Function Pointer Representation**: `call_func_ptr` decompiles to `goto a0`, which is invalid C and semantically confusing for a function call.
+- **SIMD Intrinsics**: Functions like `recursion_factorial` and `loop_continue` are represented as unreadable vectorized pseudo-code (`AddV`, `InterleaveLOV`) rather than high-level logic.
+- **Total Decompilation Failure**: `duffs_device` resulted in "Failed to decompile", providing zero insight into the function.
+- **Loss of Loop Semantics**: `loop_for_fixed` is reduced to a complex arithmetic formula `(a0 - 1) * (a0 - 2) >> 1 + a0 - 1`, obscuring the iterative nature of the source.
+
+### Best Quality Aspect
+- **Function Naming Quality (Score: 8/10)**
+- **Why?** The decompiler successfully preserved the original function names from the binary symbols, making it easy to locate specific logic blocks despite the poor internal code quality.
+
+### Most Needs Improvement
+- **Idiom Recognition (Score: 1/10)**
+- **Why?** The decompiler failed to map optimized machine code back to high-level patterns, presenting simple algorithms (factorial, summation) as low-level vector math or bit-twiddling.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Pattern Recognition for Optimized Loops**: Implement analysis to detect closed-form arithmetic replacements of loops (e.g., sum of integers) and present them as loops or commented formulas.
+2. **SIMD-to-Scalar Lifting**: Add a pass to abstract SIMD vector intrinsics back into scalar loop logic when the vectorization is a standard optimization pattern (e.g., parallel reduction).
+3. **Function Pointer Recovery**: Fix the lifting of indirect calls to use standard C function pointer syntax (`(*func_ptr)(arg)`) instead of computed jumps (`goto address`).

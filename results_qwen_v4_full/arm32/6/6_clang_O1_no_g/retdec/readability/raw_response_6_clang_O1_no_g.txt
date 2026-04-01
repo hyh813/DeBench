@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `str`, `result`, `thread_func_arg`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `pid`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main function names preserved (`param_strcpy`, `call_memcpy`, `param_pthread_create`), but helper functions use generic address-based names (`function_c68`, `function_c74`, `function_da0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (40, 12, 18, 255) without explanation. String literals stored as globals with hex-encoded names (`g19`, `g20`) instead of inline. Constants like `SYS_open` partially preserved.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts at -O0, but unnecessary helper function wrappers for standard library calls (`function_da0` for `strcpy`, `function_c8c` for `strcmp`) add indirection.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage where loops should exist (e.g., `lab_0x22d8`, `lab_0x2500`, `lab_0x2a60_2`). Original `for` loops converted to while+goto patterns disrupting readability.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but critical signature errors (e.g., `param_strcpy(void)` loses `dst` and `src` parameters). Helper functions created for every libc call.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearization with frequent forward jumps and label-based branching. Functions like `param_pthread_join` and `param_thread_local_storage` have multiple goto labels breaking top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Moderate redundancy from decompiler patterns. No loop unrolling (expected at -O0), but duplicate code patterns in test functions not consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—everything becomes `int32_t` or `char*`. Original types like `size_t`, `pid_t`, `pthread_t`, `FILE*` lost. Function pointers often `int32_t* (*)(int32_t*)`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined (`_IO_FILE`, `ipc_perm`, `shmid_ds`, `stat`) but all fields are generic (`e0`, `e1`, `e2`...). `ThreadData` struct completely lost, accessed via pointer arithmetic.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)str`, `(char *)file_path`, `(int32_t)&g40`. Pointer arithmetic on `int32_t` instead of proper typed pointers. Function pointer casts like `(int32_t * (*)(int32_t *))&g15`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining purpose, expected values, and test scenarios—all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `memcpy`, `pthread_create`, `fork`), but no pattern naming or algorithm identification. Producer-consumer pattern in `param_condition_variable` not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags or uncertainty indicators. Incorrect code presented confidently (e.g., `param_strcpy` with wrong signature, `param_signal_handling` with corrupted signal numbers).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions and return value semantics completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g1` through `g46`) used without purpose explanation. Thread callback relationships implicit only.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic file with 138 detected functions. Some logical grouping (test functions together), but no header separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. Necessary headers included. Some function declarations may need stubs but overall structure is compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+6)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (3+5+3+6)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+3+2)/3   = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (1+5+1+1)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+5+7)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.85/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_strcpy(void)` loses both `dst` and `src` parameters, making the function semantically incorrect
+- **Excessive goto usage**: Control flow uses `lab_0xXXXX` labels instead of structured loops (e.g., `param_pthread_join`, `param_thread_local_storage`)
+- **Type system collapse**: All variables become `int32_t` or `char*`, losing `size_t`, `pid_t`, `pthread_t` semantics
+- **Zero documentation**: No comments explaining purpose, expected values, or decompilation uncertainty
+- **Generic struct fields**: All struct members named `e0`, `e1`, `e2`... losing semantic meaning (e.g., `ThreadData.start`, `ThreadData.end` lost)
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - The decompiled code includes necessary headers and metadata indicates successful compilation, making it at least runnable.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, comments, or decompilation confidence indicators makes understanding the code extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function signatures from calling conventions** - Analyze parameter passing (registers, stack) to restore correct function prototypes instead of defaulting to `void` or generic `int32_t`
+2. **Implement structured control flow recovery** - Convert `goto`+label patterns back to `for`/`while` loops by detecting backward jump patterns and loop induction variables
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target` to guide manual review

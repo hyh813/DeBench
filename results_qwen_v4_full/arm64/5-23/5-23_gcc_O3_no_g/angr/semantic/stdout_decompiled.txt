@@ -1,0 +1,7 @@
+ASM test
+ASM basic: 15
+ASM clobber: 15
+ASM multi: 42
+ASM SIMD: 36
+Atomic result: 30
+Result: 1973940224

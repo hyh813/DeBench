@@ -1,0 +1,143 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use cryptic generic names like `v0`, `v1`, `v2`, `ptr`, `i` with register annotations (r0, r3, lr, r4). Stack variables like `v0` at `[bp-0x8]` provide no semantic meaning. Original source uses meaningful names like `global_counter`, `arr`, `leak` but these are lost.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+Justification: Some functions correctly recovered (main, double_value, test_stack_memory, test_heap_memory), but many have auto-generated cryptic names like `sub_10598`, `sub_106d8`, `sub_107a0`. The original static helper function `static_helper` became part of `call_static_func` inline, losing its identity.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Some literals like `20`, `10`, `15` are correctly inlined for return values, but string pointers like `0x1297c` lack clarity about their content. Magic numbers such as `4294967295` (0xFFFFFFFF) for error returns are not explained. The original source's constants (e.g., array sizes) are not recovered.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Severe noise pollution includes duplicate struct definitions (struct_0, struct_1, struct_2 repeated), spurious type definitions like `unsigned int [5] heap_realloc()` which is invalid syntax, register annotations cluttering every variable, and decompiler artifacts like `armg_calculate_condition` for condition code handling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: At -O0, control flow is mostly preserved naturally. Loops use do-while constructs correctly. Some goto statements present (e.g., `goto LABEL_106fc`) but these appear to be decompiler artifacts rather than original code. The original if/else structures are reasonably recovered.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Functions maintain appropriate granularity. Test functions like `test_heap_memory` are large (~100 lines) but this matches the source. Some inlining occurred: `static_helper` was inlined into `call_static_func`. Parameter lists are mostly reasonable though some expose implementation details.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling (e.g., `if (!ptr) return 4294967295`). Some goto labels create minor non-linearity but nothing severe.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Some loop unrolling present (e.g., in `heap_basic` the initialization loop is unrolled) but not explicitly commented. Dead code is minimal. Some redundant struct definitions create noise but don't affect logic comprehension significantly.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Extensive type degradation - almost all variables use generic `unsigned int` instead of specific types. Original `int` parameters became `unsigned int`. Pointers and arrays confused (e.g., `address_of_array` takes `unsigned int *a0` instead of `int arr[10]`). Function pointers use `unsigned int` instead of proper function signatures.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Partial struct reconstruction with generic field names. Original `Point` struct (with x, y fields) lost - appears as raw `malloc(8)` in `heap_struct`. Original `Node` struct partially recovered as `struct_0`/`struct_2` with generic fields (`field_0`, `field_4`). Nested structures confused with multiple conflicting definitions.
+
+### 11. Type Safety
+**Score: 3/10**
+Justification: Multiple severe type safety issues: (1) `heap_basic` - pointer arithmetic error: `free(ptr)` then `return ptr[a0 + (a0 >> 31) >> 1]` uses freed pointer; (2) `heap_calloc` - same pattern with freed pointer access; (3) `dangling_pointer` - returns `*(ptr)` after free, but this is the actual bug being tested; (4) Function pointer type confusion in `call_global_callback`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Almost no useful comments. Only decompiler artifacts like `/* do not return */` for abort calls. No explanation of algorithm logic, no recovery of original comments from debug symbols. The source code's extensive comments documenting test scenarios (MEM-L1-01, HEAP-L2-01, etc.) are completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Some patterns partially recognizable - linked list traversal in `linked_list_heap` uses `->field_4` for next pointer, tree traversal in `tree_heap_traversal` shows left/right children. But no explicit naming or recognition of these as data structure patterns. Memory allocation patterns (malloc/free) correctly identified but not named as patterns.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flagging of suspicious code. The dangling pointer bug in `dangling_pointer` (returns `*(ptr)` after `free(ptr)`) is presented without any warning. Memory leak in `memory_leak` (allocates but never frees) not flagged. The intentional bugs in the test code (double_free, heap_overflow) are not marked as anomalies.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. Original source has safety checks (e.g., `if (n <= 0 || n > 1000) return -1` in vla_stack) but these are recovered as raw conditionals without documenting the contract. No documentation of what functions expect or guarantee.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+Justification: Function call relationships not clearly documented. External dependencies marked as `extern` but not explained. For example, `extern_global_var` and `extern_function` are declared but their origin isn't documented. No indication of which functions call which others.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions grouped reasonably - test functions together, heap functions together, static/global functions together. However, the organization is flat with no file structure recovery. Static functions like `double_value` are at file scope but this isn't explicitly marked.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+Justification: Code does not compile. Multiple syntax errors: (1) `unsigned int [5] heap_realloc()` - invalid syntax; (2) Duplicate variable names in same scope (e.g., `unsigned int *ptr` declared twice in `heap_basic`); (3) Missing struct tag definitions before use; (4) Invalid goto target `goto global_func_ptr`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+4+5+3)/4 = 3.50
+L2_avg = (7+7+7+6)/4 = 6.75
+L3_avg = (4+4+3)/3 = 3.67
+L4_avg = (2+4+2+2)/4 = 2.50
+L5_avg = (3+6+2)/3 = 3.67
+
+Overall = (3.50 × 0.30) + (6.75 × 0.25) + (3.67 × 0.20) + (2.50 × 0.15) + (3.67 × 0.10)
+        = 1.050 + 1.688 + 0.734 + 0.375 + 0.367
+        = 4.21/10
+```
+
+**Overall Readability Score: 4.21/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming**: All variables use generic names (v0, v1, ptr, i) with register annotations, completely losing semantic meaning from source (e.g., `global_counter`, `arr`, `leak`)
+
+2. **Type precision loss**: Original `int` types became `unsigned int`, pointers to structs lost their type information, function pointers use `unsigned int` instead of proper signatures
+
+3. **Struct recovery failure**: Original `Point` and `Node` structs not recovered - appear as raw `malloc(8)` with generic field names like `field_0`, `field_4`
+
+4. **No comments**: Zero useful comments explaining algorithm logic, test scenarios, or recovered intent. Original source's extensive documentation (MEM-L1-01, HEAP-L2-01, etc.) completely lost
+
+5. **Compilation errors**: Invalid syntax like `unsigned int [5] heap_realloc()`, duplicate variable declarations, preventing any attempt to compile the decompiled code
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Control Flow Naturalness (7/10)**
+- **Why?** At -O0 optimization, the original control flow structures (if/else, loops, function calls) are mostly preserved naturally. The decompiler correctly recovered loop constructs as do-while and maintained the original conditional logic structure.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (2/10)**
+- **Why?** The decompiled code has almost no useful comments. Original source has extensive documentation (888 lines with detailed comments for each test scenario), but the decompiled output contains only decompiler artifacts like `/* do not return */`. No algorithm explanations, no recovered intent documentation, no flagging of suspicious patterns.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used in malloc/free pairs → `heap_ptr`; `v0` used as counter in loop → `counter` or `i`). The source had meaningful names like `global_counter`, `arr`, `leak` that should be recoverable from debug symbols or usage analysis.
+
+2. **Recover struct types from allocation sizes**: When seeing `malloc(8)` with two int-sized field accesses, recover as `Point` struct. When seeing `malloc(8)` with `data` and `next` field accesses, recover as `Node` struct. The original source defines these types explicitly.
+
+3. **Add semantic comments for non-obvious patterns**: Flag intentional bugs (dangling_pointer, double_free, heap_overflow) as "INTENTIONAL BUG - DO NOT USE IN PRODUCTION". Document loop unrolling patterns. Explain why certain complex conditionals exist (e.g., stack canary checking).
+
+4. **Fix syntax errors for compilation**: The current output has invalid C syntax that prevents compilation. Fix duplicate variable declarations, invalid type syntax, and invalid goto targets.
+
+5. **Recover type information from debug symbols**: At -O0 with -g flag, debug information should be available. Recover proper types (int vs unsigned int), function pointer signatures, and const correctness from DWARF/PDB information.

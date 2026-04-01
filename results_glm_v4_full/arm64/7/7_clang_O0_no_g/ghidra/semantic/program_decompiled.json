@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_clang_O0_no_g/ghidra/syntactic/bin/7_clang_O0_no_g_fixed",
+  "stdout": "Testing fake branch: 1\nFake branch result: 10\nTesting opaque predicate: 5\nOpaque predicate result: 20\nTesting instruction substitution: 10\nInstruction substitution result: 225\nTesting non-tail call: 1000\nNon-tail call result: 500500\nTesting vectorized loop: 100\nVectorized loop result: 5050\nTesting division by zero: 5\nDivision by zero result: 0\nTesting null pointer deref: 5\nNull pointer deref result: 2\nTesting buffer overflow: 10\nTesting integer overflow: 30\nInteger overflow result: 1000000000\nTesting undefined behavior: 999999999\nUndefined behavior result: 5\nTesting implementation defined: 10\nImplementation defined result: 0\nImplementation defined result: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

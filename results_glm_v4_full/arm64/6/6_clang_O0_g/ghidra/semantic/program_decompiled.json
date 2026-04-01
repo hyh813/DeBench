@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/6/6_clang_O0_g/ghidra/syntactic/bin/6_clang_O0_g_fixed",
+  "stdout": "Testing strcpy: Result: 8\nResult: 0\nResult: 12\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

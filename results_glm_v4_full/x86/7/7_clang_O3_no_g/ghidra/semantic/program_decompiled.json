@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_clang_O3_no_g/ghidra/syntactic/bin/7_clang_O3_no_g_fixed",
+  "stdout": "\nTesting obfuscation and optimization techniques:\n\nparam_fake_branch: 10\ncall_opaque_predicate: 20\ncall_instruction_substitution: 0xe1\nparam_string_encryption: 0\ncall_tail_call_optimized: 0x7a314\ncall_non_tail_call: 0x13ba\ncall_vectorized_loop: 0x48\ncall_link_time_optimization: 0x14\ncall_division_by_zero: 1\ncall_null_pointer_deref: 41\ncall_buffer_overflow: 0x1e\ncall_integer_overflow: 2000000000\ncall_undefined_behavior: 10\ncall_implementation_defined: 0x2b\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

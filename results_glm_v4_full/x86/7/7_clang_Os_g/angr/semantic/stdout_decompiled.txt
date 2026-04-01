@@ -1,0 +1,5 @@
+Running obf_opt_edge tests...
+
+Test opaque predicate: 0
+Test instruction substitution: 0
+Test string encryption: 0

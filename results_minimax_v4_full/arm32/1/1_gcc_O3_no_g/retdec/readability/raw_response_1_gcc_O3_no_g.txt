@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses extremely generic names like `a1`, `a2` for parameters and `v1` through `v19` for temporaries. In `duffs_device`, variables `v4` through `v19` are all assigned identical values (`v1` or `v2`) but serve no distinguishable purpose—these should be eliminated entirely, not named.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names accurately match the source: `duffs_device`, `non_local_jump`, `computed_goto`, and the test functions `test_control_flow_l1/l2/l3`. However, `non_local_jump_constprop_0` appears to be an auto-generated artifact from constant propagation, not a real function.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The decompiler shows hardcoded test values directly in printf statements (e.g., `21`, `20`, `-5`) rather than showing the function calls. The expression `(result + 7) >> 3` for computing `(n+7)/8` is not explained. String literals contain raw UTF-8 hex escapes like `\xe6\xb5\x8b` which obscure their meaning.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The `duffs_device` function contains massive redundancy—variables `v4` through `v19` are all assigned the same values repeatedly and never used meaningfully. The setjmp struct initialization is excessively verbose with explicit struct syntax. This level of noise makes the code nearly unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The control flow is generally recoverable but uses `goto` in `duffs_device` instead of the original switch-case with fall-through semantics. The switch cases show unusual negative values (`case -2`, `case -3`, etc.) which don't match the source and indicate decompilation artifacts.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated, matching the source structure. However, the spurious `non_local_jump_constprop_0` function appears to be an outline artifact from constant propagation analysis, not a real function from the source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: The code generally reads top-to-bottom, but the `duffs_device` function uses `goto lab_0x10dbc` which disrupts linear flow. The switch statement with its unusual case ordering also makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: The `duffs_device` function has severe redundancy—nineteen redundant variable assignments (`v4 = v1; v5 = v2; v6 = v1; v7 = v2; ...`) that serve no purpose. These should have been eliminated by copy propagation. This is the most severe structural issue.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: The decompiler correctly uses `int32_t` and `uint32_t` types. However, the custom `int3_t` typedef for switch cases is unusual and not explained. Parameter types like `int32_t * a1` are generic but acceptable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The setjmp recovery is actually quite sophisticated, showing the jmp_buf structure with its internal fields. However, it's overly verbose with explicit struct initialization syntax that obscures the simple `setjmp(&g4)` call.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The cast `(int3_t)result` in the switch is unusual. Pointer arithmetic in `duffs_device` (`v4 + 4`, `v5 + 4`) is correct but not type-safe. The massive number of redundant variables could lead to confusion about aliasing.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments at function tops (e.g., `// Address range: 0x109e8 - 0x10bc0`). No explanation of algorithms, no decompilation confidence indicators, no documentation of what the functions do.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The `duffs_device` pattern is somewhat recognizable from the switch-do-while structure, but it's not explicitly identified as Duff's device. The setjmp/longjmp pattern is visible but not named. No design patterns or algorithms are identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The unusual negative switch cases, the spurious constprop function, and the massive variable redundancy should have been flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The `if (result < 1) return -1;` check in `duffs_device` has no comment explaining it's the validation for `n > 0`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No cross-references are documented. There's no indication of which functions call which, no information about global variable usage, and no callback relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are logically grouped—test functions together (`test_control_flow_l1/l2/l3`), implementation functions separate. However, the spurious `non_local_jump_constprop_0` is interleaved with real functions, disrupting organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code includes standard headers (`<stdint.h>`, `<stdio.h>`, `<setjmp.h>`) and appears compilable. However, the `int3_t` typedef may not be standard, and the verbose struct initializations could cause issues.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Variable naming**: Generic names (`a1`, `a2`, `v1`-`v19`) provide no semantic meaning
+- **Redundancy**: `duffs_device` has 19 redundant variable assignments that should have been eliminated
+- **No comments**: Zero useful comments explaining algorithms, contracts, or anomalies
+- **Spurious function**: `non_local_jump_constprop_0` is an artifact, not real code
+- **Anomalies unflagged**: Unusual negative switch cases and massive redundancy not indicated
+
+**Best Quality Aspect:** Type System Fidelity (scored 6.7/10)  
+The decompiler uses precise integer types (`int32_t`, `uint32_t`) and reasonably recovers the complex setjmp structure, showing understanding of the underlying types.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.3/10)  
+The decompiled code has zero useful comments, doesn't flag any anomalies, and makes no attempt to identify patterns or recover contracts. This leaves analysts with no guidance on suspicious code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Eliminate redundant variables**: Apply copy propagation to remove the 19 unused copies in `duffs_device` before outputting
+2. **Add semantic comments**: Include pattern names (e.g., "Duff's device"), algorithm descriptions, and decompilation confidence notes
+3. **Flag anomalies**: Mark unusual switch case values, spurious functions from constant propagation, and any code that couldn't be fully resolved

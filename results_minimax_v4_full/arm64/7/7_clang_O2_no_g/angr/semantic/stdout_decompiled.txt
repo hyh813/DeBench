@@ -1,0 +1,5 @@
+=== Testing Obfuscation Optimizations ===
+
+Result: 10
+opaque_predicate: 35
+instruction_sub: 225

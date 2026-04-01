@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) instead of semantic names like `size`, `counter`, `increment`. Some better names exist (`idx`, `iter`, `cur`) but are inconsistent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions preserved accurately (`param_macro_constants`, `call_asm_basic`). However, runtime functions use generic names (`sub_401020`, `sub_401030`) losing initialization context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x400` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `57072` (should be `0xDEF0`), `282` (line number + counters). No constant recovery from macros.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization code (`_init`, `deregister_tm_clones`, `register_tm_clones`) clutters output. Some unnecessary type casts present (`& 4294967295` for truncation).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered well (`for` in `param_asm_clobber`, `param_asm_multi_insn`). Constant folding aggressive but correct (`call_macro_constants` returns 64 directly). No spurious gotos in main logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated. Runtime init functions over-fragmented (many single-purpose `sub_XXXXX` functions). Test functions well-organized.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive forward jumps. Early returns used appropriately. Loop structures clear and idiomatic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminates some redundancy (caller functions return constants). Some redundant masking operations (`& 4294967295`) from type promotions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision: `unsigned long long`, `unsigned int`, `int`, `long long` used inconsistently. `param_macro_functions` returns `long long` but source returns `int`. Pointer types often generic (`void*`, `char*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only one trivial struct defined (`struct_0`) and unused. Arrays recovered as individual variables or pointers. No meaningful struct/union recovery from complex data.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `*((void*)addr) = v1`, `ptr(a0)` for function pointer call. Pointer arithmetic in `param_asm_clobber` correct but untyped. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation explaining macros, assembly, and test purposes. One anomaly marker only (`[D] Unsupported jumpkind`).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro patterns completely lost (SQUARE, MAX, ADD_16 flattened to arithmetic). Assembly patterns converted but not identified as SIMD/atomic operations. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`). No warnings about macro information loss, constant folding uncertainty, or assembly recovery confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions or error handling documentation. Return value semantics unclear without source comparison.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variables named generically (`g_403fe8`, `g_40203d`) losing semantic meaning. String literals externalized to globals without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All code in single file. Runtime initialization mixed with application logic. Test functions grouped but no header/API separation. Original section comments lost.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Metadata indicates successful compilation. External dependencies declared (`__printf_chk`, `mmap`, `atomic_exchange_add`). Some platform-specific code preserved correctly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5+8+4+6)/4 = 5.75  → 5.75 × 0.30 = 1.725
+Level 2 Average: (7+7+8+7)/4 = 7.25  → 7.25 × 0.25 = 1.8125
+Level 3 Average: (6+4+5)/3 = 5.00    → 5.00 × 0.20 = 1.000
+Level 4 Average: (2+3+4+2)/4 = 2.75  → 2.75 × 0.15 = 0.4125
+Level 5 Average: (6+6+8)/3 = 6.67    → 6.67 × 0.10 = 0.667
+
+Overall = 1.725 + 1.8125 + 1.000 + 0.4125 + 0.667 = 5.62/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Macro semantics completely lost**: `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE(x)` all flattened to magic numbers with no recovery hints
+- **Variable names generic**: `a0`, `a1`, `v0`, `v1` instead of `size`, `x`, `y`, `counter`, `increment`
+- **No documentation recovered**: Original 200+ lines of comments explaining preprocessing, assembly, and test purposes entirely absent
+- **Magic numbers unexplained**: `57072`, `282`, `0x400`, `0x200` without constant name recovery
+- **Type precision degraded**: Inconsistent integer types, generic pointer types losing original intent
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core application function names preserved accurately from source, maintaining semantic clarity for test functions.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no comments recovered despite extensive original documentation; decompiler provides no semantic guidance.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro constant names**: Analyze comparison patterns (e.g., `if (0x400 >= a0)`) to suggest named constants like `MAX_SIZE`
+2. **Infer variable semantics from usage**: Variables used in size checks should be named `size`, loop indices should be `i`/`idx`, counters should be `counter`
+3. **Add decompilation confidence annotations**: Flag regions where macro expansion, constant folding, or assembly recovery may have lost semantic information

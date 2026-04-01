@@ -1,0 +1,158 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`, `x`). Local variables are `v1`, `v2`, `v3`, `v4`, `v5` - completely devoid of semantic meaning. Even loop indices use cryptic names like `i` (when present) or `v1`/`v2`. The source had meaningful names like `temp1`, `temp2`, `sum`, `count` which are completely lost.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: While some function names match the source (`sequential_ops`, `single_if`, `if_else`), many are missing entirely or use generic names. The test functions are completely absent from proper naming - `test_control_flow_l1` appears but others are merged or renamed. Functions like `loop_multi_exit` retain names but the core issue is the 7 "FAILED to decompile" functions and the overall inconsistency between source and decompiled function sets.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Some literals are clear - array indices like `dword_3654[a1]` for switch tables, and constants like `0xFFFFFFFF` for error returns are understandable. However, magic numbers like `1001` (loop limit), `10 * a1 + 10` (value calculation), and `3 * a1 + 1` lack explanation. The source had explicit constants (e.g., `100`, `200`, `300` for case values) that are now computed expressions.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts present. The code is mostly clean without excessive casts or debug instrumentation. Some artifacts exist like `LODWORD(result)` for type conversions, but these are manageable. The main noise is the "FAILED to decompile" sections which are properly flagged as failures rather than being hidden.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Justification: Several control flow structures are poorly recovered. `loop_for_fixed` is transformed into a complex arithmetic formula instead of a recognizable for-loop. `loop_while` uses a confusing `do-while` with `(unsigned int)(v2 + 9) > 0x12` as the condition (which should be `x != 0`). `loop_continue` is completely mangled with bit manipulation instead of the simple `continue` pattern. The source's clear `for (int i = 0; i < n; i++)` becomes unrecognizable.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions are properly separated and maintain reasonable granularity. Each source function corresponds to a decompiled function. Parameter lists are present though poorly named. No obvious outline artifacts (functions that are just basic block collections). The main issue is that some functions like `test_control_flow_l1` contain hardcoded values instead of actual function calls.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Justification: Many functions read reasonably top-to-bottom, but several have goto-based jumps that disrupt flow. The `duffs_device` function has extensive labels (`LABEL_5` through `LABEL_12`) creating spaghetti code. `loop_multi_exit` has complex nested goto patterns. The `goto_forward` and `goto_backward` source functions are recovered but with confusing variable usage that makes tracing difficult.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: Generally clean without obvious dead code. Some optimization artifacts like the arithmetic transformation in `loop_for_fixed` (computing sum formula directly) are present but represent legitimate compiler optimization at -O1. No significant duplicate code blocks observed. The main issue is the mathematical formulas replacing loops which, while optimized, reduce readability.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Significant type degradation. Function parameters use `int` or `unsigned int` but the return types are often `__int64` without clear rationale. The source used `int` consistently for these simple arithmetic functions. Function pointer types are particularly bad - `__int64 (__fastcall *a1)(_QWORD)` is overly generic. The source had proper function signatures like `int (*f)(int)` which are lost.
+
+### 10. Composite Type Recovery
+**Score: 1/10**
+
+Justification: No struct or union types are reconstructed. The source has `int matrix[3][4]` in `loop_multi_exit` and `int arr[]` in `loop_break`, but these are recovered as raw pointer arithmetic with `*((_DWORD *)&unk_3060 + 4 * i)` and `&unk_3040`. The arrays are completely lost, replaced with cryptic `unk_XXXX` references to raw memory locations.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Moderate type safety issues. Multiple unsafe casts like `(unsigned int)(2 * a1)` where the multiplication could overflow. Pointer arithmetic like `a1 + 4 * v4` without bounds checking. Function pointer calls `funcs_1967[a1](a2)` have no type safety. However, no buffer overflow patterns are obvious. The main issues are the generic pointer types and lack of bounds validation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. The only comments are the decompiler header explaining it was "Decompiled by IDA Pro 9.1 with Hex-Rays" and the binary path. No comments explain algorithm logic, recovered intent, or flag uncertain areas. The source had extensive comments explaining each function's purpose and test cases - all lost. The "FAILED to decompile" sections are noted but lack explanation of why.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns are recognized - switch statements are identified, loops are present (though mangled). The `duffs_device` is partially recognized with its switch-case structure but the do-while loop pattern is not identified. State machines are recognized as switch statements. However, design patterns like "callback", "strategy", or "state machine" are not named or documented. The ternary operator in source is sometimes recovered but often transformed.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: The "FAILED to decompile" functions are properly flagged, showing 7 failures. However, no explanation is given for WHY they failed. The "positive sp value has been detected" warning in `_start` is noted but not explained. No indicators for uncertain indirect calls or unusual stack manipulations. The failures are reported but not diagnosed.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The source had explicit parameter validation (e.g., `if (n <= 0) return -1;` in `duffs_device`) which could be documented as preconditions, but none are recovered. No error condition documentation. The contracts are completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+Justification: No function call relationships are documented. The test functions call other functions but this is not indicated. Global variables like `jump_buffer` for setjmp/longjmp are used but their scope and usage are not explained. The callback relationships in `process_with_callback` and `call_func_ptr` are not documented. The code is presented in isolation without context.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are reasonably grouped - control flow Level 1 functions appear together, Level 2 together, etc. Static helper functions like `double_value`, `triple_value` are placed near their usage. The main function properly calls the test functions. However, the organization is arbitrary - there's no clear grouping matching the source's comment sections. The file is a single monolithic output.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code would not compile as-is. Seven functions "FAILED to decompile" leaving gaps. External dependencies on `puts`, `printf`, `_setjmp`, `longjmp` are not declared. The test functions have hardcoded values instead of function calls (e.g., `printf("CF-L1-01 (sequential_ops): %d\n", 21)` instead of calling `sequential_ops(5, 7, 3)`). Significant patching would be required to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 3 + 5 + 7) / 4 = 4.25
+L2_avg = (4 + 8 + 5 + 7) / 4 = 6.0
+L3_avg = (4 + 1 + 5) / 3 = 3.33
+L4_avg = (2 + 4 + 5 + 1) / 4 = 3.0
+L5_avg = (2 + 7 + 3) / 3 = 4.0
+
+Overall = (4.25 × 0.30) + (6.0 × 0.25) + (3.33 × 0.20) + 
+          (3.0 × 0.15) + (4.0 × 0.10)
+        = 1.275 + 1.5 + 0.666 + 0.45 + 0.4
+        = 4.29/10
+```
+
+**Overall Readability Score: 4.29/10**
+
+### Critical Defects
+
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` instead of source names (`a`, `b`, `c`, `x`). Local variables are `v1`, `v2`, `v3` - completely non-semantic.
+
+- **Type recovery failure**: No struct/union types recovered. Arrays like `int matrix[3][4]` become `*((_DWORD *)&unk_3060 + 4 * i)` - raw pointer arithmetic losing all semantic meaning.
+
+- **Control flow mangling**: `loop_for_fixed` becomes a complex arithmetic formula instead of a for-loop. `loop_while` condition `(unsigned int)(v2 + 9) > 0x12` is unrecognizable as `x != 0`.
+
+- **Test functions hardcoded**: `test_control_flow_l1` prints hardcoded expected values (`printf("CF-L1-01 (sequential_ops): %d\n", 21)`) instead of calling the actual functions with test inputs.
+
+- **No comments or contracts**: Zero meaningful comments explaining algorithm intent, preconditions, or recovered semantics. The source had extensive documentation completely lost.
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Functions are properly separated and maintain reasonable granularity. Each source function corresponds to a decompiled function with reasonable parameter lists.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The generic `a1`, `a2`, `v1`, `v2` naming makes it extremely difficult to track variable purposes across functions. This is the most impactful degradation.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, array indices, loop bounds) to suggest semantically meaningful names like `sum`, `count`, `index`, `packet_size`.
+
+2. **Recover composite types**: Detect array accesses like `arr[i]` or struct field accesses and reconstruct the original types with meaningful field names rather than raw pointer arithmetic with `unk_XXXX` addresses.
+
+3. **Preserve test function logic**: The test functions should call the actual functions with test inputs rather than printing hardcoded expected values. This would allow verification that the decompilation is semantically correct.

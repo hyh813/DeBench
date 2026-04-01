@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_O1_no_g/binaryai/syntactic/bin/5-23_clang_O1_no_g_fixed",
+  "stdout": "Preprocessing Features Test\nparam_macro_constants: 64\ncall_macro_constants: 30\nparam_macro_functions: 32\ncall_macro_functions: 57122\nparam_conditional_compile: 116\ncall_conditional_compile: 19\nparam_multi_branch_compile: 60\nLOG: Values: 10, 20, 30\ncall_multi_branch_compile: 60\nparam_macro_recursion: 16\ncall_macro_recursion: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:09\nparam_stringize: 382\nASM Features Test\nparam_asm_basic: 15\ncall_asm_basic: -1209364429\nparam_asm_clobber: -1\ncall_asm_clobber: 36\nparam_asm_multi_insn: 30\ncall_asm_multi_insn: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

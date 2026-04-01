@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_4`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that clearly indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (cdecl_func, call_cdecl, varargs_func), accurately reflecting purpose. However, some functions have generic names (FUN_001006d0, FUN_0010083c) and internal helpers lost names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (0x10, 0xffffffff, 0x2a, 0x12345678) without explanation. String literals referenced as opaque DAT_00101dc0 instead of actual text. Hex values like 0x14, 0x1e, 0x28 should be decimal 20, 30, 40.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present including redundant casts `(int)((ulong)uVar1 >> 0x20)`, frame pointer manipulation, and register spilling variables. No debug instrumentation but type promotion noise exists.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures mostly preserved as for/while constructs. Conditional logic is readable. However, varargs handling shows awkward stack pointer arithmetic that obscures the simple original loop pattern.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical function signature errors: `call_cdecl`, `call_stdcall`, `call_fastcall` declared as `void` but should return `int`. `func_no_args` returns `undefined8` instead of `int`. Function boundaries preserved but return types corrupted.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Nesting stays under 4 levels. Early returns used appropriately in functions like `func_struct_byptr`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casting present (`(ulong)local_24`, `(int)sVar1`). No significant dead code. The varargs implementation has unnecessary complexity from stack frame tracking.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` used where `int32_t` needed, `undefined8` instead of proper return types, `long` instead of struct pointers. Function pointers degraded to `code *`. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete struct recovery failure. `LargeStruct` becomes `long param_1` with pointer arithmetic `*(long *)(param_1 + (long)local_c * 8)`. `SmallStruct` becomes `int *param_1`. Array types lost entirely (param_array_decay shows no array parameter).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout: `(int *)((long)local_40 + (long)local_20)`, `(undefined4 *)*param_1`. Pointer arithmetic on struct data without type safety. Function pointer calls use `code *` with no signature verification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each test case, expected values, and calling convention details. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (complex stack arithmetic instead of va_list). Struct passing not identified. Function pointer callback pattern obscured. No algorithm or design pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite critical issues: `call_order_dep()` called with no arguments (should have 2), function return type mismatches, struct type loss. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Error conditions not documented. Original source had clear test expectations that are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as DAT_00101dc0 without meaning. Callback relationships (callback_func → param_func_ptr) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Static functions not properly scoped. No header file with API declarations. Original source had clear section organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations incomplete. References to undefined symbols (DAT_00101dc0, ret_opaque_handle_handle1). Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+5+8+7)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (4+2+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.49/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Function return types corrupted**: `call_cdecl`, `call_stdcall`, `call_fastcall` declared as `void` but should return `int`
+- **Complete struct type loss**: `LargeStruct` and `SmallStruct` reduced to pointer arithmetic with no field names
+- **Varargs implementation unreadable**: Complex stack pointer arithmetic instead of recognizable va_list pattern
+- **Zero comments**: No documentation despite complex calling convention test cases
+- **Missing function arguments**: `call_order_dep()` called with no arguments (original had 2 parameters)
+
+### Best Quality Aspect:
+- **Code Linearization (8/10)** - Code reads top-to-bottom naturally with minimal forward jumps and appropriate nesting levels
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding test purposes impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from memory access patterns** - Detect consistent offset-based field access and reconstruct struct definitions with field names
+2. **Preserve function signatures from debug symbols** - When `-g` flag is present, use DWARF information to maintain correct return types and parameter lists
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (varargs, struct passing) with comments indicating manual review needed

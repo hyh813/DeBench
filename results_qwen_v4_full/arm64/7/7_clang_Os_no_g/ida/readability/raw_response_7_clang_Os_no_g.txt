@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic register-based names (`v0`, `v1`, `a1`, `a2`, `w8`, `x10`) with zero semantic meaning. No variable indicates purpose like `result`, `encrypted`, or `buffer`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: User function names preserved (`param_fake_branch`, `call_opaque_predicate`) but critical functions like `param_fake_branch` are empty. Generic names like `sub_730` appear for helper functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x12345678`, `0xAAAAAAAA` appear without explanation. Some constants folded away entirely (e.g., `call_fake_branch` returns literal 10).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`LOBYTE`, `LODWORD`, explicit casts like `(unsigned __int8)`). Not severe but adds visual clutter throughout functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_fake_branch` lost ALL control flow (empty function). Other functions show reasonable if-else/loops but `param_opaque_predicate` has awkward do-while patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but `param_buffer_overflow_stack`, `param_buffer_overflow_heap`, and `param_fake_branch` are empty when they should contain logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but do-while loops with manual increment (`v8++ - 1`) disrupt natural reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Type casts repeated throughout (`(unsigned int)`, `(unsigned __int8)`). Some expressions could be simplified but no severe dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original used `int` consistently; decompiled mixes `__int64`, `unsigned int`, `int`. `param_fake_branch` changed from `int` return to `void`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (function just returns constant 48). No struct definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(__sighandler_t)`, `(unsigned __int64)`). Pointer arithmetic visible but no buffer overflow warnings.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No explanation of obfuscation patterns, algorithm purpose, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (fake branches, opaque predicates) not identified. GCD algorithm in `param_opaque_predicate` not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warning that `param_fake_branch` being empty is suspicious. Failed library functions listed but no impact analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). No postconditions or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Call graph not provided. Global variable usage unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping comments. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 11 standard library functions failed to decompile (`strlen`, `signal`, `printf`, etc.). Requires stubs for compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+5+6)/4 = 4.50
+Level 2 (Structural):  (4+5+6+6)/4 = 5.25
+Level 3 (Type):        (5+4+5)/3   = 4.67
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50
+Level 5 (Contextual):  (5+5+4)/3   = 4.67
+
+Overall = (4.50×0.30) + (5.25×0.25) + (4.67×0.20) + (2.50×0.15) + (4.67×0.10)
+        = 1.35 + 1.31 + 0.93 + 0.38 + 0.47
+        = 4.44/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **`param_fake_branch` completely empty** - Original had fake branch logic with `x*x < 0` conditions; decompiled version is `void param_fake_branch() { ; }`
+- **All variable names are generic** - `v0`, `v1`, `a1`, `w8` provide zero semantic information about purpose
+- **11 standard library functions failed** - `strlen`, `signal`, `printf`, `longjmp` etc. not decompiled, breaking context
+- **No comments or documentation** - Zero explanation of obfuscation patterns, algorithm purpose, or decompilation confidence
+- **Constant folding lost call relationships** - `call_fake_branch()` returns literal 10 instead of calling `param_fake_branch(10)`
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - User-defined function names were preserved from debug symbols (`param_opaque_predicate`, `decrypt_string`), providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.5/10 average)** - Complete absence of comments, no pattern recognition for obfuscation techniques, and no anomaly warnings for critical decompilation failures.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag logic loss anomalies** - When a function with debug symbols becomes empty or significantly smaller than expected, emit a warning comment indicating potential decompilation failure.
+2. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, buffer pointers, return values) to generate semantic names like `i`, `buffer`, `result` instead of `v0`, `v1`.
+3. **Document obfuscation patterns** - Recognize common obfuscation techniques (fake branches, opaque predicates, instruction substitution) and add explanatory comments identifying the pattern and its purpose.
+
+---
+
+## Additional Observations
+
+**Metadata Inconsistency:** The decompiled code header claims "Decompiled by IDA Pro 9.1" but metadata states "Ghidra (12.0_PUBLIC)". Additionally, binary path shows `7_clang_Os_no_g` but original metadata claims `gcc -O0 -g`. This suggests the analyzed binary does not match the claimed source.
+
+**Optimization Mismatch:** Original compiled with `-O0` (debug, no optimization) but decompiled code shows aggressive constant folding and inlining typical of `-O2` or higher. This explains why `call_*` functions return constants instead of calling their targets.
+
+**Architecture Note:** Original claims `arm64` but decompiled header says `Processor: arm` (32-bit). This architecture mismatch may contribute to decompilation quality issues.

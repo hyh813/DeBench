@@ -1,0 +1,15 @@
+Testing obfuscation and optimization features
+Obf: 10
+Obf: 20
+Obf: 225
+Obf: 68
+Opt: 500500
+Opt: 5050
+Opt: 396
+Opt: 20
+Edge: 1
+Edge: 41
+Edge: 30
+Edge: 2000000000
+Edge: 10
+Edge: 44

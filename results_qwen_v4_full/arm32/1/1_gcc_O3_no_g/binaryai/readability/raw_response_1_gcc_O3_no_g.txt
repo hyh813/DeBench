@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` instead of semantic names (e.g., `sequential_ops` uses `param_1/2/3` instead of `a/b/c`, `loop_for_fixed` uses `iVar1/iVar2` instead of `sum/i`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`, `recursion_factorial`), clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x14`, `0x1e`, `0xffffffff`) without explanation; test functions hardcode expected values without context (e.g., `__printf_chk(1,"CF-L1-01...%d\n",0x15)`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler/runtime artifacts (`_init`, `register_tm_clones`, `__do_global_dtors_aux`, `__aeabi_idiv`) that clutter the output but don't impede core function understanding.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while correctly, but `switch_fallthrough` becomes nested if-else losing fall-through semantics, and `loop_multi_exit` uses goto labels (`LAB_00010c90`) instead of structured breaks.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity; helper functions (`double_value`, `triple_value`, `op_add`) remain separate. However, `duffs_device` becomes overly complex with switch-case goto chains.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally, but `loop_multi_exit` and `duffs_device` have disruptive forward jumps with labeled blocks that break linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `__aeabi_idiv` contains 35+ boolean variables (`bVar5` through `bVar35`) from unrolled division logic; `indirect_recursion_a` has deeply nested conditionals that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent typing throughout (`op_div` uses `undefined4` for param_1 but `int` for param_2); function pointers often typed as generic `code *` instead of proper signatures; `if_else` returns `bool` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` recovered as `__jmp_buf_tag *` correctly, but no struct definitions for arrays (e.g., `matrix[3][4]` in `loop_multi_exit` becomes implicit); function pointer arrays use `code *apcStack_18[6]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int)param_1`, `(uint)bVar5`); `call_func_ptr` uses `UNRECOVERED_JUMPTABLE` with undefined signature; `conditional_func_ptr` calls function pointer without proper parameter passing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining algorithm intent, non-obvious logic, or decompilation confidence; original source had extensive documentation (e.g., "难度依据", "场景标签") completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device not identified as such; state machine pattern in `state_machine`/`fsm_func_table` not labeled; recursion patterns not annotated as tail-recursion optimization candidates.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`), but `computed_goto` shows `(code *)&DAT_000116c8` without explaining this is a computed jump target; `non_local_jump.constprop.0` renamed without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n>0`); no postconditions; error conditions not explained (e.g., when functions return `-1` or `0xffffffff`).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; test functions (`test_control_flow_l1/2/3`) call target functions but no call graph provided; callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (runtime init functions mixed with test functions); no logical grouping by control flow level (L1/L2/L3 functions interspersed).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `__aeabi_idiv`, `__longjmp_chk`) not properly declared; ARM-specific runtime calls present; won't compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Calculation:**
+```
+L1 (Lexical):     (4+9+5+6)/4 = 6.0  × 0.30 = 1.80
+L2 (Structural):  (6+7+7+6)/4 = 6.5  × 0.25 = 1.63
+L3 (Type):        (5+6+5)/3   = 5.3  × 0.20 = 1.07
+L4 (Semantic):    (2+3+5+2)/4 = 3.0  × 0.15 = 0.45
+L5 (Contextual):  (5+5+4)/3   = 4.7  × 0.10 = 0.47
+─────────────────────────────────────────────────
+Total:                                    5.42 → 5.4/10
+```
+
+**Critical Defects:**
+- Variable `param_1/2/3` should be named `a/b/c` or semantic equivalents based on original source
+- `switch_fallthrough` loses intentional fall-through semantics, converted to nested if-else
+- Zero comments explaining algorithm intent or decompilation confidence
+- `__aeabi_idiv` contains 35+ boolean variables from unoptimized division routine
+- Function pointer calls use generic `code *` type losing signature information
+- Test functions hardcode expected values without explaining what's being tested
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- Function names are perfectly preserved from source, making identification and navigation trivial.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of documentation makes understanding non-trivial logic require reverse engineering effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., `param_1` → `a` when used in arithmetic operations matching source)
+2. **Add semantic annotations** for recognized patterns (Duff's device, state machines, tail recursion) with confidence indicators
+3. **Recover and preserve fall-through semantics** in switch statements by detecting missing break patterns and annotating accordingly

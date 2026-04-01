@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v3`, `v4`, `v5`, `result`). For example, in `process_char(int result)`, the parameter should be named `c` based on source. In `array_1d_stack`, parameters `a1` and `a2` should be `arr` and `n` respectively.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most test functions correctly recovered their original names (`process_char`, `process_short`, `array_1d_stack`, `ptr_single`). However, some helper functions have generic names like `sub_103A0`, `sub_11A18`, and `binary_tree_sum` (which should be internal). The core test functions maintain semantic accuracy.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `65`, `32`, `0x19` in `process_char` are unexplained (should be `'A'`, `32`, `'Z'-'A'`). The enum values in `enum_switch` reference `CSWTCH_73[a1]` without defining the enum constants. Some literals like `300`, `11`, `200` in test functions are hardcoded results rather than computed values.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts present. The code is relatively clean without excessive register spilling artifacts or debug instrumentation. Some minor noise like `LODWORD`/`HIDWORD` macros for 64-bit operations, but these are manageable.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is natural with recognizable loops and conditionals. However, `binary_tree_sum` has deeply nested structure that's hard to follow, and `array_3d` uses fully unrolled loops instead of nested for-loops. At -O0, such aggressive loop unrolling is unexpected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity - each test function focuses on a single type/pattern. The `binary_tree` function correctly delegates to `binary_tree_sum`. No excessive inlining or outlining artifacts observed at this debug optimization level.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns in `array_complex_index` and `ptr_diff` are appropriate. The `pointer_array` function has some nested conditionals but remains traceable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: `array_3d` and `array_2d_stack` show significant loop unrolling (125 and 10 additions respectively, fully expanded). This makes the code verbose and harder to understand. At -O0, such unrolling should not occur.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic `_DWORD` (32-bit unsigned) instead of `int32_t` or `int`. Function pointers use `int (__fastcall *)(int)` instead of proper signatures. `process_ld` returns `double` instead of `long double`. Boolean returns `bool` which is correct. Mixed precision throughout.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: `struct_simple` correctly accesses fields as `*a1 + a1[1] + a1[2]` (x, y, z). However, `struct_nested` loses the nested structure, computing `*a1 + a1[3]` instead of `r->position.x + r->size.width`. `struct_deep` uses raw pointer arithmetic without field names. Union types partially recovered but lose member names.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe casts present: `*(_DWORD *)a1` in `ptr_void`, `(int)*(float *)a1` in `union_type`. Pointer arithmetic like `a1 + 4 * a2` in `ptr_offset` is correct but unchecked. Function pointer calls like `(*(int (__fastcall **)(_DWORD))(a1 + 4))(*(_DWORD *)a1)` are type-unsafe.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Almost no comments present. Only "// attributes: thunk" appears once. No explanation of algorithms, parameter purposes, or return value meanings. The decompiled code provides no guidance for understanding complex logic like the tree traversal or graph algorithms.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms explicitly identified. The linked list traversal in `linked_list` and `doubly_linked_list` could be recognized as iterator patterns but aren't labeled. The binary tree recursion isn't identified as such.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Failed functions are listed at the end (`__imp_puts`, `__imp___printf_chk`, etc.) but without context. No indication of why `opaque_handle_create` is empty or the significance of `JUMPOUT` calls. Some uncertainty markers missing.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. Functions like `array_complex_index` with bounds checking don't indicate the validation logic. No documentation of error return values (-1 for invalid bounds).
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are implicit through the test harness structure but not explicitly documented. The `complex_callback` function used by `ptr_func_complex` isn't clearly linked. No indication of which functions call `double_value`.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically by type (data types, arrays, pointers, composites). Static functions like `double_value` aren't marked but the grouping is reasonable. The output follows a sensible order matching test execution.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Several external function references fail to decompile (`__imp_puts`, `__imp___printf_chk`). The code would require linking against libc. Some function signatures like `main(int argc, const char **argv, const char **envp)` are correct but others need stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 8) / 4 = 5.25
+L2_avg = (6 + 8 + 7 + 6) / 4 = 6.75
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (2 + 3 + 5 + 2) / 4 = 3.00
+L5_avg = (5 + 7 + 5) / 3 = 5.67
+
+Overall = (5.25 × 0.30) + (6.75 × 0.25) + (4.67 × 0.20) + 
+          (3.00 × 0.15) + (5.67 × 0.10)
+        = 1.575 + 1.6875 + 0.934 + 0.45 + 0.567
+        = 5.21/10
+```
+
+**Overall Readability Score: 5.21/10**
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` instead of semantic names like `c`, `arr`, `n`
+- **Loop unrolling at -O0**: `array_3d` and `array_2d_stack` are fully unrolled, making 125 and 10 additions respectively - unexpected at debug optimization level
+- **Struct field loss**: Nested structures like `Rect` and `Widget` are reduced to raw pointer arithmetic without field names
+- **No comments**: Zero explanatory comments for algorithms, parameters, or return values
+- **Type precision loss**: `long double` returned as `double`, generic `_DWORD` instead of specific integer types
+
+### Best Quality Aspect
+**Function Naming Quality (7/10)** - Core test function names like `process_char`, `array_1d_stack`, `ptr_single` accurately reflect their purpose and match the original source.
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - The pervasive use of `a1`, `a2`, `v3`, `v4`, `result` makes it extremely difficult to track variable purposes across all functions. This is the most severe readability issue.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `a1` used in array indexing → `arr` or `array`; `a2` compared to 0 → `count` or `length`)
+2. **Preserve loop structures at -O0**: Don't unroll loops when decompiling debug builds; reconstruct `for`/`while` constructs from backward jump patterns
+3. **Recover struct field names**: Use type information and field access patterns to reconstruct meaningful field names like `position.x`, `size.width` instead of `a1[3]`

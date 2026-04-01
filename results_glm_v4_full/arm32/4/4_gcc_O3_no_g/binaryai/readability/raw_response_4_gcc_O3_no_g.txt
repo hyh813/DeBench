@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are consistently named `param_1`, `param_2`, etc., which is generic but standard for decompilation without debug symbols. However, in `cdecl_func`, the parameters `a` and `b` are lost, reducing semantic clarity.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `cdecl_func`, `test_calling_conventions`, `main`), matching the original source exactly.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0xf` (15) and `0x32` (50) are used directly in functions like `call_cdecl` and `call_stdcall`. While accurate to the compiled constant-folded code, they obscure the original arithmetic operations (`5+10`, `5*10`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The user code is clean, but the output includes numerous compiler/library helper functions like `__aeabi_dadd` and `__subdf3` which clutter the listing, though they are separated from the main logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Most control flow is natural, but `varargs_func` is decompiled as a simple counter loop (`iVar1 = iVar1 + 1`) rather than the accumulator logic found in the source (`sum += va_arg`), significantly altering the perceived logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source. There is no inlining or outlining of the user-defined functions, maintaining the original structure perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The `do-while` loop in `varargs_func` is a minor structural variation from the source's `for` loop but remains readable.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or obvious redundancy in the user functions. The compiler's constant folding (e.g., `return 0xf`) is presented cleanly, even if it differs structurally from the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void` are correct, but return types are often `undefined4` (e.g., in `call_cdecl`) instead of `int`, losing signedness information and semantic intent.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: `LargeStruct` passed by value in `func_struct_byval` is completely flattened into 32 separate integer parameters (`param_1` through `param_21`), destroying the structure abstraction and making the function signature unreadable.
+
+**11. Type Safety:** Score: 6/10
+Justification: While pointer arithmetic in `func_struct_byptr` is correct, the flattened struct parameters in `func_struct_byval` create a type-unsafe signature that misrepresents the memory access pattern.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic or anomalies (like the varargs failure) are left unexplained.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The varargs idiom is completely missed; the decompiler failed to recognize the `va_list` usage and instead generated a generic loop, failing to identify the standard pattern.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the incorrect logic for `varargs_func` and the disastrous signature for `func_struct_byval` with absolute confidence, offering no warnings about potential analysis failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the non-null requirement for `func_struct_byptr` is not noted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved perfectly. `main` correctly calls `test_calling_conventions`, which in turn calls the specific test functions, maintaining the call graph accurately.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, generally following the source order. Helper functions are placed at the end, keeping the main logic distinct.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes references to external symbols (e.g., `__printf_chk`, `__aeabi_dadd`) without providing headers or stubs, requiring significant patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- **Struct Flattening**: `func_struct_byval` destroys the `LargeStruct` abstraction, expanding it into 32 separate integer parameters.
+- **Varargs Logic Loss**: `varargs_func` logic is incorrectly decompiled as a counter loop, completely missing the `va_arg` accumulation.
+- **Missing Comments**: Total absence of comments makes it impossible to distinguish intended behavior from decompiler artifacts without cross-referencing the binary.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Why? The decompiler successfully recovered all original function names from symbols, making the high-level purpose of each unit immediately identifiable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- Why? The failure to recover `LargeStruct` passed by value turns a readable function into an unreadable mess of parameters, fundamentally breaking the code's comprehensibility.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve ARM64 Struct Passing Analysis**: Implement logic to detect hidden pointer arguments for large structs passed by value to reconstruct the original struct signature.
+2.  **Enhance Varargs Support**: Improve the analysis of `va_list` and stack pointer manipulation to recover the actual logic of variadic functions instead of falling back to generic loop patterns.
+3.  **Add Anomaly Warnings**: Automatically flag functions where the decompiled logic seems inconsistent with standard calling conventions (e.g., a varargs function that doesn't access its arguments) to alert the analyst.

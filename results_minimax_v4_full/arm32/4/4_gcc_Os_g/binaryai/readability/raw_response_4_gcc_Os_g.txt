@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses generic parameter names (`param_1`, `param_2`) and local variable names (`iVar1`, `uVar1`, `local_10`, `local_c`) that provide zero semantic information. Compare to source where variables like `count`, `sum`, `args` clearly indicate purpose. The decompiled code makes it nearly impossible to track variable roles without extensive cross-referencing.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from the source: `cdecl_func`, `call_cdecl`, `test_calling_conventions`, `varargs_func`, `func_many_args`. The decompiler accurately recovered the meaningful function names. Minor issue: some internal functions like `callback_func` could be better contextualized.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The decompiled code uses hex literals (`0xf` for 15, `0x32` for 50, `0x2a` for 42) without explanation. String literals are replaced with data references (`&DAT_0001148c`) losing the actual text. The magic numbers are correct but lack semantic meaning - a reader must manually convert hex to understand the values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts pollute the code: type casts like `(undefined4 *)0x0`, compiler intrinsics (`__printf_chk`, `__stack_chk_fail`), and massive floating-point helper functions (`__aeabi_dadd`, `__subdf3`, `__aeabi_l2d` - over 300 lines of low-level code). These artifacts overwhelm the actual application logic and make the code nearly unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow structures are preserved - loops with `for` statements, conditionals with `if/else`. However, some patterns are awkward: `param_varargs` has an empty loop body that doesn't reflect the original `va_arg` usage. At `-O0`, the control flow should more closely match the source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler correctly maintains function boundaries - all 40+ functions from the source are preserved as separate entities. Function sizes are reasonable. However, some functions like `test_calling_conventions` are quite large (60+ lines) and could benefit from decomposition that the source didn't have due to being test code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. However, some computed jumps and the presence of `do-while` loops instead of `for` loops slightly disrupt linear reading. The `ret_large_struct` function has complex stack manipulation that breaks linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. The decompiler doesn't introduce duplicate expressions. Some optimization artifacts exist but are minimal. The code is relatively clean in this dimension.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The decompiler uses generic types: `undefined4` and `undefined8` instead of specific integer types, `byte*` instead of `char*` for strings, `code*` for function pointers. The original source used `int`, `char*`, `va_list`, etc. While types are present, they lack the precision of the original. Const correctness is not preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler fails to recover struct types. For `func_struct_byval`, it uses `int local_10 [4]` with raw pointer arithmetic instead of the original `LargeStruct` with its `data[16]` array. For `SmallStruct`, it uses `int*` instead of the struct type. All composite types are lost to raw memory operations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: `(undefined4 *)*param_1` dereferencing, pointer arithmetic like `param_1 + iVar2 * 4` for array access. The `param_complex_cast` function uses `int*` for void* without safety annotations. Not severely dangerous but lacks the safety guarantees of the original.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in the entire decompiled output. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"). The decompiler provides no documentation about what each function does, no algorithm explanations, and no uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are recognized or named. The original uses standard C idioms (varargs with va_list, function pointers, struct passing) but these are not identified. The decompiler doesn't flag the stdarg usage pattern or the callback pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `call_ptr_array` function has undefined behavior (passing stack addresses to function expecting `char*[]`) but this isn't indicated. No warnings about potential undefined behavior from the original source's intentional UB tests (like `param_order_dep`).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had implicit contracts (e.g., `func_struct_byptr` requires non-null pointer, `varargs_func` requires count > 0). These are not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `test_calling_conventions` calls `puts`, `__printf_chk`). However, there's no documentation of which functions call which, no indication of callbacks (like `callback_func` being passed to `param_func_ptr`), and no global variable usage documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output (all test functions together, all parameter passing functions together). However, everything is in a single monolithic output without file boundaries. The original had clear section comments (`// 4.1 调用约定`, `// 4.2 参数传递模式`) which are lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. It uses undefined types (`undefined4`, `undefined8`, `code`), calls external functions without declarations, and has missing includes. Significant patching would be needed: adding `#include <stdarg.h>`, `#include <string.h>`, defining all the `undefined*` types, and declaring external library functions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `iVar1`, `local_10`) providing zero semantic information about purpose
+- No struct type recovery - all composite types lost to raw pointer arithmetic
+- Zero comments or documentation - completely opaque code
+- Excessive compiler artifacts (intrinsics, helper functions) overwhelming application logic
+- Type precision severely degraded (`undefined4`, `byte*`, `code*` instead of specific types)
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+The decompiler correctly preserved the meaningful function names from the source (`cdecl_func`, `test_calling_conventions`, `varargs_func`), making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The decompiled output has zero comments, making it impossible to understand the purpose of test cases, the meaning of magic numbers, or the intent of complex logic without referring back to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used in `va_start(args, param_1)` → should be named `count`; `local_10` used in loop from 0-15 summing → should be named `sum` or reflect the data being processed)
+2. **Recover struct/union types**: Detect sequential memory accesses and reconstruct composite types with field names based on access patterns
+3. **Add semantic comments**: Include basic documentation explaining what each test function validates, the meaning of key constants, and flag areas of uncertainty or potential undefined behavior

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/3/3_gcc_O0_no_g/ida/syntactic/bin/3_gcc_O0_no_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0xcc in position 0: invalid continuation byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

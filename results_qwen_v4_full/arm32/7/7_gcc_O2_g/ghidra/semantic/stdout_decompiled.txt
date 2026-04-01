@@ -1,0 +1,8 @@
+Test output:
+
+Value: 10
+Result: 35
+Hex: 225
+Encrypted: 24
+Tail call: 500500
+Non-tail: 5050

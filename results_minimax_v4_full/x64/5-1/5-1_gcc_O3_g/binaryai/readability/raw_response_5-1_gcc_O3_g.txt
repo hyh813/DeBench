@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic stack slot names (`local_34`, `local_2c`, `local_24`, `local_1c`, `local_18`, `local_16`, `local_15`, `local_10`). Parameters use generic names (`param_1`, `param_2`). No semantic meaning recovered - the string "Test" is encoded as hex `0x74736554` in `local_34` without recognition.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`). Template instantiations reasonably named (`template_max_int_`, `template_max_double_`). However, many internal functions use auto-generated patterns like `FUN_00101020`, and virtual function overrides lose their class context (e.g., `Base::virtual_func` vs `Derived::virtual_func` not clearly distinguished).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x125c` (4704), `0x3e9` (1000), `0x15` (21). The string "Test" appears as raw hex `0x74736554`. No constants or enum values recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. External function stubs are properly isolated. Stack canary checks (`__stack_chk_fail`) present but expected at -O0 with -fstack-protector. No redundant casts or debug instrumentation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with if/else and returns. However, virtual function call in `call_virtual_func` uses cryptic `(***(code ***)param_1)();` instead of proper vtable dispatch syntax. Some virtual inheritance functions have complex pointer arithmetic obscuring the logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation - each test function is separate, member functions extracted, template instantiations distinct. Minor issue: some destructors are duplicated (e.g., `DiamondDerived::~DiamondDerived` appears 3 times suggesting multiple vtable entries).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto or backward jumps. Some forward jumps exist but minimal.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No dead code observed. Some duplicate destructor definitions (3 versions of `DiamondDerived::~DiamondDerived`) suggest vtable complexity rather than true redundancy. Template functions properly deduplicated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined`, `undefined4`, `undefined8` types. Integer types not specific (generic `int` vs `int32_t`). Pointers to functions use generic `code` type. Const correctness lost - `const char*` becomes `char*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial recovery - `Container_int_` and `Container_double_` correctly identified as template instantiations. However, most classes lack proper struct definitions with named fields. Access to class members uses raw offset arithmetic (e.g., `*(int *)(this + 8)`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: virtual call `(***(code ***)param_1)();` is dangerous, pointer arithmetic like `this + *(long *)(*(long *)this + -0x18)` is error-prone, no bounds checking on array accesses. The `call_virtual_func` signature shows `void` return instead of `int`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Zero explanation of algorithms, vtable mechanics, or template instantiation. The source had Chinese comments explaining each test - none recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Virtual function mechanism partially recognized (vtable calls visible), template instantiation detected (`template_max_int_`), but no explicit naming of patterns like "virtual dispatch", "RAII", "CRTP", or "diamond inheritance".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `call_virtual_func` with broken return type not flagged. Multiple destructor versions for same class not explained. Complex virtual inheritance offset calculations not annotated as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had implicit contracts (e.g., `getData` requires idx < size) - none recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function names indicate some relationships (e.g., `Container<int>::push` called from `test_cpp_template_class`). However, no explicit call graphs, no indication which functions are virtual overrides, no documentation of inheritance relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions loosely grouped by type (test functions, member functions, templates). However, all dumped in single file with no namespace recovery. Static vs instance methods not clearly distinguished.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile as-is. Missing `#include <cstddef>`, `std::` namespace qualifiers, template syntax, and proper class definitions. External dependencies (`operator_new`, `operator_delete`) need stubs.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- All local variables use generic names (`local_34`, `param_1`) with no semantic recovery
+- No comments explaining any functionality - completely absent
+- Virtual function calls use unsafe cryptic syntax `(***(code ***)param_1)();`
+- Magic numbers everywhere without explanation (e.g., `0x125c` for 4704)
+- Type precision severely degraded with `undefined4`/`undefined8` everywhere
+- Class members accessed via raw offset arithmetic instead of named fields
+
+**Best Quality Aspect:** Noise Reduction (7/10)  
+The decompiled output is relatively clean without excessive compiler artifacts like redundant casts or debug instrumentation cluttering the code.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+The decompiled code has zero comments explaining any functionality. At -O0 with debug symbols, the decompiler should have recovered significantly more context including variable names from debug info and explanatory comments.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover debug symbol information**: At -O0 -g, variable names like `value`, `name`, `size` should be extracted from DWARF debug info rather than using generic `local_X` names
+2. **Add explanatory comments**: Document virtual dispatch mechanics, template instantiation patterns, and complex pointer arithmetic with uncertainty flags
+3. **Improve type precision**: Use debug info to recover `int32_t`, `size_t`, `const char*` instead of generic `int`, `undefined4`, `char*`

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_clang_Os_g/ida/syntactic/bin/7_clang_Os_g_fixed",
+  "stdout": "Test Output\nObf L402: 10\nObf L403: 20\nObf L404: 225\nObf L405: 89\nOpt L401: 500500\nOpt L401_0: 5050\nOpt L402: 396\nOpt L501: 20\nEdge L301: 1\nEdge L302: 41\nEdge L303: 30\nEdge L304: 2000000000\nEdge L401: 10\nEdge L402: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/6/6_clang_O0_g/ida/syntactic/bin/6_clang_O0_g_fixed",
+  "stdout": "=== Standard Library Functions ===\nstrcpy: 8\nstrcmp: 0\nstrlen: 12\nmemcpy: -1073741773\nmemcmp: -1\nValue: 42, Name: Test\nprintf: 22\nscanf: 579\nfopen/fclose: 42\nfread/fwrite: 42\nmalloc/free: 90\nmemset: 0\nstrchr/strstr: 15\n=== System Calls ===\nlinux_syscall: 42\nwin32_api: 42\nfork_exec: 42\npipe_communication: 42\nsocket_create: 42\nshmget_shmat: 42\nsignal_handling: 42\n=== Thread Concurrency ===\npthread_create: 49\npthread_join: 465\nmutex_lock: 42\ncondition_variable: 42\natomic_ops: 42\nthread_local_storage: -3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

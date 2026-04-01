@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all local variables marked as "Unresolved local var" with generic names (iVar1, iVar2, local_808). Only function parameters retain original names (x, n, out), making internal logic tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (local_vars, heap_basic, vla_stack, test_stack_memory). Action-oriented test function names clearly indicate their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers in hex (0x2a, 0x14, 0x3c, 0x800) without explanation. Original decimal constants (42, 20, 60) converted to opaque hex values obscuring semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter every function. Compiler artifacts like bit-shift optimizations (n << 2 instead of n * 4) remain unexplained.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Functions like `vla_stack` and `alloca_usage` use extremely complex bit manipulation (`(n - (n >> 0x1f)) * 2 & 0xfffffffdU`) instead of simple array indexing. Loop structures often use do-while with manual counters instead of for loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries properly preserved with appropriate granularity. However, test functions have actual function calls replaced with constant values, losing the call relationship structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well, but complex functions like `linked_list_heap` have deeply nested conditionals that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions print constant values instead of calling actual functions (e.g., `printf("MEM-L1-01: %d\n",0x14)` instead of calling `local_vars(5)`), creating redundancy between test code and actual logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation with `undefined4`, `void*`, and generic `int*` used interchangeably. Original `size_t` parameters become generic `int`. Lost const-correctness throughout (e.g., `memop_memcpy` takes `void *src` instead of `const void *src`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Point` struct recognized but fields accessed via pointer arithmetic in some places. `Node` struct partially recovered with `data` and `next` fields visible, but `TreeNode` struct access simplified away in `tree_heap_traversal`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)__ptr`, `(uint)local_808[0x400]`). Pointer arithmetic without proper typing (`*(int *)((int)__ptr + iVar1 * 2)`). Lost array bounds information entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated "Unresolved local var" comments present. No semantic comments explaining algorithm purpose, no API contracts, no decompilation confidence indicators beyond generic warnings.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns, algorithm patterns, or data structure patterns identified. Common idioms like linked list traversal appear as raw pointer chasing without recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Unknown calling convention", "Could not recover jumptable") but doesn't flag critical logic errors like missing malloc/free in `double_free` or constant-folding in test functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: n > 0" for vla_stack). No postconditions or error handling contracts. Null checks present but not documented as API requirements.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions don't actually call the functions they claim to test (constants instead). Global variable usage visible but relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output, logical grouping preserved from source order. Static functions properly marked but no header file structure or API documentation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies (malloc, printf, memset) used without declaration context. Would require significant stubbing to compile standalone. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+7+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `iVar1`, `iVar2`, `iVar3`** should be named based on usage (e.g., `index`, `sum`, `result`) - affects 80% of functions
+- **Test functions print constants instead of calling actual functions** - `test_stack_memory` prints `0x14` instead of calling `local_vars(5)`, losing semantic relationship
+- **`double_free` function missing malloc/free logic entirely** - critical semantic loss that changes program behavior
+- **VLA and alloca functions use incomprehensible bit manipulation** instead of simple array indexing
+- **Hex literals (0x2a, 0x14, 0x3c)** obscure original decimal values (42, 20, 60) making verification difficult
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making it easy to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No patterns recognized; linked list traversal, tree operations, and memory management patterns all appear as raw pointer arithmetic without any semantic identification
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counter, accumulator, pointer) to generate meaningful names instead of iVar1/iVar2
+2. **Recover function call relationships in test code** - Don't constant-fold test function calls; preserve the actual function invocation to maintain semantic relationships
+3. **Add pattern recognition for common data structures** - Detect linked list traversal, tree operations, and array patterns to add explanatory comments and recover higher-level abstractions

@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `x`, `a`, `b`, `c`, `result`, `i`, `j`, `sum` throughout. While some like `target`, `flag`, `arr`, `matrix` are descriptive, the original source's meaningful names like `temp1`, `temp2`, `temp3` were not recovered. The mix of generic and semi-descriptive names requires moderate effort to track purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names correctly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`. Minor auto-generated stubs like `sub_1030` exist but don't impede analysis of the target functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1000` (timeout limit), `8` (loop unroll factor), `0x14u` (stack canary offset) appear without explanation. The value `7` in `(n + 7) / 8` for Duff's device is unexplained. Some literals like case values in switches are clear, but many lack semantic meaning.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__readgsdword(0x14u)`) appear but are expected at -O0 with stack protection. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - for loops, while loops, if-else are correctly recovered. However, some switches are incorrectly decompiled as if-else chains (e.g., `switch_small` uses nested ifs instead of switch). The `goto_backward` function correctly became a for loop. Some awkward condition ordering exists.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are monolithic. Helper functions like `double_value`, `triple_value`, `state_idle`, `state_processing` are properly extracted. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some nested conditions in `nested_if_deep` create depth but remain traceable. No severe disruption to linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in Duff's device is present but structurally preserved (though incorrectly implemented). Common subexpressions are not unnecessarily duplicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most variables are generic `int`. The `volatile int *flag` is correctly typed. Function pointer types like `int (*f)(int)` are properly recovered. However, original `int` types could be more specific (e.g., `int32_t`). No const correctness preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays like `arr[5]` and `matrix[3][4]` are correctly recovered with dimensions. The array initialization in `loop_break` uses direct assignment which is clear. However, struct recovery is minimal since the source didn't use structs extensively.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is straightforward. Function pointer usage is type-safe. Minor issues: some comparisons like `x >= 0` after `x > 0` check are redundant but not unsafe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Decompiler adds minimal auto-generated comments. No algorithm explanations or non-obvious logic documentation. Some header comments indicate function signatures but provide no semantic context. No decompilation confidence indicators for uncertain code.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Basic patterns like loops, conditionals, recursion are recognized. Duff's device structure is partially preserved (though incorrectly). State machine patterns in `state_machine` and `fsm_func_table` are identifiable but not explicitly named as patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed to decompile functions like `__libc_start_main`, `printf`, `longjmp` are noted at the end. However, no inline warnings about semantic errors in the recovered code (e.g., `if_else` returning wrong values). No flags for indirect calls that couldn't be resolved within functions.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions from original (e.g., division by zero checks in `op_div`) are partially preserved but not explicitly documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls (e.g., `call_func_ptr_array` calls `funcs[idx](x)`). However, no documentation of who calls whom or global variable usage. Callback relationships in `process_with_callback` are implicit, not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, helper functions near their users, state machine functions grouped. Static functions properly scoped. Overall organization mirrors source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library includes. External dependencies (printf, setjmp, longjmp) are standard. No compiler-specific hacks. Minor stubs needed for missing definitions.
+
+---
+
+## === CRITICAL SEMANTIC ERRORS FOUND ===
+
+The decompiled code contains several **semantic errors** that differ from source:
+
+1. **`if_else` function**: Returns `x > 0` (boolean expression, returns 1 or 0) but source returns explicit `1` or `0` - semantically equivalent but style differs
+
+2. **`switch_small` function**: Returns `2` for case 3 (should be `a / b = 10/5 = 2` ✓), but case 0 returns `15` instead of `15` (10+5=15 ✓), case 1 returns `5` instead of `5` (10-5=5 ✓), case 2 returns `50` instead of `50` (10*5=50 ✓) - actually correct!
+
+3. **`switch_default` function**: For op=3 returns 300 (correct), but for op=5 returns 0 (correct default), op=1 returns 100 (correct), op=2 returns 200 (correct) - actually correct!
+
+4. **`switch_fallthrough` function**: Incorrectly implemented - doesn't handle fall-through correctly. For op=3: should return 21 (3 + 6 + 12 = 21), but decompiled returns wrong value.
+
+5. **`loop_while` function**: Returns `1` when count <= 0, but source returns `count > 0 ? count : 1` - this is actually correct!
+
+6. **`conditional_return` function**: Has incorrect logic - checks `x >= 0` after `x > 0`, which is redundant and changes semantics slightly.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **`switch_fallthrough`**: Incorrectly implements Duff's device - fall-through logic broken
+- **Variable naming**: Generic names like `x`, `a`, `b`, `result` obscure semantic purpose
+- **Magic numbers**: Undocumented constants like `1000`, `7`, `8` lack explanation
+- **Comment absence**: No algorithm explanations or decompilation confidence indicators
+- **Contract loss**: No preconditions/postconditions documented for functions
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names closely match the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement: Literal Clarity (5/10)
+Magic numbers throughout the code lack semantic explanation. The value `7` in `(n + 7) / 8` for Duff's device, `1000` for timeout, and `8` for loop unrolling should be documented or named.
+
+### Top 3 Recommendations:
+1. **Add semantic comments** explaining non-obvious calculations (e.g., "(n + 7) / 8" computes ceiling division for Duff's device)
+2. **Recover variable names** from usage patterns - `temp1`, `temp2`, `temp3` in `sequential_ops` should be inferred
+3. **Fix semantic errors** in `switch_fallthrough` - the fall-through logic is incorrectly implemented compared to source

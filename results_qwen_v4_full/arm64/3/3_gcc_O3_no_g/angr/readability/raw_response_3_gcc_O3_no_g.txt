@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `addr`) with zero semantic meaning recovered. Original variables like `local`, `arr`, `p` in source are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names preserved (`double_value`, `local_vars`, `heap_basic`) but many use address-based naming (`sub_4009c4`, `sub_400b24`). Inconsistent recovery.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`4294967294`, `17179869180`, `0x100000000`) with no explanation. Simple operations like `x * 2` become `(a0 * 2 | a0 >> 31) & 4294967294`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_guard`), condition code calculations (`arm64g_calculate_condition`), unsupported operations (`[D] unsupported_Iop_ZeroHI64ofV128`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy `goto` usage with labels (`LABEL_400e84`, `LABEL_401520`), unnatural do-while loops, complex bit manipulation replacing simple comparisons. Original `for` loops completely lost.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Unnecessary wrapper functions (`sub_400c54` just calls `double_value`), inconsistent granularity. Some functions constant-folded (`alloca_usage.constprop.0` returns `15` directly).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupting flow, goto labels scattered throughout. Original linear code structure completely lost in complex functions like `vla_stack`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate expressions (`memcpy` called twice in `sub_4009c4`), repeated calculations, loop unrolling artifacts without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `void*` everywhere, generic `unsigned long`/`unsigned int`, lost signed/unsigned distinction. Original `int`, `char*`, `Point*` types not preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). Original `Point {x, y}` and `Node {data, next}` structures lost semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(char *)addr + 4 * ...`), pointer arithmetic without bounds checking, type-confused operations throughout heap functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no API documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Original linked list creation, tree traversal, and memory allocation patterns completely obscured by optimization artifacts.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some unsupported operations noted (`[D] unsupported_Iop_...`) but no warnings for suspicious code like dangling pointer access in `dangling_pointer()`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions (`ptr != NULL`), no postconditions, no error documentation. Original null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. No call graph, no callback relationship documentation for `global_func_ptr`.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions in arbitrary order, no logical grouping by category (stack/heap/static). Original test organization completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Claims to compile but has external dependencies (`__libc_start_main`, `extern_function`), unsupported operations, and platform-specific code.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+4+3+3)/4 = 3.00
+Level 2 (Structural):     (3+4+4+4)/4 = 3.75
+Level 3 (Type System):    (3+4+4)/3   = 3.67
+Level 4 (Semantic):       (1+2+3+2)/4 = 2.00
+Level 5 (Contextual):     (4+3+5)/3   = 4.00
+
+Overall = (3.00 × 0.30) + (3.75 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (4.00 × 0.10)
+        = 0.90 + 0.94 + 0.73 + 0.30 + 0.40
+        = 3.27/10
+```
+
+**Overall Readability Score: 3.3/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr` should be named** based on usage (e.g., `buffer`, `result`, `node_ptr`)
+- **Control flow uses goto instead of loop constructs** - original `for` loops completely lost
+- **Magic numbers everywhere** - `4294967294`, `17179869180` replace simple arithmetic
+- **Struct fields all generic** (`field_0`, `field_8`, `padding_4`) losing semantic meaning from `Point`, `Node`
+- **Constant folding destroyed logic** - `alloca_usage.constprop.0` returns `15` directly instead of computing
+
+### Best Quality Aspect:
+- **Build System Compatibility (5/10)** - Code claims to compile with minimal stubs, external dependencies at least declared
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments throughout 2229 lines; no explanation of any non-trivial logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (array indexing → `index`, malloc result → `buffer`)
+2. **Reconstruct high-level control flow** - Convert goto-based loops back to `for`/`while` constructs, especially at -O0 where original structure should be preserved
+3. **Add decompilation confidence annotations** - Mark uncertain recoveries, note optimization artifacts, explain magic numbers with inferred meaning
+
+---
+
+## Assessment Notes
+
+**Critical Observation:** The metadata claims `-O0 -g` (debug build) but the decompiled code shows heavy optimization artifacts typical of `-O3`. This suggests either metadata error or severe decompiler transformation. At true `-O0`, readability should be 8-10/10; the 3.3/10 score indicates fundamental decompilation failures.
+
+**Most Damaging Issue:** Simple arithmetic like `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294` - this is optimizer output that the decompiler failed to simplify back to source-level expressions.

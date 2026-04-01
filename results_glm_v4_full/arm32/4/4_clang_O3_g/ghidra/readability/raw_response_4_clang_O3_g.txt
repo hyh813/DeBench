@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar3`, `piVar1`), providing no semantic hint about their role in calculations like summing or string handling.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants like `15` or `50` are replaced with magic hex values (e.g., `0xf`, `0x32`) due to compiler optimization, reducing readability.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with soft-float library intrinsics (e.g., `__adddf3`, `__floatsidf`) and compiler warnings ("Unknown calling convention"), obscuring the simple arithmetic logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with recovered `do-while` loops and `if` statements, though the switch statement in `ret_multi_branch` is optimized into a range check and arithmetic expression.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions match the source granularity perfectly; there is no artificial splitting or merging, and the SRET (hidden return pointer) pattern in `ret_small_struct` is correctly handled.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing branching, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The loop in `func_struct_byval` is aggressively unrolled/vectorized into a series of obscure partial sum assignments (e.g., `s.data[0]._4_4_ = ...`), destroying the original loop logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While user-defined types like `LargeStruct` are recovered, many parameters in library calls are generic `undefined4` or `undefined8`, and `longlong` is used instead of `int64_t`.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structures like `LargeStruct` and `SmallStruct` are accurately reconstructed with correct field names (`data`, `x`, `y`) and array sizes.
+
+**11. Type Safety:** Score: 6/10
+Justification: Pointer arithmetic and casts are generally correct, but the prevalence of `undefined` types in floating-point operations introduces ambiguity and potential safety concerns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to compiler warnings (e.g., "Removing unreachable block") and offer no insight into the algorithm's purpose or the logic behind optimized code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The varargs `va_list` pattern is recognized but implemented as raw stack pointer manipulation (`piVar1 = local_c`), and the SRET idiom is correctly identified.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra correctly flags "Unknown calling convention" for many functions, which is accurate given the mix of conventions tested, but it does not explain the constant folding in test functions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement for non-null pointers in `param_double_ptr` is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear where not inlined, and the relationship between callers and callees is preserved, though the inlining of test functions obscures the test flow.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in a logical order that closely matches the source file structure, grouping related tests together effectively.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on specific compiler intrinsics (`__adddf3`) and `undefined` types that would require significant patching and headers to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Avg: 4.75
+L2 Avg: 6.75
+L3 Avg: 6.67
+L4 Avg: 3.50
+L5 Avg: 6.33
+
+Overall = (4.75 × 0.30) + (6.75 × 0.25) + (6.67 × 0.20) + 
+          (3.50 × 0.15) + (6.33 × 0.10)
+Overall = 1.425 + 1.6875 + 1.334 + 0.525 + 0.633
+Overall = 5.60 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.6/10
+
+### Critical Defects (Bullet List)
+- Variable naming is entirely generic (`iVar1`, `uVar3`), obscuring the logic of summations and string operations.
+- Soft-float intrinsics (`__adddf3`, `__floatsidf`) clutter the code, hiding simple arithmetic operations like `x + d`.
+- The loop in `func_struct_byval` is unrolled into unreadable partial sum assignments (`s.data[0]._4_4_`), destroying the original algorithmic structure.
+- Test functions like `call_cdecl` are reduced to constant returns (`return 0xf`), completely removing the context of the calling convention tests.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** Ghidra perfectly preserved all original function names from the symbol table, making the high-level purpose of each unit immediately clear.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (2/10)**
+- **Why?** The decompiler provides no semantic comments to explain the complex transformations (like vectorization or constant folding) or the purpose of the obscure soft-float calls.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Abstract Soft-Float Intrinsics:** Detect patterns of soft-float library calls (`__adddf3`, etc.) and lift them back into high-level arithmetic operators (`+`, `-`) for readability.
+2. **Reconstruct Unrolled Loops:** Identify sequences of accumulator updates (like in `func_struct_byval`) and present them as a loop or at least annotate the unrolling pattern.
+3. **Annotate Constant Folding:** When a function is reduced to a constant return due to optimization, add a comment indicating the original call (e.g., `/* Optimized from: cdecl_func(5, 10) */`).

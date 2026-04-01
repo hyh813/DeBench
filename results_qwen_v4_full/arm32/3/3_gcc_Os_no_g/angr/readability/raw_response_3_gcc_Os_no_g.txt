@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `a0` with no semantic meaning. Original variables like `local`, `arr`, `p`, `head`, `current` are completely lost, making it impossible to track variable purpose without deep analysis.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `double_value`, `local_vars`, `heap_basic` are preserved, but many helper functions are named `sub_10598`, `sub_106d8`. Test functions like `test_stack_memory` retain names but parameter lists are corrupted.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX for error), `0xfffffff8` (alignment mask), and `77248` (hardcoded address) appear without explanation. Original constants and meaningful values are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition()` calls (appears 50+ times), `__stack_chk_guard` checks in every function, and redundant condition branches. Compiler artifacts dominate the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements replace natural loops and conditionals. Functions like `heap_calloc` have 6+ labels (`LABEL_10afa`, `LABEL_10af9`, etc.) creating spaghetti code instead of clean if/while structures.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries are mostly preserved but parameter lists are corrupted (e.g., `test_heap_memory` has 3 parameters instead of 0). Some functions like `stack_alias` are incorrectly simplified to return constants.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Heavy use of forward jumps and labels disrupts top-to-bottom reading. Functions like `vla_stack` have nested conditionals with goto that make execution flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy from `armg_calculate_condition` calls repeated for identical checks. Stack canary checks appear in every function even when unnecessary. Dead code paths are preserved.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` regardless of original type. `int`, `size_t`, `char*` all become `unsigned int`. Function pointers lose signature information (e.g., `global_func_ptr` is `unsigned int` not `int(*)(int)`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct_0`, `struct_1`, `struct_2`) but with generic field names (`field_0`, `field_4`). Original `Point`, `Node`, `TreeNode` structures are lost. Nested struct relationships partially preserved.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts like `(char *)ptr + 4 * idx`. Pointer arithmetic on `void*` without proper casting. Function `call_global_callback` uses `goto global_func_ptr` which is type-unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated annotations like `// lr`, `// r0` for register hints. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns like linked list traversal, tree creation, malloc/free pairs are not recognized or named. `armg_calculate_condition` obscures all conditional idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainty. Incorrect logic (e.g., `stack_alias` returning constant 20) presented confidently. No warnings about unresolved indirect calls or potential UB.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks exist but aren't labeled as contracts). Error return values like `4294967295` not explained. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships unclear. Global variables declared as `extern` but usage patterns not documented. Callback relationships (e.g., `set_global_callback`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly original order but no logical grouping. Static functions not properly scoped. All code in single output without header file separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes proper `extern` declarations and standard library calls. However, `armg_calculate_condition` is Angr-specific and won't compile with standard toolchains. Many undefined symbols (`g_12784`, `g_23008`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):   (3+4+4+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type System):  (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):   (4+5+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score = 1.05 + 0.875 + 0.80 + 0.225 + 0.50 = 3.45/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on semantic usage (e.g., `stack_canary`, `loop_index`, `heap_buffer`)
+- **`armg_calculate_condition()`** calls (50+ occurrences) obscure all conditional logic and should be converted to standard C operators
+- **Function `stack_alias`** incorrectly returns constant 20 instead of implementing pointer alias logic from source
+- **Function `global_var_access`** returns `global_counter + 1` instead of just `global_counter` (logic corruption)
+- **Struct fields** all named `field_0`, `field_4` losing semantic meaning (should be `data`, `next`, `left`, `right`)
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - External declarations and standard library calls are mostly preserved, making partial compilation possible with stubs
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments; even basic function purpose documentation is absent, making reverse engineering extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables passed to `malloc` → `buffer`, `array`)
+2. **Replace `armg_calculate_condition` with native C operators** - This Angr-specific function obscures all conditional logic and should be converted to standard `if`, `while`, `?:` expressions
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: indirect call target not resolved` to help analysts identify potential errors

@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generic (`a1`, `v2`, `v3`, `v4`) instead of semantic names like `x`, `result`, `p1`, `p2`. At `-O0` with debug symbols, variable names should be recoverable but are lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Clear action-oriented naming that matches original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Signal numbers `8` and `11` should be `SIGFPE`/`SIGSEGV`. Character literals `65`, `66` instead of `'A'`, `'B'`. XOR key `90` instead of `0x5A`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary code (`__readfsqword(0x28u)`) present throughout. Type casts `(unsigned int)`, `(unsigned __int64)` add visual noise but don't obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures preserved correctly (for/while). Fake branches optimized away (expected). Signal handling with setjmp/longjmp preserved but uses numeric values.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Appropriate function granularity with single responsibility. Helper functions (`decrypt_string`) properly separated. `call_*` wrappers preserved.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Functions read top-to-bottom naturally. Standard control structures without excessive gotos. Stack variable declarations at function top (C style).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code from fake branches correctly eliminated. Some redundant type casts present. No obvious duplicate expressions obscuring logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: `param_fake_branch` takes `unsigned int` but source has `int`. Return types are `__int64` throughout instead of `int`. Pointer types mostly correct (`const char *`, `size_t`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Bitfield struct in `param_implementation_defined` optimized to constant `47` (structure lost). Arrays shown as `_DWORD v1[8]` - reasonable but no struct definitions visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(__sighandler_t)`, `(__int64)`). Raw pointer arithmetic `*(_DWORD *)(4LL * i + a3)`. No buffer overflow warnings despite overflow code present.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except auto-generated function headers. No algorithm documentation, no decompilation confidence indicators, no explanation of what functions do.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern not named. Tail call optimization pattern not noted. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about fake branches being optimized away. No indication `param_implementation_defined` simplified to constant. Failed decompilations listed at end (13 functions).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). No postconditions or error condition documentation. Return values not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Internal function calls clear. Global variables referenced (`encrypted_0`, `jmp_buffer`) but not defined in output. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no file organization. Static functions not clearly marked. Runtime functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 13 library functions failed to decompile (`printf`, `malloc`, `signal`, etc.). Global variables undefined. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4×0.10 + 9×0.10 + 5×0.05 + 6×0.05) / 0.30 = 6.17
+Level 2 (25%): (7×0.08 + 8×0.07 + 8×0.05 + 7×0.05) / 0.25 = 7.48
+Level 3 (20%): (6×0.08 + 5×0.07 + 5×0.05) / 0.20 = 5.40
+Level 4 (15%): (2×0.05 + 3×0.03 + 4×0.03 + 2×0.04) / 0.15 = 2.60
+Level 5 (10%): (5×0.04 + 4×0.03 + 3×0.03) / 0.10 = 4.10
+
+Overall = 6.17×0.30 + 7.48×0.25 + 5.40×0.20 + 2.60×0.15 + 4.10×0.10
+Overall = 1.85 + 1.87 + 1.08 + 0.39 + 0.41 = 5.60/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- Variable `a1` should be named `x` based on source and usage pattern
+- Signal numbers `8` and `11` should be `SIGFPE` and `SIGSEGV` constants
+- No comments explaining algorithm purpose (GCD, XOR decryption, tail recursion)
+- Character literals `65`, `66` should be `'A'`, `'B'` for clarity
+- 13 library functions failed to decompile, requiring external stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names preserved accurately, making code navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no semantic documentation; decompiler should add algorithm explanations and confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol variable names** - At `-O0 -g`, DWARF debug info should provide original variable names (`x`, `result`, `p1`, `p2`)
+2. **Add semantic comments for recognized patterns** - Detect and document GCD algorithm, XOR decryption, tail recursion optimization patterns
+3. **Replace magic numbers with named constants** - Signal numbers, character literals, and hex values should use symbolic names (`SIGFPE`, `'A'`, `0x5A`)

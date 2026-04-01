@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mix of preserved names (`sum`, `count`, `i`) and generic decompiler names (`iVar1`, `local_8`, `local_140`). Parameter shadows like `a_local`, `b_local` add noise without semantic value.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only runtime functions like `FUN_00100750` lack meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex format (`0x2a` for 42, `0xf` for 15, `0x12345678`) without explanation. String literals referenced as `&DAT_00101fb0` instead of actual content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`___stack_chk_guard`) in every function, redundant `_local` parameter shadows, and multiple "WARNING:" comments cluttering output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs. Switch statements degraded to if-else chains (`ret_multi_branch`). Varargs handling shows low-level implementation details.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries well-preserved at -O0. No inappropriate inlining or fragmentation. Function sizes match source complexity appropriately.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Stack canary checks at function ends disrupt flow. No excessive goto usage; forward jumps minimal.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Unnecessary parameter shadows (`a_local`, `b_local` that just copy parameters). Struct copying shown as 16 individual field assignments in `test_calling_conventions`. Repeated stack checks in every function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `double`, `longlong`). Function pointer types partially recovered (`_func_int_int*`, `func_ptr_t`). Some size type imprecision (`long` vs `longlong`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types preserved (`LargeStruct`, `SmallStruct`, `BigStruct`). Critical issue: `func_struct_byval(LargeStruct *s)` changed from by-value to by-pointer, altering semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(int)sVar2`, `(ulong)uVar2`, `(char*)int_ptr`. Varargs implementation exposes low-level `va_list` internals with pointer arithmetic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra headers with addresses. All original source comments explaining test purposes completely lost. Warning comments are technical, not semantic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern visible but shown with low-level `__gr_offs`/`__stack` internals. Function pointer callbacks preserved but not identified as callback pattern. No design pattern naming.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Variable defined which should be unmapped". Technical anomalies flagged appropriately.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Null checks present in code (`if (p == (SmallStruct *)0x0)`) but not documented as preconditions. No postcondition or invariant documentation.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly visible in code. No call graph documentation. Global variable usage (`___stack_chk_guard`, `DAT_00101fb0`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output (expected). Functions appear in address order, not logical grouping. Original section comments (4.1, 4.2, 4.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`printf`, `puts`, `strlen`) without includes. Data references like `&DAT_00101fb0` need resolution. Would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+4)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (3+5+7+4)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              5.88/10
+```
+
+### Overall Readability Score: **5.9/10**
+
+### Critical Defects:
+- **Parameter shadowing**: Variables like `a_local`, `b_local`, `x_local` redundantly copy parameters without semantic value
+- **Struct passing convention change**: `func_struct_byval(LargeStruct *s)` changed from by-value to by-pointer, altering ABI semantics
+- **Magic numbers in hex**: Values like `0x2a`, `0xf`, `0x10` used without decimal equivalents or named constants
+- **String literal obfuscation**: All strings referenced as `&DAT_0010xxxx` instead of actual content
+- **Stack canary pollution**: Every function contains `___stack_chk_guard` checks that obscure core logic
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved accurately, making navigation and identification straightforward despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- All semantic documentation from source completely lost; only auto-generated technical headers remain, leaving algorithm purpose unexplained.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate parameter shadow variables**: Detect when `_local` variables simply copy parameters and omit them unless modified
+2. **Recover string literals inline**: Replace `&DAT_0010xxxx` references with actual string content in quotes where possible
+3. **Preserve source comments**: When debug symbols (-g) are available, extract and embed original source comments into decompiled output

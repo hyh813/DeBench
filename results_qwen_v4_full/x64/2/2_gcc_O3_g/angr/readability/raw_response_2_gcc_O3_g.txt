@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `cur`) with no semantic meaning. For example, `binary_tree_sum` uses `v15`, `v30`, `v46` instead of meaningful names like `sum`, `node`, or `left_child`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names partially preserved (`process_char`, `array_1d_stack`, `struct_simple`) but surrounded by meaningless wrappers (`sub_401020`, `sub_4011b9`). About 50% of functions have auto-generated names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (should be `-1` or `UINT_MAX`), `0x3fc00000` (float constant), `4591870180066957722` (double constant). No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains `[D] Unsupported jumpkind` markers, compiler initialization functions (`_init`, `deregister_tm_clones`), and redundant wrapper functions that add no value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `ptr_func_simple` uses `goto a0` instead of function call. `binary_tree_sum` converts recursive tree traversal into deeply nested iterative loops (12+ nesting levels) that are nearly unreadable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Every original function has a wrapper (`sub_4011b9` calls `process_char`). `binary_tree_sum` is a 200+ line monolith that should be a simple 10-line recursive function.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `binary_tree_sum` has extreme forward/backward jumps. Simple functions like `process_int` are well-linearized.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy from loop unrolling in array functions (`array_1d_stack`, `array_vla` have identical 60-line unrolled loops). Wrapper functions duplicate call sites unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `process_float` returns `double` but declares `int v1` for xmm0. Many `unsigned long long` where `int` or `size_t` would be correct. Pointer types often lose specificity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure: `binary_tree_sum` creates 40+ different struct types (`struct_0` through `struct_44`) that should all be the same `TreeNode`. Struct fields are all `field_0`, `field_8` with no semantic names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned long long)(AddV(...))`), pointer arithmetic without bounds checking, and type-confused operations in `process_ld` with unsupported vector operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only `[D]` error markers exist. No algorithm explanations, no parameter documentation, no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition whatsoever. Linked list traversal, tree recursion, and graph traversal are not identified. The decompiler treats all structures as opaque memory.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D] Unsupported jumpkind` and `[D] unsupported_<class 'pyvex.expr.GetI'>` markers indicate problems, but don't explain what went wrong or suggest manual analysis paths.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for linked list functions). No postconditions. No error condition documentation despite many potential failure points.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but no call graph documentation. Global variables named `g_405fe8` with no semantic meaning. Callback relationships not identified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains `[D]` unsupported operation markers that won't compile. External dependencies (`__libc_start_main`, `__printf_chk`) not properly declared. Would require extensive manual fixing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+4+5+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+2+5+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.65/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **`binary_tree_sum` creates 40+ distinct struct types** that should all be `TreeNode` - catastrophic type recovery failure
+- **`process_ld` contains `[D] unsupported` operations** making the function completely unusable
+- **Every function has redundant wrapper** (`sub_4011b9` → `process_char`) doubling the code size
+- **Zero semantic variable names** - all `v0`, `v1`, `ptr` with no indication of purpose
+- **Recursive algorithms converted to unreadable nested loops** - tree traversal becomes 200+ lines of goto-style code
+
+### Best Quality Aspect: **Anomaly Indication (5/10)**
+- At least `[D]` markers indicate where decompilation failed, preventing silent incorrect output
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Creating 40+ struct types for a single `TreeNode` structure makes the code completely unmaintainable and demonstrates fundamental type analysis failure
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type unification across functions** - recognize that `struct_0` through `struct_44` in `binary_tree_sum` are the same recursive type and merge them
+2. **Recover recursive call patterns from stack analysis** - detect when nested loops represent tree recursion and emit proper recursive function calls
+3. **Eliminate wrapper function generation** - don't create `sub_4011b9` that just calls `process_char`; preserve original function boundaries directly

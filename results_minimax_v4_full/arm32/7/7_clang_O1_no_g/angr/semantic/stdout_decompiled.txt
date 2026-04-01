@@ -1,0 +1,5 @@
+Test obf opt edge
+
+Result: 10
+Opaque predicate result: 35
+Instruction substitution result: 225

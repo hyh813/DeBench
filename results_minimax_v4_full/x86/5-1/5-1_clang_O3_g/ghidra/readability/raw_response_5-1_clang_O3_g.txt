@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Almost all local variables are unresolved or use generic names like `local_28`, `local_30`, `sVar1`, `iVar1`, `iVar2`, `puVar1`, `piVar2`. The decompiler explicitly marks variables as "Unresolved local var" (e.g., `SimpleClass obj@[???]`, `int r1@[???]`), making it impossible to track semantic purpose.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names are perfectly recovered, matching the original source exactly: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, `call_virtual_func`, `template_max<int>`, `Container<int>::push`, etc. The decompiler correctly identifies template instantiations and class member functions.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: All return values are hardcoded as magic numbers without explanation: `0x125c` (should be 4704), `0x2a` (should be 42), `0x47` (should be 71), `0x28a` (should be 650), etc. No named constants or comments explain what these values represent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution from 44+ WARNING comments about "Unknown calling convention", "Unresolved local var", "Removing unreachable block", and "This is an inlined function". The code is cluttered with compiler/debugging artifacts that impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural with simple if/return structures. However, `template_max<double>` has an unusual condition `if (b <= a || a != b)` that doesn't match the expected ternary logic. Many test functions are reduced to single return statements with pre-computed values due to -O3 optimization.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Template functions are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`), class member functions are extracted individually (`Container<int>::push`, `Container<int>::get`), and test functions remain distinct. Good granularity overall.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Early returns are used appropriately. The linear structure is preserved well despite optimization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Loop unrolling in test functions is acceptable at -O3. The code is clean without duplicate logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally precise: `size_t` for string lengths, `int` and `double` for numeric types, `char` for strings. Minor issues: some `undefined4` appears in function signatures. Overall good type recovery.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class names are correctly recovered: `Base`, `Derived`, `Container<int>`, `Container<double>`, `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB`. Member functions are properly associated with classes. Struct field names within classes are not fully resolved but class structure is clear.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct. Virtual function calls use proper vtable access (`**obj->_vptr_Base`). Type safety is maintained throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Mixed quality - DWARF original prototype comments are helpful (e.g., `/* DWARF original prototype: void push(Container<int> * this, int value) */`), but most comments are warnings about unresolved items. No explanation of algorithm logic or expected return values.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some C++ idioms recognized: virtual function calls via vtable (`**obj->_vptr_Base`), template instantiation, RAII patterns in smart pointers. However, no explicit pattern naming or documentation of design patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage for unknown calling conventions and unresolved local variables. However, the pre-computed return values in test functions (e.g., `return 0x2a;`) are presented as fact without indicating they are constant-propagated results.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The decompiler doesn't indicate that test functions should return specific values or that objects require particular initialization.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Class relationships are visible through vtable access and inheritance. Function calls between test functions and class methods are clear. However, no explicit documentation of call graphs or caller/callee relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, template instantiations together, class methods grouped by class. Minor issue: some runtime support functions (`_init`, `_start`, `_fini`) are interleaved.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`puts`, `printf`, `strlen`, `operator_new`, `operator_delete`) but headers are not included. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable naming**: All local variables are unresolved or use generic names (`local_28`, `sVar1`, `iVar1`), making code flow extremely difficult to trace
+- **Magic numbers**: All test function return values are hardcoded hex constants (`0x125c`, `0x2a`, `0x47`) without explanation of what they represent
+- **Noise pollution**: 44+ WARNING comments about unresolved items, unreachable blocks, and inlined functions clutter the output
+- **Pre-computed results**: Test functions reduced to single return statements (e.g., `return 0x2a;`) lose all intermediate computation logic
+- **No contracts**: No documentation of preconditions, postconditions, or expected behavior
+
+### Best Quality Aspect: Function Naming (10/10)
+- Every function name is perfectly recovered, matching the original source exactly, including template instantiations and class member functions
+
+### Most Needs Improvement: Variable Naming (1/10)
+- Nearly all local variables are marked as "Unresolved" or use generic temporary names, completely obscuring the data flow and computation logic
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Use data flow analysis to name variables based on how they're used (e.g., `local_28` used in `strlen()` should be named `name_buffer`)
+2. **Replace magic numbers with symbolic constants**: The hex values in return statements correspond to expected test results - add comments or named constants explaining this
+3. **Reduce warning noise**: Filter or consolidate the 44+ WARNING comments, moving unresolved variable notes to a separate summary rather than inline clutter

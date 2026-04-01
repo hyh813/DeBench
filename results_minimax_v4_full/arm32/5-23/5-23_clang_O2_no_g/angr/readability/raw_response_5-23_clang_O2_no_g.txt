@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `ptr`, `result`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` but these are completely lost. Even register-mapped comments like `// r0`, `// r1` don't help identify semantic purpose.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names perfectly match the original source - `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, etc. All 30+ functions have accurate, action-oriented names that reflect their exact purpose. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most computed values are preserved (e.g., `64`, `0x200`, `30`, `57122`), but magic numbers like `57072` (which is 0xDEF0) lack explanation. The formula `a0 * 5 + 57072` is present but the original `#if PLATFORM == 1/2/3` conditional compilation context is lost. However, the computed results are correct.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some register mapping comments (`// r0`, `// lr`) are present but don't impede readability. No redundant casts or obvious dead code. The goto statements in some functions are legitimate control flow, not noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural if-else and return structures. However, `param_asm_clobber` uses a goto-based loop structure instead of a proper while/for loop, and `param_memory_protection` has confusing nested goto patterns that make execution flow difficult to trace. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity is excellent - all small functions from the original source are preserved as separate functions. Each function has a single responsibility. The decomposition matches the source exactly, with no inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. However, `param_asm_clobber` has a backward goto used as a loop, and `param_memory_protection` has multiple goto labels that disrupt linear reading. The goto-based loop in clobber function is particularly hard to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. The code is straightforward without duplicate expressions or dead code. Loop unrolling is minimal (the SIMD functions expand to element-wise operations, which is appropriate for ARM64 without SIMD intrinsics).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most parameters and return types are `unsigned int`, but the original used `int`. This is likely due to ARM64 calling convention (64-bit registers). However, `param_asm_clobber` takes `unsigned int *a0` (pointer) but the original had `int *arr`. The type precision is moderate - pointers are preserved but signedness is inconsistent.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: The source had minimal struct usage (only in comments/examples), so there's nothing to recover. The decompiled code correctly uses pointer types for array parameters (`unsigned int *a0`, `unsigned int *index`). No struct reconstruction was needed.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts or type-confused operations. Pointer arithmetic is used correctly in functions like `param_asm_simd` where it does `ptr[1] = index[1] + pos[1]`. The code is type-safe overall.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments are sparse and mostly limited to register mapping annotations (`// r0`, `// r1`, `// lr`). There's no explanation of macro semantics, conditional compilation branches, or algorithm intent. The original source had extensive comments explaining preprocessing behavior that are completely absent in the decompiled output.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognized - the atomic operations show `__atomic_fetch_add_4()` calls, and the SIMD functions are correctly identified as element-wise operations. However, the original macro expansions (SQUARE, MAX, SAFE_ADD) are not identified as macro semantics - they're just shown as computed formulas. The conditional compilation branches are not flagged.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The decompiled code presents everything as confident output, but there are issues: the `param_asm_clobber` function has a bug where it returns `*(ptr) + v1` but `ptr` was never properly initialized in the loop. This should be flagged as suspicious. Also, the inline assembly in original is completely replaced with C implementations without indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but the decompiler could infer some contracts (e.g., "requires: n > 0" for array functions). None are present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `main` calls `test_preprocessing_features` and `test_asm_features`, which call other functions. Global variable `global_var` is properly referenced. However, callback relationships and virtual dispatch are not applicable here since the code doesn't use those patterns.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - preprocessing test functions together, asm test functions together, helper functions like `my_func` near their callers. The organization matches the source file structure well. Static functions are properly scoped.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The metadata states "Compilation Result: Yes", confirming it compiles. External dependencies like `printf`, `mmap`, `munmap`, `mprotect`, `sysconf`, `memcpy`, `__atomic_fetch_add_4` are properly declared or referenced. Minimal patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 10 + 7 + 8) / 4 = 6.75
+L2_avg = (7 + 9 + 7 + 8) / 4 = 7.75
+L3_avg = (6 + 8 + 8) / 3 = 7.33
+L4_avg = (5 + 6 + 3 + 2) / 4 = 4.00
+L5_avg = (7 + 8 + 9) / 3 = 8.00
+
+Overall = (6.75 × 0.30) + (7.75 × 0.25) + (7.33 × 0.20) + 
+          (4.00 × 0.15) + (8.00 × 0.10)
+        = 2.025 + 1.9375 + 1.466 + 0.6 + 0.8
+        = 6.83/10
+```
+
+**Overall Readability Score:** 6.83/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is nearly useless** - All meaningful names replaced with `v0`, `v1`, `a0`, `a1`, `ptr`, making it impossible to track semantic purpose without cross-referencing source
+- **No anomaly detection** - `param_asm_clobber` has a clear bug (returning uninitialized `*(ptr)`) that should be flagged
+- **No semantic context for macros** - Conditional compilation branches, macro expansions, and preprocessor semantics are completely lost; just shows computed results
+- **Missing comments** - No explanation of algorithm intent, macro behavior, or inline assembly replacement
+- **Goto-based loops** - `param_asm_clobber` uses goto for loop construct making control flow hard to follow
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)** - Every function name perfectly matches the original source, demonstrating excellent symbol recovery
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - Generic names like `v0`, `v1`, `a0`, `a1` completely obscure semantic purpose; this is the single biggest readability barrier
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `if (a0 > 1024)` suggests `a0` is a size/limit parameter; `a0 * a0` suggests squaring operation)
+2. **Flag anomalies and uncertain constructs** - The buggy `param_asm_clobber` return statement and goto-based loops should be flagged as suspicious
+3. **Recover macro semantics** - Instead of just showing computed results, indicate when code came from macro expansion (e.g., "// From MAX(a,b) macro") and flag conditional compilation branches

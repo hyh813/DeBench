@@ -1,0 +1,21 @@
+Preprocessing features test
+param_macro_constants result: 64
+param_macro_functions result: 30
+param_conditional_compile result: 32
+param_multi_branch_compile result: 57122
+param_macro_recursion result: 116
+param_stringize result: 19
+param_token_paste result: 60
+LOG: Values: 10, 20, 30
+param_variadic_macro result: 60
+param_macro_override result: 16
+param_include_guard result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:06
+param_builtin_macros result: 382
+param_asm_basic result: -551932672, 0
+call_asm_basic result: 15
+call_asm_clobber result: 15
+call_asm_multi_insn result: 42
+call_asm_simd result: 0
+call_asm_atomic result: 30
+ASM features test complete

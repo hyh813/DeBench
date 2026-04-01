@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, mem, ptr) with no semantic meaning. Original code had descriptive names like `arr`, `local`, `head`, `current`, `new_node` that clearly indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (double_value, local_vars, heap_basic, test_stack_memory). Some helper functions have generic names (function_1120, function_1130) for library wrappers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers from type casting abound (0xfffffffe, 0xffffffff, 0x100000000). String literals stored as hex-encoded globals (g1-g8) instead of readable strings. Original had clear test expectations documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (__readfsqword, __stack_chk_fail) and compiler runtime functions (__cxa_finalize, __gmon_start__) present throughout. At -O0 optimization, these artifacts should be minimal.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recovered but many use manual pointer arithmetic instead of array indexing. linked_list_heap uses goto labels (lab_0x1937, lab_0x1942) instead of while loops. At -O0, should be much cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated and match original structure well. Test functions and implementation functions are correctly distinguished. Some helper functions could be better organized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but linked_list_heap has multiple forward jump labels disrupting flow. Some functions have complex branching that could be simplified.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts and bit masking operations throughout (e.g., `& 0xfffffffe`, `& 0xffffffff`). Some operations like `v4 = v4 + a1 & 0xffffffff` are unnecessarily verbose.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything collapsed to int64_t or int32_t. Original types (Point, Node, TreeNode, size_t) completely lost. Pointer types are generic int64_t* instead of proper typed pointers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct definitions (Point, Node, TreeNode) completely lost. All struct access through raw pointer arithmetic (e.g., `*(int64_t *)(v1 + 8)` for next pointer). No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout, pointer arithmetic without bounds checking. Original had proper type safety with malloc return checks and proper struct member access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 1/10  
+Justification: Zero comments explaining logic or purpose. Original had extensive comments with test scenarios, expected values, and section headers (e.g., "3.1 栈内存操作").
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation/traversal, tree operations, and memory allocation patterns not identified. Original clearly documented these as test scenarios.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about undefined behavior (dangling_pointer accesses freed memory), potential crashes, or decompilation uncertainty. Original explicitly marked dangerous test cases.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear test expectations (e.g., "期望: 20", "期望: 100") and input validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved, but global variable relationships obscured (g1-g23 instead of descriptive names like global_counter, global_array). Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped but not logically organized like source. No section comments separating stack/heap/static memory tests. Function prototypes listed at top without categorization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers and should compile. External function declarations present (extern_function). Some platform-specific code preserved (#ifdef handling).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.297 ≈ 4.3/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct types completely lost**: Point, Node, TreeNode definitions missing; all access via raw pointer arithmetic (`*(int64_t *)(v1 + 8)`)
+- **Variable names all generic**: v1, v2, v3 instead of semantic names like `arr`, `local`, `head`, `current`
+- **Zero documentation**: No comments explaining logic, test expectations, or dangerous operations
+- **No anomaly warnings**: dangling_pointer's undefined behavior not flagged despite being intentional test case
+- **Magic numbers from type casting**: 0xfffffffe, 0xffffffff, 0x100000000 obscure actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source (double_value, local_vars, heap_basic, test_stack_memory), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Complete absence of documentation; original had extensive comments with test scenarios, expected values, and section organization that are entirely missing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze consistent memory access patterns to reconstruct struct layouts with field names (e.g., detect `*(ptr+8)` consistently used as "next" pointer in linked structures)
+2. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, heap allocations should be named by type (`arr`, `node`, `buffer`), and pointer parameters should reflect purpose (`out`, `head`)
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, undefined behavior patterns, and missing type information with comments like `// DECOMPILE_UNCERTAIN: struct type not recovered`

@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and locals use mechanical names (`iVar1`, `uVar1`, `piVar1`) with zero semantic meaning. For example, `array_1d_stack` uses `param_1` for the array pointer and `param_2` for count instead of `arr` and `n`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved (`process_char`, `array_1d_stack`, `struct_simple`), which is excellent. However, some runtime functions have generic names (`FUN_00011594`) and test functions lost their computational purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0xbf`, `0x1a`, `0x10000`, `0x3fc00000` (float constant). Test functions print hardcoded constants (`0x61`, `0x62`) instead of showing actual computation results.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Hundreds of lines of floating-point runtime emulation code (`__muldf3`, `__adddf3`, `__aeabi_*`) pollute the output. These compiler artifacts should be recognized and abstracted, not dumped inline.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions use awkward do-while decrement patterns instead of natural for-loops (e.g., `array_1d_stack` uses `param_2 = param_2 + -1` loop). Floating-point functions have extremely complex, unreadable control flow with hundreds of branches.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries are preserved, but test functions lost their structure (now just print constants). Floating-point operations became massive monolithic functions instead of being recognized as library calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but backward-jump loops with decrement (`param_2 = param_2 + -1; ... while (param_2 != 0)`) are less natural than forward-counting for-loops.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point runtime functions contain massive code duplication (similar bit-manipulation patterns repeated across `__muldf3`, `__adddf3`, `__subdf3`). Test functions redundantly print pre-computed constants.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `process_int` returns `uint` instead of `int`, `process_short` returns `int` instead of `short`, `process_float` returns `void` instead of `float`. All pointers become `int*` or `undefined4*` losing original type information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs accessed via array indexing (`param_1[0]`, `param_1[1]`, `param_1[2]`) instead of field names (`p->x`, `p->y`, `p->z`). No struct definitions recovered. Unions and enums completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`(int *)`, `(undefined4 *)`, `(code *)`). Function pointers degraded to `code*` or `undefined4*`. Pointer arithmetic on generic `int*` loses type safety guarantees.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Even complex floating-point emulation has no explanatory comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition - loop idioms not recovered (for→do-while), no algorithm identification, no data structure pattern naming. Linked list traversal looks like generic pointer chasing.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly flagging. Only one instance shows `UNRECOVERED_JUMPTABLE` for function pointer call. Otherwise silent about type mismatches, potential undefined behavior, or decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`), no postconditions, no error condition documentation. Functions that could crash on NULL input have no warnings.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No call graph information, no indication of which functions call which. Global variable usage unclear (`DAT_00012453` instead of string constant names).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions dumped in single flat file with no logical grouping. No header file structure, no namespace organization. Runtime functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Would require significant stubs to compile. External function declarations present but runtime functions (`__muldf3`, etc.) would need linking. Some type mismatches would cause compilation warnings/errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 4.25/10 | 30% | 1.275 |
+| L2: Structural Intelligibility | 5.50/10 | 25% | 1.375 |
+| L3: Type System Fidelity | 2.67/10 | 20% | 0.534 |
+| L4: Semantic Transparency | 1.75/10 | 15% | 0.263 |
+| L5: Contextual Coherence | 4.33/10 | 10% | 0.433 |
+
+**Overall Readability Score: 3.88/10**
+
+---
+
+### Critical Defects
+
+- **All variables use generic names** (`param_1`, `iVar1`) losing all semantic meaning from original source
+- **Complete struct type loss** - `Point3D` accessed as `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`
+- **Floating-point functions return `void`** instead of proper types, calling runtime emulation directly
+- **Test functions optimized to print constants** instead of showing actual computation (loses educational value)
+- **Zero comments** despite complex floating-point emulation code requiring explanation
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)** - Original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), making it possible to match decompiled code to source functions.
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding complex code nearly impossible.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover composite type definitions** - Analyze struct access patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct struct definitions with meaningful field names based on usage context.
+
+2. **Abstract compiler runtime calls** - Recognize `__muldf3`, `__adddf3`, `__aeabi_*` patterns and replace with high-level expressions (`a * b`, `a + b`) instead of dumping hundreds of lines of emulation code.
+
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (type mismatches, function pointer calls) with comments like `// DECOMPILER UNCERTAIN: function pointer signature inferred` to guide manual review.

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic numbered names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`) with no semantic meaning. For example, `int32_t v1; // 0x1000` provides no indication of the variable's purpose. The original source uses meaningful names like `result`, `capture_by_value`, `capture_by_ref`, but these are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names like `_Z18test_cpp_exceptionv`, `_ZN4Base12virtual_funcEi`. While demangled names appear in comments (e.g., `// Demangled: test_cpp_exception()`), the actual function names remain mangled. Many helper functions are named `function_1150`, `function_1160` etc. - completely generic with no semantic value.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers appear throughout. For example, `0x74736554` (which is "Test" encoded), `0x2bea`, `0x1d80`, `0x1f7c` are used without explanation. The value `42` thrown as an exception is not documented. Constants like `20` in `__readgsdword(20)` are unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts pollute the code: `__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_ax`, `__readgsdword(20)`, `__stack_chk_fail_local`, `__stack_chk_fail`. These x86-specific functions have no place in a clean decompilation and obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions have relatively natural control flow, but the exception handling code (`test_cpp_exception`) uses complex goto patterns and unusual conditional structures that are difficult to follow. The decompiler preserves the convoluted control flow from exception handling rather than presenting it as try-catch blocks.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated and each handles a specific test case. However, some functions like `test_cpp_exception` are quite complex (80+ lines) with tangled logic. Template functions are properly instantiated separately.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read reasonably top-to-bottom. The exception handling function has multiple forward jumps and complex branching that disrupts linear reading. Other functions like `test_cpp_template_func` are fairly linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or redundant expressions. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Some minor redundancy in the exception handling code but generally clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` and `float64_t` appropriately, showing awareness of 32-bit types. However, everything defaults to `int32_t` even when the original used `size_t` or `bool`. Function parameters lose their original types (e.g., `int32_t a2` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only the minimal `_Unwind_Exception` struct is defined. Class member recovery is poor - most class data is accessed via raw pointer arithmetic. Global variables are named `g1` through `g14` with no meaningful field names. The original classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are not reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: extensive `(int32_t *)` casts throughout, pointer arithmetic like `*(int32_t *)(v1 + 40)`, and function pointer handling without proper type signatures. The code could easily cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments provide demangled function names and line number mappings (e.g., `// Line range: 398 - 425 // Demangled: test_cpp_exception()`). However, they lack meaningful explanation of the algorithm, purpose, or any uncertainty indicators. Many functions have no comments at all.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The decompiler doesn't recognize or label patterns like RAII (from smart pointers), virtual dispatch, or template instantiation. The virtual thunk functions (`_ZTv0_n12_`) are present but not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code, indirect calls that couldn't be resolved, or areas of decompilation uncertainty. The code presents everything with false confidence even where the decompiler may have made guesses.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The code provides no guidance on expected input ranges, return value meanings, or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: The call relationships can be inferred from the code (e.g., `test_cpp_oo_features` calls other test functions), but there's no explicit documentation of the call graph, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions are in a single file without clear logical grouping. Related test functions are scattered. No namespace or class structure is reconstructed - everything is flat.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code includes standard library headers and appears structurally valid. However, it relies on x86-specific intrinsics and has undefined references to external functions. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `v3`...) with no semantic meaning recovered
+- Function names remain mangled (`_Z18test_cpp_exceptionv`) rather than using demangled versions
+- Class structures are not reconstructed - all class data accessed via raw pointer arithmetic
+- Extensive compiler noise (`__x86_get_pc_thunk_*`, `__readgsdword`) obscures logic
+- No type safety - unsafe casts and pointer arithmetic throughout
+- Exception handling code is convoluted, not presented as try-catch blocks
+
+**Best Quality Aspect:** Redundancy Elimination (scored 7/10)  
+The decompiled code has minimal redundancy - template instantiations are properly separated and there's no obvious dead code.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable uses generic numbered names (`v1`-`v14`) with no semantic recovery. The original source uses meaningful names like `result`, `capture_by_value`, `capture_by_ref`, `ptr1`, `ptr2` that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v2 * v13 + 21` where v2 is multiplied by a small constant suggests `instance_count` based on the original `LifecycleClass::getInstanceCount()`)
+2. **Use demangled names as function names**: The comments already contain demangled names - these should be the actual function names, not mangled versions
+3. **Recover class structures**: Instead of raw pointer arithmetic like `*(int32_t *)(v1 + 40)`, reconstruct the class layout with meaningful field names based on vtable analysis

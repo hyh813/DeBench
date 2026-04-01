@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/6/6_gcc_O0_no_g/ida/syntactic/bin/6_gcc_O0_no_g_fixed",
+  "stdout": "Lib Test Start\n\nLib.101: strcpy: 8\nLib.102: strcmp: 0\nLib.103: strlen: 12\nLib.104: memcpy: -4618614075553742838\nLib.105: memcmp: -4618614071258775553\nValue: 42, Name: Test\nLib.106: printf: 22\nLib.107: scanf: 579\nLib.108: fopen/fclose: 42\nLib.109: fread/fwrite: 42\nLib.110: malloc/free: 90\nLib.111: memset: -4618614075553742848\nLib.112: strchr/strstr: 15\nSystem Test Start\n\nSys.301: linux_syscall: 42\nSys.302: win32_api: 42\nSys.303: fork_exec: 42\nSys.304: pipe_communication: 42\nSys.305: socket_create: 42\nSys.306: shmget_shmat: 42\nSys.307: signal_handling: 42\nThread Test Start\n\n",
+  "stderr": "free(): invalid pointer\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

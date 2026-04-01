@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Parameters are generic (`a1`, `a2`) and locals are generic (`v1`, `v2`, `result`), failing to convey semantic meaning like `size` or `arr`. Despite `-g` compilation flags, debug info for local variables was not recovered.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_macro_constants` and `call_asm_basic` are perfectly preserved from the source, accurately reflecting their purpose and making the high-level flow easy to follow.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Critical failure in constant recovery; magic numbers like `1024` and `512` are replaced with addresses of global variables (e.g., `(int32_t)&g23` for `1024`). String literals are accessed via obscure pointer arithmetic (e.g., `(char *)((int32_t)&g28 + 1984)`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly free of register spilling artifacts or redundant casts typical of decompilation, though the pointer arithmetic for string access adds significant visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is natural and idiomatic (e.g., `if`, `while`, `for` loops), which is expected given the `-O0` optimization level. The logic in `param_asm_clobber` is easy to trace despite the generic variable names.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code, maintaining appropriate granularity and cohesion. No artificial outlining or inlining obscured the structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps or forward references, making it easy to scan and understand execution paths.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no apparent dead code or loop unrolling artifacts. The logic is concise, though the reliance on global variable addresses for constants introduces a form of logical redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, using `int32_t` and `int32_t *` correctly for integers and pointers. Signedness and pointer arithmetic are handled well.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays are correctly handled as pointers, and structure access is implied through pointer arithmetic (e.g., `*(int32_t *)(v1 + a2)`), which is standard for decompiled output without debug symbols for structs.
+
+**11. Type Safety:** Score: 8/10
+Justification: No dangerous or incorrect casts are present that would lead to undefined behavior. The pointer arithmetic used for array access is type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the pointer arithmetic for string access or the use of global addresses as constants, is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard loop idioms are recognized, but higher-level patterns like the "macro recursion" or "token pasting" are reduced to simple arithmetic, losing the original semantic context.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the use of global variable addresses as integer constants (e.g., `&g23`) as valid logic without flagging it as a potential recovery error or anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `mmap` success or valid pointer inputs is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and standard library calls like `printf` and `mmap` are correctly identified. However, the reliance on global variables `g1`...`g34` for strings obscures the data flow.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and the separation between preprocessing tests and assembly tests is preserved in the function ordering.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not recompilable as-is because it relies on specific memory addresses of global variables (e.g., `&g20` equating to `512`). If the memory layout changes, the logic breaks.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Constant Recovery Failure**: Integer constants (e.g., `1024`, `512`) are replaced with addresses of global variables (`&g23`, `&g20`), making the logic dependent on memory layout rather than values.
+- **String Literal Obfuscation**: String literals are stored in globals and accessed via pointer arithmetic offsets (e.g., `&g28 + 1984`), rendering the text unreadable.
+- **Generic Variable Naming**: Local variables use generic names (`a1`, `v1`) despite the presence of debug symbols (`-g`), losing semantic context.
+- **Lack of Comments**: Zero comments are provided to explain the non-obvious transformations or address arithmetic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the debug symbols, making the high-level structure of the test suite immediately recognizable.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The replacement of numeric constants with global variable addresses and the obfuscation of string literals via pointer arithmetic severely degrade the ability to understand the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Constant Propagation**: Distinguish between PC-relative loads of immediate values and actual references to global variable addresses to avoid replacing constants like `1024` with `&global_var`.
+2.  **Recover String Literals**: Detect string literals in the data section and inline them into the code (e.g., `printf("string")`) instead of modeling them as global variables accessed via offsets.
+3.  **Leverage Debug Info for Locals**: Utilize DWARF debug information (present due to `-g`) to recover original local variable names instead of defaulting to `a1`, `v1`.

@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Variables like `lVar1`, `iVar2`, `iVar3`, `puVar1` are generic and uninformative. However, some names like `capture_by_value`, `capture_by_ref`, `result`, `obj` are semantically meaningful. The majority of locals use the cryptic pattern that obscures purpose.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Test functions perfectly match source names (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.). Member functions are correctly named (`SimpleClass::getValue`, `Point::operator+`, `template_max<int>`). Minor issues with some internal std::template functions having complex mangled names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: String literals like "Test", "Base", "Derived" are clear. However, magic numbers like `0x1234` (4660), `0x14` (20), `0x1e` (30), `0x96` (150), `0xfa` (250) lack explanatory constants. The value `0x32` (50) in diamond inheritance is unexplained.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant compiler artifacts present: `__stack_chk_fail` calls, `__cxa_throw`/`__cxa_allocate_exception` for exceptions, `__gmon_start__`, `__static_initialization_and_destruction_0`. Many "WARNING" blocks about unreachable code. The std::template implementation details (`__uniq_ptr_data`, `_Tuple_impl`, `_Head_base`) create massive noise.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Test functions have natural control flow matching source. Exception handling shows try-catch blocks appropriately. Virtual function calls use vtable dispatch correctly. Minor awkwardness in exception handling where `__cxa_throw` doesn't return. At -O0, loops and conditionals are straightforward.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Test functions are appropriately sized (20-50 lines). Member functions properly extracted. However, std::template implementations are over-fragmented into many tiny functions (`__uniq_ptr_data`, `__uniq_ptr_impl`, `get<0>`, `get<1>`, `_M_ptr`, `_M_deleter`, etc.) exposing internal boilerplate.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Test functions read top-to-bottom with minimal forward jumps. Early returns used appropriately. The std::template code has more jumps but that's expected from tuple implementation. Overall good linearization for main logic.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Virtual function thunks appear in multiple places but that's necessary for vtable dispatch. Some duplicate code patterns in template implementations but acceptable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 8/10**
+Justification: Types are precise - `int`, `size_t`, `bool`, `double` correctly used. `const` correctness preserved in function signatures. Function pointer types accurate for vtable calls. Minor generic `type` alias for some template return types.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Struct layouts mostly recovered with reasonable field names (`super_BaseA`, `super_BaseB`, `data`, `size`, `multiplier`). However, diamond inheritance has issues: `field_0x20`, `field_0x10`, `_40_4_`, `_32_8_` are generic. Warning "Struct DiamondDerived: ignoring overlapping field" indicates confusion.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Appropriate casts between related types. Some unusual patterns like `(uint)(&obj != (MultiDerived *)&obj.super_BaseB)` for pointer comparison but functionally correct.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 6/10**
+Justification: DWARF original prototypes provide useful type information for parameters. "WARNING" comments flag issues like "Unknown calling convention", "Struct overlapping field". Sparse but useful. Not as comprehensive as source comments but functional.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: C++ idioms partially recognized - vtable for virtual functions, RAII patterns for smart pointers. However, no explicit naming of design patterns. Template metaprogramming (tuple, unique_ptr) exposed as raw implementation rather than high-level idioms.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Warnings present for "Unknown calling convention", "Struct overlapping field", "Removing unreachable block". However, specific anomalies like the diamond inheritance field overlap could be better explained. Some indirect calls flagged but not fully resolved.
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**
+Justification: No explicit preconditions/postconditions recovered. Some implicit contracts visible (e.g., null checks in smart pointer destructors) but not documented. Would benefit from "requires: ptr != NULL" style annotations.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships clear from code. Virtual dispatch relationships shown via vtable pointers. Static member function calls (`SimpleClass::getClassID()`) correctly identified. However, callback relationships and global variable usage not explicitly documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions logically grouped - test functions together, member functions by class, template implementations grouped. Static functions properly scoped. Some std::template functions intermixed with application code.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code compiles successfully (marked "Compilation Result: Yes" in metadata). Minimal external dependencies - mainly standard library. Function declarations clear. Some internal std:: functions need standard library linkage.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4+9+5+4)/4 = 5.5
+L2_avg = (7+6+7+7)/4 = 6.75
+L3_avg = (8+5+7)/3 = 6.67
+L4_avg = (6+5+6+4)/4 = 5.25
+L5_avg = (6+7+8)/3 = 7.0
+
+Overall = (5.5 × 0.30) + (6.75 × 0.25) + (6.67 × 0.20) + (5.25 × 0.15) + (7.0 × 0.10)
+        = 1.65 + 1.6875 + 1.334 + 0.7875 + 0.7
+        = 6.14/10
+```
+
+### Overall Readability Score: 6.1/10
+
+### Critical Defects
+- **Variable naming**: Generic patterns like `lVar1`, `iVar2`, `puVar1` obscure variable purpose throughout
+- **Diamond inheritance**: Struct fields use cryptic names (`field_0x20`, `_40_4_`, `_32_8_`) with overlapping field warnings
+- **Noise pollution**: Massive std::template implementation details (`__uniq_ptr_data`, `_Tuple_impl`, `_Head_base`) clutter output
+- **Magic numbers**: Values like `0x1234`, `0x96`, `0xfa` lack explanatory constants
+- **Contract recovery**: No precondition/postcondition documentation for functions
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names almost perfectly match the original source - test functions, member functions, and operators all have semantically accurate names that reflect their purpose.
+
+### Most Needs Improvement: Variable Naming (4/10)
+Despite -O0 compilation producing debug-friendly code, variable names remain generic and cryptic, making it difficult to track variable purpose without analyzing usage patterns.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: Variables like `lVar1` used as stack guard should be named `stack_chk_guard_local`. Parameters like `param_1` should use DWARF debug info to recover meaningful names.
+2. **Improve diamond inheritance handling**: The decompiler struggles with virtual inheritance. Add explicit comments explaining the vtable layout and field offsets.
+3. **Abstract template implementation noise**: Hide std::template internals or provide a "simplified" view that shows high-level unique_ptr/tuple operations rather than exposing _Head_base, _Tuple_impl details.

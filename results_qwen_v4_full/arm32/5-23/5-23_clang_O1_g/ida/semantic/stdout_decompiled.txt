@@ -1,0 +1,14 @@
+Testing preprocessing features
+Result 201: 64
+Result 202: 30
+Result 203: 32
+Result 204: 57122
+Result 301: 116
+Result 302: 19
+Result 303: 60
+LOG: Values: 10, 20, 30
+Result 304: 60
+Result 305: 16
+Result 306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:15
+Result 307: 382

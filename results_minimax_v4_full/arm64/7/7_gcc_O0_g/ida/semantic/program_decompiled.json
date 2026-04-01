@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O0_g/ida/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "Obfuscation Test:\n\nFake branch: 10\nOpaque predicate: 20\nInstruction substitution: 225\nString encryption: 102\nTail call optimization: 500500\nNon-tail call: 5050\nVectorized loop: -1864513339\nLink-time optimization: 20\nDivision by zero: 2\nNull pointer dereference: 41\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

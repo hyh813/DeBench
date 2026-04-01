@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names `a0` (dst) and `a1` (src) instead of descriptive names. Local variables `v2` and `v0` are meaningless. The source uses `dst` and `src` which clearly indicate purpose.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: The function name `param_strcpy` is perfectly preserved from the original source. This is excellent decompilation - the decompiler correctly identified the function's semantic purpose.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: This simple function contains no magic numbers or unclear literals. The string arguments are passed through parameters.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The code is clean with minimal compiler artifacts. The stack frame variable `v0` at `[bp-0x8]` is the only minor artifact, but it's necessary for capturing the return value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: The control flow is perfectly natural - a simple return statement with nested function calls. No goto, no confusing conditionals. Reads exactly like the source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The function is appropriately granular - it does one thing (string copy and length return). This matches the source decomposition exactly.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly top-to-bottom with no forward jumps, breaks, or continues. Linear execution flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. Each function (strcpy, strlen) is called exactly once. No dead code or duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Three type issues: (1) Return type is `long long` but source returns `int` (strlen returns size_t, cast to int); (2) Second parameter is `char *a1` but source uses `const char *src` - missing const qualifier; (3) Local variable `v2` typed as `unsigned long long` but should be `size_t`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No structs or unions in this function, so nothing to recover. N/A applies.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The code is mostly type-safe. Minor issue: passing `char *a1` to strcpy when source has `const char *src` could cause const-correctness warnings, but no undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments whatsoever in the decompiled function. The source has clear documentation intent, but decompiled output has zero explanatory text.
+
+**13. Idiom Recognition:** Score: 9/10  
+Justification: The decompiler correctly identified the strcpy+strlen idiom as a string copy operation returning length. This is a recognized C pattern.
+
+**14. Anomaly Indication:** Score: 10/10  
+Justification: No anomalies in this function - straightforward compilation of strcpy and strlen calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. The source implies: preconditions (dst buffer valid, src null-terminated), postcondition (returns copy length). None recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function calls to `strcpy` and `strlen` are clearly visible. These are standard library functions, so their semantics are understood.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The function appears in a large file with many other test functions (call_strcpy, param_strcmp, etc.). Organization is reasonable but could be better grouped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile with minimal stubs for strcpy, strlen. The function signature needs adjustment (const char* parameter) for exact compatibility.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.4/10
+
+**Critical Defects:**
+- Parameter `a1` should be `const char *src` to match source and ensure const-correctness
+- Return type should be `int` not `long long` (source returns `int` from strlen)
+- No comments explaining the function's purpose or return value semantics
+- Generic variable names `v0`, `v2` lose the semantic meaning of capturing return values
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The function name `param_strcpy` is perfectly preserved, exactly matching the source. This is the single best aspect of this decompilation.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled function has zero comments. Even a simple comment like "// Copy src to dst and return length" would significantly improve readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer parameter names from function semantics - `param_strcpy` should yield `dst` and `src` parameters
+2. Add basic documentation comments explaining function purpose, especially for standard library wrappers
+3. Preserve const-correctness from source - detect when parameters should be `const` based on usage patterns (passed to functions that accept const)

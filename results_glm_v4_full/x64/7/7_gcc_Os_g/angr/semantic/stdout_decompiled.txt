@@ -1,0 +1,5 @@
+Test: obf_opt_edge
+
+Fake branch result: 10
+Opaque predicate result: 35
+Instruction substitution: 225

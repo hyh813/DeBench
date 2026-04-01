@@ -1,0 +1,4 @@
+Testing standard library functions...
+strcpy result: 8
+strcmp result: 2
+strlen result: 12

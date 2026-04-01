@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/1/1_gcc_O2_g/retdec/syntactic/bin/1_gcc_O2_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0xb4 in position 0: invalid start byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false
+}

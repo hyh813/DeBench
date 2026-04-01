@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `local_8`, `iVar1`, `iVar2`, `uVar1`. The original source used meaningful names like `size`, `x`, `y`, `result`, `counter`, but these are completely lost in decompilation. This makes it extremely difficult to track variable purposes across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `my_func`). However, some internal functions like `FUN_00011030` use generic naming. The primary test functions are well-recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervade the code: `0x401` (1025) instead of MAX_SIZE (1024), `0x200` (512) instead of MAX_SIZE/2, `0x40` (64) instead of BUFFER_COUNT*4, `0xdef0` for platform constant, `0x10` for ADD_16. The original source had clear named constants that are completely lost, replaced with unexplained hex values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts remain. Some warnings about unreachable blocks and inlined functions appear in comments. No asm blocks or frame pointer manipulation clutter the code. The decompiled output is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures match the source well. Simple if-else statements are natural, loops are properly recovered as for loops, and no spurious goto statements are present. At -O0, the control flow should closely mirror source, which it does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the source - many small, focused functions are preserved (e.g., `param_macro_constants`, `call_macro_constants` are separate). No monolithic functions observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. Some forward jumps exist but don't severely disrupt readability. The code flows reasonably well.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling in SIMD functions (`param_asm_simd`) is appropriate and represents the actual compiled behavior. The code is clean without significant redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers use generic `int` type. Some return types use `undefined4` which is not valid C. Pointers are correctly identified as `int*` or `undefined1*`. The original used specific types like `size_t` for memory sizes, but these are lost. Mixed results - basic types work but precision is lacking.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct types are recovered. The code uses raw pointer arithmetic extensively (e.g., `*(int *)(param_1 + iVar2 * 4)` for array access). The original source had no complex structs either, but the decompilation doesn't improve on this.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic exists (e.g., `param_1 + iVar2 * 4` without bounds checking). However, no obviously dangerous casts or type-confused function pointers are present. The code is reasonably safe for decompiled output, though not bulletproof.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are sparse and mostly auto-generated (e.g., "WARNING: Function replaced with injection", "WARNING: Removing unreachable block"). No explanation of what functions do, algorithm documentation, or recovery of original comments. The source had extensive comments explaining each test case, completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns, algorithms, or idioms are identified or named. The inline assembly patterns, macro expansions, and conditional compilation are not recognized as specific patterns. The code presents as generic procedural code.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged with warnings (e.g., "Function replaced with injection", "This is an inlined function", "Removing unreachable block"). However, many suspicious patterns are silently presented without flags. The coverage is inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, invariants, or error conditions are documented. The original source had no explicit assertions either, but the decompilation makes no attempt to infer contracts (e.g., "requires: ptr != NULL" for mmap results).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No explicit documentation of function call relationships, global variable usage, or callback relationships. The code presents functions in isolation without explaining how they relate to each other or are called by external code.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in binary order rather than logical grouping. The original source had clear sections (preprocessing tests, asm tests) with comments, but the decompiled output just lists functions sequentially. Some grouping by test category exists but isn't explicit.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses `undefined4` type which is not valid C and will cause compilation failures. References to `DAT_` sections for string literals need resolution. External function declarations (printf, mmap, etc.) are needed. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`param_1`, `local_8`, `iVar1`) - completely loses semantic meaning from source
+- Magic numbers everywhere (`0x401`, `0x200`, `0x40`, `0xdef0`) instead of recovered constants (MAX_SIZE, BUFFER_COUNT)
+- No struct/type recovery - all composite types are raw pointer arithmetic
+- Comments are auto-generated noise with no useful algorithm or intent documentation
+- Type precision issues: `undefined4` is not valid C and will fail compilation
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+The decompiler correctly recovers natural loop and conditional structures. At -O0, control flow should mirror source, and Ghidra achieves this well.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of meaningful variable names is the most severe readability issue. Every parameter and local variable uses generic names that require significant reverse-engineering effort to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., comparison with 1024 → likely "max_size", array index with multiplication by 4 → likely "element_count")
+2. **Detect magic numbers and suggest constants**: When a literal appears multiple times or matches known patterns (0x20 = MAP_ANONYMOUS), suggest or recover the original constant name
+3. **Recover type information more precisely**: Replace `undefined4` with `int` or appropriate types, and add `size_t` for memory-related quantities

@@ -1,0 +1,8 @@
+=== Standard Library Tests ===
+strcpy: 7
+strcmp: 0
+strlen: 12
+memcpy: 90
+memcmp: 0
+Value: 42, Name: Test
+printf: 22

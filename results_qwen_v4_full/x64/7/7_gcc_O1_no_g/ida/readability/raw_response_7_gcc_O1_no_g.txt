@@ -1,0 +1,111 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `v2`) with no semantic meaning. Original source had descriptive names like `result`, `encrypted`, `decrypted`, `heap_buffer` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`) matching original source intent. This is the strongest lexical aspect.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `90` (XOR key), `0x28u` (stack canary offset), and `0xFFFFFFFFLL` appear without explanation. Original had comments explaining `0xDEADBEEF` and encryption keys.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts like `__readfsqword(0x28u)` for stack canaries, excessive type casts `(unsigned int)`, and `__fastcall` calling conventions that clutter readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if/else and loops. However, `param_opaque_predicate` shows optimization artifacts with the gcd loop preserved but fake branches eliminated.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and cohesive. Each function has single responsibility matching original structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Some functions like `param_vectorized_loop` have pointer arithmetic that disrupts linear reading slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some functions are over-optimized (`param_fake_branch` returns just `a1`), losing the original fake branch logic entirely. This is semantic loss, not helpful elimination.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `__int64`, `unsigned int` instead of specific types. Original had `int`, `size_t`, `char*` with clear semantics. Signed/unsigned confusion present (e.g., `param_fake_branch` takes `unsigned int` but original used `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost—function returns constant `47` instead of computing with struct fields. No struct recovery visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts like `(unsigned int)(a1 - 1)` and `(unsigned int)(3 * a1 + 20)`. Pointer arithmetic in `param_vectorized_loop` uses raw `__int64` instead of typed pointers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. Original had extensive documentation explaining obfuscation techniques (OBF-L4-02, opaque predicates, etc.). Only auto-generated variable annotations exist.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Obfuscation patterns (fake branches, opaque predicates, instruction substitution) are not identified or documented despite being the code's purpose.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Lists "FAILED to decompile" for 13 library functions, but doesn't warn about optimized-away code (fake branches eliminated, buffer overflow logic removed). Silent semantic loss.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Original had clear expectations (e.g., "期望: 10", "期望: 20"). No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear, but global variables (`encrypted_0`, `jmp_buffer`, `div_zero_caught`) are referenced without declaration context or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching original structure. Related functions grouped together (param/call pairs adjacent).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 13 library functions failed to decompile (`free`, `malloc`, `signal`, `strlen`, etc.). Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3×0.10 + 8×0.10 + 5×0.05 + 6×0.05) / 0.30 = 5.67/10
+Level 2 (Structural):  (7×0.08 + 8×0.07 + 7×0.05 + 6×0.05) / 0.25 = 7.04/10
+Level 3 (Type):        (5×0.08 + 4×0.07 + 5×0.05) / 0.20 = 4.65/10
+Level 4 (Semantic):    (2×0.05 + 3×0.03 + 5×0.03 + 3×0.04) / 0.15 = 3.07/10
+Level 5 (Contextual):  (6×0.04 + 7×0.03 + 4×0.03) / 0.10 = 5.70/10
+
+Overall = (5.67×0.30) + (7.04×0.25) + (4.65×0.20) + (3.07×0.15) + (5.70×0.10)
+        = 1.70 + 1.76 + 0.93 + 0.46 + 0.57
+        = 5.42/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Semantic loss in `param_fake_branch`**: Returns just `a1` instead of preserving fake branch logic (always-false conditions eliminated by optimizer)
+- **Variable names all generic**: `a1`, `v0`, `v1` provide no semantic information about purpose
+- **No comments documenting obfuscation**: Original had extensive OBF-L4-XX labels and technique explanations
+- **Bitfield struct completely lost**: `param_implementation_defined` returns constant `47` instead of computing with struct
+- **13 library functions failed**: `malloc`, `free`, `signal`, `strlen` etc. need manual stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from original source, making it easy to identify purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation explaining obfuscation techniques, expected values, and algorithm intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve optimization artifacts with annotations**: When optimizer eliminates code (fake branches), add comments like `// OPTIMIZED: Always-false condition removed by compiler`
+2. **Infer variable names from usage patterns**: Variables used in size checks should be named `size`, `length`; encryption variables should be `key`, `encrypted`, `decrypted`
+3. **Recover and document obfuscation patterns**: Detect opaque predicates, fake branches, and instruction substitution patterns, then add explanatory comments identifying the technique
+
+---
+
+**Assessment Notes:**
+- Metadata inconsistency: Original claims `-O0 -g` but decompiled code shows significant optimization (dead code elimination, constant folding)
+- Architecture mismatch: Original ARM64, decompiled x64
+- Decompiler mismatch: Metadata says Ghidra, header says IDA Pro
+- These inconsistencies suggest the binary analyzed differs from the stated source, affecting score validity

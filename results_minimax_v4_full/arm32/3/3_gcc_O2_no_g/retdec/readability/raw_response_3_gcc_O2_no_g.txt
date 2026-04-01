@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are named with generic patterns like `v1`, `v2`, `v3`, `mem`, `mem2`, `mem3`. The original source had meaningful names like `global_counter`, `arr`, `head`, `current`, `new_node`, `root`, `left`, `right`. The decompiled version loses all semantic meaning in variable names, making it difficult to track purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately reflect their purpose: `large_stack_frame`, `alloca_usage`, `test_stack_memory`, `heap_realloc`, `linked_list_heap`, `tree_heap_traversal` all match source. Minor issue: `function_ffff0fa0` appears to be a spurious stub function.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful (e.g., `20` for expected test output), but many magic numbers lack explanation: `8` for Node struct size, `12` for TreeNode, `4` for int size, `40` for malloc allocations. String literals are encoded in UTF-8 hex (e.g., `\xe6\xb5\x8b`) rather than decoded.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts including `__stack_chk_fail()` calls, unreachable code marked with `// UNREACHABLE`, and redundant casts like `(int32_t)` throughout. However, these are manageable and don't completely obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Uses goto statements for loop constructs (`goto lab_0x10d14`), which is a decompilation artifact. Basic structures like for loops and while loops are preserved. The goto usage disrupts natural flow but logic is traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The original many small functions (local_vars, local_array, etc.) are inlined into test functions, which is appropriate for -O0. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The goto statements create some non-linearity, but there are no excessive forward jumps into loop bodies or deep nesting (>4 levels).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling is present in `test_heap_memory` but it's manageable. Minor duplicate patterns in heap operations but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` and `uint32_t` which is good. However, there's confusion between pointers and integers (e.g., `int32_t * mem = malloc(8)` loses pointer type precision). Function parameters like `a1` are generic `int32_t` rather than specific types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The original source defines `Point`, `Node`, and `TreeNode` structs. The decompiled version completely loses these - they're replaced with raw `int32_t*` pointers and manual field access like `*(int32_t *)(v1 + 4) = 2`. No struct recovery at all.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: manual struct field access via pointer arithmetic (`*(int32_t *)(v1 + 4)`), using `int32_t*` for malloc returns, and casts throughout. These create potential undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments exist. No algorithm explanations, no recovery confidence indicators, no API contracts. Only auto-generated address ranges like `// Address range: 0x10830 - 0x1089c` are present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are recognized or named. The linked list, tree, and memory operation patterns are not identified. The code just presents raw operations without naming the patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls, or potential undefined behavior. The `function_ffff0fa0` stub appears but isn't flagged as anomalous. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error conditions from the original (e.g., NULL checks, bounds checking) are present in code but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at the top indicate what functions exist and their signatures. However, there's no documentation of call relationships, global variable usage, or callback connections.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All code is in a single file. Functions are grouped logically (test functions together), but static functions aren't marked, and there's no clear separation matching the original source organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers and has function prototypes. Should compile with minimal changes. The `function_ffff0fa0` stub and some unreachable code might cause warnings but not failures.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `mem`, `mem2`) losing all semantic meaning from original source
+- Composite types (Point, Node, TreeNode) completely lost - replaced with raw pointer arithmetic
+- No comments explaining algorithms, contracts, or recovery confidence
+- Struct field access done via manual offset calculations (`*(int32_t *)(v1 + 4)`) rather than named fields
+- Goto statements used for loop constructs, creating unnatural control flow
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Most function names accurately reflect their purpose and match the original source names closely.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+The decompiled code lacks comments, pattern recognition, anomaly indication, and contract recovery - making it difficult to understand the intent and reliability of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v1` used as array index should be named `index` or `i`)
+2. Recover struct/union types from allocation sizes and field access patterns (malloc(8) with field at offset 4 suggests a 2-field struct)
+3. Add comments explaining algorithm intent, recovery confidence, and potential anomalies (e.g., "Likely linked list traversal" or "UNCERTAIN: indirect call")

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc. (e.g., `local_array` uses `v2`, `v3`, `v4` instead of `arr`, `i`). Only occasional names like `mem`, `result` provide minimal semantic hint.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`double_value`, `local_vars`, `heap_basic`), but many helpers degraded to `function_1140`, `function_1150`. Original semantic names partially recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `2048`, `40`, `0x1000` appear without explanation. String literals exist but global references (`&g14 - 0x2eb6`) obscure their meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: `__x86_get_pc_thunk_bx`, `__readgsdword(20)`, `__stack_chk_fail_local` in nearly every function. 17 opaque global variables (`g1`-`g17`) pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops partially recovered as `while` but `linked_list_heap` uses explicit `goto lab_0x1a60`. Stack canary checks create unnatural conditional branches throughout.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but thunk functions (`function_1160`-`function_1240`) create unnecessary fragmentation. Original cohesion partially maintained.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps for error handling disrupt flow. `test_heap_memory` has complex branching that obscures execution path.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. Thunk wrappers for standard library calls (`memcpy`, `malloc`) create redundant indirection layers.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int32_t` or `int32_t*`. Lost distinction between `size_t`, `uint32_t`, specific struct pointers. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point`, `Node`, `TreeNode` structs entirely lost. `heap_struct` uses `malloc(8)` with raw pointer arithmetic instead of struct field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(int32_t)mem`, `(char*)`). Pointer arithmetic without bounds checking. Original type-safe patterns (struct member access) replaced with raw memory operations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. Zero documentation of algorithm logic, non-obvious patterns, or decompilation confidence. Original explanatory comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal, tree creation) not identified or named. No recognition of test harness structure or memory operation idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about decompilation uncertainty. Stack canary checks present but unexplained. Dangerous patterns (`dangling_pointer`, `double_free`) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 != 0` checks not explained as validation). Error return values (-1, -2, -3) lack semantic meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships undocumented. Global variables (`g1`-`g17`) have no semantic meaning. No call graph or data flow information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Original section organization (stack/heap/static/memory-op tests) not preserved in output structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but 17 undefined globals (`g1`-`g17`). Thunk functions and platform-specific calls (`__readgsdword`) require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Calculation:**
+```
+L1 (Lexical):     4.25 × 0.30 = 1.275
+L2 (Structural):  5.50 × 0.25 = 1.375
+L3 (Type):        3.33 × 0.20 = 0.666
+L4 (Semantic):    2.75 × 0.15 = 0.413
+L5 (Contextual):  4.33 × 0.10 = 0.433
+----------------------------------------
+Total:            4.162 ≈ 4.2/10
+```
+
+**Critical Defects:**
+- All struct types (`Point`, `Node`, `TreeNode`) completely lost - accessed via raw pointer arithmetic
+- 17 opaque global variables (`g1`-`g17`) replace meaningful static/global data
+- Stack canary instrumentation (`__readgsdword`, `__stack_chk_fail`) clutters every function
+- Variable names (`v1`, `v2`, `v3`) provide zero semantic information
+- No comments explaining algorithm logic or decompilation confidence
+- `linked_list_heap` and `tree_heap_traversal` severely degraded with goto labels and broken logic
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+- Core function boundaries preserved with recognizable names for test functions
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- Complete failure to recover any struct/union types, forcing raw pointer arithmetic throughout
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct type inference from consistent field access patterns (e.g., `*(ptr+4)` always accessed together = struct field)
+2. Add semantic variable naming based on usage context (loop counters, array indices, pointer targets)
+3. Strip or comment compiler instrumentation (stack canaries, thunks) with explanation rather than leaving as opaque calls

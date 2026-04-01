@@ -1,0 +1,8 @@
+Test: Obf Opt Edge
+
+GCD(10) = 1
+Opaque predicate result: 20
+Instruction substitution result: 225
+String encryption result: 91
+Tail call optimized result: 500500
+Non-tail call result: 5050

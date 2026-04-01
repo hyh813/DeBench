@@ -1,0 +1,155 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+The decompiled code uses generic type-based variable names throughout: `iVar1`, `lVar1`, `puVar2`, `__ptr`, `pvVar2`. While some globals like `global_counter` and `file_scope_static` are properly named, most local variables are unresolved or use cryptic names like `var_1`. For example, in `heap_basic`, the pointer `__ptr` should be named `arr` based on its usage pattern `*(int *)((long)__ptr + lVar1 * 4)`.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Most test functions retain their original names (`local_vars`, `heap_basic`, `global_var_access`), which is excellent. However, some helper functions have cryptic names like `FUN_001009b0`, `FUN_00100bfc`, and internal symbols like `call_weak_fn` remain unclear. The core test functions are well-named, matching the source exactly.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Some literals are clear (e.g., `0x2a` for 42 in `address_of_local`, `0x14` for 20), but many magic numbers lack explanation. In `heap_realloc`, the value `0x200000001` appears without context. The decompiler doesn't recover named constants like `MAX_SIZE` or `BUFFER_LEN` - these remain as raw numbers.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+The output is cluttered with numerous warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Globals starting with '_' overlap smaller symbols". Comments like "Unresolved local var: int * arr@[???]" appear repeatedly. This noise significantly impedes reading the actual logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Most control flow is preserved naturally - loops appear as do-while constructs, conditionals are clear. However, some patterns are unusual: `vla_stack` and `alloca_usage` have complex computed stack allocation logic that obscures the simple VLA/alloca pattern. At `-O0`, this level of complexity is unexpected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Function granularity matches the original source well. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is separate. Helper functions like `double_value`, `create_tree_node` are properly extracted. No obvious over-fragmentation or monolith issues.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+The code generally reads top-to-bottom without excessive forward jumps. Early returns in error handling are present but appropriate. Some computed jumps in VLA/alloca functions disrupt linearity slightly, but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Loop unrolling is present in `local_array` and `large_stack_frame` but these are expected at `-O0`. No significant dead code observed. Some duplicate patterns in test functions but these reflect the original structure.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Basic types (`int`, `char`, `void*`) are correctly identified. However, many specific types are lost: `size_t` becomes `ulong`, `uint` becomes `int`. The decompiler uses `undefined1`, `undefined4`, `undefined8` for unresolved types. Function pointer types like `_func_int_int` are auto-generated and unclear.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Structures `Point`, `Node`, `TreeNode` are recognized and named correctly. However, field names are partially lost - `Node` has `data` and `next` correctly identified, but some struct operations use raw pointer arithmetic. The struct layout is preserved but some semantic field names are generic.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Generally type-safe code with minimal unsafe casts. Some pointer arithmetic is present but correctly typed. The main issues are in memory operation functions where `void*` is used extensively. No severe type safety violations that would cause undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Most comments are auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var") rather than explanatory content. No algorithm explanations or contract documentation. The few useful comments are about unreachable blocks, but these are noise rather than helpful analysis.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Basic patterns like linked lists and binary trees are recognizable from the code structure, but no explicit pattern naming or documentation. The decompiler doesn't identify "this is a linked list traversal" or "this implements a memory pool".
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Warnings about unreachable blocks and unresolved local variables are present. However, critical anomalies like the `dangling_pointer` function (which accesses freed memory) aren't flagged as dangerous. The double-free in `double_free` isn't highlighted as a vulnerability.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover contracts like "requires: n > 0" or "ensures: return is heap-allocated". Error handling is present in the code but not explained.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function call relationships are implicit in the code (e.g., `test_stack_memory` calls `local_vars`, `local_array`). However, there's no explicit documentation of call graphs or callback relationships. The `global_func_ptr` callback pattern is recognizable but not documented.
+
+### 17. Module Organization
+**Score: 5/10**
+
+All functions are in a single monolithic listing with no logical grouping. The original source's section comments (Stack Memory, Heap Memory, Static & Global) are lost. No file structure or namespace organization recovered.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+The metadata indicates "Compilation Result: Yes", meaning the code compiles. External dependencies (libc functions like `malloc`, `free`, `printf`) are properly declared. However, some stubs may be needed for unresolved symbols.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+5+4)/4 = 4.75
+L2_avg = (6+8+7+7)/4 = 7.00
+L3_avg = (5+6+7)/3 = 6.00
+L4_avg = (4+5+6+3)/4 = 4.50
+L5_avg = (5+5+6)/3 = 5.33
+
+Overall = (4.75 × 0.30) + (7.00 × 0.25) + (6.00 × 0.20) + 
+          (4.50 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.75 + 1.2 + 0.675 + 0.533
+        = 5.583/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming is unusable**: Generic names like `iVar1`, `lVar1`, `__ptr` make it extremely difficult to track variable purposes across functions
+2. **Excessive noise**: Hundreds of lines of "WARNING" comments and "Unresolved local var" annotations obscure the actual logic
+3. **Lost type precision**: Many types are `undefined1`/`undefined8` instead of specific types like `size_t` or `uint32_t`
+4. **No semantic documentation**: No comments explaining algorithms, contracts, or anomalies - just auto-generated warnings
+5. **Composite type field loss**: Struct fields like `Point.x`, `Point.y` are not recovered; operations use raw pointer arithmetic
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - The decompiler correctly preserves the original function boundaries and granularity. Each test function remains separate, and helper functions like `double_value` and `create_tree_node` are properly extracted.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (3/10)** - The generic type-based naming convention (iVar1, lVar1, puVar2) makes the code nearly unusable for analysis. At `-O0` with debug symbols, the decompiler should be able to recover meaningful variable names from debug information.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from DWARF debug info**: The source was compiled with `-g`, so variable names like `arr`, `leak`, `p1`, `p2` should be recoverable from `.debug_info` section
+2. **Reduce noise output**: Filter or consolidate warnings about unreachable blocks and unresolved locals - only report actionable issues
+3. **Recover struct field names**: Use debug info to recover `Point.x`, `Point.y`, `Node.data`, `Node.next` instead of generic field access
+4. **Add semantic comments**: Document detected patterns (linked list traversal, binary tree, memory leak) and flag dangerous operations (dangling pointer, double-free)

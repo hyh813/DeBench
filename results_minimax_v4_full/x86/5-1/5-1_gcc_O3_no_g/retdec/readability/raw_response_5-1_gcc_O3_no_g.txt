@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `v4` throughout the codebase. For example, in `_Z18test_cpp_exceptionv`, variables `v1` through `v19` are used with only stack position comments like `// bp-60`. No semantic meaning is conveyed.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: While demangled names appear as comments (e.g., `// Demangled: test_cpp_exception()`), the actual function names remain mangled (e.g., `_Z18test_cpp_exceptionv`). This provides some readability but the primary identifiers are still cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear, such as `0x74736554` (reversed "Test" string), `0x125c`, `0x3bea`, and `20` for stack canary offset. These literals lack explanation or constant names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts include numerous `__x86_get_pc_thunk_*` functions, stack canary checks (`__readgsdword(20)`), and multiple virtual thunk functions (`_ZTv0_n12_*`, `_ZThn8_*`). These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions have readable top-to-bottom flow, but exception handling code in `_Z18test_cpp_exceptionv` shows complex control flow with multiple branches and `_Unwind_Resume` calls that are difficult to follow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized with clear single responsibilities. Template instantiations are properly separated. However, some tiny wrapper functions like `function_1150` (just calls `__cxa_finalize`) could be inlined.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The exception handling function has forward jumps and complex branching that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant calculations visible (e.g., computing `v1 + (int32_t)&g6` multiple times in RTTI code). No major dead code but some optimization opportunities missed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of `int32_t`, `float64_t`, `float80_t` instead of generic `int`. However, pointers are often stored as `int32_t` rather than proper pointer types, and const correctness is largely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No C++ class structures were recovered. All class access uses raw pointer arithmetic like `*(int32_t *)((int32_t)result + 4)` instead of `result->multiplier`. The original classes (SimpleClass, Base, Derived, etc.) are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (e.g., `(int32_t *)a1`, `(struct _Unwind_Exception *)v4`). Pointer arithmetic without bounds checking. Function pointers treated as regular pointers in many places.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Demangled function names and address ranges are provided as comments. However, no algorithmic explanations, no documentation of what the code actually does, and no uncertainty indicators for complex indirect calls.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of C++ idioms. Virtual function calls are not clearly marked as vtable dispatches. Exception handling code is not identified as try-catch blocks. Template instantiations not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags or warnings for suspicious code patterns. Indirect virtual calls are presented as regular function calls without indicating resolution uncertainty. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of assert statements or error handling contracts from the original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at the top provide basic call relationships. However, no comments indicate which functions call which, no virtual method relationships are documented, and global variable usage is unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by type (test functions, virtual functions, template functions) but within a single monolithic file. No namespace or class structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers and provides function prototypes. Should compile with additional stubs for undefined symbols. No build instructions or dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `v3`...) with no semantic meaning
+- No C++ class/struct recovery - all access uses raw pointer arithmetic like `*(int32_t *)((int32_t)result + 4)`
+- Function names remain mangled (`_Z18test_cpp_exceptionv`) despite demangled comments
+- Excessive compiler artifacts (thunk functions, stack canaries, __x86_get_pc_thunk_*)
+- No idiom recognition for C++ features (virtual functions, exceptions, templates, RAII)
+- No anomaly indication for indirect calls or uncertain decompilation
+
+**Best Quality Aspect:** Type Precision (scored 7/10)  
+- Uses specific integer types (`int32_t`, `int64_t`) and floating-point types (`float32_t`, `float64_t`, `float80_t`) rather than generic types
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every variable uses generic numbered names (`v1`-`v19`) with only stack position comments, completely obscuring semantic purpose
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest meaningful names like `index`, `length`, `result`
+2. **Recover C++ class structures**: Reconstruct struct layouts from vtable offsets and member access patterns rather than exposing raw pointer arithmetic
+3. **Add semantic comments for C++ idioms**: Mark virtual function calls as "vtable dispatch", exception handling as "try-catch block", and template instantiations as such

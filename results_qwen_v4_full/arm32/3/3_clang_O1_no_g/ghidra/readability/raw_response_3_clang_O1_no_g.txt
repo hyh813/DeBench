@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `iVar2`, `local_28`, `uVar2`). Original source had meaningful names like `arr`, `p`, `local`, `out`, `head` that indicated purpose. No semantic inference attempted by decompiler.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`, `double_value`). Action verbs and purpose clearly reflected in names matching source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x14` (20), `0xf` (15), `0x1e` (30). Original source used clear expressions like `x * 2`, `x + 10`. Hex notation obscures decimal intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: redundant casts `(undefined4 *)`, `(int *)0x0`, frame manipulation in VLA functions. Multiple `__sync_*` functions included that weren't in original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Awkward loop patterns with negative indexing: `local_28[-iVar2] = iVar1; iVar2 = iVar2 + -1`. Original used clean `for (int i = 0; i < 10; i++)`. Backward counting obscures intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No monolithic functions. However, some functions like `linked_list_heap` could benefit from helper extraction.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto labels disrupt flow: `joined_r0x00010d18`, `LAB_00010d40` in `linked_list_heap`. Original used structured while/for loops. Forward jumps break top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions heavily constant-folded losing original logic: `printf("MEM-L1-01 (local_vars): %d\n",0x14);` instead of calling `local_vars(5)`. Original computation intent lost.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `undefined4`, `undefined1`, `byte *`. Original had precise `int`, `char`, `size_t`, `Point *`. Function signatures degraded: `global_var_access(void)` should return `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct not recovered, `Node` struct lost. Field access via pointer arithmetic: `__ptr[1] = (int)piVar2` instead of `node->next = new_node`. All struct semantics lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere: `(int *)0x0`, `(undefined4 *)`, `(void **)`. Pointer arithmetic without bounds: `*(int *)((int)__ptr + iVar1 * 2)`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings: `/* WARNING: Removing unreachable block */`. No algorithm explanations, no parameter documentation. Original had extensive test case comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns unrecognized: malloc/free pairs, linked list traversal, tree creation all appear as raw pointer operations. No pattern hints or naming suggestions.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some unreachable block warnings present. Critical anomalies NOT flagged: `dangling_pointer` use-after-free, `double_free` behavior lost entirely, `stack_alias` reduced to constant return.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but undocumented. No precondition/postcondition recovery. Original had explicit safety checks like `if (n <= 0 || n > 1000) return -1;` with clear intent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`global_counter`, `file_scope_static`) used without declaration context. Callback mechanism (`global_func_ptr`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed but no logical grouping. Original had clear sections (Stack, Heap, Static, Memory Ops). All 112 functions in single output without organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External symbols declared (`extern_global_var`, `extern_function`) but undefined. Many `__sync_*` atomic functions included without implementation. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+7+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (3+2+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point` and `Node` structs not recovered; all field access via pointer arithmetic (`__ptr[1]`, `__ptr[2]`)
+- **Semantic behavior lost**: `stack_alias` reduced to `return 0x14;` losing pointer aliasing logic entirely
+- **Test functions constant-folded**: Original function calls replaced with pre-computed constants, losing test intent
+- **Variable names all generic**: `param_1`, `iVar1`, `local_28` provide zero semantic information
+- **Dangerous patterns unflagged**: `dangling_pointer` use-after-free and `double_free` issues not warned
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original symbol names perfectly preserved, making function identification trivial
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, forcing all composite access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from access patterns** - Detect consistent field offsets (e.g., `+0`, `+4`, `+8` for Node) and suggest struct definitions with field names
+2. **Preserve semantic behavior in optimized code** - Don't constant-fold test functions; maintain original call structure even when compiler optimized
+3. **Flag dangerous memory patterns** - Detect and warn about use-after-free (`dangling_pointer`), double-free, and pointer aliasing scenarios with explicit annotations

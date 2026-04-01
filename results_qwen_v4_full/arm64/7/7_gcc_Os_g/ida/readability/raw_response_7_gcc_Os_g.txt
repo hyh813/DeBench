@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v6`, `v7`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `buffer` that are lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Only runtime/entry functions use generic names (`sub_860`, `start`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x20u`, `90`, `0x10u`, signal numbers `8` and `11`). Original source had comments explaining XOR key `0x5A` and signal constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations (`[xsp+28h] [xbp+28h] BYREF`) and type casts (`(__sighandler_t)`, `(__int64)`) add visual noise. 14 external functions failed to decompile, cluttering output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `while`/`for` constructs naturally. However, `param_tail_call_optimized` converted from recursion to iteration (optimization artifact), and dead branches eliminated entirely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well. However, `param_buffer_overflow_stack` reduced to empty `void` function (dead code elimination), losing original intent.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No excessive `goto` usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code from fake branches properly eliminated. Constant folding applied (`call_fake_branch` returns `10` directly). No obvious redundant expressions remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of `int32_t`. Some unsigned conversions visible (`(unsigned int)x`, `(unsigned __int8)`). Function pointer types degraded to generic casts.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Bitfield struct from `param_implementation_defined` completely optimized away (returns constant `48`). Array parameters preserved but no struct definitions visible in output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(__sighandler_t)`, `(__int64)`). Signal handler casts are necessary but type-unsafe. No obvious buffer overflow patterns in decompiled code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original source had extensive documentation explaining obfuscation techniques. Only auto-generated type annotations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Tail call optimization recognized and converted to iteration. However, no algorithm naming (e.g., "GCD calculation" for opaque predicate) or pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (14 functions). No warnings about optimized-away code or uncertainty markers for ambiguous transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation recovered. Original source had expected return values in comments that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Global variables referenced (`encrypted_0`, `jmp_buffer`). No call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Original source had section comments (7.1, 7.2, 7.3) that are completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 14 external functions failed to decompile requiring stubs. Architecture-specific annotations (arm64) present. Cannot compile standalone without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+8+5+6)/4 = 5.75
+Level 2 Average: (7+7+8+8)/4 = 7.50
+Level 3 Average: (6+5+6)/3 = 5.67
+Level 4 Average: (2+4+4+2)/4 = 3.00
+Level 5 Average: (6+5+4)/3 = 5.00
+
+Overall = (5.75 × 0.30) + (7.50 × 0.25) + (5.67 × 0.20) + (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 1.875 + 1.134 + 0.450 + 0.500
+        = 5.68/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source
+- **No comments recovered** despite original having extensive documentation explaining obfuscation techniques
+- **Dead code elimination too aggressive** - `param_fake_branch` and `param_buffer_overflow_stack` lose their testing purpose
+- **Magic numbers unexplained** - signal numbers (8, 11), XOR key (90), buffer sizes lack context
+- **14 external functions failed to decompile** requiring manual stub creation for compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately, maintaining semantic connection to original source intent
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation means readers cannot understand the obfuscation testing purpose without original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `xor_key` instead of `v6`, `buffer_size` instead of `0x20u`
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments in decompiled output
+3. **Add decompilation confidence annotations** - Mark optimized-away code regions with warnings like `// OPTIMIZED: Dead branch eliminated by compiler` to preserve original intent

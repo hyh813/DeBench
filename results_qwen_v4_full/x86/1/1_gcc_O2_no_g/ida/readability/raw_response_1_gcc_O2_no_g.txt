@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `a`, `b`, `c` from source. Stack variables are `v1`, `v2`, `v3` with no indication of purpose (e.g., `result`, `sum`, `count` lost).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`). However, helper functions like `sub_1030`, `sub_1040` are generic, and some test output strings referenced as `asc_3008`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `100 * (a1 + 1)` in `if_elseif_long` obscure the original switch-like logic. String literals replaced with references (`asc_3008`). Some constants like `0x14u` for stack canary are unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__readgsdword(0x14u)` for stack canaries, register comments (`// eax`, `// edx`), and BYREF annotations. Test functions particularly noisy with stack management code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered (if-else, loops), but `for` loops converted to `do-while`. `switch_fallthrough` optimized to hardcoded returns losing fall-through semantics. `duffs_device` has complex goto chains that are hard to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Helper functions preserved (`double_value`, `op_add`, `state_idle`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some functions use goto labels (`duffs_device`, `computed_goto`) but these reflect source complexity. Test functions have goto-based patterns for error handling.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions have duplicated printf patterns matching source. No obvious dead code. Some expressions simplified aggressively (`if_elseif_long` became `100 * (a1 + 1)`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to generic `int`. Some functions use `_BOOL4`, `__int64`, `_DWORD` inconsistently. `op_or` takes `__int64` instead of two `int` parameters. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays recovered as individual stack variables (`v2[1]`, `v2[2]` in `loop_break`). Matrix in `loop_multi_exit` flattened to separate variables. No struct/union definitions visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer calls use explicit casting: `((int (__cdecl *)(int))v3[a1])(a2)`. Pointer arithmetic present but not obviously dangerous. No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments. Only register/stack annotations from decompiler. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. State machine in `state_machine` not labeled as such. Loop patterns recognized but not named. No algorithm identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("positive sp value has been detected", "FAILED to decompile"). `computed_goto` has inline assembly not fully explained. Inconsistent anomaly flagging across functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No error condition documentation. Function contracts completely missing.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but not documented. No call graph information. Global variable usage (`jump_buffer`) not clearly documented. Callback relationships visible but unexplained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation. Static functions not clearly marked. Test functions grouped together matching source structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile (`__libc_start_main`, `puts`, `__printf_chk`). Architecture-specific code (`__readgsdword`) requires x86. Would need significant stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+8+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.24/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable names completely generic**: `a1`, `a2`, `v1`, `v2` instead of `a`, `b`, `sum`, `count` - requires manual inference for every variable
+- **No semantic comments**: Zero documentation of algorithm intent, preconditions, or decompilation confidence
+- **Type degradation**: `op_or` signature changed from `(int, int)` to `(__int64)`, losing parameter semantics
+- **Composite types flattened**: Arrays and matrices recovered as individual stack variables losing structure
+- **Architecture mismatch**: Source claims ARM64 but decompiled code is x86 with `__readgsdword` and x86 calling conventions
+
+### Best Quality Aspect: **Function Decomposition (8/10)**
+- Function boundaries and granularity preserved well, with helper functions like `double_value`, `op_add` correctly identified as separate functions
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation exists to help understand algorithm intent, making reverse engineering significantly harder
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop counters, accumulators) to suggest semantic names like `i`, `sum`, `count`
+2. **Add decompilation confidence annotations**: Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: optimized switch pattern`
+3. **Recover composite type structures**: Detect array patterns and stack layouts to reconstruct struct definitions with meaningful field names

@@ -1,0 +1,16 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1208583824,Arg1=-1078781472,Arg2=0,Arg3=-1210630239|eax=0x465fb4,ebx=0x0,ecx=0xbfb319e0,edx=0xbfb31a04,esi=0xb7f33000,edi=0x0
+TRACE_PRINT|0|%54%65%73%74%69%6E%67%20%6F%62%66%75%73%63%61%74%65%64%2F%6F%70%74%69%6D%69%7A%65%64%20%65%64%67%65%20%63%61%73%65%73%3A%0A
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|call_fake_branch|1|Arg0=-1078781508,Arg1=0,Arg2=-1078781436,Arg3=-1078781472|eax=0x2a,ebx=0x465fb4,ecx=0x0,edx=0xb7f34890,esi=0xb7f33000,edi=0x0
+TRACE_ENT|2|param_fake_branch|2|Arg0=10,Arg1=-1208792944,Arg2=0,Arg3=42|eax=0x465fb4,ebx=0x465fb4,ecx=0x0,edx=0xb7f34890,esi=0xb7f33000,edi=0x0
+TRACE_EXT|2|param_fake_branch|2|10
+TRACE_EXT|1|call_fake_branch|1|10
+TRACE_PRINT|0|%66%61%6B%65%5F%62%72%61%6E%63%68%3A%20%31%30%0A
+TRACE_ENT|3|call_opaque_predicate|1|Arg0=-1078781508,Arg1=0,Arg2=-1078781436,Arg3=10|eax=0x10,ebx=0x465fb4,ecx=0x0,edx=0xbfb2f394,esi=0xb7f33000,edi=0x0
+TRACE_ENT|4|param_opaque_predicate|2|Arg0=5,Arg1=-1078791276,Arg2=0,Arg3=16|eax=0x465fb4,ebx=0x465fb4,ecx=0x0,edx=0xbfb2f394,esi=0xb7f33000,edi=0x0
+TRACE_EXT|4|param_opaque_predicate|2|20
+TRACE_EXT|3|call_opaque_predicate|1|20
+TRACE_PRINT|0|%6F%70%61%71%75%65%5F%70%72%65%64%69%63%61%74%65%3A%20%32%30%0A
+TRACE_ENT|5|call_instruction_substitution|1|Arg0=-1078781508,Arg1=0,Arg2=-1078781436,Arg3=20|eax=0x15,ebx=0x465fb4,ecx=0x0,edx=0xbfb2f394,esi=0xb7f33000,edi=0x0
+TRACE_ENT|6|param_instruction_substitution|2|Arg0=10,Arg1=-1078791276,Arg2=0,Arg3=21|eax=0x465fb4,ebx=0x465fb4,ecx=0x0,edx=0xbfb2f394,esi=0xb7f33000,edi=0x0
+TRACE_EXT|6|param_instruction_substitution|2|225

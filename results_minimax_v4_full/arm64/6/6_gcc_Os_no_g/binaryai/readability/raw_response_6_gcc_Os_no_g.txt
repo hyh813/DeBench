@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_strcpy` in the original source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+Decompiled version:
+```c
+void param_strcpy(char *param_1,char *param_2)
+{
+  strcpy(param_1,param_2);
+  strlen(param_1);
+  return;
+}
+```
+
+This is a critical defect - the return value is completely lost.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and locals use patterns like `local_8`, `uVar1`, `iVar1`. The original source uses meaningful names like `dst`, `src`, `buffer`, `len` - these are completely lost. A variable like `param_1` used as `dst` provides zero semantic value.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Most function names match the original source exactly (e.g., `param_strcpy`, `call_strcpy`, `signal_handler`, `thread_compute`). The decompiler correctly preserved the semantic naming from the source, which is excellent for readability.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Some literals are clear (e.g., `0x2a` for 42 is recognizable as return code, `0xffffffff` for -1). However, signal numbers like `10` (SIGUSR1) and `0xe` (SIGALRM) are magic numbers without constants. The string literals in data sections are not shown with their content.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts - only `___stack_chk_guard` checks appear, which are expected at `-O0`. No redundant casts or debug instrumentation. The code is relatively clean.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with clear if-else chains, for/while loops properly recovered. At `-O0`, there's no loop unrolling or goto conversion. The `param_strcmp` function shows proper ternary expression recovery: `iVar1 = -(uint)(iVar2 != 0); if (0 < iVar2) { iVar1 = 1; }`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - no 500-line monoliths. Each function has single responsibility (e.g., `thread_compute` computes squares, `thread_sum` sums ranges). The decomposition matches the original source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Some early returns in error handling paths create minor non-linearity, but this is appropriate for the pattern. No computed jumps or confusing forward references.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpression elimination is minimal at `-O0`. Loop constructs are not unrolled. The code is clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` instead of `int`. The return value `strlen(dst)` is computed but discarded. Many functions use `undefined4`/`undefined8` where specific types should be. The `const` qualifier is lost (`char *param_2` instead of `const char *src`). This is severe type degradation.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No struct recovery visible in `param_strcpy` itself. However, in `param_pthread_join`, the `ThreadData` structure is partially visible through the stack layout (`local_48` array with fields at offsets). The decompiler shows awareness of structure layouts even if not explicitly named.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: return value discarded in `param_strcpy`, pointer arithmetic in `thread_tls_test` using `tpidr_el0` directly, casting between `int*` and `void*` freely. No `restrict` or `_Atomic` annotations. Moderate risk of undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source has extensive comments explaining each function's purpose, but these are completely lost. No algorithm explanations, no "UNCERTAIN" indicators for indirect calls, no @param/@return documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - mutex lock/unlock pairs, pthread create/join patterns, signal handler registration. However, no explicit naming of patterns (e.g., "Producer-Consumer pattern"). The atomic operations use raw `__aarch64_ldadd4_acq_rel` without explaining they're implementing atomic fetch-add.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The `param_strcpy` return value loss is not flagged as suspicious. Indirect function calls through vtables are not marked. The code presents everything as confident when some things are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has implicit contracts (e.g., "ptr != NULL" for malloc results) that are not recovered. Error return semantics are not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible (`strcpy`, `strlen`, `pthread_create`). However, there's no documentation of who calls each function or what globals each function accesses. The relationship between `call_strcpy` → `param_strcpy` → `strcpy` is clear from code but not annotated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output (standard library wrappers first, then test functions, then main). However, this is file-scoped organization only - no header declarations or namespace structure. Related functions like all pthread functions are near each other.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code uses external declarations for libc functions which would require linking against libc. Stack guard functions need definitions. Minor patching needed for standalone compilation. Dependencies on pthreads are implicit, not documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Calculation:**
+- L1 avg: (2+9+7+8)/4 = 6.5
+- L2 avg: (8+8+7+8)/4 = 7.75
+- L3 avg: (3+6+5)/3 = 4.67
+- L4 avg: (1+5+3+2)/4 = 2.75
+- L5 avg: (6+7+7)/3 = 6.67
+
+Overall = (6.5 × 0.30) + (7.75 × 0.25) + (4.67 × 0.20) + (2.75 × 0.15) + (6.67 × 0.10) = 1.95 + 1.94 + 0.93 + 0.41 + 0.67 = **5.9/10**
+
+**Critical Defects:**
+- **Return value discarded**: `param_strcpy` returns `void` instead of `int`, completely losing the `strlen(dst)` return value - this is a semantic error
+- **No variable names**: Parameters are `param_1`, `param_2` with no semantic meaning - should be `dst`, `src`
+- **No comments**: Zero documentation explaining function purposes, algorithms, or contracts
+- **Type qualifiers lost**: `const char *src` becomes `char *param_2`, losing const-correctness
+- **No anomaly indication**: The return value loss is not flagged as suspicious
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler preserved the original function names almost perfectly, making it easy to identify what each function does at a high level.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+The complete absence of comments severely impacts readability. Original source had extensive documentation explaining each function's purpose, parameters, and return values - all lost in decompilation.
+
+**Top 3 Recommendations:**
+1. **Recover return values**: The decompiler must track all function return values and preserve them in the signature. `param_strcpy` returning `void` is a critical semantic loss.
+2. **Add semantic variable naming**: Infer parameter names from usage patterns (e.g., first param used as destination in strcpy → name it `dst` or `dest`)
+3. **Generate documentation comments**: Add basic comments explaining function purpose, parameters, and return values based on analysis of the function body and calling conventions

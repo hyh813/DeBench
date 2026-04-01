@@ -1,0 +1,14 @@
+Preprocessing Tests:
+  PpL2_01: 64
+  PpL2_02: 30
+  PpL2_03: 32
+  PpL2_04: 57122
+  PpL3_01: 116
+  PpL3_02: 19
+  PpL3_03: 60
+LOG: Values: 10, 20, 30
+  PpL3_04: 60
+  PpL3_05: 16
+  PpL3_06: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:15
+  PpL3_07: 382

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic single-letter names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`) or parameter names like `a1`, `a2`, `a3`. Only `exception` and `dest` provide minimal semantic hints. The original source had meaningful names like `capture_by_value`, `capture_by_ref`, `ptr1`, `ptr2` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Member functions like `Base::virtual_func` and `Derived::virtual_func` are well-reconstructed, but C++ name mangling remains in global functions (`_Z18test_cpp_exceptionv` instead of `test_cpp_exception`). Thunk functions have cryptic names like `_ZThn16_N12MultiDerived5funcBEv` that obscure their purpose.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like `"Base"`, `"Derived"`, and `"Test"` are correctly preserved. However, many magic numbers lack explanation (e.g., `0x1Fu` for buffer size, `8u`, `0x10u`, `0x20u` for object sizes). The value `42` appears without context in exception handling.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from 23 failed decompilations (standard library functions), thunk functions for virtual dispatch (`_ZTv0_n24_N7MiddleA4funcEv`), and non-virtual thunks (`_ZThn16_N12MultiDerived5funcBEv`). These compiler-generated artifacts severely clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with if-else and return statements. The exception handling shows `__cxa_throw` directly which is expected at -O0. Virtual function calls through vtable pointers are appropriately represented as indirect calls.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Template instantiations (`template_max<int>`, `template_max<double>`, `template_swap<int>`) are correctly separated. Class member functions are properly decomposed. Minor issue: some template functions could be combined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately. The virtual function dispatch adds some non-linearity but it's manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code is minimal. Template instantiations are separate but that's necessary for the linking model. Loop unrolling is not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise: `int`, `unsigned int`, `double`, `char*`, `__int64` for 64-bit. The `this` pointer is properly typed in member functions. Some generic types like `_DWORD*` could be more specific. Const correctness is partially preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Classes are reconstructed with correct names (`Base`, `Derived`, `MultiDerived`, `DiamondDerived`). Virtual function tables (`vtable`) are identified. However, field names within classes are lost (e.g., `multiplier`, `dataA`, `dataB` appear as offsets). The `Container` template class shows raw offset arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: raw pointer arithmetic in virtual function implementations (e.g., `*(_DWORD *)((char *)this + *(_QWORD *)(*(_QWORD *)this - 24LL) + 8)`). Function pointer casts for vtable calls. However, no buffer overflow patterns are obvious.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in the decompiled output. No explanation of complex logic like virtual inheritance, RTTI mechanisms, or exception handling. The "attributes: thunk" comment is useful but rare. No documentation of preconditions or postconditions.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ idioms like virtual functions (vtable dispatch), templates, and exception handling are partially recognized. However, the virtual inheritance mechanism (diamond problem) is shown as complex pointer arithmetic without explaining the pattern. RTTI (`__dynamic_cast`, `typeid`) is present but not clearly documented as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" messages clearly indicate 23 standard library functions that couldn't be resolved. However, indirect virtual calls could be better flagged. No warnings about potential undefined behavior in the complex virtual inheritance offset calculations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No implicit preconditions, postconditions, or invariants are documented. The complex virtual inheritance offset calculations (`*(_QWORD *)(*(_QWORD *)this - 24LL)`) have no explanation of what they're computing or why.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within classes (e.g., `Base::virtual_func` calls through vtable). Template instantiation relationships are visible. However, global function call graph is not documented. Callback relationships (e.g., deleter in smart pointers) are not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably grouped by class. Template instantiations are together. The main test function is separate. Static functions could be better marked. Overall organization follows class boundaries.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code references many standard library functions that failed to decompile (`puts`, `strlen`, `__cxa_throw`, etc.). Would require significant stubs to compile. No clear dependency documentation. The mangled names would need demangling for compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`-`v8`, `a1`-`a8`), losing all semantic meaning from the original source
+- C++ name mangling not demangled (`_Z18test_cpp_exceptionv` should be `test_cpp_exception`)
+- 23 standard library functions failed to decompile, leaving gaps in the code
+- Virtual inheritance offset calculations are shown as opaque pointer arithmetic without explanation
+- Thunk functions for virtual dispatch clutter the output without clear documentation
+- No comments explaining complex C++ patterns (virtual tables, RTTI, exception handling)
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+The decompiled control flow closely matches the original source structure with natural if-else statements and return patterns. At -O0 optimization, the flow is quite readable.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The complete loss of meaningful variable names is the most severe readability issue. Original names like `capture_by_value`, `capture_by_ref`, `ptr1`, `ptr2`, `obj`, `pb`, `pd` are replaced with generic `v0`, `v1`, `a1`, `a2`, making it extremely difficult to track data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `capture_by_ref += 5` indicates a reference capture) to generate semantically meaningful names instead of generic `v0`, `v1`
+2. **Demangle C++ names automatically**: Convert `_Z18test_cpp_exceptionv` to `test_cpp_exception()` and `_ZN4Base12virtual_funcEi` to `Base::virtual_func(int)`
+3. **Document virtual mechanism complexity**: Add comments explaining vtable layout, thunk adjustments for multiple inheritance, and virtual inheritance offset calculations rather than showing raw pointer arithmetic

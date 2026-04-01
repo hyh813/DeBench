@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_calling_conventions|0|Arg0=1,Arg1=-335712424,Arg2=-335712408,Arg3=703596544|x0=0x1,x1=0xffffebfd6f58,x2=0xffffebfd6f68,x3=0xc97729f00800,x4=0x2eacf03532a9b935,x5=0xf658e0b11d90,x6=0xf658e0b11d90,x7=0xf658e0b10580

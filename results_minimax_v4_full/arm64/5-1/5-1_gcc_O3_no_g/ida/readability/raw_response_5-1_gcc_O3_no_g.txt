@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic register-derived names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8` throughout. In `test_cpp_rtti`, variables like `__int64 *v0; // x21` and `void *v1; // x20` completely obscure their semantic roles as RTTI objects. The original source had meaningful names like `capture_by_value`, `capture_by_ref`, `ptr1`, `ptr2`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions are properly demangled (e.g., `Base::virtual_func`, `Derived::virtual_func`, `template_max<int>`), but others retain mangled names like `_Z20test_cpp_member_funcv` and `_Z18test_cpp_exceptionv`. The thunk functions have cryptic names like `_ZThn16_N12MultiDerived5funcBEv`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x1Fu` (31 for strncpy limit), `8u`, `0x10u`, `0x20u`, `0x30u` (object sizes), `42` (thrown exception), `100`, `200`, `250` (multipliers). The value `4700` in `test_cpp_member_func` is a computed constant that should be explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes `JUMPOUT(0);` statements, register annotations like `// w0`, `// x21`, `// d8`, thunk attributes, and `__fastcall` specifiers. Additionally, 23 functions "FAILED to decompile" leaving gaps in the output. The comment "Decompiled by IDA Pro 9.0" is metadata, not useful analysis.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have straightforward control flow returning computed values directly (e.g., `return 42;`, `return 71;`). However, `test_cpp_member_func` has an awkward pattern using `strncpy` return value for `strlen` that obscures the original logic. At -O0, more natural expressions expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is properly separated. Class methods are extracted as individual functions. No excessive inlining or fragmentation observed - decomposition closely matches source structure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without complex jumps or forward references. Most functions are single return statements. No goto statements or confusing control flow interruptions. The code is highly linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Template instantiations appear once each. The code is clean without redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `__int64`, `_DWORD`, `unsigned __int8` instead of precise C++ types. Function pointers are represented as `__int64 (__fastcall ***)(_QWORD)` instead of proper signatures. The original `int` becomes `_DWORD` or `int`, but `size_t` and other precise types are lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No class/struct reconstruction. Instead uses raw pointer arithmetic: `*(_DWORD *)(result + 40)` for what should be `Container<int>::size`, `*((_DWORD *)this + 2)` for `Derived::multiplier`. The original class members are completely lost, replaced with offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic (`*(_DWORD *)(a1 + 40)`), unsafe casts between pointer types, function pointer type confusion (`__int64 (__fastcall ***)(_QWORD)`). Many operations could cause undefined behavior without any safety checks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. Only auto-generated annotations like `// attributes: thunk`, `// BYREF`, and register designations `// w0`, `// x21`. No explanation of algorithm intent, preconditions, or non-obvious logic. The original source had detailed comments explaining each test scenario.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or idioms identified. Virtual function calls are not labeled as vtable dispatch. Template instantiations not recognized as such. Exception handling not identified as try-catch pattern. The rich C++ idioms (RAII, smart pointers, lambda capture) are completely unrecognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The "FAILED to decompile" messages for 23 functions provide basic acknowledgment of problems, but lack detail. No explanations of why decompilation failed or what the original code might have been. Thunk functions are labeled but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had no explicit assertions, but the decompiler could have inferred some contracts (e.g., "requires: idx < size" for Container::get). Nothing documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships documented. No indication of which functions call `call_virtual_func`, how classes relate through inheritance, or virtual method overrides. The code is presented in isolation without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in the order they were defined in source, but no logical grouping or namespace structure. Static functions not distinguished from exported ones. No header-like API documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing declarations for `operator new`, `operator delete`, `std::ios_base::Init`, `__cxa_*` functions, and other runtime symbols. No `#include` statements or dependency documentation. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are all generic (`v0`, `v1`, `v2`, etc.) making code flow extremely difficult to trace
+- No class/struct recovery - all composite types replaced with raw pointer arithmetic (`*(_DWORD *)(result + 40)`)
+- 23 functions failed to decompile, leaving significant gaps in the analysis
+- No pattern recognition for C++ idioms (virtual functions, templates, exceptions, smart pointers)
+- Mangled function names partially retained instead of consistent demangling
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Function boundaries match original source well; each test function and class method properly separated
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic register-derived names completely obscure variable semantics; must infer purpose from usage patterns
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names like `packet_size`, `buffer_ptr`, `iteration_count`
+2. **Recover class/struct layouts**: Reconstruct composite types from pointer arithmetic patterns; recognize vtable offsets and object layouts
+3. **Demangle all C++ names consistently**: Apply Itanium mangling uniformly; also label thunk functions and explain their purpose (this pointer adjustment)

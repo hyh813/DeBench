@@ -1,0 +1,10 @@
+Test
+
+10
+Obf/L403: 20
+Obf/L404: 225
+Obf/L405: 0
+Opt/L401: 500500
+Opt/L401: 5050
+Opt/L402: 72
+Opt/L501: LTO 20

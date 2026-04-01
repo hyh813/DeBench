@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `count`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `fp` that are completely lost. Only loop counters (`i`, `j`, `idx`) retain minimal clarity.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like `param_strcpy`, `call_strcpy`, `test_standard_library_functions` are preserved from source. However, many auxiliary functions have mechanical names (`sub_402020`, `sub_4023e5`, `sub_4024a9`) that provide no semantic information.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical magic numbers obscure meaning: `4294967295` (should be `-1`/`UINT_MAX`), `42` (success code), signal numbers `10`/`14` (should be `SIGUSR1`/`SIGALRM`), socket constants `2`/`1`/`0` (should be `AF_INET`/`SOCK_STREAM`/`0`). String literals are preserved well.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary wrapper functions clutter the code (`sub_4024a9` just calls `param_strcpy`, `sub_4024dc` just calls `call_strcpy`). Excessive type casts like `(unsigned int *)&v0` and `& 4294967295` operations add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and for-loop structures are recovered. However, some patterns are awkward: signal handling uses `((ready ^ 255) & 1)` instead of `!ready`, and nested conditionals in `param_fork_exec` could be cleaner with early returns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries are mostly preserved with reasonable granularity. However, the proliferation of `sub_XXXXXX` wrapper functions that simply call the real function creates artificial fragmentation without adding clarity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns for error cases. Some functions like `param_signal_handling` have deep nesting (5+ levels) that could be flattened, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create redundant call patterns. Expressions like `call_strcpy() & 4294967295` appear repeatedly in test functions. The pattern `v0 = v0; return v0;` appears in multiple functions without purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `size_t` → `unsigned long`, `FILE*` → `void*`/`FILE*` (inconsistent), `pid_t` → `unsigned int`, `pthread_t` → `char`/`unsigned long long`. Original `const char*` parameters lose const-correctness becoming `char*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor: `FILE` defined as empty struct, `sockaddr` has generic `sa_data[14]` instead of proper union. TLS access uses raw pointer arithmetic `p[18446744073709551568]` instead of proper `__thread` variable access. ThreadData struct completely lost, accessed via array indexing.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(int)pthread_create(...)`, `(char [4])&(&v3)[3 * i]`, `*((long long *)&ptr[2 * j])`. Pointer arithmetic like `ptr[1 + a0]` in `param_malloc_free` is off-by-one error (should be `ptr[a0 - 1]`). Type-confused function pointers throughout thread functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining purpose, expected values, and test scenarios. No decompilation confidence indicators or algorithm explanations provided.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `printf`, `memcpy`) are correctly identified. However, higher-level patterns are missed: producer-consumer pattern in `param_condition_variable`, mutex-protected critical sections, and fork-exec process creation patterns are not annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4203493`. Many other issues silent: unresolved indirect calls, potential buffer overflows in `param_strcpy`, and TLS access anomalies not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for `param_strcpy`). No postconditions (e.g., `return >= 0` for successful operations). Error conditions return magic numbers without explanation of what each value means.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through code but not documented. Global variables use opaque names (`g_407fe0`, `g_408008`, `g_4050a6`). No call graph documentation or callback relationship indicators. Signal handler registration not clearly linked to handler function.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order mixed with wrappers. No logical grouping by functionality (library functions, syscalls, threads all intermixed). No header file structure or API boundary declarations. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but many with generic signatures. Would require significant stubbing for globals (`signal_received`, `counter_mutex`, `atomic_counter`). Platform-specific code (ARM64 polyfill) lost. pthread dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Sub-dimension Scores | Level Average | Weight | Weighted |
+|-------|---------------------|---------------|--------|----------|
+| L1: Lexical Clarity | 3, 6, 4, 5 | 4.50 | 30% | 1.35 |
+| L2: Structural Intelligibility | 6, 6, 7, 5 | 6.00 | 25% | 1.50 |
+| L3: Type System Fidelity | 4, 3, 3 | 3.33 | 20% | 0.67 |
+| L4: Semantic Transparency | 1, 4, 3, 2 | 2.50 | 15% | 0.38 |
+| L5: Contextual Coherence | 4, 4, 5 | 4.33 | 10% | 0.43 |
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `result`, `fd`, `ret_val`) - makes tracking data flow nearly impossible
+- **Magic number `4294967295`** used throughout instead of `-1` or `UINT_MAX` - obscures error handling logic
+- **TLS access via `p[18446744073709551568]`** instead of proper `__thread` variable - completely loses thread-local storage semantics
+- **Zero comments** in decompiled output despite extensive original documentation - no semantic guidance for analyst
+- **Off-by-one error in `param_malloc_free`**: `ptr[1 + a0]` should be `ptr[a0 - 1]` - introduces potential bug not in original
+
+### Best Quality Aspect
+- **Code Linearization (7/10)** - Code generally reads top-to-bottom with appropriate early returns, making execution flow traceable despite other issues
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all semantic documentation from original source, making understanding intent extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in `strlen()` calls should be named `string` or `buffer`, file descriptor returns should be `fd`)
+
+2. **Recover symbolic constants from system headers** - Map magic numbers to known constants (4294967295 → -1/UINT_MAX, signal 10 → SIGUSR1, socket type 1 → SOCK_STREAM) using platform-specific header databases
+
+3. **Add decompilation confidence annotations** - Insert comments indicating uncertainty levels, unresolved references, and potential issues (e.g., "// DECOMPILE UNCERTAINTY: TLS access pattern not fully resolved")

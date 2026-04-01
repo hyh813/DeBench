@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` (e.g., `cdecl_func(int32_t a1, int32_t a2)`), and local variables use `v1`, `v2`, `v3`. Global variables are named `g1`, `g2`, etc. Only `result`, `len`, `i` are descriptive. This severely impedes tracking variable purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly match source names (`cdecl_func`, `stdcall_func`, `call_cdecl`). However, some internal functions have generic names like `function_1090`, `function_10a0`. The core API functions are well-recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables have cryptic hex values (`g1 = -0x5dfffffc // 0x2469`). String literals accessed via complex address arithmetic (`v1 + (int32_t)&g8 - 0x1fc4`). Some constants like `42` are clear, but many magic numbers lack explanation.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Heavy compiler artifacts including `__x86_get_pc_thunk_bx`, `__readgsdword`, `__asm_rep_movsd_memcpy`, stack canary checks, and internal CRT functions. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops, conditionals), but some patterns are awkward. For example, `test_calling_conventions` has complex while loops with cryptic conditions like `(v3 || v7 ^ 17) != 0`. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized with good separation. `test_calling_conventions` is large (0x14a7-0x1688) but represents a test harness. Core functions like `cdecl_func` are appropriately small and focused.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns in some functions. However, some functions like `varargs_func` have backward jumps that require tracing. The `test_calling_conventions` function has complex nested structures.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns exist, like the loop structure in `varargs_func` and `param_varargs` being nearly identical. No dead code elimination comments. Loop unrolling not explicitly marked.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good. However, pointer types are confused: `param_string(int32_t a1)` should be `const char*`, `param_ptr_array(int32_t *a1)` should be `char**`. Function pointer types are not properly typed.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types are completely lost. `SmallStruct` and `LargeStruct` from source are not recovered. Instead, raw pointer arithmetic is used: `*(int32_t *)(a1 + 4) * *(int32_t *)a1` for struct field access. No struct definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(int32_t *)a1`, `(char *)str`, `(char *)a1`. Pointer arithmetic like `4 * v1 + (int32_t)&v2` for array access. No bounds checking. Function pointers treated as integers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address ranges are commented (e.g., `// Address range: 0x12ac - 0x12bb`). No explanation of algorithm, purpose, or logic. No decompilation confidence indicators. Comments are purely mechanical.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some calling convention patterns visible but not explicitly named. The varargs handling shows stdarg usage pattern but isn't labeled. No design patterns or algorithms identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Indirect calls not resolved are silent. Unusual stack layouts not documented. The code presents everything as confident when some things are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks like `if (a1 != 0)` aren't explained as contracts. Error conditions not documented as such.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. No comments indicating which functions call which. Global variable usage (`g1`, `g2`, etc.) is cryptic. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically (test functions together, parameter functions together). However, all in single file with no header separation. Internal vs. external functions not distinguished.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Many undefined functions: `__x86_get_pc_thunk_bx`, `__printf_chk`, `__stack_chk_fail`, `__asm_hlt`. No dependency documentation. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2`, `g1`, `g2` making tracking purpose nearly impossible
+- Composite types (structs) completely lost; `SmallStruct` and `LargeStruct` accessed via raw pointer arithmetic
+- Heavy compiler noise (`__x86_get_pc_thunk_*`, `__readgsdword`, stack canaries) obscures logic
+- Type precision poor: `param_string` takes `int32_t` instead of `const char*`, function pointers not properly typed
+- No struct recovery - all composite types reduced to void* and pointer arithmetic
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Core test functions like `cdecl_func`, `call_cdecl`, `varargs_func` correctly match source names, making the API surface understandable.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+Struct definitions from source are completely lost. The decompiler produces raw pointer arithmetic instead of struct field access, losing all semantic meaning of composite data types.
+
+**Top 3 Recommendations:**
+1. Recover struct/union definitions from stack layout and memory access patterns - this is critical for semantic understanding
+2. Infer parameter names from usage patterns (e.g., `a1` used as string index → `str` or `ptr`)
+3. Add type information for function pointers rather than treating them as integers; recover callback signatures

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/7/7_gcc_Os_g/ghidra/syntactic/bin/7_gcc_Os_g_fixed",
+  "stdout": "Testing obfuscated/optimized edge cases\n\ncall_opaque_predicate: 10\nparam_opaque_predicate: 35\ncall_instruction_substitution: 225\nparam_string_encryption: 0\ncall_tail_call_optimized: 500500\ncall_non_tail_call: 5050\ncall_vectorized_loop: 72\ncall_link_time_optimization: 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

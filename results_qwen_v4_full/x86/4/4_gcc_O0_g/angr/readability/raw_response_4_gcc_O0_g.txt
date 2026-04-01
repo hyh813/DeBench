@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original variables like `count`, `sum`, `args` in `varargs_func` are lost, replaced with `v0`, `v1`, `i`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`cdecl_func`, `call_cdecl`, `varargs_func`, `main`), but helper functions use mechanical names (`sub_401030`, `sub_401040`). Runtime functions like `_start`, `_init` correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test values (5, 10, 15) are clear, but magic numbers like `4294967295` (representing -1) and `0x403008` (global addresses) appear without explanation. String literals sometimes replaced with global references.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `__x86.get_pc_thunk.ax` calls in nearly every function, `[D] Unsupported jumpkind` errors, and `[D] unsupported_<class 'pyvex.expr.GetI'>` markers throughout complex functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but complex functions like `func_mixed_args` contain `[D]` error blocks that break readability. Some functions use `goto` instead of proper loop constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but excessive fragmentation with many `sub_401XXX` helper functions. Main test functions are appropriately separated from implementation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Stack canary checks at function ends create non-linear patterns. Forward jumps in struct handling functions disrupt top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated `__x86.get_pc_thunk.ax` calls in every function. Stack canary implementation duplicated across functions instead of being abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types frequently become `unsigned int`. Function pointers degraded to `unsigned int *`. Pointer vs. array distinctions lost (e.g., `param_array_decay` loses array parameter).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic field names (`field_0`, `padding_0`, `field_24`). `LargeStruct` and `SmallStruct` not properly reconstructed. Multiple conflicting `struct_0` definitions throughout.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts present. Function `param_func_ptr` treats function pointer as `unsigned int *` then calls it. Pointer arithmetic without type safety in struct access patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments in decompiled output. Only auto-generated function headers with addresses. No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (uses `_ccall` and `vvar_1` instead of `va_list`). Common C idioms like struct initialization not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Anomalies flagged with `[D]` markers but no explanation of meaning or remediation. Unsupported operations clearly marked but developer left without guidance on how to proceed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions or postconditions documented. Stack canary checks present but not explained as safety mechanisms. Null pointer checks exist but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_403008`, etc.) referenced without explanation. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Test functions mixed with runtime initialization code. No namespace or package structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains `[D]` unsupported operation markers that won't compile. External dependencies (`_ccall`, `__stack_chk_fail_local`) not properly declared. Would require extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Calculation:**
+- Level 1 (Lexical): 4.25 × 0.30 = 1.275
+- Level 2 (Structural): 5.25 × 0.25 = 1.3125
+- Level 3 (Type System): 3.33 × 0.20 = 0.666
+- Level 4 (Semantic): 2.5 × 0.15 = 0.375
+- Level 5 (Contextual): 3.67 × 0.10 = 0.367
+- **Total: 3.995 ≈ 4.0/10**
+
+**Critical Defects:**
+- Variable `vvar_1` in `varargs_func` should be named `args` or `va_list_ptr` based on varargs usage pattern
+- `[D] Unsupported jumpkind` and `[D] unsupported_<class 'pyvex.expr.GetI'>` errors make `func_mixed_args` and `test_calling_conventions` partially unreadable
+- Struct fields all generic (`field_0`, `padding_0`) losing semantic meaning from original `LargeStruct.data[16]`
+- `__x86.get_pc_thunk.ax` calls in every function add significant noise without semantic value
+- Architecture mismatch: Original compiled for ARM64 but decompilation shows X86, causing fundamental recovery issues
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Core test function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to original source.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Zero meaningful comments recovered; decompiler provides no guidance on algorithm intent, parameter purposes, or decompilation confidence levels.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., loop counters → `i`, `idx`; accumulators → `sum`; pointers → `ptr_buffer`)
+2. **Add decompilation confidence annotations**: Mark uncertain recoveries with explanatory comments (e.g., `// DECOMPILER_UNCERTAIN: varargs handling may be incomplete`)
+3. **Eliminate or abstract thunk calls**: Either remove `__x86.get_pc_thunk.*` calls from output or consolidate them into a single documented helper function with explanation

@@ -1,0 +1,4 @@
+Test 1: Fake Branch
+Result: 10
+Opaque Predicate: 35
+Instruction Substitution: 225

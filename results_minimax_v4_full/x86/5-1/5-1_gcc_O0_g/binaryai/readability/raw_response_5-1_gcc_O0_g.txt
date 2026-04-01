@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`local_34`, `iVar1`, `param_1`, `puVar2`). The original source had meaningful names like `value`, `name`, `data`, `size` which are completely lost. Only stack canary `local_10` appears consistently.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Class member functions are well-preserved (`SimpleClass::getValue`, `LifecycleClass::getData`, `Derived::virtual_func`). Static functions like `template_max_int_` and `template_swap_int_` are appropriately named. Minor issues with some internal thunks.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved ("Test", "Base", "Derived"), but magic numbers like `0x1234` (getClassID), `0x2a` (42), `0x14` (20) lack explanations. The value `5` for array size appears without context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_GS_OFFSET + 0x14`) and `__stack_chk_fail_local()` calls add noise but are expected at -O0. Some redundant casts present but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with proper loops and conditionals. Template instantiation creates separate functions but structure is clear. Virtual dispatch through vtables is handled appropriately.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template functions properly separated (`template_max_int_`, `template_max_double_`). Standard library internals expanded but logically grouped. Member functions remain cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in some functions. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Template code shows some repetition due to instantiation, but this reflects actual compilation. No obvious dead code. Loop unrolling minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Class method signatures preserved. However, `undefined4` used extensively instead of `int`. Generic `int` for most returns. Template type parameters shown as `_int` suffix but not fully resolved.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: All class structures recovered with correct names (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Point`, `Container_int_`, `Container_double_`). Field layouts accurate.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. Pointer arithmetic using raw offsets (e.g., `this + 4`, `this + 8`). Virtual function calls through `***(code ***)param_1` are type-unsafe. Some `undefined***` casts.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. Zero explanation of algorithms, magic numbers, or non-obvious logic. The header mentions "Decompiled by BinaryAI" but no functional comments.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms recognized - constructors (`SimpleClass::SimpleClass`), destructors (`_LifecycleClass`), virtual tables (`PTR_virtual_func_*`), `std::unique_ptr` patterns. Some internal STL details exposed.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indicators. Indirect virtual calls not flagged. Unusual patterns like `call_virtual_func` using triple-indirection not explained. No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error handling expectations shown. Null checks implicit in code but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships traceable through code. Virtual dispatch relationships implicit through vtable pointers. No explicit call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions first, then class methods, then STL internals. Single file output but reasonable organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require significant standard library stubs to compile. Dependencies on `std::` namespace functions not documented. No header information recovered.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+- Level 1 average: (2+8+5+6)/4 = **5.25**
+- Level 2 average: (7+7+7+7)/4 = **7.00**
+- Level 3 average: (5+8+4)/3 = **5.67**
+- Level 4 average: (1+7+1+1)/4 = **2.50**
+- Level 5 average: (6+7+5)/3 = **6.00**
+
+**Overall = (5.25 × 0.30) + (7.0 × 0.25) + (5.67 × 0.20) + (2.5 × 0.15) + (6.0 × 0.10) = 5.43/10**
+
+---
+
+### Overall Readability Score: **5.4/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: `local_34`, `iVar1`, `puVar2` - original semantic names like `value`, `data`, `size` completely lost
+- **No comments whatsoever**: Zero explanation of algorithms, magic numbers, or non-obvious patterns
+- **No anomaly indication**: Indirect virtual calls not flagged, potential issues not highlighted
+- **Type precision degraded**: Extensive use of `undefined4` instead of proper `int` types
+- **No contract documentation**: Preconditions, postconditions, and invariants completely absent
+
+---
+
+### Best Quality Aspect: Composite Type Recovery (8/10)
+Class structures and their names are well-preserved (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, etc.). Field layouts match original source.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (2.5/10)
+Comments, anomaly indication, and contract recovery all scored 1/10. The decompiled code provides no interpretive guidance to analysts.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `local_34` passed to `SimpleClass::setValue` → should be `obj` or `instance`)
+
+2. **Add comments for magic numbers and indirect calls**: Flag `0x1234` as "Class ID constant" and mark virtual dispatch calls as "UNCERTAIN: vtable call"
+
+3. **Recover type information more precisely**: Replace `undefined4` with `int` where obvious, and add type annotations for template instantiations

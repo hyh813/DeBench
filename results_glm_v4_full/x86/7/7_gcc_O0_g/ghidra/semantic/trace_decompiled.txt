@@ -1,0 +1,10 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1208538768,Arg1=-1079821680,Arg2=0,Arg3=-1210585183|eax=0x4dffb4,ebx=0x0,ecx=0xbfa33a90,edx=0xbfa33ab4,esi=0xb7f3e000,edi=0x0
+TRACE_PRINT|0|%74%65%73%74%5F%66%61%6B%65%5F%62%72%61%6E%63%68%3A%20%25%64%0A
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|call_fake_branch|1|Arg0=-1079821716,Arg1=0,Arg2=-1079821644,Arg3=-1079821680|eax=0x16,ebx=0x4dffb4,ecx=0x0,edx=0xb7f3f890,esi=0xb7f3e000,edi=0x0
+TRACE_ENT|2|param_fake_branch|2|Arg0=10,Arg1=-1208747888,Arg2=0,Arg3=22|eax=0x4dffb4,ebx=0x4dffb4,ecx=0x0,edx=0xb7f3f890,esi=0xb7f3e000,edi=0x0
+TRACE_EXT|2|param_fake_branch|2|10
+TRACE_EXT|1|call_fake_branch|1|10
+TRACE_PRINT|0|%20%3D%20%31%30%0A
+TRACE_ENT|3|call_opaque_predicate|1|Arg0=-1079821716,Arg1=0,Arg2=-1079821644,Arg3=10|eax=0x6,ebx=0x4dffb4,ecx=0x0,edx=0xbfa31444,esi=0xb7f3e000,edi=0x0
+TRACE_ENT|4|param_opaque_predicate|2|Arg0=5,Arg1=-1079831484,Arg2=0,Arg3=6|eax=0x4dffb4,ebx=0x4dffb4,ecx=0x0,edx=0xbfa31444,esi=0xb7f3e000,edi=0x0

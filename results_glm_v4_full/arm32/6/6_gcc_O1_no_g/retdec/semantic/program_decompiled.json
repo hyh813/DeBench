@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_gcc_O1_no_g/retdec/syntactic/bin/6_gcc_O1_no_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0xbd in position 1: invalid start byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

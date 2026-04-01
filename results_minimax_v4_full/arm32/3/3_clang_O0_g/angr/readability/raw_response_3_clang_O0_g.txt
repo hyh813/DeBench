@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `idx`. For example, in `local_vars`, source variables `a`, `b`, `c` become `v1`, `v0`. The struct `Point p` is completely flattened into `v0`. Only a few like `ptr`, `idx`, `i` are descriptive.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `local_vars`, `heap_basic`, `test_stack_memory` retain original names. However, many helper functions use mechanical naming: `sub_400588`, `sub_4006b8`, `$a.42`. The `double_value` source function becomes `$a.42` in decompiled output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (representing -1 as unsigned), `4294967293`, `4294905792` appear without explanation. Loop bounds like `9 >= idx` instead of `i < 10` are less clear. The constant `42` in `address_of_local` is preserved but not named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution includes: compiler-generated functions (`_init`, `_start`, `frame_dummy`), auto-generated struct typedefs (`typedef struct struct_0 {...}`), stack frame annotations (`// [bp-0x4]`), and spurious functions like `__sync_fetch_and_add_4` with infinite loops. The `tls_access` function is completely mangled.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper `for` loops and `if-else` structures. However, `global_array_access` uses unusual `armg_calculate_condition` function instead of simple comparison. Some goto patterns in initialization code are present but manageable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable size (20-80 lines). Good separation between test functions and core logic. Some parameter exposure issues: `heap_nested` takes `struct_0 **` but could be cleaner.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (`if (!ptr) return -1`). Some forward jumps in `vla_stack` and `alloca_usage` for bounds checking but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal at -O0. Some repeated calculations in `call_extern_func` (calls `extern_function(5)` twice) but minor.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most parameters use `unsigned int` when source used `int`, losing sign information. Pointers are correctly typed as `void*` or `unsigned int*`. Size calculations like `a0 * 4` for `sizeof(int)` are present. Function pointers like `global_func_ptr` have incorrect types (treated as struct pointer).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are partially recovered with generic names (`struct_0`, `struct_1`). Field names are lost (`field_0`, `field_4` instead of `data`, `next`). The `Point` struct becomes `unsigned int ptr[2]` losing all semantic meaning. Nested structs like `TreeNode` have incorrect field types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic like `ptr + idx * 4`, casting through `*(unsigned int*)`, incorrect function pointer calls in `call_global_callback` (`global_func_ptr(a0, global_func_ptr)` is wrong). The `heap_nested` has severe type confusion with `*(ptr)->field_4 = ptr`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments like `// [bp-0x4]`, `/* do not return */`, and function addresses. No explanation of algorithm logic, no recovery of original comments from source. The source had detailed test case comments (e.g., `// MEM-L1-01`) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: linked list (`Node* next`), tree structures, memory allocation/free pairs. But no explicit naming or documentation of these patterns. The "TLS" (thread-local storage) pattern in `tls_access` is completely mangled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function (which intentionally accesses freed memory) has no warning. The `double_free` pattern not flagged. The infinite loops in `__sync_*` functions not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The safety checks in source (e.g., `if (n <= 0 || n > 1000) return -1` in vla_stack) are preserved but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships unclear. `extern` declarations show external dependencies but not usage context. The callback relationship between `set_global_callback` and `call_global_callback` is visible but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, heap functions together, memory ops together). Static functions properly marked. But no explicit module boundaries or organization comments.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations needed. The code has numerous dependencies on libc functions. Some functions like `__sync_fetch_and_add_4` are completely broken (infinite loops). Would require moderate patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`, `a0`, `ptr[2]`) - the original `Point` struct becomes `unsigned int ptr[2]`
+- Composite types lost: `Point` struct fields `x`, `y` become `ptr[0]`, `ptr[1]`; `Node` fields become `field_0`, `field_4`
+- Type precision lost: all `int` become `unsigned int`, losing sign semantics
+- Function pointer calls incorrect: `call_global_callback` generates wrong call syntax
+- Heavy noise: auto-generated structs, compiler artifacts, stack frame annotations clutter output
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- At -O0, loops and conditionals are mostly preserved naturally; decompiler correctly recovers `for` loops and `if-else` structures
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Nearly all meaningful variable names lost; generic `v0`/`v1`/`a0` pattern makes tracking data flow extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `v0 = a0 * 2` appears, infer `double_value` or similar; when `ptr[0]`, `ptr[1]` are used as struct fields, reconstruct the struct with meaningful field names
+2. **Recover composite types properly**: The `Point` struct should be reconstructed as `typedef struct { int x; int y; } Point;` not `unsigned int ptr[2]`
+3. **Eliminate noise artifacts**: Remove auto-generated struct typedefs like `struct_0`, stack frame annotations, and spurious compiler functions that aren't part of the user code

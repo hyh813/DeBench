@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are generic (`param_1`, `param_2`) and the local variable is generic (`iVar1`), completely obscuring the semantic roles of destination and source pointers.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The function name `param_strcpy` is perfectly recovered from the source, accurately reflecting the operation performed.
+
+**3. Literal Clarity:** Score: 10/10
+Justification: There are no magic numbers or literals in the function body to evaluate; the logic relies entirely on variables and function calls.
+
+**4. Noise Reduction:** Score: 9/10
+Justification: The code is clean with no visible compiler artifacts, redundant casts, or debug instrumentation cluttering the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: The control flow is perfectly linear and natural, consisting of a single function call followed by a return statement, matching the source structure.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The function is correctly identified as a separate unit with appropriate granularity, matching the source's modular design.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads strictly top-to-bottom with no jumps, forward references, or non-linear constructs disrupting the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the code is concise, the transformation of `strcpy` + `strlen` into a single call plus pointer arithmetic (`iVar1 - param_1`) obscures the original logic, making it harder to verify the intent compared to the explicit source calls.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical type information is lost; parameters are typed as `int` and `undefined4` instead of `char *` and `const char *`, and the return type is `int` instead of `size_t`/`int`.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Not applicable to this function, as no composite types (structs/unions) are used.
+
+**11. Type Safety:** Score: 2/10
+Justification: Performing pointer arithmetic (`iVar1 - param_1`) on variables typed as `int` is type-unsafe and misleading, failing to convey that these are memory addresses.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the library call, or the pointer arithmetic calculation.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler failed to recognize the standard library string operations, replacing `strcpy` and `strlen` with a generic `FUN_00011510` and pointer math.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication that `FUN_00011510` is an external library call or that the logic represents a standard string copy operation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., non-null pointers) or postconditions are documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: The call to `FUN_00011510` is opaque; it does not indicate that this is a standard library function or link it to `strcpy`/`strlen`.
+
+**17. Module Organization:** Score: 8/10
+Justification: The function is correctly placed within the file structure, though the surrounding context of other library calls is similarly obfuscated.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile because `FUN_00011510` is undefined, and the types do not match standard library signatures.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 10 + 9) / 4 = 8.0
+L2_avg: (10 + 10 + 10 + 5) / 4 = 8.75
+L3_avg: (2 + 10 + 2) / 3 = 4.67
+L4_avg: (1 + 1 + 1 + 1) / 4 = 1.0
+L5_avg: (2 + 8 + 1) / 3 = 3.67
+
+Overall = (8.0 × 0.30) + (8.75 × 0.25) + (4.67 × 0.20) + 
+          (1.0 × 0.15) + (3.67 × 0.10)
+Overall = 2.4 + 2.1875 + 0.934 + 0.15 + 0.367
+Overall = 6.04
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.0/10
+
+### Critical Defects (Bullet List)
+- **Standard Library Recognition Failure**: The decompiler failed to identify `strcpy` and `strlen`, replacing them with a generic `FUN_00011510` and pointer arithmetic.
+- **Type Information Loss**: Pointer types (`char *`, `const char *`) were demoted to generic integers (`int`, `undefined4`), obscuring the memory manipulation nature of the function.
+- **Semantic Obscurity**: The logic `return iVar1 - param_1` is mathematically correct for length but semantically opaque compared to the source's explicit `strlen(dst)`.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully recovered the exact function name `param_strcpy` from the symbol table, which is the only clear link to the original source intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Idiom Recognition (1/10)**
+- **Why?** The complete failure to recognize standard C library string idioms (`strcpy`, `strlen`) renders the code meaningless without external knowledge of what `FUN_00011510` represents.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Standard Library Signature Matching**: Implement stricter recognition of common libc functions (like `strcpy`, `strlen`) based on register usage and calling conventions, even at `-O0`.
+2.  **Recover Pointer Types from Arithmetic**: When pointer arithmetic (subtraction) is detected, infer that the operands are pointers rather than generic integers to preserve type safety.
+3.  **Propagate Library Call Semantics**: If a library call is inlined or optimized (e.g., `strcpy`+`strlen` becoming `stpcpy` logic), attempt to annotate the resulting code with the original high-level intent or the specific optimized intrinsic used.

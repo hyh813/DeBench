@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `iVar1`, `sVar2`, `dVar2`, `puVar1`, `piVar2`, `piVar3`, `local_10`. While `obj` is correctly named, the vast majority of variables lose semantic meaning present in source (e.g., `capture_by_value`, `capture_by_ref`, `r1`, `r2` become `iVar1`, `iVar2`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match source exactly: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_exception`, `test_cpp_smart_ptr`, `test_cpp_rtti`. Member functions like `Base::virtual_func`, `Derived::virtual_func`, `template_max<int>` are also correctly recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x125c` (4704), `0x3e9` (1000) appear without explanation. String literals like "Test", "Base", "Derived" are correctly preserved. The code returns correct values but provides no insight into what these constants represent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler/runtime artifacts include: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "Unresolved local var" annotations. The `test_cpp_member_func` shows excessive noise with 27 individual `obj.name[x] = '\0'` statements instead of proper array initialization.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else and loop structures. However, `test_cpp_exception` is reduced to a single throw statement losing all try-catch structure. `call_virtual_func` shows "WARNING: Could not recover jumptable" indicating unresolved indirect dispatch. Template functions maintain natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and well-separated. Member functions are properly extracted as separate functions (e.g., `Base::virtual_func`, `Derived::virtual_func` are separate). Template instantiations are correctly separated (`template_max<int>`, `template_max<double>`). Good granularity overall.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumping. Early returns and simple conditionals are used appropriately. Minor disruption from stack canary checks (`__stack_chk_fail_local`) which introduce forward jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code has been removed. Loop unrolling in `test_cpp_member_func` (the 27 null assignments) could be seen as unoptimized, but this is a decompilation artifact rather than redundancy in the recovered logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are generally accurate - `int`, `double`, `size_t`, `char*`, proper pointer types (`Base*`, `int*`). The `__thiscall` calling convention is correctly identified. However, some type information is lost: `SimpleClass` shows only `name[32]` without the `value` field type visible; `LifecycleClass::instance_count` should be `static int` but appears without static modifier in some contexts.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Template classes `Container<int>` and `Container<double>` are well-recovered with `data[10]` and `size` fields. However, regular classes lose significant information: `SimpleClass` only shows `name[32]`, missing `value` field entirely. `Base` only has `_vptr_Base`, missing `dataA`. `Derived` missing `multiplier` field. The decompiler struggles with class member recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic present in virtual function thunks (e.g., `*(int *)((int)&this->dataA + (int)this->_vptr_MiddleA[-3])`). Raw `operator_new` calls without type safety. However, these are inherent decompilation challenges. The code is no less safe than typical decompiled C++.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF original prototypes are present (e.g., "DWARF original prototype: int virtual_func(Base * this, int x)"), which is excellent. However, these are technical metadata rather than semantic explanations. No comments explain what functions do or why certain operations occur. "WARNING" comments indicate problems but don't explain solutions.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The decompiler correctly recovers C++ idioms (virtual dispatch, templates, RAII via destructor calls) but doesn't explicitly identify or name them. No recognition of patterns like "virtual function dispatch via vtable", "template instantiation", or "exception handling via __cxa_throw".
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for decompilation uncertainties: "Unresolved local var", "Unknown calling convention", "Could not recover jumptable". These flag areas requiring manual analysis. However, some anomalies could be better explained (e.g., what the unresolved local variables should likely be).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiled code provides no insight into expected input constraints (e.g., "requires: obj != nullptr") or guaranteed output properties.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit documentation of which functions call which. The call graph relationships are not explicitly stated. However, the code structure implies relationships through function signatures and usage patterns.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are well-grouped by class - all `Base` methods together, all `Derived` methods together, template instantiations grouped. Static functions appropriately scoped. The organization matches the logical class structure from the source.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses standard library functions (`operator_new`, `operator_delete`, `strlen`, `strcmp`, `__dynamic_cast`, `__cxa_throw`) that require libstdc++ linkage. Would need additional declarations to compile standalone. No explicit dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `iVar1`, `sVar2`, `puVar1` completely lose semantic meaning from source (e.g., `capture_by_value`, `capture_by_ref`)
+- **Class member recovery**: `SimpleClass` only shows `name[32]`, missing `value` field entirely; `Derived` missing `multiplier` field
+- **Exception structure loss**: `test_cpp_exception` reduced to single `__cxa_throw` call, losing all try-catch structure
+- **Magic numbers**: Constants like `0x2a`, `0x47`, `0x28a`, `0x125c` appear without explanation
+- **Excessive noise**: 27 individual null assignments in `test_cpp_member_func` instead of proper array initialization
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+- Nearly all function names match source exactly, including member functions and template instantiations. This is the strongest area of the decompilation.
+
+### Most Needs Improvement: Variable Naming Quality (scored 3/10)
+- Generic variable names (`iVar1`, `sVar2`, `local_10`) completely obscure the semantic purpose that is clearly present in the original source code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `capture_by_ref += 5` suggests reference capture, `strlen(obj.name)` suggests a string buffer) to generate semantically meaningful names instead of generic patterns.
+2. **Recover class member fields**: Use type information and constructor analysis to recover all class data members, not just those with obvious initialization patterns.
+3. **Explain magic numbers**: Implement constant detection to identify meaningful literals (e.g., `0x1234` = `getClassID()` return value) and add explanatory comments.

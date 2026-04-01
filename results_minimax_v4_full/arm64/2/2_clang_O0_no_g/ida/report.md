@@ -1,0 +1,1908 @@
+# BinBench Evaluation Report
+
+**Generated:** 2026-03-09 12:27:45
+
+## 1. Test Object
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `src/2.c` |
+| Decompiled | `decompiled/ida_out/arm64/2/2_clang_O0_no_g.c` |
+| Decompiler | IDA |
+| Architecture | arm64 |
+| Compiler | clang |
+| Optimization | O0 |
+| Debug | no |
+
+## 2. Evaluation Results
+
+| Dimension | Status |
+|-----------|--------|
+| Readability | ✅ Completed |
+| Syntactic | ❌ Failed |
+| Semantic | ⏭ Skipped |
+
+## 3. Detailed Results
+
+### 3.1 Readability Evaluation
+
+*No readability results found.*
+
+### 3.2 Syntactic Correctness Evaluation
+
+#### Repair Trace Log
+
+```json
+{
+  "file_name": "results_minimax_v4_full/arm64/2/2_clang_O0_no_g/ida/syntactic/fix_2_clang_O0_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 52,
+  "final_status": "compile_failed",
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 98,
+        "stats": {
+          "Implicit Function Declaration": 15,
+          "Undeclared Identifier": 23,
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Unknown Type": 7,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Conflicting Types": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22921,
+        "completion_tokens": 453,
+        "total_tokens": 23374
+      },
+      "time_cost": 15.66350769996643,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 97,
+        "stats": {
+          "Implicit Function Declaration": 15,
+          "Undeclared Identifier": 23,
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Unknown Type": 6,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Conflicting Types": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          },
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          },
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          },
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22976,
+        "completion_tokens": 740,
+        "total_tokens": 23716
+      },
+      "time_cost": 19.633700609207153,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 92,
+        "stats": {
+          "Implicit Function Declaration": 15,
+          "Undeclared Identifier": 23,
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Unknown Type": 1,
+          "Conflicting Types": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23113,
+        "completion_tokens": 565,
+        "total_tokens": 23678
+      },
+      "time_cost": 17.992915391921997,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 91,
+        "stats": {
+          "Implicit Function Declaration": 15,
+          "Undeclared Identifier": 23,
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Conflicting Types": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23150,
+        "completion_tokens": 812,
+        "total_tokens": 23962
+      },
+      "time_cost": 27.057444095611572,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 70,
+        "stats": {
+          "Undeclared Identifier": 8,
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Implicit Function Declaration": 9,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Conflicting Types": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23359,
+        "completion_tokens": 725,
+        "total_tokens": 24084
+      },
+      "time_cost": 20.027456045150757,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 65,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Conflicting Types": 2,
+          "Undeclared Identifier": 2,
+          "Implicit Function Declaration": 9,
+          "Other": 29,
+          "Member Access Error": 10
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23462,
+        "completion_tokens": 525,
+        "total_tokens": 23987
+      },
+      "time_cost": 20.541398525238037,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 61,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Conflicting Types": 2,
+          "Implicit Function Declaration": 5,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Invalid Operands": 1,
+          "Undeclared Identifier": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23673,
+        "completion_tokens": 574,
+        "total_tokens": 24247
+      },
+      "time_cost": 25.12542200088501,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 57,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Conflicting Types": 1,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Syntax Error": 2,
+          "Invalid Operands": 1,
+          "Undeclared Identifier": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23920,
+        "completion_tokens": 378,
+        "total_tokens": 24298
+      },
+      "time_cost": 17.1914644241333,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 56,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Conflicting Types": 1,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Syntax Error": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23959,
+        "completion_tokens": 854,
+        "total_tokens": 24813
+      },
+      "time_cost": 32.37523102760315,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 56,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Conflicting Types": 1,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Syntax Error": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24019,
+        "completion_tokens": 808,
+        "total_tokens": 24827
+      },
+      "time_cost": 28.257014513015747,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 51,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 29,
+          "Syntax Error": 5,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24016,
+        "completion_tokens": 1179,
+        "total_tokens": 25195
+      },
+      "time_cost": 37.643847942352295,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 24,
+        "stats": {
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 5,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24073,
+        "completion_tokens": 638,
+        "total_tokens": 24711
+      },
+      "time_cost": 22.321027517318726,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 21,
+        "stats": {
+          "Type Conversion Warning": 4,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 5,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1850."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24107,
+        "completion_tokens": 921,
+        "total_tokens": 25028
+      },
+      "time_cost": 28.606027364730835,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 20,
+        "stats": {
+          "Type Conversion Warning": 4,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 4,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24102,
+        "completion_tokens": 1342,
+        "total_tokens": 25444
+      },
+      "time_cost": 40.40760588645935,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 21,
+        "stats": {
+          "Type Conversion Warning": 4,
+          "Incompatible Pointer Type": 9,
+          "Conflicting Types": 1,
+          "Syntax Error": 4,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24357,
+        "completion_tokens": 1087,
+        "total_tokens": 25444
+      },
+      "time_cost": 36.67375421524048,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 21,
+        "stats": {
+          "Type Conversion Warning": 4,
+          "Incompatible Pointer Type": 9,
+          "Conflicting Types": 1,
+          "Syntax Error": 4,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24341,
+        "completion_tokens": 1148,
+        "total_tokens": 25489
+      },
+      "time_cost": 30.41880202293396,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 19,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 9,
+          "Conflicting Types": 1,
+          "Syntax Error": 4,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24324,
+        "completion_tokens": 810,
+        "total_tokens": 25134
+      },
+      "time_cost": 26.395840167999268,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 17,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24358,
+        "completion_tokens": 697,
+        "total_tokens": 25055
+      },
+      "time_cost": 22.110591173171997,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 17,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24371,
+        "completion_tokens": 784,
+        "total_tokens": 25155
+      },
+      "time_cost": 25.91133403778076,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 17,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24466,
+        "completion_tokens": 1235,
+        "total_tokens": 25701
+      },
+      "time_cost": 37.362154960632324,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 17,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24567,
+        "completion_tokens": 860,
+        "total_tokens": 25427
+      },
+      "time_cost": 29.654808282852173,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 17,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block matched (ignoring whitespace/blank lines) and replaced near line 1916."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24610,
+        "completion_tokens": 868,
+        "total_tokens": 25478
+      },
+      "time_cost": 27.476094484329224,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 17,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Syntax Error": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24617,
+        "completion_tokens": 7038,
+        "total_tokens": 31655
+      },
+      "time_cost": 147.69550037384033,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 16,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24637,
+        "completion_tokens": 2167,
+        "total_tokens": 26804
+      },
+      "time_cost": 49.05472755432129,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 16,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24671,
+        "completion_tokens": 943,
+        "total_tokens": 25614
+      },
+      "time_cost": 28.30599284172058,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 16,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24656,
+        "completion_tokens": 703,
+        "total_tokens": 25359
+      },
+      "time_cost": 22.161179304122925,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 43,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 29,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24849,
+        "completion_tokens": 757,
+        "total_tokens": 25606
+      },
+      "time_cost": 20.809207439422607,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 16,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24828,
+        "completion_tokens": 745,
+        "total_tokens": 25573
+      },
+      "time_cost": 22.502596378326416,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 43,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 29,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24902,
+        "completion_tokens": 704,
+        "total_tokens": 25606
+      },
+      "time_cost": 21.963979482650757,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 16,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 8,
+          "Conflicting Types": 1,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24919,
+        "completion_tokens": 904,
+        "total_tokens": 25823
+      },
+      "time_cost": 325.9277732372284,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24699,
+        "completion_tokens": 1175,
+        "total_tokens": 25874
+      },
+      "time_cost": 29.34510636329651,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24833,
+        "completion_tokens": 964,
+        "total_tokens": 25797
+      },
+      "time_cost": 29.136114835739136,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24897,
+        "completion_tokens": 791,
+        "total_tokens": 25688
+      },
+      "time_cost": 321.7258315086365,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24884,
+        "completion_tokens": 1332,
+        "total_tokens": 26216
+      },
+      "time_cost": 31.771818161010742,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 39,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 28,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24927,
+        "completion_tokens": 704,
+        "total_tokens": 25631
+      },
+      "time_cost": 18.79382014274597,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24879,
+        "completion_tokens": 1023,
+        "total_tokens": 25902
+      },
+      "time_cost": 321.20362186431885,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24878,
+        "completion_tokens": 725,
+        "total_tokens": 25603
+      },
+      "time_cost": 321.82089018821716,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24882,
+        "completion_tokens": 1255,
+        "total_tokens": 26137
+      },
+      "time_cost": 27.329635620117188,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 22,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Syntax Error": 8,
+          "Implicit Int": 3,
+          "Other": 2,
+          "Invalid Operands": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 25067,
+        "completion_tokens": 1227,
+        "total_tokens": 26294
+      },
+      "time_cost": 23.95987892150879,
+      "phase": "compile",
+      "new_errors_introduced": 8
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24886,
+        "completion_tokens": 1025,
+        "total_tokens": 25911
+      },
+      "time_cost": 20.687738180160522,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24910,
+        "completion_tokens": 897,
+        "total_tokens": 25807
+      },
+      "time_cost": 25.4135582447052,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24783,
+        "completion_tokens": 969,
+        "total_tokens": 25752
+      },
+      "time_cost": 21.74324917793274,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24737,
+        "completion_tokens": 758,
+        "total_tokens": 25495
+      },
+      "time_cost": 18.361531019210815,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24747,
+        "completion_tokens": 897,
+        "total_tokens": 25644
+      },
+      "time_cost": 20.61664867401123,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24702,
+        "completion_tokens": 784,
+        "total_tokens": 25486
+      },
+      "time_cost": 21.099813222885132,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 13,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Conflicting Types": 1,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24703,
+        "completion_tokens": 652,
+        "total_tokens": 25355
+      },
+      "time_cost": 17.184722661972046,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 12,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24620,
+        "completion_tokens": 776,
+        "total_tokens": 25396
+      },
+      "time_cost": 19.380797624588013,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 12,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24521,
+        "completion_tokens": 778,
+        "total_tokens": 25299
+      },
+      "time_cost": 20.751796007156372,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 12,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24518,
+        "completion_tokens": 823,
+        "total_tokens": 25341
+      },
+      "time_cost": 19.93397879600525,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 12,
+        "stats": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24522,
+        "completion_tokens": 2946,
+        "total_tokens": 27468
+      },
+      "time_cost": 51.53512954711914,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 1272383,
+    "total_time_seconds": 2609.06,
+    "initial_state": {
+      "error_count": 98,
+      "error_types": {
+        "Implicit Function Declaration": 15,
+        "Undeclared Identifier": 23,
+        "Type Conversion Warning": 7,
+        "Incompatible Pointer Type": 6,
+        "Unknown Type": 7,
+        "Other": 29,
+        "Member Access Error": 10,
+        "Conflicting Types": 1
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.102,
+        "error_trajectory": [
+          98,
+          97,
+          92,
+          91,
+          70,
+          65,
+          61,
+          57,
+          56,
+          56,
+          51,
+          24,
+          21,
+          20,
+          21,
+          21,
+          19,
+          17,
+          17,
+          17,
+          17,
+          17,
+          17,
+          16,
+          16,
+          16,
+          43,
+          16,
+          43,
+          16,
+          13,
+          13,
+          13,
+          13,
+          39,
+          13,
+          13,
+          13,
+          22,
+          13,
+          13,
+          13,
+          13,
+          13,
+          13,
+          13,
+          12,
+          12,
+          12,
+          12
+        ],
+        "max_error_count": 98,
+        "min_error_count": 12
+      },
+      "effort": {
+        "initial_error_count": 98,
+        "lowest_error_count": 12,
+        "lowest_at_iteration": 47,
+        "error_reduction": 86,
+        "error_reduction_ratio": 0.8776
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Implicit Function Declaration": 15,
+          "Undeclared Identifier": 23,
+          "Type Conversion Warning": 7,
+          "Incompatible Pointer Type": 6,
+          "Unknown Type": 7,
+          "Other": 29,
+          "Member Access Error": 10,
+          "Conflicting Types": 1
+        },
+        "final_types": {
+          "Type Conversion Warning": 2,
+          "Incompatible Pointer Type": 5,
+          "Other": 2,
+          "Invalid Operands": 1,
+          "Syntax Error": 2
+        },
+        "types_eliminated": [
+          "Conflicting Types",
+          "Implicit Function Declaration",
+          "Member Access Error",
+          "Undeclared Identifier",
+          "Unknown Type"
+        ],
+        "types_introduced": [
+          "Invalid Operands",
+          "Syntax Error"
+        ]
+      },
+      "score": {
+        "effort_score": 43.88,
+        "stability_score": 44.9,
+        "total_score": 88.78,
+        "grade": "A"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 11,
+    "type_breakdown": {
+      "Conflicting Types": {
+        "initial_count": 1,
+        "max_count": 2,
+        "final_count": "unknown"
+      },
+      "Unknown Type": {
+        "initial_count": 7,
+        "max_count": 7,
+        "final_count": "unknown"
+      },
+      "Incompatible Pointer Type": {
+        "initial_count": 6,
+        "max_count": 9,
+        "final_count": "unknown"
+      },
+      "Undeclared Identifier": {
+        "initial_count": 23,
+        "max_count": 23,
+        "final_count": "unknown"
+      },
+      "Invalid Operands": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Implicit Int": {
+        "initial_count": 0,
+        "max_count": 3,
+        "final_count": "unknown"
+      },
+      "Member Access Error": {
+        "initial_count": 10,
+        "max_count": 10,
+        "final_count": "unknown"
+      },
+      "Type Conversion Warning": {
+        "initial_count": 7,
+        "max_count": 7,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 0,
+        "max_count": 8,
+        "final_count": "unknown"
+      },
+      "Implicit Function Declaration": {
+        "initial_count": 15,
+        "max_count": 15,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 29,
+        "max_count": 29,
+        "final_count": "unknown"
+      }
+    }
+  }
+}
+```
+
+### 3.3 Semantic Fidelity Evaluation
+
+*No semantic analysis report found.*
+

@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic type-prefixed names (`iVar1`, `sVar1`, `local_30`, `__ptr`) with no semantic meaning. Comments like "Unresolved local var: int sum@[???]" show the decompiler couldn't recover original names like `buffer`, `packet_size`, or `thread_ret`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved original names (`param_strcpy`, `thread_compute`, `param_mutex_lock`), but initialization functions use generic names (`FUN_001012e0`, `FUN_001017fc`). Action verbs are present where names were recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x38`/`0x39` for syscalls, `0x2a` (42) for success, `0x7f` (127) for exit codes, `0x1000` for shared memory. String literals preserved but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "Unresolved local var" comments throughout, "WARNING: Unknown calling convention" warnings, and verbose type casts like `(ulong)(uint)x` and `(byte *)((long)buffer + 1)` clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs appropriately for -O0, but signal handling code uses verbose boolean flags (`bVar1`, `bVar2`) instead of clean conditionals. Some ternary operators expanded to if-else unnecessarily.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable sizes. However, `test_standard_library_functions` inlines test logic instead of calling individual `call_*` functions, losing modular structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions like `param_signal_handling` have nested conditionals that could be flattened for better readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Critical issue: test functions like `call_strcmp`, `call_strlen`, `call_memcmp` return constant values (0, 0xc, -1) instead of executing original logic—aggressive constant folding obscures actual behavior.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `FILE*`, `pthread_t`), but some type erasure occurs. Pointer arithmetic uses explicit casts that are correct but verbose.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `sockaddr` struct partially recovered with field names, but `ThreadData` struct lost—accessed via raw pointer arithmetic (`*(int *)((long)arg + 4)`). TLS variables accessed via `tpidr_el0` offset instead of proper struct.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(int *)0x0` for NULL, `(pthread_mutex_t *)&counter_mutex`. Pointer arithmetic is explicit but error-prone. No buffer overflow warnings despite `strcpy` usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated technical artifacts ("Unresolved local var", "WARNING: Subroutine does not return") with zero semantic value. No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `memcpy`, `pthread_create`) correctly identified, but no higher-level pattern recognition (producer-consumer, mutex-protected critical sections not named).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Unknown calling convention", "Removing unreachable block") but without actionable guidance. No indication of potential security issues with `strcpy` buffer operations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"), no postconditions, no invariants. Error conditions present but not formally specified.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and globals (`signal_received`, `atomic_counter`) referenced, but no call graph documentation. Callback relationships (thread entry functions) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 75 functions in single output without logical grouping. Original source had clear sections (6.1 Library, 6.2 Syscall, 6.3 Thread) but decompilation loses this organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions (`pthread_create`, `malloc`, `syscall`) used without declarations. Platform-specific code not separated. Will not compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (7+5+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.44/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Test functions return constants**: `call_strcmp`, `call_strlen`, `call_memcmp` return hardcoded values (0, 0xc, -1) instead of executing original logic—completely obscures test behavior
+- **Variable names are generic**: `iVar1`, `sVar1`, `local_30` provide no semantic information; original names like `buffer`, `ret`, `written` lost
+- **Struct recovery failed**: `ThreadData` struct accessed via pointer arithmetic instead of field names, making thread logic hard to follow
+- **No semantic comments**: Zero documentation of algorithm intent, only auto-generated technical warnings
+- **Magic numbers unexplained**: `0x38`, `0x39`, `0x2a`, `0x7f` used throughout without constant definitions
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `param_strcpy`, `thread_compute`, `param_mutex_lock` were preserved from debug symbols, maintaining semantic clarity for the main API surface.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Comments are purely auto-generated technical artifacts with zero semantic value; no algorithm explanations, API contracts, or decompilation confidence indicators.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols**: The `-g` flag was used during compilation; leverage DWARF debug info to restore original variable names instead of generic `iVar1`, `local_30` patterns.
+
+2. **Detect and flag constant-folded functions**: When test functions return constants, add comments like "// OPTIMIZED: Original logic folded to constant 0xc (strlen of 'BinBench2025')" to preserve semantic intent.
+
+3. **Recover struct types from type information**: Use debug type info to reconstruct `ThreadData`, `sockaddr_in`, and TLS structures with named fields instead of raw pointer arithmetic access patterns.

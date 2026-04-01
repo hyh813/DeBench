@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`) instead of semantic names like `local`, `arr`, `head`, `current` from source. Some better names exist (`idx`, `result`, `flag1`) but are exceptions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`local_vars`, `heap_basic`, `double_value`), but many wrapper functions use mechanical names (`sub_4012b1`, `sub_40132e`). Runtime functions (`_init`, `_start`) are standard but not descriptive.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1), `0x800`, `0xfffffff0` appear without explanation. Original constants (10, 1000, 2048) are present but not named.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `_GLOBAL_OFFSET_TABLE_` references in nearly every function, `__x86.get_pc_thunk.*` stubs, redundant assignments (`v5 = v2; return v5;`), and struct padding fields clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs correctly. However, some functions contain problematic `goto` statements (`sub_401030`: `goto ptr[2]`). At `-O0`, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions created (`sub_4012b1` just calls `local_vars()`). Some functions fragmented with poor cohesion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with standard control structures. Some forward jumps disrupt flow but most execution paths are traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments throughout (`v0 = &_GLOBAL_OFFSET_TABLE_;` in functions that don't use it). Dead code from register spilling not eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` → `unsigned int`, `char*` → `void*`, `size_t` → `unsigned int`. Original `Point*`, `Node*`, `TreeNode*` all become generic `unsigned int` or `struct_X*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_4`) instead of `x`, `y`, `data`, `next`. Layouts often correct but semantic meaning lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(char *)ptr`, `(int *)&v0`), unclear pointer arithmetic (`ptr[4 * idx]`), and type-confused operations. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, API contracts, or decompilation confidence indicators. Only one anomaly note: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation) not identified or named. No design pattern recognition despite clear data structure usage.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Dangerous patterns (dangling pointer, double free, heap overflow) not highlighted despite being present in source.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postconditions or invariants recovered. Error return values (`4294967295`) not explained.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`global_counter`, `file_scope_static`) not clearly explained. Callback relationships opaque.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order, not matching source organization (stack→heap→static→memop). No logical grouping by functionality.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`printf`, `malloc`, `fork`, `waitpid`) declared but type mismatches would prevent compilation. Platform mismatch (ARM64 source → X86 decompilation) is critical.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.55/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Platform mismatch**: Source compiled for ARM64 but decompiled as X86 architecture
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `local_value`, `array_index`, `result`)
+- **Struct fields** all generic (`field_0`, `field_4`) losing semantic meaning (`x`, `y`, `data`, `next`)
+- **No comments** explaining magic numbers like `4294967295` (error return) or `0xfffffff0` (alignment mask)
+- **Redundant `_GLOBAL_OFFSET_TABLE_`** loading in nearly every function adds noise without value
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (6/10)** - Loop constructs and conditionals mostly recovered correctly despite optimization artifacts
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `ptr`, `buffer`)
+2. **Recover and preserve original struct field names** - Use debug symbols (`-g` flag present) to restore `Point.x`, `Node.data`, `Node.next` instead of `field_0`, `field_4`
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, magic numbers, and potential undefined behavior (dangling pointers, double frees) with inline comments

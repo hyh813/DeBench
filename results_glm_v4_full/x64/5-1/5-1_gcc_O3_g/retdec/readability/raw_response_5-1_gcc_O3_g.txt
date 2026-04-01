@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `str`, and `result`. No semantic meaning is preserved (e.g., `obj` becomes `v2`, `derivedA` becomes `v10`), making it impossible to track object identities without the source.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully demangles C++ symbols in the prototype section (e.g., `_Z18test_cpp_exceptionv` is labeled `test_cpp_exception()`), which is excellent. However, the actual function definitions in the body still use the mangled names, requiring cross-referencing.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved but often hex-encoded (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`), reducing readability. Magic numbers like `40` (stack canary offset) and `8` (allocation size) appear without context or named constants.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with compiler artifacts and low-level intrinsics. `__readfsqword(40)` appears in almost every function for stack canaries, and SSE instructions are emitted as `__asm_movsd`/`__asm_maxsd` blocks instead of high-level arithmetic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Critical failure: multiple functions containing significant logic in the source (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) are decompiled as empty functions with just `return;`. Where logic exists (e.g., `test_cpp_rtti`), it is obscured by pointer arithmetic and nested `if` checks rather than structured logic.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While the decompiler identifies function boundaries, it fails to recover the bodies of many functions, leaving them as stubs. The logic that is recovered is often fragmented or inlined into `test_cpp_oo_features` (e.g., template logic), breaking the original modularity.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The flow is hard to follow due to the mix of empty functions and the intrusion of low-level assembly blocks (`__asm_`) in the middle of C code. In `test_cpp_rtti`, the logic jumps between type checks and casts without clear structure.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated stack canary checks (`__readfsqword`). The decompiler also fails to abstract common patterns, such as the `dynamic_cast` logic, which is expanded into raw pointer operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are generally correct (`int32_t`, `int64_t`, `float64_t`). However, floating-point operations are incorrectly represented using `int128_t` and `__asm_` intrinsics, losing the semantic type information that they are doubles.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No C++ classes or structs are reconstructed. Object-oriented access is represented entirely as raw pointer arithmetic and offsets (e.g., `*(int32_t *)((int64_t)result + 40)`), completely obscuring the original class layout.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts. For example, `int64_t` is used to hold object pointers (`this`), which are then cast to `int32_t*` or `char*` for member access. There is no distinction between `bool`, `int`, or pointer types in many operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to metadata (line ranges, module paths) and demangled names. There are no comments explaining the *logic* (e.g., "allocating exception object" or "checking vtable for RTTI"), leaving the complex pointer arithmetic unexplained.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler identifies standard library calls (`__cxa_throw`, `__dynamic_cast`, `_Znwm`) but fails to recognize the higher-level idioms they implement (e.g., C++ exception handling, polymorphic casts, or RAII). It presents the mechanism but not the idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently outputs `return;` for functions that clearly have logic in the source (e.g., `test_cpp_constructor`), providing no warning that the analysis might have failed or that the body is incomplete. This is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For instance, the requirement that pointers are not null before `dynamic_cast` is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: The prototype section provides a good overview of all functions and their demangled names. Call sites are visible, but the relationship between class methods (e.g., `Base::virtual_func` vs `Derived::virtual_func`) is lost in the flat list.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a single flat file. While functions are grouped by address, there is no logical grouping by class or functionality (e.g., all `Container` methods are scattered).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code includes necessary headers and prototypes, but the use of non-standard `__asm_` intrinsics and `__readfsqword` makes it non-portable and likely requires a specific compiler setup (likely GCC/Clang with inline asm support) to compile, if at all.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- **Logic Loss**: Functions like `test_cpp_constructor` and `test_cpp_virtual_func` are decompiled as empty `void` functions with just `return;`, completely dropping the implementation logic present in the source.
+- **Inline Assembly Intrinsics**: High-level floating-point operations are replaced by `__asm_movsd` and `__asm_maxsd` intrinsics, destroying semantic readability.
+- **Missing Class Recovery**: C++ classes are not reconstructed; member access is done via raw pointer offsets (e.g., `offset + 40`), making the code look like C rather than C++.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully demangles C++ mangled names in the prototype section, allowing the user to map the binary functions back to the original source names.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 2/10)
+- The failure to recover the control flow for most functions (reducing them to `return;`) is the most critical issue, rendering the decompiled output functionally useless for understanding the program's behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Fix CFG Analysis for -O0**: Investigate why basic blocks are being dropped for functions compiled without optimization; ensure all reachable code paths are included in the decompiled output.
+2.  **Lift SSE/AVX Instructions**: Implement a lifting pass to convert SSE floating-point instructions into standard C floating-point operators (`+`, `-`, `*`) instead of emitting inline assembly intrinsics.
+3.  **Reconstruct C++ Class Hierarchies**: Utilize RTTI and vtable analysis to reconstruct `struct` and `class` definitions with correct field names and types, replacing raw pointer arithmetic.

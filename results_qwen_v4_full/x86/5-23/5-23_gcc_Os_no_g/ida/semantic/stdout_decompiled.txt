@@ -1,0 +1,19 @@
+=== Preprocessing Features Test ===
+PP_L201D: 64
+PP_L202D: 30
+PP_L203D: 32
+PP_L204D: 57122
+PP_L301D: 116
+PP_L302D: 19
+PP_L303D: 60
+LOG: Values: 10, 20, 30
+PP_L304D: 60
+PP_L305D: 16
+PP_L306D: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:02
+PP_L307D: 382
+=== ASM Features Test ===
+ASM_L401D: 15
+ASM_L402D: 2007286670
+ASM_L403D: 42
+ASM_L404D: 42

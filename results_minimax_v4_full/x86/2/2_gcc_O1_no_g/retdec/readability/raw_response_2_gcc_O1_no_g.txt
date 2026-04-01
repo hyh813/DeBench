@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, completely obscuring their semantic purpose (e.g., `a1` should be `arr` in `array_1d_stack`, `a2` should be `n`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (`double_value`, `process_int`, `array_1d_stack`), but infrastructure functions have generic names like `function_1080`, `function_1090` which are meaningless.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation - global variables initialized with `0x258`, `0x480e4144`, string offsets like `v1 + 0x1ca7`, and loop bounds like `40 * a2` without explaining what 40 represents (10 elements × 4 bytes).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__do_global_ctors_aux`, `register_tm_clones`, stack protection functions, and frame setup code clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow preserved - loops become while loops with manual index management. However, some awkward constructions like `while (v2 != 4 * a2 + v1)` instead of cleaner `for` loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain properly separated matching source structure. Each test function (`test_data_types_l1`, `test_array_types`) is correctly isolated with appropriate helper functions extracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with some forward jumps. The `array_3d` function has complex nested loops that are traceable but not cleanly linearized.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant index calculations (e.g., recalculating `v1 + 0x4ef3` multiple times) but not severe enough to impede understanding significantly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `float32_t`, `float64_t`, `float80_t` appropriately. However, pointer types are often lost - `int32_t a1` instead of `int32_t *a1` for pointer parameters, losing the distinction between pass-by-value and pass-by-reference.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union types recovered. All composite types accessed via raw pointer arithmetic: `*(int32_t *)a1 + *(int32_t *)(a1 + 4) + *(int32_t *)(a1 + 8)` instead of `p->x + p->y + p->z`. Bitfields particularly mangled.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Frequent unsafe casts like `(int32_t *)a1`, `(char *)a1` throughout. Pointer arithmetic not properly typed (e.g., `4 * a2 + a1` should be pointer arithmetic). However, no buffer overflow-prone patterns that are obviously dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, parameter purposes, or return value meanings.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (linked list traversal, array summation) but not explicitly identified or named. The decompiler doesn't highlight "this is a linked list traversal" or "this is a state machine."
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The code silently produces potentially incorrect results (e.g., `array_2d_stack` comparing against string literal `"/ld-linux.so.2"` which is clearly wrong) without any warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_oob` has undefined behavior from the out-of-bounds access.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships partially visible through direct calls (`ptr_triple(&v5)`, `array_1d_stack(&v3, 5)`), but no documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, helper functions grouped, infrastructure functions at the top. Static functions properly marked.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`. Function prototypes declared. Should compile with minimal patching (just needs linking).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- All variable names are generic (`a1`, `v1`, `v2`) making code flow extremely difficult to trace
+- No struct/union type recovery - all composite types reduced to raw pointer arithmetic
+- No comments explaining any logic, parameters, or return values
+- `array_2d_stack` contains corrupted comparison: `while (v2 != v1 + (int32_t)"/ld-linux.so.2")` - clearly wrong
+- Pointer types lost - parameters passed by reference shown as value types
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+The decompiler preserved the function boundaries from the original source, keeping test functions separate and helper functions properly extracted.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The complete absence of comments makes even simple functions difficult to understand. Combined with generic variable names, the code requires significant reverse-engineering effort to comprehend.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used as array base with `4 * a2` offset should be named `arr` and `n` respectively
+2. Recover struct/union types from memory access patterns - sequential offsets like `a1`, `a1+4`, `a1+8` strongly suggest struct fields
+3. Add basic comments explaining parameter purpose and return value semantics, even if auto-generated

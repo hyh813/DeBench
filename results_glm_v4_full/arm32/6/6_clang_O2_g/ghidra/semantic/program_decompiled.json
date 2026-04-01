@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_clang_O2_g/ghidra/syntactic/bin/6_clang_O2_g_fixed",
+  "stdout": "===scffTsmpmfpa\nsscmmValue: 42, Name: Tsmpmfpa\npsffmalloc_free: 90\nmemset: 0\ns=scffTsmpmfpa\nssf",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

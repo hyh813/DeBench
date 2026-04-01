@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_10`, and `local_14`. For example, in `array_1d_stack`, the array pointer is `param_1` and the counter is `local_14`, offering no semantic hint about their purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `process_char`, `struct_simple`, `test_data_types_l1`), likely due to the presence of debug symbols, making navigation trivial.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Magic numbers are used for ASCII checks (e.g., `0x41` for 'A', `0x5b` for '[') instead of character literals, which is slightly less readable but standard for decompilation. String literals like `"hello"` are preserved perfectly.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The logic is clean, but type definitions introduce noise, such as `undefined1 [16]` return types for floating-point functions and `undefined8` parameters, which clutter the function signatures.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; loops are recovered as `for` loops and conditionals as `if/else` blocks. For instance, `array_1d_stack` retains the natural loop structure found in the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code with no inlining or outlining artifacts. The granularity is perfect, maintaining the original separation of concerns.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. For example, `process_char` flows naturally through the condition check and return.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or spurious instructions. The `volatile_access` function simplifies the two separate reads in the source into `return *param_1 + *param_1;`, which is semantically cleaner but slightly obscures the volatile nature of the operation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Significant type degradation is present. `process_double` returns `undefined1 [16]` instead of `double`, and `process_ld` returns `void` instead of `long double`. Struct parameters are decayed to `int*` (e.g., `struct_simple` takes `int *param_1` instead of `Point3D *`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are completely lost. Structs like `Point3D`, `Rect`, and `Node` are not defined; instead, the code uses raw pointer arithmetic and array offsets (e.g., accessing `param_1[3]` in `struct_nested` to get the `width` field).
+
+**11. Type Safety:** Score: 6/10
+Justification: The code relies on explicit pointer arithmetic and casts, such as `*(int *)(param_1 + (long)local_14 * 4)`, which is technically correct but less safe and readable than the original array indexing syntax. `const` qualifiers are also stripped.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are mostly absent, with the exception of a warning in `test_array_types` ("Type propagation algorithm not settling"). There are no comments explaining the logic or data structures.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like string length calculation are recognized, but pointer difference in `ptr_diff` is explicitly calculated as `(param_1 - param_2) / 4` rather than preserving the high-level pointer subtraction idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra flags type propagation issues in `test_array_types`, which is helpful. However, it does not explicitly flag the incorrect return types for floating-point functions or the loss of struct definitions.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: API contracts are lost; for example, `const_param` loses the `const` qualifier on the input pointer. No preconditions or invariants are documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and easy to trace because function names were recovered perfectly. It is easy to see that `test_data_types_l1` calls `process_char`, `printf`, etc.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, likely reflecting the source file's order. Helper functions and test functions are distinct blocks.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile without significant modification. The use of `undefined` types, incorrect return types (e.g., `undefined1 [16]`), and missing struct definitions prevent compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- **Composite Type Loss**: Structs (`Point3D`, `Rect`, `Node`) are completely unrecovered, replaced by raw pointer arithmetic (e.g., `param_1[3]`).
+- **Floating Point Type Errors**: `process_double` returns `undefined1 [16]` and `process_ld` returns `void`, completely obscuring the return types.
+- **Variable Naming**: Parameters and locals use generic names (`param_1`, `local_10`), requiring the reader to manually track semantics.
+- **Const Stripping**: `const` qualifiers are removed from function signatures (e.g., `const_param`), losing API safety information.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Debug symbols were successfully utilized, recovering exact function names from the source, which makes navigating the decompiled code trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The complete failure to recover struct definitions turns high-level data structure manipulations into low-level pointer math, which is the single biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Floating Point Type Recovery**: Fix the handling of ARM64 floating-point return values (especially `double` and `long double`) to avoid `undefined` array return types and `void` returns.
+2.  **Heuristic Struct Recovery**: Implement analysis to group related pointer offsets (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]`) into reconstructed struct definitions to restore high-level semantics.
+3.  **Propagate Debug Type Qualifiers**: Ensure `const` and `volatile` qualifiers from debug symbols are applied to the decompiled type signatures to preserve API contracts.

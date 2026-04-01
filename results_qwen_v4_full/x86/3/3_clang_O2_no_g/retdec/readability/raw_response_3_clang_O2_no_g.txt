@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `a1`, `a2`, `temp`) with no semantic meaning. For example, `heap_basic` uses `mem`, `v1`, `v2` instead of `array`, `index`, `result` that would match the source's `arr`, `i`, `result` pattern.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`local_vars`, `heap_basic`, `double_value`), but standard library wrappers became meaningless (`function_1050` = printf, `function_1060` = memmove). About 40% of functions have auto-generated names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables use cryptic hex values (`g1 = 0x24322a3b`, `g14 = 0x2c0e4728`) instead of meaningful names like `global_counter` or `global_array`. Magic numbers like `2041`, `0x4ea4` appear without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including `__x86_get_pc_thunk_*` functions, `__do_global_ctors_aux`, `register_tm_clones`, and `deregister_tm_clones` that add ~15% code bloat without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Aggressive loop unrolling in `vla_stack` and `alloca_usage` transforms simple for-loops into complex unrolled patterns with manual index tracking (`v3 += 4`, `v4 += 8`, `while ((a1 & -4) != v5)`). Original simple loops are unrecognizable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions preserved but standard library calls extracted into separate wrappers (`function_1070` = free, `function_10d0` = malloc). Some functions over-optimized away (`stack_alias` returns constant 20, `tree_heap_traversal` returns 60).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but complex functions like `test_heap_memory` have scattered printf calls with pointer arithmetic for string addresses (`(char *)(v1 + 0x1458)`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling creates massive redundancy - `large_stack_frame` has 8 nearly identical byte-write statements repeated in a loop. `heap_basic` and `heap_array` have nearly identical unrolled patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type semantics. `vla_stack` parameter should be `int` but became `uint32_t`. Pointer types often degraded to `int32_t *` without const-correctness.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point` struct (`{int x, y}`) and `Node` struct (`{int data, struct Node *next}`) completely lost. All struct access became pointer arithmetic (`*(int32_t *)(v1 + 4)`, `*(int32_t *)(v2 + 8)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(int32_t *)a2`, `(char *)(v1 + 0x14c2)`). `dangling_pointer` shows use-after-free pattern without any warning. Function pointer types lost (`global_func_ptr` became generic `int32_t`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation (`// MEM-L1-01: 局部变量（基础类型）⭐`). No decompiler confidence indicators or algorithm explanations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized - linked list traversal in `linked_list_heap`, tree creation in `tree_heap_traversal`, and VLA patterns in `vla_stack` all appear as raw pointer arithmetic with no pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous patterns silently presented - `dangling_pointer` use-after-free, `double_free` double-free vulnerability, `heap_overflow` buffer overflow all have no warnings. `stack_alias` logic completely lost (returns constant).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks in `vla_stack`, `alloca_usage`). Null pointer checks present but not documented as contracts. Return value semantics unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_stack_memory` calls original functions correctly, but global variable references use opaque addresses (`(int32_t)&g14 + 100`). Callback relationships lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address not logical grouping. Related functions scattered (`local_vars` at 0x12c0, `local_array` at 0x12d0, but `large_stack_frame` at 0x1310). No header file organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers (`stdio.h`, `stdlib.h`, `string.h`, `unistd.h`, `sys/wait.h`). Standard library wrappers properly declared. Would likely compile with minor fixes for undefined globals (`g1`-`g15`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+6+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.06/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Complete struct type loss**: `Point` and `Node` structs reduced to raw pointer arithmetic (`*(int32_t *)(v1 + 4)`)
+- **Zero documentation**: No comments explaining any logic, despite complex transformations
+- **Aggressive optimization artifacts**: Loop unrolling in `vla_stack`, `alloca_usage` makes simple loops unrecognizable
+- **Generic variable naming**: All locals are `v1`, `v2`, `a1`, `a2` with no semantic meaning
+- **Silent dangerous patterns**: Use-after-free (`dangling_pointer`), double-free, buffer overflow presented without warnings
+
+### Best Quality Aspect: **Build System Compatibility (7/10)**
+- Proper header includes and function declarations allow potential compilation with minimal fixes
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding transformed code extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from access patterns**: Detect struct field access patterns (`*(ptr+0)`, `*(ptr+4)`) and reconstruct named struct definitions
+2. **Add confidence annotations**: Mark optimized-away functions (`stack_alias`, `tree_heap_traversal`) with comments explaining constant folding occurred
+3. **Flag dangerous patterns**: Automatically detect and warn about use-after-free, double-free, and buffer overflow patterns with explicit comments

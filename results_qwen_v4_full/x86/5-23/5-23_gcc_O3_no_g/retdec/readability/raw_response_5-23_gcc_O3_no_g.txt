@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `exec_mem`, `page_size`, `counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names are preserved (`param_macro_constants`, `call_asm_basic`), but helper functions use generic names (`function_10b0`, `function_1100`). Good verb choices for preserved names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xdef0`, `0xdf22`, `64`, `30` appear without explanation. Original used named constants (`MAX_SIZE`, `BUFFER_COUNT`) that are lost in decompilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*` functions, `__readgsdword(20)` stack canary checks, and generic globals (`g1`, `g2`, `g3`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if/while constructs. Some use ternary operators awkwardly (`v1 < 0 == ((v1 ^ a1) & ...)`) but logic remains traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; original structure mostly preserved. Some `call_*` functions are over-optimized to return constants directly.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. While loops are used appropriately instead of goto-based constructs.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some redundant variable assignments exist (`result = 0; result += ...`) but don't significantly obscure logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `uint32_t` appropriately. Some types are generic (`int32_t` instead of `size_t` for sizes). Pointer types are mostly preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in source code. Arrays handled as pointer arithmetic. The `int128_t` typedef for SIMD is reasonable but non-standard.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(int32_t *)-1` for MAP_FAILED). Pointer arithmetic without bounds checking in memory operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining macro behavior, preprocessing, and assembly semantics—all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly intrinsics recognized as `__asm_movaps`, `__asm_paddd` but not explained. No algorithm or pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly flags for architecture mismatch (original arm64, decompiled x86). Assembly patterns shown but not marked as potentially problematic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original had expected return values in comments that are absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear, but global variable usage is opaque (`g1`, `g2`, `g3` with hex addresses). No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized. No header file structure or namespace separation. Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`sys/mman.h`, `unistd.h`). Some platform-specific code may need adjustment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (7+6+6)/3   = 6.33  × 0.20 = 1.27
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+7)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  5.62/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects
+- **Variable names completely generic** (`v1`, `v2`, `v3`) losing all semantic meaning from original source
+- **Zero comments** despite original having extensive documentation explaining macro behavior and assembly semantics
+- **Architecture mismatch** not flagged (original arm64, decompiled shows x86-specific `__readgsdword`, `__x86_get_pc_thunk_*`)
+- **Global variables opaque** (`g1`, `g2`, `g3` with hex addresses) instead of meaningful names
+- **Magic numbers unexplained** (`0xdef0`, `0xdf22`, `64`) where original used named constants
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Main function names preserved from source (`param_macro_constants`, `call_asm_basic`), making function identification straightforward despite other readability issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe deficit; original source had extensive documentation explaining preprocessing behavior, macro semantics, and assembly intent that would dramatically improve understanding if recovered.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size comparisons should be named `size`, `limit`, `max`)
+2. **Recover and preserve source comments** from debug symbols when `-g` flag is present in compilation
+3. **Flag architecture mismatches** and platform-specific code with clear annotations when decompiled architecture differs from source

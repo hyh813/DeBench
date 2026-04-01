@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a0`, `a1`, `a2` instead of semantic names like `a`, `b`, `x`. Local variables are `v0`, `v1`, `v2`, `ptr`, `i` - completely non-descriptive. Compare `cdecl_func(unsigned int a0, unsigned int a1)` to original `cdecl_func(int a, int b)`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered: `cdecl_func`, `stdcall_func`, `fastcall_func`, `call_cdecl`. However, many utility functions use generic names like `sub_4006e4`, `sub_4007b0`, `frame_dummy`. Mixed result - about 50% accuracy.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently without explanation. String format references like `extern char $d.2;` are opaque. The value `100` in `ret_large_struct(100)` is correctly literal but many constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: redundant assignments (`v10 = v28; v9 = v29;`), duplicate returns (`v0 = frame_dummy(); return frame_dummy();`), unnecessary frame setup (`char *v0; char v1; v0 = &v1;`). These add ~100% LOC overhead (1303 vs 665).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is well preserved. Loops render as `for (i = 0; a0 > i; i += 1)` correctly. Conditionals are natural. No goto abuse. Minor awkwardness in switch reconstruction but overall excellent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. `test_calling_conventions` is ~100 lines but handles multiple test cases. Individual functions like `cdecl_func` are single-purpose. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps disrupting flow. The varargs functions have some complexity but remain traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate calls present: `v0 = frame_dummy(); return frame_dummy();`. Unused variable assignments like `v10 = v28; v9 = v29;` create noise. Some dead code from register spilling. Moderate redundancy impact.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters typed as `unsigned int` when original was `int`. Pointers use `unsigned long` or `unsigned long long` instead of proper pointer types. `char*` correctly recovered in `param_string`. Mixed precision - some correct, many generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` (128 bytes) degenerated to `unsigned long ptr` in `func_struct_byval`. `SmallStruct` becomes `unsigned int *ptr` in `func_struct_byptr`. All struct field names lost. The decompiler treats structs as raw pointers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe operations: `__ROL__` used incorrectly for multiplication (`*(ptr) = __ROL__(*(ptr), 1)` should be `*ptr *= 2`). Pointer arithmetic in `func_struct_byval` uses `ptr + i * 8` without proper casting. Function pointer typed as `unsigned long long *a0` instead of proper function pointer type.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. Zero explanation of algorithm intent, parameter purposes, or return value semantics. Completely uncommented code.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithm idioms identified. Varargs handling, callback patterns, struct passing all presented as raw code without pattern recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. Indirect calls not resolved, unusual stack layouts not flagged, potential undefined behavior not indicated. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks not explained, error returns not justified, contract information completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external function declarations visible (`extern char $d.2;`, `extern unsigned long long g_412ff8;`). However, function call relationships not documented - no indication which functions call which, or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address but not logically organized. Related test functions scattered. No logical grouping matching original source sections (calling conventions, parameter passing, return values).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Requires extensive `extern` declarations for string constants and global variables. Many undefined references. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 3) / 4 = 3.5
+L2_avg = (8 + 8 + 8 + 5) / 4 = 7.25
+L3_avg = (5 + 3 + 4) / 3 = 4.0
+L4_avg = (1 + 1 + 1 + 1) / 4 = 1.0
+L5_avg = (4 + 5 + 3) / 3 = 4.0
+
+Overall = (3.5 × 0.30) + (7.25 × 0.25) + (4.0 × 0.20) + (1.0 × 0.15) + (4.0 × 0.10)
+        = 1.05 + 1.8125 + 0.8 + 0.15 + 0.4
+        = 4.2125 / 10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names like `a`, `b`, `packet_size`
+- Composite types completely lost - `LargeStruct` becomes `unsigned long ptr`, losing all field information
+- Type safety violations: `__ROL__` misused for multiplication, improper pointer arithmetic
+- No comments or documentation - zero semantic transparency
+- Struct return values mishandled: `ret_small_struct` returns raw bits instead of proper struct
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (8/10)** - At -O0, loops, conditionals, and basic structures are well preserved and readable
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (1/10)** - Zero comments, no idiom recognition, no anomaly indication, no contract recovery. The code is a semantic black box.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: `a0 + a1` in `cdecl_func` should suggest parameters `a` and `b`. Track parameter usage across function body.
+2. **Recover composite types**: Detect struct pointer parameters and attempt struct layout reconstruction. `func_struct_byval(ptr + i * 8)` clearly accesses struct fields.
+3. **Add semantic annotations**: Include basic comments explaining function purpose, parameter contracts, and flag anomalies like indirect calls or unusual stack patterns.

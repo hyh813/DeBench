@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_gcc_O3_g/ghidra/syntactic/bin/6_gcc_O3_g_fixed",
+  "stdout": "Testing standard library functions...\nstrlen test: 8\nstrcmp test: 0\nparam_strlen test: 12\nparam_memcpy test: 90\nparam_memcmp test: -1\nValue: 42, Name: TestName\nparam_printf test: 26\nparam_scanf test: 579\nparam_fopen_fclose test: 42\nparam_fread_fwrite test: 42\nparam_malloc_free test: 90\nparam_memset test: 0\nparam_strchr_strstr test: 15\nTesting system calls...\nparam_linux_syscall test: 42\nparam_win32_api test: passed\ncall_fork_exec test: passed\nparam_pipe_communication test: 42\nparam_socket_create test: 42\nparam_shmget_shmat test: 42\nparam_signal_handling test: passed\nTesting thread concurrency...\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

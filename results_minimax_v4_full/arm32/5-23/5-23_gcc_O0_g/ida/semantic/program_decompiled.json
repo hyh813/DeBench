@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_gcc_O0_g/ida/syntactic/bin/5-23_gcc_O0_g_fixed",
+  "stdout": "Testing Preprocessing Features\nPreprocessing Level 201: 64\nPreprocessing Level 202: 30\nPreprocessing Level 203: 32\nPreprocessing Level 204: 57122\nPreprocessing Level 301: 116\nPreprocessing Level 302: 19\nPreprocessing Level 303: 60\nLOG: Values: 10, 20, 30\nPreprocessing Level 304: 60\nPreprocessing Level 305: 16\nPreprocessing Level 306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:01\nPreprocessing Level 307: 382\nTesting ASM Features\nAsm Level 401: 15\nAsm Level 402: 15\nAsm Level 403: 42\nAsm Level 404: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,2 @@
+Testing obfuscation optimizations:
+Fake branch result: 0

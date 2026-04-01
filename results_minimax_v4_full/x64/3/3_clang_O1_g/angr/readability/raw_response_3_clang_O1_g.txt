@@ -1,0 +1,155 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality (10%)
+**Score: 2/10**
+
+The decompiled code uses exclusively generic variable names (v0, v1, v2, v3, v4, v5, v6, idx, i, j, l, ptr, p, a0, a1, a2). Compare to source where variables like `arr`, `n`, `i` in local_array or `p`, `new_node`, `head`, `current` in linked_list_heap convey clear semantic meaning. The decompiler made no effort to infer meaningful names from usage patterns.
+
+### 2. Function Naming Quality (10%)
+**Score: 6/10**
+
+Approximately half the functions have correct names recovered (local_vars, heap_basic, linked_list_heap, double_value, etc.), but the other half retain auto-generated names like sub_401020, sub_40102c. Additionally, many wrapper functions (sub_401209, sub_401217) that just call the actual functions add confusion. The recovered names are accurate but inconsistent in coverage.
+
+### 3. Literal Clarity (5%)
+**Score: 4/10**
+
+Magic numbers like 4294967295 (representing -1 as unsigned), 0x800 (2048), and various array sizes appear without explanation. The decompiler correctly identified some constants but failed to replace magic numbers with meaningful names. The value 42 appears in address_of_local but isn't recognized as a significant constant.
+
+### 4. Noise Reduction (5%)
+**Score: 8/10**
+
+The decompiled code is relatively clean with minimal compiler artifacts. No obvious register spilling, debug instrumentation, or redundant casts. The only noise is the occasional [D] annotation for unsupported operations. Overall, the code reads without significant distraction from artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness (8%)
+**Score: 7/10**
+
+Control flow is mostly natural with proper do-while loops (e.g., local_array, heap_basic). However, some issues exist: sub_401020 uses goto incorrectly (goto g_406010 is nonsensical), and some loop conditions are convoluted (vla_stack uses complex index calculations). At -O0, more natural flow is expected.
+
+### 6. Function Decomposition (7%)
+**Score: 8/10**
+
+Functions maintain appropriate granularity. The test functions (test_stack_memory, test_heap_memory) properly aggregate related tests. Individual functions like local_vars, heap_basic have clear single responsibilities. The wrapper functions (sub_401209 calling local_vars) are minor overhead but don't significantly impede understanding.
+
+### 7. Code Linearization (5%)
+**Score: 7/10**
+
+Most functions read top-to-bottom without excessive forward jumps. The test functions have sequential calls which is natural. Some complex index calculations in vla_stack and alloca_usage create non-linear expressions, but overall flow is traceable.
+
+### 8. Redundancy Elimination (5%)
+**Score: 8/10**
+
+No significant dead code observed. Loop unrolling in some functions (heap_basic uses idx += 2) is present but manageable. The code doesn't contain obvious redundant expressions that would impede analysis.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision (8%)
+**Score: 6/10**
+
+Types are generic: mostly unsigned int and unsigned long long. The original source used signed int, which matters for semantic correctness. Function parameters use unsigned long for addresses, losing the original int semantics. However, size_t usage for memory allocation sizes is appropriate.
+
+### 10. Composite Type Recovery (7%)
+**Score: 5/10**
+
+Mixed results: Some structs are reconstructed (struct_0, struct_1 in heap_nested with field_0, field_8), but field names are generic. The Node structure in linked_list_heap is partially recovered but with wrong field names (field_0 instead of data, field_8 instead of next). Tree structures in tree_heap_traversal have multiple typedefs but lack semantic field names.
+
+### 11. Type Safety (5%)
+**Score: 3/10**
+
+Several serious type safety issues:
+- dangling_pointer() returns *(ptr) after free - use-after-free bug preserved
+- heap_overflow() accesses ptr after free in return statement
+- Multiple functions use unsigned types where signed were intended
+- The double_free function doesn't actually perform double free in the decompiled version
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence (5%)
+**Score: 3/10**
+
+Almost no comments in the decompiled code. The only annotations are "[D] Unsupported jumpkind" and "[D] MBusEvent-Imbe_Fence()" which are decompiler artifacts, not helpful explanations. No algorithm documentation, no explanation of non-obvious logic, no recovery confidence indicators.
+
+### 13. Idiom Recognition (3%)
+**Score: 5/10**
+
+Basic patterns are visible: malloc/free pairs, loop constructs, conditional checks. However, no explicit pattern naming or recognition. The linked list creation pattern could be identified as "singly-linked list with tail pointer" but isn't.
+
+### 14. Anomaly Indication (3%)
+**Score: 5/10**
+
+Partial anomaly detection: [D] markers appear for unsupported operations (memory barriers, unusual jumps). However, critical anomalies like the dangling pointer access and heap overflow are not flagged - the code is presented as correct when it contains undefined behavior.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. The function contracts (e.g., "returns -1 on error") from the original source are not recovered. Error handling is present but not explained.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 5/10**
+
+External functions are declared with extern keyword, showing dependencies. The test functions show which functions they call. However, there's no explicit call graph documentation, no indication of who calls a given function, and callback relationships (like global_func_ptr) aren't fully explained.
+
+### 17. Module Organization (3%)
+**Score: 7/10**
+
+Functions are logically grouped: stack memory functions together, heap functions together, static/global functions together. The test functions appropriately call related groups. Static functions are properly indicated. However, the file is a single monolithic output.
+
+### 18. Build System Compatibility (3%)
+**Score: 8/10**
+
+The code has proper extern declarations for external dependencies. Functions have return types and parameter types. The code would compile with minimal stubs for external functions (printf, malloc, etc.). Dependencies are implicit but reasonable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 8) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.5
+L3_avg = (6 + 5 + 3) / 3 = 4.67
+L4_avg = (3 + 5 + 5 + 2) / 4 = 3.75
+L5_avg = (5 + 7 + 8) / 3 = 6.67
+
+Overall = (5.0 × 0.30) + (7.5 × 0.25) + (4.67 × 0.20) + (3.75 × 0.15) + (6.67 × 0.10)
+        = 1.5 + 1.875 + 0.934 + 0.5625 + 0.667
+        = 5.54/10
+```
+
+**Overall Readability Score: 5.54/10**
+
+### Critical Defects
+
+- **Variable naming**: All variables use generic names (v0, v1, v2, ptr, idx) with no semantic inference from usage patterns
+- **Type safety violations**: dangling_pointer() and heap_overflow() preserve undefined behavior (use-after-free)
+- **Missing comments**: Zero meaningful comments explaining algorithms, contracts, or non-obvious logic
+- **Struct field names**: All field names are generic (field_0, field_1, field_8) losing original semantic meaning
+- **Function name inconsistency**: ~50% of functions retain auto-generated names (sub_401020) while others are recovered
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Functions maintain appropriate granularity with clear single responsibilities. Test functions properly aggregate related tests, and individual functions like heap_basic have cohesive, understandable implementations.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The decompiler makes no effort to infer meaningful variable names from usage patterns. Compare source's `arr[i] = i * n` to decompiled's `*((unsigned int *)((char *)&v4 + 4 * idx)) = v2` - the semantic relationship is completely obscured.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `idx` or `index`; when used as size, name it `n` or `size`; when storing a specific value (42), recognize it as meaningful
+2. **Flag undefined behavior**: Annotate dangling_pointer() and heap_overflow() with warnings about use-after-free rather than presenting the code as correct
+3. **Recover struct field names**: Use type information and field access patterns to infer meaningful names (data, next, left, right) rather than generic field_0, field_1

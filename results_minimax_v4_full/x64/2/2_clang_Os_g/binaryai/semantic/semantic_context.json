@@ -1,0 +1,28 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "x64",
+  "src_name": "2",
+  "source_path": "src/2.c",
+  "target_src_names": [
+    "2"
+  ],
+  "build_cmd": "clang --target=x86_64-linux-gnu -Os -g src/2.c -o build/x64/2/2_clang_Os_g",
+  "original_bin": "build/x64/2/2_clang_Os_g",
+  "decompiled_bin": "results_minimax_v4_full/x64/2/2_clang_Os_g/binaryai/syntactic/bin/2_clang_Os_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "unavailable",
+      "program_only": true,
+      "trace_event_count": 0,
+      "error": "fallback_metrics_only"
+    },
+    "decompiled": {
+      "status": "unavailable",
+      "program_only": true,
+      "trace_event_count": 0,
+      "error": "fallback_metrics_only"
+    }
+  }
+}

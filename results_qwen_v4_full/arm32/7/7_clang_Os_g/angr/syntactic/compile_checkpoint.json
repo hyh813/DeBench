@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 5,
+  "source_file": "decompiled/angr_out/arm32/7/7_clang_Os_g.c",
+  "fixed_file": "results_qwen_v4_full/arm32/7/7_clang_Os_g/angr/syntactic/fix_7_clang_Os_g.c"
+}

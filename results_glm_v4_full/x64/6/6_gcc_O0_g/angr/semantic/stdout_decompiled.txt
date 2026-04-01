@@ -1,0 +1,10 @@
+Testing Standard Library Functions:
+  call_strcpy: 8
+  call_strcmp: 2
+  call_strlen: 12
+  call_memcpy: 0
+  call_memcmp: 2
+Value: 42, Name: Test
+  call_printf: 22
+  call_scanf: 67
+  call_fopen_fclose: 42

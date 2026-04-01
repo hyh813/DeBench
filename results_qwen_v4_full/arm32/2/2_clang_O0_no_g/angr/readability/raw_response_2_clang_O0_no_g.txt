@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1` obscuring semantic meaning. Only occasional names like `idx`, `cur`, `ptr` provide minimal clarity. Original variable purposes (e.g., `sum`, `len`) are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions retained original names (`process_char`, `array_1d_stack`), but 50+ helper functions use cryptic `sub_400XXX` naming. Runtime functions like `__mulsf3` are preserved but not explained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `65`, `90`, `32` in character checks; `0x80000000`, `0x100000` in float operations; `4294967295` for -1. No constants recovered from original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler runtime functions (`__mulsf3`, `__adddf3`, `armg_calculate_condition`) clutter output. Temporary variables (`v0` through `v100+`) from register spilling pollute function bodies.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Despite -O0 compilation, loops converted to `goto` patterns (e.g., `LABEL_4004c4`, `LABEL_402369`). Original `for`/`while` structures not recovered. Switch statements become computed goto chains.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler runtime helpers (`deregister_tm_clones`, `__do_global_dtors_aux`) interspersed. Some functions like `__adddf3` span 500+ lines of incomprehensible logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Labels like `LABEL_402ac0` appear mid-function. Deep nesting in float operations creates non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated `armg_calculate_condition` calls with identical parameters. Float operations duplicate logic across `__mulsf3`, `__muldf3`, `__addsf3`. No dead code elimination visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type erosion: `char`→`unsigned int`, `short`→`unsigned short`, `float`/`double`→`unsigned int` pairs. `long long` split into two `unsigned int` parameters (`a0`, `a1`). No const/volatile preservation.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_4`). Nested structs like `Widget` flattened to array indexing (`a0[2]`, `a0[5]`). Union types lost entirely, treated as raw memory.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts pervasive: `(char *)a0`, `(int *)ptr`. Pointer arithmetic on `unsigned int` instead of typed pointers. Function pointers lose signatures (`unsigned int *a0` called as function).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic. No algorithm descriptions, no parameter documentation. Only auto-generated function headers present. Original source comments completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (character case conversion, array summation, linked list traversal) not identified. Float operations expanded to raw bit manipulation without noting IEEE 754 semantics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about unresolved indirect calls, type mismatches, or potential undefined behavior. `array_oob` intentional overflow not flagged. Floating point helper failures silent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). Postconditions absent. Error conditions like `array_complex_index` returning -1 not explained. No invariant recovery.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. `complex_callback` called but signature mismatched. Global variables (`g_414008`, `g_40306c`) unnamed and unexplained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order, not logical grouping. Test functions mixed with runtime initialization. No header file structure or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone. Missing type definitions, external dependencies (`__libc_start_main`, `printf`), and architecture-specific helpers (`armg_calculate_condition`). Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+5+4+4)/4 = 4.00
+Level 2 Average: (4+6+4+5)/4 = 4.75
+Level 3 Average: (2+4+3)/3 = 3.00
+Level 4 Average: (1+3+3+2)/4 = 2.25
+Level 5 Average: (4+5+4)/3 = 4.33
+
+Overall = (4.00 × 0.30) + (4.75 × 0.25) + (3.00 × 0.20) + 
+          (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.1875 + 0.60 + 0.3375 + 0.433
+        = 3.76/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Type system collapse**: All numeric types degraded to `unsigned int`, losing `char`, `short`, `float`, `double` distinctions
+- **Variable naming**: Generic `v0`, `v1`, `a0` names obscure all semantic meaning (e.g., `sum` in array functions becomes `v1`)
+- **Control flow degradation**: Simple `for` loops converted to `goto`/`LABEL` patterns despite -O0 debug compilation
+- **Zero documentation**: No comments explaining any logic, algorithms, or function purposes
+- **Float operation explosion**: Simple `f * 1.5f + 0.5f` expands to 200+ lines of `armg_calculate_condition` calls
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)**: Original function boundaries mostly preserved; `process_char`, `array_1d_stack`, `linked_list` remain as distinct functions matching source structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)**: Complete absence of any explanatory comments makes understanding algorithm intent impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns**: Detect `char` operations (comparisons with 65/90, +32 offset) and `float` operations (0x3f800000 constants) to restore original types
+2. **Recover high-level control structures**: Convert `goto`/`LABEL` patterns back to `for`/`while` loops when backward jumps form recognizable loop structures
+3. **Generate semantic variable names**: Analyze variable usage (accumulation → `sum`, index → `i`, pointer traversal → `current`) to replace `v0`, `v1` with meaningful names

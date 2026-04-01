@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_Os_no_g/binaryai/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\n\nstrlen: 8\nstrcmp: 0\ncall_strlen: 12\nmemset: 90\ncall_memcmp: 1\nValue: 42, Name: BinBench\nprintf returned: 26\nscanf: 579\nfopen_fclose: 42\nfread_fwrite: 42\nmalloc_free: 90\ncall_memset: 0\ncall_strchr_strstr: 15\n=== Testing System Calls ===\n\nlinux_syscall: 42\nstat: 42\nfork_exec: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

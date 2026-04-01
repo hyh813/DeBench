@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `result`) instead of semantic names like `temp1`, `sum`, `count` from original. For example, `sequential_ops` uses `a1, a2, a3` instead of `a, b, c`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`), but helper functions use generic names (`function_10a0`, `function_10b0`) and some signatures changed.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x100000000`, `0x80000000` in `op_div`/`op_mod` lack explanation. Some constants recovered but many unexplained numeric literals remain.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*`, `__readgsdword(20)`, `__stack_chk_fail_local()`, and 15+ boilerplate helper functions clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/else recovered but loops often converted to manual `while` with increment (e.g., `loop_for_fixed`). `switch_fallthrough` uses awkward label pattern instead of clean fall-through.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity matches original reasonably, but includes 15+ compiler boilerplate functions (`frame_dummy`, `__do_global_ctors_aux`) that fragment the codebase.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Some functions read top-to-bottom but others use explicit labels and goto (`loop_multi_exit` has `lab_0x1a7a`, `lab_0x1a68`) disrupting natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack checking code adds redundancy (`if (v1 != __readgsdword(20)) return __stack_chk_fail_local()`). Some redundant variable assignments present but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but with errors: `loop_while` takes `int32_t*` instead of `int`, `nested_if_2` uses `uint32_t` for signed comparison.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `struct __jmp_buf_tag` recovered with fields (`e0[8]`, `e1`, `e2`), but field names are generic. Most functions don't use complex types so limited assessment possible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer arithmetic (`*(int32_t *)(4 * v3 + (int32_t)&v2)`). Stack canary checks add safety but cast patterns are concerning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled code. Original had extensive Chinese documentation explaining each function's purpose, test cases, and difficulty level.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Original's state machine, Duff's device, and recursion patterns not identified or labeled in decompiled output.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No uncertainty warnings despite obvious issues (e.g., `call_func_ptr` returns uninitialized `result`, `computed_goto` completely broken).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original's test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no call graph documentation. Relationships between test functions and target functions not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 87 functions in single file with no logical grouping. Original's clear section organization (L1/L2/L3 control flow) lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers and declares external functions. Would need stubs for some compiler-specific functions but mostly compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):   (5+6+5+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):         (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):     (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):   (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.85/10
+```
+
+**Overall Readability Score:** 4.85/10
+
+### Critical Defects:
+- **Zero comments** despite original having extensive documentation explaining each function's purpose and test cases
+- Variable names like `v1`, `v2`, `v3` instead of semantic names (`sum`, `count`, `temp1`)
+- Compiler noise artifacts (`__readgsdword`, `__x86_get_pc_thunk_*`) clutter 15+ helper functions
+- Type errors: `loop_while` takes `int32_t*` instead of `int`, breaking semantic meaning
+- Control flow degradation: `switch_fallthrough` uses awkward label pattern instead of clean fall-through
+- `computed_goto` function completely broken - returns constant instead of implementing computed jump
+- No anomaly warnings despite obviously incorrect decompilations (e.g., `call_func_ptr` returns uninitialized value)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from original source (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original having extensive Chinese comments explaining purpose, test cases, and difficulty levels for each function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even at -O0 with debug symbols, comments should be extractable from DWARF debug info
+2. **Infer semantic variable names from usage patterns** - Variables used in accumulation should be named `sum`, counters should be `count`/`i`/`j`
+3. **Add anomaly detection warnings** - Flag uncertain decompilations (uninitialized returns, broken computed gotos) with confidence indicators

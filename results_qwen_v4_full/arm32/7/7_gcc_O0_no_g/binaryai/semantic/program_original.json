@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/7/7_gcc_O0_no_g/binaryai/semantic/native_arm32_bin/7_gcc_O0_no_g_native",
+  "stdout": "=== 测试混淆、优化与边界情况 ===\nOBF-L4-02: 10 (期望: 10)\nOBF-L4-03: 20 (期望: 20)\nOBF-L4-04: 225 (期望: 225)\nOBF-L4-05: 68 (期望: 68)\nOPT-L4-01 尾递归: 500500 (期望: 500500)\nOPT-L4-01 非尾: 5050 (期望: 5050)\nOPT-L4-02 向量化: 72 (期望: 72)\nOPT-L5-01 LTO: 20 (期望: 20)\nEDGE-L3-01: 1 (期望: 1)\nEDGE-L3-02: 41 (期望: 41)\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

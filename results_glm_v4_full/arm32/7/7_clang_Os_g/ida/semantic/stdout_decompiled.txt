@@ -1,0 +1,15 @@
+Test String
+Value: 10
+Obf L4.02: 20
+Obf L4.03: 225
+Obf L4.04: 0
+Opt L4.01: 500500
+Opt L4.02: 5050
+Opt L4.03: 0
+Opt L5.01 LtoD: 20
+Edge L3.01: 1
+Edge L3.02: 41
+Edge L3.03: 30
+Edge L3.04: 2000000000
+Edge L4.01: 10
+Edge L4.02: 44

@@ -1,0 +1,12 @@
+TRACE_ENT|0|test_calling_conventions|0|Arg0=1,Arg1=-447900984,Arg2=-447900968,Arg3=-1748688648|x0=0x1,x1=0xffffe54d92c8,x2=0xffffe54d92d8,x3=0xc2a397c520f8,x4=0x1d6ee32d05d14f48,x5=0xfdd8a1a91d90,x6=0xfdd8a1a91d90,x7=0xfdd8a1a90580
+TRACE_PRINT|0|%3D%3D%3D%20%54%65%73%74%69%6E%67%20%43%61%6C%6C%69%6E%67%20%43%6F%6E%76%65%6E%74%69%6F%6E%73%20%3D%3D%3D%0A
+TRACE_ENT|1|call_cdecl|1|Arg0=36,Arg1=-1582326632,Arg2=0,Arg3=0|x0=0x24,x1=0xfdd8a1af9c98,x2=0x0,x3=0x0,x4=0xfdd8a1af0f00,x5=0xfdd8a1a91430,x6=0xffffe54d8da8,x7=0x0
+TRACE_EXT|1|call_cdecl|1|15
+TRACE_PRINT|0|%43%41%4C%4C%2D%4C%31%2D%30%31%3A%20%31%35%0A
+TRACE_ENT|2|call_stdcall|1|Arg0=15,Arg1=-1582326632,Arg2=0,Arg3=0|x0=0xf,x1=0xfdd8a1af9c98,x2=0x0,x3=0x0,x4=0xfdd8a1af0f00,x5=0xfdd8a1a91430,x6=0xffffe54d8da8,x7=0x0
+TRACE_EXT|2|call_stdcall|1|50
+TRACE_PRINT|0|%43%41%4C%4C%2D%4C%31%2D%30%32%3A%20%35%30%0A
+TRACE_ENT|3|call_fastcall|1|Arg0=15,Arg1=-1582326632,Arg2=0,Arg3=0|x0=0xf,x1=0xfdd8a1af9c98,x2=0x0,x3=0x0,x4=0xfdd8a1af0f00,x5=0xfdd8a1a91430,x6=0xffffe54d8da8,x7=0x0
+TRACE_EXT|3|call_fastcall|1|6
+TRACE_PRINT|0|%43%41%4C%4C%2D%4C%31%2D%30%33%3A%20%36%0A
+TRACE_ENT|4|call_thiscall|1|Arg0=14,Arg1=-1582326632,Arg2=0,Arg3=0|x0=0xe,x1=0xfdd8a1af9c98,x2=0x0,x3=0x0,x4=0xfdd8a1af0f00,x5=0xfdd8a1a91430,x6=0xffffe54d8da8,x7=0x0

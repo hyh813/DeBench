@@ -1,0 +1,11 @@
+=== Standard Library Functions ===
+
+strcpy result: 8
+strcmp result: 2
+strlen result: 12
+memcpy result: 0
+memcmp result: 1
+Value: 42, Name: Test
+printf result: 22
+scanf result: 323
+fopen_fclose result: 42

@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `v3`, `v4` for locals. At -O0 debug level, these should be meaningful like `temp1`, `temp2` from source. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial` correctly match source names. Some internal helpers like `sub_174C` are generic, but the main API functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0xFFFFFFFFLL` used for -1 (error returns) is inferable. Switch table `dword_1EE0[a1]` is recognized as array. However, constants like `100` in `if_elseif_chain` lack explanation of why they represent specific values.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation output with minimal compiler artifacts. No obvious register spilling, redundant casts, or debug instrumentation visible. The code reads naturally.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops (`for`, `while`, `do-while`) correctly recognized. Switch statements recovered as switch rather than if-else chains. The `duffs_device` shows goto labels which is appropriate for that complex pattern. At -O0, control flow should nearly match source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with appropriate granularity. No inlining at -O0. Parameter counts match source (e.g., `sequential_ops(int a1, int a2, int a3)` has 3 params).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Switch statements have forward jumps but these are structurally necessary. Some nested conditions create moderate nesting depth.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. At -O0, no loop unrolling or common subexpression elimination should be present. Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most integers. Function pointers use verbose `__int64 (__fastcall *)(_QWORD)` instead of proper signatures. Some `unsigned int` for indices. At -O0, types should be more precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays like `dword_18D8[result]` and `unk_18F0` are recognized as indexed access. No struct recovery visible - all structures accessed as raw offsets. The matrix in `loop_multi_exit` is not reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer calls use unsafe `_QWORD` casting: `((__int64 (__fastcall *)(_QWORD))off_12D30[a1])(a2)`. Some pointer arithmetic visible. Not dangerous but not type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the header comment about IDA Pro decompilation present. No algorithm explanations, no recovery confidence indicators, no @param/@return documentation. The source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized (switch statements, loops) but not explicitly named or documented. State machine patterns in `state_machine` and `fsm_func_table` could be annotated. Duff's device is recognized but not identified by name.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed functions listed at end (`_setjmp`, `__libc_start_main`, etc.) but no inline warnings about uncertain decompilation. No flags for indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error conditions beyond return value -1. Source had test validation comments that are lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`recursion_factorial`, `double_value`, etc.). No documentation of who calls whom or global variable usage. Callback relationships in `process_with_callback` not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions together, helper functions near their callers. Static functions properly scoped. Reasonable file organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears syntactically correct. Would need standard library stubs (`printf`, `puts`, etc.) to compile standalone. No compiler-specific hacks visible.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: Parameters `a1`/`a2`/`a3` and locals `v1`/`v2`/`v3` are generic - should infer semantic names from usage (e.g., `temp1`, `temp2` from source)
+- **No comments**: Source had extensive documentation (test scenarios, expected values) completely lost in decompilation
+- **Type precision**: Function pointers use `_QWORD` instead of proper signatures, losing parameter type information
+- **No struct recovery**: Matrix data in `loop_multi_exit` accessed as raw offsets instead of struct fields
+- **No contract recovery**: Preconditions, postconditions, and invariants not documented
+
+### Best Quality Aspect: Function Naming (8/10)
+- Core function names match source exactly (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`)
+
+### Most Needs Improvement: Variable Naming & Comments (tied at 2-3/10)
+- At -O0 debug level, variable names should be meaningful, not generic indices
+- Comments are essential for understanding decompiled algorithms
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (arithmetic, indexing, conditions) to generate semantic names like `temp1`, `sum`, `count`
+2. **Add algorithm documentation**: When recovering complex patterns (Duff's device, state machines), add explanatory comments identifying the pattern
+3. **Recover function pointer types**: Instead of `__int64 (__fastcall *)(_QWORD)`, use actual function signature based on call targets (`int (*)(int)`)

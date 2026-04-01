@@ -1,0 +1,39 @@
+=== 测试基础调用约定 ===
+CALL-L1-01: 15
+CALL-L1-02: 50
+CALL-L1-03: 6
+CALL-L1-04: 15
+CALL-L1-05: 15
+CALL-L1-06: 100
+CALL-L1-07: 21
+CALL-L1-08: 15
+CALL-L1-09: 10
+CALL-L1-10: 33
+CALL-L2-06：varargs_func(5, 1-5) = 15
+CALL-L2-07：func_no_args() = 42
+CALL-L2-08：func_many_args(1-8) = 36
+CALL-L2-09：func_mixed_args(...) = 117
+CALL-L2-10：func_struct_byval(large) = 136
+CALL-L2-11：func_struct_byptr({5,10}) = 50
+=== 测试参数传递模式 ===
+PARAM-L1-01: 15
+PARAM-L1-02: 11
+PARAM-L2-01: 4
+PARAM-L2-02: 173
+PARAM-L2-03: 300
+PARAM-L2-04: 100
+PARAM-L3-01: 20
+PARAM-L3-02: 21
+PARAM-L3-03: 305419896
+PARAM-L3-04: 15
+PARAM-L3-05: 4
+=== 测试返回值处理 ===
+RET-L1-01: 42 (期望: 42)
+RET-L1-02: 20 (期望: 20)
+RET-L1-03: 7 (期望: 7)
+RET-L1-04: 215 (期望: 215)
+RET-L2-01: 10 (期望: 10)
+RET-L2-02: 100 (期望: 100)
+RET-L3-01: 40 (期望: 40)
+RET-L3-02: 60 (期望: 60)
+RET-L3-03: 21 (期望: 21)

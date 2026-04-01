@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of semantic names (e.g., `x`, `n`, `ptr`). Local variables are `v0`, `v1`, `v2`, `idx`, `ptr` - while some indicate usage, they lack the semantic clarity of source like `packet_size` or `buffer`. VLA variables show as `vvar_21{r56|8b}`, indicating VLA detection but poor naming.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - test functions like `test_stack_memory`, `heap_basic`, `local_vars` correctly recovered their names. However, many functions still use mechanical names like `sub_401020`, `sub_40102c`, `sub_401145` with no semantic meaning. The helper functions in the test harness are well-named, but bootstrap/initialization code remains cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used consistently for error returns but unexplained. Large initialization patterns like `0xf0e0d0c0b0a09080706050403020100` appear without context. String literals referenced via addresses like `&g_4025e9` rather than actual strings. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; no redundant casts from type promotions visible. Some decompiler-specific annotations like `[D] Unsupported jumpkind` and `[D] MBusEvent-Imbe_Fence()` present but don't significantly impede reading. Overall clean output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops properly recovered as `do-while` constructs matching source. However, `call_global_callback` uses problematic `goto global_func_ptr;` which is a computed goto pattern that doesn't translate well to C. At -O0, control flow should be nearly 1:1 with source, but some awkward patterns remain.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibility. The test functions properly call sub-functions. No 500-line monoliths observed. Parameter lists are reasonable - not exposing excessive implementation details. Good granularity matching source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error-checking code. Some nesting in complex functions like `linked_list_heap` but manageable. The code flows logically without severe disruption.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling present in `large_stack_frame` using 128-bit vector operations but this is appropriate for the 2KB buffer initialization. Common subexpressions handled reasonably. Clean code without significant duplication.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `void*` - mostly accurate but generic. Integer types lose signed/unsigned distinction in some places (e.g., `local_vars` returns `unsigned int` when source is `int`). Function pointers properly typed as `unsigned long long` rather than proper function signatures. Some type erosion from original.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is partial - uses `struct_0`, `struct_1`, `struct_2`, etc. with generic field names like `field_0`, `field_8`, `padding_4`. The source's `Point` struct was not recovered (appears as simple arithmetic in `local_struct`). Linked list `Node` recovered but with generic naming. Nested structures handled but lose semantic field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - pointer arithmetic in array indexing like `*((unsigned int *)((char *)ptr + 2 * idx))`. The `call_global_callback` uses `goto` with function pointer which is type-unsafe. However, most operations are reasonably safe with proper casting. No severe type safety violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output whatsoever. The source had extensive comments explaining test scenarios (e.g., "MEM-L1-01: 局部变量（基础类型）⭐"). Zero effort to explain algorithm logic, recovered structures, or non-obvious patterns. This severely impacts understandability.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns hinted but not explicitly named. Memory operations (malloc/free) recognized. Linked list traversal pattern present but not identified as such. Error handling patterns (NULL checks, early returns) present. No explicit pattern naming like "linked list" or "binary tree" despite code implementing these.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged - `[D] Unsupported jumpkind Ijk_SigTRAP` at one address, `[D] MBusEvent-Imbe_Fence()` for memory barriers. However, many suspicious patterns not flagged: the `dangling_pointer` function returns `*(ptr)` after `free(ptr)` - undefined behavior not indicated. The `double_free` pattern not flagged. Inconsistent anomaly detection.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. Source had input validation (e.g., `if (n <= 0 || n > 1000) return -1;`) but decompiled code shows the result without explaining the contract. Error return values (0xFFFFFFFF) not documented as "on error" or "invalid parameter". No invariant recovery.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: External functions declared as `extern` (e.g., `extern unsigned int extern_function(unsigned int a0);`). Global variables properly declared as `extern`. However, callback relationships not documented (e.g., `global_func_ptr` used as callback). Function call graph not explicit. Some relationships clear through naming, others require manual tracing.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - stack memory functions together, heap functions together, static/global functions together. Matches source organization of test sections. Static functions properly scoped. However, no header file structure or API boundaries indicated. Single flat output file.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library headers. External dependencies declared. Some stubs needed for undefined externs. No compiler-specific hacks. The code is reasonably portable. However, the computed goto `goto global_func_ptr;` will not compile in standard C - this is a critical build failure.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable naming**: Parameters `a0`, `a1`, `a2` and locals `v0`, `v1`, `v2` provide no semantic meaning - should infer names from usage like `x` → `packet_size`
+- **No comments**: Zero explanatory comments despite -O0 optimization level where source structure should be nearly perfectly recoverable
+- **Struct field loss**: `Point` struct not recovered; appears as arithmetic. Generic `struct_0`, `field_0` naming loses all semantic meaning
+- **Computed goto**: `call_global_callback` uses `goto global_func_ptr;` which is invalid C and won't compile
+- **Anomaly silent failure**: `dangling_pointer` returns `*(ptr)` after `free(ptr)` - undefined behavior not flagged
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are appropriately sized with clear single responsibility matching source organization. Test functions properly call sub-functions with reasonable parameter lists.
+
+### Most Needs Improvement: Comment Quality (2/10)
+At -O0 optimization, the decompiler should recover near-perfect code. The complete absence of comments severely impacts understandability, especially for complex patterns like linked lists, trees, and memory operations.
+
+### Top 3 Recommendations:
+1. **Add explanatory comments**: Document algorithm logic, recovered structures, and non-obvious patterns. At -O0, source comments should be nearly recoverable.
+2. **Improve variable naming**: Infer names from usage patterns - `a0` used in multiplication → `multiplier` or `x`. VLA variables should indicate purpose.
+3. **Recover struct semantics**: The `Point` struct and `Node` linked list should have meaningful field names, not `struct_0`, `field_0`. Detect common patterns and name them explicitly.

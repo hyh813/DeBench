@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` with zero semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result`, `target` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `nested_if_deep`, `recursion_factorial`), but several helper functions named `FUN_000112f5`, `FUN_00011455` are meaningless.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions print hex constants (`0x15`, `0x3e9`, `0x78`) instead of calling actual functions. Magic numbers throughout with no explanation of their purpose.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts (`__i686.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`) and redundant external function wrappers that call themselves.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `single_if` uses bit-shift `param_1 << (0 < param_1)` instead of clear if-statement. `loop_for_fixed` uses complex bit manipulation instead of simple loop. `if_elseif_chain` uses formula `param_1 * 10 + 10` instead of if-else chain.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions (`test_control_flow_l1/2/3`) are completely broken - they print constants instead of calling functions. Several `FUN_000xxxxx` functions appear to be incorrectly identified compiler artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but `duffs_device` uses goto labels appropriately while `infinite_loop` has bizarre repetitive if-statements that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `infinite_loop` and `loop_external_state` have 5+ repeated `if (*param_1 == 1)` checks. Test functions have redundant printf calls with hardcoded values instead of function calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `if_else` returns `bool` instead of `int`. `nested_if_deep` returns `byte` instead of `int`. Parameters inconsistently typed as `uint` vs `int`. Function pointers use generic `code *` type.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in original source, but `jmp_buf` referenced as `__jmp_buf_tag *`. Function pointer arrays recovered but with generic pointer names losing semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `call_func_ptr` takes `undefined4` instead of proper function signature. `large_jump_table` returns `undefined4`. `conditional_func_ptr` has void return instead of int. Multiple unsafe implicit casts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original source had extensive documentation explaining each function's purpose, difficulty level, and test cases - all completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device recovered with goto labels but not identified as such. State machine patterns, loop patterns, and recursion patterns not recognized or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Test functions confidently print wrong values without indicating the decompiler failed to recover actual function calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or test case documentation recovered. Original source's test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls shown but test functions don't actually call the functions they're testing. Global variables (`jump_buffer`, `DAT_00013691`) referenced without explanation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in one file matching original structure. Static functions properly identified. However, logical L1/L2/L3 grouping from source comments is lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External function stubs call themselves (`printf`, `puts`, `longjmp`). Code would not compile without significant modification to fix circular dependencies and undefined types.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+6+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+6+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.20/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects
+- **Test functions completely broken**: `test_control_flow_l1/2/3` print hardcoded constants instead of calling actual functions, making verification impossible
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information about variable purpose
+- **Control flow optimization obscures logic**: Simple if-else chains converted to mathematical formulas (`param_1 * 10 + 10`)
+- **Zero documentation**: No comments explaining function purpose, algorithm, or decompilation confidence
+- **Type mismatches**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names were preserved correctly, allowing identification of function purpose despite other issues
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding decompiled logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover test function calls**: Instead of constant folding test outputs, preserve actual function call relationships to enable verification
+2. **Infer semantic variable names**: Use data flow analysis to name variables based on usage patterns (e.g., loop counters, accumulators, flags)
+3. **Add decompilation confidence annotations**: Mark uncertain recoveries with comments like `// DECOMPILER UNCERTAIN: control flow may differ from source`

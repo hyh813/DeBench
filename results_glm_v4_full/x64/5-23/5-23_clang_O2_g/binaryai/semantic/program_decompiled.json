@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_clang_O2_g/binaryai/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "Testing preprocessing features...\n\n0x40\n0x1e\n0x20\n0xdf22\n0x74\n0x13\n0x3c\nLOG: Values: 10, 20, 30\n0x3c\n0x10\n500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:50\n0x17e\nTesting ASM features...\n\n0xf\n140735054275104\n0x2a\n0x24\n0x1e\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

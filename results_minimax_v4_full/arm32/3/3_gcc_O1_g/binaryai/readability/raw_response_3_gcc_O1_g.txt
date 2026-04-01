@@ -1,0 +1,139 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses purely mechanical variable names: `param_1`, `param_2` for parameters, and `iVar1`, `iVar2`, `uVar1`, `pvVar1`, `piVar1` for local variables. Stack variables use cryptic names like `local_14`, `local_34`, `local_180`. At -O0 with debug symbols, the decompiler should infer semantic names like `x`, `arr`, `n`, `result` from the original source. The naming provides no indication of variable purpose.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Function names are correctly preserved from the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `static_local`, `memop_memset`, etc. The decompiler successfully recovered the exact function names. Minor deduction for some internal functions like `call_weak_fn` which are compiler-generated but presented without context.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is littered with unexplained magic numbers: `0x2a` (42), `0x14` (20), `0xffffffff` (-1), `0x32` (50), `0x3c` (60), `0x1e` (30). String literals are replaced with `&DAT_000128a0` style references that are not human-readable. The decompiler makes no attempt to identify or name these constants. At -O0, these values should be recoverable from debug info.
+
+### 4. Noise Reduction
+**Score: 6/10**
+
+Some compiler artifacts present but manageable. The code includes stack check functions (`__stack_chk_fail`) that are compiler-inserted. Type casts like `(int *)((int)__ptr + -4)` are awkward but necessary for the decompiled representation. No significant dead code or debug instrumentation observed beyond what is expected from -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Control flow is mostly natural with do-while loops correctly identified. However, some loops use awkward pointer arithmetic patterns (e.g., `local_array`: `piVar1 = piVar1 + 1` inside do-while). The `vla_stack` and `alloca_usage` functions have complex stack frame setup that obscures the simple for-loop logic from the original source. At -O0, the original loop structures should be more faithfully recovered.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Functions are appropriately decomposed matching the original source. Each function has a single responsibility. The test functions (`test_stack_memory`, `test_heap_memory`) are slightly large but this matches the original. No inlining artifacts or over-fragmentation observed. Parameter lists are reasonable.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Code generally reads top-to-bottom. Early returns for error conditions (NULL checks) are present and appropriate. Some functions like `linked_list_heap` have complex nested loops but the logic is traceable. No excessive forward jumps or goto abuse.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Some loop unrolling present in array initialization patterns (e.g., `heap_basic`, `heap_array`) but it's the natural result of decompilation, not excessive. No obvious dead code. The test functions have repetitive patterns but that's expected from the source.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+The decompiler uses generic types extensively: `undefined4` for 32-bit values instead of `int`, `undefined` for bytes instead of `char`, `void*` for generic pointers. Function pointers are typed as `code *` rather than proper function signatures. At -O0 with debug info, types like `int`, `char`, `size_t` should be recoverable. The type precision is severely degraded.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+No struct types are recovered. The `Point` struct in `heap_struct` and `global_struct_access` is completely lost - just `malloc(8)` without struct context. The `Node` and `TreeNode` structures in linked list and tree functions are treated as raw memory (`malloc(8)`, `malloc(0xc)`) with manual field access via pointer arithmetic. The decompiler makes no attempt to reconstruct these composite types.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Moderate type safety issues: extensive use of `undefined4` creates ambiguity, pointer arithmetic like `(int *)((int)__ptr + -4)` is error-prone, and the `dangling_pointer` function returns `*__ptr` after free (undefined behavior) but there's no warning. Some casts are unsafe. The lack of `const` correctness throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+No comments whatsoever in the decompiled output. Zero explanation of algorithm logic, no documentation of preconditions/postconditions, no indication of what the functions do. This is a severe deficiency for a decompiler output.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Basic memory allocation patterns (malloc/free pairs) are recognizable. Some common patterns like linked list traversal are present but not explicitly identified or named. No design patterns or algorithms are explicitly labeled. The decompiler doesn't attempt to identify or document the patterns it recognizes.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly indication. The `dangling_pointer` function has clear undefined behavior (accessing freed memory) but there's no warning. The `double_free` function has obvious bugs but no flags. The `heap_overflow` function writes beyond allocated bounds but no indication. The decompiler presents everything as if it's correct code.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants documented. No error condition explanations. The NULL checks are present in the code but not explained as preconditions. No contract information recovered whatsoever.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are clear and traceable. Global variables like `global_counter`, `global_array`, `file_scope_static` are correctly identified. However, there's no documentation about who calls each function or the relationships between functions. The callback mechanism in `set_global_callback`/`call_global_callback` works but isn't explained.
+
+### 17. Module Organization
+**Score: 6/10**
+
+All functions in a single file, matching the original single-C-file structure. Functions are roughly ordered by category (stack, heap, static, memory ops, tests) but no logical grouping markers. Static functions aren't explicitly marked as file-scoped. The organization is adequate but could be improved with comments indicating sections.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code uses external function declarations that are appropriate. However, types like `undefined4`, `undefined`, `undefined4 *` would need to be replaced with standard C types (`int`, `char`, `int *`) for compilation. The `code *` function pointer type is non-standard. Some cleanup needed before compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 6) / 4 = 4.75
+L2_avg = (6 + 7 + 7 + 6) / 4 = 6.50
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 4 + 1 + 1) / 4 = 1.75
+L5_avg = (5 + 6 + 4) / 3 = 5.00
+
+Overall = (4.75 × 0.30) + (6.50 × 0.25) + (3.67 × 0.20) + (1.75 × 0.15) + (5.00 × 0.10)
+        = 1.425 + 1.625 + 0.734 + 0.2625 + 0.50
+        = 4.55/10
+```
+
+### Overall Readability Score: 4.55/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use mechanical names (`param_1`, `iVar1`, `local_14`) with no semantic meaning - at -O0 with debug info, these should be recoverable
+- **No struct recovery**: `Point`, `Node`, `TreeNode` structures completely lost; treated as raw memory allocations
+- **No comments**: Zero documentation or explanation of any function logic
+- **No anomaly indication**: Dangerous code patterns (dangling pointer, double free, heap overflow) presented without warnings
+- **Type precision**: Uses `undefined4`, `undefined`, `code *` instead of proper C types like `int`, `char`, function signatures
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names are correctly preserved from the original source, matching exactly: `double_value`, `local_vars`, `heap_basic`, `global_var_access`, etc. This is the strongest area of the decompilation.
+
+### Most Needs Improvement: Semantic Transparency (1.75/10)
+The combination of no comments, no idiom recognition, no anomaly indication, and no contract recovery makes the code extremely difficult to understand semantically. The decompiler provides zero context or guidance to the analyst.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from debug info**: At -O0 with `-g`, DWARF debug symbols contain variable names. The decompiler should use `x`, `arr`, `n`, `result` instead of `param_1`, `local_34`, `iVar1`.
+
+2. **Reconstruct struct/union types**: Analyze malloc sizes and field access patterns to recover composite types. `malloc(8)` followed by field accesses to offsets 0 and 4 should reconstruct `Point { int x; int y; }`.
+
+3. **Add semantic annotations**: Include comments explaining preconditions (e.g., "requires: ptr != NULL"), flagging undefined behavior (e.g., "WARNING: accessing freed memory"), and identifying patterns (e.g., "Linked list traversal").

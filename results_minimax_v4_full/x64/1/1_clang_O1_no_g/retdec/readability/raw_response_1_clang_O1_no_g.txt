@@ -1,0 +1,162 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+All parameters use generic names (a1, a2, a3, a4) and local variables use v1, v2, v3, etc. For example, `sequential_ops(int64_t a1, int64_t a2, int64_t a3)` should have meaningful names like `a, b, c`. The decompiled code provides no semantic information about variable purpose - completely unusable for analysis.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Most function names correctly match the original source (sequential_ops, single_if, if_else, loop_for_fixed, etc.). However, many functions have incorrect signatures with extra unused parameters (e.g., `single_if` takes 4 parameters instead of 1, `loop_while` takes 4 instead of 1). The core naming is preserved but parameter handling is broken.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Magic numbers like `0x66666667` (division by 10 magic number) and `0x100000000` (for multiplication) appear without explanation. The `& 0xffffffff` masks are compiler artifacts simulating 32-bit arithmetic. Some literals like `10 * a1 + 10` in if_elseif_chain are partially recoverable. The bitwise masks obscure the original arithmetic operations.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Significant noise from decompilation artifacts: internal function names (function_1030, function_1040), redundant type casts throughout, and the pervasive `& 0xffffffff` masks. However, no debug instrumentation or frame pointer manipulation. The noise level is moderate - manageable but distracting.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Basic control structures are recognizable: if-else chains, switch statements, and loops are present. However, many constructs are convoluted - for example, `single_if` uses an incomprehensible ternary expression instead of a simple if statement. The `goto_forward` function uses goto instead of proper structured control flow. At -O0, this level of control flow distortion is excessive.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Functions remain properly separated with reasonable granularity. No 500-line monoliths. However, some functions like `test_control_flow_l2` are quite large (300+ lines) and could benefit from decomposition. The parameter lists are often wrong (exposing implementation details), which is a significant issue.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Code generally reads top-to-bottom but has problematic goto statements. The `loop_multi_exit` function uses complex goto patterns with labels (`lab_0x1640`, `lab_0x16be`) that disrupt linear reading. Forward jumps into loop bodies are present. Some functions have acceptable linearity but others are quite poor.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+No obvious dead code. Loop unrolling is minimal. Common subexpression elimination artifacts are present but not severe (e.g., repeated `0x100000000 * a1 >> 32` calculations). The redundancy level is manageable for understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+
+Severe type degradation: all integers are `int64_t` when the original uses `int` (32-bit). Function parameters like `sequential_ops(int64_t a1, int64_t a2, int64_t a3)` should be `int a, int b, int c`. Return types are all `int64_t` instead of `int`. The original `int` types are completely lost, replaced with 64-bit types throughout.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Some structure recovery exists: `struct __jmp_buf_tag` is partially reconstructed with fields. However, most structures are not recovered - the code uses raw pointer arithmetic instead. The jmp_buf structure shows some recovery effort but is incomplete and uses generic field names (e0, e1, e2).
+
+### 11. Type Safety
+**Score: 6/10**
+
+The pervasive `& 0xffffffff` operations simulate 32-bit arithmetic within 64-bit types - technically type-safe within the decompilation context. However, the incorrect use of int64_t for everything creates potential overflow issues that wouldn't exist in the original. No unsafe pointer casts, but the type choices are problematic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Almost no useful comments. Only address range annotations like `// Address range: 0x1170 - 0x1178` are present. No explanation of algorithm logic, no recovery confidence indicators, no API contracts. The code is completely devoid of meaningful documentation.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Some patterns are recognizable: switch statements, basic loops, recursive functions. However, no explicit naming of patterns (e.g., "State machine pattern detected"). The ternary operator in `ternary_op` is completely obfuscated. Design patterns like state machines are not identified or labeled.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No warnings about suspicious code. The decompiled code presents everything as definitive fact. Indirect calls that couldn't be resolved are not flagged. Unusual patterns like the computed goto are not annotated. The code confidently presents potentially incorrect information without any uncertainty indicators.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No precondition, postcondition, or invariant documentation. Error conditions are not explicitly marked. The code provides no information about what inputs are valid or what guarantees the functions provide. This is a complete failure to recover semantic contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Function calls exist but relationships are unclear. Global variables (g1-g12) are declared but their usage across functions is not documented. Callback relationships (e.g., process_with_callback's function pointer parameter) are not explained. No call graph or usage documentation.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Functions are grouped somewhat logically (test functions together, helper functions together). However, the organization doesn't reflect the original source's clear separation by control flow pattern. Static functions are not properly scoped with internal linkage indicated. The grouping is arbitrary rather than semantic.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code includes necessary headers (stdio.h, stdlib.h, stdint.h, setjmp.h) and appears structurally compilable. However, function signature mismatches (wrong parameter counts) would cause linker errors. The code would require significant patching to compile and link correctly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 5) / 4 = 4.75
+L2_avg = (5 + 6 + 5 + 7) / 4 = 5.75
+L3_avg = (3 + 5 + 6) / 3 = 4.67
+L4_avg = (1 + 4 + 2 + 2) / 4 = 2.25
+L5_avg = (3 + 5 + 4) / 3 = 4.00
+
+Overall = (4.75 × 0.30) + (5.75 × 0.25) + (4.67 × 0.20) + 
+          (2.25 × 0.15) + (4.00 × 0.10)
+        = 1.425 + 1.4375 + 0.934 + 0.3375 + 0.4
+        = 4.53/10
+```
+
+**Overall Readability Score: 4.53/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming is completely unusable**: All parameters are `a1, a2, a3...` and locals are `v1, v2, v3...` - zero semantic information
+2. **Type precision severely degraded**: All `int` types replaced with `int64_t`, losing the original 32-bit semantics
+3. **Function signatures wrong**: Many functions have incorrect parameter counts (e.g., `single_if` has 4 params instead of 1, `loop_while` has 4 instead of 1)
+4. **No comments or documentation**: Zero useful comments explaining algorithms, contracts, or anomalies
+5. **Control flow obfuscation**: Simple constructs like `single_if` are rendered as incomprehensible ternary expressions
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - The decompiler preserved most original function names (sequential_ops, loop_for_fixed, recursion_factorial, etc.), which is the single most important readability factor. This makes it possible to locate specific functions in the decompiled output.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - The complete absence of meaningful comments is a severe gap. Combined with the poor variable naming, the code provides no guidance to analysts trying to understand the logic. Even basic explanations of what each function does would dramatically improve usability.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, comparisons, array indices) to suggest semantically meaningful names. For example, `a1 + a2` in sequential_ops suggests `addend1` and `addend2`.
+
+2. **Preserve original types at -O0**: At debug optimization level, types should exactly match source. The decompiler should output `int` not `int64_t`, and maintain original struct/union types.
+
+3. **Add algorithm comments and pattern recognition**: Include brief explanations of what each function does, identify design patterns (state machine, recursion, callback), and flag uncertain decompilations with confidence indicators.

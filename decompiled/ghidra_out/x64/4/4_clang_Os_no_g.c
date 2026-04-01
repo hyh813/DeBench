@@ -1,0 +1,1043 @@
+/*
+ * Decompiled by Ghidra 12.0
+ * Binary: /Users/eren/Desktop/Antigravity/compiler/build/x64/4/4_clang_Os_no_g
+ * Processor: x86
+ * Compiler Spec: gcc
+ */
+
+/* Function: _init @ 00101000 */
+
+int _init(EVP_PKEY_CTX *ctx)
+
+{
+  int iVar1;
+  
+  iVar1 = __gmon_start__();
+  return iVar1;
+}
+
+
+
+/* Function: FUN_00101020 @ 00101020 */
+
+void FUN_00101020(void)
+
+{
+  (*(code *)(undefined *)0x0)();
+  return;
+}
+
+
+
+/* Function: _start @ 00101070 */
+
+void processEntry _start(undefined8 param_1,undefined8 param_2)
+
+{
+  undefined1 auStack_8 [8];
+  
+  __libc_start_main(main,param_2,&stack0x00000008,0,0,param_1,auStack_8);
+  do {
+                    /* WARNING: Do nothing block with infinite loop */
+  } while( true );
+}
+
+
+
+/* Function: deregister_tm_clones @ 001010a0 */
+
+/* WARNING: Removing unreachable block (ram,0x001010b3) */
+/* WARNING: Removing unreachable block (ram,0x001010bf) */
+
+void deregister_tm_clones(void)
+
+{
+  return;
+}
+
+
+
+/* Function: register_tm_clones @ 001010d0 */
+
+/* WARNING: Removing unreachable block (ram,0x001010f4) */
+/* WARNING: Removing unreachable block (ram,0x00101100) */
+
+void register_tm_clones(void)
+
+{
+  return;
+}
+
+
+
+/* Function: __do_global_dtors_aux @ 00101110 */
+
+void __do_global_dtors_aux(void)
+
+{
+  if (completed_0 != '\0') {
+    return;
+  }
+  __cxa_finalize(__dso_handle);
+  deregister_tm_clones();
+  completed_0 = 1;
+  return;
+}
+
+
+
+/* Function: cdecl_func @ 0010115c */
+
+int cdecl_func(int param_1,int param_2)
+
+{
+  return param_1 + param_2;
+}
+
+
+
+/* Function: call_cdecl @ 00101160 */
+
+undefined8 call_cdecl(void)
+
+{
+  return 0xf;
+}
+
+
+
+/* Function: stdcall_func @ 00101166 */
+
+int stdcall_func(int param_1,int param_2)
+
+{
+  return param_1 * param_2;
+}
+
+
+
+/* Function: call_stdcall @ 0010116c */
+
+undefined8 call_stdcall(void)
+
+{
+  return 0x32;
+}
+
+
+
+/* Function: fastcall_func @ 00101172 */
+
+int fastcall_func(int param_1,int param_2,int param_3)
+
+{
+  return param_1 + param_2 + param_3;
+}
+
+
+
+/* Function: call_fastcall @ 00101178 */
+
+undefined8 call_fastcall(void)
+
+{
+  return 6;
+}
+
+
+
+/* Function: call_thiscall @ 0010117e */
+
+undefined8 call_thiscall(void)
+
+{
+  return 0xf;
+}
+
+
+
+/* Function: arm_aapcs_func @ 00101184 */
+
+int arm_aapcs_func(int param_1,int param_2,int param_3,int param_4,int param_5)
+
+{
+  return param_1 + param_2 + param_3 + param_4 + param_5;
+}
+
+
+
+/* Function: call_arm_aapcs @ 0010118f */
+
+undefined8 call_arm_aapcs(void)
+
+{
+  return 0xf;
+}
+
+
+
+/* Function: mips_func @ 00101195 */
+
+int mips_func(int param_1,int param_2,int param_3,int param_4)
+
+{
+  return param_1 + param_2 + param_3 + param_4;
+}
+
+
+
+/* Function: call_mips @ 0010119d */
+
+undefined8 call_mips(void)
+
+{
+  return 100;
+}
+
+
+
+/* Function: amd64_sysv_func @ 001011a3 */
+
+int amd64_sysv_func(int param_1,int param_2,int param_3,int param_4,int param_5,int param_6)
+
+{
+  return param_1 + param_2 + param_3 + param_4 + param_5 + param_6;
+}
+
+
+
+/* Function: call_amd64_sysv @ 001011b1 */
+
+undefined8 call_amd64_sysv(void)
+
+{
+  return 0x15;
+}
+
+
+
+/* Function: ms_x64_func @ 001011b7 */
+
+int ms_x64_func(int param_1,int param_2,int param_3,int param_4,int param_5)
+
+{
+  return param_1 + param_2 + param_3 + param_4 + param_5;
+}
+
+
+
+/* Function: call_ms_x64 @ 001011c2 */
+
+undefined8 call_ms_x64(void)
+
+{
+  return 0xf;
+}
+
+
+
+/* Function: vectorcall_func @ 001011c8 */
+
+int vectorcall_func(int param_1,int param_2,int param_3,int param_4)
+
+{
+  return param_1 + param_2 + param_3 + param_4;
+}
+
+
+
+/* Function: call_vectorcall @ 001011d0 */
+
+undefined8 call_vectorcall(void)
+
+{
+  return 10;
+}
+
+
+
+/* Function: mixed_conventions_test @ 001011d6 */
+
+undefined8 mixed_conventions_test(void)
+
+{
+  return 0x21;
+}
+
+
+
+/* Function: varargs_func @ 001011dc */
+
+int varargs_func(int param_1)
+
+{
+  int iVar1;
+  ulong uVar2;
+  int *piVar3;
+  uint local_d8;
+  int *local_d0;
+  int local_b8 [46];
+  
+  local_d0 = (int *)&stack0x00000008;
+  if (param_1 < 1) {
+    iVar1 = 0;
+  }
+  else {
+    iVar1 = 0;
+    local_d8 = 8;
+    do {
+      if (local_d8 < 0x29) {
+        uVar2 = (ulong)local_d8;
+        local_d8 = local_d8 + 8;
+        piVar3 = (int *)((long)local_b8 + uVar2);
+      }
+      else {
+        piVar3 = local_d0;
+        local_d0 = local_d0 + 2;
+      }
+      iVar1 = iVar1 + *piVar3;
+      param_1 = param_1 + -1;
+    } while (param_1 != 0);
+  }
+  return iVar1;
+}
+
+
+
+/* Function: func_no_args @ 00101281 */
+
+undefined8 func_no_args(void)
+
+{
+  return 0x2a;
+}
+
+
+
+/* Function: func_many_args @ 00101287 */
+
+int func_many_args(int param_1,int param_2,int param_3,int param_4,int param_5,int param_6,
+                  int param_7,int param_8)
+
+{
+  return param_1 + param_2 + param_3 + param_4 + param_5 + param_6 + param_7 + param_8;
+}
+
+
+
+/* Function: func_mixed_args @ 0010129d */
+
+int func_mixed_args(double param_1,int param_2,char *param_3,long param_4)
+
+{
+  int iVar1;
+  size_t sVar2;
+  
+  if (param_3 == (char *)0x0) {
+    iVar1 = 0;
+  }
+  else {
+    sVar2 = strlen(param_3);
+    iVar1 = (int)sVar2;
+  }
+  return (int)((double)param_4 + (double)(iVar1 + param_2) + param_1);
+}
+
+
+
+/* Function: func_struct_byval @ 001012de */
+
+long func_struct_byval(void)
+
+{
+  long lVar1;
+  long lVar2;
+  long lVar3;
+  
+  lVar2 = 0;
+  lVar3 = 0;
+  lVar1 = 0;
+  do {
+    lVar2 = lVar2 + *(long *)(&stack0x00000008 + lVar1 * 8);
+    lVar3 = lVar3 + *(long *)(&stack0x00000010 + lVar1 * 8);
+    lVar1 = lVar1 + 2;
+  } while (lVar1 != 0x10);
+  return lVar3 + lVar2;
+}
+
+
+
+/* Function: func_struct_byptr @ 0010130b */
+
+int func_struct_byptr(int *param_1)
+
+{
+  if (param_1 != (int *)0x0) {
+    return param_1[1] * *param_1;
+  }
+  return -1;
+}
+
+
+
+/* Function: test_calling_conventions @ 0010131d */
+
+void test_calling_conventions(void)
+
+{
+  uint uVar1;
+  long lVar2;
+  long lVar3;
+  long lVar4;
+  undefined1 auVar5 [16];
+  long local_88 [16];
+  
+  puts(&DAT_001023ca);
+  lVar2 = 0;
+  printf("CALL-L1-01: %d\n",0xf);
+  printf("CALL-L1-02: %d\n",0x32);
+  printf("CALL-L1-03: %d\n",6);
+  printf("CALL-L1-04: %d\n",0xf);
+  printf("CALL-L1-05: %d\n",0xf);
+  printf("CALL-L1-06: %d\n",100);
+  printf("CALL-L1-07: %d\n",0x15);
+  printf("CALL-L1-08: %d\n",0xf);
+  printf("CALL-L1-09: %d\n",10);
+  printf("CALL-L1-10: %d\n",0x21);
+  uVar1 = varargs_func(5,1,2,3,4,5);
+  printf(&DAT_00102120,(ulong)uVar1);
+  printf(&DAT_00102148,0x2a);
+  printf(&DAT_0010216a,0x24);
+  printf(&DAT_00102191,0x75);
+  lVar3 = 0;
+  lVar4 = 1;
+  auVar5._8_4_ = 0xffffffff;
+  auVar5._0_8_ = 0xffffffffffffffff;
+  auVar5._12_4_ = 0xffffffff;
+  do {
+    local_88[lVar2] = lVar3 + 1;
+    local_88[lVar2 + 1] = lVar4 - auVar5._8_8_;
+    lVar2 = lVar2 + 2;
+    lVar3 = lVar3 + 2;
+    lVar4 = lVar4 + 2;
+  } while (lVar2 != 0x10);
+  lVar3 = 0;
+  lVar4 = 0;
+  lVar2 = 0;
+  do {
+    lVar3 = lVar3 + local_88[lVar2];
+    lVar4 = lVar4 + local_88[lVar2 + 1];
+    lVar2 = lVar2 + 2;
+  } while (lVar2 != 0x10);
+  printf(&DAT_001021b9,lVar4 + lVar3);
+  printf(&DAT_001021e5,0x32);
+  return;
+}
+
+
+
+/* Function: param_by_value_int @ 001014e0 */
+
+int param_by_value_int(int param_1)
+
+{
+  return param_1 * 2;
+}
+
+
+
+/* Function: call_by_value_int @ 001014e4 */
+
+undefined8 call_by_value_int(void)
+
+{
+  return 0xf;
+}
+
+
+
+/* Function: param_by_value_ptr @ 001014ea */
+
+undefined8 param_by_value_ptr(int *param_1)
+
+{
+  *param_1 = *param_1 << 1;
+  return 1;
+}
+
+
+
+/* Function: call_by_value_ptr @ 001014f2 */
+
+undefined8 call_by_value_ptr(void)
+
+{
+  return 0xb;
+}
+
+
+
+/* Function: param_array_decay @ 001014f8 */
+
+undefined8 param_array_decay(void)
+
+{
+  return 8;
+}
+
+
+
+/* Function: call_array_decay @ 001014fe */
+
+undefined8 call_array_decay(void)
+
+{
+  return 8;
+}
+
+
+
+/* Function: param_string @ 00101504 */
+
+int param_string(char *param_1)
+
+{
+  return (int)param_1[1] + (int)*param_1;
+}
+
+
+
+/* Function: call_string_param @ 0010150e */
+
+undefined8 call_string_param(void)
+
+{
+  return 0xad;
+}
+
+
+
+/* Function: param_ptr_array @ 00101514 */
+
+int param_ptr_array(long param_1,uint param_2)
+
+{
+  int iVar1;
+  ulong uVar2;
+  
+  if (0 < (int)param_2) {
+    uVar2 = 0;
+    iVar1 = 0;
+    do {
+      iVar1 = iVar1 + **(char **)(param_1 + uVar2 * 8);
+      uVar2 = uVar2 + 1;
+    } while (param_2 != uVar2);
+    return iVar1;
+  }
+  return 0;
+}
+
+
+
+/* Function: call_ptr_array @ 00101533 */
+
+undefined8 call_ptr_array(void)
+
+{
+  return 300;
+}
+
+
+
+/* Function: param_varargs @ 00101539 */
+
+int param_varargs(int param_1)
+
+{
+  int iVar1;
+  ulong uVar2;
+  int *piVar3;
+  uint local_d8;
+  int *local_d0;
+  int local_b8 [46];
+  
+  local_d0 = (int *)&stack0x00000008;
+  if (param_1 < 1) {
+    iVar1 = 0;
+  }
+  else {
+    iVar1 = 0;
+    local_d8 = 8;
+    do {
+      if (local_d8 < 0x29) {
+        uVar2 = (ulong)local_d8;
+        local_d8 = local_d8 + 8;
+        piVar3 = (int *)((long)local_b8 + uVar2);
+      }
+      else {
+        piVar3 = local_d0;
+        local_d0 = local_d0 + 2;
+      }
+      iVar1 = iVar1 + *piVar3;
+      param_1 = param_1 + -1;
+    } while (param_1 != 0);
+  }
+  return iVar1;
+}
+
+
+
+/* Function: call_varargs_param @ 001015de */
+
+void call_varargs_param(void)
+
+{
+  param_varargs(4,10,0x14,0x1e,0x28);
+  return;
+}
+
+
+
+/* Function: param_func_ptr @ 001015ff */
+
+int param_func_ptr(code *param_1,undefined4 param_2)
+
+{
+  int iVar1;
+  
+  iVar1 = (*param_1)(param_2);
+  return iVar1 + 10;
+}
+
+
+
+/* Function: call_func_ptr_param @ 0010160c */
+
+undefined8 call_func_ptr_param(void)
+
+{
+  return 0x14;
+}
+
+
+
+/* Function: param_double_ptr @ 00101612 */
+
+undefined8 param_double_ptr(long *param_1,undefined4 param_2)
+
+{
+  undefined8 uVar1;
+  
+  uVar1 = 0xffffffff;
+  if ((param_1 != (long *)0x0) && ((undefined4 *)*param_1 != (undefined4 *)0x0)) {
+    *(undefined4 *)*param_1 = param_2;
+    *param_1 = 0;
+    uVar1 = 1;
+  }
+  return uVar1;
+}
+
+
+
+/* Function: call_double_ptr @ 00101633 */
+
+undefined8 call_double_ptr(void)
+
+{
+  return 0x15;
+}
+
+
+
+/* Function: param_complex_cast @ 00101639 */
+
+int param_complex_cast(int *param_1,int param_2)
+
+{
+  int iVar1;
+  
+  if (param_2 == 1) {
+    iVar1 = param_1[1] + *param_1;
+  }
+  else {
+    iVar1 = -1;
+    if (param_2 == 0) {
+      return *param_1;
+    }
+  }
+  return iVar1;
+}
+
+
+
+/* Function: call_complex_cast @ 00101650 */
+
+undefined8 call_complex_cast(void)
+
+{
+  return 0x12345678;
+}
+
+
+
+/* Function: param_struct_byval @ 00101656 */
+
+int param_struct_byval(void)
+
+{
+  int in_stack_00000008;
+  undefined8 in_stack_00000040;
+  
+  return in_stack_00000040._4_4_ + in_stack_00000008;
+}
+
+
+
+/* Function: call_struct_byval @ 0010165f */
+
+undefined4 call_struct_byval(void)
+
+{
+  return 0xf;
+}
+
+
+
+/* Function: param_order_dep @ 00101680 */
+
+int param_order_dep(int param_1,int param_2)
+
+{
+  return param_1 + param_2;
+}
+
+
+
+/* Function: call_order_dep @ 00101684 */
+
+undefined8 call_order_dep(void)
+
+{
+  return 3;
+}
+
+
+
+/* Function: test_parameter_passing @ 0010168a */
+
+void test_parameter_passing(void)
+
+{
+  uint uVar1;
+  
+  puts(&DAT_001023eb);
+  printf("PARAM-L1-01: %d\n",0xf);
+  printf("PARAM-L1-02: %d\n",0xb);
+  printf("PARAM-L2-01: %d\n",8);
+  printf("PARAM-L2-02: %d\n",0xad);
+  printf("PARAM-L2-03: %d\n",300);
+  uVar1 = param_varargs(4,10,0x14,0x1e,0x28);
+  printf("PARAM-L2-04: %d\n",(ulong)uVar1);
+  printf("PARAM-L3-01: %d\n",0x14);
+  printf("PARAM-L3-02: %d\n",0x15);
+  printf("PARAM-L3-03: %d\n",0x12345678);
+  printf("PARAM-L3-04: %d\n",0xf);
+  printf("PARAM-L3-05: %d\n",3);
+  return;
+}
+
+
+
+/* Function: ret_basic_type @ 001017a6 */
+
+int ret_basic_type(int param_1)
+
+{
+  return param_1 * 2;
+}
+
+
+
+/* Function: call_ret_basic @ 001017aa */
+
+undefined8 call_ret_basic(void)
+
+{
+  return 0x2a;
+}
+
+
+
+/* Function: ret_pointer @ 001017b0 */
+
+long ret_pointer(long param_1)
+
+{
+  return param_1 + 4;
+}
+
+
+
+/* Function: call_ret_pointer @ 001017b5 */
+
+undefined8 call_ret_pointer(void)
+
+{
+  return 0x14;
+}
+
+
+
+/* Function: ret_small_struct @ 001017bb */
+
+ulong ret_small_struct(uint param_1,long param_2)
+
+{
+  return (ulong)param_1 | param_2 << 0x20;
+}
+
+
+
+/* Function: call_ret_small_struct @ 001017c5 */
+
+undefined8 call_ret_small_struct(void)
+
+{
+  return 7;
+}
+
+
+
+/* Function: ret_large_struct @ 001017cb */
+
+void ret_large_struct(long param_1,int param_2)
+
+{
+  int *piVar1;
+  long lVar2;
+  int iVar3;
+  int iVar4;
+  int iVar5;
+  int iVar6;
+  
+  iVar3 = 0;
+  iVar4 = 1;
+  iVar5 = 2;
+  iVar6 = 3;
+  lVar2 = 0;
+  do {
+    piVar1 = (int *)(param_1 + lVar2 * 4);
+    *piVar1 = iVar3 + param_2;
+    piVar1[1] = iVar4 + param_2;
+    piVar1[2] = iVar5 + param_2;
+    piVar1[3] = iVar6 + param_2;
+    lVar2 = lVar2 + 4;
+    iVar3 = iVar3 + 4;
+    iVar4 = iVar4 + 4;
+    iVar5 = iVar5 + 4;
+    iVar6 = iVar6 + 4;
+  } while (lVar2 != 0x10);
+  return;
+}
+
+
+
+/* Function: call_ret_large_struct @ 00101805 */
+
+undefined4 call_ret_large_struct(void)
+
+{
+  return 0xd7;
+}
+
+
+
+/* Function: func_a @ 00101826 */
+
+int func_a(int param_1)
+
+{
+  return param_1 + 10;
+}
+
+
+
+/* Function: func_b @ 0010182a */
+
+int func_b(int param_1)
+
+{
+  return param_1 * 2;
+}
+
+
+
+/* Function: ret_func_ptr @ 0010182e */
+
+code * ret_func_ptr(int param_1)
+
+{
+  code *pcVar1;
+  
+  pcVar1 = func_b;
+  if (param_1 == 0) {
+    pcVar1 = func_a;
+  }
+  return pcVar1;
+}
+
+
+
+/* Function: call_ret_func_ptr @ 00101843 */
+
+undefined8 call_ret_func_ptr(void)
+
+{
+  return 10;
+}
+
+
+
+/* Function: ret_opaque_handle @ 00101849 */
+
+undefined8 * ret_opaque_handle(int param_1)
+
+{
+  undefined8 *puVar1;
+  
+  puVar1 = &ret_opaque_handle_handle2;
+  if (param_1 == 0) {
+    puVar1 = (undefined8 *)&ret_opaque_handle_handle1;
+  }
+  return puVar1;
+}
+
+
+
+/* Function: call_ret_opaque @ 0010185e */
+
+undefined4 call_ret_opaque(void)
+
+{
+  return ret_opaque_handle_handle1;
+}
+
+
+
+/* Function: ret_complex_expr @ 00101865 */
+
+int ret_complex_expr(int param_1,int param_2,int param_3)
+
+{
+  int iVar1;
+  
+  iVar1 = param_3 + 10;
+  if (param_2 < param_1) {
+    iVar1 = param_3 * 2;
+  }
+  return iVar1;
+}
+
+
+
+/* Function: call_ret_complex_expr @ 00101871 */
+
+undefined8 call_ret_complex_expr(void)
+
+{
+  return 0x28;
+}
+
+
+
+/* Function: ret_multi_branch @ 00101877 */
+
+int ret_multi_branch(uint param_1)
+
+{
+  int iVar1;
+  
+  iVar1 = -1;
+  if (param_1 < 3) {
+    iVar1 = param_1 * 10 + 10;
+  }
+  return iVar1;
+}
+
+
+
+/* Function: call_ret_multi_branch @ 0010188a */
+
+undefined8 call_ret_multi_branch(void)
+
+{
+  return 0x3c;
+}
+
+
+
+/* Function: ret_void @ 00101890 */
+
+void ret_void(int param_1,int *param_2)
+
+{
+  *param_2 = param_1 * 3;
+  return;
+}
+
+
+
+/* Function: call_ret_void @ 00101896 */
+
+undefined8 call_ret_void(void)
+
+{
+  return 0x15;
+}
+
+
+
+/* Function: test_return_values @ 0010189c */
+
+void test_return_values(void)
+
+{
+  puts(&DAT_0010240c);
+  printf(&DAT_001022cd,0x2a);
+  printf(&DAT_001022e9,0x14);
+  printf(&DAT_00102305,7);
+  printf(&DAT_00102320,0xd7);
+  printf(&DAT_0010233d,10);
+  printf(&DAT_00102359,(ulong)ret_opaque_handle_handle1);
+  printf(&DAT_00102376,0x28);
+  printf(&DAT_00102392,0x3c);
+  printf(&DAT_001023ae,0x15);
+  return;
+}
+
+
+
+/* Function: main @ 00101975 */
+
+undefined8 main(void)
+
+{
+  test_calling_conventions();
+  test_parameter_passing();
+  test_return_values();
+  return 0;
+}
+
+
+
+/* Function: _fini @ 0010198c */
+
+void _fini(void)
+
+{
+  return;
+}
+
+
+
+/* Total functions decompiled: 77 */

@@ -1,0 +1,145 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use generic single-letter names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `a1`, `a2`, `a3`) that provide no semantic meaning. For example, in `test_cpp_member_func`, the variable `dest` is reasonable, but in `test_cpp_rtti`, variables `v0` through `v7` are completely opaque about their purposes (object pointers, type info, result values).
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most test functions have excellent names matching the source exactly (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`). C++ name mangling is preserved, enabling correlation with source. Minor deduction needed for internal helper functions like `sub_1470`.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x1F` (31 for strncpy), `0x14` (20 for allocation), and `4700` appear without explanation. The value `21` is used in multiple functions but its origin (21 = 10 + 1 + 10 from source) is not documented. Some values like `0x1234` are inferable from context.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts present. Thunk functions (e.g., `` `non-virtual thunk to'MultiDerived::funcB``) are necessary for virtual dispatch accuracy. The `JUMPOUT` macro indicates external calls. No redundant casts or debug instrumentation clutter the code.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most functions have natural control flow matching source logic. At -O0, loops and conditionals are preserved well. The `test_cpp_exception` function correctly shows `__noreturn` behavior when throwing. Minor awkwardness in virtual function setup code where vtable addresses are manually assigned.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Excellent decomposition - each test function is separate, member functions are properly extracted, and template instantiations are distinct functions (`template_max<int>`, `template_max<double>`). Function granularity is appropriate with clear single responsibilities.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. No goto statements or spaghetti code patterns. The flow is easy to trace for most functions.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal at -O0. Common subexpression elimination is not excessive. Code is clean without duplicate logic blocks.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Generic `int` used throughout instead of more specific types like `int32_t` or `size_t`. Function pointer types are reasonably accurate (e.g., `__int64 (__fastcall ***)(_QWORD)` for vtable). Some type erosion - `char*` used where `const char*` would be more accurate. Signed/unsigned mostly correct.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Classes are reconstructed with member functions properly associated. Virtual tables shown as `off_XXXXX` addresses. However, internal struct layouts are not recovered - fields accessed via raw offsets (e.g., `*(_DWORD *)(result + 40)` for Container<int>::size). Base class offsets in multiple inheritance not clearly documented.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Mostly type-safe code with necessary casts for vtable manipulation. Pointer arithmetic is explicit but correct. No obvious buffer overflow patterns. Some unsafe-looking code in virtual function thunks but functionally necessary.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: No explanatory comments in any function. The only comments are decompiler headers and "attributes: thunk" markers. Complex virtual function logic (especially diamond inheritance) has no comments explaining the vtable/thunk mechanics. No documentation of what values like `21` or `4700` represent.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Virtual function dispatch is visible through vtable access patterns, but not explicitly labeled as "vtable dispatch." Template instantiation is recognized as separate functions. Exception handling mechanism is partially shown but not fully explained. Some C++ patterns are recoverable but not named.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Failed decompilations are listed at the end (25 functions). Thunk functions are clearly labeled with backticks. However, no warnings for uncertain indirect calls or potential undefined behavior. No flags for complex virtual inheritance calculations that require manual verification.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. No indication of what parameters require (e.g., non-null pointers). Error conditions not documented. The decompiler provides no contract information.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear through direct calls. Virtual dispatch is visible through vtable addresses. Static member function calls (`SimpleClass::getClassID()`) are properly shown. However, no explicit documentation of call graphs or caller/callee relationships.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - test functions together, member functions by class, template instantiations grouped. Static functions are properly scoped. Minor issue: some internal functions like `call_weak_fn` could be better organized.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: The code uses standard C++ constructs and would compile with moderate fixes. External dependencies (libstdc++, libc) are implicit but not documented. 25 functions failed to decompile, creating gaps. Some stub functions would be needed for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 7) / 4 = 5.50
+L2_avg = (7 + 8 + 8 + 8) / 4 = 7.75
+L3_avg = (6 + 6 + 7) / 3 = 6.33
+L4_avg = (3 + 5 + 5 + 2) / 4 = 3.75
+L5_avg = (7 + 7 + 5) / 3 = 6.33
+
+Overall = (5.50 × 0.30) + (7.75 × 0.25) + (6.33 × 0.20) + (3.75 × 0.15) + (6.33 × 0.10)
+        = 1.65 + 1.94 + 1.27 + 0.56 + 0.63
+        = 6.05/10
+```
+
+### Overall Readability Score: 6.05/10
+
+---
+
+### Critical Defects
+
+- **Variable naming**: Generic names like `v0`, `v1`, `v2`, `a1`, `a2` make it nearly impossible to track data flow without extensive reverse-engineering
+- **No comments**: Complex C++ mechanisms (virtual functions, diamond inheritance, RTTI) have zero explanatory comments
+- **Type precision loss**: All variables default to `int` or `__int64` instead of more specific types like `size_t`, `uint32_t`
+- **Composite type erosion**: Struct/class fields accessed via raw offsets (`*(_DWORD *)(result + 40)`) losing field names
+- **No contract recovery**: Preconditions, postconditions, and invariants are completely absent
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - The decompiler excellently separates each test function, member function, and template instantiation into distinct functions with appropriate granularity. This makes the code structure highly maintainable.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The use of single-letter generic variables (`v0`-`v7`, `a1`-`a8`) is the most severe readability issue. These should be inferred from usage patterns (e.g., `v0` used as object pointer → `obj_ptr`, `v4` used as counter → `count`).
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names. `v0` used in `strlen()` → suggest `str` or `string_buffer`.
+
+2. **Add explanatory comments for C++ mechanisms**: Document virtual function dispatch, vtable layout, multiple inheritance offsets, and RTTI operations. Example: `// Virtual dispatch via vtable at offset 0`
+
+3. **Recover struct/class field names**: Instead of `*(_DWORD *)(result + 40)`, infer field names from constructor initializations and usage patterns to produce `result->size`.
+
+4. **Document magic numbers**: When a constant appears multiple times or matches known patterns (array sizes, flags), suggest named constants. `21` appears as `1 + 10 + 10` in source → document as `instance_count + getData(2) + getInstanceCount()*1000`.

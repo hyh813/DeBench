@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_O0_no_g/ghidra/syntactic/bin/5-23_gcc_O0_no_g_fixed",
+  "stdout": "=== Preprocessing Features ===\n\nMacro constants: 0x40\nMacro functions: 30\nConditional compile: 32\nMulti branch: 57122\nMacro recursion: 116\nStringize: 19\nToken paste: 60\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

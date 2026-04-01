@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 3,
+  "source_file": "decompiled/retdec_out/arm32/5-23/5-23_gcc_O3_g.c",
+  "fixed_file": "results_glm_v4_full/arm32/5-23/5-23_gcc_O3_g/retdec/syntactic/fix_5-23_gcc_O3_g.c"
+}

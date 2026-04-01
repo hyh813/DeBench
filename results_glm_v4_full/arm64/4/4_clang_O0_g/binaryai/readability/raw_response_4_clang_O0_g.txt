@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`param_1`, `local_40`, `local_20`), losing semantic meaning like `sum`, `count`, or `seed` found in the source. While `a` and `b` in source were also short, the decompiler's `local_40[1]` for an accumulator is significantly harder to track.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered (e.g., `cdecl_func`, `test_calling_conventions`), matching the source exactly. This is likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with opaque pointers to data sections (e.g., `&DAT_00101dc0` instead of `"=== 测试基础调用约定 ===\n"`), severely impacting readability. Magic numbers like `0x12345678` are preserved but not explained.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but `varargs_func` contains significant noise with references to `register0x00000008` and complex pointer arithmetic that obscures the simple `va_list` logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent, matching the source's `for` loops and `if-else` structures perfectly. This is expected with `-O0` optimization, which preserves the original structure without aggressive transformations.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. However, parameter ordering in `func_mixed_args` is incorrect (listing the double/float register first instead of argument order), which slightly degrades the interface clarity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. Early returns and loop structures are preserved naturally, making execution paths easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No redundant code or dead stores are present. The logic is direct and concise, reflecting the unoptimized nature of the binary while remaining readable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Basic types are mostly correct, but `undefined8` and `undefined4` are used where specific integer types were expected (e.g., `func_no_args` returns `undefined8` instead of `int`). The parameter reordering in mixed-type functions is a significant precision error.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost. `func_struct_byval` accepts a `long` (pointer) and accesses data via raw pointer arithmetic (`*(long *)(param_1 + (long)local_c * 8)`) instead of array indexing `s.data[i]`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The decompiled code relies on unsafe casts and pointer arithmetic for struct access and varargs handling (e.g., casting a register to `int*`), which obscures the memory safety boundaries of the original code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or the purpose of complex pointer manipulations. Only standard decompiler headers are present.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like `va_list`/`varargs` are not recognized; instead, the decompiler shows manual stack walking and register access. Struct iteration is also not recognized as an idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The suspicious `register0x00000008` access in `varargs_func` and the raw pointer arithmetic for structs are presented as normal code without any warnings or flags indicating potential decompiler uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the non-null requirement for `func_struct_byptr` is not explicitly stated in the decompiled view.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct names (e.g., `cdecl_func`, `printf`), making the call graph clear and easy to navigate.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order (mostly address order, which correlates with source order here), and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: While the structure is valid, the reliance on `DAT_` references for strings and missing struct definitions would require significant patching to compile the decompiled output standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable `local_40[1]` should be named `sum` based on its accumulation role.
+- String literals are replaced with pointers like `&DAT_00101dc0`, obscuring output messages.
+- Struct parameters in `func_struct_byval` are accessed via raw pointer arithmetic instead of field names.
+- The `varargs` implementation is shown as manual register hacking rather than `va_list` usage.
+- Parameter order in `func_mixed_args` is incorrect (floating-point arg listed first).
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)
+- The unoptimized compilation allowed the decompiler to perfectly preserve loops and conditionals, making the logic easy to trace despite poor naming.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The decompiler fails to recognize standard C idioms (varargs, structs) and provides no comments or warnings, leaving the user to decipher complex pointer arithmetic manually.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement specific pattern matching for `va_list`/varargs to generate cleaner code instead of exposing register access.
+2. Recover string literals from the data section and inline them into the function pseudo-code.
+3. Improve type recovery for structs passed by value to reconstruct field access syntax (`s.data[i]`) rather than pointer offsets.

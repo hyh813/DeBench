@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_18`, `local_c`, `iVar1` instead of semantic names like `dst`, `src`, `fd`, `pid`. Original `buffer[32]` becomes `auStack_28[32]` losing all meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names largely preserved from source (`param_strcpy`, `thread_compute`, `consumer_thread`, `producer_thread`). External functions marked `<EXTERNAL>::` which is informative.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex obscure meaning: `0x2a` (42), `0xffffffff` (-1), `0x42` ('B' character). String literals preserved well ("HelloLib", "/etc/passwd") but error codes lose semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs add noise (each just calls itself). Redundant casts throughout (`(int *)`, `(void *)`). `SCARRY4` signed carry checks and `undefined4` types are compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as for/while but signal handling uses `while(true)` with manual break instead of natural condition. At -O0, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Thread functions properly separated. Some return `undefined4` instead of proper types but structure is preserved.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Forward references to data (`&DAT_000133fd`) disrupt flow slightly. Nested conditionals are clear and traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: External function wrapper stubs are completely redundant. `SCARRY4` checks add verbosity. No obvious dead code in main logic but type casts repeat unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many `undefined4` types instead of `int`. `param_strchr_strstr` uses `byte param_2` for char parameter. `size_t` sometimes preserved, sometimes `uint`. Return types often generic.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `stat` struct recovered with `st_size` field. `ThreadData` struct NOT recovered—uses array indexing (`param_1[2]`, `param_1[0]`). `sockaddr` partially recovered as byte array access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int *)`, `(void *)`, `(char *)`. Pointer arithmetic with int casts: `(int)param_1 + local_1c`. Thread function signatures wrong (consumer_thread takes no params but should take `void*`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining purpose. No decompiler confidence indicators or algorithm explanations anywhere.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (strcpy, strcmp). Producer-consumer pattern NOT identified. Signal handling pattern not named. No design pattern recognition at all.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings present. Thread function signature mismatches not flagged. External function stubs not explained. No indication of decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. Error return values (-1, -2, -3) meanings lost. No postconditions inferred. No invariant recognition for shared variables.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. External functions grouped at top. Test functions grouped together. Static variables not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies listed (pthread, libc). Some type issues (`undefined4`) would need fixing but structure is compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3 + 8 + 5 + 5) / 4 = 5.25
+L2 Average: (6 + 7 + 7 + 6) / 4 = 6.50
+L3 Average: (5 + 4 + 4) / 3 = 4.33
+L4 Average: (2 + 4 + 3 + 2) / 4 = 2.75
+L5 Average: (5 + 6 + 7) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (4.33 × 0.20) + (2.75 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.625 + 0.866 + 0.413 + 0.600
+        = 5.08/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- Variable `param_1`, `param_2` should be named `dst`, `src` based on strcpy usage pattern
+- `local_c`, `local_18` obscure their roles as return values and loop counters
+- Magic numbers `0x2a`, `0xffffffff` should be `42`, `-1` for readability
+- ThreadData struct not recovered—uses opaque array indexing `param_1[2]` instead of `data->result`
+- Zero comments despite complex concurrency logic (mutex, condition variables, atomics)
+- External function stubs add 60+ lines of noise (each just calls itself)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, making it easy to identify purpose of each routine
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes complex concurrency patterns extremely difficult to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - `param_1` used as destination in strcpy should be `dst`, loop counters should be `i`, `j`
+2. **Recover struct definitions from access patterns** - `param_1[0]`, `param_1[1]`, `param_1[2]` access pattern indicates ThreadData struct with start/end/result fields
+3. **Add semantic comments for concurrency primitives** - Mutex locks, condition waits, and atomic operations need explanation of synchronization intent

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are generic (`a1`, `a2`) and local variables are auto-generated (`v2`, `v3`), providing no semantic hint about their purpose (e.g., `x`, `sum`, `i` in source).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols (e.g., `double_value`, `process_char`, `array_1d_stack`), matching the source exactly and clearly indicating intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `64`, `90`, and `32` are used directly instead of character constants `'A'`, `'Z'`, or `32`, and stack canary offsets like `0x14u` appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Stack canary checks (`__readgsdword(0x14u)`) are present in almost every function, cluttering the logic and obscuring the actual algorithmic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent due to `-O0` compilation; loops are preserved as `for` loops and conditionals as `if/else`, matching the source structure perfectly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original modular design and granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: Code reads linearly from top to bottom with minimal jumps; the structure is straightforward and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code typical of higher optimizations; the verbosity comes from stack operations rather than logical redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `char`, `float`) are correct, but pointers are often typed as `_DWORD *` (unsigned int) rather than `int *`, and `long` is demoted to `int` (32-bit) due to x86 architecture differences.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `struct_simple` accesses fields via array indexing (`a1[0]`, `a1[1]`) instead of member names (`p->x`, `p->y`), and bitfields are reduced to manual shift/mask operations.
+
+**11. Type Safety:** Score: 6/10
+Justification: While pointer arithmetic is explicit, the heavy use of raw casts like `*(_DWORD *)(4 * i + a1)` is error-prone and lacks the safety of the original array/struct notation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Only auto-generated headers are present; there are no comments explaining logic, algorithms, or the purpose of complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like string length calculation or summation are recognizable via the control flow, but they are not explicitly identified or labeled (e.g., no "strlen" pattern recognition).
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the stack canary code or the loss of struct definitions; it presents the raw, noisy output as confident code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred or documented (e.g., no indication that `array_1d_stack` requires a valid pointer).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and use the correct names, making the call graph easy to understand despite the lack of comments.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, appearing in the same relative order as the source, which aids in navigating the file.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on compiler-specific types like `_DWORD` and intrinsics like `__readgsdword`, preventing it from compiling without significant modification or specific headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic and array indexing (e.g., `a1[1]` instead of `p->y`).
+- Stack canary instrumentation (`__readgsdword`) pollutes every function, significantly adding noise.
+- Variable names are entirely generic (`a1`, `v2`), stripping away semantic meaning present in the source.
+- Bitfields are manually deconstructed into shift and mask operations, obscuring the original `Flags` struct logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Why? The decompiler perfectly preserved the original function symbols, making the high-level purpose of every block immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- Why? The failure to reconstruct `Point3D`, `Rect`, or `Flags` structures turns readable data access into obscure pointer math, which is the biggest barrier to understanding the data manipulation logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement structure recovery based on access patterns (e.g., consecutive `a1[0]`, `a1[1]`, `a1[2]` accesses should suggest a struct).
+2. Detect and abstract stack canary checks (guard variables) into a macro or hide them by default to reduce noise.
+3. Map compiler-specific types like `_DWORD` to standard C types (`uint32_t`) or the original signed types (`int`) to improve portability and readability.

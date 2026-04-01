@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `local_10`, `local_14`) and lack semantic meaning; for example, in `param_macro_functions`, `local_10` holds the maximum value but is not named `max_val` or similar.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols (e.g., `param_macro_constants`, `param_asm_basic`), matching the source exactly and clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Macro constants are fully expanded into magic numbers, obscuring intent; `MAX_SIZE` (1024) appears as `0x401`, `BUFFER_COUNT * 4` (64) appears as `0x40`, and `0xdef0` appears without context.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is clean with minimal compiler artifacts; however, casts like `(ulong)param_1` in `printf` calls are slightly verbose but acceptable for `-O0`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: Control flow is perfectly natural, using standard `if`, `for`, and `return` statements that match the source structure exactly, as expected with `-O0` optimization.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are preserved 1:1 with the source; there is no inlining or outlining, and each function maintains its original responsibility.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom with no confusing jumps or goto statements, making execution paths extremely easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code; the logic is direct and concise, though the macro expansion in `param_macro_recursion` results in a simple addition `param_1 + 0x10` rather than showing the recursive structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are generally correct but imprecise; `int` is often recovered as `undefined4`, and `size_t` is recovered as `ulong` or `undefined8`, losing the specific semantic distinction.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Stack-allocated arrays are flattened into individual variables (e.g., `uStack_28`, `local_30` in `call_asm_clobber`) rather than being reconstructed as an array `int arr[5]`.
+
+**11. Type Safety:** Score: 9/10
+Justification: The code is type-safe with no dangerous or confusing pointer arithmetic; the casts present are mostly standard conversions for variadic functions like `printf`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are absolutely no comments in the decompiled output; the rich documentation explaining macro behaviors and assembly logic in the source is completely absent.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `memcpy`, `printf`, and `mmap` are recognized, but the specific macro idioms (token pasting, stringification) and assembly patterns are lost, reduced to simple arithmetic or C fallbacks.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No anomalies are flagged; the decompiler presents the ARM64 fallback code for x86 inline assembly blocks silently, which might confuse a user expecting x86 instructions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred; for example, the contract that `param_dynamic_code` requires executable memory allocation is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand; global variable usage (like `global_var`) is also explicit.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code would require patching to compile (replacing `undefined4` with `int`, `undefined8` with `void*`/`size_t`) and handling the hardcoded string literals generated from macros.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Macro constants are expanded into magic numbers (e.g., `0x401` instead of `MAX_SIZE`), completely losing the named constant semantics.
+- Local variables use generic names (`local_10`, `param_1`) instead of semantic names from the source or debug info.
+- Stack-allocated arrays are destructured into separate scalar variables (e.g., in `call_asm_clobber`), obscuring the data structure.
+- Stringification and token-pasting macros are reduced to hardcoded literals and direct function calls, hiding the preprocessor logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Ghidra perfectly recovered all function names from the debug symbols, making the high-level flow trivial to follow.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- The expansion of all macros into magic numbers makes understanding the underlying logic and constants extremely difficult compared to the readable source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement constant propagation analysis to suggest named constants for magic numbers found in comparisons or arithmetic (e.g., suggest `MAX_SIZE` for `0x400`).
+2. Improve local variable naming by leveraging debug symbols (DWARF) more aggressively or inferring names from usage context (e.g., `max_val` for a variable storing a maximum).
+3. Detect and reconstruct stack arrays from contiguous stack variable accesses to preserve composite data structures instead of flattening them.

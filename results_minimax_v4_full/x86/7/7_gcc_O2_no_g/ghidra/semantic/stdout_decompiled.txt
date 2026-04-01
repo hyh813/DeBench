@@ -1,0 +1,8 @@
+Testing obfuscation optimizations:
+
+param_opaque_predicate: 10
+call_opaque_predicate: 20
+call_instruction_substitution: 225
+param_string_encryption returned: 100
+param_tail_call_optimized: 500500
+call_non_tail_call: 5050

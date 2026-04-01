@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `v4`, `v5`, `v6` in `param_asm_clobber` and `param_memory_protection` are generic numbered names. Only `result`, `arr`, `n` have meaningful names. The decompiler failed to infer semantic meaning from usage patterns (e.g., `v4 = arr - 1` suggests `arr_start`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`. Only startup functions like `sub_10438` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `57072` used instead of `0xDEF0` (the hex constant from source). Constant `30` for `sysconf(_SC_PAGESIZE)` is unexplained. However, values like `64`, `512`, `1024` are correctly propagated from macro expansion.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. The atomic operation library functions (`__sync_fetch_and_add_4`) are correctly identified as library stubs. No redundant casts or debug instrumentation present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are properly recognized as do-while constructs (e.g., `param_asm_clobber` uses `do { ... } while (v5 != v4)`). Conditionals are clear if-else structures. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. The 1348 LOC output vs 709 LOC source reflects library functions and some expansion, but core functions like `param_macro_constants` (3 lines) and `param_asm_clobber` (15 lines) are well-decomposed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `param_asm_clobber` loop is straightforward. Some complexity in `call_asm_privileged` with nested conditionals, but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The atomic operation library functions show loop unrolling patterns but these are compiler-provided library functions, not decompilation artifacts.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most values. `size_t` correctly used for memory sizes. `_DWORD` is IDA notation for 32-bit integers. Pointer types are imprecise (e.g., `void *` vs specific types). No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery visible. The code operates on flat types. Arrays like `int arr[]` are passed as pointers. The source's `mmap` parameters use raw integers instead of the `PROT_*` and `MAP_*` constants.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some potential issues: `param_asm_simd` uses raw pointer arithmetic (`result[1] = a[1] + b[1]`) without bounds checking. No buffer overflow protection. Minor unsafe casts in atomic operations.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled functions. The source had extensive comments explaining macro behavior, assembly semantics, and test expectations. None of this semantic information was recovered. Only auto-generated function headers remain.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations recognized as library functions but not identified as such. The inline assembly patterns in source are completely lost (converted to pure C). No pattern naming (e.g., "This implements a compare-and-swap loop").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed functions are marked with "FAILED to decompile" messages, which is good. However, the `param_asm_multi_insn` was converted to `memcpy` without indicating this was originally inline assembly - a significant semantic loss. No warnings about architecture-specific code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had explicit behavior (e.g., "returns x+5", "expects non-null pointer") that was not recovered. Error handling paths lack documentation.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and traceable. However, no documentation of caller/callee relationships. The test functions (`call_*`) calling parameter functions are clear, but the broader context (test harness) isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: preprocessing functions first, then assembly-related functions. Static functions like `my_func` are properly scoped. However, the file is flat with no section organization matching the source's chapter comments.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal changes. Uses standard library functions (`sysconf`, `mmap`, `printf`). External dependencies are standard C library. Some IDA-specific types (`_DWORD`, `_BYTE`) would need replacement for portable compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`-`v6` patterns, obscuring semantic meaning (e.g., `v4 = arr - 1` should indicate `arr_start`)
+- Inline assembly completely lost - `param_asm_basic` shows as `return x + 10` instead of the original `__asm__` block
+- No comments recovered - the extensive source documentation explaining macro behavior and test expectations is completely absent
+- Magic number `57072` instead of `0xDEF0` loses the hex constant semantic from source
+- Type information degraded - no `const` correctness, `PROT_*`/`MAP_*` constants replaced with raw integers
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler almost perfectly preserved original function names, making it easy to locate specific functions from the source.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiler recovered zero semantic comments from the source. The original had extensive explanations of macro behavior, assembly semantics, and test expectations - all lost in decompilation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `v4 = arr - 1` appears, infer `arr_start` or `arr_ptr`. When `v3` is used as page size, name it `page_size`.
+2. **Recover inline assembly semantics**: Instead of just showing the optimized result, indicate "Originally inline assembly" and preserve the assembly logic as comments or pseudo-code.
+3. **Detect and preserve macro semantic information**: When constants like `1024`, `64`, `512` appear together, recognize they came from `#define MAX_SIZE 1024` and add comments like "/* MAX_SIZE */".

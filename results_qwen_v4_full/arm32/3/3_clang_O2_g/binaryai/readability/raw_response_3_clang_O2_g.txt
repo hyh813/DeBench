@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `local_808`) with no semantic meaning. For example, `local_vars` uses `param_1` instead of `x`, and `heap_basic` uses `__ptr` instead of `arr`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`). External functions are marked `<EXTERNAL>` which is appropriate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy use of magic hex numbers (`0x2a`, `0x14`, `0xffffffff`, `0x3e9`) without explanation. Values like `42` become `0x2a`, `20` becomes `0x14`, obscuring intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `undefined4` types, redundant bit-shift operations for division (`param_1 >> 0x1f`), and many `__sync_*` stub functions that clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops converted to `do-while` with manual increment instead of `for` loops. Some functions constant-folded (e.g., `local_array` returns `param_1 * 5` instead of showing array logic).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but some over-simplified through optimization. `stack_alias` reduced to single return `0x14`, losing all alias logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex bit manipulation for array indexing (`(param_1 - (param_1 >> 0x1f)) * 2 & 0xfffffffdU`) disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundant patterns. Multiple `__sync_*` functions with nearly identical code. Test functions duplicate heap logic inline.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy degradation to `undefined4`, `undefined`, generic `int`. Lost `size_t`, `Point*`, `Node*` types. Function `global_var_access` returns `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete loss of struct types (`Point`, `Node`, `TreeNode`). All accessed via raw pointer arithmetic (`__ptr[1]`, `puVar1[2]`). No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`), pointer arithmetic without bounds checking. `dangling_pointer` returns dereferenced freed memory without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of complex bit manipulation, no algorithm documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list creation in `linked_list_heap` not identified as such. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about undefined behavior (`dangling_pointer`, `double_free`). No indication that `stack_alias` logic was lost to optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 > 0` checks). No postconditions. Error return values (`0xffffffff`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables (`global_counter`, `static_local_counter`) not clearly declared. Callback relationships (`global_func_ptr`) unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No separation between test functions and implementation. External dependencies not grouped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing struct definitions, type declarations, header includes. `undefined4` is Ghidra-specific, not valid C.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.10/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Complete struct type loss**: `Point`, `Node`, `TreeNode` all reduced to raw pointer arithmetic with no field names
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information
+- **Zero documentation**: No comments explaining complex bit manipulation or optimization artifacts
+- **Constant folding obscures logic**: Functions like `local_array`, `stack_alias`, `tree_heap_traversal` return pre-computed values instead of showing actual logic
+- **Type degradation**: `undefined4`, `undefined` types make code non-compilable and obscure original type intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify which function is which despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding complex transformations nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve struct/union type definitions** with field names based on usage patterns (e.g., detect `Point` has `x`, `y` fields from access patterns)
+2. **Add semantic variable naming** by analyzing usage context (e.g., `param_1` in `local_vars` should be `x`, loop counters should be `i`)
+3. **Generate explanatory comments** for optimization artifacts (bit shifts for division, constant-folded results) and flag potential undefined behavior patterns

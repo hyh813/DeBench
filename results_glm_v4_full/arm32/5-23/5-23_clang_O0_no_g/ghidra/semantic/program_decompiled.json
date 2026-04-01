@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_clang_O0_no_g/ghidra/syntactic/bin/5-23_clang_O0_no_g_fixed",
+  "stdout": "Testing macro constants...\nTesting macro functions...\nTesting conditional compile...\nTesting multi-branch compile...\nTesting macro recursion...\nTesting stringize...\nTesting token paste...\nTesting variadic macros...\nLOG: Values: 10, 20, 30\nTesting macro override...\nTesting include guard...\nTesting builtin macros...\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:14\nPreprocessing tests complete!\nTesting ASM basic...\nTesting ASM clobber...\nTesting ASM multi-instruction...\nTesting ASM SIMD...\nTesting ASM atomic...\nTesting ASM privileged...\nASM tests complete!\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,12 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1208645264,Arg1=-1077264928,Arg2=0,Arg3=-1210691679|eax=0xb7f25dd8,ebx=0x0,ecx=0xbfca3de0,edx=0xbfca3e04,esi=0xb7f24000,edi=0x0
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%43%0E%10%86%04%41%0E%14%83%05%02%5C%C3%0E%10%41%C6%0E%0C%41%C7%0E%08%41%C5%0E%04
+TRACE_PRINT|0|%AC%EE%FF%FF%09
+TRACE_PRINT|0|%0C%87%03%41%0E%10%86%04%41%0E%14%83%05%4E%0E%24%4C%0E%28%44%0E%2C%41%0E%30%4C%0E%20%73%0E%14%43%C3%0E%10%41%C6%0E%0C%41%C7%0E%08%41%C5%0E%04
+TRACE_PRINT|0|%C5%0E%04
+TRACE_PRINT|0|%45%0E%30%4C%0E%20%02%9A%0A%0E%0C%41%C3%0E%08%41%C6%0E%04%41%0B
+TRACE_ENT|1|param_null_pointer_deref|1|Arg0=-1077265000,Arg1=4506112,Arg2=31,Arg3=0|eax=0xbfca3d98,ebx=0x44dfb4,ecx=0x0,edx=0xb7f25890,esi=0x44c114,edi=0x8
+TRACE_EXT|1|param_null_pointer_deref|1|42
+TRACE_ENT|2|param_null_pointer_deref|1|Arg0=0,Arg1=4506112,Arg2=31,Arg3=0|eax=0x2a,ebx=0x44dfb4,ecx=0x0,edx=0xbfca3d34,esi=0x44c114,edi=0x8
+TRACE_ENT|3|call_integer_overflow|2|Arg0=11,Arg1=-1245676096,Arg2=1,Arg3=1|eax=0x44b3dc,ebx=0xb73ba000,ecx=0xb5c0d090,edx=0x44b3da,esi=0x1,edi=0xb5bf9228
+TRACE_EXT|3|call_integer_overflow|2|2000000000

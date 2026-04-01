@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code shows "Unresolved local var" comments with debug info references (e.g., `int result@[DW_OP_reg0(x0)]`, `char * str@[???]`). Variables are essentially unnamed, making it impossible to understand their purpose without referencing debug info.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names match the original source exactly: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, etc. The naming is semantically accurate and action-oriented.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: Critical literals are completely missing. The original code contains `0xDEADBEEF` in the fake branch and the string "test", but the decompiled `param_fake_branch` just returns `x` directly - the entire fake branch logic with its magic number is completely absent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING" comments about unreachable blocks and "Unresolved local var" annotations add significant noise. However, there are no redundant casts or obvious compiler artifacts from the function itself.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The most critical defect - `param_fake_branch` has lost its entire control flow structure. The original had two always-false if-statements that modify `result`, but the decompiled version simply returns `x` directly. This is a fundamental semantic failure, not an optimization artifact (since -O0 was used).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and separated. Each test function (`param_fake_branch`, `param_opaque_predicate`, etc.) is correctly isolated. No over-fragmentation or monolith issues observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The simplified code reads linearly from top to bottom. No goto statements or confusing jumps in the decompiled output.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code from the original is correctly eliminated (the unreachable branches in fake_branch would be optimized away), but the decompiler should still show them as dead code rather than completely removing the logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic integer types are preserved correctly (`int x`, `int result`). However, `const char *str` in the original is shown as unresolved. Minor type precision issues but nothing severe.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs or unions in this specific function. The decompiled code handles basic types correctly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Basic type safety is maintained. No obvious unsafe casts or pointer arithmetic issues in `param_fake_branch`. However, the missing logic means type safety cannot be fully assessed.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 3/10  
+Justification: Comments are sparse and unhelpful. "Unresolved local var" comments provide no semantic value. There are no comments explaining the fake branch pattern or the always-false conditions.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The always-false condition idiom (x*x < 0 for real numbers, strlen(str) < 0) is completely unrecognized. The decompiler should recognize these as "opaque predicates" or "fake branches" but instead just eliminated them entirely.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the function logic is incomplete. The decompiled code confidently shows `return x;` when the original clearly had more complex logic. No warnings about potential decompilation failures.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function's contract (takes int x, returns computed result) is not clearly communicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `call_fake_branch` calls `param_fake_branch(10)`. However, there's no documentation of what calls these functions or their broader context in the test suite.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All 43 functions are in a single output, but they're logically grouped by test category (obfuscation, optimization, edge cases). Some organization is present.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code should compile as C code. External dependencies (libc functions like `signal`, `strlen`, `strncpy`) are correctly referenced.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **`param_fake_branch` completely loses fake branch logic**: The original has two always-false if-statements that modify `result`, but decompiled version just returns `x` directly - this is a fundamental semantic failure
+- **Magic number `0xDEADBEEF` completely missing**: The literal that was part of the fake branch logic is absent
+- **Variable `result` is unresolved**: Shown only as debug info reference, not as a usable variable
+- **String literal "test" for strlen check is missing**: The second fake branch used `strlen(str) < 0` but this is not reflected in decompiled code
+- **No anomaly indication**: Decompiler should warn that function logic appears incomplete, but shows it confidently
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+- Function names match original source exactly and are semantically accurate
+
+### Most Needs Improvement: Control Flow Naturalness & Anomaly Indication (both 2/10 and 1/10)
+- The fake branch logic is completely eliminated rather than shown as dead code
+- No indication to the user that the decompilation may be incomplete
+
+### Top 3 Recommendations:
+1. **Preserve unreachable code paths**: Even at -O0, show the fake branches as dead code with comments like "WARNING: unreachable - always-false condition", rather than eliminating them entirely
+2. **Add anomaly warnings**: When function logic appears simplified or key variables are unused, add explicit warnings like "ANOMALY: result variable computed but not used"
+3. **Recover variable names from debug info**: The DWARF info clearly has variable names (`result`, `str`); use them instead of showing unresolved references

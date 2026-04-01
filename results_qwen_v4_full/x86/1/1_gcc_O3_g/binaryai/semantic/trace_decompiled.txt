@@ -1,0 +1,2 @@
+TRACE_ENT|0|non_local_jump|0|Arg0=-5,Arg1=-1081176444,Arg2=-1081176436,Arg3=4400017|eax=0xb7ee2dd8,ebx=0x0,ecx=0xbf8e8df0,edx=0xbf8e8e14,esi=0xb7ee1000,edi=0x0
+TRACE_EXT|0|non_local_jump|0|2

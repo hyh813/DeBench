@@ -1,0 +1,20 @@
+=== Standard Library Function Tests ===
+
+String length: 8
+strcmp result: 0
+strlen result: 12
+memcpy result: 0x5a
+memcmp result: 1
+Value: 42, Name: TestName
+printf return: 26
+scanf result: -1090766844
+fopen result: 42
+fread/write result: 42
+malloc/free result: 90
+memset result: 0
+strchr/strstr result: 15
+=== System Call Tests ===
+
+syscall result: 42
+stat result: 42
+fork/exec result: 42

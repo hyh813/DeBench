@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1` instead of semantic names (e.g., `size`, `x`, `counter`). Only occasional meaningful names like `result`, `sum`, `ptr` appear.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`), but helper functions use generic names (`sub_4004ec`, `sub_4005c8`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x400`, `0x200`, `57072`, `282` replace original constants (`MAX_SIZE`, `BUFFER_COUNT`). Some expected values (64, 30, 32) are clear but unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization code present (`_init`, `deregister_tm_clones`, `register_tm_clones`) mixed with application logic. No debug instrumentation, but compiler artifacts remain.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use clean ternary operators, but several functions use goto patterns (`LABEL_4005ec`, `LABEL_400618`) instead of structured conditionals.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (most under 50 lines), but constant folding collapsed computation logic into single return statements, losing structural information.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto labels disrupt top-to-bottom reading flow. Functions like `call_weak_fn` and `deregister_tm_clones` have non-linear jump patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding removed computation logic (e.g., `call_macro_constants` returns 64 directly instead of showing `16*4`). This optimization loses semantic meaning.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to generic `unsigned int` or `int`. Original `size_t`, specific integer widths, and const-correctness are lost. Pointer types are present but generic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs/unions in this code sample. Array handling uses pointer notation correctly. Limited opportunity to evaluate this dimension.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `param_asm_clobber` has confusing pointer handling with `ptr` used uninitialized. No explicit unsafe casts visible, but `void*` usage lacks bounds information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled code. Original had extensive documentation about macro behavior, expected values, and architecture-specific notes—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansion patterns completely obscured by constant folding. Assembly patterns simplified to C but without indicating original inline assembly intent.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about decompilation uncertainty. `armg_calculate_condition` appears without explanation. `param_asm_clobber` has suspicious logic but no flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Original had expected return values in comments (e.g., "期望: 64")—all contract information lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear, but string literals accessed through opaque globals (`g_400fb7`, `g_4011ab`). Global variable names reveal no semantic meaning.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat file. Runtime initialization functions mixed with application code. No logical grouping by feature (preprocessing vs. assembly).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`printf`, `mmap`, `__atomic_fetch_add_4`) without declarations. Global variables need external definitions. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+5+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (5+7+6)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.06/10
+```
+
+### Overall Readability Score: **5.1/10**
+
+### Critical Defects:
+- **Zero comments** - All original documentation about macro semantics, expected values, and architecture notes completely lost
+- **Generic variable names** - `v0`, `v1`, `a0`, `a1` obscure parameter purposes (e.g., `a0` should be `size` or `x`)
+- **Magic numbers** - `0x400`, `0x200`, `57072` replace named constants (`MAX_SIZE`, `0xDEF0`)
+- **Constant folding over-optimization** - Computation logic collapsed (e.g., `call_macro_constants` returns 64 directly, hiding `BUFFER_COUNT * 4`)
+- **Opaque global references** - String literals accessed via `g_400fb7` instead of direct string values
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved (`param_macro_constants`, `param_asm_basic`), maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all contextual information about macro behavior, expected values, and decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve comments** - Extract debug symbols (`-g` flag was used) to restore original comments about macro semantics and expected values
+2. **Infer variable names from usage patterns** - Analyze parameter usage to suggest semantic names (e.g., `a0` used in size comparison → `size`)
+3. **Annotate constant-folded expressions** - When constants are folded, add comments showing original computation (e.g., `return 64; // BUFFER_COUNT * 4 = 16 * 4`)

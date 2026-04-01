@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`. For example, in `_ZN7Derived12virtual_funcEi`, the `this` pointer is `v1` and the member `multiplier` is accessed via `*(int32_t *)(v1 + 8)`, completely obscuring the original semantic meaning.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: Function definitions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), which are unreadable, although demangled names are provided in comments. This forces the reader to constantly cross-reference the comments rather than reading the code flow naturally.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers and addresses are used directly, such as `0x125c` in `_Z20test_cpp_member_funcv` or offsets like `+8` and `-24` for member access. String literals are present but sometimes referenced via global pointers with hex addresses.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant compiler noise, including stack canary checks (`__stack_chk_fail`), redundant casts, and inline assembly markers like `__asm_fcmpe`, which clutter the logic and distract from the program's intent.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural; for instance, `_Z18test_cpp_exceptionv` uses `goto` statements and labels (`lab_0x10e0`) to implement exception handling flow, rather than showing the structured `try-catch` blocks present in the source.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While the decompiler correctly identifies thunks (e.g., `_ZThn16_N12MultiDerived5funcBEv`) and vtable functions as separate units, the main test functions (e.g., `test_cpp_virtual_func`) are reduced to simple constant returns (e.g., `return 42`), effectively hiding the algorithmic decomposition.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code suffers from non-linear patterns, particularly in exception handling where execution jumps backward and forward via labels. Even simple logic is interrupted by stack integrity checks.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is no obvious loop unrolling, but the decompiler introduces redundancy through excessive variable assignments (e.g., `int64_t v2 = v1;`) and pointer arithmetic that could be simplified to struct member access.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: C++ objects are demoted to generic `int64_t` or `void*` types. For example, class instances are treated as raw integers, and member access is done via byte offsets (e.g., `v1 + 8`) rather than typed member access.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The decompiler fails to recover the class definitions (e.g., `SimpleClass`, `Base`, `Derived`). While vtables are defined as structs (`struct vtable_12c28_type`), the actual class layouts with their data members are completely missing, leaving only pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as casting `int64_t` to function pointers or `int32_t*` to access object members. This erases type safety boundaries that existed in the original C++ source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: The only useful comments are the demangled function names (e.g., `// Demangled: test_cpp_member_func()`). There are no comments explaining the logic, the purpose of the magic offsets, or the high-level intent of the code blocks.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: C++ idioms like virtual dispatch are exposed as low-level vtable lookups rather than abstracted as "virtual function calls." RAII patterns (constructors/destructors) are visible as mangled function calls but not recognized as object lifecycle events.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the reduction of complex functions to constants (e.g., `test_cpp_virtual_func` returning `42`) as potential analysis failures or optimizations; it presents them confidently as the full logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the checks in `Container::get` are decompiled into raw comparisons without indicating they represent bounds checking.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While the mangled names technically link callers and callees, the lack of recovered class structures makes it difficult to understand the relationships between objects and their methods (e.g., which class a specific vtable pointer belongs to).
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions and global variables. There is no logical grouping by class or functionality, making it hard to navigate the codebase compared to the source's organization.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes standard headers and prototypes, but it relies on compiler intrinsics (like `__asm_fcmpe`) and specific global variable layouts that would likely require significant patching to compile into a working program.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- **C++ Class Structure Loss**: Classes like `SimpleClass` and `Derived` are not reconstructed; objects are manipulated as raw `int64_t` pointers with magic offsets.
+- **Logic Elimination**: Test functions are reduced to constant returns (e.g., `return 42`), completely removing the logic that demonstrates the C++ features being tested.
+- **Variable Naming**: Universal use of generic names (`v1`, `a1`) obscures the semantic meaning of variables representing objects, strings, or loop counters.
+- **Control Flow Obfuscation**: Exception handling is represented as a spaghetti of `goto` labels and `__cxa_` ABI calls rather than `try-catch` blocks.
+
+**Best Quality Aspect:** Function Naming (Demangling)
+- **Why?** The inclusion of demangled names in comments (e.g., `// Demangled: Base::virtual_func(int)`) is the only link back to the original source semantics, providing a crucial breadcrumb for analysis.
+
+**Most Needs Improvement:** Composite Type Recovery
+- **Why?** The failure to reconstruct C++ classes from the vtable and member access patterns is the single biggest barrier to readability, turning object-oriented code into incomprehensible pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement C++ Class Recovery**: Analyze `this` pointer usage and constructor/destructor patterns to reconstruct `struct` definitions with correct field types and offsets.
+2. **Preserve Logic in Test Functions**: Avoid constant propagation that collapses entire functions to single return values; ensure the intermediate steps (object creation, method calls) are visible in the decompiled output.
+3. **Map Pointer Arithmetic to Member Access**: Transform expressions like `*(int32_t *)(v1 + 8)` into `v1->member_name` based on recovered type information.

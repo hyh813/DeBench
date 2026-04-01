@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `local_30`, `iVar1`, `puStack_3c`, `ppuVar4`. Only a few meaningful names exist (e.g., `in_GS_OFFSET` for stack canary). The original source had clear names like `value`, `name`, `size`, `data` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Mixed results - test functions correctly named (`test_cpp_exception`, `test_cpp_member_func`), class methods recovered (`Base::virtual_func`, `Derived::virtual_func`), template instantiations identified (`template_max_int_`, `template_swap_int_`). However, many internal functions remain as `FUN_00011030`, `FUN_00011180` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers generally align with expected values from source (e.g., `0x47`=71 matches expected return for multiple inheritance, `0x2bf`=703 for smart_ptr). However, no explanatory comments for what these values represent. Some literals like `0x2a` (42 - thrown exception) could be named.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks present (`__stack_chk_fail_local`), undefined types used (`undefined4`, `undefined *`), function pointer casts present. However, these are manageable compiler artifacts typical for -O0. No significant dead code or redundant operations observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with readable if-else structures. Exception handling (`test_cpp_exception`) shows complex state management with computed jumps, which is expected for C++ exception handling. Loop constructs properly recovered in template functions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function granularity - test functions are appropriately sized (20-40 lines), class methods are cohesive. Template instantiations properly separated (`template_max_int_` vs `template_max_double_`). No 500-line monoliths. Minor issue: some destructor overloads seem duplicated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Exception handling has some forward jumps and complex state management. Early returns present where appropriate. Some computed jumps in virtual function dispatch but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. No significant redundant expressions. Loop unrolling not present (expected at -O0). Template functions show clean single-pass logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - proper types like `int`, `double`, `int*`, `char*` used in many places. Template types recovered (`Container_int_`, `Container_double_`). However, extensive use of `undefined4`, `undefined *`, `undefined8` instead of proper types. Some function pointer types unclear.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Partial recovery - template container types identified (`Container_int_`, `Container_double_`), smart pointer types reconstructed (`unique_ptr_int_std__default_delete_int__`). However, many struct-like operations use raw pointer arithmetic instead of proper field access. Virtual inheritance offsets computed manually.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally follows expected patterns. Some pointer arithmetic present (e.g., `this + *(int *)(*(int *)this + -0xc)` for virtual base access). Function pointer types mostly correct for virtual calls. No severe type safety violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comment present ("Decompiled by BinaryAI"). No useful comments explaining algorithm, non-obvious logic, or decompilation confidence. Original source comments completely lost. No indication of uncertain indirect calls.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ idioms partially recognized - virtual function calls through vtable (`***(code ***)param_1`), template instantiation names, RAII patterns in smart pointer destructors. However, exception handling patterns not explicitly identified as such, lambda expressions reduced to constants.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flagging of suspicious code or uncertain decompilation. Some indirect calls could not be resolved but no warnings. Virtual function calls marked with `***(code ***)` but no explanation of vtable mechanism.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. No invariant detection. Original assertions and contracts from source completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear - `test_cpp_oo_features` calls all test functions. Virtual dispatch through vtables visible. Template instantiation relationships clear. However, no explicit documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, class methods grouped by class, template instantiations separated. Static functions properly scoped. However, no namespace recovery or header file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation successful ("Compilation Result: Yes"). External dependencies (libstdc++) implicitly required. Some type stubs needed (`undefined4`). No portability issues noted.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`local_X`, `iVar1`, `puStack_X`) - original names like `value`, `size`, `data` completely lost
+- No comments whatsoever - cannot understand algorithm intent without source
+- Many internal functions remain as `FUN_XXXXXXXX` with no semantic meaning
+- Type precision poor - extensive use of `undefined4`, `undefined *` instead of proper types
+- No anomaly indication for uncertain decompilation decisions
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with good cohesion. Template instantiations properly separated. Class methods logically grouped. No excessive inlining or fragmentation.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+No useful comments explaining algorithm, no decompilation confidence indicators, no documentation of non-obvious transformations. The code is technically readable but lacks semantic context.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `local_30` used as `name` buffer with `strncpy` - should be named `name_buffer` or similar
+2. **Add meaningful comments**: Explain virtual function dispatch, exception handling mechanisms, and any uncertain decompilation decisions
+3. **Recover more type information**: Replace `undefined4` with `int` where obvious, add struct field names where possible

@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `iVar1`, `uVar1`) and do not reflect semantic meaning (e.g., `param_1` in `process_char` represents a character `c`). Stack variables in `test_array_types` are named `local_1fc`, `local_1f8`, etc., which obscures the fact that they form a 3D array.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols (`process_char`, `array_2d_stack`, `struct_simple`), matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure logic; `process_char` uses `0xbf` and `0x1a` instead of `'A'` and `'Z'`, and `process_float` uses hex constants like `0x3fc00000` instead of `1.5f`, making the mathematical intent hard to decipher.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The `test_array_types` function is polluted with hundreds of lines of individual stack variable declarations (`local_1fc` down to `local_c`), and macros like `CONCAT44` in `process_ll` add significant noise, making the code difficult to scan.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Most loops are recovered as `do-while` structures, which is acceptable, but `array_2d_stack` is flattened into a single return statement summing specific indices, losing the loop structure entirely.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion; there are no artificial splits or monolithic inlining issues beyond what the compiler generated.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with standard `do-while` loops; however, the flattened `array_2d_stack` and the massive variable list in `test_array_types` disrupt the linear reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: `array_2d_stack` and the inner loop of `array_3d` exhibit significant redundancy (unrolling), summing explicit indices like `piVar2[0x18] + ... + piVar2[0]` instead of using a loop, which bloats the code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; `process_float` returns `void` and calls `__mulsf3` instead of using `float` operators, and `process_ll` uses `CONCAT44` macros instead of `long long` arithmetic.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are completely lost; `struct_simple` takes `int *param_1` and accesses `param_1[1]` instead of `Point3D *p` accessing `p->y`, and `struct_nested` similarly decays to pointer arithmetic on `int`.
+
+**11. Type Safety:** Score: 3/10
+Justification: Heavy use of `undefined` types (`undefined4`, `undefined8`) and generic `code *` for function pointers (`ptr_func_simple`) removes type safety and makes the code prone to misuse if recompiled.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining logic; only a header indicating the decompiler tool is present, leaving complex logic like the range check in `process_char` unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are not recognized; the range check `if ((byte)(param_1 + 0xbfU) < 0x1a)` is not identified as an uppercase check, and the array summation in `array_2d_stack` is not identified as a diagonal traversal.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags the function pointer in `ptr_func_simple` as `UNRECOVERED_JUMPTABLE`, indicating a failure to resolve the target, which is helpful, but other anomalies like the lost struct types are silent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, `array_complex_index` does not indicate the bounds checking logic that exists in the source.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear because function names were preserved; `main` clearly calls the test functions, and `printf` calls are easily identifiable, maintaining good relationship visibility.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered logically matching the source flow, though the lack of struct definitions at the top level (which are completely missing) hurts the overall module structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to Ghidra-specific types (`undefined4`, `code`, `CONCAT44`) and missing struct definitions, requiring significant modification to build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 4 + 3) / 4 = 5.0
+L2_avg = (7 + 9 + 8 + 4) / 4 = 7.0
+L3_avg = (3 + 1 + 3) / 3 = 2.33
+L4_avg = (1 + 3 + 6 + 1) / 4 = 2.75
+L5_avg = (8 + 7 + 2) / 3 = 5.67
+
+Overall = (5.0 * 0.30) + (7.0 * 0.25) + (2.33 * 0.20) + (2.75 * 0.15) + (5.67 * 0.10)
+Overall = 1.5 + 1.75 + 0.466 + 0.4125 + 0.567
+Overall = 4.6955
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: Structs (`Point3D`, `Rect`) are completely unrecovered, replaced by raw `int*` array indexing (e.g., `param_1[1]` instead of `p->y`).
+- **Floating Point Opacity**: Floating-point operations are obscured by software library calls (`__mulsf3`, `__adddf3`) and hex literals instead of standard operators.
+- **Stack Variable Explosion**: The `test_array_types` function is unreadable due to the declaration of ~125 individual stack variables (`local_1fc`...`local_c`) instead of a 3D array type.
+- **Magic Number Logic**: Simple range checks like `c >= 'A' && c <= 'Z'` are transformed into obscure arithmetic `(param_1 + 0xbfU) < 0x1a` without comments.
+- **Type Erasure**: Extensive use of `undefined` types and `code*` for function pointers removes semantic type information.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, making the high-level purpose of every block immediately obvious despite the poor internal code quality.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (1/10)**
+- **Why?** The complete failure to recover `struct` or `union` definitions reduces complex data manipulation to meaningless pointer arithmetic, which is the single biggest barrier to understanding the data manipulation logic in this code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Struct Recovery**: Implement analysis to detect sequential array accesses on a pointer (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]`) and reconstruct them as struct field accesses with synthetic struct definitions.
+2.  **Abstract Soft-Float Libcalls**: Recognize standard compiler-rt soft-float function calls (like `__mulsf3`, `__adddf3`) and lift them back into high-level floating-point arithmetic operators (`*`, `+`) with appropriate types.
+3.  **Aggregate Stack Variables**: Detect patterns of large, sequential stack variable declarations (like `local_1fc` down to `local_c`) and collapse them into a single array declaration to restore the original data structure intent.

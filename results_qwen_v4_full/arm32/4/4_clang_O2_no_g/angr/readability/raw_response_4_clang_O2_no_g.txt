@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a0`, `a1`, `v0`, `v1` with no semantic meaning. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but are `a0`-`a5`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`cdecl_func`, `call_cdecl`), but helper functions use generic names (`sub_4003f0`, `sub_400490`). Runtime functions like `__adddf3` are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX), `0x100000`, and `0x80000000` appear without explanation. Some constants like `15`, `42` are clear from context but not documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v` calls throughout `__adddf3` (300+ lines of compiler artifacts).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements and `LABEL_` jumps replace natural loops. The `varargs_func` uses `do-while` with `goto` instead of clean `for` loop. `__adddf3` has deeply nested conditionals with goto chains.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `func_struct_byval` has 31 parameters instead of 1 struct parameter. `ret_small_struct` returns `unsigned int [2]` array instead of struct. Test functions are constant-folded (return literals instead of computing).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. `func_struct_byptr` has confusing nested if-else with goto that should be simple null check.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `__adddf3` repeats `armg_calculate_condition` patterns dozens of times. `test_calling_conventions` calls `printf(&g_401525, 50)` twice identically.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All types degraded to `unsigned int` or `int`. `func_mixed_args` loses `double`, `char*`, `long long` distinctions. `ret_opaque_handle` returns `int` instead of `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` (128 bytes) becomes 31 separate `unsigned int` parameters. `SmallStruct` becomes `struct_0` with `field_0`. No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: `param_func_ptr` treats `unsigned int *a0` as callable function pointer (`a0(a1)`). `func_struct_byptr` has invalid `armg_calculate_condition` in null check that doesn't type-check.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of `armg_calculate_condition` purpose, no algorithm documentation, no API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (manual stack walking instead of `va_arg`). Struct-by-value passing not recovered. Function pointer callback pattern obscured.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about `armg_calculate_condition` artifacts. No indication that test functions are constant-folded. `func_struct_byptr` has nonsensical `Goto None` statements without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL). No postconditions. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables named `g_401460` instead of string constants. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. Runtime helpers (`__adddf3`, `__floatsidf`) mixed with application code. No logical grouping.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies (`__libc_start_main`, `__adddf3`, `strlen`) undeclared. `typedef struct struct_0` defined inline. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+4+4+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall = 1.125 + 0.875 + 0.534 + 0.225 + 0.400 = 3.16/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0`** should be named semantically (e.g., `count`, `sum`, `ptr`) based on usage patterns
+- **`func_struct_byval`** has 31 parameters instead of 1 `LargeStruct` parameter—complete struct recovery failure
+- **`__adddf3` function** (300+ lines) is unreadable compiler artifact soup with `armg_calculate_condition` calls
+- **Test functions constant-folded**—`call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`
+- **Zero comments** explaining non-trivial logic, anomalies, or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core application functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing some semantic anchor points
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding compiler artifacts and recovered logic nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts** - Detect struct parameters passed via multiple registers/stack slots and reconstruct as single struct type
+2. **Add confidence annotations** - Mark uncertain recoveries (e.g., `// DECOMPILER_UNCERTAIN: varargs handling`) and explain `armg_calculate_condition` artifacts
+3. **Preserve computation over constant folding** - Don't optimize away function calls in test harnesses; show actual call relationships for reverse engineering value

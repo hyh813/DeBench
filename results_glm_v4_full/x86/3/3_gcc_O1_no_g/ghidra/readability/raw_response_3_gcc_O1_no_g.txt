@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `local_38`, `piVar1`, `puVar5`), obscuring the semantic meaning of variables like `arr`, `i`, or `n` found in the source. While global variables like `global_counter` are named correctly, local stack variables lack descriptive identifiers.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly (e.g., `double_value`, `heap_basic`, `test_stack_memory`), matching the source exactly. This is likely due to the presence of debug symbols (`-g`), providing excellent high-level context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent and not replaced with named constants; for example, `0x2a` is used instead of `42`, and `0x800` instead of `2048`. While `0xffffffff` is recognizable as `-1`, the lack of `MAX_SIZE` or similar definitions reduces readability.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present from compiler security features, specifically stack canary checks (`in_GS_OFFSET` comparisons) and calls to `__stack_chk_fail_local`. Additionally, `__x86.get_pc_thunk` injections clutter the function headers.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The control flow in `vla_stack` and `alloca_usage` is severely obfuscated by compiler-generated stack probing loops (e.g., `for (; puVar5 != auStack_1c + -(uVar2 & 0xfffff000); ...)`), which replaces the simple allocation logic of the source with complex page-touching code.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source code, maintaining appropriate granularity. There is no monolithic inlining or fragmentation, making it easy to locate specific logic blocks from the original source.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but the stack probing logic in VLA functions introduces nested loops and pointer arithmetic that disrupt the top-to-bottom flow. The `stack_alias` function is reduced to a single return, losing all structural context.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully removes dead stores and folds constants (e.g., `local_vars` is reduced to `param_1 * 2 + 10`). However, the stack probing code represents "redundant" logic from a semantic perspective that clutters the output.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic; `undefined4` is used frequently for return values and parameters instead of `int` or specific enum types. `size_t` parameters are often demoted to `int` or `uint`, losing precision regarding the intended range.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost. `Point`, `Node`, and `TreeNode` are not reconstructed; instead, the code uses raw pointer arithmetic and array indexing (e.g., `__ptr[1]`, `puVar1[2]`) to access struct fields, making the data layout opaque.
+
+**11. Type Safety:** Score: 6/10
+Justification: While standard pointer arithmetic is generally correct, the use of `undefined4` and `undefined1` types effectively removes type safety checks. The lack of struct definitions means the compiler cannot enforce field access types during recompilation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, consisting only of compiler warnings (e.g., "WARNING: Function: __x86.get_pc_thunk.bx replaced..."). There are no comments explaining the logic of memory operations or the purpose of complex loops like stack probing.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard heap idioms (`malloc`/`free`) are recognizable. However, higher-level idioms like linked list traversal or tree operations are obscured by the lack of struct recovery, appearing as generic pointer manipulation.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler fails to flag the critical anomaly in `stack_alias`, where the function signature is wrong (missing parameters) and the logic is reduced to a constant return. It presents this confidently without warning about the parameter loss or optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present in code but not explicitly documented as a contract or safety check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Global variable accesses (e.g., `global_counter`) are clear and named. Function calls to other defined functions are resolved correctly. However, the lack of struct definitions hinders understanding the data relationships passed between functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, largely following the source order. The separation between stack, heap, and static/global tests is preserved in the function listing order.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific types like `undefined4` and injected functions like `get_pc_thunk_bx`, which would require significant patching to compile. The missing struct definitions would also require manual recreation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 4 + 5) / 4 = 5.25
+L2_avg: (4 + 8 + 6 + 7) / 4 = 6.25
+L3_avg: (5 + 2 + 6) / 3 = 4.33
+L4_avg: (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg: (7 + 8 + 4) / 3 = 6.33
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (6.33 × 0.10)
+Overall = 1.575 + 1.5625 + 0.866 + 0.45 + 0.633
+Overall = 5.0865
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet Points)
+- **Struct Recovery Failure**: Composite types (`Point`, `Node`, `TreeNode`) are not recovered; code uses raw pointer arithmetic (e.g., `__ptr[1]`) instead of field names.
+- **Parameter Loss in `stack_alias`**: The decompiled signature `stack_alias(void)` is incorrect compared to the source `stack_alias(int *p1, int *p2)`, and the logic is incorrectly reduced to a constant return.
+- **Stack Probing Obfuscation**: The simple logic of `vla_stack` and `alloca_usage` is buried under complex compiler-generated stack probing loops that are not abstracted or commented.
+- **Generic Variable Naming**: Local variables are named `local_XX`, `piVarX`, or `puVarX`, making it difficult to track data flow without cross-referencing the source.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The debug symbols allowed Ghidra to perfectly recover the original function names, providing excellent high-level navigation.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The complete failure to recover `struct` definitions turns data manipulation into obscure pointer arithmetic, which is the biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Struct Recovery**: Implement analysis to detect `malloc` sizes followed by sequential field offsets to reconstruct `struct` definitions automatically.
+2.  **Abstract Stack Probing**: Detect the specific pattern of x86 stack probing (page touching loops) and replace it with a pseudo-instruction or comment like `/* PROBE_STACK(size) */` to simplify control flow.
+3.  **Improve Variable Naming**: Heuristically infer variable names from usage context (e.g., variables used in loop conditions could be named `i` or `counter`) rather than relying solely on `local_XX` patterns.

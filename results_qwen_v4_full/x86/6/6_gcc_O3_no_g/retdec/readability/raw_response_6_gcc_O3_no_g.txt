@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `temp_1` with no semantic meaning. For example, in `param_strcpy`, parameters are `str` and `str2` instead of `dst` and `src`, obscuring the copy direction.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names like `param_strcpy`, `param_strcmp` are preserved, but many helper functions use address-based names (`function_13e0`, `function_1400`). Thread functions like `thread_compute` are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (e.g., `42`, `100`, `150` in TLS test). String literals are referenced through opaque global variables (`&g6 - 0x2b68`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `__x86_get_pc_thunk_*` calls (wrong architecture!), `__readgsdword(20)` stack canary checks in every function, and redundant variable assignments like `int32_t v2 = v1;`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements and labels (`lab_0x1cf0`, `lab_0x1d63`) replace natural loops. The `param_thread_local_storage` function has 6+ goto labels making execution paths nearly impossible to follow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Some functions are over-fragmented (`param_fork_exec_part_0` is just a helper for unreachable code), while others like `param_thread_local_storage` (320 lines) are monolithic with poor cohesion.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Frequent forward jumps disrupt top-to-bottom reading. The `param_atomic_ops_constprop_0` function jumps between `lab_0x1ec0`, `lab_0x1e80_2`, and `lab_0x1f06` making linear comprehension impossible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Call functions are constant-folded losing actual logic (`call_strcpy` returns `8` directly instead of calling `param_strcpy`). Stack canary checks repeat identically in every function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost everything is `int32_t` - original `size_t`, `char*`, `FILE*`, `pthread_t` types are lost. Function `param_memcpy` takes `int32_t` instead of `void*`, `const void*`, `size_t`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs exist but fields are named `e0`, `e1`, `e2` with no semantic meaning. `struct _IO_FILE` has 17 integer fields instead of proper FILE structure with named members.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts like `(int32_t *)a1`, `(char *)str` throughout. Pointer arithmetic on `int32_t` types creates potential undefined behavior. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation uncertainty. No API contracts, no parameter documentation, no indication of what any complex section does.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard library patterns (strcpy, strcmp) are recognized as function calls, but higher-level patterns (producer-consumer in condition variable test) are completely obscured by low-level representation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of architecture mismatch (x86 thunks in ARM64 binary), no warnings about unresolved indirect calls, no flags for potentially incorrect reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"), no postconditions, no error condition explanations. Return values like `-1`, `-2`, `-3` have no documented meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call graph is visible through direct calls, but callback relationships (thread entry functions) are obscured by function pointer casts. Global variable usage (`g27`, `g4`) is opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (library functions, syscalls, threads), but no header file structure, no static/internal function scoping, all globals are exposed.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes proper headers and compiles, but has architecture mismatches (x86 thunks), missing external function declarations, and relies on undefined globals (`g1` through `g27`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):   (3+4+3+4)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type System):  (3+4+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):     (1+2+2+2)/4 = 1.75 × 0.15 = 0.2625
+Level 5 (Contextual):   (4+5+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 3.49/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Architecture mismatch**: x86 thunk functions (`__x86_get_pc_thunk_*`) appear in ARM64 decompilation, indicating fundamental reconstruction errors
+- **Variable naming**: All variables are `v1`, `v2`, `v3` with zero semantic meaning (e.g., `param_strcpy` parameters should be `dst`, `src`)
+- **Control flow**: Excessive `goto` statements and labels replace natural loop/conditional constructs throughout
+- **Type erosion**: All types collapsed to `int32_t`, losing `size_t`, `char*`, `FILE*`, `pthread_t` semantics
+- **Zero documentation**: No comments explaining logic, uncertainty, or API contracts anywhere in 2716 lines
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code includes proper headers and can compile with minimal stubs, though architecture issues remain
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, uncertainty indicators, or logic explanations makes understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables used in `malloc` size should be `size`, pointer return values should be `ptr` or specific type names)
+2. **Recover structured control flow** - Replace `goto`/label patterns with native loop constructs (for/while) and eliminate unnecessary jump tables
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, architecture mismatches, and unresolved calls with clear warnings for analyst review

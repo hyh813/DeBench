@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `c`, `x`, `arr`. Local variables are `v0`, `v1`, `v2` with no indication of purpose (e.g., `process_char` parameter should be `c` not `a1`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined function names preserved well (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use generic names (`sub_3E0`, `sub_20F0`). Debug symbols helped recover most names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals shown as hex (`0x41u` instead of `'A'`, `0x5Au` instead of `'Z'`). Array stride constants (`40 * i`, `12 * i`) obscure struct field offsets that should be named.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(_DWORD *)`, `(__int64)`), stack frame annotations (`[sp+0h] [bp-8h]`), and `__fastcall` calling conventions clutter the code. Runtime functions (`_do_global_dtors_aux`) included unnecessarily.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as for/while constructs correctly. However, `volatile_access` collapses two reads into `2 * *a1`, losing the volatile semantics. Switch statements recovered properly in `enum_switch`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each test function is separate with appropriate size. Helper functions (`complex_callback`, `double_value`) preserved as distinct units.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Loop structures are clear. Some complex functions (`sub_20F0`) have excessive branching but user code is generally linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Optimization artifacts visible—`volatile_access` merges two memory reads. No obvious dead code in user functions, but runtime functions contain redundant patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `char`→`unsigned __int8`, `long`→`int` (ARM32 vs x86_64 mismatch), `long double`→`double` (precision loss). Critical: `const` and `volatile` qualifiers completely lost (`volatile int *` becomes `_DWORD *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—structs accessed as array indices (`a1[0]`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`). No struct definitions recovered. `struct_nested` shows `a1[0] + a1[3]` instead of `r->position.x + r->size.width`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts (`(_DWORD *)`, `(int)(__int64)`). Pointer arithmetic exposed (`a1 + 4 * i`). Function pointer types degraded to generic signatures. void* conversions lose all type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only decompiler header comments present. No algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop and switch patterns recognized. No design pattern identification (linked list, tree traversal not named). `binary_tree_sum` recursion recognized but not labeled as tree traversal.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some functions marked "FAILED to decompile" at end. No warnings about lost volatile semantics, type degradation, or struct information loss. No uncertainty indicators in recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `requires: arr != NULL`). No postcondition inference. No error condition documentation. Array bounds checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. No call graph documentation. Callback relationships not explicit (`ptr_func_simple` doesn't indicate it's a callback wrapper). Global variable usage not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by test category (data types, arrays, pointers, composites). Static functions not properly scoped. No header file separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Six functions marked "FAILED to decompile" (`__imp_printf`, `__imp_memset`, etc.). Would require significant stubbing to compile. Platform-specific calling conventions (`__fastcall`) limit portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00
+Level 2 (Structural):  (6+8+7+6)/4 = 6.75
+Level 3 (Type):        (4+2+3)/3   = 3.00
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75
+Level 5 (Contextual):  (5+4+3)/3   = 4.00
+
+Overall = (5.00 × 0.30) + (6.75 × 0.25) + (3.00 × 0.20) + (2.75 × 0.15) + (4.00 × 0.10)
+        = 1.50 + 1.69 + 0.60 + 0.41 + 0.40
+        = 4.60/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Composite types completely lost**: Structs accessed as raw array indices (`a1[0]`, `a1[1]`) instead of field names (`p->x`, `p->y`)
+- **Volatile semantics destroyed**: `volatile_access` collapses two memory reads into `2 * *a1`, eliminating the volatile behavior
+- **All parameters use generic names**: `a1`, `a2`, `a3` instead of semantic names like `c`, `x`, `arr`, `p`
+- **Type qualifiers lost**: `const` and `volatile` modifiers completely absent from decompiled signatures
+- **Character literals as hex**: `0x41u` instead of `'A'`, reducing immediate readability
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function boundaries preserved well with appropriate granularity; each test function remains separate and cohesive matching the original source structure.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all composite types degraded to pointer arithmetic with array indexing, losing all field semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for type recovery**: With `-g` flag present, struct definitions and field names should be recoverable from DWARF debug information instead of raw pointer arithmetic.
+2. **Preserve type qualifiers**: Track and emit `const` and `volatile` qualifiers from debug info to maintain semantic correctness, especially for memory-mapped I/O patterns.
+3. **Recover semantic variable names**: Use debug symbol information to restore original parameter and local variable names instead of generic `a1`, `v0` naming scheme.

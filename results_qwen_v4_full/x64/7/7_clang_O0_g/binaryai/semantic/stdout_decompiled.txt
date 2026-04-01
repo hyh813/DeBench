@@ -1,0 +1,15 @@
+1737960824
+fake_branch: 0
+opaque_predicate: 0
+instruction_substitution: 0
+string_encryption: 0
+tail_call_optimized: 0
+non_tail_call: 0
+vectorized_loop: 0
+link_time_optimization: 0
+division_by_zero: 1
+null_pointer_deref: 41
+buffer_overflow: 30
+integer_overflow: 2000000000
+undefined_behavior: 10
+implementation_defined: 0

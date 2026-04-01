@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `result`) with no semantic meaning. Original `param_macro_constants(int size)` became `param_macro_constants(int a1)`, and `param_asm_clobber(int *arr, int n)` became `param_asm_clobber(int a1, int a2)`, completely losing parameter purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`sub_1030`, `sub_10B0`, `sub_10EC`). Function purpose is inferable for main test functions but lost for infrastructure code.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `sysconf(30)` instead of `_SC_PAGESIZE`, `mmap(..., 7, ...)` instead of `PROT_READ|PROT_WRITE|PROT_EXEC`, `57072` instead of `0xDEF0`. Original macro constants (`MAX_SIZE`, `BUFFER_COUNT`) completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts: `@<eax>`, `@<ebx>` register hints, `BYREF` annotations, warning comments ("positive sp value has been detected"). Stack variables like `v2; // esi` add noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as proper `for`/`while` constructs. However, `call_asm_multi_insn` uses awkward bit manipulation (`LOBYTE(v2[0]) ^ 0x48 | BYTE4(v2[0]) ^ 0x6F`) instead of clean character comparison.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but aggressive constant folding destroyed logic: `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`. `param_stringize()` returns `19` instead of computing string lengths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `test_asm_features` has excessive local variable declarations (`v0` through `v14`) that disrupt reading flow but don't break logic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminated computation redundancy but at cost of semantic loss. `test_asm_features` repeats similar printf patterns. No dead code observed in main logic paths.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `int` used universally instead of `int32_t`, `size_t`, `ssize_t`. Pointer semantics lost (`int *arr` → `int a1`). SIMD types (`__m128i`) partially preserved but inconsistently applied.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union definitions recovered. Original code had minimal composite types, but decompiler shows no capability to recover them. Array parameters decayed to pointers without size information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int *)mmap(...)`, `(__m128i)xmmword_2030`. Volatile semantics for atomics partially preserved (`volatile signed __int32 *`). No buffer overflow warnings on array access patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. Only auto-generated annotations (`// eax`, `// [esp+0h]`). No algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Macro expansion patterns not identified. Assembly-to-C conversions not flagged as recovered from inline asm. String comparison idiom in `call_asm_multi_insn` not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures marked ("FAILED to decompile: printf"). However, suspicious internal patterns (bit manipulation, constant-folded returns) not flagged. No warnings about potential semantic loss from optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions. Error return values (`-1`, `-2`, `-3` in `param_memory_protection`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable `global_var` referenced without context. No call graph documentation. Callback relationships not identified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed in address order, not logical groups. No distinction between static/non-static preserved. Test functions (`test_preprocessing_features`, `test_asm_features`) not grouped with their callees.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed to decompile (`printf`, `mmap`, `sysconf`, etc.). Code will not compile standalone. No dependency documentation. Platform-specific intrinsics (`_mm_add_epi32`, `_InterlockedExchangeAdd`) require specific headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+7+4+5)/4 = 4.75
+Level 2 Average: (7+6+7+7)/4 = 6.75
+Level 3 Average: (5+5+5)/3 = 5.00
+Level 4 Average: (2+4+5+2)/4 = 3.25
+Level 5 Average: (5+5+4)/3 = 4.67
+
+Overall = (4.75 × 0.30) + (6.75 × 0.25) + (5.00 × 0.20) + 
+          (3.25 × 0.15) + (4.67 × 0.10)
+        = 1.425 + 1.688 + 1.000 + 0.488 + 0.467
+        = 5.07/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `a1`, `a2` should be named `size`, `arr`, `n`** based on usage patterns and comparison to source
+- **Magic numbers `30`, `7`, `3`, `1`** in sysconf/mmap/mprotect calls should be recovered as `_SC_PAGESIZE`, `PROT_*`, `MAP_*` constants
+- **Zero comments** explaining recovered logic, especially for assembly-to-C conversions
+- **Constant folding destroyed semantics** - `call_macro_constants()` returns `64` directly instead of showing the call relationship
+- **8 external functions failed to decompile** with no stubs or forward declarations provided
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (scored 7/10)** - Loop constructs and conditionals were successfully recovered from assembly into idiomatic C patterns
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Complete absence of explanatory comments makes understanding recovered logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Recover system call constants** - Map magic numbers in sysconf/mmap/mprotect to named constants using platform knowledge bases
+3. **Add decompilation confidence annotations** - Flag regions where optimization may have altered semantics (constant folding, inlining) and document recovery uncertainty

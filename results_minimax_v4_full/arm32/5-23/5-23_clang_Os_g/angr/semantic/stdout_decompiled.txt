@@ -1,0 +1,25 @@
+test_preprocessing_features
+
+64
+30
+32
+57122
+116
+19
+60
+LOG: Values: 10, 20, 30
+60
+16
+500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:23
+382
+382
+test_asm_features
+
+15
+15
+42
+0
+30
+77
+77

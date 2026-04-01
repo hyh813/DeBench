@@ -1,0 +1,15 @@
+Antigravity
+opaque_predicate: 10
+opaque_predicate(5): 20
+instruction_substitution: 225
+string_encryption: 0
+tail_call_optimized: 500500
+non_tail_call: 5050
+vectorized_loop: 27
+link_time_optimization: 20
+division_by_zero: 2
+null_pointer_deref: 41
+buffer_overflow: 30
+integer_overflow: 2000000000
+undefined_behavior: 10
+implementation_defined: 48

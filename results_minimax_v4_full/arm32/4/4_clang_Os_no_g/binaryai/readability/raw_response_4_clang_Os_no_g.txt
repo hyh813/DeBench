@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are named generically as `param_1`, `param_2`, `local_c`, `local_40`, `iVar1`, `uVar1`. The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum`. Only type-hinted prefixes (i=integer, u=unsigned) provide minimal context.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly match the original source: `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `param_by_value_int`, `ret_basic_type`. External library functions (`printf`, `strlen`) are correctly identified. Minor issue: some internal functions like `_init` are auto-generated.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21). String literals are referenced as `&DAT_0001178b` without recovery of actual content. No named constants from the original source (like `MAX_SIZE`) were recovered.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled code is relatively clean. Type-hinted variable names (`iVar1`, `puVar2`) are present but don't significantly impede readability. No redundant casts, debug instrumentation, or frame pointer manipulation artifacts observed. Minor auto-generated names like `<EXTERNAL>` for library functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use do-while constructs (`do { ... } while (param_1 != 0)`), conditionals are clear. At `-O0` debug level, the code closely matches source structure. Minor: some complex arithmetic in `test_calling_conventions` with carry flags, but this is ARM64-specific ABI handling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each test function (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) is properly separated. No over-fragmentation or monoliths. Parameter lists match original function signatures.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `test_calling_conventions` with computed array indexing. Early returns are used appropriately in functions like `varargs_func`. Minor disruption from computed goto patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling is present in `func_struct_byval` (iterating with `iVar2 != 0x80` for 128 bytes), which is expected at `-O0`. Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate: `int` for most integers, `undefined4` for unknown 32-bit types, `undefined8` for 64-bit, `byte*` for char pointers. Original source uses specific types like `int`, `char*`, `double`, `long long`, `va_list`. The type `undefined4` obscures the actual type (could be float, unsigned int, etc.).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. Original source defines `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`. Decompiled code uses raw pointer arithmetic: `local_10[0] = param_1; local_10[1] = param_2;` instead of struct field access. The struct passing convention is partially visible but not typed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. `byte*` used for string parameters (`param_string(byte *param_1)`). Function pointer typed as `code *` which loses signature information. However, no obviously dangerous casts between incompatible types. Minor: `param_1 + 1` in `ret_pointer` assumes pointer arithmetic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source has extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定", "// 测试: 参数从右到左压栈"). This complete absence makes understanding the test scenarios impossible without the source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized but not named. Varargs handling shows `va_list` pattern via `local_c` array. The `param_double_ptr` function shows pointer-to-pointer idiom. However, no explicit naming of patterns like "varargs", "callback", "output parameter".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The decompiled code presents everything as certain, even when there could be ambiguity. For example, the complex floating-point operations in `func_mixed_args` involving `__floatsidf`, `__adddf3`, `__floatdidf` are not explained. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. Original source has implicit contracts (e.g., `func_struct_byptr` requires non-null pointer, `varargs_func` requires count > 0). These are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - we can see `main` calls `test_calling_conventions()`, `test_parameter_passing()`, `test_return_values()`. Static functions like `callback_func` are properly scoped. However, no explicit documentation of call graph or usage relationships.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically, matching the source file's organization: calling convention functions first, parameter passing functions, return value functions, then test functions. External library functions are separated. Matches the original 665 LOC source structure well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions are marked with `<EXTERNAL>` and include proper signatures (`int printf(char *__format,...)`). However, no header file recovery, build instructions, or dependency documentation. The code would require significant patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `local_c`, `iVar1`) instead of semantic names from source (`a`, `b`, `count`, `args`)
+- No struct type recovery - `LargeStruct`, `SmallStruct` are lost, replaced with raw pointer arithmetic
+- Complete absence of comments - original source's extensive documentation explaining test scenarios is missing
+- Magic numbers everywhere (`0xf`, `0x32`, `0x2a`) without constant name recovery
+- No type precision - `undefined4`, `undefined8` obscure actual types like `double`, `long long`
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names perfectly match the original source (`cdecl_func`, `varargs_func`, `param_by_value_int`), making it easy to identify which test case each function implements.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The original source has extensive comments explaining each test case's purpose, scenario, and expected behavior. This documentation is completely absent from the decompiled output, making it impossible to understand the test scenarios without reference to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 + param_2` suggests addition operands → rename to `a`, `b`; `local_c` used with `va_arg` suggests varargs list → rename to `args`)
+2. **Recover struct/union types from memory layout patterns**: Detect sequential memory accesses at fixed offsets and reconstruct struct definitions with field names
+3. **Add semantic comments for test functions**: When decompiling test harness code, recover the intent comments (e.g., "// CALL-L1-01: cdecl调用约定") to explain what each function tests

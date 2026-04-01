@@ -1,0 +1,156 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `i`, `j`, `k` throughout. For example, in `double_value(unsigned int a0)`, parameter `a0` should be named `x` based on the source. The naming provides no semantic information about the variable's purpose - `v0` in `array_1d_stack` could be `sum` or `index` but it's impossible to determine without deep analysis.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Some functions retain their original names (e.g., `double_value`, `process_int`, `process_char`, `test_data_types_l1`), but many are named with mechanical addresses like `sub_4006e4`, `sub_4007b0`, `sub_400888`. The test functions are correctly named, but helper functions like `complex_callback` are preserved while many internal functions lose their identity. The naming is inconsistent - some semantic names exist but many are auto-generated.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is riddled with unexplained magic numbers. For example, `4294967295` (0xFFFFFFFF) appears repeatedly for masking operations without explanation. The expression `(a0 * 2 | a0 >> 31) & 4294967294` in `double_value` is an overly complex way to express signed multiplication by 2. Constants like `25`, `32`, `65` in character processing are not explained. The literal clarity is severely compromised.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Significant noise artifacts exist: excessive bit manipulation macros like `__ROL__` for rotate operations, unnecessary masking expressions (e.g., `& 4294967295`), complex condition calculations like `arm64g_calculate_condition`, and frame pointer manipulations. The `process_float` function returns an uninitialized `v0`, and `process_double` returns a string literal instead of a computed value - these are severe decompilation artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+At -O0, control flow should be relatively natural, but some issues exist. The `array_2d_stack` function uses a complex pointer arithmetic loop that obscures the simple 10-iteration diagonal sum. The `array_complex_index` function has convoluted condition checking with `arm64g_calculate_condition` calls. However, most simple functions like `double_value` and `process_int` have straightforward control flow.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Functions are appropriately decomposed - each test function calls multiple helper functions as expected. The `main` function properly calls the four test functions. However, some functions like `test_array_types` are quite large (over 100 lines) with significant local variable declarations. The decomposition is acceptable but not optimal.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Most code reads top-to-bottom, but some functions have forward jumps or complex loop structures. The `array_3d` function uses nested do-while loops that are harder to follow than for-loops. The `array_pointer` function has a complex termination condition `ptr != (char *)&a0[7 + 10 * a1] + 2` that disrupts linear reading.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Significant redundancy exists in bit manipulation. For example, `(a0 * 2 | a0 >> 31) & 4294967294` appears in multiple functions (`double_value`, `process_int`, `ptr_const`) with slight variations. The masking operations are repeated throughout. Some dead code patterns exist in the complex functions like `__addtf3`.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Major type degradation throughout. The decompiler uses `unsigned int` instead of `int` for functions like `double_value(int x)`, `process_int(int x)`. The `long` type becomes `unsigned long long`. The `short` type is not properly recovered - `process_short` takes `unsigned int` parameters. Function pointers are often treated as `unsigned long long`. The `const` qualifier is not preserved in parameter types.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+The decompiler creates synthetic structs like `struct_0`, `struct_1` with generic field names (`field_0`, `field_1`, `field_8`). For example, `struct_with_ptr` becomes:
+```c
+typedef struct struct_0 {
+    unsigned int field_0;
+    char padding_4[4];
+    struct struct_1 *field_8;
+} struct_0;
+```
+This loses the original names (`data`, `next`). The bitfield handling in `struct_bitfields` is particularly complex and obscures the original structure. Union types are partially recovered but lose their semantic names.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple type safety issues: extensive use of raw pointer arithmetic (e.g., `ptr + v0 * 4`), unsafe casts in `ptr_void` function, and pointer type confusion. The `ptr_diff` function has an extremely complex and potentially incorrect expression: `((a0 - a1) * 0x4000000000000000 | a0 - a1 >> 2) & 13835058059577131007 & 4294967295`. The `process_double` returning a string literal is a critical type safety failure.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Almost no comments exist in the decompiled code. The only comments are the auto-generated function headers like `// Function: double_value at 0x400894`. There are no explanations of algorithm logic, no documentation of preconditions/postconditions, and no indication of uncertainty. The code is completely devoid of meaningful commentary.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Some patterns are recognizable (loops, conditionals) but not explicitly named or documented. The linked list traversal in `linked_list` is recognizable as a while-loop pattern but not identified as such. No design patterns, algorithms, or data structure patterns are explicitly recognized or named.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly indication exists. The `process_float` returning uninitialized data, `process_double` returning a string literal, and the extremely complex expressions in `ptr_diff` and `array_complex_index` are presented as confident code without any warnings about potential issues or uncertainty.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No contract information is recovered. There are no preconditions (e.g., "requires: ptr != NULL"), no postconditions, and no invariant documentation. The error return in `array_complex_index` (-1 for out-of-bounds) is not documented as such.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function calls are present but relationships are not documented. The test functions call their helper functions, but there's no comment indicating which functions are called by which. Global variables like `g_413f88` are declared as `extern` but their purpose is unclear. No call graph or usage documentation exists.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are roughly grouped by type (data types, arrays, pointers, composites) in the decompiled output, matching the source organization somewhat. However, the file is a single monolithic output with no clear separation. Static functions are not explicitly marked as static in all cases.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code would not compile as-is. Issues include: undefined references to `__printf_chk`, `puts`, `__libc_start_main`, `__stack_chk_fail`, and other libc functions. The `process_double` returning a string literal would cause type errors. Many extern declarations are incomplete. Significant patching would be required to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 3) / 4 = 3.25
+L2_avg = (5 + 7 + 6 + 4) / 4 = 5.50
+L3_avg = (3 + 4 + 4) / 3 = 3.67
+L4_avg = (1 + 3 + 1 + 2) / 4 = 1.75
+L5_avg = (4 + 6 + 2) / 3 = 4.00
+
+Overall = (3.25 × 0.30) + (5.50 × 0.25) + (3.67 × 0.20) + 
+          (1.75 × 0.15) + (4.00 × 0.10)
+        = 0.975 + 1.375 + 0.734 + 0.263 + 0.400
+        = 3.75/10
+```
+
+### Overall Readability Score: 3.75/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic names (`a0`, `a1`) and local variables use `v0`, `v1`, etc., providing zero semantic information
+- **Type precision**: `int` parameters become `unsigned int`, losing sign information; `const` qualifiers are lost
+- **No comments**: Zero meaningful comments explaining algorithm logic, magic numbers, or uncertainty
+- **Composite type loss**: Struct fields named `field_0`, `field_1` instead of `data`, `next`, `x`, `y`
+- **Anomaly silence**: Critical issues like `process_double` returning a string literal are presented without warning
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are appropriately sized and helper functions are properly extracted. The test functions call their respective helper functions in a logical order matching the source.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiled code has essentially zero meaningful comments. Without any documentation, the complex bit manipulation expressions and algorithm logic are extremely difficult to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0 * 2` suggests multiplication input, `ptr + offset * 4` suggests array indexing) to generate semantic names like `x`, `index`, `sum`
+2. **Recover struct field names from context**: Use the struct definition in the source or field access patterns to name fields (e.g., `field_0` → `data`, `field_8` → `next`)
+3. **Add confidence indicators for anomalous code**: Flag functions that return wrong types, uninitialized values, or have extremely complex expressions with comments like `// WARNING: Possible decompilation error`

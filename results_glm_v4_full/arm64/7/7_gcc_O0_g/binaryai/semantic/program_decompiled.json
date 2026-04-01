@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_O0_g/binaryai/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "Testing fake branch...\n\nfake_branch result: 10\nopaque_predicate result: 56\ninstruction_substitution result: 10\nstring_encryption result: 0\ntail_call_optimized result: 500500\nnon_tail_call result: 630\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

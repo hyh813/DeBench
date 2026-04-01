@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `v4`, `v5`). While `ptr` is used for pointers, it lacks semantic specificity (e.g., `current_node` vs `ptr`), making it difficult to track data flow in complex functions like `linked_list_heap`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `double_value`, `local_array`, `heap_basic`), likely due to symbol preservation. This provides excellent high-level context despite the poor variable naming.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers, such as `4294967295` (representing `-1` or `UINT_MAX`) and `77708` (base address of `global_array`). These obscure the logic; `4294967295` should be represented as `-1` or a named constant.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiler output is heavily polluted with `armg_calculate_condition` calls, which appear to be lifting artifacts for ARM condition codes. This noise completely obscures the actual conditional logic (e.g., `if` statements), rendering the code nearly unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is severely disrupted by `armg_calculate_condition` artifacts, turning simple `if` checks into complex, unreadable expressions. Additionally, array loops are often represented as `do-while` loops with pointer arithmetic (e.g., `local_array`), which is harder to follow than a standard `for` loop.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions map 1:1 with the source code boundaries where they exist in the binary. While some logic was inlined by the compiler (e.g., inside `test_stack_memory`), the decompiler correctly presents the remaining functions as cohesive units.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Functions like `memop_memcpy` and `memop_memcmp` contain excessive label jumping (`LABEL_115e5`, `LABEL_115e6`) caused by the failed lifting of condition codes. This creates a "spaghetti" structure that prevents linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler effectively reflects the compiler's optimizations, removing dead stores and redundant calculations. For example, `test_stack_memory` shows the pre-calculated results of function calls rather than the calls themselves, which is accurate to the binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are imprecise, with `unsigned int` used ubiquitously even for signed values (e.g., `double_value` takes `unsigned int` instead of `int`). Pointers are often typed as `unsigned int *` rather than specific struct pointers, losing semantic type information.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Structures are recovered with correct layout and padding (e.g., `struct struct_0` in `local_array`), but field names are generic (`field_0`, `field_4`). The `Point` struct in `local_struct` was completely optimized away, which is expected but limits recovery.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are no obviously dangerous casts that would cause immediate crashes, but the loose typing (e.g., treating `void*` from `malloc` immediately as `unsigned int*`) requires the reader to infer safety. It is not unsafe, just imprecise.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually absent, with the exception of `/* do not return */` annotations. There are no comments explaining the complex `armg_calculate_condition` logic or the pointer arithmetic used for array access.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls like `malloc`, `free`, and `fork` are recognized. However, higher-level idioms like the linked list traversal in `linked_list_heap` are obscured by pointer math and generic variable names, making the pattern hard to spot.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the `armg_calculate_condition` calls as anomalies or lifting artifacts; it presents them as standard function calls. This misleads the reader into thinking they are part of the original program logic.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Preconditions like `if (!ptr) return ...` are preserved, but they are not documented as contracts (e.g., "Requires: ptr != NULL"). The reader must infer the error handling logic from the magic number return values.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Global variables and external functions are correctly declared with `extern` (e.g., `extern unsigned int global_counter;`). This helps understand dependencies, even if the usage inside functions is messy.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by memory address, which is standard for decompilers but does not group related logic (e.g., all heap functions) together as the source file did.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is uncompilable due to the presence of `armg_calculate_condition`, which is not a standard C function. Additionally, hardcoded addresses like `77708` would break compilation on any other system.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 10 + 3 + 2) / 4 = 4.75
+L2_avg: (4 + 7 + 4 + 8) / 4 = 5.75
+L3_avg: (5 + 6 + 6) / 3 = 5.67
+L4_avg: (2 + 4 + 3 + 4) / 4 = 3.25
+L5_avg: (7 + 5 + 1) / 3 = 4.33
+
+Overall = (4.75 * 0.30) + (5.75 * 0.25) + (5.67 * 0.20) + 
+          (3.25 * 0.15) + (4.33 * 0.10)
+Overall = 1.425 + 1.4375 + 1.134 + 0.4875 + 0.433
+Overall = 4.917
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet List)
+- **Lifting Artifacts:** The code is dominated by `armg_calculate_condition` calls, which obscure all conditional logic and make the code unreadable.
+- **Magic Numbers:** Error codes are represented as `4294967295` instead of `-1`, and global array accesses use hardcoded addresses like `77708`.
+- **Generic Naming:** Variables are named `v0`, `v1`, etc., losing all semantic meaning of the original source.
+- **Pointer Arithmetic:** Array accesses are represented as raw pointer math (e.g., `77708 + a0 * 4`) instead of array indexing syntax.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully preserved the original function names from the binary symbols, providing the only clear semantic link to the source code.
+
+### Most Needs Improvement (Single Dimension)
+- **Noise Reduction (2/10)**
+- **Why?** The `armg_calculate_condition` artifacts are a critical failure in the lifting/decompilation process that renders the control flow completely opaque.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Resolve Condition Code Artifacts:** Implement a pattern matching pass to convert `armg_calculate_condition` sequences back into standard C `if`/`else` statements.
+2.  **Symbolic Constant Propagation:** Replace magic numbers like `4294967295` with their likely semantic equivalents (e.g., `-1`, `NULL`, `UINT_MAX`) based on context.
+3.  **Array Index Recovery:** Improve the analysis of stack and global memory access to convert pointer arithmetic (e.g., `base + index * 4`) back into array indexing syntax (e.g., `arr[index]`).

@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+The decompiler uses systematic but semantically meaningless naming: `param_1`, `param_2` for parameters; `local_34`, `local_10`, `local_c` for stack variables; `auStack_808`, `aiStack_30` for stack arrays. At -O0 with debug info available, variables like `x`, `arr`, `n` should be recoverable but are replaced with generic offset-based names. Only global variables like `global_counter`, `bss_var` retain meaningful names.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Most function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `static_local`, `memop_memset`, `memop_memcpy`. The decompiler correctly preserved the semantic intent in function names. Minor deduction for some internal functions like `call_weak_fn` which could be better documented.
+
+### 3. Literal Clarity
+**Score: 7/10**
+
+String literals are perfectly preserved: `"MEM-L1-01 (local_vars): %d\n"`, `"HEAP-L2-01 (heap_basic): %d\n"`. Numeric literals like `0x2a` (42), `0x14` (20), `0x800` (2048) are present but in hex. Some magic numbers like loop bounds could benefit from named constants. The `0xb` in heap_overflow correctly reflects the off-by-one error in the original source.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Significant compiler artifacts present: stack canary checks (`___stack_chk_guard`), type annotations (`undefined4`, `undefined8`, `byte`), stack check failure calls. The `vla_stack` and `alloca_usage` functions contain complex pointer manipulation loops for stack allocation that obscure the simple `alloca()` call. However, at -O0, these artifacts are expected from GCC's stack protection.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Most control flow is natural and readable: `for` loops, `if/else` conditionals, early returns for error handling. The `linked_list_heap` function correctly recovers the while-loop pattern. However, `vla_stack` and `alloca_usage` contain confusing pointer arithmetic loops for stack allocation that obscure the simple VLA/alloca semantics. At -O0, loop structures should be cleaner.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Function boundaries match the original source exactly. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is properly separated. No inlining or outlining artifacts at -O0. Function sizes are appropriate (typically 20-80 lines). The decompiler correctly preserved the original decomposition.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Code generally reads top-to-bottom without excessive jumps. Early returns for error conditions (NULL checks) are appropriately placed. The `linked_list_heap` function has nested while loops but they're clearly structured. No goto abuse or spaghetti code patterns observed.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+At -O0, there's minimal optimization overhead. No loop unrolling artifacts. No dead code. No common subexpression elimination. The decompiled code closely mirrors the source structure without significant redundancy.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Extensive use of generic types: `undefined4`, `undefined8`, `byte`, `undefined`. Integer types are not distinguished (should be `int32_t` or `size_t`). Function pointers use `code *` instead of proper signatures. However, basic types like `int`, `void *`, `char *` are correct. The `ulong` usage in memory operation functions is appropriate for size_t.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+**Critical failure**: No struct types are recovered. The `Point` struct is completely lost - `heap_struct` uses `int *` with manual `__ptr[1]` access instead of `Point*` with `p->x`, `p->y`. The `Node` struct is lost - `linked_list_heap` uses `int *` with offset calculations `*(int **)(local_20 + 2)` instead of `Node*`. The `TreeNode` struct is similarly lost. Global struct `global_point` is treated as a raw integer.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Significant type safety issues from struct loss: manual pointer arithmetic like `*(int *)((long)__ptr + (long)local_10 * 4)` instead of array indexing. Function pointer type `code *` is unsafe. Extensive `undefined4*` casts. However, no obvious buffer overflow patterns beyond what exists in the source (which intentionally tests these).
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+No meaningful comments present. No algorithm explanations. No documentation of non-obvious logic. No decompilation confidence indicators. Only auto-generated function headers like `// Function: double_value @ 0x100c54`. The code is completely devoid of semantic context.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Some patterns are implicitly recognizable: linked list creation and traversal is identifiable through the malloc/next pattern; tree structure is somewhat visible; memory allocation/free pairs are clear. However, no explicit pattern naming or recognition (e.g., "Linked list detected"). The struct loss makes patterns less obvious than they should be.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly detection or communication. The `stack_alias` function has a clearly broken implementation (`&stack0x00000000 == 0xc` is always false) but no warning is given. No flags for unusual patterns, indirect calls, or potential undefined behavior. The decompiler presents everything as confident output.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No contract information whatsoever. No preconditions documented (e.g., "requires: n > 0"). No postconditions documented (e.g., "ensures: return is heap-allocated and must be freed"). No invariant recognition. The implicit contracts from NULL checks and bounds validation are not communicated.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Function calls are explicit and traceable. Global variable usage is visible (`global_counter`, `global_array`, etc.). Callback relationships like `set_global_callback(double_value)` → `call_global_callback` are clear. However, no explicit documentation of relationships (no "Calls:", "Called by:" comments). The caller-callee relationships require manual tracing.
+
+### 17. Module Organization
+**Score: 4/10**
+
+The output is a single monolithic listing with all functions sequentially. No logical grouping (stack functions, heap functions, static functions). No separation into sections or files. Functions appear in address order rather than logical grouping. The original source's clear section comments (// ============================================================================) are not reflected.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code would not compile standalone. Missing type definitions (`Point`, `Node`, `TreeNode`). External declarations are incomplete. The `DAT_` and `&DAT_` references are undefined symbols. However, the function signatures are mostly correct and the code structure is sound - it would require moderate patching (adding struct definitions, extern declarations) to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 7 + 5) / 4 = 5.75
+L2_avg = (7 + 9 + 8 + 9) / 4 = 8.25
+L3_avg = (5 + 3 + 5) / 3 = 4.33
+L4_avg = (2 + 5 + 1 + 1) / 4 = 2.25
+L5_avg = (6 + 4 + 4) / 3 = 4.67
+
+Overall = (5.75 × 0.30) + (8.25 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.725 + 2.0625 + 0.866 + 0.3375 + 0.467
+        = 5.458 ≈ 5.5/10
+```
+
+### Overall Readability Score: 5.5/10
+
+---
+
+### Critical Defects
+
+1. **Struct type recovery completely failed**: `Point`, `Node`, `TreeNode` structs are all lost, replaced with raw `int*` and pointer arithmetic. This is the most severe readability issue.
+
+2. **Variable naming is semantically empty**: `param_1`, `local_34`, `auStack_808` provide no semantic information. At -O0 with debug symbols, meaningful names should be recoverable.
+
+3. **No comments or documentation**: Zero semantic context is provided. No algorithm explanations, no decompilation confidence, no anomaly warnings.
+
+4. **Stack allocation functions are obfuscated**: `vla_stack` and `alloca_usage` contain complex pointer manipulation loops that completely obscure the simple `alloca()` call pattern.
+
+5. **Type precision is poor**: Excessive use of `undefined4`, `undefined8`, `byte` instead of specific types. Function pointers use `code *` instead of proper signatures.
+
+---
+
+### Best Quality Aspect: Function Decomposition (9/10)
+
+Function boundaries match the original source exactly. At -O0 with debug info, the decompiler correctly preserved all function separations without inlining or outlining artifacts. Each test function is properly isolated.
+
+---
+
+### Most Needs Improvement: Anomaly Indication & Contract Recovery (both 1/10)
+
+The decompiler provides zero feedback about suspicious code patterns, undefined behavior, or implicit contracts. The broken `stack_alias` function is presented without warning. NULL checks and bounds validation have no documentation. This leaves analysts without critical context for understanding potential issues.
+
+---
+
+### Top 3 Recommendations
+
+1. **Recover struct types from memory layout analysis**: Use size information and field access patterns to reconstruct `Point`, `Node`, `TreeNode` with proper field names. This would dramatically improve readability for heap operations.
+
+2. **Leverage debug symbols at -O0**: The source was compiled with `-g`, so DWARF information should be available to recover meaningful variable names like `x`, `arr`, `n` instead of `param_1`, `local_10`.
+
+3. **Add semantic comments and anomaly flags**: Include algorithm explanations, mark indirect calls that couldn't be resolved, document implicit contracts from NULL checks, and flag potential undefined behavior like the dangling pointer in `dangling_pointer`.

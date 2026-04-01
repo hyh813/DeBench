@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_O1_no_g/ida/syntactic/bin/6_clang_O1_no_g_fixed",
+  "stdout": "Testing Standard Library Functions\nstrcpy test: 8\nstrcmp test: 0\nstrlen test: 12\nmemcpy test: 90\nmemcmp test: -1\nValue: 42, Name: Test\nprintf test: 22\nscanf test: 579\nfopen test: 42\nfread_fwrite test: 42\nmalloc_free test: 90\nmemset test: 0\nstrchr_strstr test: 15\nTesting System Calls\nsyscall test: 42\nstat test: 42\nfork_exec test: -1\npipe test: 42\nsocket test: 42\nshm test: 42\nsignal_handling test: 42\nTesting Thread Concurrency\npthread_create test: 49\npthread_join test: 0\nmutex_lock test: 42\ncondition_variable test: 42\natomic_ops test: 500\nthread_local_storage test: -3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

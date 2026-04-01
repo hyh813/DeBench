@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. Original code had meaningful names like `local`, `arr`, `head`, `current`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some original names recovered (`local_vars`, `heap_basic`, `double_value`, `main`) but many functions have mechanical `sub_XXXXXX` names. Unnecessary wrapper functions created (e.g., `sub_4012b1` just calls `local_vars`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (error return), `0xfffffff0`, `0xfffffffc` for alignment. Original constants like `42`, `10`, `20` are preserved but unexplained. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `deregister_tm_clones`, `register_tm_clones`. Architecture mismatch (X86 decompilation of ARM64 binary). Many unnecessary wrapper functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `local_vars` recover well (`return a0 * 2 + 10`), but complex functions like `vla_stack` and `alloca_usage` have extremely convoluted loop unrolling that obscures original `for` loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Poor granularity - unnecessary wrapper functions created for every original function. `linked_list_heap` is recovered but fragmented. Original cohesive functions split into caller/callee pairs unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom reasonably. However, loop unrolling in `heap_basic`, `memory_leak` creates non-linear appearance with multiple similar code blocks.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling - `heap_basic` and `heap_array` have nearly identical unrolled loop patterns. No dead code removal evident in complex functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - everything becomes `unsigned int` or `void*`. Original `int`, `char*`, `Point*`, `Node*`, `TreeNode*` all lost. No const-correctness. Function pointers typed as `unsigned int` but called as functions.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with fields `field_0`, `field_4`, `padding_0[92]`. Original `Point {x, y}`, `Node {data, next}`, `TreeNode {data, left, right}` completely lost semantic meaning.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts present. Pointer arithmetic on `void*` and `char*`. `global_func_ptr(a0)` called as function but typed as `unsigned int`. `dangling_pointer` returns `*(ptr)` after free with no warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators. Original extensive comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list creation/traversal in `linked_list_heap` not recognized. Tree structure in `tree_heap_traversal` not identified. Data structure patterns completely obscured.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP`. Incorrect code presented confidently (e.g., `stack_alias` returns constant `20` ignoring parameters). No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented. NULL checks present but not explained as contracts. Error return values (`4294967295`) not documented. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Global variables declared as `extern` but usage unclear. Callback relationships (`set_global_callback`, `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. Test functions mixed with implementation. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many external dependencies (`extern` declarations) undefined. Architecture mismatch (X86 vs ARM64). Would require significant patching to compile. Some functions reference undefined globals.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25
+Level 3 (Type):        (3+3+3)/3   = 3.00
+Level 4 (Semantic):    (2+2+3+3)/4 = 2.50
+Level 5 (Contextual):  (5+4+4)/3   = 4.33
+
+Overall = (4.00 × 0.30) + (5.25 × 0.25) + (3.00 × 0.20) + 
+          (2.50 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.31 + 0.60 + 0.38 + 0.43
+        = 3.92/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `ptr`, `a0` provide no semantic information about purpose
+- **Type system severely degraded** - All types collapse to `unsigned int` or `void*`, losing struct definitions like `Point`, `Node`, `TreeNode`
+- **Loop unrolling obscures original intent** - Simple `for` loops transformed into complex unrolled patterns in `vla_stack`, `alloca_usage`, `heap_basic`
+- **Test functions broken** - `printf` calls missing format arguments (e.g., `printf("MEM-L1-01 (local_vars): %d\n")` without value)
+- **Architecture mismatch** - ARM64 source decompiled as X86, indicating fundamental binary analysis errors
+
+### Best Quality Aspect: **Structural Intelligibility (5.25/10)**
+- Simple functions like `local_vars`, `double_value`, `local_struct` recover reasonable control flow despite optimization artifacts
+
+### Most Needs Improvement: **Semantic Transparency (2.50/10)**
+- Zero meaningful comments, no pattern recognition, no anomaly warnings for clearly incorrect code like `stack_alias` returning constant 20
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Recover high-level loop constructs** - Detect loop unrolling patterns and reconstruct original `for`/`while` loops with appropriate bounds
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "CONFIDENCE: LOW - indirect call target unresolved") and warn about potential undefined behavior

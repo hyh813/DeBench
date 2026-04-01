@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr` with no semantic meaning. For example, in `param_strcpy`, `a0` and `a1` should be `dst` and `src` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retain original names (`param_strcpy`, `thread_compute`) but many helper functions use mechanical names (`sub_4012f4`, `sub_401724`). Some names are preserved but semantics are lost.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX/-1), `18446744073709551612`, and XOR constants (`7521977183824144706`) with no explanation. String literals preserved but numeric constants obscure logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frame pointer manipulation patterns (`v0 = &v1`) appear in every function. Redundant variable assignments and compiler artifacts like `__ROL__` operations clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `arm64g_calculate_condition` for basic comparisons instead of natural if-else. Loop structures often use do-while with manual counters instead of for loops. Goto statements present (`goto g_413ff8`).
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical bug: `call_strcpy` doesn't call `param_strcpy` but uses `strncpy` directly. `call_strlen` returns constant `12` instead of calling the function. Function boundaries don't match source semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but disrupted by forward jumps and nested condition calculations. Some functions have reasonable flow but others use complex branching.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Functions like `call_printf` call `printf` directly instead of `param_printf`. `call_fread_fwrite` calls `param_fread_fwrite` twice in return statement. Duplicate expressions throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `unsigned long long` instead of specific types. `FILE*` struct defined empty. `param_strlen` missing `str` parameter entirely. Signed/unsigned confusion in return values.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined with generic field names (`field_0`, `field_5`, `padding_0`). `sockaddr` partially recovered. TLS struct uses `tpidr_el0` which is architecture-specific noise.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(char *)ptr + v7`). Pointer arithmetic without proper typing. `param_scanf` missing input string parameter. Function signatures don't match source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. No documentation of API contracts or error conditions. Only "Failed to decompile" markers present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `pthread_create`). Atomic operations shown as intrinsics (`__aarch64_ldadd4_acq_rel`). Pattern recognition inconsistent.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Two functions marked "Failed to decompile" but no warnings about uncertain code elsewhere. `arm64g_calculate_condition` calls not explained as decompilation artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions or error condition documentation. Return value semantics completely unclear.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`atomic_counter`, `shared_counter`) referenced without context. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order but no logical grouping. No header file structure. Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing includes (`<pthread.h>`, `<stdio.h>`). Undefined external symbols (`g_4013ff8`, `__aarch64_have_lse_atomics`). Architecture-specific intrinsics won't compile on x86.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+5)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+4+6+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):        (4+4+3)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (1+5+4+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.04/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **`call_strcpy` doesn't call `param_strcpy`** - uses `strncpy` on uninitialized local buffer instead
+- **`param_strlen` missing `str` parameter** - function signature broken, `v2` uninitialized
+- **Magic number `4294967295`** used throughout for `-1` without explanation
+- **`param_fread_fwrite` string comparison** replaced with opaque XOR against constants (`7521977183824144706`)
+- **`arm64g_calculate_condition` calls** obscure simple comparisons without explanation
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Most functions read top-to-bottom without excessive forward jumps, making basic tracing possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Zero explanatory comments; a reader has no guidance on what the code does, why, or what the decompiler is uncertain about.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function call relationships** - `call_*` functions should invoke their corresponding `param_*` functions, not duplicate logic or return constants.
+2. **Add decompilation confidence annotations** - Mark uncertain code regions (like `arm64g_calculate_condition`) with comments explaining they're decompilation artifacts.
+3. **Infer semantic variable names from usage** - Variables used in size checks should be named `size`/`length`, pointers to buffers should be `buffer`/`dst`/`src`.

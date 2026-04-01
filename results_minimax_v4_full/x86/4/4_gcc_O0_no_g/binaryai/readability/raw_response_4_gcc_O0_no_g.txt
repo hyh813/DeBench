@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic - `param_1`, `param_2`, `local_1c`, `local_18`, `local_14`. The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum`, but these are completely lost in decompilation. Only stack frame offsets like `in_GS_OFFSET` provide any semantic hint.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions are correctly recovered: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, some internal functions remain as `FUN_00011030`, `FUN_00011090` etc. The main test functions match source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful (0x2a = 42 for func_no_args return), but many magic numbers lack explanation: `0x14` (20), `0x1e` (30), `0x28` (40) appear without context. The decompiler doesn't explain these are parameter values being passed. Mixed result - some constants inferable, others opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`if (*(int *)(in_GS_OFFSET + 0x14) != *(int *)(in_GS_OFFSET + 0x14))`), frame pointer manipulation, undefined types (`undefined4`, `undefined8`). The `__stack_chk_fail_local()` calls add noise. However, no debug instrumentation or asm blocks present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recognized as `for` constructs (e.g., `for (local_14 = 0; local_14 < param_1; local_14 = local_14 + 1)`). Conditionals are clear. At -O0, control flow should be nearly identical to source, and the decompiler achieves this. Minor issue: some switch statements become if-else chains.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - main test functions call sub-functions correctly. The decomposition matches source: `test_calling_conventions` calls `call_cdecl`, `call_stdcall`, etc. No 500-line monoliths. Function granularity is good and matches original structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but minimal. Some forward jumps exist in complex functions like `test_calling_conventions` but are manageable. No severe non-linearity that makes reading impossible.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling visible in `test_calling_conventions` where array initialization is explicit, but this is manageable. Common subexpression elimination artifacts are minimal. Overall clean.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of specific types. Parameters typed as `int` correctly, but `undefined4`, `undefined8` used for ambiguous types. Pointer types are reasonable (`int *param_1`). No `int32_t`, `size_t`, or const-correctness. At -O0, types should be more precise.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` (128 bytes) completely lost - `func_struct_byval` accesses `*(int *)(&stack0x00000004 + local_10 * 8)` with raw pointer arithmetic. `SmallStruct` not recovered - `func_struct_byptr` uses `param_1[1] * *param_1` instead of `p->x * p->y`. The original source defines clear structs but decompiler shows only raw memory access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `CONCAT44` used for double construction, `ROUND` for floating point. Function pointer typed as `code *` which is non-standard. Pointer arithmetic visible but generally safe. No major buffer overflow patterns. Minor type safety issues.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments whatsoever in the decompiled output. The original source has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定", "测试: 参数从右到左压栈"). Zero recovery of documentation. This is a major readability gap.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: varargs functions show manual va_list handling, calling conventions visible (fastcall shows `__regparm3`). However, no explicit naming of patterns like "varargs", "cdecl convention", or algorithm patterns. Basic hints present but not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The architecture mismatch (metadata says arm64 but code is x86) is not indicated. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior. Silent on all issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. Original source has implicit contracts (e.g., "param_1 != NULL" for pointer parameters) but none are documented. No `// requires:` or `// ensures:` comments. Zero contract information.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - `test_calling_conventions` calls `call_cdecl`, etc. Global variable usage somewhat visible. However, no explicit documentation of "called by" or "calls" relationships. Basic inference possible but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically: all calling convention tests together, parameter passing tests together, return value tests together. Matches source organization. Static functions properly scoped. Minor: all in single file without header separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes" - code compiles. Some external dependencies (printf via `FUN_000110b0` which is likely `printf`). Minimal stubs needed. The code is reasonably portable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`param_1`, `local_18`) - loses all semantic meaning from source (`a`, `b`, `count`, `sum`)
+- Composite types completely lost - `LargeStruct` and `SmallStruct` become raw pointer arithmetic
+- Zero comments recovered - original source has extensive documentation explaining each test case
+- No anomaly indication - architecture mismatch (arm64 vs x86) not flagged
+- Type precision poor - uses `undefined4`, `undefined8` instead of proper types
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most user-defined functions are correctly named matching the original source exactly (`cdecl_func`, `test_calling_conventions`, etc.). The decompiler recovered the function identity well.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Every parameter and local variable uses generic names. At -O0, the decompiler should be able to infer semantic meaning from usage patterns. `param_1` should be `a` or `count`, `local_18` should be `sum` based on accumulation patterns.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., accumulating in a loop → `sum`, counting iterations → `count`, pointer dereferencing → `ptr`)
+2. **Recover composite types**: Detect stack access patterns that indicate struct fields. `param_1[1] * *param_1` clearly indicates a 2-field struct, not just "two integers"
+3. **Add semantic comments**: At minimum, document what each test case verifies (e.g., "// Tests cdecl: right-to-left push, caller cleanup")

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/5-23/5-23_gcc_O2_g/angr/syntactic/bin/5-23_gcc_O2_g_fixed",
+  "stdout": "-317816136\n64\n30\n32\n57122\n116\n19\n60\nLOG: Values: 10, 20, 30\n60\n16\n500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:29\n382\n0\n15\n-1256356544\n42\n6\n30\n959107072\n959107072\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

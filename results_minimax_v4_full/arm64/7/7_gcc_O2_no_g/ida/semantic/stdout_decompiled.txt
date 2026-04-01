@@ -1,0 +1,16 @@
+Obfuscated Testing Suite
+
+opaque predicate (call): 10
+opaque predicate (param): 20
+instruction substitution: 225
+string encryption: 131
+tail call optimization: 500500
+non-tail call: 5050
+vectorized loop: 0
+link-time optimization: 20
+division by zero: 2
+null pointer dereference: 41
+buffer overflow: 30
+integer overflow: 2000000000
+undefined behavior: 10
+implementation-defined: 48

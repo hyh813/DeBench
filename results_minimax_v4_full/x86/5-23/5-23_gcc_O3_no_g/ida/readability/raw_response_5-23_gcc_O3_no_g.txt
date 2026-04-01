@@ -1,0 +1,88 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables are `v2`, `v3`, `i`, `result`. The original source used meaningful names like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment` which are completely lost. This makes it very difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `test_preprocessing_features`, `test_asm_features`. Internal utility functions use generic `sub_XXXX` format, but the main API functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: All macro constants are inlined as raw values: `1024` instead of `MAX_SIZE`, `64` instead of `BUFFER_COUNT * 4`, `57072` (0xDEF0 decimal) instead of `0xDEF0`. The original source's named constants are completely lost. The decompiler correctly computed the results but removed the symbolic names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) appear in several functions - this is compiler-generated but not excessive. No redundant casts or obvious dead code. The code is relatively clean from compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - simple if-else in `param_macro_constants`, for loops in `param_asm_clobber`, while loops in `param_asm_multi_insn`. At -O0 optimization, the decompiler correctly recovers the original control structures without spurious goto statements.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source had many small, focused functions (macro test functions, asm test functions). The decompiled code preserves this granularity - each function remains focused with reasonable parameter lists. No monolithic functions created.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without confusing jumps. Early returns are used appropriately (e.g., `param_dynamic_code` returns -1 on mmap failure). No forward jumps into loop bodies or excessive nesting.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (the original had small fixed iterations anyway). Common subexpression elimination is not excessive. The code is clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `int` for integers, `size_t` for sizes, `volatile signed __int32` for atomic operations, `__m128i` for SIMD. Some degradation exists (generic `int` instead of specific widths), but it's manageable. The atomic operations correctly use volatile.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The code doesn't heavily use structs, but when it does (SIMD operations), `__m128i` is correctly used. Arrays are accessed via pointer arithmetic which is standard for decompiled code. No struct recovery was needed for this particular source.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Atomic operations use proper `_InterlockedExchangeAdd` with volatile. SIMD uses proper intrinsics. Pointer arithmetic is reasonable. No obvious type-confused function pointers or buffer-overflow-prone patterns. Minor issue: some pointer types could be more specific.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **NO COMMENTS whatsoever** in the decompiled output. The original source had extensive comments explaining each test case (PP-L2-01, PP-L3-04, etc.), macro purposes, and assembly semantics. All of this is completely lost. This is a critical readability failure.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized - atomic operations use `_InterlockedExchangeAdd`, SIMD uses `_mm_add_epi32`, memory mapping uses standard mmap/munmap. However, these are not explicitly named or documented as patterns (e.g., "Implements lock-free atomic fetch-add").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly marks 8 functions as "FAILED to decompile" (e.g., `__libc_start_main`, `mprotect`, `sysconf`). However, there's no indication of other potential issues like the architecture mismatch (source says arm64, output is x86), or the fact that inline assembly was replaced with intrinsic calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., "requires: ptr != NULL" for mmap results, "ensures: page protection changed"). These are not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear - you can see `test_preprocessing_features()` calls `__printf_chk` multiple times. However, there's no documentation of which functions call which, the callback relationships, or global variable usage. The call graph is inferable but not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (preprocessing tests, asm tests), but there's no explicit module structure or section comments. The original had clear section headers (5.2, 5.3) which are lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code uses standard library functions (`printf`, `mmap`, `sysconf`) but doesn't include headers. It would require adding includes to compile. Dependencies are not documented. The code looks syntactically correct.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable naming is entirely generic** - all parameters are `a1`, `a2`, `a3`; local variables are `v2`, `v3`, `i`, `result`. The original names like `size`, `x`, `y`, `counter`, `increment` are completely lost.
+- **No comments at all** - the original source had extensive documentation explaining each test case, macro semantics, and assembly behavior. All of this is missing.
+- **All macro constants inlined as magic numbers** - `MAX_SIZE` becomes `1024`, `BUFFER_COUNT * 4` becomes `64`, losing the symbolic names that made the code readable.
+- **Architecture mismatch not flagged** - source metadata says arm64 but decompiled code is clearly x86 (uses ebx, eax, edx registers).
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly recovers natural control flow structures - for loops, while loops, if-else statements match the original source patterns. At -O0, this is excellent.
+
+### Most Needs Improvement: Comment Quality (2/10)
+The complete absence of comments severely impacts readability. The original source was essentially a tutorial with extensive explanations; the decompiled output is a bare code skeleton with no context.
+
+### Top 3 Recommendations:
+1. **Recover variable names from usage patterns** - e.g., `a1` used in `if (a1 > 1024)` should be named `size`; `a2` used as loop bound should be `count` or `n`.
+2. **Add comments explaining macro inlining** - when constants are inlined, add comments like `// was: MAX_SIZE (1024)` to preserve semantic meaning.
+3. **Generate documentation comments** - add function-level comments explaining what each test function validates, especially for the preprocessing and assembly test cases.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `idx` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered with original names (`cdecl_func`, `call_cdecl`, `varargs_func`), but surrounded by many generic wrapper functions (`sub_401030`, `sub_401221`, `sub_40125d`) that add no value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` used for -1 without explanation. String literals referenced via GOT offsets (`v1 - 12246`) instead of direct strings. Simple constants (5, 10, 42) remain clear.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe decompilation artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>`, `[D] PutI(72:F64x8)[t3,0] = t6()`. Many redundant wrapper functions that just call the real function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `func_mixed_args` contains broken control flow with unsupported expressions in both branches of if-else. Some functions use natural loops, but `varargs_func` uses pointer iteration that obscures the original va_list pattern.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Every function has a duplicate wrapper (`sub_401201` calls `cdecl_func`, `sub_401221` calls `call_cdecl`). This creates artificial fragmentation that doesn't match source organization.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most code reads top-to-bottom but stack variable initialization patterns (`v0 = v1; v1 = &v2;`) create non-linear reading. Some goto usage where loops should exist.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate struct definitions throughout file (struct_0 defined 3+ times with different layouts). GOT table access repeated in every function. Wrapper functions add 100% redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All types degraded to `unsigned int` regardless of original type. `func_mixed_args` lost `double` and `long long` parameters. Function pointers become `unsigned int *`. Original `int`, `char *`, `void *` distinctions mostly lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` and `SmallStruct` completely lost - `func_struct_byval` takes no parameters instead of struct. `func_struct_byptr` takes `unsigned int *` instead of `SmallStruct *`. Struct fields all generic (`field_0`, `padding_0`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(char *)&ptr[5080]`). Function pointer calls with wrong signatures (`a0(a1, *((int *)&v0), &v1)`). Pointer arithmetic on generic types obscures buffer boundaries.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated `[D]` markers indicating decompilation failures. No algorithm explanations, no parameter documentation, no return value descriptions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (uses manual pointer iteration). Struct passing conventions lost. Function pointer callback pattern obscured. No standard C idiom recovery.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate problems but don't explain them. `func_mixed_args` shows unsupported expressions without context. Some anomalies flagged but no guidance for manual resolution.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note NULL check). No postconditions inferred. Error return values (`4294967295` for -1) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but callback relationships lost (`callback_func` not linked to `param_func_ptr`). Global variable usage (`g_403008`, `_GLOBAL_OFFSET_TABLE_`) not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single file with no logical grouping. Original test sections (calling conventions, parameter passing, return values) not preserved. Wrapper functions interspersed randomly.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains undefined extern symbols (`_GLOBAL_OFFSET_TABLE_`, `g_403008`). GOT references need resolution. Would require significant patching and stub implementations to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+2)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+4+5+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.33
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.47/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `sum`, `count`, `index` in varargs functions)
+- **`func_mixed_args`** contains broken decompilation with `[D] unsupported_<class 'pyvex.expr.GetI'>` making it unusable
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` not recovered, parameters flattened to integers
+- **100% function wrapper redundancy** - every function has a `sub_XXXXXX` wrapper that adds no value
+- **Zero comments** - no documentation of algorithm intent, parameter meaning, or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `cdecl_func`, `call_cdecl`, `varargs_func` were successfully recovered from debug symbols, preserving some semantic identity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding intent impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate wrapper function duplication** - Detect when `sub_XXXXXX` only calls another function and merge them to reduce noise by ~50%.
+2. **Recover varargs patterns from stack access** - Recognize `va_start`/`va_arg` patterns from pointer iteration over stack parameters and restore `va_list` semantics.
+3. **Add decompilation confidence annotations** - Replace `[D] unsupported` markers with actionable guidance like "// DECOMPILER: Floating point handling uncertain - verify manually".

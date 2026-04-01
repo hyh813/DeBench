@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler failed to recover meaningful local variable names. Functions like `array_1d_stack` show generic names like `piVar1`, `piVar2`, `uVar5`, `lVar6` with "Unresolved local var: int sum@[???]" annotations. This is severe degradation - at -O0, variables should have debug symbols enabling proper names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `process_char`, `process_short`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, etc. Only internal functions like `FUN_00100620` are generic. The decompiler correctly preserved the semantic function names from debug information.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show computed literals (e.g., `0x61` for 'a', `0xb` for 11) but lack explanatory comments. The magic number `0x19` and `0xbfU` in `process_char` are unexplained. While values are correct, their semantic meaning (ASCII offset for case conversion) is lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with 100+ instances of "Unresolved local var" annotations, "WARNING: Unknown calling convention", and type warnings like "Unresolved local var: int vol_value@[???]". The output is cluttered with decompiler diagnostics that impede readability.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions like `process_char` and `process_int` have natural if-else and return expressions. However, array functions show aggressive loop unrolling (8-element chunks) which obscures the original loop structure. At -O0 this transformation is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Test functions properly call sub-functions. No monolithic functions observed. The decomposition matches the original source structure well.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. The `array_3d` function has extremely poor linearization with 60+ lines of unrolled accesses. Complex functions like `array_1d_stack` have forward jumps that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: The `array_3d` function is catastrophically unrolled - the original 3 nested for-loops became 125+ lines of direct array accesses. This is the worst example: `arr[4][0][0]`, `arr[4][1][0]`, etc. The decompiler made no attempt to recognize this pattern. Loop unrolling in `array_1d_stack` and `array_oob` is also severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool`. Function pointer types are generic (`_func_int_int *`). Some `undefined8` types appear. Overall good but not perfect.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. All types found: `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `DNode`, `Edge`, `Graph`, `UnionData`, `Flags`, `Device`. Field names are correct: `p->x`, `p->y`, `p->z`, `node->next`, `root->left`. Union and bitfield handling is accurate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some raw pointer arithmetic in array functions. No major safety violations that would cause undefined behavior. The code is reasonably safe to analyze.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No algorithm explanations, no documentation of non-obvious logic, no recovery confidence indicators. The comments are noise, not useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly present (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`) but not explicitly named or commented. A reader would recognize them but the decompiler doesn't highlight them.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "WARNING: Could not recover jumptable at 0x001014a0. Too many branches" for `enum_switch`. "Unresolved local var" indicates problems. However, the enum switch using a jump table is incorrectly handled - it shows raw pointer arithmetic instead of a switch statement.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The decompiler provides no insight into function contracts, expected input ranges, or error conditions. This is a significant gap.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. No documentation of callers/callees. The `main` function clearly calls the test functions, but the relationships between internal functions are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single output, which is expected for decompilation. Related functions (test functions and tested functions) are grouped together. Static functions properly identified.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C types and library functions (printf, puts). Should compile with minor fixes. External dependencies are clear. No compiler-specific hacks observed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable naming**: All local variables are generic (`piVar1`, `uVar5`, `sum@[???]`) - should recover names from debug info
+- **Loop unrolling**: `array_3d` expanded from 3 nested loops to 125+ lines of direct accesses - pattern not recognized
+- **No comments**: Zero useful comments explaining algorithms or intent
+- **Enum switch**: `enum_switch` shows raw pointer arithmetic instead of switch statement
+- **Noise pollution**: 100+ "Unresolved local var" annotations clutter output
+
+### Best Quality Aspect: Composite Type Recovery (9/10)
+Struct, union, and bitfield types are almost perfectly reconstructed with correct field names. The decompiler excelled at recovering complex data structures.
+
+### Most Needs Improvement: Redundancy Elimination (2/10)
+The catastrophic loop unrolling in `array_3d` and other array functions made code practically unreadable. At -O0, this transformation should not occur.
+
+### Top 3 Recommendations:
+1. **Recover local variable names from debug symbols** - At -O0, DWARF info contains variable names; the decompiler should use them
+2. **Detect and re-loop unrolled code** - Recognize patterns like `arr[0][0][0]`, `arr[0][0][1]`, ... and reconstruct loops
+3. **Add meaningful comments** - Document algorithms, pattern recognition (linked list, tree traversal), and uncertainty indicators

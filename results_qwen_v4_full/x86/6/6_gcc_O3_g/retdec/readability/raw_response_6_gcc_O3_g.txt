@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`, `temp`) with no semantic meaning. Original names like `dst`, `src`, `buffer`, `thread_count` are completely lost. Even simple functions like `param_strcpy` use `str` and `str2` instead of `dst` and `src`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core function names preserved (`param_strcpy`, `call_strcpy`, `param_strlen`) but many helpers degraded to address-based names (`function_13e0`, `function_1400`). Some functions incorrectly renamed with compiler artifacts (`param_thread_local_storage_constprop_0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`42`, `100`, `0x1000`, `0x72656853` for "Share"). String literals sometimes recovered but often obscured through pointer arithmetic (`(char *)(v1 + (int32_t)&g8 - 0x2eb0)`).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution: `__x86_get_pc_thunk_bx`, `__readgsdword(20)`, `__stack_chk_fail_local`, `lab_0x1cf0` labels. **Critical**: Architecture mismatch—original is ARM64 but decompiled code contains x86-specific instructions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage with labels (`lab_0x1cf0`, `lab_0x1d63`, `lab_0x1e80_2`) instead of natural loop/conditional constructs. At `-O0` optimization, this restructuring is unjustified and severely impacts readability.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Original 1174 LOC expanded to 2754 LOC (2.3x). Functions fragmented into constprop variants (`param_mutex_lock_constprop_0`) and helper functions (`param_fork_exec_part_0`) that obscure original structure.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Complex functions like `param_thread_local_storage` require constant label jumping to trace execution flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated code patterns in thread creation loops without abstraction. Constprop variants duplicate logic. Loop bodies often copy-pasted between label sections.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything becomes `int32_t`. Original types like `size_t`, `FILE*`, `pthread_t`, `atomic_int`, `pid_t` all degraded to generic integers. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined with generic field names (`e0`, `e1`, `e2` for `ipc_perm`, `shmid_ds`). `ThreadData` structure not recovered—fields accessed via pointer arithmetic. `sockaddr` loses semantic field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts: `(char *)str`, `(int32_t *)mem`, `(struct sockaddr *)&addr2`. Pointer arithmetic on void* throughout. No type safety annotations or bounds checking recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no API contracts, no decompilation confidence indicators. Completely bare code with no documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard library patterns (`strcpy`, `pthread_create`, `mutex_lock`) not identified or named. No design pattern recognition. Functions appear as generic code blocks without semantic labeling.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **Critical anomaly not flagged**: ARM64 source decompiled to x86 code with `__readgsdword` and `__x86_get_pc_thunk_*`. No warnings about architecture mismatch, unresolved calls, or suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred. Error conditions not explained. Return value semantics lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage (`g1`, `g2`, etc.) opaque without context. Callback relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions scattered without logical grouping. Related functions (e.g., thread tests) not co-located. No header file organization. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code includes necessary headers and has function prototypes. However, architecture mismatch (ARM64→x86) would cause runtime issues. Some external dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+4+4+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System): (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+1+2)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+4+5)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  3.23/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Architecture mismatch**: ARM64 source decompiled to x86 code (`__readgsdword`, `__x86_get_pc_thunk_*`) without warning
+- Variable `v1`, `v2`, `v3` throughout should be named based on semantic usage (e.g., `thread_count`, `buffer_ptr`)
+- Control flow uses `goto lab_0x1cf0` instead of natural `while`/`for` loop constructs
+- Zero comments explaining any logic, algorithms, or API contracts
+- All types degraded to `int32_t` losing `size_t`, `FILE*`, `pthread_t`, `atomic_int` distinctions
+- Struct fields named `e0`, `e1`, `e2` instead of semantic names like `key`, `size`, `permissions`
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core function names like `param_strcpy`, `call_strlen`, `param_mutex_lock` were preserved from source, providing some semantic anchors in an otherwise opaque codebase.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic nearly impossible; even basic function purpose comments would dramatically improve usability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement architecture validation** - Detect and warn when decompiled instruction set doesn't match source architecture (ARM64→x86 is a critical failure)
+2. **Recover variable names from usage patterns** - Analyze how variables are used (loop counters, buffer pointers, size values) to infer semantic names instead of `v1`, `v2`, `v3`
+3. **Reconstruct natural control flow** - Replace `goto` label patterns with idiomatic `while`/`for`/`if-else` constructs, especially at `-O0` where original structure should be preserved

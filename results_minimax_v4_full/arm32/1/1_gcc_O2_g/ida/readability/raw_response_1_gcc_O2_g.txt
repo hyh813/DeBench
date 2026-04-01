@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names (v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, i, result). The original source used descriptive names like `temp1`, `temp2`, `count`, `sum`, `target` but these are completely lost. Even loop indices are sometimes just `i` without context.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `duffs_device` all match the original source exactly. Only minor issues with some internal helper naming.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (array sizes like 5, 10 are embedded), but magic numbers like `1001` (from `count > 1000`) and computed expressions like `100 * (x + 1)` lack explanation. The decompiler correctly computed some expressions but didn't document the original constants.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean output with minimal compiler artifacts. No obvious register spilling, debug instrumentation, or redundant casts. Some internal labels like `LABEL_8`, `LABEL_12` appear in `duffs_device` but are manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - if/else, switch, for, while loops are preserved. However, `duffs_device` shows goto-style labels (LABEL_8, LABEL_12) instead of the original switch-do-while pattern. The `switch_fallthrough` case is partially reconstructed but loses the fallthrough semantics.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition - all 40+ functions from source are preserved as separate entities. Each function has appropriate granularity. The test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are correctly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally good top-to-bottom reading. Some forward jumps in `duffs_device` and `switch_fallthrough` disrupt flow slightly. Early returns are preserved correctly. The nesting depth is manageable (mostly 1-3 levels).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling is present in `loop_for_fixed` (do-while pattern) but it's a legitimate compiler transformation at O0. Common subexpressions like `2 * x` appear multiple times but this is expected.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All types are generic `int` - the original had `int` everywhere so this is acceptable, but the decompiler doesn't indicate signed/unsigned distinctions. Function pointer types are partially reconstructed but use generic signatures. No `size_t`, `uint32_t` etc.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays are partially recovered - `int arr[5]` appears in `loop_break`, but field names are lost. The matrix in `loop_multi_exit` uses raw pointer arithmetic (`*(_QWORD *)&matrix[0][0]`) instead of proper 2D array syntax. No struct recovery with meaningful field names.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some minor issues: pointer arithmetic in array accesses (`v7 = arr - 1`), but no severe violations like incorrect pointer casts. Function pointers are called correctly. The code is reasonably safe to analyze.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only function signatures and occasional notes like "attributes: thunk". No explanation of algorithms, no recovery of original comments from source. The test functions have hardcoded expected values in printf but no documentation of what they test.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized but not named. `duffs_device` is correctly identified as a function but not flagged as Duff's device. State machines are reconstructed as switch statements but not labeled as such. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. The decompiler presents all code confidently. The "FAILED to decompile" messages for import functions are present but not integrated into the code flow. No flags for uncertain indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "n must be > 0" in `duffs_device`, postconditions, and invariants are not documented. The decompiler doesn't infer any contracts from the code logic.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of which functions call which, no callback relationships documented. The test functions call many others but this isn't explicitly shown.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Static functions like `double_value`, `triple_value` are correctly scoped. No header file structure or API boundaries. The original source organization by control flow level (L1, L2, L3) is lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would require significant patching to compile. Missing declarations for standard library functions (`puts`, `printf`, `memset`), external references like `__gmon_start__`, and runtime functions. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Calculation:**
+- L1 avg: (2+9+6+8)/4 = 6.25 × 0.30 = 1.875
+- L2 avg: (7+9+7+7)/4 = 7.5 × 0.25 = 1.875
+- L3 avg: (5+4+7)/3 = 5.33 × 0.20 = 1.066
+- L4 avg: (3+4+2+2)/4 = 2.75 × 0.15 = 0.4125
+- L5 avg: (3+4+3)/3 = 3.33 × 0.10 = 0.333
+- **Total: 5.56/10**
+
+**Critical Defects:**
+- Variable names are entirely generic (v1, v2, v3...) - loses all semantic meaning from source
+- `duffs_device` uses goto labels instead of recognizing the switch-do-while pattern
+- No comments explaining algorithms or recovery decisions
+- Composite types (2D arrays, structs) use raw pointer arithmetic losing semantic clarity
+- No cross-reference or module organization documentation
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler excellently preserved all function names from the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of descriptive variable names (temp1, temp2, count, sum, target) to generic names (v1, v2, v3) severely impacts readability and makes tracking data flow extremely difficult.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns** - Analyze how variables are used (array index → `i`/`idx`, accumulator → `sum`/`acc`, size check → `size`/`len`) to generate semantically meaningful names
+2. **Recognize and label idioms** - Flag patterns like Duff's device, state machines, and callback patterns with explanatory comments
+3. **Recover composite type structures** - Instead of raw pointer arithmetic for matrices/structs, reconstruct the original type layout with meaningful field names

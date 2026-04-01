@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `iVar1`, `iVar2`, `ppcVar1`, `pcVar2` are auto-generated placeholders. Stack variables use cryptic names like `auStack_118`, `local_90`, `in_stack_00000004`. Only parameters like `a`, `b`, `x` are reasonably generic. The decompiler failed to infer semantic names from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match source: `cdecl_func`, `stdcall_func`, `test_calling_conventions`, `param_by_value_int`. However, some internal functions like `FUN_00011030` remain unnamed. The core test functions have excellent name recovery.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear without explanation. The decompiler correctly identifies some values but doesn't provide context (e.g., "expected: 15" from source comments). String data references like `&DAT_00012008` are not labeled.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive WARNING comments about "Unknown calling convention", "Unresolved local var: int i@[???]", and "Function: __x86.get_pc_thunk.bx replaced with injection" clutter the output. Stack variable references like `&stack0x00000008` are compiler artifacts that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control structures (if/else, while, for loops) are correctly recovered. The switch statement in `ret_multi_branch` became an if-else chain with arithmetic, which is a common x86 optimization artifact. Loop constructs are generally recognizable and idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Wrapper functions like `call_cdecl()` remain separate from core functions. The test functions are appropriately sized. No excessive inlining or fragmentation observed - decomposition closely follows the original source structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `func_no_args` and `param_varargs`. The `test_calling_conventions` function has some complex nesting but remains traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundant code blocks. Some loop unrolling in `test_calling_conventions` for initializing the `large` array is present but manageable. Dead code removal is effective overall.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types like `int`, `char*`, `double`, `longlong` are correctly identified. However, `longlong` is non-standard (should be `long long` or `int64_t`). Function pointer types like `_func_int_int *` are auto-generated. Some type precision issues where `int` should be `size_t` for `strlen` result.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types `LargeStruct`, `SmallStruct`, `BigStruct` are recovered with names matching source. However, field access uses array notation (`s.data[0xf]`) instead of named fields. The source had `data[16]` as named fields - the decompiler correctly identified the struct but lost field names. `SmallPoint` struct is properly recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with correct pointer usage. The `param_complex_cast` function has some unsafe operations but they're flagged with "Unresolved local var" annotations. Pointer arithmetic in functions like `ret_pointer` and `param_by_value_ptr` is correct. No severe type safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Many WARNING comments are auto-generated noise rather than useful documentation. The "Unresolved local var" comments indicate uncertainty but don't explain the code. No algorithm explanation or semantic documentation recovered from source. Some useful comments about calling conventions exist but are repetitive.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like varargs (`int varargs_func(int count,...)`) are identified. Standard C patterns (pointer parameters, struct by value) are recognized but not explicitly named or documented. No design pattern recognition (e.g., "This implements a state machine").
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments flag unknown calling conventions and unresolved variables. However, there's no indication of potential undefined behavior (e.g., the `param_order_dep` function with undefined behavior in source). Some indirect calls are flagged but not thoroughly explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition recovery. No invariant documentation. The source had explicit test expectations (e.g., "期望: 15") that are not reflected in the decompiled code. No contract information whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls. Global variables like `handle1_1`, `handle2_0` are visible. However, there's no documentation of caller/callee relationships or callback relationships. The function pointer usage in `param_func_ptr` is correctly typed but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in a single file with no header structure. Related functions (calling convention tests, parameter passing tests) are grouped together. Static functions are not explicitly marked. No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has dependencies on libc functions (`printf`, `strlen`, `va_start` macros). Compiler-specific functions like `__stack_chk_fail_local` and `__printf_chk` would require stubs. The binary was compiled with `-O2` (not -O0 as stated in metadata), explaining some optimization artifacts. Not standalone without significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with auto-generated names like `iVar1`, `iVar2`, `auStack_118`, `in_stack_00000004` that obscure semantic purpose
+- Excessive noise from WARNING comments and "Unresolved local var" annotations clutter every complex function
+- No contract or assertion recovery - source had explicit test expectations ("期望: 15") completely lost
+- Type precision issues: `longlong` is non-standard, function pointer types are auto-generated `_func_int_int`
+- Struct field names lost - `s.data[0xf]` instead of named fields like `s.data[15]` with proper semantics
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function granularity closely matches the original source. Wrapper functions like `call_cdecl()` are properly separated from core functions, and test functions maintain appropriate cohesion. The decompiler preserved the logical structure of the original code.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The decompiler relies heavily on generic placeholders (`iVar1`, `param_1`, `local_*`) instead of inferring semantic names from usage patterns. This is particularly damaging because variable names are the primary interface for understanding decompiled code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*p << 1` suggests doubling, `strlen(s)` suggests string length) to generate semantic names like `doubled_value` or `string_length` instead of `iVar1`
+2. **Reduce noise artifacts**: Filter or consolidate WARNING comments about "Unknown calling convention" - they appear on every function and add no value. Only show when there's actual actionable information
+3. **Recover struct field names**: Instead of array notation `data[0]`, attempt to recover named field access. The source clearly defines `struct BigStruct { int data[16]; }` - the decompiler should preserve `s.data[0]` as named field access, not convert to array indexing that loses semantic meaning

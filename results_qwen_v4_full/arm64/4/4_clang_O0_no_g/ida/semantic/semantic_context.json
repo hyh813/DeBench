@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "arm64",
+  "src_name": "4",
+  "source_path": "src/4.c",
+  "target_src_names": [
+    "4"
+  ],
+  "build_cmd": "clang --target=aarch64-linux-gnu -O0 src/4.c -o build/arm64/4/4_clang_O0_no_g",
+  "original_bin": "build/arm64/4/4_clang_O0_no_g",
+  "decompiled_bin": "results_qwen_v4_full/arm64/4/4_clang_O0_no_g/ida/syntactic/bin/4_clang_O0_no_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "build/arm64/4/4_clang_O0_no_g",
+      "src_name": "4",
+      "target_src_names": [
+        "4"
+      ],
+      "error": null,
+      "event_count": 173,
+      "entry_count": 67,
+      "exit_count": 67,
+      "print_count": 39
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_qwen_v4_full/arm64/4/4_clang_O0_no_g/ida/syntactic/bin/4_clang_O0_no_g_fixed",
+      "src_name": "4",
+      "target_src_names": [
+        "4"
+      ],
+      "error": null,
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0
+    }
+  }
+}

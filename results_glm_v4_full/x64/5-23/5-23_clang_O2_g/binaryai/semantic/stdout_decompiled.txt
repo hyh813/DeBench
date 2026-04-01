@@ -1,0 +1,22 @@
+Testing preprocessing features...
+
+0x40
+0x1e
+0x20
+0xdf22
+0x74
+0x13
+0x3c
+LOG: Values: 10, 20, 30
+0x3c
+0x10
+500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:50
+0x17e
+Testing ASM features...
+
+0xf
+140735054275104
+0x2a
+0x24
+0x1e

@@ -1,0 +1,8 @@
+Starting tests...
+
+fake_branch result: 19
+opaque_predicate result: 23
+instruction_substitution result: 28
+string_encryption result: 36
+tail_call_optimized result: 29
+non_tail_call result: 31

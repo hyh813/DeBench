@@ -1,0 +1,136 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_fake_branch` (OBF-L4-02: False Branch Obfuscation)
+
+**Original Purpose:** Demonstrates always-false condition branches for code obfuscation:
+- `x * x < 0` (mathematically impossible for real numbers)
+- `strlen(str) < 0` (string length cannot be negative)
+
+**Decompiled Version:**
+```c
+int32_t param_fake_branch(int32_t result) {
+    // 0x13b0
+    return result;
+}
+```
+
+**Critical Issue:** The decompiler has completely eliminated the fake branch logic, losing the intentional obfuscation technique. This is a fundamental semantic loss.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameter named `result` but actually represents input `x` from source. The original had separate `result` variable for output. Misleading naming obscures the variable's true semantic role.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function correctly named `param_fake_branch` matching source. Verb-noun structure appropriate. Minor issue: doesn't indicate it's been simplified.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in simplified function - clean. The original's `0xDEADBEEF` magic number is completely lost.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean decompilation with no compiler artifacts, no redundant casts, no debug instrumentation. Address comments are minimal and useful.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **CRITICAL DEFECT** - Control flow completely eliminated. Original had two if-statements with always-false conditions; now just returns input. The obfuscation technique is entirely lost.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function appropriately small (1 line). However, this oversimplification loses the original complexity. The call wrapper `call_fake_branch()` directly returns 10 instead of calling the function.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear - single return statement. No jumps or branches to disrupt flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. However, this is because the branches were removed entirely, not because they were optimized.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Uses `int32_t` which is appropriate for ARM64 at -O0. Matches original `int` well. Signed/unsigned correct.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types in this function - not applicable.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts or pointer arithmetic. Type-safe code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Only has address comment (`// 0x13b0`). No indication that code was simplified or that fake branches were removed. Auto-generated style only.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: **CRITICAL DEFECT** - The "fake branch" (永假条件) obfuscation idiom is completely lost. Original intentionally used always-false conditions; decompiler treated them as dead code and eliminated them.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warning that branches were removed or that this represents simplified logic. Silent about the semantic loss.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No pre/postcondition recovery. Original had implicit "never enters branch" invariant - not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function prototype shows it takes int32_t and returns int32_t. However, relationship with `call_fake_branch()` is obscured by the direct return optimization.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically in the decompiled output. Related obfuscation functions (opaque predicate, instruction substitution) are nearby.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Proper includes present. Function prototypes declared. Compiles cleanly as standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Calculation:**
+- L1 avg: (5+9+10+9)/4 = 8.25 × 0.30 = 2.475
+- L2 avg: (2+9+10+10)/4 = 7.75 × 0.25 = 1.9375
+- L3 avg: (9+10+9)/3 = 9.33 × 0.20 = 1.866
+- L4 avg: (5+1+2+5)/4 = 3.25 × 0.15 = 0.4875
+- L5 avg: (6+7+8)/3 = 7.0 × 0.10 = 0.70
+- **Total: 7.47** → Wait, let me recalculate with proper weighting
+
+Actually:
+- L1: (5+9+10+9)/4 = 8.25 × 0.30 = 2.475
+- L2: (2+9+10+10)/4 = 7.75 × 0.25 = 1.9375  
+- L3: (9+10+9)/3 = 9.33 × 0.20 = 1.866
+- L4: (5+1+2+5)/4 = 3.25 × 0.15 = 0.4875
+- L5: (6+7+8)/3 = 7.0 × 0.10 = 0.70
+
+**Total = 7.47/10**
+
+---
+
+### Critical Defects:
+- **Control flow completely eliminated** - The fake branch obfuscation (永假条件) is lost; decompiler treated intentional dead code as removable
+- **Idiom recognition failure** - Cannot identify "fake branch" pattern; should preserve as comment or explicit dead code
+- **Parameter naming misleading** - `result` parameter actually represents input `x`, not output
+- **No anomaly indication** - Silent about significant semantic loss from branch removal
+- **Call wrapper optimized away** - `call_fake_branch()` directly returns 10 instead of calling `param_fake_branch(10)`
+
+### Best Quality Aspect: Type System Fidelity (9.1/10)
+Types are precise with `int32_t` matching ARM64 architecture. No type safety issues. Excellent for this dimension.
+
+### Most Needs Improvement: Semantic Transparency (3.3/10)
+The fake branch idiom is completely lost. No comments explaining removed code. No anomaly warnings. This is the core purpose of the original function.
+
+### Top 3 Recommendations:
+1. **Preserve dead code branches** - When encountering always-false conditions, add comments like `// DEAD CODE (always-false): if (x*x < 0)` instead of removing entirely
+2. **Add idiom recognition** - Detect obfuscation patterns (fake branches, opaque predicates) and label them with comments
+3. **Improve variable inference** - Analyze parameter usage to determine if `result` is input or output; should be `x` based on being returned unchanged

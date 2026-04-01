@@ -1,0 +1,17 @@
+Macro: -213927000
+Function call: 64
+Value: 30
+Value: 32
+Multi-branch: 57122
+Recursion: 116
+Value: 19
+Token paste: 60
+LOG: Values: 10, 20, 30
+Variadic: 60
+Override: 16
+Value: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:27
+Builtin: 382
+ASM clobber: 0
+ASM multi: 15
+ASM clobber result: 1439281055

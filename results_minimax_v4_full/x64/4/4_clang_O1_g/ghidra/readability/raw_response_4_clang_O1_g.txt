@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables are almost entirely generic (iVar1, piVar2, lVar1, lVar2, local_d0, local_b8, alStack_88). The decompiler uses register-based naming conventions (e.g., "Unresolved local var: int i@[DW_OP_reg0(RAX)]") rather than semantic names. Only parameters retain meaningful names from source (a, b, count, x, y).
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly (cdecl_func, stdcall_func, varargs_func, param_by_value_int, ret_pointer). Internal/CRT functions use generic names (FUN_00101020, _init, _start) which is expected. The main functions from the test suite are correctly recovered.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers are prevalent (0xf, 0x32, 0x2a, 0x15, 0xad) without explanatory constants. The decompiler outputs computed values directly rather than recognizing them as meaningful constants. However, string format references like &DAT_0010234e are appropriately marked as data.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Significant decompilation artifacts present including: "WARNING: Unknown calling convention" (appears 20+ times), "WARNING: Removing unreachable block", "Unresolved local var" annotations, and DWARF debug register hints (DW_OP_reg0, DW_OP_breg5). These clutter the output but don't completely obscure logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural with proper if/else and while/do loops. The varargs_func shows complex loop structure but is still readable. At -O0, control flow should be nearly identical to source, and the decompiler largely achieves this.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized (5-30 lines each). The test wrapper functions (test_calling_conventions, test_parameter_passing, test_return_values) are around 25-40 lines, reasonable for test functions. No obvious over-fragmentation or monoliths.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. The varargs_func has some forward jumps in its loop handling, but this is manageable. No severe non-linearity issues.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal. The code is clean without redundant artifacts from common subexpression elimination.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Types are mostly accurate - int, int*, char*, double, longlong all correctly identified. Function pointer types use cryptic names like "_func_int_int" instead of proper typedef. Integer types are generic "int" rather than int32_t, but this is acceptable for decompilation.
+
+### 10. Composite Type Recovery
+**Score: 9/10**
+Justification: Excellent struct recovery. LargeStruct, SmallStruct, SmallPoint, BigStruct, LargeData all recovered with correct field names (data[16], x, y). The struct definitions match the source almost perfectly.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Some unsafe operations present: pointer arithmetic (p + 1, p + 4), casts (int)str[1], (double)ll. No severe buffer overflow patterns. The code is reasonably safe to reason about.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Comments are primarily decompilation warnings ("WARNING: Unknown calling convention", "Unresolved local var") rather than explanatory content. No algorithm documentation or semantic explanations. The comments indicate decompilation confidence but don't help understand the code's purpose.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Standard C idioms like varargs handling, function pointers, and struct passing are present but not explicitly named or highlighted. A knowledgeable reader can identify them, but the decompiler doesn't provide pattern recognition.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+Justification: The decompiler appropriately flags: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", and marks unresolved variables. However, it doesn't explain the implications of these anomalies or provide guidance for manual analysis.
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**
+Justification: No precondition/postcondition documentation recovered. Some null checks are present in the code (if (p != (SmallStruct *)0x0)) but not documented as contracts. The decompiler doesn't recover implicit assumptions from the source.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function call relationships are implicit in the code but not documented. No call graph, caller/callee relationships, or callback documentation. Static functions aren't explicitly marked as static in the output.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are logically grouped matching the source organization: calling convention tests, parameter passing tests, return value tests. The decompiled output mirrors the source file's logical structure well.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: The code uses standard C library functions (printf, puts, strlen) and should compile with minimal changes. No obvious compiler-specific hacks. External dependencies are clear (standard libc).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 5 + 5) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (7 + 9 + 7) / 3 = 7.67
+L4_avg = (4 + 5 + 7 + 4) / 4 = 5.00
+L5_avg = (4 + 8 + 8) / 3 = 6.67
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (7.67 × 0.20) + 
+          (5.00 × 0.15) + (6.67 × 0.10)
+        = 1.575 + 1.875 + 1.534 + 0.75 + 0.667
+        = 6.40/10
+```
+
+### Overall Readability Score: 6.4/10
+
+### Critical Defects
+- **Variable naming**: Nearly all local variables use generic names (iVar1, lVar2, local_b8) making it difficult to track data flow and purpose
+- **Comment quality**: Comments are exclusively decompilation warnings rather than semantic explanations of the code
+- **Cross-reference clarity**: No documentation of function relationships, callbacks, or caller/callee graphs
+- **Contract recovery**: No recovery of preconditions, postconditions, or implicit assumptions from the source
+- **Literal clarity**: Magic numbers (0xf, 0x32, 0x2a) appear without explanation of their computed meaning
+
+### Best Quality Aspect: Composite Type Recovery (9/10)
+Struct types are almost perfectly reconstructed with accurate field names matching the source exactly (LargeStruct.data[16], SmallStruct.x/y, SmallPoint.x/y).
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+The decompiler uses mechanical register-based naming (iVar1, uVar4) and stack location references rather than inferring semantic names from usage patterns. At -O0, variables should be recoverable with meaningful names.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, function calls) to generate semantic names like "packet_size" or "buffer_ptr" instead of "iVar1"
+2. **Add semantic comments**: Replace "WARNING: Unknown calling convention" with explanatory comments about what the function does and its relationships
+3. **Recover constants**: Detect computed constants (like 0xf = 15) and either show both hex and decimal, or better, recognize them as meaningful values from the source context

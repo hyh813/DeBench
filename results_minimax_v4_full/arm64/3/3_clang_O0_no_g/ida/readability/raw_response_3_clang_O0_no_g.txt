@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1` (parameter), `v1`/`v2`/`v3` (temporaries), and `ptr` instead of semantic names like `x`, `arr`, `n` from source. Loop variables `i`/`j` are acceptable but don't indicate purpose. This severely obscures variable roles.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (local_vars, heap_basic, global_var_access, static_local). Minor issue: some internal functions like `sub_920` remain unnamed. The preserved names are semantically accurate.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Simple literals like `42`, `10`, `5` are preserved. However, computed values like `0x14u` (20) and `0x28u` (40) lack explanation. Some magic numbers remain unexplained (e.g., `0x10u` for sizeof(Node)).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Type casts like `*(_DWORD *)` and `*(_QWORD *)` are necessary for type reconstruction. No register spilling debris or debug instrumentation observed. Clean output overall.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops use `for (i = 0; i < n; ++i)` pattern. Conditionals are natural. Minor artifact: `stack_alias` has confusing `if (&v1)` check. Overall natural flow preserved.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries match source exactly. No inlining or fragmentation. Each function maintains appropriate parameter list and scope. Excellent decomposition preservation at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive forward jumps. Good linearization for most functions.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. At -O0, no loop unrolling artifacts. Code is clean without unnecessary duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic types `_DWORD` (4-byte), `_QWORD` (8-byte) instead of `int`/`long`. Function pointers lose specific signatures (become generic `void*`). Some precision lost but basic size information preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct `Point` completely lost - accessed as raw `_DWORD` array. Struct `Node` accessed via pointer arithmetic without field names. TreeNode similarly degraded. All composite type semantics lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `*(_DWORD *)*a1`, `*((_QWORD *)*a1 + 1)`. Pointer arithmetic without bounds checking. Type-confused operations in heap_nested. Significant type safety concerns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only file header comment present ("Decompiled by IDA Pro 9.1"). No logic explanations, no decompilation confidence indicators, no @param/@return documentation. Comments essentially absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal appears as raw loop without "linked list" label. Tree operations not identified as tree patterns. Design patterns completely unmentioned.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: 18 functions marked "FAILED to decompile" but no explanation of why or what the anomaly was. No warnings about suspicious code. Silent failures provide no guidance.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Some implicit preconditions present (null checks like `if (ptr)`), but no explicit documentation. No @requires/@ensures annotations. Postconditions and invariants not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved. No documentation of call graph relationships or global variable usage patterns. Callback relationships not indicated. Some relationships inferable but not explicit.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output. No logical grouping of related functions. No static vs extern distinction in output organization. No namespace/header structure recovery.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions (malloc, free, printf, memset) used but headers not included. Would require adding `#include` statements. No dependency documentation. Basic compilation possible with stubs.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`a1`, `v1`, `v2`, `ptr`) instead of semantic names (`x`, `arr`, `n`, `buffer`)
+- Composite types completely lost - `Point` struct becomes `_DWORD` array, `Node` struct accessed via raw pointer arithmetic
+- No comments or documentation explaining logic, making decompiled code self-contained but opaque
+- 18 functions failed to decompile with no explanation of the anomalies
+- Type safety issues: unsafe casts between `_DWORD*`, `_QWORD*`, `void**` without proper type recovery
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- Function boundaries match source exactly at -O0; no inlining or fragmentation. Each function maintains appropriate parameter list and scope.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- No meaningful comments explaining logic, algorithm, or decompilation confidence. Code is syntactically correct but semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `a1`→`x` (parameter), `v3[5]`→`arr[5]` (array access pattern), `ptr`→`buffer` (malloc result)
+2. **Recover composite type structures**: Detect struct allocation patterns (malloc + field assignments) and reconstruct `struct Point { int x, y; }` with field names instead of raw pointer arithmetic
+3. **Add semantic comments**: Include algorithm explanations, decompilation confidence indicators for indirect calls, and @param/@return contracts for functions

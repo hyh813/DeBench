@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Local variables are predominantly generic (`iVar1`, `puVar1`, `local_14`), obscuring data flow. While some class members like `obj.name` and `derived.multiplier` are recovered, deep template nesting (e.g., `ptr2._M_t.super___uniq_ptr_impl...`) renders names effectively unreadable.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent recovery of C++ mangled names; functions like `test_cpp_member_func`, `Base::virtual_func`, and `Container<int>::push` are clearly identified. Thunks are also accurately labeled (e.g., `virtual thunk to MultiDerived::funcB`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Extensive use of magic numbers due to constant propagation (e.g., `0x2a` for 42, `0x125c` for 4704, `0x55` for 85) replaces the original logic, making the code's intent difficult to deduce without the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler noise is present, including implicit destructor parameters (`__in_chrg`), verbose template internal structures, and `undefined4` casts that clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is often reduced to simple returns due to optimization (e.g., `test_cpp_lambda` just returns `0x55`), hiding the original algorithmic structure. Exception handling logic (`try/catch`) in `test_cpp_exception` is completely lost, showing only the throw.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-decomposed; template instantiations and thunks are correctly separated into distinct functions. The granularity is appropriate, though the sheer number of thunks adds clutter.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly where logic remains. There are minimal confusing jumps or spaghetti code structures, which is a positive aspect of the decompilation.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler successfully removed redundancy via constant propagation, resulting in "clean" but sparse code. However, the decompiler does not annotate this optimization, leaving the user wondering where the logic went.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: User-defined types like `SimpleClass`, `Base`, and `Container<int>` are recovered with good precision. However, standard library types like `unique_ptr` are expanded into their internal implementation details (`_M_t`, `super___uniq_ptr_impl`), losing semantic meaning.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Structs are recovered, but complex inheritance scenarios (like `DiamondDerived`) result in warnings about "overlapping fields" and confusing member access (e.g., `obj.super_MiddleA._8_4_`). `unique_ptr` internals are exposed rather than abstracted.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code is littered with unsafe casts and pointer arithmetic typical of C++ ABI lowering, such as `*(int *)((int)&this->dataA + (int)this->_vptr_MiddleA[-3])`, which looks dangerous and obscures the high-level type safety of the original C++.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are primarily technical warnings (e.g., "WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). There are no semantic comments explaining the *purpose* of the code or the C++ idioms used.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms like vtables (`_vptr_Base`), RTTI (`typeid`, `__dynamic_cast`), and thunks are recognized and labeled. However, they are presented as low-level implementations rather than high-level concepts (e.g., "Virtual Call").
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler provides useful warnings for difficult constructs, such as "Could not recover jumptable" for virtual calls and "ignoring overlapping field" for virtual inheritance, which accurately alerts the analyst to potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. The logic is so optimized that even basic control flow contracts (like the `try/catch` structure) are missing.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but virtual calls are represented as indirect calls through vtables (e.g., `(**obj->_vptr_Base)()`), requiring manual tracing to determine the actual target function.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions ordered by address. While related class methods are often grouped, the overall organization lacks the logical grouping of the original source files.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on implicit standard library definitions and uses types like `undefined4`. It would require significant patching and header definitions to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **Exception Logic Loss:** The `try/catch` block in `test_cpp_exception` is completely missing; only the `throw` mechanism is visible.
+- **Constant Propagation:** Algorithmic logic is replaced by magic numbers (e.g., `test_cpp_lambda` returns `0x55` instead of showing the lambda calculation).
+- **Template Internals Exposed:** `std::unique_ptr` is expanded into internal tuple implementations (`_M_t.super___uniq_ptr_impl...`), destroying semantic readability.
+- **Virtual Inheritance Complexity:** `DiamondDerived` results in confusing pointer arithmetic and overlapping field warnings, making the struct layout hard to understand.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Ghidra's C++ demangler successfully recovered the original function names, including namespaces, classes, and template parameters, which is crucial for navigation.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- The pervasive use of magic numbers resulting from constant propagation makes it nearly impossible to understand the original algorithmic intent without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Standard Library Types:** Implement pretty-printers for common STL types (like `std::unique_ptr`, `std::vector`) to hide internal implementation details and present the logical interface.
+2. **Recover Exception Handling:** Improve analysis to reconstruct `try/catch` blocks from personality routines and landing pads, rather than just showing the throw.
+3. **Annotate Optimized Logic:** When constant propagation replaces a block of code with a constant, insert a comment indicating the original expression or that optimization occurred (e.g., "Optimized: result = 85").

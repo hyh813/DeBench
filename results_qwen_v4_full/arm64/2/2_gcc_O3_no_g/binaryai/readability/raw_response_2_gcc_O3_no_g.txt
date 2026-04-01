@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `uVar1`, `puVar2` instead of semantic names like `sum`, `index`, `array_ptr`. Original `sum` variable in `array_1d_stack` becomes `iVar4/iVar5/iVar6/iVar7`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, helper functions degraded to `FUN_001006d0`, `FUN_0010087c`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Float constants shown as hex (`0x3fc00000`, `0x3f000000`) instead of `1.5f`, `0.5f`. Test functions show hardcoded expected values (`0x61`, `0x62`) instead of actual function call results.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`___stack_chk_guard`), NEON intrinsics (`NEON_fmadd`), long double helpers (`__multf3`, `__addtf3` with 500+ lines each).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions readable, but `binary_tree_sum` transformed from 6-line recursion to 200+ line nested iteration. Array functions use unrolled loops with complex termination conditions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but internal structure destroyed. Test functions (`test_data_types_l1`) show printf with hardcoded values instead of actual function calls, losing semantic purpose.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `__addtf3` and `__multf3` contain hundreds of lines with excessive goto labels (`LAB_00102530`, `LAB_001026d8`). Deep nesting in `binary_tree_sum` with 8+ levels.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `array_3d` manually lists all 125 element accesses instead of loops. `pointer_array` unrolls all 10 iterations explicitly with nested if-statements.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `process_float` returns `undefined4` instead of `float`. `process_double` returns `undefined8`. `process_ll` parameter is `long` but should be `long long`. Many `undefined8 *` instead of specific pointer types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - no struct definitions recovered. `struct_simple` takes `int *param_1` instead of `Point3D *p`. All struct access via array indexing (`param_1[1]`, `param_1[3]`) instead of field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int**)`, `(undefined8 *)`). Function pointers degraded to `code *`. `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE` indicating type loss.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each test case purpose, expected values, and scenarios.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list traversal, tree recursion, and graph traversal patterns completely obscured. `binary_tree_sum` recursion converted to iterative mess losing algorithmic clarity.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked (`UNRECOVERED_JUMPTABLE`), but most issues silent. No indication that test functions lost actual computation logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. Original null checks in linked list functions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved in simple cases, but test functions don't call actual functions - show hardcoded results. Globals referenced as `DAT_00103078` without meaning.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header organization. Related functions not grouped logically (test functions scattered).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `__libc_start_main`, `__stack_chk_fail`) require stubs. Would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (4+5+4+3)/4 = 4.00  × 0.25 = 1.00
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (4+5+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  3.79/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`) reduced to `int *` with array indexing
+- **Test functions semantically broken**: Show hardcoded expected values instead of actual function calls, losing verification purpose
+- **Variable naming universally generic**: `param_1`, `iVar1`, `uVar1` throughout with no semantic inference
+- **Floating point operations opaque**: Constants shown as hex (`0x3fc00000`) instead of readable values (`1.5f`)
+- **Recursive algorithms destroyed**: `binary_tree_sum` converted from 6-line recursion to 200+ line iterative nightmare
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `process_char`, `array_1d_stack`, `ptr_single` preserved accurately from source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero documentation recovered despite original having extensive comments explaining each test's purpose and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** from consistent memory access patterns (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]` → `struct {int x,y,z;}`)
+2. **Infer variable names from usage context** (accumulator variables in loops → `sum`, index variables → `i`, pointer parameters → `arr`/`ptr`)
+3. **Preserve test function semantics** by recognizing printf patterns and recovering actual function calls instead of hardcoded expected values

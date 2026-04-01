@@ -1,0 +1,29 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "arm32",
+  "src_name": "3",
+  "source_path": "src/3.c",
+  "target_src_names": [
+    "3",
+    "3-3_extern_defs"
+  ],
+  "build_cmd": "arm-linux-gnueabi-gcc -O0 -g src/3.c src/3-3_extern_defs.c -o build/arm32/3/3_gcc_O0_g",
+  "original_bin": "results_minimax_v4_full/arm32/3/3_gcc_O0_g/ghidra/semantic/native_arm32_bin/3_gcc_O0_g_native",
+  "decompiled_bin": "results_minimax_v4_full/arm32/3/3_gcc_O0_g/ghidra/syntactic/bin/3_gcc_O0_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "unavailable",
+      "program_only": true,
+      "trace_event_count": 0,
+      "error": "fallback_metrics_only"
+    },
+    "decompiled": {
+      "status": "unavailable",
+      "program_only": true,
+      "trace_event_count": 0,
+      "error": "fallback_metrics_only"
+    }
+  }
+}

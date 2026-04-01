@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic: `a0`, `a1`, `v0`, `v1`, `v2`, `v3`, `ptr`, `idx`. The decompiler uses sequential naming that provides no semantic meaning - e.g., `param_by_value_int` has parameter `a0` when it should be `x`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - core functions like `cdecl_func`, `stdcall_func`, `call_cdecl` correctly match source, but many functions use generic addresses: `sub_401030`, `sub_401080`, `sub_401221`. Test functions (`test_calling_conventions`) are properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals like "Hello" preserved correctly, but many magic numbers lack explanation. Offsets like `v1 - 12246` for printf format strings are opaque. The value `4294967295` (0xFFFFFFFF) used for -1 without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains VEX IR artifacts like `[D] PutI(72:F64x8)[t3,0] = t6()` in `func_mixed_args`. Some weird struct definitions with large padding arrays. However, core logic is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use for/while constructs, conditionals are readable. Some goto usage exists but is limited. At -O0, control flow should closely match source, and it mostly does.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (20-80 lines). Good separation between test functions and implementation. Some wrapper functions exist but are appropriate for calling convention thunks.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in complex functions like `register_tm_clones`. Early returns used appropriately in some functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions visible (e.g., repeated calculations in loops). No major dead code. Loop constructs are recognizable despite some optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all parameters are `unsigned int` when source uses `int`. Function pointers like `callback_func` treated as `unsigned int*`. `char*` strings treated as generic pointers. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Very poor struct recovery. Generic struct names: `struct_0`, `struct_1` with meaningless field names like `field_0`, `padding_0`. LargeStruct and SmallStruct from source completely lost - accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Function pointer calls like `a0(a1, *((int *)&v0), &v1)` are type-unsafe. Pointer arithmetic is generally correct but lacks safety annotations. No bounds checking visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like "do not return" on `__libc_start_main`. No explanation of algorithm intent, calling convention behavior, or parameter purposes.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Calling convention patterns partially visible (fastcall uses ecx/edx) but not explicitly documented. No recognition of patterns like varargs, struct passing semantics, or callback idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some unsupported operations marked with `[D]` prefix (e.g., `[D] unsupported_<class 'pyvex.expr.GetI'>`). However, many anomalies are silently handled or produce incorrect code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `func_struct_byptr` that check for NULL pointers don't have any contract documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear through direct calls. External dependencies marked with `extern`. However, no documentation of who calls whom or global variable usage patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped - all calling convention tests together, parameter tests together, return tests together. Static functions appropriately scoped. Minor organization issues with runtime support functions mixed in.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has `extern` declarations for external functions. Many missing prototypes. Would require significant stubs to compile. No header file recovery.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `a1`, `v0`, `v1`) - no semantic meaning recovered
+- All integer types degraded to `unsigned int` losing sign information
+- Struct types completely lost - accessed via raw pointer arithmetic with no field names
+- No comments explaining calling convention behavior or algorithm intent
+- Function pointers treated as generic `unsigned int*` losing type safety
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are reasonably sized and logically grouped. Test functions are properly separated from implementation, and calling convention thunks are appropriately decomposed.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable uses generic sequential names. Parameters like `a0`, `a1` should be `x`, `y` or `a`, `b`. Local variables like `v0`, `v1` should reflect usage (e.g., `sum`, `result`, `ptr`).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `a0 + a1` in `cdecl_func` suggests parameters should be named `a` and `b`. Loop variables accumulating sums should be `sum` not `v1`.
+2. **Recover struct types from memory access patterns**: The 128-byte LargeStruct accessed via `ptr[8 * idx]` and `ptr[4 + 8 * idx]` clearly shows two 64-bit fields per iteration - should reconstruct struct with meaningful field names.
+3. **Preserve integer type signedness**: Source uses `int` throughout but decompiler shows `unsigned int`. Detect sign from arithmetic operations (multiplication by 2, addition) and preserve signed types.

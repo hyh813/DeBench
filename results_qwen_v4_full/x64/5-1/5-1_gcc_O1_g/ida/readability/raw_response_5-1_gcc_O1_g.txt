@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `temp`) with no semantic meaning. For example, `test_cpp_rtti` uses `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` instead of meaningful names like `obj1`, `obj2`, `result`, `type_name`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions recovered original names through demangling (`test_cpp_member_func`, `test_cpp_constructor`). Class methods also recovered (`Base::virtual_func`, `Derived::getName`). However, 20+ helper functions remain as `sub_2020`, `sub_2030`, etc.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `4700` in `test_cpp_member_func` (should be `4660 + 40`), `0x28u` for stack canary, vtable offsets like `-3`, `-4`, `-24LL`. No constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) present in most functions. Frame pointer setup visible. However, no excessive dead code from register spilling since `-O0` was used.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but `test_cpp_exception` is incorrectly marked `__noreturn` when it should have try-catch blocks. Exception handling completely lost its structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Many test functions optimized to constant returns (`test_cpp_multiple_inheritance` returns `71` directly, `test_cpp_operator_overload` returns `22`). Original computation logic lost entirely.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Virtual thunk functions are separate but logically related code is fragmented across multiple entries.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. However, virtual thunk duplication (`virtual thunk to'DiamondDerived::func`, `non-virtual thunk to'DiamondDerived::func`) could be consolidated with comments.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `double`, `char*`), but class types degraded to raw pointers. `SimpleClass obj` appears but fields accessed as `obj.name` without proper struct definition. Many `__int64`, `_DWORD` generic types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures mostly lost - accessed through pointer arithmetic (`*(int *)((char *)&this->dataA + *((_QWORD *)this->_vptr_MiddleA - 3))`). No proper struct definitions for `SimpleClass`, `LifecycleClass`, `Container`, etc.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(__int64)(**)`, `(void *)`, `(char *)` pointer arithmetic on objects. Virtual function calls through raw vtable pointers `(*obj->_vptr_Base)(obj, x)`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except decompiler metadata header. No explanation of C++ features (vtables, virtual thunks, RTTI, diamond inheritance). Complex pointer arithmetic completely undocumented.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible but not identified: vtable calls shown as `(*obj->_vptr_Base)`, virtual thunks labeled but not explained, RTTI through `__dynamic_cast` not recognized as type checking pattern.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "FAILED to decompile" for 23 functions, "positive sp value has been detected" warning in `_start`. However, critical issues like lost exception handling not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts lost (`test_cpp_exception` marked `__noreturn` incorrectly). No null checks or bounds validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible, virtual dispatch shown through vtable pointers. Inheritance relationships partially visible through thunk functions. However, 23 external functions failed to decompile breaking call graph.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output with no logical grouping. Related class methods scattered (Base methods at 0x29B4-0x29C8, Derived at 0x29CE-0x29DA). No namespace or file organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 23 functions failed to decompile including critical ones (`operator new`, `operator delete`, `__cxa_throw`, `strlen`, `printf`). Would require extensive stubs and external library linking to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+6+7+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.06/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Exception handling completely lost**: `test_cpp_exception` marked `__noreturn` with no try-catch structure recovered
+- **23 external functions failed to decompile**: Including `operator new`, `operator delete`, `__cxa_throw`, `strlen`, `printf`
+- **Class structures degraded to pointer arithmetic**: No proper struct definitions for `SimpleClass`, `LifecycleClass`, `Container`, etc.
+- **Test functions optimized to constants**: `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda` return constants instead of computation
+- **Variable names entirely generic**: `v0`, `v1`, `v2` throughout with no semantic meaning recovered
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - C++ name demangling successfully recovered original function names for test functions and class methods, preserving semantic intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Almost no documentation of complex C++ features (vtables, virtual thunks, RTTI, diamond inheritance) that would be essential for understanding the decompiled code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct proper struct definitions with field names instead of raw pointer arithmetic
+2. **Add semantic comments for C++ idioms** - Automatically annotate virtual function calls, virtual thunks, RTTI checks, and exception handling patterns with explanatory comments
+3. **Preserve computation logic over constant folding** - Detect when test functions are optimized to constants and attempt to recover original computation from available debug symbols or pattern matching

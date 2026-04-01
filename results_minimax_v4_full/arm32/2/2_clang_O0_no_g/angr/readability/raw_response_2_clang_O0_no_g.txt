@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic auto-generated names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3`, `v4`, `idx`, `ptr`. Parameter names are meaningless (e.g., `char a0` instead of `char c`). Even local variables like `unsigned int v1; // [bp-0xc]` provide no semantic information about their purpose.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test functions like `process_char`, `array_1d_stack`, `ptr_single` are well-named and match source. However, many functions use mechanical address-based names like `sub_4003e0`, `sub_401a89`, `sub_4020f1`. The helper/utility functions lack semantic meaning entirely.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation. Example: `if (a0 >= 65 && 90 >= a0)` should have comments explaining 'A'-'Z' range. Constants like `65535` for short mask, `0x3fc00000` for float 1.5 are unexplained. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary casts present (e.g., `*((int *)(ptr + idx * 4))`). Register annotations like `// r0`, `// [bp-0x4]` are present but not excessive. No debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recovered as `for` constructs. Control flow is natural with appropriate use of `if/else`. At `-O0`, no loop unrolling should occur, and indeed the loops are clean. Minor issue: some complex conditions in float/double functions are hard to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function is properly separated. Functions maintain single responsibility - e.g., `process_char` does exactly one thing. Parameter lists are reasonable. No 500-line monoliths. Static helper functions like `complex_callback` are properly extracted.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `process_char`. No deep nesting (>4 levels). Good linear flow overall.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some duplicate expressions in float/double functions (e.g., `__addsf3` called twice with same args) but this appears to be decompilation artifact, not source redundancy. Loop unrolling not present at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types mostly correct (`char a0`, `unsigned int`). However, all pointers are `unsigned int` instead of proper pointer types (`int*`, `char*`). Example: `int ptr_single(unsigned int *a0)` should be `int ptr_single(int *p)`. Signed/unsigned mostly correct. Const/volatile not always preserved in parameter types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some structs recovered with generic names like `struct_0`, `struct_1`. Example: `typedef struct struct_0 { unsigned int field_0; } struct_0;` for Node. However, field names like `field_0`, `field_4` lose semantic meaning. Union types partially recovered. Bitfields handled reasonably.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Most casts are necessary and correct for pointer arithmetic. Some unsafe patterns: `*((int *)(ptr + idx * 4))` - correct but verbose. No obvious buffer overflows. Function pointer types sometimes incorrect (e.g., `ptr_func_simple` uses `unsigned int *a0` instead of function pointer signature).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are almost entirely auto-generated register/stack annotations (e.g., `// r0`, `// [bp-0x4]`, `// [bp-0x10]`). No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. Zero useful semantic comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified or named. Linked list traversal is recognizable as a pattern but not labeled. No recognition of common patterns like "pointer chase," "array iteration," or "state machine."
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for indirect calls that couldn't be resolved. No warnings about unusual stack layouts. No indication of potential undefined behavior. Code presents everything with equal confidence - even potentially incorrect interpretations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero preconditions, postconditions, or invariants documented. No detection of error conditions from source (e.g., NULL checks, bounds checks). No recovery of assert statements or validation logic.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships not documented. No indication of who calls whom. Global variables like `g_413f00`, `g_413f04` appear but their purpose unclear. Callback relationships not explicitly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by type (data types, arrays, pointers, composites) but this is implicit. No header file structure. Static functions properly scoped. Single monolithic output file - no logical grouping visible.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code compiles successfully (marked "Compilation Result: Yes" in metadata). External dependencies clearly marked as `extern`. No compiler-specific hacks. Minimal stubs needed - mostly just standard library linkage.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `v1`, `idx`) with no semantic meaning
+- All pointer types lost - `int*` becomes `unsigned int`
+- Zero useful comments - only register annotations
+- Struct field names are generic (`field_0`, `field_1`) losing original semantic names like `data`, `next`
+- No preconditions, postconditions, or contract documentation recovered
+
+**Best Quality Aspect:** Build System Compatibility (scored 9/10)  
+The decompiled code compiles successfully with minimal patching needed. External dependencies are clearly marked as `extern`, making integration straightforward.
+
+**Most Needs Improvement:** Lexical Clarity (scored 4.0/10)  
+Variable and function naming is the primary readability blocker. Generic names like `a0`, `v1`, `sub_4003e0` make it nearly impossible to understand code intent without constant cross-referencing to source.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `a0` used in `a0 + 32` for uppercase-to-lowercase conversion should be named `c` or `character`
+2. **Recover pointer types**: `unsigned int` used as pointer parameter should be `int*`, `char*`, etc. based on dereference patterns
+3. **Add semantic comments**: Document what each function does, explain magic numbers, flag uncertain decompilations

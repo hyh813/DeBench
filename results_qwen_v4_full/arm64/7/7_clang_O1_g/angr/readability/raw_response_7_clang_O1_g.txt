@@ -1,0 +1,111 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelmingly generic names (`v0`, `v1`, `a0`, `flag1`, `cur`) dominate; original semantic names like `result`, `encrypted`, `decrypted` are lost. Critical variables in `param_opaque_predicate` (`v0`-`v9`) are impossible to trace to original intent.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `call_opaque_predicate`), but helper functions use mechanical names (`sub_400744`, `sub_400830`, `$x`). Some names like `$d.1` for data are cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (UINT_MAX), `9223372036854775807` (INT64_MAX), `90` (XOR key). Signal numbers appear as raw integers (8, 11) instead of `SIGFPE`/`SIGSEGV`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack frame artifacts in every function (`v0 = &v1`, `v1 = v3`), register spill variables (`v2`, `v3` as x30), and Ghidra-specific helpers (`arm64g_calculate_condition`) clutter the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `arm64g_calculate_condition` calls obscure simple boolean logic; `param_fake_branch` completely broken (returns uninitialized `v0` instead of `x`). Goto statements appear in `register_tm_clones`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical functions broken: `param_fake_branch` and `param_buffer_overflow_stack/heap` return just `v0` with no logic. `call_fake_branch` correctly constant-folded to `return 10`, showing inconsistent recovery.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with do-while loops recovered. Some forward jumps disrupt flow but most functions maintain sequential readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate expressions in `param_opaque_predicate` (identical branches for `v7`/`v8`/`v9` calculation). `call_non_tail_call` calls `param_non_tail_call(100)` twice unnecessarily.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type erosion evident: original `int` becomes `unsigned long long` in many places. Mixed `unsigned int`, `unsigned long`, `long long` without clear rationale. `param_fake_branch` loses parameter entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (function returns constant `48`). Arrays shown as raw pointers; no struct reconstruction for `jmp_buf` or signal handlers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(unsigned int)v0`, `(char *)cur`, `(void**)`. Pointer arithmetic without bounds checking. `decrypt_string` returns `char [2]` which is incorrect array typing.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated annotations like `/* do not return */`. No algorithm explanations for GCD, string decryption, or opaque predicates.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern in `decrypt_string` not recognized. Instruction substitution patterns simplified but not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken functions (`param_fake_branch` returns garbage). No uncertainty markers for `arm64g_calculate_condition` calls. Silent failures on critical logic loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 != 0` for division). No postconditions inferred. Error handling paths not distinguished from normal flow.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_411ff8`, `$d.1`) referenced without explanation. No call graph or dependency information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary linker order, not logical grouping. Runtime init functions (`_init`, `_start`, `_fini`) mixed with application logic. No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External declarations present but many undefined (`arm64g_calculate_condition`, `call_weak_fn`). Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+6+4+4)/4 = 4.25
+L2 Average: (4+5+6+5)/4 = 5.00
+L3 Average: (5+4+4)/3 = 4.33
+L4 Average: (2+3+2+2)/4 = 2.25
+L5 Average: (5+4+5)/3 = 4.67
+
+Overall = (4.25 × 0.30) + (5.00 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.250 + 0.866 + 0.338 + 0.467
+        = 4.20/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken** - Returns uninitialized `v0` instead of input `x`, losing all fake branch logic
+- **`arm64g_calculate_condition` obscures simple boolean logic** - Should be recovered as standard C comparisons
+- **No semantic variable names** - `v0`-`v9` in `param_opaque_predicate` should be `p1`, `p2`, `p3`, `result`, etc.
+- **Magic numbers unexplained** - `4294967295`, `9223372036854775807`, signal numbers as raw integers
+- **Zero comments or documentation** - No indication of decompilation confidence or algorithm identification
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Most functions maintain sequential top-to-bottom flow with recognizable loop structures despite optimization artifacts
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.25/10 average)** - Complete absence of comments, no idiom recognition, no anomaly warnings, and no contract recovery makes the code practically unusable for understanding original intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover boolean expressions from `arm64g_calculate_condition`** - Map ARM condition codes back to standard C comparisons (`==`, `<`, `>`, `&&`, `||`)
+2. **Implement semantic variable naming from usage patterns** - Variables used in size checks should be named `size`/`len`, XOR operations should hint at `key`/`mask`
+3. **Add decompilation confidence annotations** - Flag functions with incomplete recovery (like `param_fake_branch`) and mark uncertain constructs with comments

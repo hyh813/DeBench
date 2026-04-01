@@ -1,0 +1,17 @@
+Testing obfuscated optimization edge cases...
+
+param_opaque_predicate: 10
+call_opaque_predicate: 20
+call_instruction_substitution: 225
+param_string_encryption: 160
+param_tail_call_optimized: 500500
+param_non_tail_call: 5050
+call_vectorized_loop: 72
+
+
+Division by zero test:
+Null pointer deref result: 41
+param_buffer_overflow: 30
+param_integer_overflow: 2000000000
+param_undefined_behavior: 10
+param_implementation_defined: 47

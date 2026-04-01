@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` in `param_opaque_predicate` and `v8`, `v9` in `decrypt_string`. Only `result` and `i` are meaningful. The original source had descriptive names like `result`, `str`, `p1`, `p2`, `p3` which are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10Justification: Every function name is perfectly recovered: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_string_encryption`, `param_tail_call_optimized`, `param_division_by_zero`, `param_null_pointer_deref`, `param_buffer_overflow_stack`, `param_integer_overflow`, etc. All 17+ function names match the original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0xDEADBEEF` from the fake branch is completely eliminated (the dead code was optimized away). The value `90` (0x5A XOR key) in `param_string_encryption` is unexplained. However, some literals like `10` in `call_fake_branch()` and `1000` in various places are contextually clear.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The code is remarkably clean with minimal compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation visible. The decompiled output reads as normal C code without spurious artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - `param_fake_branch` correctly shows as simple `return x`. However, `param_opaque_predicate` has convoluted variable reuse (`v1`, `v2`, `v3` reused for different purposes) making the logic harder to follow. The while loop for gcd is correctly recovered as a loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The decompiler correctly separated the wrapper functions (`call_*`) from implementation functions (`param_*`). Each function has a focused purpose matching the source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without forward jumps. `param_opaque_predicate` has some back-and-forth variable usage that disrupts linear reading, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code from the fake branches (`x*x < 0` and `strlen(str) < 0`) was correctly eliminated - this is actually good decompilation. No obvious redundant expressions remain in the output.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correct (`int`, `char`, `unsigned int`, `size_t`). However, `param_string_encryption` returns `size_t` instead of `int` as in source. The `key` parameter in `decrypt_string` is `char` but should be `int` for proper XOR semantics. Some precision loss compared to source.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The `jmp_buffer` type is used but not defined (it's a compiler builtin). The `va_list` in `_start` is correctly typed. However, no struct recovery for the bitfield in `param_implementation_defined` - it's completely optimized away to a constant return value.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Function signatures are type-safe with correct parameter types. No obvious unsafe casts. Pointer parameters are correctly typed (`int *p`, `char *buffer`). The code is safe to use without risk of undefined behavior from type confusion.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the obfuscation techniques. The source had detailed comments about "OBF-L4-02: 虚假分支（永假）" and other techniques. The decompiled code provides zero context about what the function does or why certain patterns exist (like the opaque predicate logic).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The gcd algorithm in `param_opaque_predicate` is correctly identified as a loop but not recognized as "Euclidean algorithm for GCD". The bit manipulation in `param_instruction_substitution` (shifts and masks) is not identified as instruction substitution obfuscation. No patterns are explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly shows that some functions were optimized to constants (e.g., `call_fake_branch` returns `10` directly). However, there's no flagging that `param_fake_branch` had dead code eliminated, or that `param_buffer_overflow_stack` was completely optimized away to empty function.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions are documented. The source had clear expectations (e.g., "期望: 10" for call_fake_branch) that are not recovered. No documentation of what the functions are supposed to return or validate.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `main` calls `test_obf_opt_edge`). However, there's no documentation of which functions are internal vs. external, or the call graph. The relationship between `param_*` and `call_*` pairs is clear from naming but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. The test harness functions (`call_*`) are separated from implementation functions (`param_*`). However, all functions are in a single flat listing without any indication of source file structure or logical grouping.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code would compile as standalone C with minimal dependencies. External functions like `puts`, `malloc`, `free`, `signal`, `strlen` are standard library. No unusual compiler-specific hacks that would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `v1`-`v6` completely obscure semantic purpose (should be `p1`, `p2`, `p3` for opaque predicates)
+- **No comments**: Zero explanation of obfuscation techniques or algorithm intent
+- **Dead code elimination not flagged**: The fake branch code (`x*x < 0`) was optimized away but not indicated as such
+- **Pattern recognition absent**: GCD algorithm, instruction substitution, and opaque predicates not identified
+- **Type precision loss**: `param_string_encryption` returns `size_t` instead of `int`
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+Every single function name from the original source is perfectly recovered, including all the obfuscation-related functions (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, etc.). This is exceptional decompilation.
+
+### Most Needs Improvement: Comment Quality (2/10)
+The decompiled code provides zero context about what the functions do. The original source had detailed comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and expected outputs. Without these, analyzing the decompiled code requires constant reference back to the source.
+
+### Top 3 Recommendations:
+1. **Add semantic context**: Include comments explaining what each obfuscation technique does (e.g., "Fake branch: x*x < 0 is always false")
+2. **Improve variable naming**: Infer names from usage patterns - `v1` in the opaque predicate function should be `p1` based on being assigned boolean results
+3. **Flag optimization artifacts**: Mark when dead code was eliminated (e.g., "NOTE: fake branch at line X was optimized away by compiler")

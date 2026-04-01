@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `iVar1`, `lVar1`, and `pvVar2` (e.g., in `test_cpp_rtti` and `test_cpp_constructor`), which obscures their semantic roles. While struct members like `multiplier` are recovered, local variables lack meaningful context.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ symbols are successfully demangled, preserving original names like `test_cpp_member_func`, `Base::virtual_func`, and `Container<int>::push`. This provides excellent high-level context for the code's purpose.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers resulting from constant folding, such as `0x125c` (4700) in `test_cpp_member_func` and `0x47` (71) in `test_cpp_multiple_inheritance`, which completely hide the original arithmetic logic (e.g., `10 + 34 + 4660`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Stack canary checks (`___stack_chk_guard`) are injected into almost every function, adding repetitive noise. While necessary for security, they significantly clutter the decompiled view of simple logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Standard control flow is readable, but virtual inheritance thunks (e.g., `virtual thunk to DiamondDerived::func`) contain complex pointer arithmetic like `*(long *)((long)&this->dataA + ...)` which disrupts natural reading.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Compiler-generated thunks (e.g., `non-virtual thunk to MultiDerived::funcB`) are correctly separated into their own functions, which is good. However, constructors are often inlined (e.g., in `test_cpp_constructor`), breaking encapsulation.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal jumping. The exception handling in `test_cpp_exception` is clearly marked with comments indicating try/catch ranges, preserving linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized code cleanly without unnecessary dead code or register spills, though the compiler's own optimizations (inlining) have removed the high-level structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `double` are correct, and pointers are generally `long` or typed. However, `undefined` types appear in exception handling (`undefined4 *puVar1`), and some RTTI objects are treated as generic `long *`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Virtual inheritance layouts are poorly abstracted. `DiamondDerived` exposes implementation details like `field_0x20` and `_32_8_` instead of a clean hierarchy, making the struct definition difficult to map to the source.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on manual pointer arithmetic for `this` adjustment in thunks (e.g., `this[-1].field_0x20`). While correct for the ABI, it represents unsafe type manipulation that obscures the logical object-oriented structure.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: Ghidra provides valuable warnings like `/* WARNING: Struct "DiamondDerived": ignoring overlapping field "super_MiddleB" */` and preserves DWARF prototype comments, which significantly aids in understanding complex C++ constructs.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms are not abstracted. Virtual calls are shown as vtable dereferences (`(**obj->_vptr_Base)(obj,...)`), and exceptions are raw `__cxa_throw` calls, requiring the user to recognize the implementation patterns manually.
+
+**14. Anomaly Indication:** Score: 9/10
+Justification: The decompiler explicitly flags issues such as "Removing unreachable block," "Unknown calling convention," and "Globals starting with '_' overlap smaller symbols," providing excellent visibility into potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants. For example, the bounds check in `Container::get` is decompiled to `(-1 < idx)`, but the semantic contract "requires: idx < size" is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and virtual dispatch is visible via vtable access. The relationship between thunks and their target functions is indicated in the names (e.g., `virtual thunk to...`).
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in memory address order, scattering related class methods (e.g., constructors and destructors are separated from their class definitions). There is no logical grouping by class or functionality.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on implicit standard library types and `undefined` definitions. It would require significant manual stubbing or header inclusion to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Logic Obscured by Constant Folding:** Functions like `test_cpp_multiple_inheritance` return `0x47` directly, hiding the arithmetic logic (`30+40+1`).
+- **Virtual Inheritance Layout:** `DiamondDerived` is represented with raw offsets (`field_0x20`, `_32_8_`) instead of a clean struct hierarchy.
+- **Generic Variable Names:** Heavy use of `iVar1`, `lVar1`, `pvVar2` in complex functions like `test_cpp_rtti` obscures data flow.
+- **Constructor Inlining:** `test_cpp_constructor` manually allocates memory and sets fields instead of showing a constructor call, breaking the OO abstraction.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** Ghidra successfully demangled almost all C++ symbols, preserving the original class and method names which is crucial for understanding OO code.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- **Why?** The aggressive constant folding combined with the lack of symbolic constant recovery means the code is full of magic numbers (e.g., `0x47`, `0x125c`) that replace the original logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Symbolic Constant Propagation:** Attempt to map folded constants back to their constituent parts or comment on the likely arithmetic (e.g., `/* 0x47 = 30 + 40 + 1 */`).
+2.  **Virtual Inheritance Reconstruction:** Improve type recovery for virtual inheritance to generate cleaner struct definitions that hide the `vbptr` arithmetic and offset fields.
+3.  **Constructor/Destructor Recognition:** Better detection of inlined constructor prologues/epilogues to represent them as function calls (e.g., `SimpleClass::SimpleClass(5, "Test")`) rather than raw memory initialization.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `a`, `b`. Local variables are `v8`, `v9`, `v10`, `v11`, `v13`, etc. At -O0, the decompiler should preserve variable identities better. Only `result` and a few others are descriptive.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names accurately match source: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args`, etc. The decompiler correctly recovered all function names from the source. Minor generic names for runtime helpers (e.g., `init_proc`) are acceptable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0xFFFFFF80FFFFFFC8LL` in `varargs_func` is unexplained. Some literals like `15`, `50`, `6` in test functions are just computed values. String format specifiers are not expanded (e.g., `asc_14D2`, `aCallL206`). At -O0, more constants should be recoverable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present: excessive casts like `(unsigned int)`, `(unsigned __int8)`, `LODWORD()`; stack frame annotations like `// [xsp+80h] [xbp-60h] BYREF`; failed decompilation messages for 7 functions; spurious `__fastcall` on ARM64. The output mixes decompiled code with compiler/debugging artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions like `cdecl_func` have natural flow. Complex functions like `varargs_func` and `param_ptr_array` use goto-based loops that are harder to follow. The switch statement in `ret_multi_branch` is converted to if-else chain. Some optimization artifacts present but manageable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. No excessive inlining at -O0. Functions like `test_calling_conventions` are long but match original. Parameter lists are reasonable. Static functions properly scoped. Good decomposition overall.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Forward jumps in `varargs_func` (goto LABEL_5) and `param_ptr_array` disrupt linear flow. Early returns present but used appropriately. Some goto-based loops create non-linear paths.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal. The code is clean without redundant computations. Good redundancy handling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic `__int64` and `int` types. Function pointer typed as `unsigned int (__fastcall *a1)(_QWORD)` - imprecise signature. Return type always `__int64` regardless of actual return. At -O0, types should be more precise. Mixed signed/unsigned handled somewhat.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is poor. `func_struct_byval` receives `_DWORD *a1` instead of `LargeStruct s`. Accesses fields via `a1[30]`, `a1[28]`, etc. No struct definitions recovered. All composite types lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic in struct field access (`a1[30]`), function pointer type mismatches, cast-heavy code. No alignment annotations or type safety hints. Moderate risk but manageable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment identifying decompiler and binary. No algorithm explanations, no API contracts, no decompilation confidence indicators. Failed decompilation messages present but not informative. Auto-generated noise dominates.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Calling conventions handled but not explicitly identified as patterns. No design pattern recognition (State machine, Strategy, etc.). No algorithm pattern naming. The decompiler correctly handles the mechanics but doesn't explain the idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilation messages for 7 functions are listed at the end. No uncertainty markers in successfully decompiled code. No flags for potential undefined behavior (e.g., `param_order_dep` with unsequenced modifications). Silent on anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation. The decompiler provides no semantic contract information about what functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call graph documentation. No global variable usage transparency. No callback relationship documentation. Functions appear isolated without relationship information.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source file. No explicit grouping or logical organization beyond sequential listing. No namespace/header structure recovery. Acceptable but not optimal.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile as-is. Issues include: `__fastcall` not valid on ARM64, undefined string identifiers (`asc_14D2`, `aCallL206`), missing function declarations. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`a1`, `a2`, `v8`, `v9`) instead of semantic names at -O0
+- No struct type recovery - all composite types lost to raw pointer arithmetic (`_DWORD *a1`)
+- No comments explaining algorithm logic or decompilation confidence
+- Failed to expand string literals - uses undefined identifiers like `asc_14D2`
+- `__fastcall` calling convention applied incorrectly to ARM64 code
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names accurately match the original source code, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+Struct types are completely lost - the decompiler treats all structures as raw pointers (`_DWORD *a1`) and accesses fields via array indexing (`a1[30]`, `a1[28]`), losing all semantic meaning of the original composite types.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover struct/union definitions from stack layout and field access patterns instead of treating them as raw pointers
+2. At -O0, preserve variable names from debug symbols rather than generating generic names
+3. Expand string literals inline or provide a string table mapping rather than undefined identifiers

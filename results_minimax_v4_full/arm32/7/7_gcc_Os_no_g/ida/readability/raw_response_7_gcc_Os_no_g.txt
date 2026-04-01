@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_fake_branch` tests always-false condition branches (obfuscation technique). In the decompiled output, this function is completely empty (just `;`) because the compiler optimized away the dead code branches. This is a critical observation that affects multiple scoring dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` with register annotations (e.g., `int v1; // r7`). The original source used semantic names like `p1`, `p2`, `p3`, `a`, `b`, `temp`. These cryptic names make tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`). Some internal stubs like `sub_10514` are generic, but the main test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `90` in `decrypt_string` should be `0x5A` for clarity. Signal numbers like `8` and `11` are unexplained (should be `SIGFPE`, `SIGSEGV`). However, some constants like `0x20` for buffer size are reasonable.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: register annotations (`// r7`, `// r4`) on every variable, empty functions (`param_fake_branch` just has `;`), 15 "FAILED to decompile" import markers, and a 200+ line division implementation (`__divsi3`) that's compiler library code, not user code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: The `param_fake_branch` function is completely optimized away (empty body). The tail call optimization is correctly converted to a loop in `param_tail_call_optimized`. Some control flow is natural, but the dead code elimination changes the structure significantly from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated with clear boundaries. However, `param_fake_branch` being completely empty is problematic - the original logic is lost. The division library function is unnecessarily included.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The `param_tail_call_optimized` uses a while loop that reads naturally. Some early returns exist but are appropriate.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from the fake branch is eliminated (expected at -Os). However, the massive `__divsi3` function (200+ lines) is included unnecessarily - this is compiler library code, not part of the original source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (`int`, `unsigned int`, `char`, `size_t`). However, `signal(8, ...)` uses magic number instead of `SIGFPE`. The `param_instruction_substitution` uses `unsigned int a1` which is reasonable. Some type precision is lost compared to the original.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: The original source uses minimal composite types (just basic arrays and simple structs in `param_implementation_defined`). The decompiler handles these appropriately. No complex struct recovery was needed for the target function.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns exist, such as `signal(8, (__sighandler_t)div_zero_handler)` requiring cast. Pointer arithmetic in `param_vectorized_loop` is correct but could be safer. No severe type safety violations that would cause undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are primarily register annotations (`// r7`, `// r4`) which are noise, not useful. No algorithm explanations or documentation of the obfuscation techniques. The original source had detailed comments explaining the fake branch logic - none are recovered.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: The tail call optimization pattern is correctly recognized and converted to a loop. The opaque predicate logic is preserved but not identified as such. Some patterns are recognized but not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "FAILED to decompile" markers for import functions indicate problems, but these are generic. The empty `param_fake_branch` function is not flagged as an anomaly - it just appears as dead code without explanation that this was intentional obfuscation.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No explicit contracts or assertions in the original source for these functions. The decompiler doesn't add value here, but also doesn't misrepresent anything.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear (e.g., `call_fake_branch` calls `param_fake_branch`). The `test_obf_opt_edge` function shows the call graph. However, global variable relationships (`jmp_buffer`, `div_zero_caught`) are not well-documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically, roughly matching the source file structure. The test functions, handlers, and core logic are separated. However, the inclusion of compiler library code (`__divsi3`) breaks the organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would NOT compile standalone. Issues include: 15 unresolved import functions, empty function bodies, missing standard library declarations, and the code relies on external linking. Significant patching would be required.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses cryptic single-letter names (`v1`-`v6`) with register annotations instead of semantic names
+- `param_fake_branch` is completely empty (optimized away), losing the original obfuscation logic
+- No comments explaining the algorithm or that the fake branch was intentionally always-false
+- 15 import functions failed to decompile, leaving gaps in the code
+- Excessive noise: register annotations on every variable, 200+ line division library function included
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to identify the corresponding decompiled function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic `v1`, `v2`, `v3` naming with register annotations makes it extremely difficult to track variable purpose and understand the code logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Instead of `v1`, `v2`, analyze how variables are used (e.g., loop counters, accumulators, predicates) to suggest semantic names like `counter`, `sum`, `predicate`
+2. **Detect and document optimized-away code**: When a function body becomes empty due to dead code elimination, add a comment explaining what was removed (e.g., "// Dead code eliminated: always-false condition")
+3. **Reduce noise from register annotations**: Move register annotations to a separate view or tooltip rather than cluttering every variable declaration with `// r7`, `// r4`

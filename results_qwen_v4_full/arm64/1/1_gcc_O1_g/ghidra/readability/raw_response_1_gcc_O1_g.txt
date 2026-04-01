@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: At -O0 with debug symbols, original variable names (temp1, temp2, sum, count) should be recoverable, but decompiler uses generic names (iVar1, iVar2, uVar3) throughout. Comments show "Unresolved local var" for most locals despite debug info availability.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test function names preserved accurately (sequential_ops, recursion_factorial, switch_fallthrough). However, runtime functions use generic names (FUN_00100940, FUN_00100abc) and helper functions like state_idle are correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (0x14, 0x32, 0x3e9, 0x65) instead of decimal values from source (20, 50, 1000, 101). No constant recovery despite debug symbols being available at -O0.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant runtime boilerplate included (_init, _start, deregister_tm_clones, __do_global_dtors_aux). Stack canary checks (__stack_chk_fail) add noise. Test functions optimized to print constants instead of actual computation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions (sequential_ops, if_else) recover well. However, switch_fallthrough uses explicit goto (LAB_00100e40) instead of fall-through semantics. Duffs_device becomes extremely convoluted with nested gotos instead of the elegant switch-in-loop pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Individual test functions maintain appropriate granularity. However, test_control_flow_l1/l2/l3 are heavily optimized away, printing pre-computed constants instead of calling functions dynamically, losing the test structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. switch_fallthrough and duffs_device introduce forward jumps (goto LAB_*) that disrupt linear reading. nested_if_deep has awkward if-else chain restructuring.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: duffs_device shows extreme redundancy with repeated copy patterns across multiple labels. Test functions contain redundant constant printing instead of actual function calls. Some functions have duplicate condition checks (op_div checks b!=0 twice).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are generic `int` rather than specific types. Function pointers use opaque typedef (_func_int_int) instead of proper signatures. Debug symbols at -O0 should preserve more type information but decompiler doesn't leverage it fully.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered correctly (matrix[3][4], arr[5]). However, struct layouts not tested in this code. Function pointer arrays show byte-level decomposition (state_handlers[0]._0_1_, _1_1_) instead of clean pointer arrays.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Implicit casts present (ulong)(b & 0x1f) in op_shl. Function pointer calls use generic types. Stack canary checks add type-unsafe patterns. No buffer overflow protections visible in array handling.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings only ("Unresolved local var", "WARNING: Removing unreachable block"). No algorithm explanations, no parameter documentation, no semantic hints about function purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine pattern (state_machine, fsm_func_table) not identified. Duff's device completely unrecognizable. Recursion patterns preserved but not labeled. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning coverage for unresolved jumps ("Could not recover jumptable at 0x00101be4"). Unreachable blocks flagged. However, computed_goto treated as function call with warning, which is partially correct but confusing.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "n must be > 0" for duffs_device). No postcondition inference. Error conditions not documented. Test validation comments from source completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through direct calls. Callback relationships (process_with_callback) preserved but not explicitly documented. Function pointer arrays show references but lack call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 74 functions in single output with no logical grouping. Runtime initialization code mixed with test functions. No separation between application logic and compiler runtime. Source file organization not preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external symbols (__libc_start_main, __printf_chk, __stack_chk_guard). Test functions print constants instead of computing, making verification impossible. Stack protection code may not link without proper runtime.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+4+5)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.40/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Variable names lost despite -O0 debug symbols**: Original names (temp1, sum, count, result) should be recoverable from DWARF but replaced with iVar1, iVar2
+- **Test functions optimized away**: test_control_flow_l1/l2/l3 print pre-computed constants instead of calling functions, destroying test verification capability
+- **Duff's device completely mangled**: Elegant switch-in-loop pattern becomes 80+ lines of nested gotos, essentially unreadable
+- **No semantic comments**: Zero algorithm explanations despite complex patterns (state machines, recursion, fall-through switches)
+- **Hex literals without context**: 0x3e9, 0x65, 0x14 instead of meaningful decimal values from source
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core test function names preserved accurately from source, enabling immediate identification of test purposes
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No precondition/postcondition documentation despite many functions having clear requirements (n>0 for duffs_device, valid op codes for switches)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage DWARF debug symbols at -O0**: Extract original variable names from DW_OP_breg annotations instead of generating iVar1/iVar2
+2. **Recognize Duff's device pattern**: Detect switch-within-do-while with fall-through cases and reconstruct the canonical form with comments
+3. **Preserve test function semantics**: Avoid constant-folding test calls; maintain actual function invocations for verification purposes

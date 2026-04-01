@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_Os_no_g/ghidra/syntactic/bin/7_gcc_Os_no_g_fixed",
+  "stdout": "test_obf_opt_edge called\n\nparam_opaque_predicate(5) = 10\ncall_opaque_predicate() = 20\ncall_instruction_substitution() = 225\ncall_tail_call_optimized(0x7a314) = 5a\ncall_non_tail_call() = 5050\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

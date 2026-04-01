@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr`, `idx`. The original source uses meaningful names like `c`, `x`, `arr`, `n`, `sum`, but these are completely lost. Even loop indices are `idx` or `i` without context.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Target functions like `process_char`, `process_int`, `array_1d_stack`, `ptr_single` correctly match source names. However, many helper functions use generic names like `sub_401030`, `sub_401070`. The test functions (`test_data_types_l1`, etc.) are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Format strings preserved but lack test case context (e.g., "DT-L1-01"). Magic numbers like `4294967295` (0xFFFFFFFF), `44`, `440`, `20`, `100` appear without explanation. The original source has clear comments explaining each literal's purpose.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution from decompiler internals: `[D] PutI(72:F64x8)[t3,0] = t6()`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`. Struct definitions with `padding_0`, `padding_4` fields add noise. Debug thunks like `__x86.get_pc_thunk.bx` clutter output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as do-while constructs, but float/double processing has bizarre control flow with repeated PutI statements that obscures logic. Some goto statements present (e.g., `sub_401030` uses `goto ptr[2]`). At -O0, control flow should be nearly 1:1 with source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition matching source. Each small function (`process_char`, `process_short`, etc.) is correctly separated. Test functions (`test_data_types_l1`, `test_array_types`, etc.) properly extracted. Function granularity matches original.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Early returns in some functions. The `array_string` uses do-while that could be clearer as while loop. Some forward jumps disrupt flow but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in float/double processing with repeated PutI patterns. Some loop unrolling present but not commented. Dead code minimal. At -O0, should have no redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. All types become `unsigned int` or `unsigned int*`. Lost: char vs short vs int vs long vs long long distinction, float vs double vs long double, signed vs unsigned, const correctness. Original uses precise types like `char`, `short`, `float`, `double`, `_Bool`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery with generic names: `struct struct_0 { unsigned int field_0; }`. Linked list node recovered as `struct_0 { unsigned int field_0; struct_0 *field_4; }`. However, many composite types are just raw pointer arithmetic. Original defines Point3D, Node, DNode, TreeNode, etc. with meaningful fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate issues. Pointer arithmetic in array functions without explicit bounds (e.g., `ptr + idx * 4`). The `ptr_diff` function has operator precedence issue: `a0 - a1 >> 2` should be `(a0 - a1) >> 2`. Some unsafe casts present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments. Only decompiler internals like `[D] PutI(...)` which are noise, not helpful annotations. Original source has extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型（char）⭐").
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (array traversal, linked list walking, tree recursion) but not explicitly named or documented. Original source explicitly labels patterns like "链表遍历", "二叉树递归".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` indicates decompiler limitations but these are internals-focused, not user-friendly. No indication of potential undefined behavior in `array_oob` (intentional out-of-bounds). No flags for the operator precedence bug in `ptr_diff`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original source has clear semantics (e.g., "返回数组元素和", "返回字符串长度") that are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships in `main` are clear (`test_data_types_l1()`, `test_array_types()`, etc.). Callback relationships not documented. Original source shows clear call graph in test functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by type (data types, arrays, pointers, composite). Matches original single-file structure. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Has `extern` declarations for globals but missing definitions. Would not compile standalone. Many undefined references (`g_4035bf`, `g_405f10`, `_GLOBAL_OFFSET_TABLE_`). Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming completely generic (`a0`, `v0`, `ptr`, `idx`) - original semantic names lost
+- Severe type degradation - all types become `unsigned int`, losing char/short/long/float/double distinctions
+- Heavy decompiler noise (`[D] PutI...`, `[D] unsupported_...`) makes code nearly unreadable
+- No comments or documentation - original test case labels completely lost
+- Type safety issues: `ptr_diff` has operator precedence bug (`a0 - a1 >> 2` should be `(a0 - a1) >> 2`)
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Each small function correctly separated matching source granularity
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Noise Reduction (2/10)  
+- Generic variable names completely obscure purpose
+- Excessive decompiler internals pollution makes reading painful
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` used as array index should be named `index` or `i`. Parameters to `process_char` should be `c`, not `a0`.
+2. **Eliminate decompiler internals from output**: Filter out `[D] PutI...`, `[D] unsupported_...` - these are not useful to end users.
+3. **Preserve type information**: At -O0, types should be recoverable. Distinguish char/short/int/long, float/double, signed/unsigned. The original uses precise types that should be recoverable.

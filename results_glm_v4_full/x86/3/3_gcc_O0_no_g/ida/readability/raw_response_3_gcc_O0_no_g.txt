@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are consistently generic (`a1`, `a2`), and local variables are mostly auto-generated (`v1`, `v2`, `v3`). While loop counters (`i`) and some pointers (`ptr`, `src`) are named adequately, the majority of variables lack semantic context (e.g., `v4` in `heap_basic` holds the result).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully preserved the original function names for all user-defined code (e.g., `double_value`, `local_array`, `heap_basic`). Only runtime/PLT functions have generic names like `sub_1030`, which is standard behavior.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Memory allocation sizes are represented as magic hex numbers (e.g., `0x14u` for 20 bytes, `0x28u` for 40 bytes) instead of `sizeof(int) * count`. While `malloc(4 * a1)` is somewhat clear, the hardcoded hex values in `heap_realloc` obscure the intent of allocating specific array sizes.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is heavily polluted by stack canary checks (`__readgsdword(0x14u)`) at the start and end of almost every function. While this is a security feature, its explicit presence in the decompiled C code significantly hinders readability by cluttering simple functions.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Standard loops and conditionals are recovered well. However, Variable Length Arrays (VLA) and `alloca` usage result in confusing pointer arithmetic loops (e.g., in `vla_stack` and `alloca_usage`) that represent stack frame adjustments rather than application logic, disrupting the natural flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiled code maintains a 1:1 mapping with the source functions. There is no inlining or outlining of code, which matches the `-O0` compilation setting and makes the structure easy to navigate.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. While the stack canary checks split the logic (prologue/epilogue), the core logic within functions is linear without excessive jumps or `goto` statements.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code, consistent with `-O0` optimization. The logic is direct without redundant calculations, making it easy to follow the execution path.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Standard types like `int` and `void*` are used correctly, but `size_t` is often demoted to `int` or `unsigned int`. Additionally, return types for functions with stack canaries are inflated to `__int64` to pack the return value with the canary check, which is a compiler artifact that reduces type accuracy.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed completely. `Point`, `Node`, and `TreeNode` are accessed as raw arrays of integers (e.g., `ptr[1]`, `v2[2]`) instead of struct member access (e.g., `p->y`, `node->next`). This obscures the data model significantly.
+
+**11. Type Safety:** Score: 4/10
+Justification: Due to the lack of struct recovery, all heap data is accessed via unsafe pointer arithmetic and casting (e.g., casting `malloc` result to `_DWORD*` and accessing offsets). This removes the type safety boundaries present in the original source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output consists solely of auto-generated headers and code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Common patterns like linked list traversal (`j = (_DWORD *)j[1]`) are visible but not explicitly labeled as such. The logic is recognizable to an expert, but the decompiler does not highlight these patterns (e.g., no "Linked List Traversal" comments).
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag potential issues like the use-after-free in `dangling_pointer` or the double-free in `double_free`. It presents the code confidently without warnings about undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions like `if ( !ptr ) return -1;` are present in the code, but they are not documented as contracts (e.g., "requires ptr != NULL"). The semantic intent is implicit only.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and use the correct names. Global variable accesses are explicit. It is easy to trace the flow between functions like `test_stack_memory` calling `local_vars`.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered by address, which roughly corresponds to the source order in this case. Related test functions are grouped together, maintaining a logical organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on compiler intrinsics like `__readgsdword`, `__readfsdword`, and `__asm` blocks. It is not standard C and would require significant patching (removing canary checks and intrinsics) to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: Structs (`Point`, `Node`, `TreeNode`) are accessed as raw integer arrays (`ptr[1]`), completely losing the semantic field names and type safety.
+- **Stack Canary Noise**: Pervasive `__readgsdword(0x14u)` checks clutter every function, obscuring the simple logic of `-O0` code.
+- **Magic Numbers**: Allocation sizes use hex literals (e.g., `0x14u`) instead of `sizeof` expressions, making it hard to determine the intended number of elements.
+- **Type Demotion**: `size_t` parameters are demoted to `int`, losing the semantic distinction between sizes and integers.
+
+**Best Quality Aspect:** Function Decomposition (Score: 9/10)
+- The decompiler perfectly preserved the function boundaries and names from the original source, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to recover structs turns readable data structure manipulations into confusing pointer arithmetic, which is the biggest barrier to understanding the code's purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Struct Recovery**: Implement analysis to identify array accesses on heap pointers that map to struct layouts, replacing `ptr[1]` with `ptr->next`.
+2.  **Abstract Stack Canaries**: Automatically detect and hide stack canary verification logic (prologue/epilogue checks) behind a macro or toggle to clean up the visual presentation.
+3.  **Recover sizeof Expressions**: Identify patterns like `malloc(4 * n)` or `malloc(0x14)` and replace them with `malloc(sizeof(int) * n)` or `malloc(sizeof(Struct))` to improve literal clarity.

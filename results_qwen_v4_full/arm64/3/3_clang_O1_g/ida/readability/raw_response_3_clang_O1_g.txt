@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`v0`, `v1`, `v2`, `v4`, etc.) with no semantic meaning. For example, `local_array` uses `v4[20]` instead of `arr[10]`, and `vla_stack` uses `v5` for what should be the VLA pointer.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`). However, some runtime functions are named generically (`sub_8E0`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x10u`, `0x18u`, `0x28u` appear without explanation. Some values are pre-computed constants (e.g., `printf("MEM-L1-01: %d\n", 20)`) losing the original computation logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts like `__fastcall`, `__cdecl`, `__int64`, `_DWORD`, `_QWORD` type casts. Frame pointer manipulation visible in stack variable declarations (`[xsp+0h] [xbp-800h]`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while instead of for loops (e.g., `heap_basic`). Test functions have constant-folded logic losing original control flow. Some functions like `stack_alias` are over-optimized to `return 20`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate. Helper functions like `create_tree_node` preserved separately. However, test functions are monolithic with excessive local variables.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions like `linked_list_heap` have multiple exit points and `goto LABEL_11` disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show significant constant folding redundancy - actual function calls replaced with pre-computed values. `test_stack_memory` computes values inline instead of calling functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types (`_DWORD`, `_QWORD`, `__int64`) instead of precise C types (`int32_t`, `int64_t`). Pointer types often degraded to `void*` or `char*`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs partially recovered with field access (`->data`, `->next`). However, `Point` struct lost - `local_struct` returns `3 * x` instead of struct field access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__int64)p`, `(_DWORD *)v7`). Pointer arithmetic visible (`buf + 1`, `char *)v6 - ((4LL * n + 15)`). No restrict or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled code. Only function headers with register annotations. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Memory allocation patterns (malloc/free pairs) visible but not identified. Linked list and tree traversal patterns not recognized or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (18 functions). However, problematic code like `dangling_pointer` returning `*v1` after free is not flagged as undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Global variables referenced (`global_counter`, `file_scope_static`). No explicit call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping comments separating stack/heap/static sections like source. Static functions not clearly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 external functions listed as "FAILED to decompile". Would require significant stubs to compile. Type mismatches (`__int64` vs `int`) need fixing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+4+5+4)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.46/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable names are generic** (`v0`, `v1`, `v2`) losing all semantic meaning from source code
+- **Test functions constant-folded** - actual function calls replaced with pre-computed values (e.g., `printf("MEM-L1-01: %d\n", 20)` instead of calling `local_vars(5)`)
+- **Struct type `Point` lost** - `local_struct` returns `3 * x` instead of showing struct field access `p.x + p.y`
+- **18 external functions failed to decompile** requiring manual stub creation
+- **No comments explaining logic** - complex pointer arithmetic in `vla_stack` and `alloca_usage` undocumented
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), making navigation straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no comments explaining algorithm intent, decompilation confidence, or non-obvious logic patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`, `count`, `length`; pointer variables should indicate their target type.
+2. **Preserve function call semantics in test code** - Avoid constant-folding function calls that have side effects or are meant to demonstrate behavior.
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "UNCERTAIN: VLA stack allocation pattern") and document failed type recovery.

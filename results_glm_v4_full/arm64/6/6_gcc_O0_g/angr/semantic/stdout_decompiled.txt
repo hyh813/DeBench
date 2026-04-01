@@ -1,0 +1,11 @@
+Standard Library Functions:
+
+  strcpy: 8
+  strcmp: 2
+  strlen: 12
+  memcpy: 0
+  memcmp: 1
+Value: 42, Name: Test
+  printf: 22
+  scanf: 323
+  fopen_fclose: 42

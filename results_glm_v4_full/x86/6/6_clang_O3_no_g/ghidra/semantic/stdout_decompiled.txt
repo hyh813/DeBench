@@ -1,0 +1,20 @@
+Standard Library Functions Test:
+
+8
+0
+12
+90
+0
+Value: 42, Name: TestName
+26
+579
+42
+42
+90
+0
+15
+System Calls Test:
+
+42
+42
+42

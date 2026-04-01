@@ -1,0 +1,29 @@
+{
+  "_comment": "Public template. Replace environment variables with your own credentials before running evaluations.",
+  "keys": {
+    "glm-official-1": {
+      "provider": "bigmodel_coding",
+      "api_key": "${BINBENCH_GLM_API_KEY}",
+      "label": "GLM official key",
+      "note": "Set BINBENCH_GLM_API_KEY in your shell environment."
+    },
+    "dashscope-1": {
+      "provider": "dashscope",
+      "api_key": "${BINBENCH_DASHSCOPE_API_KEY}",
+      "label": "DashScope key",
+      "note": "Used by qwen3.5-plus in the public template."
+    },
+    "minimax-official-1": {
+      "provider": "minimax_official",
+      "api_key": "${BINBENCH_MINIMAX_API_KEY}",
+      "label": "MiniMax official key",
+      "note": "Set BINBENCH_MINIMAX_API_KEY in your shell environment."
+    },
+    "deepseek-1": {
+      "provider": "siliconflow",
+      "api_key": "${BINBENCH_SILICONFLOW_API_KEY}",
+      "label": "SiliconFlow key",
+      "note": "Used by the optional deepseek profile."
+    }
+  }
+}

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables use generic names (`v0`, `v1`, `ptr`, `temp`) with no semantic meaning. Only occasional names like `result`, `count`, `index` provide minimal context. Original variables like `capture_by_value`, `multiplier`, `instance_count` are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mix of mangled C++ names (`_Z20test_cpp_member_funcv`) and generic labels (`sub_401030`). Mangled names preserve source identity but are unreadable without demangling. Some runtime functions have descriptive names (`__do_global_dtors_aux`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4660` (getClassID), `4294967295` (UINT_MAX), and `0x40040000` (double representation) appear without explanation. Some values like `100`, `200` are contextually clear from usage.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>`, and `[D] PutI(136:I8x8)` artifacts throughout template and lambda functions. Platform mismatch (X86 vs arm64) adds confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple test functions have reasonable structure, but initialization code uses `goto` patterns (`goto ptr[2]`). Template functions contain broken conditional chains with unsupported expressions disrupting flow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Standard library templates explode into dozens of tiny functions (`std::_Tuple_impl`, `std::_Head_base`, `std::__get_helper`). Test functions are cohesive but buried under 5000+ lines of library expansion.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom in test functions, but template instantiation code has forward jumps and broken conditional branches. Exception handling code uses non-linear patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy from template instantiation - `unique_ptr<int>` and `unique_ptr<int[]>` generate nearly identical code blocks. Smart pointer implementation spans 2000+ lines with duplicated patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int`, `char*`), but complex types degrade to `void*`, `unsigned int`. Double precision handling fails with `nan` and unsupported expressions. `size_t` becomes `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs use generic field names (`field_0`, `padding_0`, `padding_4[31]`). Class structures partially recovered but lose semantic meaning. `SimpleClass` becomes `struct_0` with `field_0` instead of `value` and `name`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int)v1[24]`, `(char *)ptr + *((int *)(*((int *)ptr) - 12))`). Pointer arithmetic obscures type boundaries. Virtual function calls use raw integer dereferencing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive documentation that is completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms (RAII, virtual dispatch, smart pointers) not identified. Lambda closures become anonymous structs (`test_cpp_lambda()::$_1`). No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Decompilation failures marked with `[D]` tags but explanations are generic ("unsupported_<class 'pyvex.expr.GetI'>"). At least indicates problems exist rather than presenting incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception handling contracts lost. No documentation of null checks or bounds validation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch mechanism not explained. Inheritance relationships obscured by generic struct names. Call graph inferable but not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output file. No logical grouping of related classes. Standard library code mixed with application code. No namespace or package structure preserved.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile standalone. Missing external declarations, unresolved symbols (`operatornew`, `__cxa_throw`). Platform mismatch (X86 vs arm64) prevents direct use. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+4+5+2)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+4+5+3)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+5+1)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.30
+
+Overall Score: 3.42/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on semantic usage (e.g., `capture_by_value`, `multiplier`, `instance_count`)
+- **Struct fields all generic** (`field_0`, `padding_0`) losing class member semantic meaning (`value`, `name`, `data`)
+- **Decompilation failures** in template and lambda code with `[D] unsupported` markers leaving logic incomplete
+- **Platform mismatch** (X86 output for arm64 source) indicates fundamental decompilation error
+- **Zero comments** despite complex C++ features (virtual tables, multiple inheritance, diamond inheritance) requiring explanation
+
+### Best Quality Aspect: **Anomaly Indication (5/10)**
+- At least marks decompilation failures with `[D]` tags rather than presenting confidently incorrect code
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of documentation for complex C++ semantics makes reverse engineering extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic recovery** - Recognize class structures, virtual tables, and inheritance relationships to restore meaningful names for fields and methods
+2. **Add decompilation confidence annotations** - Include comments explaining uncertain reconstructions, especially for templates, lambdas, and exception handling
+3. **Reduce standard library expansion** - Recognize common STL patterns (unique_ptr, tuple, container) and emit simplified representations rather than full template instantiation

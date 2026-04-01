@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named generically as `v1`, `v2`, `v3`, `result`, `a1`, `a2`, `a3` throughout. For example, in `_Z20test_cpp_member_funcv`, variables `v1` and `v2` hold the results of `getValue()` and `compute()` respectively, but their purpose is completely obscured by generic names.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: While demangled names are provided in comments (e.g., "Demangled: test_cpp_member_func()"), the actual function names in code remain mangled like `_Z20test_cpp_member_funcv`. This is a mixed result - the semantic information exists but isn't utilized as the actual identifier.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables like `g1 = 0x8b3800000000` have minimal explanation (some have comments like `// 0x1234`), but most magic numbers remain unexplained. The value `0x1234` for `getClassID()` is never documented as a meaningful constant.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. No redundant casts from type promotions, no debug instrumentation, and no obvious register spilling artifacts. Some `__asm` blocks for floating point operations but these are necessary.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow uses natural constructs - proper if/else, while loops, and return statements. At `-O0` optimization, the flow closely matches source. Minor issues like some awkward pointer arithmetic in complex inheritance scenarios.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (typically 20-80 lines). The STL template implementations are properly separated. Some helper functions like `function_2030` are trivial wrappers but don't significantly impede understanding.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Exception handling code has some non-linear flow due to `__cxa_throw` patterns, but this is expected for C++ exceptions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some template instantiation code is repetitive but this is inherent to how templates are compiled. No obvious common subexpression elimination artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses precise types like `int32_t`, `int64_t`, `uint64_t` appropriately. Some generic types like `int64_t *` used where more specific types could apply. Const correctness is partially preserved in function signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Vtable structures are reconstructed (e.g., `struct vtable_8878_type`) but field names are generic (`e0`, `e1`, `e2`). Class layouts are partially recovered but field semantics are lost. Example: `*(int32_t *)result = a2;` - the field meaning is unclear.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present throughout (e.g., `(int64_t *)result`, `(int32_t *)v1`). Pointer arithmetic is used extensively (e.g., `*(int32_t *)(4 * a2 + v1)`). Some type-confused operations in virtual function dispatch.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 5/10  
+Justification: Comments provide demangled function names and line range information, but lack algorithm explanations. No documentation of preconditions, postconditions, or non-obvious logic. Example: "Line range: 41 - 49" but no explanation of what those lines do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit design pattern or algorithm recognition. Virtual function calls are handled through vtable structures but not labeled as "polymorphic dispatch". Template instantiation patterns not explicitly identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No uncertainty markers or anomaly flags. Code is presented confidently even where indirect calls couldn't be fully resolved. No warnings about potential undefined behavior or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Error conditions from exceptions not documented. Memory allocation postconditions (e.g., "ensures: return is heap-allocated") not indicated.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function prototypes are listed at the top, global variables defined. Virtual dispatch relationships partially visible through vtable structures. However, call graph relationships not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single large file output. Functions are somewhat grouped by class/type but no clear logical separation. No namespace or package structure recovery.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Should compile with minimal stubs. Dependencies on libc++ not explicitly documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `a1`, `a2`, `result`) - no semantic meaning recovered
+- Function names remain mangled in code despite demangled versions available in comments
+- No struct field names recovered - all fields are generic (`e0`, `field0`)
+- No comments explaining algorithm logic or contracts
+- Type safety issues with numerous unsafe casts throughout
+
+**Best Quality Aspect:** Noise Reduction (scored 8/10)  
+The decompiled code is relatively clean without compiler artifacts, register spilling, or debug instrumentation that would further obscure the logic.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Variables are named with completely generic identifiers that provide no semantic information about their purpose or content, making the code extremely difficult to follow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index` or `idx`, those used for sizes should be `size` or `count`, based on how they're used in subsequent operations
+2. **Recover struct field names**: Analyze vtable structures and class layouts to infer meaningful field names like `virtual_func`, `getName`, `destructor` instead of `e0`, `e1`, `e2`
+3. **Use demangled names as primary identifiers**: The demangled names are already computed (shown in comments) - they should be used as the actual function/class names in the output rather than keeping mangled names

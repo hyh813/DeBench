@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables frequently show as "Unresolved local var: int sum@[???]", "int i@[???]", "int val@[???]". Parameters like `a`, `b`, `x`, `y` are preserved which is acceptable for simple functions, but most local variables lack meaningful names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions like `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `param_by_value_int` match source exactly. Infrastructure functions like `FUN_00100640` are generic but expected for non-test code.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Computed constants like `0xf` (15), `0x32` (50), `0x2a` (42) are appropriate for constant-folded results. However, string references like `&DAT_001014d2` are opaque, and some magic numbers like `0xffffffc8` in varargs handling lack explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy decompilation artifacts including "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var" annotations throughout. These appear in nearly every function and significantly clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions like `cdecl_func` have natural flow. Complex functions like `varargs_func` and `param_ptr_array` have convoluted loop structures with manual pointer manipulation that obscures the original for-loop logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - no 500-line monoliths. Each test function is separate and focused. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. The `varargs_func` has complex control flow with computed jumps, and `param_ptr_array` has multiple loop paths that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `func_struct_byval` shows explicit loop unrolling with 16 separate `s->data[i]` accesses instead of a loop. This level of redundancy is unexpected at -O0 and significantly impacts readability.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correct (`int`, `char*`, `double`, `longlong`). Function pointer type `_func_int_int *` is non-standard. Some inconsistencies: `uint` vs `unsigned int`, `longlong` vs `long long`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structures recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`. Field names preserved as `data[0]`, `data[15]`, `x`, `y`. Minor naming differences from source (BigStruct vs LargeStruct).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer usage. Some unusual casts in `ret_opaque_handle` returning `(double *)piVar1`. No major undefined behavior risks observed.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are predominantly decompilation warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") rather than helpful explanations. DWARF annotations like "DW_OP_reg0(x0)" are present but not explanatory.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit design patterns or algorithms identified. Varargs handling shows some understanding of `va_list` mechanics but doesn't explain the pattern. No recognition of calling convention patterns being tested.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for unknown calling conventions and unresolved local variables. However, warnings are generic ("Unknown calling convention") rather than specific about what the anomaly means for analysis.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `func_struct_byptr` with NULL checks don't have "requires: p != NULL" style annotations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear (e.g., `call_cdecl()` calls `cdecl_func()`). No documentation of which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by test category (calling conventions, parameter passing, return values). Single file output is expected from Ghidra. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". Standard library functions (`puts`, `printf`, `strlen`) are referenced. Some unusual types may require typedefs.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- "Unresolved local var" annotations throughout - variable names completely lost for most local variables
+- Excessive decompilation warnings ("WARNING: Unknown calling convention") cluttering every function
+- Loop unrolling in `func_struct_byval` at -O0 creates 16 separate array accesses instead of a loop
+- String literals replaced with opaque references like `&DAT_001014d2`
+- No contract or precondition documentation for functions with requirements (e.g., NULL checks)
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions maintain appropriate granularity with clear single responsibilities matching the source test structure.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+Most local variables show as "Unresolved local var" with generic placeholder names, making it difficult to track data flow and purpose within functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer local variable names from usage patterns (e.g., `sum` for variables accumulated in loops, `i` for loop counters)
+2. Replace opaque data references like `&DAT_001014d2` with actual string content where recoverable
+3. Add contract annotations for NULL checks and other validation logic (e.g., "requires: p != NULL")

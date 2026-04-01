@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original code had meaningful names like `local`, `arr`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions retained original names (`local_vars`, `heap_basic`, `linked_list_heap`), but system functions use generic names (`sub_4009c4`, `sub_400b30`) and some are incorrectly named (`$x`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate: `4294967295`, `4294967294`, `0x8000000000000000` replace simple operations like `x * 2`. Complex bit operations (`__ROL__`, shifts) obscure original arithmetic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`) appear in every function. Frame pointer setup (`v0 = &v1`) is redundant. `arm64g_calculate_condition` calls obscure simple conditionals.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use natural do-while loops, but others have complex bit-manipulation conditionals. `vla_stack` and `alloca_usage` have nearly unreadable loop conditions with `__ROL__` operations.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity mostly preserved from source. Helper functions like `create_tree_node` remain separate. No severe monolithic functions, though some are inflated by noise.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but error paths use goto labels (`LABEL_4013b4`). Deep nesting in `linked_list_heap` and `tree_heap_traversal` disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate calculations visible (e.g., `memcpy` called twice in `sub_4009c4`). Optimized arithmetic expressions repeated instead of factored. Some dead code from register spilling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types degraded to `unsigned long long`, `unsigned int` universally. Original `int`, `char*`, `Point*` specificity lost. Function `double_value` returns `unsigned int` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). Original `Point { x, y }` and `Node { data, next }` semantic names completely lost. Multiple conflicting `struct_0` definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(char *)ptr + 4 * idx`). Pointer arithmetic without bounds checking. `heap_basic` accesses freed memory (`free(ptr)` then `return ptr[...]`). Function pointer types degraded to `unsigned long long`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list creation/traversal pattern in `linked_list_heap` not recognized. Tree structure in `tree_heap_traversal` obscured by generic struct types.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about indirect calls or unresolved references. `stack_alias` function signature completely wrong (no parameters). Dangerous patterns like `dangling_pointer` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks not explained). No postconditions inferred. Error return values (`4294967295` = -1) not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships obscured. `global_func_ptr` usage in `call_global_callback` has wrong signature (no parameter). Global variable declarations present but usage not contextualized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by memory type (stack/heap/static). Static functions not properly scoped (`static_helper` became `call_static_func` calling undefined function).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External declarations present (`extern char __stack_chk_guard`). Some functions reference undefined symbols (`extern_function`). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+7+3+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):     (5+7+6+5)/4 = 5.75  × 0.25 = 1.438
+Level 3 (Type System):    (4+4+4)/3 = 4.00    × 0.20 = 0.800
+Level 4 (Semantic):       (2+3+3+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):     (5+4+5)/3 = 4.67    × 0.10 = 0.467
+─────────────────────────────────────────────────────────────
+Overall Score:                                    4.36/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from original (`local`, `arr`, `head`)
+- **Magic numbers replace simple arithmetic** - `4294967294` and `__ROL__` operations instead of `x * 2`
+- **Struct field names lost** - `field_0`, `field_8`, `padding_4` instead of `x`, `y`, `data`, `next`
+- **Function signature errors** - `stack_alias()` has no parameters, `call_global_callback()` missing parameter
+- **No comments or documentation** - zero explanation of algorithm intent or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most user-defined functions retained their original semantic names (`local_vars`, `heap_basic`, `linked_list_heap`), providing anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments means readers must reverse-engineer intent from obfuscated code with no guidance on decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `ptr`, `buffer`)
+2. **Recover high-level arithmetic patterns** - Recognize `__ROL__(x, 1) & 4294967294` as `x * 2` for signed integers and emit readable expressions
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: indirect call target unresolved`

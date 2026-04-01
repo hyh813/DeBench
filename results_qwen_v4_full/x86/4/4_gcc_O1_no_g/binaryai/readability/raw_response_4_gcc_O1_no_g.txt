@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `local_10` throughout. For example, `func_mixed_args` uses `param_1` through `param_5` instead of meaningful names like `x`, `str`, `d`, `ll` from the source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserve original names (`cdecl_func`, `callback_func`, `main`), but helper functions use address-based names (`FUN_00011030`, `FUN_000110e0`). Runtime thunks like `__x86_get_pc_thunk_bx` are preserved but add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere without explanation: `0xf` (should be 15), `0x32` (50), `0x2a` (42), `0x12345678`. String literals replaced with `&DAT_00012008` references losing readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`), thunk functions (`__x86_get_pc_thunk_*`), and initialization routines (`__do_global_ctors_aux`) clutter the output without being filtered.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but `varargs_func` uses manual pointer iteration instead of recognizing va_list pattern. Some functions constant-folded to single returns losing original structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but many caller functions (`call_cdecl`, `call_stdcall`) collapsed to constant returns instead of showing actual function calls, losing semantic structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal jumps. Loop constructs in `func_struct_byval` and `param_ptr_array` are recognizable as do-while patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated in every function with stack protection. Each function repeats `local_10 = *(int *)(in_GS_OFFSET + 0x14)` pattern without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types `undefined4`, `undefined8` replace specific types. `func_mixed_args` shows `undefined4 param_4, undefined4 param_5` for what should be `long long`. Return types often `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` and `SmallStruct` completely lost. `func_struct_byval` shows `void` parameters with stack pointer arithmetic instead of struct type. `func_struct_byptr` uses `int *param_1` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int *)&stack0x00000004`, `(undefined4 *)*param_1`. Pointer arithmetic on typed pointers without bounds checking. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No explanation of varargs handling, struct passing conventions, or calling convention differences. Only decompiler header comment present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (manual stack iteration instead of va_list). Struct-by-value passing not identified. Function pointer callbacks not annotated as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Stack checking code present but not explained as security feature. No indication of constant-folding optimizations. Architecture mismatch (arm64 source vs x86 decompilation) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` for pointer functions). Null checks exist but not annotated as contracts. Return value semantics not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_calling_conventions` calls `FUN_000110e0` (printf) without indication. Callback relationship between `param_func_ptr` and `callback_func` not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by address rather than logical grouping. Related functions (`cdecl_func`/`call_cdecl`) separated. No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile - missing struct definitions, undefined symbols (`handle1_1`, `handle2_0`, `DAT_00012008`), and `undefined` types. Requires extensive manual reconstruction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+2+5)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` not recovered; `func_struct_byval` shows raw stack pointer arithmetic instead of struct parameter
+- **Zero semantic comments**: No explanation of varargs handling, calling conventions, or optimization artifacts
+- **Generic variable naming**: All parameters named `param_1`, `param_2` etc., losing original semantic names (`a`, `b`, `count`, `args`)
+- **Magic hex literals**: Constants like `0xf`, `0x32`, `0x2a` not converted to decimal or named constants
+- **Architecture mismatch**: Source compiled for arm64 but decompilation shows x86 patterns (EBX, EDI, stack0x references)
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Code generally reads top-to-bottom with recognizable loop constructs and minimal disruptive jumps
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes understanding decompiler decisions and recovered patterns impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Detect struct access patterns (sequential field accesses at fixed offsets) and reconstruct struct definitions with field names
+2. **Add semantic annotations for common patterns** - Recognize varargs (va_start/va_arg patterns), calling conventions, and add explanatory comments
+3. **Convert magic numbers to decimal with context hints** - Replace hex literals with decimal equivalents and suggest constant names based on usage context (e.g., `0x2a` → `42 /* func_no_args return value */`)

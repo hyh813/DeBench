@@ -1,0 +1,95 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic auto-generated names (`iVar1`, `uVar2`, `puVar4`). No semantic meaning like `size`, `count`, or `buffer` is recovered. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source (`param_macro_constants`, `param_asm_basic`, `call_asm_clobber`). The decompiler correctly recovered the semantic intent through function names. Minor deduction for some internal functions like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants are clear (0x40 = 64, 0x200 = 512), but magic numbers like `0x1e` (page size), `0x22` (MAP flags), and `7` (PROT flags) remain unexplained. String literals in printf are preserved but not named.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Only `__regparm1` calling convention attribute and some zero-extension operations (`ZEXT816`) present. No debug instrumentation or register spilling noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else and for loops. At -O0, decompilation closely matches source structure. No spurious goto statements; loops use standard for/while constructs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each test function (`param_*`, `call_*`) is correctly isolated. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without confusing jumps. Early returns used appropriately. No forward jumps into loop bodies or computed goto patterns.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or duplicate expressions. Loop unrolling in `call_asm_multi_insn` is a legitimate optimization artifact from -O0, not redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy type degradation - most integers become `int` or `undefined4`. Original types like `size_t`, `uint32_t`, `int*` are lost. Return types are generically `undefined4` instead of specific integer types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays are partially recovered (`local_1c[6]`), and struct-like groupings are identified (`local_38`, `local_34`, `local_30`). However, no named struct definitions with field names like the original source.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts or buffer overflow patterns. Pointer arithmetic is correct. Minor issues with void pointer usage but no dangerous operations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining function purpose, algorithm logic, or preconditions. Only external functions are marked with `<EXTERNAL>::` prefix. No documentation of what macros or assembly features are being tested.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms explicitly identified. The decompiler doesn't recognize patterns like "atomic operation", "SIMD vector operation", or "self-modifying code" even though these are present in the code.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: External library calls are marked with `<EXTERNAL>::` prefix, which is helpful. However, no warnings about indirect calls, unusual stack patterns, or hand-written assembly that couldn't be fully recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The decompiler doesn't indicate requirements like "ptr != NULL" or "n > 0" that could be inferred from the code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure but not explicitly documented. No indication of which functions call `param_*` functions or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing functions (0x11240-0x113f0), assembly functions (0x115d0-0x11940), and test functions are separated. However, no file/header organization indicated.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code declares external functions (`printf`, `mmap`, `sysconf`) and compiles. However, requires standard library headers. No build instructions or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable naming is unusable**: All parameters are `param_1`, `param_2`; locals are `iVar1`, `uVar2`, `puVar4` - providing zero semantic meaning
+- **No comments explaining macro/assembly features**: The test suite tests complex preprocessing (macros, stringification, token pasting) and inline assembly (SIMD, atomic, self-modifying code) but decompiled code has no documentation
+- **Type precision severely degraded**: All integers become `int` or `undefined4`, losing `size_t`, `uint32_t` distinctions from source
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names are almost perfectly recovered from the binary, matching the original source exactly (`param_macro_constants`, `param_asm_basic`, etc.). This is the decompiler's strongest feature.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Variable naming is completely generic and provides no semantic value. At -O0, the compiler preserves all variables, so the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how parameters/locals are used (e.g., `param_1 > 0x400` suggests `size` or `threshold`; `param_1 + param_2` suggests `addend` or `increment`)
+2. **Add semantic comments**: For test functions, document what features are being tested (e.g., "// Tests macro stringification with # operator")
+3. **Recover type information**: Use debug symbols (-g flag was used) to recover precise types like `size_t`, `int32_t`, and preserve signed/unsigned distinctions

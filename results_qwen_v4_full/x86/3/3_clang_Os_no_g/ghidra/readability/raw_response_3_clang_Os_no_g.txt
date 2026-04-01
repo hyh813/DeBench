@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `iVar2`, `local_28`, `uVar3`) with no semantic meaning. Original source had meaningful names like `arr`, `head`, `current`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`local_vars`, `heap_basic`, `double_value`) but many critical functions became `FUN_00011030`, `FUN_00011af0`. Test functions like `stack_alias` lost all logic and just return constants.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x2a`, `0x14`, `0x3c`, `0x1e`). Original code used expressions like `x * 2` but decompiled shows `param_1 * 3` (incorrect optimization) or hardcoded constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__x86.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`). Multiple "WARNING: Removing unreachable block" comments clutter the output but don't impede core logic understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as `do-while` instead of original `for` loops. Some functions completely constant-folded (`tree_heap_traversal` returns `0x3c` instead of showing tree traversal). `stack_alias` reduced to single return statement losing all alias logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but test functions inlined constant results instead of calling actual functions. `create_tree_node` changed from returning `TreeNode*` to `void` losing return value semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has awkward patterns like `stack0xfffffff4 + iVar3 * 2 + iVar1 + 0xc` for VLA access. Some functions have label jumps (`LAB_00011798`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding created redundancy—test functions compute values at compile-time then print constants. `test_stack_memory` has inline loops duplicating what actual functions do, obscuring the test structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `void*`, generic `int` instead of precise types. Original `Point*`, `Node*`, `TreeNode*` all degraded to `undefined4*` or `int*`. Size types (`size_t`) sometimes preserved but inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—no struct definitions recovered. `Point`, `Node`, `TreeNode` all lost. Struct access becomes pointer arithmetic (`__ptr[1]`, `*(int*)((int)__ptr + 8)`). Original `p->x + p->y` becomes `param_1 * 3` (incorrect constant folding).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(char*)`, `(int*)`, `(undefined4*)`). Pointer arithmetic on void pointers throughout. `stack_alias` signature changed from `(int*, int*)` to `void()` losing all parameter type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler metadata comments present ("Decompiled by Ghidra 12.0", "WARNING: Function replaced"). Zero semantic comments explaining algorithm intent, unlike original's extensive documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation) not identified. `linked_list_heap` shows list operations but no recognition of the pattern. Memory barrier assembly replaced with `LOCK()/UNLOCK()` macros without explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "inlined function") but critical anomalies not flagged. `stack_alias` returning constant `0x14` should be flagged as suspicious. `dangling_pointer` undefined behavior not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but not as contracts). Error return values (`0xffffffff`, `0xfffffffe`) not explained. Original's safety checks lost semantic meaning.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `extern_function` declared but no indication it's external. `global_func_ptr` callback mechanism present but not documented. Test-to-function relationships obscured by constant folding.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order, not grouped by category (stack/heap/static). Original's clear section headers (`// 3.1 栈内存操作`) completely lost. Helper functions mixed with test functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies declared (`extern_function`, `malloc`, `printf`). Some functions may compile standalone but missing struct definitions and proper headers. `LOCK()/UNLOCK()` macros undefined.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.34/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` definitions missing; all struct access reduced to pointer arithmetic
+- **Aggressive constant folding** - Functions like `stack_alias`, `tree_heap_traversal`, `local_struct` return hardcoded constants instead of showing actual logic
+- **Variable names entirely generic** - `param_1`, `iVar1`, `local_28` provide zero semantic information about purpose
+- **Function signature degradation** - `stack_alias(int*, int*)` became `stack_alias(void)` losing all parameter information
+- **Test functions inlined constants** - `test_stack_memory` prints pre-computed values instead of calling actual functions, breaking test verification
+
+### Best Quality Aspect: **Noise Reduction (6/10)**
+- Compiler runtime functions (`_init`, `_fini`, `deregister_tm_clones`) are clearly separated and don't interfere with application logic understanding
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any struct/union definitions; all composite type operations reduced to opaque pointer arithmetic, making data structure manipulation incomprehensible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Analyze consistent offset patterns (`+0`, `+4`, `+8`) to reconstruct struct layouts with field names based on usage context
+2. **Avoid aggressive constant folding for analysis purposes** - Preserve original computation logic even when values are compile-time constant; add comments indicating foldable expressions
+3. **Infer variable names from usage semantics** - Variables used in size checks should be named `size`/`count`; pointer iteration variables should be named `ptr`/`current`; return values should reflect function purpose

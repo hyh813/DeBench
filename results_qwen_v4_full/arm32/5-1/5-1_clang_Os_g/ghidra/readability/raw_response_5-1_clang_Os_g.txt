@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Features
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generic (`local_28`, `uStack_24`, `iVar1`, `puVar1`) with numerous "Unresolved local var" comments indicating complete name loss. Original names like `capture_by_value`, `obj`, `result` are entirely absent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved accurately (`test_cpp_member_func`, `test_cpp_virtual_func`), and template instantiations show type info (`template_max<int>`, `Container<int>::push`). However, runtime helpers use cryptic names (`_GLOBAL__sub_I_5_1_cpp`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers dominate returns (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`, `0x2bf`) with zero explanation. String literals appear as `&DAT_00011294` instead of readable text like `"=== 测试 C++ 面向对象特性 ==="`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`). Multiple "WARNING: Removing unreachable block" and "Unknown calling convention" warnings clutter output. Stack variables declared as `undefined4` add verbosity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions reduced to single `return` statements losing all control flow. Exception handling shows raw `__cxa_throw` instead of try-catch blocks. Only template functions retain conditional logic (`if (a <= b)`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Class methods properly separated (`Container<int>::push`, `Container<int>::get`), but test functions oversimplified to constant returns. Template instantiations correctly create separate functions per type.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Functions read top-to-bottom due to oversimplification. `test_cpp_rtti` has reasonable conditional flow. No excessive goto statements disrupting readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but information loss means original logic isn't optimized—it's missing. Stack variable initialization (`local_28 = 0x74736554; uStack_24 = 0;`) appears redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision—some types recovered (`int`, `double`, `size_t`, `Base *`), but many generic (`undefined4`, `undefined1`, `undefined2`). Class pointers partially recovered but many show as unresolved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures (SimpleClass, LifecycleClass, Point) not defined in output. Only method signatures with `__thiscall` recovered. Vtable references present (`_vptr_Base`) but no field layouts visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts visible (`(undefined4 *)__cxa_allocate_exception(4)`, `(int)&PTR__RTTIBase_00021eec`). Pointer operations lack type safety annotations. Exception type handling shows type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Technical warnings present ("Unresolved local var", "WARNING: Could not recover jumptable") but no semantic explanations. DWARF prototype comments helpful for class methods. No algorithm or logic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized—no RAII, virtual dispatch, or exception handling idioms identified. Lambda expressions reduced to constant returns. Operator overloading not indicated.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning messages about unresolved variables and indirect calls. "WARNING: Treating indirect jump as call" in `call_virtual_func` appropriately flags uncertainty. Clear about what couldn't be recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. No error condition documentation for any function.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially shown (`_vptr_Base`) but no call graph. External runtime functions referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order but no clear module boundaries. Runtime init/fini functions mixed with test functions. No namespace or logical grouping visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References many external functions (`__cxa_allocate_exception`, `operator_new`, `__dynamic_cast`) without declarations. Would require extensive stubs and C++ runtime to compile. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3+7+2+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (25%): (3+6+7+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (20%): (5+3+5)/3 = 4.33 × 0.20 = 0.867
+Level 4 (15%): (5+2+7+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (10%): (5+5+3)/3 = 4.33 × 0.10 = 0.433
+
+Overall = 1.275 + 1.375 + 0.867 + 0.600 + 0.433 = 4.55/10
+```
+
+**Overall Readability Score:** 4.55/10
+
+### Critical Defects:
+- **Test functions reduced to constant returns** - `test_cpp_virtual_func`, `test_cpp_lambda`, `test_cpp_operator_overload` all return precomputed constants instead of showing actual logic
+- **Variable names completely lost** - All local variables show as `local_XX`, `uStack_XX`, `iVar1` with "Unresolved local var" comments
+- **Magic numbers without explanation** - Return values like `0x125c`, `0x2bf`, `0x28a` have no semantic meaning in decompiled output
+- **Exception handling not recovered** - `test_cpp_exception` shows raw `__cxa_throw` calls instead of try-catch structure
+- **Class definitions missing** - No struct/class field layouts for SimpleClass, LifecycleClass, Point, Container templates
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - Ghidra clearly flags what it couldn't recover with "Unresolved local var" and "WARNING" messages, preventing false confidence in incorrect decompilation
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - C++ patterns (RAII, virtual dispatch, exceptions, lambdas, operator overloading) are completely unrecognized, making the decompiled code look like C rather than C++
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ exception handling structure** - Detect `__cxa_begin_catch`/`__cxa_end_catch` patterns and reconstruct try-catch blocks instead of showing raw runtime calls
+2. **Preserve test function logic** - Even at -O0, constant folding shouldn't eliminate all computation; track data flow to recover original arithmetic expressions
+3. **Recover class field layouts from DWARF** - Use debug information to reconstruct struct/class definitions with field names instead of leaving them as unresolved types

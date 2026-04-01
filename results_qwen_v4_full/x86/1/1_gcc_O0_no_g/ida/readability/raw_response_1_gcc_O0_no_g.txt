@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `a3`, `v2`, `v3` instead of semantic names (`a`, `b`, `c`, `sum`, `temp1`). Only loop iterators `i`, `j` and occasional `result` are meaningful.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`). Helper functions like `double_value`, `triple_value` also retained. Some stubs remain as `sub_1030`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `10`, `20`, `30`, `1000` appear without explanation. String literals reference external labels (`asc_3030`) instead of inline text. Array sizes like `v3[8]` lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary code (`__readgsdword(0x14u)`) appears in many functions. Compiler artifacts like `_x86_get_pc_thunk.bx`, `deregister_tm_clones` clutter output. Type annotations (`__cdecl`, `__usercall`) add verbosity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops (`for`, `while`, `do-while`) recovered well. However, `switch_fallthrough` uses goto labels (`LABEL_7`) instead of fall-through. `duffs_device` degrades to complex goto chains. Some if-else chains converted to switch unnecessarily.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source accurately. Helper functions (`double_value`, `op_add`) remain separate. No inappropriate inlining or fragmentation. Test functions are monolithic but match original design.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `switch_fallthrough` and `duffs_device` use goto labels that disrupt flow. `computed_goto` has inline assembly jump that breaks linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `switch_large` assigns to `result` before each break (redundant pattern). Stack canary code repeats across functions. No significant dead code, but `duffs_device` has repeated copy operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are generic `int` instead of `int32_t`. Pointers degrade to `_DWORD *` rather than typed pointers. `if_else` returns `_BOOL4` (good). Function pointers retain signatures but parameter names lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Arrays appear as local variables (`v3[8]`, `v4[15]`) without type definitions. Matrix data becomes flat arrays. Complete loss of composite type semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `((int (__cdecl *)(int))v3[a1])(a2)`. Pointer arithmetic uses raw indexing (`v4[4 * i + j]`). Function pointer calls lack type safety. Stack operations introduce potential issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic despite extensive source comments. Only function headers with metadata. No algorithm explanations, decompilation confidence indicators, or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized. State machine patterns in `state_machine`/`fsm_func_table` not identified. Duff's device not recognized. No design patterns named or explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked "FAILED to decompile". Stack warning present ("positive sp value has been detected"). No detailed anomaly explanations or confidence indicators for uncertain recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Source comments about test validation completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Callback relationships show through function pointer types. No call graph documentation. Global variable usage (`jump_buffer`) lacks context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Static functions not properly scoped. No header file structure. Organization is flat with runtime functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions marked "FAILED to decompile" (`printf`, `longjmp`, etc.). Would require stubs to compile. Dependencies not documented. Metadata inconsistency (claims Ghidra, comment says IDA Pro).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+6+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+8+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.33/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v2`) despite -O0 debug build that should preserve original names
+- **Zero comment recovery** - all source documentation, test validation notes, and algorithm explanations lost
+- **No struct/union recovery** - composite types degraded to raw arrays (`v3[8]`, `v4[15]`)
+- **Complex patterns degrade to goto** - `switch_fallthrough` and `duffs_device` lose structured semantics
+- **Metadata inconsistency** - header claims Ghidra but decompiled comment says "IDA Pro 9.1 with Hex-Rays"
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function boundaries and granularity preserved accurately; helper functions remain properly separated matching source structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation despite debug symbols; no algorithm explanations or decompilation confidence indicators.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable names** - At -O0 with `-g`, original variable names (`a`, `b`, `c`, `temp1`, `sum`) should be recoverable from DWARF debug info instead of generic `a1`, `v2`.
+
+2. **Recover source comments from debug sections** - Implement comment extraction from DWARF line tables or separate debug sections to preserve algorithm documentation and test validation notes.
+
+3. **Recognize and annotate complex patterns** - Add pattern detection for Duff's device, switch fall-through, and state machines with explanatory comments rather than degrading to goto chains.

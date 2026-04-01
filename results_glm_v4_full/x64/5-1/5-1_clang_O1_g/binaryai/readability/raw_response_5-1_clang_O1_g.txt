@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables use generic names like `local_24`, `puVar1`, and `uStack_20`, providing no semantic context. Despite `-g` compilation flags, local variable names were not recovered from debug symbols.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent, accurately reflecting the original source (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Derived::getName`). This significantly aids navigation and understanding.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Logic is often replaced by magic numbers (e.g., `return 0x2bf` in `test_cpp_smart_ptr` instead of the calculation logic). While string literals like `"Derived"` are clear, the numeric constants obscure the implementation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Code contains significant noise from generic types (`undefined4`, `undefined8`) and split stack variables (e.g., `uStack_20`, `uStack_1c`), which hinders readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While functions with logic (e.g., `test_cpp_constructor`) have natural loops, many functions are reduced to single `return` statements of constants, completely hiding the control flow present in the source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods and test functions are correctly separated into individual functions. However, the bodies of several functions are missing due to constant propagation.
+
+**7. Code Linearization:** Score: 8/10
+Justification: In functions where logic is present (e.g., `test_cpp_rtti`), the code reads linearly from top to bottom with appropriate conditional checks.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler shows no redundant code, but this is largely because complex logic blocks have been eliminated entirely rather than cleaned up.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are imprecise, frequently using `undefined4` for `int` and `undefined8` for pointers/longs. Signed/unsigned distinctions and specific class types are lost.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No C++ class structures are recovered. Object access is performed via raw pointer arithmetic (e.g., `*(int *)(this + 8)` instead of `this->multiplier`), losing all object-oriented context.
+
+**11. Type Safety:** Score: 4/10
+Justification: Extensive use of `undefined*` casts and pointer arithmetic makes the code look unsafe and difficult to reason about, even if the underlying binary is valid.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The output is purely raw decompiled code.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Virtual function calls are correctly identified as indirect calls via vtables (e.g., `(**(code ***)param_1)()`), and template instantiations are named (e.g., `template_max_int_`), though not explicitly explained.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The decompiler confidently presents `return 0x2bf` for `test_cpp_smart_ptr` without indicating that the logic was optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and the naming scheme allows easy tracing of class hierarchies (e.g., `Base::` vs `Derived::`).
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner, but the naming convention implicitly groups them by class and functionality.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to `undefined` types and missing struct definitions, requiring significant manual patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Logic replaced by magic constants (e.g., `test_cpp_smart_ptr` returns `0x2bf` instead of showing pointer operations).
+- Composite types (classes) not recovered; accessed via raw pointer offsets (e.g., `*(int *)(this + 8)`).
+- Types are generic (`undefined4`, `undefined8`) instead of specific C++ types.
+- Variable names are generic (`local_24`, `puVar1`) despite debug symbols being present.
+- Exception handling logic is missing or obscured in `test_cpp_exception`.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully recovered the exact function names from the source, including class-scoped methods and template instantiations, which is crucial for high-level navigation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct C++ classes/structs forces the reader to interpret raw pointer arithmetic, destroying the object-oriented semantic layer of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class structure recovery to replace pointer arithmetic with member access (e.g., `this->multiplier`).
+2. Improve type inference to utilize debug info (`-g`) and replace `undefined` types with concrete types (`int`, `char*`).
+3. Detect and annotate constant propagation that obscures source logic, or attempt to reverse it when debug symbols indicate the original structure.

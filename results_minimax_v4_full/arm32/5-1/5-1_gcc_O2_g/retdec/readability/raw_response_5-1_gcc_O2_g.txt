@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic numbered names (v1-v12, a, b, str, result) with no semantic meaning. Compare to source where variables like `capture_by_value`, `capture_by_ref`, `ptr1`, `ptr2` clearly indicate purpose. The decompiled code is essentially unusable for manual analysis.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions use mangled C++ names (`_Z18test_cpp_exceptionv`) rather than demangled forms. While comments contain demangled names (e.g., "Demangled: test_cpp_exception()"), the actual function identifiers are not human-readable. The demangling in comments provides some utility but requires extra parsing.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `42` (thrown exception), `21` and `1000` (constructor test), `650` and `703` (completely inlined results). The value `4` used in `__cxa_allocate_exception(4)` is unexplained. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or register spilling artifacts visible. The code is relatively clean from a noise perspective, though some type punning through casts exists.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures preserved, but several functions are completely inlined to return constants (`test_cpp_diamond_inheritance` returns 650, `test_cpp_smart_ptr` returns 703). The exception handling in `test_cpp_exception` shows awkward conditional structure with `if ((int32_t)&g19 == 1)` that obscures the try-catch logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized, but many are oversimplified due to aggressive inlining. Template functions are properly separated (`template_max<int>`, `template_max<double>`), but class member functions are not recovered as methods - they're standalone functions with mangled names.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The exception handling has some backward jumps but overall flow is manageable. Early returns in some functions help readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. The template functions show proper single-expression implementations. Some common subexpression elimination visible but not problematic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `float64_t` appropriately. However, function parameters use generic names (`a1`, `a2`) without type hints. The `template_swap` function incorrectly assigns pointers as values (`*a1 = (int32_t)a2`) - a type error. Some `void*` usage in dynamic_cast operations.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: VTable structures partially recovered (`struct vtable_1162c_type`), but class internals are lost. Class `SimpleClass` with members `value` and `name[32]` is never recovered - only global test functions exist. The `LifecycleClass` with its `data` pointer and `size` member is completely absent.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple type safety issues: `template_swap` has incorrect pointer assignment (`*a1 = (int32_t)a2`), should swap values not addresses. The exception handling uses raw pointer arithmetic (`*(int32_t *)(*v1 - 4)`). No bounds checking on array accesses.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Comments provide module name, address range, and line range which helps correlation with source. Demangled names in comments are useful. However, no explanation of algorithm logic, no recovery of original variable names, no indication of confidence levels.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms identified. The virtual function mechanism is partially visible through vtable structures but not explained. Template instantiation is recognized but not identified as such. Lambda expressions not recovered at all.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No flags for suspicious code. The `if ((int32_t)&g19 == 1)` pattern is unusual and not flagged. The completely inlined functions (returning 650, 703) could be compiler optimizations but aren't noted. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. The `test_cpp_exception` function has complex control flow with no explanation of what exceptions are being caught or thrown.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`_Z20test_cpp_constructorv()` called from `test_cpp_oo_features`). Virtual dispatch through vtables is partially visible but not clearly documented. Global variable usage (`g19`, `g20`) present but relationships unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically by test category. Template functions grouped together. Class member functions (destructors, getType) placed near each other. However, all in single file with no namespace structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdint.h`, `stdio.h`, `string.h`). Function prototypes declared. Should compile with minimal stubs for runtime functions (`__cxa_*`, `__dynamic_cast`). No build system information provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable naming**: All variables are generic (v1-v12, a, b, str) - completely unusable for analysis
+- **Class recovery failure**: Classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are completely absent - only test functions remain
+- **Type error in template_swap**: `*a1 = (int32_t)a2` assigns pointer address as value instead of swapping contents
+- **Oversimplified functions**: `test_cpp_diamond_inheritance` and `test_cpp_smart_ptr` return hardcoded constants (650, 703) losing all logic
+- **Exception handling obfuscation**: Complex conditional structure `if ((int32_t)&g19 == 1)` obscures try-catch logic
+
+### Best Quality Aspect: Noise Reduction (8/10)
+The decompiled code has minimal compiler artifacts - no redundant casts, no debug instrumentation, and relatively clean output. This makes the code structurally readable despite other issues.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The complete absence of semantic variable names is the most severe readability issue. Every meaningful variable from the source (capture_by_value, capture_by_ref, ptr1, ptr2, obj, derived, pb, pd) is lost, replaced with generic numbered variables.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string operations, pointer dereferencing) to suggest meaningful names like `capture_by_value` from lambda capture patterns
+2. **Recover class structures**: When detecting vtable pointers, reconstruct the class layout with field names and types rather than leaving only test functions
+3. **Flag oversimplified functions**: When a function is completely inlined to a constant, add a comment noting "Function body inlined by compiler - original logic lost" rather than presenting it as the complete function

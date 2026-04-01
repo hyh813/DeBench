@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic stack names like `local_28`, `uStack_24`, and `param_1`. For example, the string "Test" is constructed into `local_28` using hex, completely losing the semantic name `name` from the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent, likely recovered from debug symbols. Names like `Container<int>::push`, `test_cpp_member_func`, and `RTTIDerivedA::getType` accurately reflect the source structure.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are obfuscated; "Test" is represented as `0x74736554` (little-endian hex). Magic numbers like `0x125c` (4700) are used without context, making the logic hard to follow.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from type definitions (`undefined4`, `undefined8`) and stack padding variables (`local_a`, `local_9`) that obscure the actual logic, though this is common in C++ decompilation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Where logic exists (e.g., `Container<int>::push`), the flow is natural. However, many functions like `test_cpp_virtual_func` are reduced to a single `return 0x2a`, completely hiding the control flow (loops, calls) present in the source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Template instantiations are correctly decomposed into separate functions (e.g., `Container<int>` vs `Container<double>`). However, class methods for `SimpleClass` and `LifecycleClass` are missing or inlined, reducing granularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps or `goto` statements, making the execution path easy to trace in the functions that aren't just constant returns.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler (or compiler) has over-optimized the logic, removing the actual implementation details. For instance, `test_cpp_constructor` returns a calculated constant rather than showing the object lifecycle management code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently degraded to `undefined4` or `undefined8`. While `int` and `void*` are recovered in places, the specific C++ types like `size_t` or class instances are often lost or treated as raw memory blobs.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct access is performed via raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`). The decompiler failed to reconstruct the `Container` class layout with named fields like `data` or `size`.
+
+**11. Type Safety:** Score: 5/10
+Justification: There are unsafe casts present, such as casting `undefined4 *` to `int *` in `test_cpp_rtti`. While functionally correct for the assembly, it violates type safety principles of the original C++ source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the C++ runtime mechanisms (like `__cxa_throw`), or the purpose of the complex hex manipulations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler identifies C++ runtime calls (`__cxa_allocate_exception`, `__dynamic_cast`), but it fails to label the high-level patterns like RAII, VTable dispatch, or Template instantiation explicitly.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The code confidently presents `local_28 = 0x74736554` without indicating that this is a reconstructed string literal or a potential decompilation artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds checks in `Container::get` are present in code but not documented as contracts) or invariants.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to standard library functions (`printf`, `strlen`, `operator_new`) are clear. The relationship between template instantiations is visible through naming, though class hierarchies are not explicitly visualized.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat manner. While related functions (like `Container` methods) are grouped by name, there is no logical grouping by class or namespace as in the source.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types like `undefined4` and `undefined8`, which would require significant patching (defining these types or replacing them) to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- String literal "Test" is reconstructed as hex integer `0x74736554` on the stack.
+- Logic is collapsed into constant returns (e.g., `test_cpp_virtual_func` returns `0x2a`), hiding the algorithm.
+- Composite types accessed via raw offsets (`this + 0x28`) instead of struct fields.
+- Types degraded to `undefined4`/`undefined8`, preventing compilation.
+- Complete lack of comments explaining C++ runtime mechanisms.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved symbol names for functions and methods, making the high-level API easy to identify.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The absence of comments and the obfuscation of logic (hex strings, constant folding) make it nearly impossible to understand the *intent* of the code, only the mechanics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement stack string pattern recognition to convert hex assignments like `local_28 = 0x74736554` back into string literals.
+2. Improve struct recovery to replace pointer arithmetic offsets with named field accesses based on context.
+3. Add auto-generated comments for C++ ABI calls (e.g., `__cxa_throw` -> "Throw C++ exception") to clarify runtime behavior.

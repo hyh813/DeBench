@@ -1,0 +1,21 @@
+=== PREPROCESSING FEATURES TEST ===
+PP.L2.01: 64
+PP.L2.02: 30
+PP.L2.03: 32
+PP.L2.04: 57122
+PP.L3.01: 116
+PP.L3.02: 19
+PP.L3.03: 60
+LOG: Values: 10, 20, 30
+PP.L3.04: 60
+PP.L3.05: 16
+PP.L3.06: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:58
+PP.L3.07: 382
+=== ASM FEATURES TEST ===
+ASM.L4.01: 15
+ASM.L4.02: 0
+ASM.L4.03: 42
+ASM.L4.04: 0
+ASM.L4.05: 30
+ASM.L4.06: 77

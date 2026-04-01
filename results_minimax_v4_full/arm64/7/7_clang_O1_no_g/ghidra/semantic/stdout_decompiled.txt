@@ -1,0 +1,16 @@
+=== Testing Obfuscation Optimizations ===
+
+Value: 10
+GCD result: 20
+Instruction substitution: 225
+String length: 0
+Tail call sum: 500500
+Non-tail sum: 5050
+Vector sum: 0
+LTO result: 20
+Division result: 2
+Null pointer result: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 48

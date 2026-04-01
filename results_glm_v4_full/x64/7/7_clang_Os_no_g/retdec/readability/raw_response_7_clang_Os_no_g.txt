@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`), obscuring semantic meaning. For example, in `param_opaque_predicate`, `v1` represents `x+1` and `v5` represents the GCD accumulator, but these relationships are lost.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`param_fake_branch`, `call_opaque_predicate`) are preserved exactly from the source. However, library wrappers like `function_1030` (for `strncpy`) lose semantic context.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered but stored as global pointers (`g3`, `g4`). Magic numbers like `0x100000000` (used for sign extension) and `0xffffffff` (masking) appear frequently without explanation, cluttering the logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, specifically the pattern `0x100000000 * (int64_t)((int32_t)x >> 31) | x` used repeatedly to emulate 32-to-64-bit sign extension. This makes simple arithmetic operations verbose and hard to read.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Critical control flow is missing or distorted. `param_fake_branch` is reduced to a single return statement, losing the `if` blocks entirely. `param_tail_call_optimized` is transformed into a complex arithmetic formula rather than the recursive loop present in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well. The decompiler correctly identifies separate functions for `param_*` and `call_*` variants, maintaining the original modular structure without artificial splitting.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but expressions are often deeply nested or convoluted (e.g., the GCD calculation in `param_opaque_predicate`), requiring significant mental effort to parse.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully simplifies the instruction substitution in `param_instruction_substitution` (e.g., bit shifts back to multiplication/division), which improves readability, though it deviates from the source's specific obfuscation intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int64_t` and `int32_t` are used, but they are applied somewhat generically. The distinction between `int` and `size_t` is often blurred, and pointer types are frequently cast to `int64_t` for arithmetic.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The `jmp_buf` structure is recovered as `struct __jmp_buf_tag`, but fields are generic (`e0`, `e1`, `e2`). The initialization of this struct in `param_division_by_zero` is a complex literal rather than a clean struct assignment.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent casting between pointers and integers (`int64_t` vs `char*`) and the use of `__asm_` intrinsics (e.g., `__asm_movdqa`) introduce type-unsafe constructs that would not compile in standard C without specific extensions.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or decompiler confidence. The complex math in `param_tail_call_optimized` or the SIMD intrinsics in `call_vectorized_loop` are left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `setjmp`/`longjmp` are present but obscured by raw struct manipulation. The SIMD vectorization in `call_vectorized_loop` is presented as raw assembly intrinsics (`__asm_paddd`) rather than a high-level vectorized loop representation.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided for the missing code in `param_fake_branch` or `param_buffer_overflow_stack`. The decompiler presents the simplified output confidently, failing to indicate that significant source logic (branches/loops) was absent in the binary or optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `param_division_by_zero` handles a signal is not explicitly stated in the contract, only visible in the implementation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and clear. Global variables (`g1` through `g24`) are used for strings and data, but their relationship to the original string literals is only visible via their addresses/hex values, not names.
+
+**17. Module Organization:** Score: 7/10
+Justification: The file is organized logically with functions appearing in a similar order to the source. Helper functions and standard library wrappers are grouped at the top, which is acceptable.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard `__asm_` intrinsics and specific `int128_t` typedefs. It would likely fail to compile with a standard C compiler (gcc/clang) without significant modification or a specific compatibility header.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **Missing Control Flow**: `param_fake_branch` and `param_buffer_overflow_stack` are reduced to simple returns, completely omitting the `if` statements and loops present in the source.
+- **Sign Extension Noise**: The repetitive use of `0x100000000 * x >> 32` patterns to handle 32-bit integers makes arithmetic logic extremely verbose and difficult to read.
+- **Raw Assembly Intrinsics**: `call_vectorized_loop` is decompiled to `__asm_pxor`/`__asm_paddd` intrinsics, which are semantically opaque compared to the source's loop.
+- **Generic Variable Names**: Complex logic like GCD in `param_opaque_predicate` uses `v1`, `v2`, etc., making it hard to track the algorithm's state.
+- **Struct Literal Obscurity**: `setjmp` usage is represented as a massive struct literal initialization rather than a standard function call, obscuring the control flow mechanism.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- The decompiler successfully preserved the original function names for the vast majority of the target functions, allowing for easy mapping between the source and binary.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1.5/10)
+- The lack of comments, failure to flag missing code anomalies, and presentation of SIMD as raw assembly make understanding the *intent* versus the *implementation* very difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Pattern Matching for Sign Extension**: Replace the `0x100000000 * ... >> 32` pattern with standard `(int32_t)` casts or `SIGN_EXTEND(x, 32)` macros to drastically reduce visual noise.
+2.  **Anomaly Reporting**: Insert comments or warnings when source-level constructs (like explicit `if` branches) are detected as missing or optimized out in the binary (e.g., "Warning: Branch condition optimized out").
+3.  **SIMD Lifting**: Attempt to lift SIMD intrinsics back into pseudo-C loops or vectorized array operations (e.g., `for (i=0; i<n; i+=4) ...`) rather than emitting raw `__asm_` blocks.

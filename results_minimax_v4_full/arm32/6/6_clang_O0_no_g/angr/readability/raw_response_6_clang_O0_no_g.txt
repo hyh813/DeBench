@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of descriptive names like `dst`, `src`. Local variables like `v0`, `v1`, `v2` obscure their semantic purpose. Only `len` in `param_strcpy` is well-named.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_strcpy`, `param_strcmp`, `param_strlen` exactly match the source function names. The naming is action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" are correctly preserved. However, magic numbers like `4294967295` (representing -1 as unsigned), `66` (O_CREAT|O_RDWR), and `438` (0666 octal) lack explanations.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some redundant operations like calling `strlen(ptr)` twice in `param_strcpy` (lines: `len = strlen(ptr); return strlen(ptr);`), but overall code is relatively clean.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with straightforward if-else structures. Loops are properly recognized. At -O0, the flow closely matches source. Minor issue: condition expressions use `armg_calculate_condition(193, ...)` which is a decompilation artifact.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. `param_strcpy` and `call_strcpy` are properly separated. Parameter lists are reasonable, though some expose implementation details (e.g., passing addresses of local variables).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling. No excessive nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant `strlen` call in `param_strcpy` (called twice). Some duplicate function calls in wrapper functions (e.g., `call_strcpy` calls `param_strcpy` then returns its result redundantly). Loop unrolling not present at -O0.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are reasonable (`char*`, `void*`, `unsigned int`). However, `const` correctness is completely lost - all `const char*` parameters become `char*`. Return types use `unsigned int` where `int` would be more appropriate for error returns.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Complex types like `struct ThreadData`, `struct sockaddr_in` are not reconstructed. The decompiler uses raw memory access patterns: `*((int *)&v1)` instead of proper struct access. The `sockaddr` typedef is empty/incomplete.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: casting between pointer and integer types (e.g., `ptr = 0;` after `free(ptr)`), pointer arithmetic without bounds checking, treating `int` as boolean with `armg_calculate_condition`. No `restrict` or `_Atomic` annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. No explanation of algorithm logic, no decompiler confidence indicators, no @param/@return documentation. The code is bare without any explanatory text.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions (`strcpy`, `strlen`, `printf`) are correctly identified by name. However, pthread patterns, IPC mechanisms, and atomic operations are not recognized as idioms - they're just raw function calls without semantic grouping.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain reconstructions. The `armg_calculate_condition` function suggests some uncertainty in condition reconstruction but no comments explain this. No flags for potential undefined behavior or indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (like returning -1 or 4294967295) are not explained. No documentation of what `param_strcpy` guarantees (returns string length).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure. External dependencies like `printf`, `strcpy` are declared. However, no explicit documentation of call graph or which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (string functions together, thread functions together). However, this appears to follow binary layout rather than semantic grouping. No namespace or static scope indicators.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc. Some stubs needed for undefined externals like `g_403496` (format strings). Basic function signatures are correct for compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`a0`, `a1`, `v0`, `v1`) instead of semantic names (`dst`, `src`, `len`)
+- `const` correctness completely lost - all `const char*` become `char*`
+- No comments explaining algorithm logic or decompiler confidence
+- Composite types (structs) not reconstructed - uses raw memory access
+- Redundant `strlen` call in `param_strcpy` (calls twice instead of storing result)
+- No preconditions/postconditions documented for functions
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names exactly match source (`param_strcpy`, `param_strcmp`, etc.), making it immediately clear what each function does.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompiled code has zero comments, making it difficult to understand algorithm intent, decompiler confidence, or contract expectations without source reference.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer parameter names from usage patterns - `a0` used as destination in `strcpy(a0, a1)` should be named `dst` or `dest`
+2. Add const-correctness recovery by analyzing read-only memory sections and string literal usage
+3. Insert comments for non-trivial logic, especially around condition reconstruction and potential undefined behavior areas

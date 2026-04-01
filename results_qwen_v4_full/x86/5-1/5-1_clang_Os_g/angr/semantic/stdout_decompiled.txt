@@ -1,0 +1,14 @@
+Starting OO features test
+
+Constructor test
+Virtual function test
+Multiple inheritance test
+Diamond inheritance test
+Operator overload test
+Template function test
+Template class test
+Lambda test
+Exception test
+Smart pointer test
+RTTI test
+OO features complete

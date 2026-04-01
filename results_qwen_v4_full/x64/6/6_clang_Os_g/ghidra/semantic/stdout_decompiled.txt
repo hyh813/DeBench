@@ -1,0 +1,18 @@
+=== Standard Library Functions ===
+strlen result: 14
+strcmp result: 0
+strlen test: 12
+memcpy result: 90
+memcmp result: -1
+Value: 42, Name: TestName
+printf result: 26
+sscanf result: 579
+fopen result: 42
+fread/fwrite result: -3
+malloc/free result: 90
+memset result: 0
+strchr/strstr result: 15
+=== System Calls ===
+linux syscall result: 42
+stat result
+fork/exec result: 42

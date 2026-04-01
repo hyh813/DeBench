@@ -1,0 +1,5 @@
+Test output
+
+Value: 10
+Opaque: 20
+Substitution: 225

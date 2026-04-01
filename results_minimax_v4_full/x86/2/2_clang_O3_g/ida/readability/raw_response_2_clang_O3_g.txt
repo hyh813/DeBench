@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result`, `i`, `v4`, `v5`, `v6`, `v7` throughout. For example, in `array_1d_stack`, variables `v2`, `v4`, `v5` obscure their roles as loop indices and pointers. Only a few like `retaddr` are meaningful.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. Excellent recovery of semantic function names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (printf format strings show expected values like 15, 5, 45), but magic numbers like `0x1Au` in `process_char` comparison and `1074528256` in float formatting lack explanation. String references like `asc_35BF` are opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some type casts present (e.g., `(int)(long)handle` in `opaque_handle_op`) but manageable. No debug instrumentation or frame pointer manipulation clutter visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control flow is natural - `array_1d_stack` uses proper loops, `array_string` uses while, `linked_list` uses for-loop. Some loop unrolling in array functions is expected at -O3. Minor goto-like patterns in `graph_traverse` but readable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching source - each handles single responsibility (e.g., `process_char`, `array_string`, `ptr_increment`). No 500-line monoliths. Parameter lists reasonable. Static functions properly scoped.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `array_complex_index` and bounds checks. Some forward jumps in `graph_traverse` but traceable. No deep nesting (>4 levels) issues.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling in `array_1d_stack`, `array_vla`, `array_oob` - processes 8 elements per iteration. This is optimization artifact that could be commented. Some common subexpression patterns visible but not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types accurate - `char`, `short`, `int`, `long`, `__int64`, `float`, `double`, `long double`, `bool`. Function pointers correctly typed. However, `const` lost in some contexts (e.g., `volatile_access` parameter shows `volatile int *` but original had `const int *` in `const_param`). Some `short` may be promoted to `int`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `Flags`, `UnionData`, `State`, `Device`, `TreeNode`, `DNode`, `Edge`, `Graph` all recovered with correct field names (x, y, z, data, next, etc.). Union correctly identified as union not struct. Nested structures handled well.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Type safety matches original source patterns. Some unsafe operations present: `(int)(long)handle` cast in `opaque_handle_op`, pointer arithmetic in array functions. No additional type safety issues introduced by decompiler. Matches source semantics.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output. Function names are self-documenting but no explanation of algorithm, parameters, or return values. No decompilation confidence indicators. Auto-generated header only.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No explicit pattern recognition. Could identify: linked list traversal (while loop with node->next), binary tree recursion, switch replaced with array lookup (enum_switch uses `dword_3640[s]`), but these aren't named or highlighted.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Four functions marked as "FAILED to decompile" (`__libc_start_main`, `printf`, `__cxa_finalize`, `puts`) but no explanation of why or what couldn't be resolved. No flags for unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanation. The original source had no assertions either, but decompiler could infer some (e.g., "requires: n > 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No explicit call graph or relationship documentation. Function names suggest relationships (test functions call implementation functions) but not documented. No global variable usage transparency.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output. Related functions grouped by decompilation order but no logical grouping matching source (data types, arrays, pointers, composites sections). No namespace or static scope indication beyond function-level.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile. Uses undefined identifiers: `asc_35BF`, `asc_35E0`, `asc_35FB`, `asc_3616` (string references), `dword_0`, `dword_3640`, `dword_64`. References undefined external functions: `_gmon_start__`, `frame_dummy`, `_do_global_ctors_aux`. Test functions have hardcoded values instead of function calls.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `v2`, `result`, `i`) throughout, obscuring semantic purpose
+- Test functions (`test_data_types_l1`, `test_array_types`, etc.) have hardcoded printf values instead of actual function calls, losing executable semantics
+- No comments explaining algorithms, parameters, or return values
+- Undefined identifiers (`asc_35BF`, `dword_3640`) prevent compilation
+- No cross-reference or relationship documentation between functions
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Function names perfectly match original source: `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, etc.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 1/10)  
+- No documentation of preconditions, postconditions, or invariants. Could infer "requires: n > 0" for array functions, "ensures: return is element count" for string length, etc.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v2` used as loop index in `array_1d_stack` should be `i` or `index`
+2. Recover function calls in test functions instead of hardcoding results - `printf("DT-L1-01: %c\n", process_char('A'))` not `printf("DT-L1-01: %c\n", 97)`
+3. Add meaningful comments explaining algorithm intent, especially for loop unrolling artifacts at high optimization levels

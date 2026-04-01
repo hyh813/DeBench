@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) instead of semantic names like `arr`, `local`, `head`, `current` from the original source. For example, `linked_list_heap` uses `v7`, `v14`, `v19` instead of `head`, `sum`, `temp`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved (`double_value`, `local_vars`, `heap_basic`), but many helper functions use mechanical names (`function_1140`, `function_1150`, `function_12ac`). Global variables degraded to `g1`, `g2`...`g15` instead of `global_counter`, `global_array`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x4d64`, `0x1000`, `4080` appear without explanation. Some constants are recoverable (e.g., `2048` for buffer size), but hex literals like `0x7a0ffff` for `g1` obscure meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*` calls in nearly every function, stack canary checks (`__readgsdword(20)`) repeated throughout, and 20+ helper function wrappers for standard library calls (`function_1160` for `memmove`, `function_11e0` for `malloc`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original `for` loops converted to `while` loops with manual increment (e.g., `heap_basic`). Multiple `goto` labels (`lab_0x1a73`, `lab_0x1f75`, `lab_0x20f9`) disrupt flow. At `-O0`, this restructuring is unexpected and reduces clarity.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but several functions constant-folded incorrectly (`alloca_usage_constprop_0` returns literal 15, `stack_alias` returns 20). Helper functions for libc calls create unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Complex functions like `linked_list_heap` and `test_heap_memory` have multiple forward jumps and label-based branching. The `test_heap_memory` function spans 500+ lines with interleaved logic that's hard to follow top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. Position-independent code thunks (`__x86_get_pc_thunk_bx`) called repeatedly. Some dead code from optimization artifacts remains.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All types degraded to `int32_t` or `uint32_t`. Original distinctions lost: `size_t` → `int32_t`, `char*` → `int32_t`, `void*` → `int32_t*`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—`struct Point`, `struct Node`, and `struct TreeNode` completely lost. Fields accessed via offset arithmetic (`*(int32_t *)(v2 + 4)`, `*(int32_t *)(result + 8)`) instead of named fields (`p->x`, `node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int32_t)mem`, `(char *)(v1 + 0x19be)`). Pointer arithmetic on `int32_t` instead of proper typed pointers. No alignment or restrict annotations recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments (address ranges, line numbers). Zero explanatory comments for logic. Original source had extensive comments like `// MEM-L1-01: 局部变量（基础类型）` all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list creation/traversal in `linked_list_heap` not identified. Tree operations in `tree_heap_traversal` not recognized. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about constant-folded functions that lost logic. Stack canary checks present but unexplained. No indication that `dangling_pointer` contains undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage opaque (`g1` through `g15` with hex addresses). No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Helper functions (`function_1140`-`function_1240`) mixed with application logic. No header file separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. Standard includes present (`stdio.h`, `stdlib.h`, `string.h`). External functions declared. Would need stubs for some platform-specific calls.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50  × 0.25 = 1.125
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (2+2+3+3)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):  (4+5+7)/3   = 5.33  × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  = 4.05/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` accessed via raw offset arithmetic (`v2 + 4`) instead of field names (`p->x`, `node->next`)
+- **Variable names all generic**: `v1`, `v2`, `a1` throughout instead of semantic names like `head`, `sum`, `arr`
+- **Functions constant-folded incorrectly**: `stack_alias`, `alloca_usage_constprop_0` return literals instead of original logic
+- **Control flow degraded**: `for` loops converted to `while` with manual increment; excessive `goto` labels (`lab_0x1a73`, `lab_0x20f9`)
+- **Global variables anonymized**: `g1` through `g15` instead of `global_counter`, `global_array`, `global_func_ptr`
+
+### Best Quality Aspect
+- **Build System Compatibility (7/10)**: The decompiled code includes proper headers and external declarations, and metadata confirms successful compilation with minimal stubs needed.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: Complete failure to recover struct definitions—critical data structures like linked list nodes and tree nodes are reduced to pointer arithmetic, making the code nearly unreadable for data structure operations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union types from memory access patterns**: Analyze consistent offset accesses (e.g., `+4`, `+8` from same base) to reconstruct `struct Node { int data; struct Node* next; }`
+2. **Preserve original variable semantics**: Use data-flow analysis to infer variable purposes (e.g., variables used in loop bounds → `count`, `size`; variables passed to `malloc` → `ptr`, `buffer`)
+3. **Avoid aggressive constant propagation on test functions**: Functions like `stack_alias` and `alloca_usage` should preserve original logic even when inputs are known, to maintain educational/debug value

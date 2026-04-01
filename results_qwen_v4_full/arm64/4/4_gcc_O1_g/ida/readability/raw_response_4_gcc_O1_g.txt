@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v0`, `v1`, `v2`, `gr_offs`, `stack`) while parameters retain original names (`a`, `b`, `x`, `count`). In `varargs_func`, variables like `v2` and `v7` obscure their roles as loop counter and temporary buffer.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Runtime functions have generic names (`sub_750`, `init_proc`) but core test functions are semantically accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Heavy constant folding replaces computations with magic numbers (e.g., `call_cdecl()` returns `15` directly instead of `cdecl_func(5, 10)`). String literals referenced as `asc_1570`, `aCallL206` without inline content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__fastcall`, `__cdecl` annotations, explicit casts (`(__int64)`, `(_DWORD *)`), and BYREF annotations. Stack frame variables (`[xsp+18h] [xbp+18h]`) add visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions have natural flow; `varargs_func` uses do-while matching source for-loop. However, `ret_multi_branch` has inverted conditional logic that's harder to follow than original switch statement.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with single responsibility. Critical issue: constant folding eliminates actual function calls (`call_cdecl` returns 15 directly), losing call graph structure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom naturally. Loop structures recognizable. No excessive goto usage; early returns used appropriately in functions like `func_struct_byptr`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `varargs_func` shows redundant gr_offs/stack handling from va_list implementation. No obvious dead code, but low-level ABI details create verbosity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Specific types recovered (`__int64`, `int`, `char *`, `func_ptr_t`). However, `func_mixed_args` return type changed from `int` to `__int64`, and va_list uses `gcc_va_list` instead of standard `va_list`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`) with field names preserved. However, struct access shows pointer arithmetic: `v1 = (LargeStruct *)((char *)v1 + 8)` instead of array indexing.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(_DWORD *)stack`, `(__int64)(__fastcall *)`, `(void *)`. `ret_small_struct` has warning: "local variable allocation has failed, the output may be wrong!" indicating type recovery issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present. Only one useful warning comment ("local variable allocation has failed"). No algorithm explanations, parameter documentation, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms preserved (va_list usage, struct access) but not identified or named. No pattern recognition for calling conventions or parameter passing patterns despite being the test's purpose.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: External functions listed as "FAILED to decompile" (strlen, printf, etc.). One internal anomaly flagged (ret_small_struct). No warnings about constant folding eliminating actual function calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks in `func_struct_byptr` not noted as requirements). No postconditions or invariants recovered. Null checks present in code but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but call graph not documented. Global variables referenced (`handle1_1`, `handle2_0`) without context. Callback relationship (`callback_func` → `param_func_ptr`) visible but not annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order. No file organization visible (single output). Static functions not clearly marked. Test functions grouped but not separated from implementation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile requiring stubs. Type definitions would need manual provision. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):   (7+8+8+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):         (7+7+5)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):     (4+5+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):   (6+6+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 6.18/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Constant folding eliminates call structure**: `call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`, losing semantic meaning
+- **Variable names generic**: `v0`, `v1`, `v2` obscure purpose (e.g., `v2` is loop counter in varargs_func)
+- **String literals externalized**: `asc_1570`, `aCallL206` require cross-referencing to understand content
+- **Type safety warnings ignored**: `ret_small_struct` has "local variable allocation has failed" but code still presented
+- **No contract documentation**: Null checks in `func_struct_byptr` not documented as preconditions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making function purposes immediately identifiable
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or invariants documented despite null checks and validation logic present in code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call relationships over constant folding** - Even at -O0, maintain actual function calls rather than pre-computing return values to preserve program structure
+2. **Infer variable names from usage patterns** - Variables used as loop counters should be named `i`, `count`; pointer variables should indicate target type
+3. **Document implicit contracts from null checks** - When code contains `if (!p) return -1`, add comment "// Requires: p != NULL" to recover precondition semantics

@@ -1,0 +1,5 @@
+Testing obfuscated optimizations:
+
+Opaque predicate: 10
+Instruction substitution: 20
+String encryption: 225

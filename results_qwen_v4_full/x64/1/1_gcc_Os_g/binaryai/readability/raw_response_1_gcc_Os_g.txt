@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1` with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`). Only a few helper functions have generic names like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions contain magic hex values (0x15, 0x14, 0x3039) instead of original decimal constants. Some literals clear (10, 5) but many require reverse engineering to understand.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) and frame pointer manipulation visible throughout. Some redundant variable assignments from register spilling present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as for/while, but `switch_fallthrough` and `duffs_device` use messy goto chains. `nested_if_deep` uses comma operators instead of nested if statements.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity appropriate; helper functions preserved. However, some functions have incorrect parameter counts (e.g., `loop_while` has 3 params instead of 1).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jump labels (LAB_001013cd, LAB_00101499) disrupt reading flow. Duff's device particularly problematic with switch-goto chains.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code; stack canary checks add some redundancy. Loop structures generally clean without excessive unrolling artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `loop_while` returns `undefined [16]`, `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char`. Many parameters incorrectly typed as `uint` vs `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays represented as raw memory operations (`local_24`, `local_48`). Function pointer arrays partially recovered but with generic `code*` types instead of proper signatures.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(long)(int)param_2`). Function pointers typed as generic `code*`. `op_div` returns `undefined [16]` suggesting type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining purpose, test cases, and difficulty levels—all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, conditionals) recognized. Duff's device partially recovered but not identified as such. State machine patterns not explicitly labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNRECOVERED_JUMPTABLE` markers present in `call_func_ptr`. However, incorrect signatures and type mismatches not flagged as potential errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original test validation comments completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jump_buffer`) referenced without explanation. Callback relationships partially visible.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Static functions not properly scoped. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has compilation issues (undefined types like `undefined [16]`, missing headers). Test functions have incorrect call signatures. Would require significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3+8+5+6)/4 = 5.50  → 1.65
+Level 2 (25%): (6+7+5+7)/4 = 6.25  → 1.56
+Level 3 (20%): (4+5+4)/3   = 4.33  → 0.87
+Level 4 (15%): (2+5+4+2)/4 = 3.25  → 0.49
+Level 5 (10%): (5+4+3)/3   = 4.00  → 0.40
+─────────────────────────────────────────────
+Overall Score:                      4.97/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Type signatures corrupted**: `loop_while` returns `undefined [16]` instead of `int`, `if_else` returns `bool` instead of `int`
+- **Test functions non-functional**: Hardcoded expected values instead of actual function calls with proper arguments
+- **Zero documentation**: All original comments explaining purpose, test cases, and difficulty levels lost
+- **Control flow degradation**: `nested_if_deep` uses comma operators, `switch_fallthrough` uses goto chains instead of structured fall-through
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation makes understanding the decompiled code's purpose extremely difficult without referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in accumulation should be named `sum`, loop counters should be `i`, `j`, `count`)
+2. **Add decompiler confidence annotations** to flag uncertain type recoveries and suggest manual review for functions with `undefined` return types
+3. **Recover and preserve original comments** from debug symbols when `-g` flag was used during compilation

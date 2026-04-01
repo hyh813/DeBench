@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3` for locals and `a1`, `a2`, `a3` for parameters. The original had meaningful names like `x`, `a`, `b`, `arr`, `n`, `p`, `local` - all completely lost. Even heap allocations use only `mem`, `mem2`, etc. with no semantic distinction.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`local_vars`, `heap_basic`, `global_array_access`), but standard library wrappers use obfuscated names like `function_1120` (free), `function_1160` (memset), `function_1180` (calloc). The `extern_function` is correctly identified as external but not named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are UTF-8 encoded hex (`g1 = "=== \xe6\xb5\x8b..."`), making them unreadable. Magic numbers like `0x100000000` (for multiplication), `40` (stack canary offset), `4080` (page mask) have no explanations. Some constants like `100`, `23`, `42` are preserved but most computation is opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive redundant casts throughout: `(int32_t)a1`, `(int64_t *)mem`, `(uint32_t)v5`. Stack canary checks (`__readfsqword(40)`) pollute every function. Type conversions like `v4 = v4 + a1 & 0xffffffff` are confusing. The `__stack_chk_fail` calls add noise without value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops are recovered as `while` constructs, but `linked_list_heap` uses explicit `goto lab_0x19b8` instead of proper loop structure. Stack canary checks create confusing control flow. At -O0, more natural flow should be recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (not monolithic). Library functions (memset, memcpy, calloc) are properly separated. Test functions maintain reasonable granularity. Minor issue: some library stubs could be better named.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some forward jumps exist in complex functions like `vla_stack` and `alloca_usage`. The `linked_list_heap` function has a goto that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: At -O0, minimal optimization artifacts are expected. Some loop-like patterns are unrolled but not excessive. No significant dead code observed. The code is reasonably clean for debug-level output.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int64_t` for virtually everything, even when original used 32-bit `int`. The original `int` variables like `x`, `n`, `i` become `int64_t a1`. Function parameters all 64-bit. The original was compiled for arm64 with 32-bit int - type sizes are incorrect.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct recovery whatsoever. Original had `Point {int x, y}`, `Node {int data, struct Node *next}`, `TreeNode` - all completely lost. All access is via raw pointer arithmetic: `*(int32_t *)mem`, `*(int64_t *)(v1 + 8)`. This is the worst aspect.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int32_t *)a1`, `(int64_t *)mem`. Pointer arithmetic is explicit and error-prone: `v3 + 4`, `v1 + 8`. No bounds checking. Function pointers stored as plain `int64_t`. Significant risk of undefined behavior interpretation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled code. Only the auto-generated file header from RetDec. No explanation of algorithms, no recovery confidence indicators, no @param/@return documentation. The original had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like malloc/free pairs are visible but not named or highlighted. The linked list creation, tree building, and memory leak patterns are recognizable but require manual analysis. No explicit pattern naming (e.g., "Implements: linked list with sentinel").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses memory after free - no warning. The `double_free` has obvious issues but no annotation. No indication of undefined behavior possibilities. The decompiler presents everything as confident.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original had explicit checks like `if (n <= 0 || n > 1000) return -1` - these are preserved but not documented as preconditions. No error handling contracts. No invariant documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (`malloc`, `free`, `memcpy`). Global variables are declared at file scope. But no documentation of who calls whom, no callback relationships, no usage context. The `set_global_callback` / `call_global_callback` pair relationship is not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - stack functions together, heap functions together, static/global together. Static functions properly scoped. Related test functions grouped. Minor issue: library stubs interspersed with user code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes are present but mismatched (`#include <stdint.h>` etc. but code uses different types). Some stub functions needed (`__printf_chk`, `__stack_chk_fail`). The code would require patching to compile. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+4+3)/4 = 3.75
+L2_avg = (5+7+6+7)/4 = 6.25
+L3_avg = (4+1+4)/3 = 3.00
+L4_avg = (1+4+2+2)/4 = 2.25
+L5_avg = (4+7+4)/3 = 5.00
+
+Overall = (3.75 × 0.30) + (6.25 × 0.25) + (3.00 × 0.20) + (2.25 × 0.15) + (5.00 × 0.10)
+        = 1.125 + 1.5625 + 0.6 + 0.3375 + 0.5
+        = 4.125/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Struct recovery completely absent**: Original had `Point`, `Node`, `TreeNode` structs - all lost to raw pointer arithmetic like `*(int32_t *)(v1 + 8)`
+- **Variable naming is unusable**: All meaningful names replaced with `v1`-`v22`, `a1`-`a3`, `mem`-`mem8`
+- **No comments whatsoever**: Original had extensive documentation explaining each test case - completely lost
+- **Type sizes incorrect**: Uses `int64_t` everywhere; original 32-bit `int` values become 64-bit
+- **Anomalies not flagged**: Dangerous code like dangling pointers, double-free, heap overflow has no warnings
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (7/10)**: Functions are appropriately sized and logically grouped. Core test functions retain their names and are well-separated from library stubs.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (1/10)**: The complete loss of struct information is the most severe readability issue. All structure access is through opaque pointer arithmetic, making the code nearly impossible to understand semantically.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union types**: Analyze allocation sizes and field access patterns to reconstruct composite types with meaningful field names (e.g., `Node->data` instead of `*(int32_t *)mem`)
+2. **Infer variable names from usage**: Use data flow analysis to name variables based on how they're used (e.g., loop counter `i`, size parameter `n`, output pointer `out`)
+3. **Add semantic comments**: Generate comments explaining what functions do, what parameters mean, and flag suspicious patterns (e.g., "Possible memory leak", "Dangling pointer access")

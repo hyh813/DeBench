@@ -1,0 +1,46 @@
+{
+  "_comment": "Public template. Real API keys are injected via environment variables referenced by llm_key_inventory.json.",
+  "active_profile": "glm_official",
+  "profiles": {
+    "glm_official": {
+      "key_provider": "bigmodel_coding",
+      "preferred_key_aliases": [
+        "glm-official-1"
+      ],
+      "base_url": "https://open.bigmodel.cn/api/coding/paas/v4",
+      "model": "glm-4.7",
+      "enable_thinking": true,
+      "temperature": 0
+    },
+    "qwen3.5-plus": {
+      "key_provider": "dashscope",
+      "preferred_key_aliases": [
+        "dashscope-1"
+      ],
+      "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+      "model": "qwen3.5-plus",
+      "enable_thinking": true,
+      "stream_for_thinking": true,
+      "temperature": 0
+    },
+    "minimax": {
+      "key_provider": "minimax_official",
+      "preferred_key_aliases": [
+        "minimax-official-1"
+      ],
+      "base_url": "https://api.minimaxi.com/v1",
+      "model": "MiniMax-M2.5",
+      "temperature": 0.01
+    },
+    "deepseek": {
+      "key_provider": "siliconflow",
+      "preferred_key_aliases": [
+        "deepseek-1"
+      ],
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-V3.2",
+      "enable_thinking": true,
+      "temperature": 0
+    }
+  }
+}

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `a1`, `a2`, `v3`, `v4` throughout. For example, in `param_macro_constants`, variable `a1` should be named `size` based on the original source. The naming provides no semantic meaning and makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `param_macro_constants`, `call_asm_basic`, `param_asm_clobber`, `param_dynamic_code`. The decompiler preserved meaningful function names like `my_func` and test functions. Minor issue: some wrapper functions like `function_10b0` are unnamed but these are CRT artifacts.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `64`, `30`, `32`, `0xdf22`, `116` are used directly without named constants. However, the values are mathematically correct (e.g., `64` for `BUFFER_COUNT * 4`). The decompiler didn't recover macro names like `MAX_SIZE` or `BUFFER_COUNT`, but the computed results are present.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx` calls, pseudo-assembly constructs like `__asm_movaps`, `__asm_paddd`, `__readgsdword(20)` for stack canary checks. The `param_macro_constants` function contains bizarre string comparison with `"loneTable"` that appears to be decompilation noise. These artifacts significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper if/while/for constructs. The `param_asm_clobber` function correctly uses a while loop. However, `param_macro_constants` has an extremely convoluted expression: `v1 < 0 == ((v1 ^ a1) & (a2 ^ a1)) < 0 == (v1 != 0)` which is clearly a decompilation error. At -O0, such obfuscation is unacceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The test functions (`test_preprocessing_features`, `test_asm_features`) properly call individual test cases. Each function handles one logical operation. No excessive fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_dynamic_code` and `param_memory_protection` are used appropriately. Some nesting in `param_memory_protection` but manageable. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. The `call_asm_clobber` function has some redundant stack canary checking but this is expected at -O0. Loop unrolling is minimal. Overall clean code without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for 32-bit values. `uint32_t` used for array length in `param_asm_clobber`. `int128_t` correctly used for SIMD operations. Some loss of `size_t` (uses `int32_t` instead) but not severe. Const correctness not preserved (no `const` qualifiers on pointers).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: This source code doesn't use complex structs, so evaluation is limited. Simple types handled well. The decompiler correctly uses `int32_t *` for array pointers. No struct recovery needed for this particular file.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some unsafe pointer arithmetic in `param_asm_multi_insn` (manual pointer increment), but this matches the original assembly implementation. No severe type confusion. Minor: `(int32_t *)a1` cast in `param_asm_atomic` is borderline but acceptable.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining preprocessing behavior, macro expansions, and assembly semantics. None of this semantic information was recovered. The decompiler provides only address ranges and line numbers.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms recognized: `printf` calls recovered as `__printf_chk`, `mmap`/`munmap`/`mprotect` system calls identified. However, inline assembly idioms (SSE operations, atomic instructions) are presented as pseudo-assembly rather than high-level C equivalents. The `LOG` macro expansion is partially recovered but not clearly documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. The bizarre expression in `param_macro_constants` should be flagged as suspicious. The `__x86_get_pc_thunk_bx` calls are not explained. No indication that certain code paths couldn't be fully resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., `param_asm_atomic` requires aligned memory, `param_dynamic_code` requires page-aligned allocations). None of this semantic information was recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct invocation. Global variables `g1`-`g8` are used but their purpose is unclear. The connection between `call_*` wrapper functions and `param_*` implementations is obvious from naming. However, no documentation of who calls whom or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: CRT initialization, preprocessing test functions, asm test functions. Static functions like `my_func` are properly scoped. The organization follows the original source structure reasonably well. Minor: some CRT functions interleaved.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code includes necessary headers (`stdint.h`, `stdlib.h`, `sys/mman.h`, `unistd.h`). Function prototypes are declared. Should compile with minimal stubs for `__printf_chk` and `__stack_chk_fail`. The code is close to standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 6 + 4) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (7 + 7 + 7) / 3 = 7.0
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.0
+L5_avg = (6 + 7 + 8) / 3 = 7.0
+
+Overall = (5.0 × 0.30) + (7.25 × 0.25) + (7.0 × 0.20) + (3.0 × 0.15) + (7.0 × 0.10)
+        = 1.5 + 1.8125 + 1.4 + 0.45 + 0.7
+        = 5.8625 ≈ 5.9/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `a1`, `a2`) providing no semantic meaning about their purpose
+- **Bizarre expression in `param_macro_constants`**: Contains nonsensical string comparison with `"loneTable"` that produces correct result but is completely unreadable
+- **No comments**: Zero semantic information recovered from original source comments explaining preprocessing behavior and macro semantics
+- **No anomaly indication**: The malformed expression and compiler artifacts like `__x86_get_pc_thunk_bx` are not flagged
+- **No contract recovery**: Preconditions/postconditions for system calls (mmap, mprotect) not documented
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+The decompiler preserved meaningful function names from the original source, making it easy to identify which function implements which feature (e.g., `param_asm_simd`, `param_dynamic_code`).
+
+### Most Needs Improvement: Semantic Transparency (3.0/10)
+The decompiled code lacks comments, idiom documentation, anomaly flags, and contract information. This dimension scored lowest because the original source had extensive semantic information (preprocessing explanations, assembly semantics, macro behavior) that was completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., compared to 1024 → likely `max_size`, used in array index → likely `index`) to generate semantically meaningful names instead of `v1`, `v2`
+2. **Detect and flag anomalous expressions**: The expression in `param_macro_constants` is clearly a decompilation failure; add heuristics to detect and flag such cases rather than outputting broken code
+3. **Recover comments from debug symbols**: Since this was compiled with `-g`, the decompiler should attempt to recover comments from DWARF debug information to restore semantic context about preprocessing and assembly behavior

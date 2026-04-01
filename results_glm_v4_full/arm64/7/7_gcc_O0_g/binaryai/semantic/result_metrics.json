@@ -1,0 +1,200 @@
+{
+  "execution_status": "success",
+  "quality_status": "fail",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/7.c",
+  "drivers": [
+    "test_obf_opt_edge"
+  ],
+  "trace_health": {
+    "status": "available",
+    "usable_for_structural_evidence": true,
+    "original": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 465,
+      "entry_count": 450,
+      "exit_count": 9,
+      "print_count": 6,
+      "call_count": 450,
+      "parsed_entry_count": 450,
+      "parsed_exit_count": 9,
+      "parsed_print_count": 6,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 82,
+      "entry_count": 67,
+      "exit_count": 9,
+      "print_count": 6,
+      "call_count": 67,
+      "parsed_entry_count": 67,
+      "parsed_exit_count": 9,
+      "parsed_print_count": 6,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "fail",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": true,
+    "stdout_exact_match": false,
+    "raw_stdout_exact_match": false,
+    "stdout_nonempty_original": true,
+    "stdout_nonempty_decompiled": true,
+    "stdout_case_match_ratio": 0.0,
+    "stable_case_total": 10,
+    "stable_case_matched": 0,
+    "original_stable_case_total": 10,
+    "decompiled_stable_case_total": 0,
+    "stable_case_ids": [
+      "EDGE-L3-01",
+      "EDGE-L3-02",
+      "EDGE-L3-03",
+      "EDGE-L3-04",
+      "OBF-L4-02",
+      "OBF-L4-03",
+      "OBF-L4-04",
+      "OBF-L4-05",
+      "OPT-L4-01",
+      "OPT-L4-02",
+      "OPT-L5-01"
+    ],
+    "unstable_case_ids": [
+      "EDGE-L4-01",
+      "EDGE-L4-02"
+    ],
+    "original_exit_code": 1,
+    "decompiled_exit_code": 1,
+    "original_signal": null,
+    "decompiled_signal": null,
+    "original_run_issue": "exit_1",
+    "decompiled_run_issue": "exit_1",
+    "comparisons_total": 10,
+    "comparisons": [
+      {
+        "test_id": "OBF-L4-02",
+        "occurrence": 1,
+        "original": "OBF-L4-02: 10 (期望: 10)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OBF-L4-03",
+        "occurrence": 1,
+        "original": "OBF-L4-03: 20 (期望: 20)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OBF-L4-04",
+        "occurrence": 1,
+        "original": "OBF-L4-04: 225 (期望: 225)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OBF-L4-05",
+        "occurrence": 1,
+        "original": "OBF-L4-05: 68 (期望: 68)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OPT-L4-01",
+        "occurrence": 1,
+        "original": "OPT-L4-01 尾递归: 500500 (期望: 500500)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OPT-L4-01",
+        "occurrence": 2,
+        "original": "OPT-L4-01 非尾: 5050 (期望: 5050)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OPT-L4-02",
+        "occurrence": 1,
+        "original": "OPT-L4-02 向量化: 72 (期望: 72)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "OPT-L5-01",
+        "occurrence": 1,
+        "original": "OPT-L5-01 LTO: 20 (期望: 20)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "EDGE-L3-01",
+        "occurrence": 1,
+        "original": "EDGE-L3-01: 2 (期望: 1)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "EDGE-L3-02",
+        "occurrence": 1,
+        "original": "EDGE-L3-02: 41 (期望: 41)",
+        "decompiled": null,
+        "matched": false
+      }
+    ]
+  },
+  "function_level": {
+    "status": "partial",
+    "segment_count": 1,
+    "segment_callseq_match_ratio": 0.2252,
+    "feature_function_match_ratio": 0.2563,
+    "call_evidence_segment_count": 1,
+    "call_evidence_unavailable_count": 0,
+    "segment_print_match_ratio": 0.0,
+    "segment_print_evidence_count": 1,
+    "segment_print_unavailable_count": 0,
+    "normalized_io_match_ratio": 0.8788,
+    "io_matched_pairs": 58,
+    "io_compared_pairs": 66,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": [
+      {
+        "segment": "test_obf_opt_edge",
+        "status": "partial",
+        "call_evidence_available": true,
+        "original_call_count": 449,
+        "decompiled_call_count": 66,
+        "original_print_count": 5,
+        "decompiled_print_count": 5,
+        "sequence_match_ratio": 0.2252,
+        "feature_match_ratio": 0.2563,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 58,
+        "matched_name_pairs": 66
+      }
+    ]
+  },
+  "low_level": {
+    "status": "available",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": 0.2252,
+    "token_count_original": 449,
+    "token_count_decompiled": 66
+  }
+}

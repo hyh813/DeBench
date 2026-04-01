@@ -1,0 +1,15 @@
+Test Output
+Value: 10
+Opaque: 20
+InstrSub: 225
+StrEnc: 28
+TailCall: 500500
+NonTail: 5050
+Vector: 72
+LTO: 20
+DivZero: 2
+Segv: 41
+Buffer: 30
+IntOverflow: 2000000000
+Undef: 10
+ImplDef: 48

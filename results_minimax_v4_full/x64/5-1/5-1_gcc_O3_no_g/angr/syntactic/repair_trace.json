@@ -1,0 +1,1965 @@
+{
+  "file_name": "results_minimax_v4_full/x64/5-1/5-1_gcc_O3_no_g/angr/syntactic/fix_5-1_gcc_O3_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 69,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 190,
+        "stats": {
+          "Other": 117,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 66,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9074,
+        "completion_tokens": 659,
+        "total_tokens": 9733
+      },
+      "time_cost": 14.518591165542603,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 189,
+        "stats": {
+          "Other": 117,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 65,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9118,
+        "completion_tokens": 1233,
+        "total_tokens": 10351
+      },
+      "time_cost": 21.707436561584473,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 182,
+        "stats": {
+          "Other": 116,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 59,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 4 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9281,
+        "completion_tokens": 680,
+        "total_tokens": 9961
+      },
+      "time_cost": 12.335831880569458,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 180,
+        "stats": {
+          "Other": 118,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 55,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9286,
+        "completion_tokens": 711,
+        "total_tokens": 9997
+      },
+      "time_cost": 11.796414375305176,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 180,
+        "stats": {
+          "Other": 118,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 55,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9315,
+        "completion_tokens": 851,
+        "total_tokens": 10166
+      },
+      "time_cost": 14.681694507598877,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 179,
+        "stats": {
+          "Other": 117,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 55,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9344,
+        "completion_tokens": 726,
+        "total_tokens": 10070
+      },
+      "time_cost": 27.197701454162598,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 178,
+        "stats": {
+          "Other": 116,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 55,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9363,
+        "completion_tokens": 800,
+        "total_tokens": 10163
+      },
+      "time_cost": 14.900426626205444,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 179,
+        "stats": {
+          "Other": 116,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 55,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9395,
+        "completion_tokens": 782,
+        "total_tokens": 10177
+      },
+      "time_cost": 13.898720026016235,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 179,
+        "stats": {
+          "Other": 116,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 55,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 4
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9420,
+        "completion_tokens": 1138,
+        "total_tokens": 10558
+      },
+      "time_cost": 50.038995027542114,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 169,
+        "stats": {
+          "Other": 118,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 35,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 4,
+          "Incomplete Type": 8
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9459,
+        "completion_tokens": 710,
+        "total_tokens": 10169
+      },
+      "time_cost": 24.994340896606445,
+      "phase": "compile",
+      "new_errors_introduced": 17
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 196,
+        "stats": {
+          "Other": 120,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 35,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9552,
+        "completion_tokens": 741,
+        "total_tokens": 10293
+      },
+      "time_cost": 12.248993158340454,
+      "phase": "compile",
+      "new_errors_introduced": 14
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 196,
+        "stats": {
+          "Other": 120,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 35,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9608,
+        "completion_tokens": 590,
+        "total_tokens": 10198
+      },
+      "time_cost": 24.689022064208984,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 195,
+        "stats": {
+          "Other": 119,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 35,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9614,
+        "completion_tokens": 638,
+        "total_tokens": 10252
+      },
+      "time_cost": 12.965725183486938,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 194,
+        "stats": {
+          "Other": 119,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 34,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9596,
+        "completion_tokens": 579,
+        "total_tokens": 10175
+      },
+      "time_cost": 12.27061915397644,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 194,
+        "stats": {
+          "Other": 119,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 34,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9675,
+        "completion_tokens": 1028,
+        "total_tokens": 10703
+      },
+      "time_cost": 23.766143083572388,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 189,
+        "stats": {
+          "Other": 119,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 29,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9672,
+        "completion_tokens": 749,
+        "total_tokens": 10421
+      },
+      "time_cost": 36.704044580459595,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 186,
+        "stats": {
+          "Other": 117,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 28,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9686,
+        "completion_tokens": 832,
+        "total_tokens": 10518
+      },
+      "time_cost": 22.47961950302124,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 183,
+        "stats": {
+          "Other": 115,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 27,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9734,
+        "completion_tokens": 532,
+        "total_tokens": 10266
+      },
+      "time_cost": 8.808513402938843,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 180,
+        "stats": {
+          "Other": 113,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 26,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9717,
+        "completion_tokens": 599,
+        "total_tokens": 10316
+      },
+      "time_cost": 9.56712794303894,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 177,
+        "stats": {
+          "Other": 111,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 25,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9705,
+        "completion_tokens": 1268,
+        "total_tokens": 10973
+      },
+      "time_cost": 20.029926300048828,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 156,
+        "stats": {
+          "Other": 97,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 18,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9663,
+        "completion_tokens": 956,
+        "total_tokens": 10619
+      },
+      "time_cost": 15.43509316444397,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 151,
+        "stats": {
+          "Other": 93,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 17,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9644,
+        "completion_tokens": 708,
+        "total_tokens": 10352
+      },
+      "time_cost": 22.246545791625977,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 149,
+        "stats": {
+          "Other": 92,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 16,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9649,
+        "completion_tokens": 731,
+        "total_tokens": 10380
+      },
+      "time_cost": 14.623552560806274,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 150,
+        "stats": {
+          "Other": 94,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 15,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9584,
+        "completion_tokens": 1004,
+        "total_tokens": 10588
+      },
+      "time_cost": 36.17247486114502,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 151,
+        "stats": {
+          "Other": 96,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 14,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 1,
+          "Incomplete Type": 36
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9754,
+        "completion_tokens": 853,
+        "total_tokens": 10607
+      },
+      "time_cost": 13.281899452209473,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 147,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 100,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 14,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 9853,
+        "completion_tokens": 932,
+        "total_tokens": 10785
+      },
+      "time_cost": 12.10615587234497,
+      "phase": "compile",
+      "new_errors_introduced": 8
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 148,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 102,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 13,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block matched 2 times. Please provide more context in search_block to make it unique."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10008,
+        "completion_tokens": 884,
+        "total_tokens": 10892
+      },
+      "time_cost": 28.352680206298828,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 148,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 102,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 13,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10065,
+        "completion_tokens": 807,
+        "total_tokens": 10872
+      },
+      "time_cost": 13.403286933898926,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 149,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 104,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 12,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10157,
+        "completion_tokens": 1090,
+        "total_tokens": 11247
+      },
+      "time_cost": 20.822633743286133,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 149,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 104,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 12,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10132,
+        "completion_tokens": 1137,
+        "total_tokens": 11269
+      },
+      "time_cost": 41.553014039993286,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 145,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 104,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 8,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10127,
+        "completion_tokens": 896,
+        "total_tokens": 11023
+      },
+      "time_cost": 15.482409238815308,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 139,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 98,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 8,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10192,
+        "completion_tokens": 646,
+        "total_tokens": 10838
+      },
+      "time_cost": 25.93599271774292,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 137,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 96,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 8,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10175,
+        "completion_tokens": 603,
+        "total_tokens": 10778
+      },
+      "time_cost": 9.478652238845825,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 137,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 97,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10170,
+        "completion_tokens": 838,
+        "total_tokens": 11008
+      },
+      "time_cost": 32.48483896255493,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 137,
+        "stats": {
+          "Incomplete Type": 26,
+          "Other": 97,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10172,
+        "completion_tokens": 644,
+        "total_tokens": 10816
+      },
+      "time_cost": 10.595600128173828,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 137,
+        "stats": {
+          "Incomplete Type": 18,
+          "Other": 105,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10183,
+        "completion_tokens": 700,
+        "total_tokens": 10883
+      },
+      "time_cost": 45.40278673171997,
+      "phase": "compile",
+      "new_errors_introduced": 8
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 137,
+        "stats": {
+          "Incomplete Type": 18,
+          "Other": 105,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10183,
+        "completion_tokens": 834,
+        "total_tokens": 11017
+      },
+      "time_cost": 47.4552743434906,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 133,
+        "stats": {
+          "Incomplete Type": 8,
+          "Other": 108,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 6
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10091,
+        "completion_tokens": 920,
+        "total_tokens": 11011
+      },
+      "time_cost": 16.34347438812256,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 131,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10255,
+        "completion_tokens": 788,
+        "total_tokens": 11043
+      },
+      "time_cost": 47.239134550094604,
+      "phase": "compile",
+      "new_errors_introduced": 11
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 131,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 7,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10124,
+        "completion_tokens": 1154,
+        "total_tokens": 11278
+      },
+      "time_cost": 31.848819971084595,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10027,
+        "completion_tokens": 655,
+        "total_tokens": 10682
+      },
+      "time_cost": 11.083823442459106,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10033,
+        "completion_tokens": 699,
+        "total_tokens": 10732
+      },
+      "time_cost": 10.610136985778809,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10096,
+        "completion_tokens": 560,
+        "total_tokens": 10656
+      },
+      "time_cost": 11.516669988632202,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10093,
+        "completion_tokens": 698,
+        "total_tokens": 10791
+      },
+      "time_cost": 12.246097087860107,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          },
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10109,
+        "completion_tokens": 1503,
+        "total_tokens": 11612
+      },
+      "time_cost": 44.3860137462616,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 130,
+        "stats": {
+          "Redefinition": 13,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10088,
+        "completion_tokens": 770,
+        "total_tokens": 10858
+      },
+      "time_cost": 23.92663860321045,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 129,
+        "stats": {
+          "Redefinition": 12,
+          "Other": 107,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10091,
+        "completion_tokens": 822,
+        "total_tokens": 10913
+      },
+      "time_cost": 32.18938589096069,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 106,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10092,
+        "completion_tokens": 1224,
+        "total_tokens": 11316
+      },
+      "time_cost": 54.632713079452515,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 106,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10111,
+        "completion_tokens": 885,
+        "total_tokens": 10996
+      },
+      "time_cost": 14.56788682937622,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 127,
+        "stats": {
+          "Redefinition": 11,
+          "Other": 105,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 10107,
+        "completion_tokens": 1355,
+        "total_tokens": 11462
+      },
+      "time_cost": 31.5055193901062,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 532784,
+    "total_time_seconds": 1136.53,
+    "initial_state": {
+      "error_count": 190,
+      "error_types": {
+        "Other": 117,
+        "Invalid Main Signature": 1,
+        "Syntax Error": 66,
+        "Member Access Error": 1,
+        "Void Value Error": 2,
+        "Redefinition": 3
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.1224,
+        "error_trajectory": [
+          190,
+          189,
+          182,
+          180,
+          180,
+          179,
+          178,
+          179,
+          179,
+          169,
+          196,
+          196,
+          195,
+          194,
+          194,
+          189,
+          186,
+          183,
+          180,
+          177,
+          156,
+          151,
+          149,
+          150,
+          151,
+          147,
+          148,
+          148,
+          149,
+          149,
+          145,
+          139,
+          137,
+          137,
+          137,
+          137,
+          137,
+          133,
+          131,
+          131,
+          130,
+          130,
+          130,
+          130,
+          130,
+          130,
+          129,
+          127,
+          127,
+          127
+        ],
+        "max_error_count": 196,
+        "min_error_count": 127
+      },
+      "effort": {
+        "initial_error_count": 190,
+        "lowest_error_count": 127,
+        "lowest_at_iteration": 48,
+        "error_reduction": 63,
+        "error_reduction_ratio": 0.3316
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 117,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 66,
+          "Member Access Error": 1,
+          "Void Value Error": 2,
+          "Redefinition": 3
+        },
+        "final_types": {
+          "Redefinition": 11,
+          "Other": 105,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1,
+          "Syntax Error": 6,
+          "Member Access Error": 1,
+          "Void Value Error": 2
+        },
+        "types_eliminated": [],
+        "types_introduced": [
+          "Argument Count Mismatch"
+        ]
+      },
+      "score": {
+        "effort_score": 16.58,
+        "stability_score": 43.88,
+        "total_score": 60.46,
+        "grade": "C+"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 8,
+    "type_breakdown": {
+      "Argument Count Mismatch": {
+        "initial_count": 0,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Member Access Error": {
+        "initial_count": 1,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 3,
+        "max_count": 13,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 117,
+        "max_count": 120,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 66,
+        "max_count": 66,
+        "final_count": "unknown"
+      },
+      "Incomplete Type": {
+        "initial_count": 0,
+        "max_count": 36,
+        "final_count": "unknown"
+      },
+      "Invalid Main Signature": {
+        "initial_count": 1,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Void Value Error": {
+        "initial_count": 2,
+        "max_count": 2,
+        "final_count": "unknown"
+      }
+    }
+  }
+}

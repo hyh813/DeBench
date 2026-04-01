@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`. The source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` but these were completely lost. For example, in `param_asm_clobber`, the parameter `arr` became `a0` and `n` became `i`, losing semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Every function name from the source was perfectly recovered, including `param_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler correctly identified all 30+ function names with their original semantics.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: While computed values are preserved (e.g., `64`, `30`, `57122`), the macro semantics are lost. Magic numbers like `0x400` (1024), `0x200` (512), `57072` (0xDEF0), and `282` (line number + counter) appear without explanation. The original source had `#define MAX_SIZE 1024` but this context is missing.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Generally clean code with minimal compiler artifacts. Some unusual constructs like `vvar_15{r64|4b}` in SIMD functions and `armg_calculate_condition` in memory protection code, but these don't significantly impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most functions have natural if-else and return statements. The loop in `param_asm_clobber` uses a do-while construct correctly. Some goto statements present but used appropriately for control flow. Minor awkwardness in `param_memory_protection` with nested conditionals.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Excellent decomposition matching the source. All small functions from source (call_* wrapper functions, param_* implementations) are preserved. Function granularity is appropriate - no monoliths, each function has clear single responsibility.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns used appropriately. The `param_asm_clobber` loop is the main non-linear element but is still understandable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Significant redundancy in `param_asm_multi_insn` which calls `memcpy` twice with identical arguments. The loop in `param_asm_clobber` has some redundant variable assignments. Otherwise reasonably clean.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Most parameters correctly typed as `unsigned int` matching the source. Pointers are identified correctly (`unsigned int *a0`). However, the distinction between pointers and arrays is sometimes lost, and `size_t` parameters become `unsigned int`.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: No struct or union types were recovered. The source had no complex structs in the functions tested, but the decompiler didn't attempt to reconstruct any composite types. All data is flat primitives.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code with no severe violations. Pointer arithmetic is present but handled reasonably. Some unsigned/signed mixing but nothing dangerous. Minor issues with the weird `armg_calculate_condition` usage.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining macro semantics, preprocessing behavior, and inline assembly constraints. This critical context is completely missing.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are implicitly recognized (the SIMD loop is correctly structured as a 4-iteration loop), but no explicit naming or documentation of patterns like "macro expansion", "conditional compilation", or "inline assembly" is provided.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No explicit flagging of anomalies. The weird `armg_calculate_condition` in `param_memory_protection` appears without explanation. The double memcpy call in `param_asm_multi_insn` is not flagged as suspicious.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The source had implicit contracts (e.g., `mmap` returns valid pointer or -1, `mprotect` requires page-aligned addresses) that are not recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls are clear and direct. The `call_*` functions correctly call their corresponding `param_*` functions. However, relationships to external code (system calls, library functions) are not documented, and the test harness structure is not explained.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are logically grouped - preprocessing functions first, then assembly functions, then test functions. This matches the source organization reasonably well. Static vs extern distinctions are preserved.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: The code has `extern` declarations for external symbols. Should compile with minimal stubs for library functions like `printf`, `mmap`, `munmap`, `mprotect`, `sysconf`, `memcpy`. Some weird constructs may cause warnings but it should build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 10 + 5 + 8) / 4 = 6.25
+L2_avg = (7 + 9 + 8 + 5) / 4 = 7.25
+L3_avg = (7 + 3 + 7) / 3 = 5.67
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg = (6 + 8 + 7) / 3 = 7.00
+
+Overall = (6.25 × 0.30) + (7.25 × 0.25) + (5.67 × 0.20) + (3.00 × 0.15) + (7.00 × 0.10)
+        = 1.875 + 1.8125 + 1.134 + 0.45 + 0.7
+        = 5.97 ≈ 6.0/10
+```
+
+### Overall Readability Score: 6.0/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) losing all semantic meaning from the source
+- **No comments**: Complete absence of comments explaining macro semantics, preprocessing behavior, and inline assembly constraints that were present in the original source
+- **Redundancy**: `param_asm_multi_insn` calls `memcpy` twice with identical arguments - obvious dead code
+- **No anomaly indication**: Weird constructs like `armg_calculate_condition` and double memcpy calls appear without any flagging
+- **No contract recovery**: Preconditions and postconditions (e.g., mmap failure handling, page alignment requirements) are not documented
+
+### Best Quality Aspect
+**Function Naming Quality (10/10)** - Every single function name from the source was perfectly recovered, demonstrating excellent symbol recovery.
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - Generic names like `v0`, `v1`, `a0`, `a1` completely obscure variable purpose. The source had meaningful names like `size`, `result`, `arr`, `n` that should be inferred from usage patterns.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., compared to 1024 → likely "max_size", used in array index → likely "index" or "count") to generate semantically meaningful names instead of generic `v0`, `v1`
+2. **Add semantic context comments**: When recovering macro-expanded code, add comments explaining the original macro (e.g., "// Original: MAX_SIZE (1024)" or "// Expanded from: SQUARE(x) + MAX(x, y)")
+3. **Detect and flag redundancy**: The double memcpy call is an obvious anomaly that should be flagged as potential dead code or optimization artifact

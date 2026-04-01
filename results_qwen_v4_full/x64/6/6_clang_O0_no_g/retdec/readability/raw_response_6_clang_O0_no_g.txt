@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `g1`, `g2`) with no semantic meaning. Original source had meaningful names like `buffer`, `fd`, `pid`, `shm`, `write_data` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strlen`, `thread_compute`), but 50+ library wrapper functions use meaningless `function_XXXX` names (e.g., `function_2030` for `raise`, `function_2090` for `strcpy`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic error codes (`0xffffffff`, `0xfffffffe`, `0xfffffffd`) used throughout without explanation. String literals stored as hex-encoded globals (`g4`, `g5`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive redundant casts (`(int64_t)`, `(int32_t)`, `(char *)`) on nearly every line. Frame pointer manipulation and compiler artifacts visible but not overwhelming.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto` with labels (`lab_0x37e1`, `lab_0x397a_2`) instead of structured loops. At `-O0` debug level, this is unacceptable—original had clean `for`/`while` constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Library wrappers properly extracted as separate functions, but main functions like `param_thread_local_storage` (200+ lines) are monolithic with poor cohesion.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple `goto` labels create non-linear flow that requires tracing to understand.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated type casts on same variables within functions. Some expressions duplicated (e.g., `strlen("BinBench Test Data")` called twice in `param_fread_fwrite`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything promoted to `int64_t` regardless of original type. Lost distinction between `int`, `size_t`, `ssize_t`, `pid_t`, `pthread_t`. Original `char *dst` becomes `int64_t *str`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic field names (`e0`, `e1`, `e2`...) with no semantic meaning. `struct stat`, `struct sockaddr`, `struct shmid_ds` all lose field names completely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(char *)str`, `(int64_t *)mem`, `(struct stat *)&buf`. Pointer arithmetic visible throughout. Thread function pointers cast to `int64_t * (*)(int64_t *)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive Chinese comments explaining purpose, test scenarios, and expected values. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls recognized but not identified as patterns. Producer-consumer pattern in `param_condition_variable` not identified. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only `UNREACHABLE` markers present. No warnings about uncertain decompilation, indirect call resolution issues, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values not explained (what does `0xfffffffd` mean?).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage (`g34`, `g35` for signal handling) not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by type (library wrappers, main functions, threads) but all in single file. No header file separation or logical module boundaries.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeded. Includes present but some function declarations need proper headers. Minimal stubs needed for external dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 4.5/10 | 30% | 1.35 |
+| L2: Structural Intelligibility | 5.25/10 | 25% | 1.31 |
+| L3: Type System Fidelity | 3.67/10 | 20% | 0.73 |
+| L4: Semantic Transparency | 2.5/10 | 15% | 0.38 |
+| L5: Contextual Coherence | 6.0/10 | 10% | 0.60 |
+
+**Overall Readability Score: 4.37/10**
+
+### Critical Defects
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `file_descriptor`, `thread_id`, `buffer_size`)
+- **Control flow uses `goto` with labels** instead of structured loops at `-O0` debug level
+- **Struct fields all generic** (`e0`, `e1`, `e2`) losing all semantic meaning for `struct stat`, `struct sockaddr`
+- **Zero comments** despite original having extensive documentation explaining test scenarios
+- **Type erosion to `int64_t`** loses critical distinctions between `pid_t`, `size_t`, `pthread_t`
+
+### Best Quality Aspect
+- **Build System Compatibility (7/10)** - The decompiled code reportedly compiles successfully with minimal modifications, indicating basic structural integrity despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is the most severe deficit, especially given the original source had extensive documentation explaining purpose, test scenarios, and expected values.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in `fork` → `process_id`) to infer semantic names
+2. **Preserve and translate source comments** - Extract debug symbols and original comments, translating them to the target language rather than discarding all documentation
+3. **Recover structured control flow at -O0** - At debug optimization levels, loop constructs should be recovered from backward jumps without resorting to `goto` statements

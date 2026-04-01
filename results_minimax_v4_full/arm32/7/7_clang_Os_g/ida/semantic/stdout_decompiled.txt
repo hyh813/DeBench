@@ -1,0 +1,15 @@
+Test obfuscation and optimization edge cases:
+Obf L4 02: param_opaque_predicate(x=10): 10
+Obf L4 03: call_opaque_predicate: 20
+Obf L4 04: instruction_substitution: 225
+Obf L4 05: string_encryption: 36
+Opt L4 01: tail_call_optimized: 500500
+Opt L4 01: non_tail_call: 5050
+Opt L4 02: vectorized_loop: 396
+Opt L5 01: link_time_optimization: 20
+Edge L3 01: division_by_zero: 1
+Edge L3 02: null_pointer_deref: 41
+Edge L3 03: buffer_overflow: 30
+Edge L3 04: integer_overflow: 2000000000
+Edge L4 01: undefined_behavior: 10
+Edge L4 02: implementation_defined: 44

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `a1`, `a2`, `a3`, `a4`, `v8`, `v9` throughout. The decompiler makes no attempt to infer semantic meaning from usage patterns (e.g., `v3 = 1; r2[0] = 10;` should suggest `size=1, data[0]=10` for Container).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_diamond_inheritance` are correctly demangled and named. However, some internal functions like `sub_109BC` remain unnamed. The C++ name demangling is excellent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42` (exception value), `0x1234` (class ID), `5` (parameter), `0x1F` (31 bytes) appear without explanation. The value `4700` in `test_cpp_member_func` should be explained as `10 + 34 + 4656` but is just a computed constant.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from 27 "FAILED to decompile" entries for import thunks. Metadata mismatch (claims Ghidra but shows IDA Pro output). Many `_cxa_*` exception functions show as raw calls rather than being integrated.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is readable, but `test_cpp_exception` is completely broken—it throws an exception instead of returning a value, losing the original try-catch logic entirely. The function signature shows `void __noreturn` which is semantically wrong.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Template instantiations like `template_max<int>` and `template_max<double>` are correctly separated. Member functions are properly extracted from classes.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns and simple conditionals are used appropriately. No excessive goto or spaghetti code patterns observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code from optimization (e.g., `v8 = a4;` in `test_cpp_virtual_func` assigns but never uses). Loop unrolling is minimal. Overall acceptable for -Os optimization.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `_DWORD` for 32-bit integers which is reasonable. However, function pointers are often shown as `int (**)(...)` rather than proper signatures. The `this` pointer types are imprecise. Many `void*` pointers without better type inference.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered: `SimpleClass` has `name` and `value` fields. `Base` has `_vptr.Base`. But many are generic: `Container<int>` uses raw array `r2[10]` with no field names. `std::unique_ptr` shows as `_M_t._M_t._M_head_impl` which is implementation detail leakage.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic like `*(_DWORD *)(*(_DWORD *)v0 - 4)` in RTTI code. Casts from `void*` to `int*` without validation. Virtual thunk functions use raw pointer manipulation. The diamond inheritance code has complex pointer adjustments that could easily be misinterpreted.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Function signatures have no documentation. No explanation of algorithm logic. The only comments are "attributes: thunk" for some functions. No indication of what virtual thunks do or why certain code is generated.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function calls are recognized as vtable dispatches (`*obj->_vptr.Base`), but not explicitly named as "virtual dispatch". Template instantiation is recognized but not explained. Exception handling is completely broken (not recognized at all). Smart pointer cleanup is shown but not identified as RAII pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: "FAILED to decompile" messages are present but provide no context about why they failed. The `test_cpp_exception` anomaly (returning void with noreturn) is not flagged as suspicious. No warnings about potential undefined behavior in pointer arithmetic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No bounds checking documentation. The `Container::get` function has implicit bounds checking but it's not documented. No contract information whatsoever.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Virtual function relationships partially shown through vtable pointers. However, no documentation of call graphs or which functions call which. Static member functions like `LifecycleClass::getInstanceCount` are recognized but relationships aren't clear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped by class but appear in arbitrary order in the output. Related functions (constructors/destructors) are near each other but the overall organization is dictated by address space, not logical grouping.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Heavy reliance on undefined externals like `_cxa_allocate_exception`, `_cxa_throw`, `std::type_info` operators. No stubs provided. The `test_cpp_exception` function is fundamentally broken.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+1. **`test_cpp_exception` completely broken**: Returns void with noreturn attribute, throws exception instead of returning value—the entire try-catch logic is lost
+2. **Generic variable names**: `v0`, `v1`, `v2`, `a1`, `a2`, `a3`, `a4` provide no semantic meaning
+3. **No struct field recovery**: `Container<int>` uses raw array `r2[10]` with no field names like `data` and `size`
+4. **Massive noise pollution**: 27 "FAILED to decompile" entries clutter the output
+5. **No comments or documentation**: Zero explanation of algorithms, virtual mechanisms, or complex patterns
+
+**Best Quality Aspect:** Function Naming (scored 8/10)  
+The C++ name demangling is excellent—test functions like `test_cpp_virtual_func`, `test_cpp_diamond_inheritance` are correctly recovered from mangled symbols.
+
+**Most Needs Improvement:** Variable Naming (scored 2/10)  
+The decompiler makes no attempt to infer meaningful variable names from usage patterns. A variable initialized as `size = 0` then incremented should be named `size`, not `v3`.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Track how variables are initialized and used (e.g., `v3 = 1; r2[0] = 10; Container<int>::push(r2, 20)` → `size = 1; data[0] = 10`)
+2. **Fix exception handling decompilation**: The `test_cpp_exception` function should show try-catch blocks, not just the throw path
+3. **Recover struct field names**: Use type information and member access patterns to name fields (e.g., `r2[10]` → `data[10]`, `r2[40]` → `size`)

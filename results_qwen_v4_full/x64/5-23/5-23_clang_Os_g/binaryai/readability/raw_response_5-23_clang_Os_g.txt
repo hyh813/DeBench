@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_18` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names that were completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`) matching original source exactly, indicating debug symbols were recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0xdef0` appear without explanation. Original macros were evaluated but not documented as constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is relatively clean without excessive compiler artifacts. Some unnecessary casts like `(undefined *)` and `(ulong)` type promotions add minor noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures recovered well with natural `for` loops and `if` statements. The `param_asm_clobber` loop reads naturally despite assembly origin.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries match original source perfectly. Each function maintains single responsibility with appropriate granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No spurious gotos; loop constructs properly recovered from assembly jump patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding applied (e.g., `call_macro_constants` returns `0x40` directly). Some redundancy in test functions where printf calls repeat format strings.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation with `undefined8`, `undefined4` return types. Original `int` returns become `undefined8`. Pointer types like `undefined *` lose semantic meaning.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No structs/unions in this code to recover. Arrays handled reasonably (`local_18[4]`), but type information like `int local_18[4]` sometimes becomes `undefined local_18[16]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined4 *)`, `(undefined *)`, `(code *)__addr`. Pointer arithmetic on `undefined *` types is type-unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: All original comments completely lost. No decompiler-generated comments explaining magic numbers, recovered logic, or confidence levels.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansion patterns not identified (e.g., `ADD_16(x)` became `x + 0x10`). Assembly patterns recovered but not labeled as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain recovery. `LOCK()/UNLOCK()` pseudo-functions appear without explanation of their atomic semantics.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Functions like `param_memory_protection` have multiple return paths without documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph comments indicating which functions call which (e.g., `test_preprocessing_features` calls).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but original section comments and grouping lost. External functions declared inline rather than in headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone. `undefined8`, `undefined4` types are Ghidra-specific. External functions (`mmap`, `printf`) lack proper declarations. `LOCK()/UNLOCK()` are undefined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+7)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):  (8+9+8+7)/4 = 8.00  × 0.25 = 2.000
+Level 3 (Type):        (4+6+5)/3   = 5.00  × 0.20 = 1.000
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75  × 0.15 = 0.263
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.49/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **All original comments lost** - No documentation explaining macro semantics, expected values, or test purposes
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` obscure semantic meaning when original names (`size`, `x`, `result`) were available in debug build
+- **Magic numbers without context** - `0x400`, `0x40`, `0xdef0` replace named constants without explanation
+- **Non-standard types** - `undefined8`, `undefined4` prevent standalone compilation
+- **No anomaly warnings** - `LOCK()/UNLOCK()` pseudo-functions appear without indicating they're decompiler artifacts
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols preserved function names perfectly, making code navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all original documentation makes understanding macro semantics and test expectations nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug sections when `-g` flag is present in compilation
+2. **Annotate magic numbers** with recovered macro names or suggested constant definitions (e.g., `// MAX_SIZE = 0x400`)
+3. **Add confidence indicators** for recovered constructs, especially for assembly-to-C translations and atomic operations

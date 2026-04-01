@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Parameters use generic names like `a0`, `a1`, `a2` and local variables use cryptic names like `v0`, `v1`, `v2`. For example, in `cdecl_func(unsigned int a0, unsigned int a1)`, the parameters should be named `a` and `b` based on the original source. The generic naming makes it difficult to track variable purposes across the 1119 lines of decompiled code.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most test functions retain their original names from the source: `cdecl_func`, `stdcall_func`, `call_cdecl`, `test_calling_conventions`, `param_by_value_int`. Only non-test helper functions have generic names like `sub_400764`. This is a strong point of the decompilation.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Multiple unexplained magic numbers appear throughout: `4294967295` (0xFFFFFFFF), `4294967294`, `18446744073709551608` (mask), and `4294967240` (offset). While some values like `15`, `50`, `6` are understandable as computed results, the varargs handling contains many unexplained constants without comments explaining their purpose.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Moderate compiler artifacts present: stack canary checks (`__stack_chk_guard`), redundant function calls (e.g., `call_varargs_param` calls `param_varargs` twice and returns twice), and some dead code patterns. The noise is manageable but adds clutter to already complex functions like `varargs_func`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural with readable loops and conditionals. The `register_tm_clones` function has an overly complex boolean expression that could be simplified. At `-O0`, the control flow should be nearly source-equivalent, and mostly it is, though some functions like the varargs handlers have convoluted logic.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: The decompiler preserves the original function granularity well. Each test function (`call_cdecl`, `call_stdcall`, etc.) remains separate. The test wrapper functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are correctly separated. Minor issue: some tiny wrapper functions could be inlined.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The `varargs_func` and `param_varargs` have complex loop logic with computed addresses, but the overall flow is traceable. Most functions have good linearity.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+Justification: Significant redundancy found: `call_varargs_param` calls `param_varargs` twice and returns twice unnecessarily. The varargs functions have duplicate register save/restore patterns. This redundancy makes the code harder to maintain and understand.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Mixed type precision - original source uses `int` but decompiler often uses `unsigned int`, `unsigned long`, or `unsigned long long`. For example, `cdecl_func` should return `int` but returns `int` (correct), but `func_many_args` uses `unsigned int` parameters instead of `int`. The signedness is inconsistent throughout.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: Poor struct recovery - `SmallStruct` (with fields `x`, `y`) is lost; `func_struct_byptr` uses `unsigned int *a0` instead of `SmallStruct *p`. `LargeStruct` (128-byte with `data[16]`) is not recovered - `func_struct_byval` uses `unsigned long ptr` (pointer) instead of the struct by value. All composite type semantics are lost.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Several unsafe operations: pointer arithmetic without bounds (e.g., `ptr + idx * 8` in loops), unsafe casts in `param_complex_cast` treating `void*` as `unsigned int*`, and the double-pointer handling in `param_double_ptr` uses a typedef struct that obscures the real type. The varargs code has many potentially unsafe memory accesses.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Almost no useful comments in the decompiled code. No explanation of what functions do, no parameter descriptions, no return value documentation. Only auto-generated annotations like `/* do not return */` appear. The original source had extensive comments explaining each test case, but these are completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Some patterns are recognizable (varargs handling, function pointers) but not explicitly named or highlighted. The decompiler doesn't identify the calling convention tests, the parameter passing patterns, or the return value handling idioms. No design patterns or algorithms are explicitly identified.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No indication of suspicious code or potential issues. The complex boolean in `register_tm_clones` (`__ROL__` operations) isn't flagged as unusual. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior (like the `param_order_dep` testing sequence points).
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 15", "期望: 50") but these are only visible in the hardcoded printf arguments, not as documented contracts. No recovery of input validation or error handling assumptions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are clear (direct calls visible), but there's no documentation of call relationships. The original source shows which functions call which (e.g., `call_cdecl` calls `cdecl_func`), but this hierarchy isn't explicitly documented in the decompiled output. Global variable usage is not clearly marked.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped roughly by their purpose (test functions together, helper functions at start), but the organization doesn't match the original source's clear section headers ("4.1 调用约定", "4.2 参数传递模式", etc.). The binary layout influences the order more than logical grouping.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: The code has many `extern` declarations for undefined symbols (`g_412f80`, `g_412fe0`, `handle2.0`, etc.) and won't compile as-is. The metadata indicates "Compilation Result: Yes" but this is misleading - significant stubs would be needed for external dependencies like `__libc_start_main`, `puts`, `__printf_chk`.
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 5 + 6) / 4 = 5.50
+L2_avg = (7 + 8 + 7 + 4) / 4 = 6.50
+L3_avg = (5 + 3 + 4) / 3 = 4.00
+L4_avg = (2 + 4 + 3 + 2) / 4 = 2.75
+L5_avg = (5 + 6 + 4) / 3 = 5.00
+
+Overall = (5.50 × 0.30) + (6.50 × 0.25) + (4.00 × 0.20) + (2.75 × 0.15) + (5.00 × 0.10)
+        = 1.65 + 1.625 + 0.80 + 0.4125 + 0.50
+        = 4.99/10
+```
+
+**Overall Readability Score:** 4.99/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`a0`, `a1`) and locals use cryptic names (`v0`, `v1`) - should reflect semantic purpose like `a`, `b`, `count`, `ptr`
+- **Composite type loss**: Struct definitions `SmallStruct` and `LargeStruct` completely lost; replaced with raw pointers losing all semantic meaning
+- **No comments**: Zero useful comments explaining function purpose, parameters, return values, or test expectations
+- **Redundant code**: `call_varargs_param` and similar functions call the same function twice unnecessarily
+- **Type imprecision**: Uses `unsigned int`/`unsigned long long` where original uses `int`, losing signedness semantics
+
+### Best Quality Aspect
+**Function Naming Quality (8/10)** - The decompiler preserved almost all original function names from the source (`cdecl_func`, `stdcall_func`, `test_calling_conventions`, etc.), making it easy to identify the purpose of each function.
+
+### Most Needs Improvement
+**Comment Quality & Presence (2/10)** - The decompiled code has virtually no useful comments. The original source had extensive documentation explaining each test case, expected values, and calling convention details. Without comments, understanding the purpose of complex functions like `varargs_func` requires significant reverse engineering effort.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*p * 2` suggests multiplication, `strlen(p)` suggests string) to generate semantically meaningful names instead of `v0`, `v1`
+2. **Recover struct/union definitions**: When pointer arithmetic and field access patterns are detected, attempt to reconstruct struct layouts with field names based on offset patterns
+3. **Add contextual comments**: Generate comments explaining function purpose, parameter semantics, and expected behavior based on call site analysis and string literal references

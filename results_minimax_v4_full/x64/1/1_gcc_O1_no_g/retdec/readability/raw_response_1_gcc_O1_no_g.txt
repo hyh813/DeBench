@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `v3`, `result`) that provide no semantic meaning. Original source used meaningful names like `a`, `b`, `c`, `sum`, `count`, `temp1`, `temp2`. The decompiled version makes it impossible to track variable purpose without extensive analysis.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names correctly match source (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`). Minor deduction for some helper functions with generic names like `function_1080`, `function_1090`, but core functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Code is littered with unexplained magic numbers: `0x66666667` for division optimization, `0x100000000` for 32-bit conversions, `0xffffffff` masks everywhere. Original source had clear arithmetic; decompiled version introduces bit manipulation artifacts that obscure intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from excessive bit masking (`& 0xffffffff`, `& 0xfffffffe`), redundant 64-to-32-bit conversions, stack canary checks (`__stack_chk_fail`), and complex expressions for simple operations. At -O0, these artifacts are unnecessary and degrade readability significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as while loops, switch statements mostly preserved. However, some awkward conditionals like `v1 >= 0 == (v1 != 0)` trying to express `v1 > 0`, and goto usage in `loop_multi_exit` for break statements. Generally readable but not idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition maintained - each test function remains separate, helper functions properly isolated. Function sizes are appropriate. The original's modular structure is preserved in the decompiled version.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with good flow. Some forward jumps in complex functions like `loop_multi_exit` and `switch_fallthrough`, but these are manageable. Minor disruption from goto-based breaks.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Loop unrolling not present (expected at -O0). Some repeated patterns in switch statements but nothing severe. Clean code in this dimension.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t` for most values (arm64 default), with `int32_t` and `uint32_t` for specific operations. Function pointer signatures are fairly precise. Minor loss: original used `int` (32-bit) throughout, decompiled uses 64-bit types which loses some precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: System structures properly recovered (`struct __jmp_buf_tag` for setjmp/longjmp). No user-defined structs in original source to recover. Adequate for what's needed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - extensive bit masking could hide issues, pointer arithmetic in `loop_break` accessing array via computed offsets. Not severe but some risky patterns exist. No `restrict` or safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments (e.g., "// Address range: 0x12ab - 0x12b7") and basic line markers. No algorithm explanation, no decompilation confidence indicators, no API contracts. Comments are purely metadata, not semantic guidance.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns present (state machine in `state_machine`, recursion in `recursion_factorial`) but not explicitly named or documented. No recognition of algorithms like Duff's device, fall-through logic, or callback patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain calls, no flags for potential issues, no warnings about indirect calls that couldn't be resolved. Everything is presented with false confidence. The decompiler doesn't communicate its limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation, no invariant recognition, no error condition documentation. The original source had implicit contracts (e.g., "x > 0" for certain functions) that are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at top show relationships, some static functions properly marked. However, no comments about call graphs, global variable usage, or callback relationships. Relationships are implicit rather than documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file, but reasonably grouped (helper functions, test functions, main). No header file structure recovered. Arbitrary but functional organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Has necessary includes (`<stdio.h>`, `<setjmp.h>`, etc.), function prototypes declared. Should compile with minimal issues. Dependencies are clear. Standalone compilation should succeed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are completely generic (`a1`, `a2`, `v1`, `v2`) providing no semantic meaning
+- Excessive bit masking noise (`& 0xffffffff`) obscures simple arithmetic operations
+- No comments explaining algorithms or intent - only address metadata
+- No anomaly indication for uncertain decompilation decisions
+- No contract/precondition recovery - original semantics lost
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core function names correctly match source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`)
+
+**Most Needs Improvement:** Semantic Transparency (2.75/10)  
+- Zero meaningful comments, no pattern recognition, no anomaly indication, no contract recovery - the decompiler provides no semantic guidance to the analyst
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1 + a2` should suggest `operand1 + operand2`, not generic `a1`
+2. **Eliminate unnecessary bit masking at -O0**: The `& 0xffffffff` masks are compiler artifacts that should be suppressed in debug builds
+3. **Add semantic comments**: Include algorithm explanations, decompilation confidence indicators, and recovered contracts (preconditions/postconditions)

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` (e.g., `cdecl_func(int32_t a1, int32_t a2)`) instead of original names `a`, `b`. Local variables use cryptic names like `v1`, `v2`, `v3`, `v4` throughout. While `result` is occasionally used, the vast majority of variables are uninformative, making it difficult to track their semantic purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are accurately preserved from source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `call_cdecl`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. Minor issue: some internal functions have auto-generated names like `function_1090`, `function_10a0`, but these don't impede understanding of the main logic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Global variables have unexplained magic number initializations (e.g., `g1 = 0x4040cc5`). String literals are accessed via computed offsets like `(char *)(v1 + 0x1935)` without revealing content. However, some constants like stack canary offset `20` and simple numeric literals (5, 10, 100) are reasonable. The printf format strings are completely obscured.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from compiler artifacts including: `__x86_get_pc_thunk_ax(v1)` repeated in nearly every function, `__readgsdword(20)` for stack canary checks, `__stack_chk_fail_local()` calls, `__asm_hlt()` assembly instruction, and `__asm_rep_movsd_memcpy` intrinsic. These artifacts significantly obscure the actual logic and make the code difficult to read.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with while loops for iteration, appropriate if-else conditionals, and early returns. The `__x86_get_pc_thunk_ax` calls at function starts are distracting but don't affect logical flow. Loop constructs like in `varargs_func` and `param_ptr_array` are correctly recovered as while loops rather than gotos.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches the original source. Each test function (`call_cdecl`, `call_stdcall`, etc.) and helper function (`cdecl_func`, `varargs_func`) is properly separated. The test orchestration functions (`test_calling_conventions`, etc.) are appropriately sized. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal disruption. Early returns are used appropriately in functions like `param_double_ptr` and `ret_multi_branch`. While loops maintain good linear flow. Some forward jumps exist in complex functions like `test_calling_conventions` but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from the repeated `__x86_get_pc_thunk_ax(v1)` pattern in almost every function. Some common subexpression patterns exist. Loop unrolling is minimal. The main issue is the pervasive boilerplate code that could be abstracted but isn't.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` for most integers which is appropriate for 32-bit compilation. Pointers are correctly typed as `int32_t *`. Some parameters use `uint32_t` appropriately (e.g., `param_ptr_array` second parameter). However, `float80_t` for long double is unusual and the distinction between pointers and arrays is not always clear.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct types were recovered. `SmallStruct` and `LargeStruct` from the source are completely lost. The code uses raw pointer arithmetic like `*(int32_t *)((int32_t)a1 + 4)` instead of struct field access. In `func_struct_byval`, the struct is accessed via `*(int32_t *)((int32_t)&v2 + 8 + 8 * i)` - completely opaque.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts between integers and pointers (e.g., `(int32_t *)a1`). Raw pointer arithmetic throughout (e.g., `v6 += 4` in varargs). Function pointer types are not properly typed - `param_func_ptr` takes `int32_t a1` instead of function pointer. Some buffer-like patterns with manual offset calculations could be prone to errors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are primarily auto-generated metadata: address ranges ("// Address range: 0x1261 - 0x127c"), stack canary checks ("// 0x1521"), and occasional UNREACHABLE markers. No meaningful algorithm explanations, API contracts, or documentation of non-obvious logic. The comments don't help understand the code's purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The varargs handling, though correctly decompiled, isn't recognized as a stdarg pattern. No mention of calling convention patterns (cdecl, stdcall, etc.) even though the function names preserve this information. The code presents "what" not "why".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code or uncertain decompilation decisions. The "UNCERTAIN" annotation appears only once in unreachable code. Indirect calls that couldn't be resolved aren't documented. No warnings about potential undefined behavior or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. Null checks like `if (a1 != NULL)` in `func_struct_byptr` aren't explained as requirements. The return value semantics aren't documented. Error handling paths aren't identified as such.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of which functions call which. Global variable usage (`g1`, `g2`, `g3`, `g4`, `g5`) isn't explained. Callback relationships aren't indicated (e.g., `callback_func` used by `param_func_ptr`). The call graph must be inferred from the code itself.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are loosely grouped by category (calling conventions, parameter passing, return values) but all in a single 1200+ line file. Static functions aren't clearly distinguished from public ones. No header file or API boundary separation. The organization is functional but primitive.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`) and has function prototypes. Should compile with gcc after adding the missing `__asm_hlt` definition. Some intrinsic functions like `__asm_rep_movsd_memset` may need stubs. External dependencies (libc functions) are properly declared.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` instead of semantic names from source
+- No struct type recovery - `SmallStruct` and `LargeStruct` are completely lost, replaced with opaque pointer arithmetic
+- Severe noise from `__x86_get_pc_thunk_ax` calls in every function
+- No composite type reconstruction - all struct fields accessed via raw offsets
+- Magic number initializations for global variables without explanation
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Function names are accurately preserved from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The pervasive use of generic names like `a1`, `a2`, `v1`, `v2` throughout the codebase makes it extremely difficult to track variable purposes and understand the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 + a2` suggests addition operands, `*a1` suggests pointer dereference) to generate semantically meaningful names like `operand_a`, `buffer_ptr`
+2. **Recover struct/union types**: Detect consistent memory access patterns and reconstruct composite types with field names based on offset analysis
+3. **Eliminate compiler artifact noise**: Recognize and optionally hide or abstract boilerplate code like `__x86_get_pc_thunk_*` calls that don't contribute to understanding the program's logic

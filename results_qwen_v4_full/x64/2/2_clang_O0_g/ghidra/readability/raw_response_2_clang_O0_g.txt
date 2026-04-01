@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Original parameter names preserved (c, x, arr, n) but unnecessary `_local` suffixes added (c_local, x_local, p_local). Test functions use generic names like `uVar1`, `local_568`, `i_1`, `i_2` obscuring purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (process_char, array_1d_stack, ptr_single, struct_simple). A few startup functions use generic names (FUN_00101020) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Character literals clear ('A', 'b', '@', '[') but magic numbers unexplained (0x12345678, 0x191d, 0x30). Hex constants in test output lack semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Unnecessary `_local` variables for every parameter (p_local, arr_local, n_local). Redundant type casts ((ulong)(uint)(int)) clutter printf calls. Compiler startup functions included but don't affect core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recovered as for/while constructs. Switch statement in enum_switch preserved accurately. Conditional logic flows naturally without goto abuse.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. No inappropriate inlining or fragmentation. Each function maintains single responsibility with reasonable size.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop constructs don't use forward jumps. No disruptive goto statements in main logic paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant _local variable assignments (local_9 = c; then use c). Test functions have unnecessary intermediate variables. No significant dead code in core functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, short, long, float, double). Some degradation (longlong vs long long). Function pointer types use custom typedefs (_func_int_int) instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names preserved (Point3D, Rect, Widget, Node). Field names mostly intact (x, y, z, position, size). Some access shows offset notation (node2._4_4_ = 0). Bitfield recovery shows raw bit operations instead of field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts ((ulong)(uint)(int)) in printf calls. Some printf calls missing arguments entirely (PTR-L2-06, CMP-L2-06, CMP-L2-14). Pointer arithmetic generally correct but void* handling inconsistent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler metadata comments present ("Decompiled by Ghidra 12.0"). Original source comments completely lost. No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion, array summation) not identified or named. No design pattern recognition. Code presented without semantic context.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). Missing printf arguments not flagged. Bitfield degradation not explained to user.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. No null pointer checks explained. Error conditions (array_oob undefined behavior) not flagged.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. Global variable references shown as DAT_ addresses without names. No call graph documentation or callback relationship explanation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Single output file with no logical grouping. Static functions not properly scoped (double_value should be static).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Missing struct definitions in output. Some typedef references may not resolve (Point3D, Rect, Widget). printf argument mismatches would cause compilation/runtime issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      6.50 × 0.30 = 1.95
+Level 2 (Structural):   7.75 × 0.25 = 1.94
+Level 3 (Type System):  6.67 × 0.20 = 1.33
+Level 4 (Semantic):     3.75 × 0.15 = 0.56
+Level 5 (Contextual):   5.67 × 0.10 = 0.57
+─────────────────────────────────────────
+Overall Score:                    6.35/10
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects:
+- **Unnecessary `_local` variables** for every parameter (p_local, arr_local, n_local) adding visual noise without value
+- **Missing printf arguments** in multiple test functions (PTR-L2-06, CMP-L2-06, CMP-L2-14) causing potential runtime issues
+- **Bitfield access degraded** to raw bit operations (*(ushort *)f >> 1 & 3) instead of field names (f->flag2)
+- **All source comments lost** - no algorithm explanations, test case descriptions, or API documentation recovered
+- **Struct field offset notation** (node2._4_4_ = 0) instead of proper field names in some cases
+
+### Best Quality Aspect: **Structural Intelligibility (7.75/10)**
+- Control flow, function decomposition, and code linearization are well-recovered, making the logic traceable despite other issues.
+
+### Most Needs Improvement: **Semantic Transparency (3.75/10)**
+- Complete loss of comments, no idiom recognition, and minimal anomaly indication severely limit understanding of code intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate unnecessary `_local` variable copies** - parameters don't need local shadows unless modified, reducing visual clutter by ~30%
+2. **Recover and preserve source comments** - embed debug symbol comments or infer documentation from function patterns and test cases
+3. **Flag semantic anomalies explicitly** - missing printf arguments, bitfield degradation, and undefined behavior should be highlighted with warnings

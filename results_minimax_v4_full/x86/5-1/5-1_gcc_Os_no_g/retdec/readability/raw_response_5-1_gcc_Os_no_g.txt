@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, v4, v5, result, result2). No semantic meaning whatsoever - e.g., `v2` should be `instance_count` based on the calculation `1001 * *(int32_t *)(__x86_get_pc_thunk_ax(...) + 0x4a26) + 21` in test_cpp_constructor.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions properly demangled (e.g., `test_cpp_exception()`, `test_cpp_member_func()`), but many retain mangled C++ names like `_ZN4Base12virtual_funcEi` (should be `Base::virtual_func`), and thunk functions like `_ZThn8_N12MultiDerived5funcBEv` are not explained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x4a26`, `0x4646`, `0x461b` appear without explanation. However, some meaningful constants like `1001` in constructor test are used directly. The RTTI section has particularly opaque literal handling with computed addresses.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution. Functions like `__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_ax`, `__readgsdword(20)` (stack canary) clutter every function. These x86-specific artifacts appear despite source being arm64, suggesting cross-compilation or incorrect architecture detection.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else structures are recognizable. However, the exception handling code (`_Z18test_cpp_exceptionv`) uses confusing goto patterns with labels like `lab_0x1384` and `lab_0x138f` that obscure the try-catch-rethrow logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and decomposed. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate. Template instantiations are properly separated. Minor issue: some thunk functions could be better documented.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. The exception test function has multiple backward jumps that complicate tracing. Most other functions are linear and readable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. The template functions are clean. Some repeated patterns in virtual function thunks but these are necessary for the inheritance hierarchy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate for 32-bit output. However, all pointers are `int32_t*` losing pointer-to-member information. Function pointers are not properly typed - e.g., `__cxa_throw` signature is incorrect.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Very limited struct recovery. The code uses raw pointer arithmetic extensively (e.g., `*(int32_t *)(v6 + 4) = 2` for array initialization in smart_ptr test). No struct definitions for classes like `SimpleClass` or `LifecycleClass` - all accessed via offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present - e.g., `(int32_t *)v2` treating pointers as integers, `(struct _Unwind_Exception *)v8` in exception handling. Some pointer arithmetic without bounds checking. However, no buffer overflow-prone patterns are obvious.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only address range comments (e.g., `// Address range: 0x12d0 - 0x13c2`) and occasional demangling notes. No explanation of algorithms, preconditions, or non-obvious logic. The exception handling code is completely undocumented.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are implicitly present (virtual function calls via vtable: `*(int32_t *)*a1`), but not explicitly named or documented. The thunk functions for multiple inheritance are not explained as this-pointer adjustments. Template instantiation is recognized but not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags or uncertainty indicators. The decompiler presents all code with equal confidence, including potentially incorrect interpretations. No warnings about indirect calls that couldn't be resolved or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No preconditions, postconditions, or invariants documented. The RTTI/dynamic_cast code has no explanation of what type relationships are being checked.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are clear from the code structure. However, no explicit documentation of who calls whom, or the inheritance relationships between classes. The vtable mechanism is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, class methods together). However, the file is a single monolithic block. No separation into logical sections or headers. The mix of runtime functions and user code is confusing.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Function prototypes are declared. Some standard library stubs present. However, requires significant patching to compile - missing includes, incorrect function signatures, undefined references to globals like `g1`, `g2`, `g3`, `g4`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- All variables use generic names (v1, v2, v3...) with no semantic meaning - should infer names from usage patterns
+- No struct/class recovery - all class members accessed via raw pointer arithmetic losing type information
+- Severe compiler artifact pollution (__x86_get_pc_thunk functions, stack canaries) despite -O0 optimization
+- No comments explaining C++ idioms (virtual functions, multiple inheritance thunks, exception handling)
+- Mangled C++ names still present for many class methods instead of proper demangling
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Functions are properly separated and reasonably sized; each test function is distinct
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every variable uses generic names like v1, v2, result making code comprehension extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., variables used in arithmetic with "instance_count" offset should be named accordingly
+2. Recover class/struct definitions from constructor patterns and vtable layout instead of raw pointer arithmetic
+3. Filter out compiler artifacts (stack canaries, PC-relative address loading thunks) or at minimum add explanatory comments when they must be retained

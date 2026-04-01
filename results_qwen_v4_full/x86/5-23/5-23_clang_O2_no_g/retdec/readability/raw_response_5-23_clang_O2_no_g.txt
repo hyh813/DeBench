@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) instead of semantic names like `size`, `page_size`, `exec_mem`, `counter`. Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved well (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`function_1040`, `function_1050`). Core functionality names match source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0xdef0`, `0xdf22`, `282`, `382`) without explanation. Original constants like `MAX_SIZE`, `BUFFER_COUNT` folded into literals, losing semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*` stubs, incorrect `typedef int64_t int128_t`, uninitialized variables (`int32_t v1;` in main), and assembly intrinsics (`__asm_movaps`, `__asm_paddd`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `param_macro_constants` uses convoluted conditional expression instead of clean if-else. Some functions constant-folded entirely losing original structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but parameter counts wrong (`param_variadic_macro` has 4 params vs 3 in source). Some functions like `call_macro_constants` reduced to single return statements.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_asm_multi_insn` and `param_memory_protection` have awkward while-loop patterns instead of for-loops. Forward jumps disrupt flow in several functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. However, `param_asm_atomic` and `param_atomic_c11` are nearly identical with no indication they were different in source (atomic vs non-atomic).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Consistent `int32_t` usage is reasonable, but pointer types degraded (`int32_t *` vs `void *`, `char *`). Critical error: `typedef int64_t int128_t` is fundamentally wrong. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No structs/unions in original to recover. Global variables named generically (`g1` through `g12`) with hex addresses but no semantic meaning. Array types often lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int32_t *)&g12`, `(char *)v7`), pointer arithmetic without proper typing, and mismatched function signatures. `param_memory_protection` returns wrong type in error paths.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Original had extensive documentation about preprocessing, macros, assembly semantics. All semantic context from comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansions not recognized (`ADD_16(x)` became `x + 16` with no indication). Stringize, token paste, variadic macro patterns completely opaque. No algorithm pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Critical errors silent: `param_include_guard` returns `&g1` instead of `500`, `param_stringize` returns constant `19` with no explanation of string length calculation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). Error conditions not indicated. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage opaque (`g1` through `g12`). Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file matching original structure. Function prototypes listed at top. Logical grouping preserved (preprocessing functions together, assembly functions together).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Does not compile standalone. Undefined symbols: `__asm_hlt`, `__asm_movaps`, `__asm_paddd`, `__asm_movdqa`. Missing standard library headers. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+6+7)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+7+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.86/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `a1`, `a2`) losing all semantic meaning from original (`size`, `page_size`, `exec_mem`)
+- **Zero comments** - all original documentation about preprocessing, macros, and assembly semantics lost
+- **Incorrect type definition** - `typedef int64_t int128_t` is fundamentally wrong and misleading
+- **Silent semantic errors** - `param_include_guard` returns `&g1` instead of `500`, no anomaly indication
+- **Does not compile** - undefined assembly intrinsics (`__asm_movaps`, `__asm_hlt`) require manual fixing
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately (`param_macro_constants`, `call_asm_basic`), maintaining traceability to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all semantic documentation; decompiler provides zero context about preprocessing behavior, macro expansions, or assembly intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant-folded expressions and annotate with original macro names (e.g., `// Originally: MAX_SIZE / 2`)
+2. **Add uncertainty annotations** - Flag functions with suspicious behavior (`param_include_guard` returning pointer instead of int) with `// DECOMPILER UNCERTAINTY` markers
+3. **Preserve type fidelity** - Fix SIMD type handling (don't map 128-bit vectors to `int64_t`) and add proper vector type definitions for assembly intrinsics

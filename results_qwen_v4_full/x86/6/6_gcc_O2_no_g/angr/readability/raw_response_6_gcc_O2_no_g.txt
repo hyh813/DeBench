@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names like `v0`, `v1`, `ptr`, `result` obscures semantic meaning. Original names like `dst`, `src`, `buffer`, `thread_count` are completely lost. Even loop counters use `i` without context about what's being iterated.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—some original names preserved (`param_strcpy`, `thread_compute`, `consumer_thread`) but many degraded to `sub_401030`, `sub_401c1a` pattern. Wrapper functions like `sub_401c1a` that just call `call_strcpy()` add no semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `42` (test success code), `1000` (usleep delay) appear without explanation. String literals like `"HelloPipe"` and `"BinBench Test Data"` are preserved correctly.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `__x86.get_pc_thunk.*` functions, `__stack_chk_fail_local` calls, `__do_global_ctors_aux`, and `deregister_tm_clones`. Architecture mismatch (ARM64 source → X86 decompilation) indicates fundamental analysis error.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` statements replace natural loop constructs. Example: `goto v1->field_f8` in `sub_4013e0`. Many functions use `do-while` with manual counter management instead of clean `for` loops.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with trivial wrappers (`sub_401c1a` → `call_strcpy`, `sub_401c2a` → `param_strcmp`). Original cohesive functions split into unnecessary layers that obscure logic flow.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps and `goto LABEL_XXXXX` patterns disrupt top-to-bottom reading. Stack canary checks with `if (v2 != *((int *)_ccall(...)))` create artificial branching throughout.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated stack canary check pattern in nearly every function. Wrapper function pairs create redundant call chains. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything becomes `unsigned int`. Original `char*`, `FILE*`, `size_t`, `pthread_t` all degraded. `param_strlen` incorrectly returns `void` instead of `size_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic names (`struct_0`, `struct_1`) and fields like `field_0`, `field_4`, `padding_0[248]`. Original `ThreadData` struct with `start`, `end`, `result` fields completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`ptr += 1`, `v10->padding_0[4 * v13]`). Function pointers passed as `unsigned int`. No const-correctness preserved from original.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had comprehensive documentation explaining each function's purpose, test scenarios, and expected values. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library patterns partially visible (`sub_401510` appears to be `strcpy`, `sub_401710` appears to be `pthread_create`) but not identified. Thread synchronization patterns not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4200411`. Architecture mismatch not warned. Many indirect calls resolved incorrectly without indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). Error return values (`4294967295` = -1) not explained. Original's explicit error handling contracts completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables named `g_40406b`, `g_404086` with no semantic meaning. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All 100+ functions in single file with no logical grouping. Original's clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Architecture mismatch (ARM64→X86) prevents direct compilation. External dependencies (`pthread`, syscalls) not documented. Would require extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+5+5+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):   (4+4+4+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type System):  (3+3+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):     (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):   (4+3+3)/3   = 3.33 × 0.10 = 0.33
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.58/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled to X86 decompilation—fundamental analysis error
+- **Functions return hardcoded values**: `call_strcpy()` returns literal `8` instead of calling `param_strcpy()`
+- **Complete absence of comments**: Zero documentation despite complex threading and syscall logic
+- **Severe type erosion**: All pointers and specialized types degraded to `unsigned int`
+- **Excessive wrapper fragmentation**: Trivial functions like `sub_401c1a` that just call other functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names preserved (`param_strcpy`, `thread_compute`, `consumer_thread`) providing minimal semantic anchors
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding complex threading and syscall logic nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Fix architecture detection** - Ensure ARM64 binaries are analyzed with ARM64 lifting, not X86, to prevent fundamental instruction misinterpretation
+2. **Implement semantic comment generation** - Add automatic comments for recognized library patterns (pthread, syscalls) and document magic numbers with their likely meaning
+3. **Eliminate trivial wrapper functions** - Detect and inline single-call wrapper functions (`sub_401c1a` → `call_strcpy`) to reduce fragmentation and improve readability

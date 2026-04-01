@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple string copy function that calls `strcpy` and returns the length. The decompiled version at address 0x11310 shows significant readability issues compared to the original.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `ptr` (destination) and `a1` (source) instead of descriptive names like `dst` and `src`. Local variable `len` is reasonable but then unused (strlen called twice). Most other functions use `v0`, `v1`, `a0`, `a1` patterns that obscure purpose entirely.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like `param_strcpy`, `call_strcpy`, `thread_sum`, `signal_handler` are well-named and match source. However, many helper functions use auto-generated names like `sub_10ca8`, `sub_112a4` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" are correctly preserved. However, error return values use magic number `4294967295` (0xFFFFFFFF) without explanation. Some socket constants like `2` for AF_INET are unclear without context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy pollution from stack canary checks (`__stack_chk_guard`, `__stack_chk_fail`), spurious `armg_calculate_condition` calls, redundant `goto` statements, and auto-generated struct definitions. The `param_strcpy` itself is relatively clean but surrounding code is unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive use of `goto` labels (LABEL_11008, LABEL_11014, etc.) creates spaghetti code. Functions like `param_strcmp` have deeply nested conditionals that are hard to follow. The `armg_calculate_condition` wrapper obscures simple comparisons.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are generally reasonable (30-80 lines typical). Some functions like `param_pthread_join` are quite large (~150 lines) but maintain cohesion. Minor outline artifacts present but not severe.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor top-to-bottom readability due to frequent forward jumps, goto labels, and complex nested conditionals. The `param_fork_exec` function has 15+ labels disrupting flow. Deep nesting (>4 levels) common in error-handling paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_strcpy` calls `strlen` twice instead of reusing `len` variable - clear redundancy. Some loop unrolling present but not commented. Multiple instances of duplicate function calls in return statements.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - some functions use `int`, others `unsigned int`. Parameter types like `char *a1` are less precise than `const char*`. The `param_strlen` function has undefined parameter `v0`. Function pointers often become generic `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered with generic names (`struct_0`, `struct FILE`), while `ThreadData` is properly reconstructed. Field names are generic (`field_0`, `field_74`). Nested structures handled poorly - mostly raw pointer arithmetic visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe patterns present: pointer arithmetic in `param_malloc_free` (`ptr + 1`, `ptr[1]`), incorrect buffer access in `call_memset` using struct overlay. Some void* casts but mostly manageable. No `restrict` or alignment annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 3/10  
+Justification: Almost no useful comments. Auto-generated register annotations (e.g., `// r0`, `// r3`) provide no semantic value. No explanation of algorithm intent, preconditions, or uncertainty flags.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions (strcpy, strlen, pthread_create) correctly identified. Some patterns like mutex lock/unlock recognized. But no explicit naming of design patterns (producer-consumer, state machine) or algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls, or decompilation uncertainty. The `param_linux_syscall` shows `syscall(5)` without indicating the missing pathname parameter - a critical anomaly. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No recovery of preconditions (e.g., "requires: dst != NULL"), postconditions, or invariants. Error return values (-1, -2, etc.) not documented. The function semantics are not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships not documented. No indication of who calls whom or global variable usage. The `extern` declarations show dependencies but not the purpose of relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address but not logically organized. Test functions (`test_standard_library_functions`, `test_system_calls`) separated but internal organization is arbitrary. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone. Missing function declarations, undefined types like `FILE`, and `extern` references to undeclared globals. Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`a0`, `a1`, `v0`, `v1`) that completely obscure parameter roles in `param_strcpy` and most other functions
+- Redundant `strlen` call in `param_strcpy` - calculates length twice instead of reusing variable
+- Heavy noise from stack canary checks (`__stack_chk_guard`, `__stack_chk_fail`) and condition calculation wrappers (`armg_calculate_condition`) make code unreadable
+- No comments explaining algorithm intent, preconditions, or decompilation uncertainty
+- Type precision issues: `param_strlen` has undefined parameter, function pointers become generic `unsigned int`
+
+**Best Quality Aspect:** Function Naming Quality (6/10)  
+- Core test functions (`param_strcpy`, `call_strcpy`, `thread_sum`, `signal_handler`) are correctly named and match source intent
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic variable names (`a0`, `a1`, `v0`, `v1`, `ptr`, `count`) make it impossible to track variable purpose without reading entire function
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer parameter names from usage**: In `param_strcpy(char *ptr, char *a1)`, analyze that `ptr` is written to and `a1` is read from - name them `dst` and `src` respectively
+2. **Eliminate redundant calls**: The decompilation shows `strlen(ptr)` called twice - detect and eliminate such redundancy
+3. **Add semantic comments**: Flag uncertain decompilations with `// UNCLEAR: indirect call` and explain algorithm intent like `// Implements strcpy + strlen pattern`

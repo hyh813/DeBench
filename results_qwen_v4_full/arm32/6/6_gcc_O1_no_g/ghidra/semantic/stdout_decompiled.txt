@@ -1,0 +1,12 @@
+Testing standard library functions
+Result: 0
+Result: 0
+Result: 12
+Result: 0
+Result: 0
+Value: 42, Name: 
+Result: 18
+Result: 0
+Result: 42
+Result: 0
+Result: 0

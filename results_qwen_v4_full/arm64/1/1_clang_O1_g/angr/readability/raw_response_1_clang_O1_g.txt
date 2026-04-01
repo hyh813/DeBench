@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count`, `i`, `j` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions degraded to `sub_400894`, `sub_400970`. Test functions (`test_control_flow_l1/2/3`) retained names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (UINT_MAX), `1717986919` (division optimization), `4294967294`. Original used clear expressions like `a + b`, `x * 2`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: `__ROL__` operations, bit shifts (`>> 31`), unnecessary casts (`(unsigned int)`, `(unsigned long long)`), and stack frame variables (`[bp-0x10]`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple if-else recovered (`if_else`, `nested_if_deep`), but loops severely degraded (`loop_for_fixed` uses bit manipulation instead of for loop). Switch statements partially recovered but some broken (`call_func_ptr_array`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved with reasonable sizes, but test functions print hardcoded values instead of calling actual functions, breaking the testing structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto statements appear where loops should exist (`duffs_device`, `loop_multi_exit`). `test_control_flow_l2` has extremely convoluted nested loops with labels disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated bit manipulation patterns across functions. Test functions have redundant printf statements. Some redundancy manageable but obscures original intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `int` becomes `unsigned int` or `unsigned long long` inconsistently. `sequential_ops` parameters are `unsigned int` instead of `int`. Return types wrong (`single_if` returns `long long`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays degraded to pointer arithmetic (`4200664 + 4 * v0` in `loop_break`). Matrix in `loop_multi_exit` becomes complex pointer calculations. No structs in original to evaluate.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointer types severely broken (`call_func_ptr` takes `unsigned long long *a0` instead of `int (*f)(int)`). Multiple unsafe casts and incorrect pointer arithmetic throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and expected behavior. Complete loss of semantic guidance.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Switch fallthrough not recognized (`switch_fallthrough` becomes nested if). Duff's device degraded to goto. State machine patterns not identified. Common idioms lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation despite obvious issues. `call_func_ptr_array` and `large_jump_table` are completely broken but presented confidently without flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation recovered. Test case expectations from original source completely absent from decompiled test functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but without call graph documentation. Global variables referenced (`g_412ff8`, `g_4018f0`) without explanation of purpose or relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. No header file structure or logical grouping. Related functions not clustered together meaningfully.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. References undefined externals (`g_412ff8`, `arm64g_calculate_condition`, `call_weak_fn`). Test functions print hardcoded values instead of executing logic.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Calculation:**
+```
+Level 1 (Lexical):     (2+7+3+4)/4 = 4.0  × 0.30 = 1.20
+Level 2 (Structural):  (5+6+5+6)/4 = 5.5  × 0.25 = 1.38
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.0  × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+---------------------------------------------------------
+Total:                                          = 4.18 ≈ 4.2/10
+```
+
+**Critical Defects:**
+- Variables `a0`, `a1`, `a2`, `v0`, `v1` should be named based on semantic usage (e.g., `a`, `b`, `c` in `sequential_ops`)
+- Test functions print hardcoded values instead of calling actual functions, breaking verification capability
+- Loop constructs completely lost (`loop_for_fixed`, `loop_while` use bit manipulation instead of loops)
+- Function pointer types broken (`call_func_ptr`, `call_func_ptr_array` don't match original signatures)
+- Zero comments despite complex logic requiring explanation
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Core function names preserved accurately from original source, maintaining semantic identity
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Complete absence of any documentation makes understanding decompiled logic extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement variable name inference** from usage patterns and original debug symbols when available (e.g., `a0` → `a` in `sequential_ops`)
+2. **Recover high-level control structures** from assembly patterns (recognize for/while loops from cmp+jcc patterns instead of emitting bit manipulation)
+3. **Add decompilation confidence annotations** to flag uncertain reconstructions (e.g., "UNCERTAIN: function pointer type may be incorrect")

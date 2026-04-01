@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) instead of semantic names like `a`, `b`, `c` from source. Local variables use cryptic auto-generated names like `iVar1`, `iVar2`, `uVar1`, `lVar2`, `puVar3` which provide no semantic meaning about their purpose (e.g., temp calculations, loop counters, array indices).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions correctly preserve original names (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`). Minor deduction for some internal functions with auto-generated names like `FUN_00100880`, but the core function names match the source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions print hardcoded hex values (`0x15` for 21, `0x14` for 20) instead of computed results, losing the dynamic nature. Magic numbers like `0x3e9` (1001), `0x65` (101), `0xe` (14) appear without explanation. Some constants like loop bounds are clear but many literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or frame pointer manipulation visible. The decompilation is clean without significant noise from the -O0 compilation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops recovered as `while`/`do-while`, conditionals as `if` statements. Some transformations like bit-shift for multiplication (`param_1 << 1` instead of `param_1 * 2`) are present but expected even at -O0 on arm64. The `goto_forward` function uses confusing arithmetic instead of clear goto reconstruction.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. No over-fragmentation or monolithic collapse. Parameter lists are reasonable - functions take expected parameters without exposing implementation details. Static helper functions (`double_value`, `triple_value`) properly extracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but some forward jumps disrupt flow. The `loop_multi_exit` function has complex nested loops with multiple exit points that are difficult to trace. Some functions like `duffs_device` have goto-based switch reconstruction that breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal. Some common subexpression patterns exist but don't significantly obscure logic. The `switch_fallthrough` function correctly uses goto labels to simulate fall-through behavior.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers use generic `int` instead of specific types like `int32_t` or `size_t`. Some unsigned types used appropriately (`uint`, `ulong`). No `const` correctness preserved - all parameters are mutable. Function pointer types use generic `code *` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. Arrays like `matrix[3][4]` in source are accessed via raw pointer arithmetic (`(&DAT_001018ec)[lVar2 * 4]`). The `loop_break` function accesses `arr` via `(&DAT_001018d8)[lVar1]` losing the array semantics entirely.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - pointer arithmetic without bounds checking (`param_1 = param_1 + 1`). Function pointer calls use generic `code *` type. Integer signed/unsigned mixing occurs (e.g., `param_1` as both `int` and `uint` in different functions). No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated function headers with addresses. No explanation of algorithm logic, no decompilation confidence indicators, no API contracts. The source had extensive comments explaining each function's purpose - none are recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - state machine in `state_machine` function, function pointer arrays in `call_func_ptr_array`, Duff's device in `duffs_device`. However, patterns are not explicitly named or documented. The goto-based switch reconstruction in `duffs_device` shows pattern recognition but lacks explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags present. Indirect calls through function pointer arrays (`(*(code *)(&PTR_double_value_00112d30)[(int)param_1])`) are not flagged as potentially unresolved. No warnings about unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No error condition explanation. The source had explicit test cases with expected values - these are hardcoded but not explained as contracts. No invariant recognition.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. No documentation of which functions call which. No indication of global variable usage. Callback relationships in `process_with_callback` are visible but not documented. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions together, helper functions near their users. Static functions properly scoped. However, the organization is essentially alphabetical by address rather than semantic grouping matching the source's comment sections (L1, L2, L3).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with minimal modifications. External functions (`printf`, `puts`, `longjmp`, `_setjmp`) declared but dependencies not documented. No header file structure. Some type mismatches may require fixes (e.g., `undefined4` vs `int`).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `param_N` and locals use cryptic `iVar1`, `uVar1` etc., completely losing semantic meaning from source (e.g., `a`, `b`, `c`, `sum`, `count`)
+- **No comments**: Zero semantic comments recovered despite extensive documentation in source explaining each function's purpose and test cases
+- **Type precision**: All types degraded to generic `int`/`uint` without size specifications, losing `int32_t` precision
+- **Composite type loss**: All arrays/structs from source (e.g., `matrix[3][4]`, `arr[]`) converted to raw pointer arithmetic losing semantic structure
+- **No anomaly indication**: Complex patterns like indirect recursion, function pointer arrays, and computed gotos not flagged as potentially uncertain
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+- Most function names correctly preserved from source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), making it easy to identify which function is being analyzed
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+- The source contained extensive comments explaining each control flow pattern (CF-L1-01 through CF-L3-10), test cases, and expected values. None of this semantic information was recovered, making it impossible to understand the function's purpose without comparing to source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used in comparison `param_1 > 0` suggests it's a "value" or "number"; `iVar2` incremented in loop suggests "counter" or "index")
+2. **Recover comments from debug symbols**: Since `-g` flag was used, extract DWARF information to recover variable names, function descriptions, and inline comments
+3. **Flag complex patterns with confidence indicators**: Mark indirect calls, computed jumps, and unusual control flow with annotations like "LIKELY: state machine pattern" or "UNCERTAIN: indirect function pointer call"

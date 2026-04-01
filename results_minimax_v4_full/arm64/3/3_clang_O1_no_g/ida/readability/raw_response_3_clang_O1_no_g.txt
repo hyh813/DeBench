@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use purely generic ARM64 register-based names (`v0`, `v1`, `a1`, `w8`, `x0`, `x9`) that provide zero semantic information. For example, in `heap_basic`, variables `v2`, `v3`, `v4`, `v5`, `v6` obscure their actual roles as allocation pointer, loop index, and result value. Compare to source where `arr`, `i`, `result` clearly convey purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly recovered (`local_vars`, `heap_basic`, `linked_list_heap`, `memop_memset`). However, infrastructure functions use mechanical names (`sub_8E0`, `call_weak_fn`, `deregister_tm_clones`) and some critical functions like `stack_alias` are reduced to constant returns, losing their semantic identity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions embed computed constants (`printf("MEM-L1-01 (local_vars): %d\n", 20)`) rather than showing the calculation `2*a1+10`. Magic numbers like `0x14u` (20), `0x28u` (40), `0xBu` (memory barrier) lack explanations. The source had meaningful variable names; these are lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts - no debug traces, redundant casts, or spurious assembly blocks. ARM64 register names (`w8`, `x19`) are unavoidable artifacts of the architecture. The output is relatively clean compared to highly optimized binaries.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly use do-while constructs (`do { *v4++ = v3; v3 += 2; } while (2LL * (unsigned int)a1 != v3);`). Conditionals are natural `if/else`. However, `stack_alias` lost all control flow (source had pointer aliasing logic), and some test functions reduced to constant outputs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions match source granularity - each test case is separate. Helper functions like `create_tree_node` correctly extracted. No 500-line monoliths. Parameter counts preserved (though types generic). Minor issue: some small functions could be inlined for clarity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in error checks (`if (!v2) return 0xFFFFFFFFLL;`). No spaghetti goto patterns. Forward jumps are minimal and logical.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling present in `local_array` (explicit 10-iteration unroll) and test functions. This is expected at -O0 but could be commented. No dead code observed. Some common subexpression patterns but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - uses both generic `int` and decompiler-specific `_DWORD`, `_QWORD`, `_BYTE`. Pointer types reasonably clear (`_DWORD *`). However, `size_t` not consistently used (some `unsigned int` where size_t expected). Function pointers lose signature specificity.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is poor. `Node` and `TreeNode` are accessed via pointer arithmetic (`*v2 = 10; *((_QWORD *)*a1 + 1) = malloc(0x10u);`) without field names. Source had `node->data`, `node->next` - these semantic names are completely lost, replaced with numeric offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: dangling pointer dereference in `dangling_pointer()` (`return *v1;` after `free(v1);`), unchecked pointer arithmetic in VLA/alloca handling, no bounds checking on array access. Unsafe casts between `_DWORD*` and `char*` throughout. The source had NULL checks; some preserved, some not.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the decompiler identification header present. No comments explaining algorithm intent, non-obvious logic, or decompilation confidence. Source had extensive comments (`// MEM-L1-01: 局部变量（基础类型）⭐`) - completely lost. Zero useful annotations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Patterns like linked list traversal, tree creation, memory operations are present but not identified. A human can recognize them, but the decompiler doesn't name or explain patterns. Source explicitly tested specific idioms (VLA, alloca, TLS) - these are just code, not recognized patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 18 functions failed to decompile (listed at end), but this is buried in output. No inline warnings about indirect calls, potential undefined behavior, or confidence levels. The `dangling_pointer` dangerous pattern is presented as normal code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition/invariant documentation. Source had safety checks (`if (n <= 0 || n > 1000) return -1;`) that are partially preserved as code but not explained as contracts. Error return meanings not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No indication of who calls whom or global variable usage. Source had clear test harness showing relationships - this context lost. Callback relationships (e.g., `set_global_callback` → `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output. Source organized into logical sections (Stack Memory, Heap Memory, Static/Global, Memory Operations) - not reflected. No file boundaries, no static function grouping hints. All functions in one block.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears standalone but relies on undefined externals (`memcpy`, `malloc`, `printf`, etc.). No `#include` or dependency documentation. Would require linking against libc. Not tested for compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses ARM64 register conventions (`v0`, `v1`, `w8`, `x0`) with zero semantic meaning - completely unusable for analysis
+- Composite types (Node, TreeNode, Point) recovered as raw pointer arithmetic without field names, losing all structural semantics
+- Comments completely absent - source had extensive documentation explaining test scenarios, completely lost
+- Function `stack_alias` reduced to constant return `20`, losing all pointer aliasing logic from source
+- Type safety issues: dangling pointer dereference in `dangling_pointer()` presented without warning
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- Loop constructs properly recognized as do-while, conditionals natural, early returns appropriate. At -O0, control flow should be close to source and it largely is.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Register-based names (`v0`, `a1`, `w8`, `x19`) provide zero semantic information. The decompiler should infer names from usage patterns (e.g., `arr` from malloc+indexing, `i` from loop counter).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (malloc→heap pointer, loop index→`i` or `idx`, return value→`result`) to generate semantic names instead of register names
+2. **Recover struct field names**: Analyze allocation sizes and field access patterns to reconstruct struct definitions with meaningful field names rather than raw pointer arithmetic
+3. **Add semantic comments**: When source had debug info (-g flag), recover and preserve comments explaining test scenarios, expected values, and algorithm intent

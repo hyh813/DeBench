@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `result`, `str`) with zero semantic meaning. For example, `test_cpp_member_func` uses `str` for what should be object data, losing all context about `SimpleClass` members.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) with demangled comments. While some names are recoverable, they don't follow C naming conventions and lack action-oriented clarity.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x11d58`, `3424`) without explanation. String literals are hex-encoded (`"\xe6\x9c\x9f\xe6\x9c\x9b"` for "期望"), making them unreadable without decoding.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive runtime wrapper functions (`function_da0` through `function_ea0`) that just call `__cxa_*` functions. Unnecessary type casts and frame pointer manipulation clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical logic loss - `test_cpp_exception` uses a `switch(g6)` instead of try-catch blocks. Many functions (`test_cpp_virtual_func`, `test_cpp_lambda`) just return constants (42, 85) instead of computing values.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are separated but many are stubs returning constants. `test_cpp_oo_features` duplicates RTTI logic from `test_cpp_rtti` instead of calling it, showing poor decomposition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads top-to-bottom reasonably, but forward references to globals (`g1`, `g2`, `g27`) disrupt understanding. Some functions have unreachable code paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Wrapper functions for runtime calls create redundancy (`function_da0` just calls `__cxa_begin_catch`). However, no severe loop unrolling or dead code observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy `int64_t` usage for everything, losing original types (`int`, `size_t`, `double`). `float64_t` used oddly for string data. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes completely lost - only vtable structures with generic fields (`e0`, `e1`, `e2`). `SimpleClass`, `Container<T>`, `Point` structures not recovered at all.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int64_t *)v1`, `(float64_t)*(float128_t *)"Test"`). Pointer arithmetic without bounds checking. Template type information completely erased.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address ranges and demangled names. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized - try-catch becomes switch, virtual dispatch becomes raw pointer calls, templates become separate mangled functions without relationship.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Functions like `call_virtual_func` return uninitialized `result` variable with no indication this is problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost in translation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Virtual dispatch relationships opaque. Global variable usage (`g1` through `g30`) unexplained. Inheritance hierarchies not visible in decompiled output.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Runtime functions mixed with application logic. No header file separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Requires numerous external symbols (`__cxa_*`, `_Znwm`, `_ZdlPv`). Would need extensive stubbing and runtime library linking to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        3.25 × 0.30 = 0.975
+Level 2 (Structural):     4.50 × 0.25 = 1.125
+Level 3 (Type System):    2.67 × 0.20 = 0.534
+Level 4 (Semantic):       2.00 × 0.15 = 0.300
+Level 5 (Contextual):     3.33 × 0.10 = 0.333
+─────────────────────────────────────────
+Overall Score:                    3.27/10
+```
+
+### Overall Readability Score: **3.3/10**
+
+### Critical Defects:
+- **Semantic computation lost**: Functions like `test_cpp_virtual_func` return constant `42` instead of computing through virtual dispatch
+- **Class structures unrecovered**: All C++ classes (`SimpleClass`, `Container<T>`, `Point`) reduced to raw pointer operations
+- **Exception handling broken**: Try-catch blocks transformed into incorrect `switch(g6)` statements
+- **Variable naming completely generic**: `v1`, `v2`, `result` provide zero semantic information
+- **Template relationships lost**: `template_max<int>` and `template_max<double>` appear as unrelated mangled functions
+
+### Best Quality Aspect: **Redundancy Elimination (6/10)**
+- While wrapper functions exist, there's no severe loop unrolling or dead code pollution that would further obscure logic
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover C++ class structures, vtables only partially recovered with generic field names, making OOP semantics impossible to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable patterns** - Analyze vtable structures to reconstruct class hierarchies with proper field names based on access patterns
+2. **Preserve exception handling semantics** - Recognize `__cxa_*` call patterns and reconstruct try-catch blocks instead of converting to switch statements
+3. **Infer variable names from usage context** - Use data flow analysis to name variables based on their role (e.g., variables used in size comparisons should be named `size`, `count`, etc.)

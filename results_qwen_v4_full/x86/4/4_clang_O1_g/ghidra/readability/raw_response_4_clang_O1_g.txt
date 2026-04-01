@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `iVar2`, `local_8`, `aiStack_8c` instead of semantic names. Many marked as "Unresolved local var" (e.g., `sum@[???]`, `args@[???]`), losing all naming information from source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, some internal functions use generic names like `FUN_00011030` and helper functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex format (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values from source (15, 50, 42). No named constants recovered; all compile-time computed values appear as raw literals.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple warning artifacts throughout: "WARNING: Unknown calling convention", "Unresolved local var", "WARNING: Function: __x86.get_pc_thunk.bx replaced". These compiler/decompiler artifacts clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use do-while instead of for loops (e.g., `func_struct_byval`). Some test functions constant-folded to direct returns (`call_cdecl` returns `0xf` instead of showing `cdecl_func(5, 10)` call), obscuring actual control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but caller functions heavily optimized away. Return-by-value structs transformed to hidden pointer parameters (`ret_small_struct` takes `__return_storage_ptr__`), changing the apparent function signature.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear function boundaries. Some stack array initialization patterns (`aiStack_8c[iVar1 * 2 + 1] = 0`) are awkward but traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions show redundancy where constant values are printed instead of actual function calls being shown. Loop patterns in `test_calling_conventions` duplicate initialization logic that could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double, longlong). Function pointer type `_func_int_int` is generic. Some type degradation with `void*` for opaque handles. Pointer arithmetic types mostly correct.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs `LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData` recovered with field access (`s.data[i]`, `p->x`, `p->y`). Field names preserved from debug info. This is a strength of the decompilation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe cast patterns in `param_complex_cast` with void* conversions. Pointer arithmetic in varargs functions (`local_8 = local_8 + 1`) lacks bounds checking. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING:", "Unresolved local var"). No semantic comments explaining algorithm purpose, test expectations, or calling convention behavior from original source.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition for common idioms (varargs pattern, struct return convention, calling convention differences). The decompiler doesn't identify these as known patterns worth documenting.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with explicit warnings for "Unknown calling convention", "Unresolved local var", and "Removing unreachable block". These alerts help identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not highlighted as contracts). Null pointer checks present but not annotated as API requirements. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. No call graph information. The `mixed_conventions_test` function body constant-folded, losing cross-reference to `cdecl_func`, `stdcall_func`, `fastcall_func`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Original source had clear section comments ("4.1 调用约定", "4.2 参数传递模式") completely lost. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has compilation warnings (undefined types like `EVP_PKEY_CTX`, `LargeStruct` not defined in output). External dependencies (`strlen`, `printf`, `puts`) not declared. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (3+4+7+3)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.71/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Constant folding obscures logic**: Test functions like `call_cdecl()` return `0xf` directly instead of showing the actual `cdecl_func(5, 10)` call, hiding the calling convention being tested
+- **Variable names lost**: Critical variables like `sum`, `args`, `i` in varargs functions marked as "Unresolved local var@[???]"
+- **Hex literals reduce clarity**: Return values shown as `0xf`, `0x32`, `0x2a` instead of decimal `15`, `50`, `42` matching source expectations
+- **Calling convention warnings**: Every caller function has "WARNING: Unknown calling convention" despite source explicitly defining conventions
+- **No semantic comments**: Original source's extensive test documentation (expected values, test purposes) completely absent
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) recovered with accurate field names and access patterns preserved
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Zero semantic comments recovered; all original documentation about test purposes, expected values, and calling convention explanations lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve constant expressions**: Instead of constant-folding `cdecl_func(5, 10)` to `0xf`, show the actual function call to preserve calling convention semantics
+2. **Recover variable names from debug info**: Use DWARF debug symbols to restore original variable names (`sum`, `args`, `i`) instead of "Unresolved local var"
+3. **Add semantic annotations**: Generate comments indicating test expectations, calling conventions, and purpose based on function naming patterns and call relationships

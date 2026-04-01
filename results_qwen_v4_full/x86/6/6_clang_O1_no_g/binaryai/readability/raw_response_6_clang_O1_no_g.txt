@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `local_24`, `iVar1`, `uVar2`) instead of semantic names like `dst`, `src`, `buffer`, `fd`. Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_strcpy`, `call_strcmp`, `param_fork_exec`), but helper functions use generic names (`FUN_00011030`, `FUN_00012545`). External wrappers properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), `0x1b6` (file permissions). String literals preserved but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs clutter output (40+ pass-through wrappers). Compiler artifacts present (`__i686.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs, but return value normalization is awkward (`uVar2 = -(uint)(uVar2 != 0) | 0x2a`). At -O0, this restructuring is unnecessary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Function sizes reasonable, but some test callers could be inlined.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but signal handling has deeply nested conditionals. Some forward references disrupt flow in complex functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Return value normalization pattern repeated across 15+ functions. Error handling code duplicated without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `undefined4` used frequently, `size_t` becomes `int`, `pid_t` becomes `__pid_t`. Original `FILE*`, `pthread_t` partially preserved but often cast to `void*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered (`st_size` visible), but `sockaddr` accessed via `sa_data` array indexing instead of proper fields. No struct definitions provided.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(int *)`, `(undefined4 *)`, `(pthread_mutex_t *)`. No const-correctness preserved. Pointer arithmetic visible in TLS access (`in_GS_OFFSET[-9]`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining purpose, expected values, and test scenarios. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, malloc, pthread_create), but higher-level patterns (producer-consumer, mutex protection) not identified or named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Functions like `FUN_00012545` have unclear behavior with no explanation. Silent failures on ambiguous constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). Error return values (-1, -2, -3) not explained. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without declaration context or explanation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by category (library, syscall, thread), but no file separation. Test functions mixed with implementation. No header declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared as stubs but would need real implementations. Missing includes, type definitions. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (1+5+2+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Context):     (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.81/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be named `dst`, `src`** based on strcpy semantics
+- **Return type wrong**: `param_strcpy` returns `void` but original returns `int` (strlen result)
+- **Magic numbers everywhere**: `0x2a`, `0xffffffff`, `0x1b6` without symbolic constants
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Type degradation**: `undefined4`, generic `void*` casts lose semantic information
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - `param_1` used as destination in strcpy should be `dst`; `local_24` holding "HelloLib" should be `buffer`
+2. **Recover symbolic constants from magic numbers** - Detect `0x2a` consistently returns success, suggest `SUCCESS` or `TEST_PASS` constant
+3. **Add decompilation confidence annotations** - Mark uncertain type recoveries, unresolved calls, and potential optimization artifacts with comments

@@ -1,0 +1,99 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `str`) with zero semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions have demangled names in comments (e.g., `test_cpp_exception()`), but 6 major test functions are completely missing. Template functions have corrupted signatures.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers (42, 100, 200) appear without explanation. String literals stored as globals (`g1`, `g2`) with UTF-8 encoded Chinese text that's unreadable in decompiled form.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary casts like `(float64_t)(int64_t)a1` and wrapper function `function_109f4` add noise. Exception handling creates verbose boilerplate code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Exception handling uses confusing if-statements instead of try-catch blocks. Functions like `test_cpp_diamond_inheritance()` return constants (650) instead of showing actual logic.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: 6 original test functions completely missing (`test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads mostly top-to-bottom but exception handling creates confusing conditional branches that don't match original try-catch structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Exception handling creates redundant `__cxa_begin_catch`/`__cxa_end_catch` pairs. Some constant folding is appropriate but obscures original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `int32_t` instead of proper C++ types. Template function `template_max<double>` has 4 parameters instead of 2, with incorrect `this` and `result` pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures completely lost. Only vtable structures partially recovered (`vtable_1162c_type`, `vtable_11640_type`). No field names for `SimpleClass`, `LifecycleClass`, etc.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(int32_t)this`, `(float32_t)v2`). Template swap function has broken logic: `*a1 = (int32_t)a2` swaps pointers not values.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated metadata comments (address ranges, demangled names). No explanation of algorithm logic or decompilation uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (exceptions, RTTI, templates, virtual dispatch) not recognized as idioms. Exception handling appears as raw `__cxa_*` calls without try-catch abstraction.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of missing functions, constant-folded code, or decompilation uncertainty. Code confidently presents incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original comments explaining expected values (e.g., "期望: 4704") lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call graph broken by 6 missing functions. Virtual dispatch partially recovered but class relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions somewhat grouped but organization is arbitrary. Global variables (`g1`-`g20`) mixed with function definitions without logical grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__cxa_*`, `__dynamic_cast`) declared but not explained. Template swap function has broken logic that won't produce correct results.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+4+5+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):   (3+3+5+6)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type System):  (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):     (3+2+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):   (3+5+4)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Readability Score: 3.67/10
+```
+
+### Critical Defects:
+- **6 test functions completely missing** from decompiled output (`test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`)
+- **Template function signatures corrupted** - `template_max<double>` has 4 parameters instead of 2
+- **Template swap broken** - `*a1 = (int32_t)a2` swaps pointer values, not pointed-to values
+- **Exception handling not recovered** as try-catch, appears as raw `__cxa_*` calls with confusing conditionals
+- **All class structures lost** - no field names, no member function recovery for most classes
+
+### Best Quality Aspect: **Literal Clarity (5/10)**
+- String literals preserved as globals and some magic numbers match original expected values
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- C++ OOP patterns (exceptions, RTTI, templates, virtual dispatch) completely unrecognized as language idioms
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ exception handling as try-catch blocks** instead of raw `__cxa_*` runtime calls with manual conditionals
+2. **Preserve template function signatures accurately** - don't add spurious `this` and `result` parameters to non-member templates
+3. **Flag missing functions explicitly** with comments indicating which original functions could not be recovered rather than silently omitting them

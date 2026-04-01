@@ -1,0 +1,7 @@
+call_fake_branch: 281473917290424
+Result: 10
+Result: 32
+Result: 247
+Result: 62
+Result: 500500
+Result: 5050

@@ -1,0 +1,2 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=1,Arg1=-1094162428,Arg2=-1094162420,Arg3=76168|r0=0x1,r1=0xbec86804,r2=0xbec8680c,r3=0x12988,r4=0xbec866c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|1|param_strcpy|1|Arg0=143804,Arg1=-1094162428,Arg2=-1094162420,Arg3=76168|r0=0x231bc,r1=0xbec86804,r2=0xbec8680c,r3=0x12988,r4=0xbec866c8,r5=0x23140,r6=0x0,r7=0x0

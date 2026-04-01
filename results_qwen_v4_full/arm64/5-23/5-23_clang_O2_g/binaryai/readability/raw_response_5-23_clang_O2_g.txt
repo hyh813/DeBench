@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic type-hinting names like `param_1`, `iVar1`, `uVar1`, `pvVar1` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names (`size`, `x`, `y`, `result`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`), but some functions have generic names (`FUN_001007a0`, `FUN_0010097c`). Return types degraded to `undefined4`/`undefined8`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers replace named constants: `0x401` (MAX_SIZE+1), `0x40` (64), `0x200` (512), `0xdef0` lost semantic meaning. Original `MAX_SIZE`, `BUFFER_COUNT` macros not recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function wrappers present (`memcpy`, `printf` calling themselves). Runtime init functions (`_init`, `_start`, `__do_global_dtors_aux`) clutter output. Core logic relatively clean.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if-else flow, but `param_asm_clobber` has complex unrolled loop with 8 accumulators. At `-O0`, cleaner control flow should be recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, constant folding occurred: `call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants(2048)`.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `param_asm_clobber` has nested loops disrupting flow, but this reflects original assembly complexity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_asm_clobber` shows severe loop unrolling with variables `iVar10` through `iVar17`. Original simple loop logic obscured by optimization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types `undefined4`, `undefined8` replace `int`. `param_variadic_macro` uses `uint`/`ulong` instead of `int`. Pointer types partially preserved but signedness often lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No structs in this code, but array handling degraded. `param_asm_clobber` treats arrays as raw pointers (`undefined8 *puVar1`) without size information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(undefined8 *)(param_1 + 0x10)`, `(int *)(param_1 + uVar7 * 4)`. `param_asm_atomic` uses `undefined8` for what should be `int*` counter pointer.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macros, expected values, and test purposes. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations present but not identified as such. Macro expansion patterns (SQUARE, MAX) not recognized. No algorithm pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about constant folding, architecture-specific code paths, or potential issues. `param_dynamic_code` silently simplified without noting assembly was removed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` range checks). Error conditions not explained. Original comments about expected return values lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `global_var` referenced without context. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order but runtime init functions interspersed with application logic. No logical grouping by feature (preprocessing vs. assembly).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions declared. Architecture-specific `__aarch64_ldadd4_acq_rel` present but may need stubs. Should compile with minimal modifications.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar1` instead of `size`, `result`, `counter`
+- **Magic numbers replace constants**: `0x401`, `0x40`, `0x200` instead of `MAX_SIZE`, `BUFFER_COUNT*4`
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Constant folding obscures logic**: `call_macro_constants` returns literal `0x40` instead of showing function call
+- **Type degradation**: `undefined4`/`undefined8` instead of proper `int` types
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `param_macro_constants`, `param_asm_basic` preserved accurately, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent impossible; original source had extensive comments explaining macros, expected values, and test purposes.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from constant patterns** - Detect when constants like `0x401` represent `MAX_SIZE+1` and suggest named constant recovery
+2. **Infer variable names from usage context** - Variables used in size comparisons should be named `size`/`length`; accumulators should be named `sum`/`count`
+3. **Add decompiler confidence annotations** - Flag constant-folded functions, architecture-specific simplifications, and unrecoverable macro expansions with comments

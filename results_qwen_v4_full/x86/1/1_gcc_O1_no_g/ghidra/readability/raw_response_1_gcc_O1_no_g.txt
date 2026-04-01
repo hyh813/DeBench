@@ -1,0 +1,123 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `local_24`) instead of semantic names from source (`a`, `b`, `temp1`, `sum`, `count`). No variable indicates purpose or type intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`). Some helpers are generic (`FUN_00011030`) but core functions match source intent well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive (`0x14`, `0x32`, `0xffffffff`, `0x3e9`) without explanation. Test functions print hardcoded expected values instead of computing results, obscuring test logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary code clutters functions (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`, `__stack_chk_fail_local()`). Multiple `get_pc_thunk_*` artifacts and "WARNING: Removing unreachable block" comments present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` correctly. `switch_fallthrough` uses explicit `goto LAB_000115a7` instead of fall-through semantics. `duffs_device` has complex goto chains obscuring the pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and cohesive. Helper functions (`op_add`, `state_idle`) properly separated. Test functions are monolithic but that matches source structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Forward jumps in `switch_fallthrough` and `duffs_device` disrupt flow. Stack canary checks at function ends create artificial branching.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `duffs_device` has significant code duplication from case fall-through (labels `_L166`, `_L168`, `_L170`, `_L172`). Stack canary code repeated in ~15 functions without abstraction.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Return type mismatches (`if_else` returns `bool` instead of `int`, `state_done` returns `undefined4` with no params). Function pointers use generic `code *` instead of proper signatures. Many `int` where specific widths needed.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered as local arrays (`local_24[9]`, `local_38[10]`). Function pointer arrays properly reconstructed. No complex structs in this codebase to evaluate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Stack canary provides runtime safety but obscures logic. Some implicit casts (`(int)param_1`, `(uint)(param_1 == 99)`). Function pointer calls use generic types risking type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only Ghidra auto-generated warnings present ("WARNING: Function...replaced"). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine functions (`state_idle`, `state_processing`) not identified as state machine pattern. Duff's device not commented as such. Recursion patterns not labeled.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Could not recover jumptable at 0x00012310", "Treating indirect jump as call"). Stack canary warnings helpful. Inconsistent coverage across functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions. Error conditions not explained. Test expected values hardcoded rather than derived.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls visible and traceable. Global variables referenced (`jump_buffer`). Callback relationships visible through function pointer arrays (`local_1c[0] = double_value`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 79 functions in single output. No header file organization. Static functions not clearly marked. No namespace or package structure recovery.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies not documented. Some architecture mismatch (source ARM64, decompiled x86) may cause portability issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.5/10  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+5)/4 = 6.0/10  × 0.25 = 1.50
+Level 3 (Type):        (5+7+6)/3   = 6.0/10  × 0.20 = 1.20
+Level 4 (Semantic):    (3+4+6+3)/4 = 4.0/10  × 0.15 = 0.60
+Level 5 (Contextual):  (7+5+7)/3   = 6.3/10  × 0.10 = 0.63
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.58/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `param_1`, `iVar1`, `local_24` provide zero semantic information compared to source (`a`, `b`, `temp1`, `sum`, `count`)
+- **Test functions optimized away**: `test_control_flow_l1/2/3` print hardcoded expected values instead of actually calling functions with variables
+- **Type mismatches**: `if_else` returns `bool` instead of `int`; `state_done` has no parameters but should take `event`
+- **Duff's device unreadable**: Complex goto chain (`_L166`, `_L168`, `_L170`, `_L172`) obscures the well-known loop unrolling pattern
+- **No semantic comments**: Zero documentation of algorithm intent, preconditions, or decompilation confidence
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Core function names preserved accurately from source (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`), making function identification straightforward despite other readability issues.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (3/10)** - Only auto-generated Ghidra warnings present; no algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic like Duff's device or state machine patterns.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns**: Analyze how variables are used (loop counters, accumulators, pointers) to suggest semantic names like `i`, `sum`, `ptr_buffer` instead of `iVar1`, `iVar2`, `local_24`.
+
+2. **Add pattern recognition comments**: Detect and label known patterns (Duff's device, state machines, recursion types) with explanatory comments to aid human understanding of optimized code structures.
+
+3. **Recover test function semantics**: Instead of constant-folding test calls, preserve the actual function invocations with variable arguments so tests remain executable and verifiable against the decompiled code.

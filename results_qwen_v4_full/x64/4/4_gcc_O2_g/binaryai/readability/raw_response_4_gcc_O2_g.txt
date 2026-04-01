@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`param_1`, `param_2`, `local_10`, `iVar1`, `uVar2`) instead of semantic names like `count`, `sum`, `args` from the original source, making purpose tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), though some helpers use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic hex numbers (`0xf`, `0x32`, `0x2a`, `0x12345678`) replace original constants, and string literals are referenced as `&DAT_00102008` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail()`) and frame pointer manipulation appear in most functions, adding compiler artifacts that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Varargs functions use complex do-while loops with goto labels (`LAB_001013c0`) instead of clean for-loops; some functions are constant-folded losing original call structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and mostly preserve original structure, but caller functions like `call_cdecl` return constants instead of calling underlying functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom with appropriate early returns, though varargs handling has forward jumps that disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks are duplicated across many functions; no significant loop unrolling issues but some redundant type casts present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types are generic (`undefined8`, `undefined4`) instead of precise types; varargs parameters shown as `undefined8` instead of proper `va_list` handling.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types (`LargeStruct`, `SmallStruct`) are not reconstructed; `func_struct_byval` shows no struct parameter, just raw stack access; `func_struct_byptr` uses `int*` instead of `SmallStruct*`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int *)`, `(long *)`, `(undefined8 *)`); pointer arithmetic on generic types; varargs handling is particularly unsafe without type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code despite original source having extensive documentation explaining each test case; no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not recognized as such; no design patterns or algorithm identification; calling convention differences not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies flagged despite complex varargs handling and struct passing; no warnings about potential type confusion or uncertain recovery.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`); null checks present but not documented as contracts; no postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible but global variables (`handle1_1`, `handle2_0`, `DAT_00102008`) referenced without documentation; no call graph provided.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order with related functions grouped together, but no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions (`puts`, `__printf_chk`, `strlen`) and undefined symbols (`handle1_1`, `completed_0`); would require stubs and patches to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4×10 + 8×10 + 5×5 + 6×5) / 30 = 5.83
+Level 2 (25%): (6×8 + 7×7 + 7×5 + 7×5) / 25 = 6.68
+Level 3 (20%): (5×8 + 4×7 + 5×5) / 20 = 4.65
+Level 4 (15%): (2×5 + 4×3 + 4×3 + 3×4) / 15 = 3.07
+Level 5 (10%): (6×4 + 7×3 + 5×3) / 10 = 6.00
+
+Overall = (5.83×0.30) + (6.68×0.25) + (4.65×0.20) + (3.07×0.15) + (6.00×0.10)
+        = 1.75 + 1.67 + 0.93 + 0.46 + 0.60
+        = 5.41/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects
+- **Variable names are entirely generic** (`param_1`, `local_10`, `iVar1`) losing all semantic meaning from original source
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` not reconstructed, replaced with raw pointer/stack access
+- **No comments or documentation** despite original having extensive test case explanations
+- **Varargs handling is opaque** - complex stack manipulation without indicating this is variable argument processing
+- **Magic hex numbers** (`0xf`, `0x32`, `0x2a`) instead of decimal constants or named values
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most function names preserved from source code, making high-level navigation straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding test purposes and expected behaviors extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Infer variable names from usage patterns (e.g., loop counter → `i`, accumulator → `sum`, parameter count → `count`)
+2. **Recover composite type structures** - Analyze stack access patterns to reconstruct struct definitions with field names based on access patterns
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (varargs, struct passing, calling conventions) with comments indicating manual review may be needed

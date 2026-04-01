@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic numbered scheme (`v0` through `v23`, `i`, `j`, `v1` through `v23` in test functions). Original names like `arr`, `large_buf`, `head`, `current`, `new_node`, `temp`, `root`, `node`, `leak` are completely lost. Only basic parameters like `argc`, `argv`, `buf`, `size`, `flag` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `address_of_array`, `large_stack_frame`, `vla_stack`, `alloca_usage`, `stack_alias`, `heap_basic`, `heap_calloc`, `heap_realloc`, `linked_list_heap`, `create_tree_node`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `heap_overflow`, `global_var_access`, `static_local`, `call_static_func`, `memop_memset`, `memop_memcpy`, `memop_memmove`, `memop_memcmp`, `memop_bzero`, `memop_bcopy`, `memop_unaligned_access`, `memop_memory_barrier`. Excellent recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u` (20), `0x28u` (40), `0x10u` (16), `0x18u` (24), `0xBu` (11), `0x100000000LL`, `0x200000001LL` appear without explanation. Some values like `2048`, `42`, `50` are clear but not named. The original had no named constants either, but the decompiled version doesn't add clarity.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from type annotations: `__int64`, `unsigned __int8`, `unsigned __int16`, `_QWORD`, `_DWORD`, `_BYTE`. Multiple casts like `(unsigned __int8*)`, `(char*)dst + v6 - 4`. Some `BYREF` annotations present. However, no __asm__ blocks or debug instrumentation in main functions. The VLA/alloca handling shows complex stack frame manipulation that is unavoidable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recognized as `while` and `do-while` constructs. Conditionals use clear `if-else` patterns. No spurious goto usage. Some optimization artifacts in `vla_stack` and `alloca_usage` with complex stack frame setup (due to VLA handling), but the loop logic itself is readable. At -O0, control flow should be nearly perfect, and it mostly is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. Helper functions like `create_tree_node` are properly extracted. Parameter lists are reasonable and don't expose excessive implementation details. No 500-line monoliths. The test functions are slightly large but that's appropriate for test orchestration code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling paths. No excessive forward jumps. The VLA/alloca functions have complex stack frame setup that disrupts linear reading slightly, but the core logic is linear. Some deep nesting in test functions (3-4 levels) but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain hardcoded expected values (`__printf_chk(1, "MEM-L1-01 (local_vars): %d\n", 20);`) instead of calling the actual functions and printing their results. This is a significant deviation from the original which called functions at runtime. Some loop unrolling visible but minimal dead code otherwise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` instead of `int32_t`. Uses `void*` for generic pointers. Some specific types preserved: `size_t`, `volatile int*`. Function pointers properly typed: `int (*f)(int)`. Integer types like `w0`, `w19`, `x0`, `x19` from ARM assembly are converted to generic `int`. Mix of precise and generic types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct properly recovered with `data` and `next` fields: `Node *v2; v2->data = 10; v2->next = v4;`. `TreeNode` struct recovered: `result->data = data; result->left = 0; result->right = 0;`. The `Point` struct is used but field access shows as arithmetic in some places. Overall good struct recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present: `(unsigned __int8 *)buf`, `(char *)dst + v6 - 4`, `*(_DWORD *)((char *)dst + v6 - 4)`. Pointer arithmetic generally correct. The `heap_overflow`, `dangling_pointer`, and `double_free` functions contain intentional bugs from the original but are not flagged as dangerous. No `restrict` or `_Atomic` annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐"). No decompilation confidence indicators like "UNCERTAIN: indirect call not resolved". No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: linked list creation and traversal in `linked_list_heap()`, tree creation and traversal in `tree_heap_traversal()`, memory allocation/free pairs. However, no explicit pattern naming or documentation. The "pattern: linked list" or "pattern: binary tree" is not indicated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer()` function accesses memory after `free()` - a critical bug - but is presented as normal code with no warning. Similarly, `double_free()` and `heap_overflow()` contain intentional bugs but aren't flagged. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No precondition/postcondition documentation. Error handling is present (null checks before dereference) but not explained. The original source had no explicit contracts either (it's test code), so this is expected. Basic null-check patterns visible but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. Global variable usage is transparent (`global_counter`, `global_array`, `file_scope_static`, `global_func_ptr`). No callback relationship documentation. No call graph or "called by" information. External functions like `extern_global_var` and `extern_function` are referenced but their definitions not shown.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file (standard for decompilation). Related functions grouped logically: stack memory functions together, heap functions together, static/global functions together, memory operation functions together. Static functions properly identified. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will NOT compile as-is. Multiple undefined identifiers: `asc_1FA8`, `asc_2118`, `asc_2318`, `asc_25C8` (string data), `aD`, `aFork_0`, `byte_22A0`, `byte_2278`. External function declarations present but some standard library functions missing. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v23` scheme, completely losing original names like `arr`, `large_buf`, `head`, `current`, `new_node`, `temp`, `root`
+- No comments whatsoever - original had extensive documentation explaining each test case
+- No anomaly indication for dangerous code patterns (`dangling_pointer`, `double_free`, `heap_overflow` contain bugs but aren't flagged)
+- Build system compatibility: code won't compile due to missing string data (`asc_1FA8`, etc.) and undefined identifiers
+- Test functions use hardcoded expected values instead of calling actual functions, losing runtime behavior
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names match the original source exactly, demonstrating excellent symbol recovery
+
+**Most Needs Improvement:** Comment Quality & Anomaly Indication (both 2/10)  
+- Zero comments present despite extensive original documentation
+- No flags for dangerous code patterns that could harm analysts
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `v1` used as array index should be named `i` or `index`; `v2` used in malloc should be named `ptr` or `buffer`; `arr[5]` access suggests `arr` for the array variable
+2. **Add anomaly flags for suspicious patterns**: Flag `dangling_pointer` with "WARNING: use-after-free", flag `double_free` with "WARNING: double-free vulnerability", flag `heap_overflow` with "WARNING: potential buffer overflow"
+3. **Recover string data as actual strings**: The `asc_*` identifiers should be reconstructed as actual string literals to enable compilation and improve readability

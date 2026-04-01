@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables use generic names like `v0`, `v1`, `ptr`, `result`, and cryptic decompiler artifacts like `vvar_35{r24|4b}`. Original semantic names like `local`, `arr`, `p` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions recovered well (`double_value`, `local_vars`, `heap_basic`), but many runtime functions have generic names (`sub_401030`, `sub_401140`). Original function names partially preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` used repeatedly for error returns (should be `-1` or `ERROR`). Values like `0x800`, `4095`, `16775` appear without explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, stack canary checks (`__stack_chk_fail_local`), repeated struct padding definitions, and `[D] Unsupported jumpkind` warnings pollute output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs, but some functions use inappropriate `goto` (e.g., `sub_401030` with `goto ptr[2]`). Stack canary checks add unnecessary branching complexity.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but runtime initialization split into many `sub_401XXX` fragments. Core logic functions maintain reasonable cohesion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but stack canary checks at function ends create non-linear flow. Some forward jumps disrupt reading (e.g., `LABEL_401e55`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated across ~30 functions. Similar struct definitions repeated with different padding sizes. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integers shown as `unsigned int` or `int` without size specificity. Segment register artifacts (`ldt`, `gdt`, `gs`) appear as variable types. Pointer types sometimes degraded to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`, `padding_0[16775]`). Node structures for linked lists partially recovered. Many struct definitions appear to be decompiler guesses with arbitrary padding.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (e.g., `(unsigned int)create_tree_node(10)`). Pointer arithmetic shown explicitly without safety checks. No const-correctness preserved. Function pointer calls lack type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only function headers with addresses present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns (malloc/free) recognized. Loop patterns generally recovered. No design pattern identification or algorithm naming (e.g., no "linked list traversal" annotation).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). No warnings about uncertain decompilation, stack canary failures unexplained, no indication of potential issues in most functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: ptr != NULL"). NULL checks present but not documented as contracts. Error return values (`4294967295`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables shown with generic names (`g_403008`, `g_4030ea`). No call graph documentation. Callback relationships partially visible.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file. No logical grouping visible. Test functions mixed with implementation. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies not clearly documented. Platform mismatch (ARM64 source compiled, x86 decompiled). Would require significant work to compile standalone. References undefined symbols.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.867
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25  × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.33/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **Platform mismatch**: Original ARM64 code decompiled as x86, causing architectural artifacts (`ldt`, `gdt`, `gs` segment registers)
+- **Variable `vvar_35{r24|4b}`** and similar cryptic names obscure stack frame layout and VLA handling
+- **Magic number `4294967295`** used throughout for error returns instead of `-1` or named constants
+- **Struct fields all generic** (`field_0`, `field_4`, `padding_0[16775]`) losing all semantic meaning
+- **No comments** explaining decompilation uncertainty, algorithm purpose, or API contracts
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`) were successfully recovered from debug symbols, preserving semantic intent for main logic.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually zero documentation; no explanation of decompilation confidence, algorithm purpose, or why certain patterns appear, making reverse engineering extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`, `count`, `length`; pointer dereferences should indicate target type
+2. **Replace magic numbers with named constants** - Detect repeated values like `4294967295` and suggest `#define ERROR_RETURN -1`
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target not resolved`

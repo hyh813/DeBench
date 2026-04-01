@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_clang_O3_no_g/binaryai/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing Preprocessing Features\n\nparam_macro_constants(64) = 64\nparam_macro_functions(3, 5) = 30\nparam_conditional_compile(6) = 32\nparam_multi_branch_compile(100) = 57122\nparam_macro_recursion(100) = 116\nparam_stringize() = 19\ncall_stringize() = 60\nLOG: Values: 10, 20, 30\nparam_variadic_macro(...) = 60\nparam_macro_override(3) = 16\nparam_include_guard() = 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:56\ncall_builtin_macros() = 382\nTesting Assembly Features\n\ncall_asm_basic() = 15\nSum of array elements: 140733904455744\nString from SIMD: 42\ncall_asm_simd() = 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

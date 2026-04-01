@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a0`, `a1`, `a2` instead of semantic names (`a`, `b`, `c`). Local variables are cryptic (`v1`, `v2`, `v3`, `v4`, `v5`), making it nearly impossible to track their purpose. For example, in `sequential_ops`, the parameters should be `a`, `b`, `c` but are `a0`, `a1`, `a2`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Mixed results - some functions correctly recovered (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`), but many wrapper/thunk functions use address-based names like `sub_401020`, `sub_4010a5`. The core test functions are properly named, but infrastructure functions are not.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of unexplained magic numbers. The constant `4294967295` (0xFFFFFFFF) appears frequently without explanation. The value `1717986919` (used for division-by-multiplication optimization) is unexplained. No named constants recovered from the source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary goto statements present (e.g., in `loop_while`), but overall manageable. No debug instrumentation or frame pointer manipulation clutter visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow structures are mostly natural - loops recognized as loops, conditionals as conditionals. However, some issues: `loop_while` uses goto-based do-while instead of proper while; `loop_for_fixed` has convoluted arithmetic expression instead of clear loop. At -O0, these should be more idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries are correctly preserved. Each source function maps to one decompiled function. No inlining artifacts or function outlining observed. Good granularity - functions like `duffs_device` and `recursion_factorial` are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some forward jumps disrupt flow. The `loop_while` function has confusing control flow with the condition check embedded in the loop body. Some nested conditions create 4+ levels of nesting.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant expressions in complex conditions (e.g., `loop_complex_cond` has unused variables). Loop unrolling is minimal. Overall acceptable for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types are mostly correct but imprecise. Parameters use `unsigned int` or `unsigned long` where source used `int`. The `single_if` function takes `unsigned long a0` but source uses `int x`. Some signed/unsigned confusion visible (e.g., `if_else` returns `long long` for boolean).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. The source uses arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break`, but decompiled version uses pointer arithmetic on string literal `"\n"`. No struct/union reconstruction for any of the source data structures.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `loop_break`, comparing `*(v1)` (char pointer) against `i` (unsigned int) is type-confused. Function pointer calls like `a0(a1)` in `call_func_ptr` lack proper type signatures. Some pointer arithmetic without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no useful comments in the entire decompiled output. No explanation of algorithms, no documentation of preconditions/postconditions. Only auto-generated function headers present. The source had extensive comments explaining each function's purpose - none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted at but not named. The `duffs_device` function shows switch-do-while pattern but not recognized as Duff's device. State machines are partially recognized but not named. No recognition of patterns like "tail recursion" or "Collatz sequence" in `indirect_recursion_a`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or uncertainties. The `loop_break` function has a clear bug (comparing string literal against integer) but no warning. Indirect calls that couldn't be resolved are not flagged. Code confidently presents potentially incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "n must be > 0" for `duffs_device` are not documented. Postconditions not inferred. Error conditions from source (e.g., division by zero checks) are partially present but not clearly documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `test_control_flow_l1` calls `sequential_ops`), but not documented. No indication of which functions call which. Global variable usage is unclear - extern declarations present but relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped by type (test functions together, operations together), but no clear logical organization matching the source's comment-based sections (CF-L1, CF-L2, CF-L3). No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has many undefined extern symbols (`g_405fe0`, `g_406008`, etc.). Some functions would require stubs to compile. External dependencies on libc functions (puts, printf) are correctly declared. Not standalone compilable without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 3 + 7) / 4 = 4.5
+L2_avg = (7 + 8 + 6 + 7) / 4 = 7.0
+L3_avg = (6 + 4 + 6) / 3 = 5.33
+L4_avg = (1 + 4 + 2 + 2) / 4 = 2.25
+L5_avg = (4 + 5 + 5) / 3 = 4.67
+
+Overall = (4.5 × 0.30) + (7.0 × 0.25) + (5.33 × 0.20) + 
+          (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.75 + 1.067 + 0.338 + 0.467
+        = 4.97/10
+```
+
+**Overall Readability Score:** 4.97/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` instead of semantic names (`a`, `b`, `c`, `x`, etc.)
+- **No comments**: Zero algorithm explanations or documentation recovered from source
+- **Type imprecision**: Parameters use `unsigned int`/`unsigned long` where source used signed `int`
+- **Anomaly silent**: `loop_break` compares string literal `"\n"` against integer target - clear bug but no warning
+- **No struct recovery**: All array/struct data from source lost; `loop_break` uses string literal instead of integer array
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Function boundaries are correctly preserved - each source function maps to one decompiled function with proper separation. No inlining or outlining artifacts.
+
+### Most Needs Improvement: Comment Quality (1/10)
+The decompiled code has essentially zero useful comments. The source had extensive documentation explaining each function's purpose, test cases, and expected behavior - none of this was recovered.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0 + a1` suggests addition operands) to suggest semantic names like `addend`, `multiplicand`
+2. **Recover comments from debug symbols**: The source was compiled with `-g`, so DWARF information should contain function descriptions and variable names that can be recovered
+3. **Flag anomalies and uncertain reconstructions**: Add warnings for suspicious patterns like comparing string literals against integers, or indirect function calls that couldn't be resolved

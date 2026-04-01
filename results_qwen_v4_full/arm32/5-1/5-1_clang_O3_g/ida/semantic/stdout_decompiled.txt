@@ -1,0 +1,10 @@
+C++ OO Features Test
+strlen result: 4704
+constructor result: 21
+virtual func result: 42
+multiple inheritance result: 71
+diamond inheritance result: 650
+operator overload result: 22
+template func result: 39
+template class result: 16
+lambda result: 85

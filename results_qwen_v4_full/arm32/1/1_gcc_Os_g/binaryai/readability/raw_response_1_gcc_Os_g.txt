@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `local_20` instead of semantic names like `a`, `b`, `c`, `sum`, `count` from the original source. Even simple functions like `sequential_ops` lose all variable meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`, `duffs_device`). Test functions also retain names. Minor issue with `UNRECOVERED_JUMPTABLE` parameter in `call_func_ptr`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x15`, `0x14`, `0x3e9`, `0x65`) without explanation. Test functions print expected values as literals rather than computing them. Some values inferable (`0x78`=120) but many obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime functions included (`_init`, `_start`, `__do_global_dtors_aux`). `__aeabi_idiv` has 35+ boolean variables. Stack variables named `uStack_38`, `local_10` add noise. `duffs_device` has excessive goto labels.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as for/while constructs. `switch_fallthrough` uses appropriate goto for fall-through. However, `duffs_device` has complex switch-goto pattern, and `indirect_recursion_a` converted to `do-while(true)` losing recursion semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Helper functions (`double_value`, `op_add`) remain separate. Issue: `loop_break` and `loop_multi_exit` incorrectly return `void` instead of `int`, losing return value semantics.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Goto usage in `switch_fallthrough` and `duffs_device` is appropriate for fall-through semantics. Some forward jumps in test functions disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions have hardcoded expected values instead of computing them. `__aeabi_idiv` has massive redundancy. Some redundant variable assignments (`iVar1 = 0` then immediately used).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Frequent `undefined4` returns (`op_div`, `nested_if_deep`). Inconsistent signedness (`int` vs `uint` for `param_1`). Function pointers use generic `code *` type. Ghidra-specific types reduce portability.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays flattened to stack variables (`local_20[4]`). No struct definitions visible. `jmp_buf` not properly typed. Matrix in `loop_multi_exit` lost 2D structure. Function pointer arrays recovered but with generic types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple `undefined4` returns indicate type uncertainty. `call_func_ptr` shows `UNRECOVERED_JUMPTABLE`. Pointer arithmetic in `process_with_callback` uses raw offsets (`param_1 + iVar2 * 4`). Several implicit casts present.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. No algorithm explanations, no decompiler confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns (for/while/do-while) recognized correctly. Switch-case patterns mostly recovered. Fall-through detected in `switch_fallthrough`. No design pattern identification or algorithm naming present.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `UNRECOVERED_JUMPTABLE` appears in two functions indicating resolution failure. `undefined4` types show uncertainty. However, no explicit warnings about potential issues, stack canary checks not indicated, `computed_goto` nature not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions. Error conditions not documented. Test functions don't show expected vs actual comparison clearly.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global `jump_buffer` referenced but not explained. Callback relationships visible in `process_with_callback` but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation. External functions marked with `<EXTERNAL>::`. Static functions not properly scoped. Test functions grouped together but no logical module boundaries.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Ghidra-specific types (`undefined4`, `code *`) prevent standalone compilation. ARM-specific runtime functions (`__aeabi_idiv`) included. Would require significant modification and type definitions to compile. External declarations incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (1+5+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.05/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled output has none
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` instead of `a`, `b`, `sum`, `count`
+- **Incorrect return types** - `loop_break` and `loop_multi_exit` return `void` instead of `int`
+- **Ghidra-specific types** - `undefined4`, `code *` prevent standalone compilation
+- **Magic hex literals** - `0x3e9`, `0x65`, `0x78` without decimal equivalents or explanations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, despite original source having extensive comments explaining purpose, test cases, and difficulty levels for each function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** - Analyze usage patterns to suggest semantic names (e.g., loop counters → `i`, accumulators → `sum`, condition results → `is_valid`)
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments in decompiled output
+3. **Add type resolution for common patterns** - Replace `undefined4` with appropriate types based on usage context, and document unresolved types with confidence indicators

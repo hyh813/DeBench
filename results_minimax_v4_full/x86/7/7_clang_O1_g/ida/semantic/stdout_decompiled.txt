@@ -1,0 +1,5 @@
+Testing Obfuscation Optimizations:
+
+Obfuscated Control Flow: 10
+Opaque Predicate Result: 20
+Instruction Substitution: 225

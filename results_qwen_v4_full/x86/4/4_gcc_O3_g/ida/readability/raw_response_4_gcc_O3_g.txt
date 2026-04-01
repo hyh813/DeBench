@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `va`) losing semantic meaning from original (`sum`, `count`, `args`, `x`, `s`, `d`, `ll`). Example: `varargs_func` uses `v1`, `v2` instead of `sum`, `i` for loop accumulation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but duplicates created with suffixes (`varargs_func_0`, `param_varargs_0`) and helpers unnamed (`sub_1030`, `sub_1040`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals replaced with opaque references (`asc_2008`, `unk_202C`); magic number `4` for pointer size unexplained; constant folding hides original computation logic (e.g., `call_cdecl()` returns 15 directly).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__usercall`, `__userpurge`, register hints (`@<eax>`, `@<ebx>`), stack frame comments (`[esp+8h] [ebp+8h]`), and stub functions with inline assembly (`sub_1030`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as do-while in `varargs_func`; conditionals preserved in `func_struct_byptr`; switch converted to if-else in `ret_multi_branch`; constant folding removes actual call logic in test functions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved; helper functions (`func_a`, `func_b`) kept separate; however, constant folding collapses call relationships (e.g., `call_cdecl` no longer calls `cdecl_func`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally; early returns used appropriately; no excessive goto; forward references to strings (`asc_2008`) slightly disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions have repeated `__printf_chk` calls with constant values; no dead code in main logic; constant folding creates redundancy where original had dynamic computation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `double`, `__int64`); calling conventions annotated (`__cdecl`, `__stdcall`); varargs handling degraded to `*_DWORD` pointer arithmetic losing type safety.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs well-recovered with field names (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`); field access preserved (`s.data[i]`, `p->x`, `p->y`); large struct return via hidden pointer correctly shown.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts in `param_complex_cast`: `*(_DWORD *)p`; varargs uses pointer arithmetic `*((_DWORD *)va + v1++)`; NULL checks preserved in pointer functions; no new buffer overflow patterns introduced.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments; only auto-generated headers with addresses; one warning present ("positive sp value has been detected"); no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern recognized but not explicitly named; struct passing patterns recovered; calling convention annotations present but not explained; no design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (`__libc_start_main`, `puts`, `strlen`); one stack warning present; no indication of constant folding artifacts or varargs handling uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved in pointer functions (`if (!p) return -1`); no precondition/postcondition documentation; error conditions not documented; no invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved where not constant-folded; callback relationships preserved in `param_func_ptr`; string/global references opaque (`asc_2008`, `handle1_1`); no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output; no logical grouping visible; original test function groupings not preserved; static functions not properly scoped; no header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 5 external functions failed to decompile (`__printf_chk`, `puts`, `strlen`, etc.); would require extensive stubs to compile standalone; dependencies not documented; internal references correct.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (3+5+5+4)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.80/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2` should be named `sum`, `i`, `count`** based on usage patterns in varargs functions
+- **String literals replaced with opaque references** (`asc_2008`, `unk_202C`) losing all semantic meaning
+- **Constant folding collapses call relationships** - `call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`
+- **No comments explaining decompilation uncertainty** for varargs handling and type casts
+- **5 external functions failed to decompile** without clear stub alternatives provided
+
+### Best Quality Aspect:
+- **Composite Type Recovery (scored 8/10)** - Structs like `LargeStruct`, `SmallStruct`, `BigStruct` recovered with accurate field names and access patterns preserved
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 3/10)** - Almost no meaningful comments; decompilation provides no guidance on uncertain regions or algorithm intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in accumulation should be named `sum`, loop counters should be `i`, count parameters should be `count`
+2. **Preserve string literal content** - Instead of `asc_2008`, show actual string content or provide cross-reference to string table
+3. **Add decompilation confidence annotations** - Mark regions where constant folding occurred, varargs handling is uncertain, or type casts may be unsafe

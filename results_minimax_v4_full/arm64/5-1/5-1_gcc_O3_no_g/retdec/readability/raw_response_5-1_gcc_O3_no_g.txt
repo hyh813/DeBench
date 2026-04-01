@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` and parameters `a1` through `a9`. Global variables are named `g3`, `g4`, `g5` etc. These cryptic names make it nearly impossible to track semantic purpose without extensive cross-referencing.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions have proper demangled names like `test_cpp_exception()`, `test_cpp_member_func()`, but many utility functions use generic patterns like `function_f00`, `function_f10`, `function_ed0`. The inconsistency between properly named test functions and generic helper functions reduces clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42`, `100`, `200`, `0x1234` appear without explanation. String literals are encoded in hex (`\xe6\xb5\x8b\xe8\xaf\x95`). Constants like the expected test values (4704, 21, 42) are not named, making the logic obscure.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Includes compiler artifacts like `__stack_chk_fail`, `__cxa_allocate_exception`, `__cxa_throw`. Some redundant operations present (e.g., `strlen(strncpy(...))`). However, no significant dead code or register spilling artifacts observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto statements with labels like `lab_0x10e4`, `lab_0x10e0` for exception handling flow. At -O0, control flow should be more natural. The exception handling code has confusing conditional chains that obscure the try-catch-rethrow pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized with clear single responsibilities. Test functions are separated from helper utilities. Some very short functions (e.g., destructors just return) but overall decomposition is logical and matches source structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward jumps via goto labels in exception handling code. The `test_cpp_exception` function has multiple label jumps that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some common patterns (like vtable setup) are repeated but necessary for object initialization. Loop unrolling is minimal since this is -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses appropriate types like `int64_t`, `int32_t`, `float64_t`. Some generic `void*` usage in dynamic_cast operations. Const correctness is partially preserved in function signatures. Minor type erasure in some template instantiations.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery present (vtable_12c28_type, vtable_12c50_type) but field names are generic (e0, e1, e2). Class layouts not fully reconstructed - uses raw pointer arithmetic instead of recovered class members.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(int64_t *)v1`, `(int32_t *)result`). Pointer arithmetic used extensively without bounds checking. Function pointer types are generic. However, no severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Contains address range comments and some demangling notes. However, no explanatory comments for complex logic (exception handling, virtual function dispatch). No documentation of what the code actually does semantically.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms partially recognized (vtable structures, virtual thunk functions). However, patterns like RAII, smart pointers, and exception handling are not explicitly named or documented. The virtual inheritance complexity is not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit warnings about indirect calls, unresolved vtable entries, or unusual patterns. Code presents all decompiled results as confident, even where the decompiler may have made assumptions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No indication of what parameters require (e.g., non-null pointers). Error handling paths not documented with contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top showing relationships. Global variables declared. However, call graph relationships not explicitly documented. Virtual dispatch relationships not clearly indicated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, helper utilities together. Class methods grouped by class. Static functions properly scoped. Overall organization matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers. Has function prototypes. Should compile with minimal stubs for runtime functions. Dependencies on libc++/libstdc++ not explicitly documented but inferable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable names are extremely generic (`v1`-`v6`, `a1`-`a9`, `g3`-`g34`) making semantic tracking nearly impossible
+- Exception handling uses goto-based control flow instead of try-catch pattern recognition
+- No comments explaining complex C++ patterns (virtual inheritance, vtable layout, exception propagation)
+- Composite types (classes) not recovered - uses raw pointer arithmetic instead of struct fields
+- Magic numbers like `42`, `100`, `200` appear without named constant equivalents
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are logically separated with appropriate granularity, matching the source's test function structure. The decompiler correctly separated different test scenarios into individual functions.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The generic `v1`, `v2`, `a1`, `a2` naming scheme completely obscures variable purpose. At -O0, the decompiler should be able to infer semantic names from usage patterns (e.g., `result`, `index`, `size`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v1` used in strlen result should be named `len`; `v2` used as exception pointer should be `exception_obj`
+2. Recover try-catch exception handling patterns instead of goto-based control flow
+3. Recover class member layouts as structs with meaningful field names rather than raw pointer arithmetic like `*(int32_t *)(v1 + 8)`

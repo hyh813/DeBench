@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `result` for locals. For example, in `loop_while`, variable `v1` should be named `count` based on its usage pattern. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All 49 function names are perfectly preserved from the original source: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`, etc. Function names are semantically accurate and match source exactly.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are meaningful (e.g., `1001` in `infinite_loop`, case values in switches). However, some magic numbers like `int32_t v1 = 12;` in `switch_fallthrough` lack explanation. The `0x3039` (12345) and `0x2694` (9876) in test calls are also unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Generally clean with minimal compiler artifacts. The main noise is the overly complex `_setjmp`/`longjmp` construct in `non_local_jump` which creates a verbose anonymous struct instead of using `jmp_buf` directly. Some redundant variable initializations present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Several issues: `loop_for_fixed` uses a formula instead of loop at -O0 (unexpected); `switch_fallthrough` uses goto labels instead of proper fallthrough semantics; `loop_break` uses complex pointer arithmetic `*(int32_t *)((int32_t)&v2 - 28 + 4 * v1)` instead of array access. However, `goto_forward` and `goto_backward` are correctly simplified.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: All 49 functions are present with reasonable granularity. No obvious inlining artifacts or monolithic functions. Function parameter counts match original. Static functions properly scoped. Excellent decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with good flow. Minor disruptions from goto labels in `switch_fallthrough` and some forward jumps in switch statements. Early returns used appropriately in many functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling in `loop_for_fixed` is the main redundancy - the decompiler converted a simple for loop to a mathematical formula. Some duplicate expressions in complex conditionals. Overall manageable but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for arm64. However, some parameters should be `uint32_t` based on usage (loop counters like `a1` in `loop_for_fixed`, `n` in `loop_continue`). Function signatures mostly accurate.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Arrays are accessed via pointer arithmetic instead of being recognized - `loop_break` uses `*(int32_t *)((int32_t)&v2 - 28 + 4 * v1)` instead of `arr[v1]`. The hardcoded array `{10,20,30,40,50}` is completely lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present, particularly in pointer arithmetic expressions. The complex jmp_buf construction involves nested struct literals. Overall acceptable for decompiled code but could be safer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x105b4 - 0x1060c`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments are purely technical metadata.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns partially recognized but not named. The state machine in `state_machine` is somewhat clear through switch structure. Duff's device in `duffs_device` is not recognized - shows as switch with weird goto labels. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code or unusual patterns. The `call_func_ptr` function simply returns its second parameter without calling anything - this semantic loss is not flagged. No indication of uncertainties or indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No precondition documentation (e.g., "requires: n > 0"), no postcondition hints, no invariant recognition. The decompiler provides zero semantic contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear. But no documentation of call relationships (who calls whom). Global variables `g4-g8` are declared but their usage relationships not explained. Callback relationships in `process_with_callback` not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file, which is expected for decompiled output. Related functions grouped reasonably (test functions together, control flow functions together). Could benefit from logical section comments.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Has proper standard library includes (`<stdio.h>`, `<setjmp.h>`, `<stdint.h>`, `<string.h>`). Should compile with minimal issues. Uses standard types (`int32_t`, `uint32_t`). Dependencies are clear.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`a1`, `a2`, `v1`, `v2`) - should infer names from usage like `count`, `sum`, `arr`
+- Array access in `loop_break` uses complex pointer arithmetic instead of recognizing the hardcoded array `{10,20,30,40,50}`
+- Loop unrolling in `loop_for_fixed` at -O0 is unexpected and obscures the simple for loop pattern
+- No struct recovery - all composite types lost to raw pointer arithmetic
+- Zero semantic context: no comments explaining algorithms, no contracts, no pattern recognition
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name perfectly matches the original source, providing excellent semantic anchoring
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic single-letter variable names with numeric suffixes make code nearly impossible to follow without constant cross-reference to source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v1++` in loop context → name it `count` or `i`; `v1 > 0` in condition → name it `is_positive` or similar)
+2. **Recognize array literals**: When seeing repeated pointer offsets like `*(arr + 4*i)`, attempt to identify as array access and recover literal arrays
+3. **Preserve loop constructs at -O0**: At debug optimization level, loops should be preserved as loops, not converted to mathematical formulas - this indicates incorrect decompilation heuristics

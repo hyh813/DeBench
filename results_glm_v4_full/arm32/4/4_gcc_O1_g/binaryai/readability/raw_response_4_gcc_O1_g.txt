@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Variables are consistently named `param_1`, `param_2`, `iVar1`, etc., which is standard for decompilers but lacks semantic meaning compared to original names like `count`, `sum`, or `a`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names from the source (e.g., `cdecl_func`, `test_calling_conventions`) are perfectly preserved, likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 7/10
+Justification: Integer constants are represented in Hex (e.g., `0xf` for 15, `0x2a` for 42), which is accurate but slightly less readable than decimal for simple arithmetic results. String literals are preserved perfectly.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is mostly clean, with the only significant noise being the stack canary checks (`if (local_c == 0) return; __stack_chk_fail();`) inserted by the compiler for security.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most functions are natural, `varargs_func` is decompiled into a dummy loop that ignores the variadic arguments, and `ret_large_struct` contains a manually unrolled block of 16 assignment statements instead of a loop or `memcpy`, obscuring the logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code; there is no inappropriate inlining or outlining of logic, maintaining the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps; loops are represented as `do-while` or `while` structures that are easy to follow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Due to the `-O0` optimization level, there is significant redundancy, such as the explicit copying of 16 structure members in `ret_large_struct` instead of using a block copy operation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `int*` are recovered correctly, but some return types are generic (`undefined4`) and function pointers are sometimes abstracted to `code *` rather than specific signatures.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Large structures passed by value (e.g., `LargeStruct`) are not reconstructed; instead, the decompiler flattens them into a list of scalar parameters (e.g., `int param_1, undefined4 param_2...`) or treats them as raw pointers, losing the struct definition entirely.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined4` and `undefined8` types indicates uncertainty in the decompiler's type analysis, leading to potential type confusion, though pointer arithmetic generally looks correct.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic; the output relies entirely on the code structure itself, which is standard for Ghidra but provides low semantic transparency.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls like `printf` are recognized, but the `varargs` idiom is completely missed; `va_start`, `va_arg`, and `va_end` logic is not recovered, leaving a nonsensical loop.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the suspicious logic in `varargs_func` (where arguments are ignored) or the flattened struct parameters as potential anomalies, presenting them confidently as correct code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions; the stack canary check is the only runtime assertion visible, but it is not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct recovered names, making the call graph easy to understand despite the lack of explicit "Called by" comments.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered roughly by address, which correlates well with the source file order in this case, providing a logical flow through the test suite.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on soft-float ABI helper functions (e.g., `__aeabi_dadd`, `__aeabi_l2d`) which are compiler-specific intrinsics, requiring specific libraries or headers to compile successfully.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- **Variable arguments lost:** `varargs_func` logic is completely broken; the variadic arguments are ignored, and the sum logic is replaced by a dummy counter loop.
+- **Struct flattening:** Large structures passed by value (e.g., `LargeStruct`) are flattened into individual integer parameters in the function signature, destroying the type definition.
+- **Soft-float obfuscation:** Arithmetic involving doubles/long longs is expanded into explicit calls to `__aeabi_` helper functions, obscuring the simple mathematical logic in `func_mixed_args`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Debug symbols were preserved, allowing the decompiler to recover the exact original function names, which significantly aids navigation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- **Why?** The inability to reconstruct `LargeStruct` arguments results in nonsensical function signatures with long lists of integers, making the code very hard to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Varargs Analysis:** Detect `va_list` usage patterns and recover variadic argument logic instead of generating dummy loops.
+2.  **Reconstruct Struct Arguments:** Analyze register and stack usage patterns to re-aggregate flattened parameters back into their original structure definitions.
+3.  **Abstract Soft-float Intrinsics:** Replace architecture-specific soft-float helper calls (like `__aeabi_dadd`) with standard arithmetic operators (`+`, `-`) to improve semantic clarity.

@@ -1,0 +1,16 @@
+AntiGravity Compiler Test Results
+
+Function result: 10
+Opaque predicate result: 35
+Instruction substitution result: 225
+String encryption result: 125
+Tail call result: 500500
+Non-tail call result: 5050
+Vectorized loop result: 72
+Link time optimization result: 20
+Division by zero result: 1
+Null pointer deref result: 41
+Buffer overflow result: 30
+Integer overflow result: 2000000000
+Undefined behavior result: 10
+Implementation defined result: 44

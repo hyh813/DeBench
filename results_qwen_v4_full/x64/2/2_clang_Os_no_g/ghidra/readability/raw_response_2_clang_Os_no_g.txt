@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `lVar5` with zero semantic meaning. For example, in `array_1d_stack`, `param_1` should be `array_base` and `param_2` should be `count`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but initialization functions use generic names (`FUN_00101020`, `_init`). Good verb choices in preserved names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0x2c`, `0x1b8`, `0x28` for struct offsets). Test functions show constant-folded results (`printf("...%d\n",0xf)`) instead of actual function calls, obscuring computation logic.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some stack variables (`auStack_8`, `local_514`) and unreachable block warnings present but don't significantly impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops converted to `do-while` instead of `for` loops (e.g., `array_1d_stack`). Conditionals sometimes inverted (`if (0 < (int)param_2)`). Logic traceable but unnatural compared to source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. Some signatures incorrect (`process_ld` returns `void` instead of `long double`), but decomposition structure intact.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but nested loops create complexity. Some forward references in test functions disrupt flow (e.g., `test_array_types` has complex initialization before printf).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions show aggressive constant folding that hides actual computation. Array access patterns show redundant offset calculations (`param_1 + uVar2 * 4` repeated).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `long double` becomes `void`, `long long` becomes `long`, function pointers become `code*`. `ptr_double` takes `undefined8*` instead of `int**`. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—structs/unions lost entirely. `struct_simple` uses `param_1[1] + *param_1 + param_1[2]` instead of `p->x + p->y + p->z`. `struct_bitfields` uses bit shifts on `ushort*` instead of named bitfield access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`undefined8*`, `undefined4*`, `(int *)(param_1 + 2)`). Pointer arithmetic replaces type-safe field access. `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE` warning indicating unresolved function pointer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: All original source comments completely lost. Only decompiler warnings remain (`WARNING: Could not recover jumptable`). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified—linked list traversal (`linked_list`), array summation, tree recursion (`binary_tree_sum`) all appear as raw loops without pattern recognition. No design pattern hints.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present (`WARNING: Treating indirect jump as call`, `WARNING: Removing unreachable block`) but generic. Doesn't explain WHY anomalies exist or suggest manual review areas.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not explained). No postconditions or error condition documentation. Null checks present but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in test functions, but relationships between data structures unclear. `double_value` referenced in `ptr_func_simple` test but struct types connecting them lost.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear roughly in source order. Initialization functions (`_init`, `_start`, `deregister_tm_clones`) scattered at beginning. No logical grouping comments.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile—missing struct definitions, undefined types (`undefined8`, `undefined4`), missing external symbols (`__libc_start_main`, `__gmon_start__`). Requires extensive manual修复.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+7)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (3+2+4)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (1+3+5+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (6+6+3)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.57/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **Complete struct/union type loss** - All composite types reduced to pointer arithmetic (`param_1[1]` instead of `p->y`)
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar2` provide zero semantic information
+- **Test functions constant-folded** - Actual function calls replaced with pre-computed values, hiding computation logic
+- **`process_ld` signature broken** - Returns `void` instead of `long double`, function body empty
+- **All source comments lost** - No documentation of algorithm intent, preconditions, or API contracts
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately, allowing quick identification of purpose despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete loss of all source documentation makes understanding intent impossible without comparing to original.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from access patterns** - Detect consistent offset patterns (`+0`, `+4`, `+8`) and propose named struct definitions with field names based on usage context.
+
+2. **Infer variable names from usage semantics** - Analyze how variables are used (loop counters, array indices, accumulators) to generate meaningful names like `sum`, `index`, `array_ptr` instead of `iVar1`, `uVar2`.
+
+3. **Preserve test function call structure** - Avoid aggressive constant folding in test functions; maintain actual function calls to show computation flow rather than pre-computed results.

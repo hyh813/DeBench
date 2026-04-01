@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `iVar1`, `uVar2`, `lVar3`, `puVar4`, `piVar5`, `local_38`, `local_28`, `auStack_8`. The original source used meaningful names like `size`, `result`, `x`, `y`, `counter`, `page_size` - all lost in decompilation. Only `param_1`, `param_2` retain minimal semantic hints.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Source function names are well-preserved: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `test_preprocessing_features`, `test_asm_features`. However, internal functions like `FUN_00101020` and startup functions (`_init`, `_start`, `_fini`) remain generic. The core test functions correctly map to source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x200` (should be MAX_SIZE=1024), `0x400` (1024 comparison), `0xdef0`, `0xdf22`, `0x10` (16), `0x1e` (30), `0x20` (32), `0x117` (line number), `0x32` (50). No named constants recovered. The value `0x200` is actually wrong - it represents 512 but MAX_SIZE was 1024 in source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise includes: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations scattered throughout. Standard startup code (`__gmon_start__`, `__libc_start_main`) is present but appropriate. The "WARNING" comments are helpful but create visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures are natural and readable. `if` statements use clear conditions (`0x400 < size`), `for` loops are properly recognized (`for (uVar2 = 0; (int)uVar2 < n; uVar2 = (ulong)((int)uVar2 + 1))`), and `while` loops are correctly identified. No goto abuse visible. At -O0, this is excellent.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches source perfectly. Each source function (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc.) is decompiled as a separate function. The test harness functions are properly separated. No over-fragmentation or monolith formation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns are used appropriately (e.g., in `param_dynamic_code`). No excessive forward jumps. The `call_asm_multi_insn` has some complex initialization but flows reasonably.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: In `call_asm_clobber`, array initialization is manually unrolled with individual assignments (`local_18[4] = 5; local_18[0] = 1; ...`). This is a minor redundancy from decompilation. Otherwise, no significant dead code or duplicate expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate: `int` for integers, `size_t` for sizes, `char*` for strings, `code*` for function pointers. However, `undefined1`, `undefined2`, `undefined4`, `undefined8` appear for unresolved types. The original had specific types like `uint32_t` but generic `int` is acceptable at -O0.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Arrays are partially recognized (e.g., `local_18[6]`, `local_38[16]`) but fields are not named. The SIMD functions show element-by-element access (`a[0]`, `a[1]`, etc.) rather than vector types like `__m128i`. Original source had no structs, but the decompilation doesn't recover the array dimensions well.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: pointer arithmetic (`dst = (void *)((long)dst + 1)`), function pointer casting (`code *__addr`), and implicit conversions. The atomic functions use `LOCK()` and `UNLOCK()` macros which are non-standard. However, no obvious buffer overflows or severe type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments focus on decompilation metadata: "WARNING: Unknown calling convention", "Unresolved local var", "WARNING: Removing unreachable block". No algorithm explanations or code semantics documentation. The original had extensive comments about preprocessing and assembly that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithm patterns identified. Inline assembly is recognized and converted to C (good), but the semantic meaning of the assembly (e.g., "atomic operation", "SIMD vector addition") is not documented. The conditional compilation branches are correctly resolved but not explained.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Anomalies are reasonably flagged: "WARNING: Unknown calling convention" appears frequently, "Unresolved local var" indicates decompilation uncertainty, and "WARNING: Removing unreachable block" notes optimization artifacts. However, the incorrect value `0x200` for MAX_SIZE is presented without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no formal contracts, but the decompilation doesn't add any helpful contracts (e.g., "requires: page_size > 0" for mmap calls). Error handling is present but not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `main` calls `test_preprocessing_features`). However, there's no documentation of who calls what or global variable usage. The `global_var` is referenced in `param_memory_clobber_demo` but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: preprocessing functions first, then assembly functions, then test harness, then main. Static functions like `my_func` are properly scoped. All in a single file which matches the original single-file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with warnings about calling conventions. Uses standard C library functions (`printf`, `mmap`, `munmap`, `mprotect`, `sysconf`). The `LOCK()` and `UNLOCK()` macros may need definition. No obvious syntax errors that would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming is unusable**: All locals are `iVar1`, `local_38`, `auStack_8` - original names like `size`, `result`, `page_size` completely lost
+- **Magic numbers everywhere**: `0x200`, `0x400`, `0xdef0`, `0xdf22` without explanation; value `0x200` is actually incorrect (512 vs 1024)
+- **No semantic comments**: Only decompilation warnings, no explanation of what code does or why
+- **Incorrect constant value**: `0x200` represents 512 but MAX_SIZE was 1024 in source - the decompiler got the math wrong
+- **No type recovery**: Arrays accessed element-by-element, no vector types for SIMD
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+- At -O0, control structures are nearly perfectly recovered: if/else, for loops, while loops all map cleanly to source. This is where the decompiler excels.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Generic temp names (`iVar1`, `uVar2`, `local_38`) make the code nearly unreadable. The original had meaningful names that should be recoverable from usage patterns (e.g., `size` used in comparison, `counter` used in atomic operations).
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `iVar1` used in `if (0x400 < size)` should be named `size`; `iVar1` in atomic function should be `old_value`
+2. **Recover macro constants**: Detect repeated literals like `0x400` and suggest `MAX_SIZE`; flag incorrect constant `0x200` (should be 0x400 for 1024)
+3. **Add semantic comments**: Instead of just "Unresolved local var", explain what the variable likely represents based on context (e.g., "// Likely: page_size based on sysconf(_SC_PAGESIZE) call")

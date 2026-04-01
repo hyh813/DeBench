@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`). These provide zero semantic information about their purpose (e.g., `v1` is actually an allocated exception pointer, `v3` is the rethrown exception). The original source had meaningful names like `result`, `capture_by_value`, `capture_by_ref`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: While demangled names appear in comments (e.g., "Demangled: test_cpp_exception()"), the actual function names in code are mangled C++ symbols (`_Z18test_cpp_exceptionv`, `_Z13test_cpp_rttiv`). The completely generic `function_109f4` has no semantic meaning at all. The original source had clear names like `test_cpp_member_func`, `test_cpp_lambda`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Chinese string literals are encoded as UTF-8 hex sequences (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"` for "测试") making them unreadable. Magic numbers like `4` (exception size), `0x40040000` (double representation), and `31` (strncpy length) appear without explanation. The original had clear expected values in printf format strings.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation. Some unnecessary casts present but not overwhelming.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The exception handling code is extremely convoluted with multiple `__cxa_*` function calls interleaved with conditionals. The pattern `if ((int32_t)&g19 == 1)` is bizarre and unclear. At -O0, this should be much more readable. The control flow for try-catch-rethrow is nearly impossible to follow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are reasonably sized, but the decompilation is severely incomplete - missing most of the original test functions (SimpleClass, LifecycleClass, Base/Derived, Point, Container, lambda tests, smart pointer tests). Template functions are extracted but with bugs. Many classes exist only as vtable structures without their methods.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with some forward jumps in exception handling. The `test_cpp_oo_features` function is mostly linear, calling test functions sequentially. However, the exception handling logic has confusing branching that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. Some repeated patterns in exception handling but that's inherent to the C++ exception mechanism, not decompilation failure.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently (appropriate for ARM64), but there's confusion between pointers and integers. The call `_Z12template_maxIdET_S0_S0_(NULL, (int32_t *)0x40040000, 0.0, 2.5)` passes NULL and a weird pointer for what should be simple double parameters. The `this` and `result` parameters in template functions are unnecessary artifacts.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: VTable structures are reconstructed (`struct vtable_116b4_type`) but with generic field names (e0, e1, e2). The original had clear virtual functions like `virtual_func`, `getName`, `~Base`. No class member data is recovered - the original classes had `multiplier`, `dataA`, `dataB`, `shared_data` fields that are completely missing.
+
+**11. Type Safety:** Score: 2/10  
+Justification: **CRITICAL BUG FOUND**: The `template_swap` function is completely wrong:
+```c
+void _Z13template_swapIiEvRT_S1_(int32_t * a1, int32_t * a2) {
+    *a1 = (int32_t)a2;  // WRONG: assigns pointer address, not value
+    *a2 = (int32_t)a1;  // WRONG: assigns pointer address, not value
+}
+```
+This assigns pointer addresses to the dereferenced values, completely breaking the swap logic. The original was `template_swap(a, b)` which should swap the values, not the pointers. This is a severe type safety and semantic error.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Minimal comments present - only structural annotations like "// From class: RTTIDerivedA", "// Type: constructor", "// Demangled: test_cpp_exception()". No explanation of what the code does or why certain operations occur. The original source had extensive comments explaining each test scenario.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or C++ idioms are recognized or named. The virtual function mechanism is partially shown via vtables but not explained. Exception handling, RTTI, and dynamic_cast are not identified as patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The broken `template_swap` function should have been flagged as suspicious. The weird `if ((int32_t)&g19 == 1)` pattern should have been marked as uncertain. The missing functions (most of the original code) are not mentioned.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear expectations like "// 期望: 10 + 34 + 4660 = 4704" which are completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some class relationships shown ("// RTTIDerivedA (base classes: RTTIBase)"), but incomplete. The call graph is unclear - `test_cpp_oo_features` calls many functions that aren't decompiled. No documentation of which functions call which others.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in a single file, which is reasonable for a decompiled output. However, the organization is arbitrary rather than matching the original source's logical grouping (member functions, constructors, virtual functions, templates, etc.).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes standard headers and uses standard library functions. However, the broken `template_swap` will cause incorrect runtime behavior. Many external dependencies (`__cxa_*` functions) are used but not documented as requiring libstdc++.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects (Bullet List)
+- **template_swap is semantically broken**: Assigns pointer addresses instead of dereferencing - `*a1 = (int32_t)a2` should be `*a1 = *a2`
+- **All variables are generic**: `v1`-`v12` provide zero semantic information about their purpose
+- **Function names are mangled**: Actual code uses `_Z18test_cpp_exceptionv` instead of readable names
+- **Severely incomplete decompilation**: Only 3 of 12 test functions are present; missing SimpleClass, LifecycleClass, Base/Derived, Point, Container, lambdas, smart pointers
+- **Exception handling is unreadable**: The try-catch-rethrow logic is nearly impossible to follow in decompiled form
+
+### Best Quality Aspect: Noise Reduction (7/10)
+- Relatively clean output without excessive compiler artifacts or register spilling debris
+
+### Most Needs Improvement: Type Safety (2/10) and Variable Naming (2/10)
+- The broken template_swap function demonstrates critical semantic errors
+- Generic variable names make the code practically unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Fix template function parameter handling**: The `template_swap` shows pointer confusion - should dereference pointers to get values, not assign addresses
+2. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, function calls) to suggest meaningful names like `exception_ptr`, `result`, `instance_count`
+3. **Complete decompilation coverage**: Many functions and classes are completely missing - ensure all symbols from the binary are decompiled, not just a subset

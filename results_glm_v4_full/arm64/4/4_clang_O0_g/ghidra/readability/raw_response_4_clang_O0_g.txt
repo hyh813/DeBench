@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Critical semantic loss in local variables; for example, in `varargs_func`, the accumulator `sum` is decompiled to `local_40[1]` and the loop counter `i` is `local_40[0]`, making the logic obscure. While parameters like `a` and `b` are preserved, the reliance on stack offsets (`local_20`, `local_118`) for logic variables significantly impedes understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Integer constants are displayed in hexadecimal (e.g., `0x2a` instead of `42`, `0x14` instead of `20`), which adds unnecessary translation burden for simple arithmetic. String literals are replaced with references to data sections (e.g., `&DAT_00101dc0`), losing the immediate context of the text being printed.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with auto-generated comments like `/* Unresolved local var: ... */` and `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` in almost every function. These warnings distract from the actual logic without providing actionable insight for the user.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions are readable, the decompilation of `varargs_func` exposes low-level ABI details (register save area handling) as complex control flow logic (`if ((local_20 < 0) ...)`), completely obscuring the simple `for` loop and `va_arg` semantics present in the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries and granularity match the source perfectly; there is no inlining or outlining of code blocks, maintaining the original modular structure (e.g., `test_calling_conventions` calling individual test functions).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps; early returns and loop structures are generally preserved well, except in the specific case of varargs expansion where the logic is fragmented.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little artificial redundancy added by the decompiler; the code is concise, though it retains the inefficiencies inherent to the `-O0` compilation (e.g., explicit stack variable usage), which is expected behavior.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Standard types are accurate, but complex types suffer; `LargeStruct` passed by value in the source (`func_struct_byval(LargeStruct s)`) is decompiled as a pointer (`func_struct_byval(LargeStruct *s)`), which is ABI-correct for ARM64 but loses the "pass-by-value" semantic intent. The `va_list` type is also degraded to raw pointers (`int *piVar2`).
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structure definitions are recovered accurately with correct field names and types; for example, `SmallStruct` members `x` and `y` are accessed correctly (`local_150.x = 5`), and `LargeStruct` array access `s->data[local_c]` is precise.
+
+**11. Type Safety:** Score: 3/10
+Justification: The decompiler performs unsafe casts to handle varargs, such as `piVar2 = (int *)register0x00000008;`, which exposes hardware register names directly in the C code. This creates type-unsafe constructs that do not exist in the high-level source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are entirely limited to decompiler warnings (e.g., "Removing unreachable block") and "Unresolved local var" markers. There are no comments explaining the *purpose* of the code, algorithms used, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed; the `va_list` iteration pattern is not recognized and is instead presented as complex pointer arithmetic and bounds checking on a stack array, failing to abstract the "variadic function" idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags "Unknown calling convention" warnings, which is relevant given the source's focus on calling conventions. However, the "Unresolved local var" warnings are too frequent and generic to be useful for debugging.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `func_struct_byptr` is decompiled as standard code (`if (p == (SmallStruct *)0x0)`) without any semantic annotation that it represents a contract check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., `main` calling `test_calling_conventions`). The relationship between callers and callees is preserved well.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure. Helper functions and test functions are grouped distinctly, maintaining the original organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on undefined external data references (e.g., `&DAT_00101dc0`) and compiler-specific types like `undefined8`, making it impossible to compile without significant manual patching or extraction of the binary data.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable `sum` in `varargs_func` is renamed to `local_40[1]`, and loop counter `i` to `local_40[0]`, destroying semantic meaning.
+- The `va_list` iteration in `varargs_func` is decompiled into raw pointer arithmetic and register access (`register0x00000008`), obscuring the simple loop logic.
+- String literals are replaced with pointers to data segments (e.g., `&DAT_00101dc0`), forcing the user to lookup memory addresses to read print statements.
+- Large structs passed by value are displayed as pointers, altering the semantic interface of the function.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the symbol table, making high-level navigation trivial.
+
+**Most Needs Improvement:** Idiom Recognition (scored 2/10)
+- The failure to recognize the `va_list` variadic argument pattern resulted in the most unreadable section of the code, transforming a simple loop into complex pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement specific pattern matching for `va_list`/`stdarg` usage to abstract away register save area implementation details.
+2. Improve local variable recovery to utilize debug symbols (DWARF) more effectively to map `local_XX` back to source names like `sum` or `i`.
+3. Provide an option to inline string literals (or display them as comments) rather than replacing them solely with data segment references.

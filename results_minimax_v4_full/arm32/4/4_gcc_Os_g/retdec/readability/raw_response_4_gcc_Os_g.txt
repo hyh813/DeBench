@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4` throughout (e.g., in `varargs_func`: `v1 = 0`, `v2`, `v3`, `v4`). The original source used meaningful names like `count`, `args`, `sum`. Only a few variables like `large`, `arr`, `n`, `callback` are descriptive.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `varargs_func`, `test_calling_conventions`, `param_ptr_array`, `call_struct_byval`, `ret_large_struct`, `test_parameter_passing`, `test_return_values`, `main`. The decompiler preserved the semantic naming from source.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are test values being printed (15, 50, 6, etc.) which is appropriate. The `128` for memcpy size correctly represents LargeStruct (128 bytes). The `4` appearing in multiple contexts (pointer size, array decay) could be clearer but is inferable.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some redundant variable initializations exist (e.g., `int32_t v1 = 0;` then reassigned), but no register spilling debris or debug instrumentation. The code is relatively clean for a decompilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (while loops, if statements). However, `varargs_func` uses `while(true)` with break instead of a proper for/while loop construct. The `test_calling_conventions` has a complex while loop for array initialization that requires effort to trace.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the original source well. Test functions remain as cohesive units, helper functions like `param_ptr_array` are appropriately sized (under 20 lines). No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `varargs_func` has a forward jump via break, but it's handled cleanly. No deep nesting (>4 levels) observed. The flow is mostly linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious common subexpression elimination artifacts. The loop in `varargs_func` is the algorithm itself, not redundant. Code is clean with no significant duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` and `uint32_t` consistently. Function pointers have proper signatures like `int32_t (*callback)(int32_t)`. The `char **` for string arrays is correct. Minor issue: some places use generic `int32_t` where `size_t` might be more appropriate.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical defect**: No struct types are recovered. The original had `LargeStruct` (128-byte with `long long data[16]`) and `SmallStruct` (with x, y fields), but the decompiled code uses raw `int32_t large` with `memcpy(&v4, &large, 128)` and pointer arithmetic. All composite type semantics are lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Necessary low-level casts like `*(int32_t *)v2` are present but justified. Pointer arithmetic appears correct. No obvious type-confused function pointers. Some potential issues but nothing severe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present (module path, address range, line range). No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The original had extensive comments explaining each test case which are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like varargs usage are recognizable but not explicitly named or documented. No design patterns or algorithm patterns are identified or labeled.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No suspicious code is flagged. The indirect function call in `call_func_ptr_param` passing `(int32_t (*)(int32_t))0x1057c` should potentially be flagged as uncertain. No indication of potential undefined behavior or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. The original source had implicit contracts (e.g., "requires: ptr != NULL" for `func_struct_byptr`) that are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct invocation. However, no documentation of who calls what or global variable usage. The callback relationship in `param_func_ptr` is visible but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: test functions together, parameter functions together, return functions together. Matches the original source organization reasonably well. Static function scoping not explicitly marked.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code includes proper headers (`<stdio.h>`, `<string.h>`, `<stdint.h>`, `<stdbool.h>`, `<stdlib.h>`). Function prototypes are declared. Should compile with minimal patching. Uses `__printf_chk` which is a glibc internal but available.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- **Variable naming**: Generic names `v1`, `v2`, `v3`, `v4` throughout make tracking purpose extremely difficult
+- **No struct recovery**: `LargeStruct` and `SmallStruct` completely lost; replaced with raw memory operations (`memcpy`, pointer arithmetic) losing all semantic meaning
+- **No comments**: Original's extensive test case documentation completely lost; only auto-generated metadata remains
+- **No anomaly indication**: Uncertain code like indirect function pointer `(int32_t (*)(int32_t))0x1057c` presented without warning
+- **No contract recovery**: Preconditions/postconditions from original source not documented
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+Struct types are completely lost in the decompilation. The original had meaningful struct definitions that are now reduced to raw memory operations, losing all semantic information about field names and data organization.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Analyze memory access patterns to reconstruct composite types with field names. The `memcpy(&v4, &large, 128)` pattern clearly indicates a 128-byte structure that should be recovered as `struct LargeStruct { long long data[16]; }`.
+2. **Improve variable naming**: Use usage pattern analysis to infer semantic names. The variable `v4` in `varargs_func` that controls loop iteration should be named `i` or `index`.
+3. **Add semantic comments**: Recover original documentation intent. The test case labels like "CALL-L1-01", "PARAM-L2-06" from the source should be preserved as comments to explain the purpose of each function.

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`v0`, `v1`, `v2`, `a1`) throughout; in `heap_basic`, the malloc result is `v1` then `v2` instead of `arr`, and `local_vars` loses intermediate variables `a`, `b`, `c` entirely through constant folding.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but initialization helpers use generic labels (`sub_1030`, `sub_1040`, `frame_dummy`), creating inconsistent naming quality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x14u` for stack canary, `0x28u` for allocation size, `0xCu` for struct size); some values like `42` and `100` are self-explanatory but most hex constants obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including `__readgsdword(0x14u)` stack canary checks, excessive casts (`(_DWORD *)`, `(_BYTE *)`), and `__printf_chk` instead of standard `printf` clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are mostly recovered as `for`/`while` constructs in `heap_basic`, but `stack_alias` collapses to `return 20;` losing all original logic, and `vla_stack` shows complex stack manipulation obscuring the VLA pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved but test functions are bloated with inlined constants; `test_heap_memory` is 100+ lines with all test logic flattened rather than calling individual test functions cleanly.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate loop structures; stack canary epilogue calculations (`v25 - __readgsdword(0x14u)`) at function ends are the main disruption to linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions compute constants at compile-time creating redundancy (e.g., `test_stack_memory` prints hardcoded expected values); repeated `__printf_chk` patterns could be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int *` becomes `_DWORD *`, `void *` loses specificity, function pointers become `(int (*)(void))`; `local_array` returns `__int64` instead of `int` due to stack canary return value packing.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`Point` struct is not recovered (`local_struct` returns `3 * a1` instead of `p.x + p.y`), `Node` linked list struct is lost (all accesses are `v0[1]` pointer arithmetic), no struct definitions appear in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts (`(_DWORD *)`, `(_BYTE *)`, `(_WORD *)`), untyped pointer arithmetic throughout, function pointers cast without signature preservation; `dangling_pointer` returns `*(_DWORD *)ptr` after free with no warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output; no explanation of stack canary logic, no documentation of function purposes, no indication of decompiler confidence or uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized—linked list traversal in `linked_list_heap` not identified, tree operations in `tree_heap_traversal` not labeled, memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `stack_alias` returning constant `20` not flagged as optimization artifact, `dangling_pointer` undefined behavior not warned, stack canary checks present without explanation of their purpose.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved (`if (!v1) return -1`) but no precondition/postcondition documentation; error return values (`-1`, `-2`, `-3`) not explained; no contract inference for memory ownership.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but global variable relationships unclear (`global_counter`, `counter_1` appear without context); callback relationship in `set_global_callback` → `call_global_callback` not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping by category (stack/heap/static); no header file structure; static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 17 functions failed to decompile (marked "FAILED to decompile"); external dependencies (`malloc`, `free`, `printf`, `fork`) lack proper declarations; code will not compile without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 6 + 5 + 4) / 4 = 4.50
+Level 2 Average: (6 + 6 + 7 + 5) / 4 = 6.00
+Level 3 Average: (4 + 2 + 3) / 3 = 3.00
+Level 4 Average: (1 + 2 + 3 + 4) / 4 = 2.50
+Level 5 Average: (5 + 5 + 3) / 3 = 4.33
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (3.00 × 0.20) + 
+          (2.50 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.50 + 0.60 + 0.375 + 0.433
+        = 4.26/10
+```
+
+**Overall Readability Score:** 4.26/10
+
+### Critical Defects
+- **Complete struct type loss**: `Point` and `Node` structs not recovered; all field accesses are raw pointer arithmetic (`v0[1]`, `v0[2]`)
+- **Zero documentation**: No comments explaining any logic, patterns, or decompiler confidence levels
+- **Generic variable naming**: All locals are `v0`, `v1`, `v2` with no semantic meaning inferred from usage
+- **17 failed decompilations**: External functions (`malloc`, `free`, `printf`, etc.) not recovered, breaking build compatibility
+- **Optimization artifacts unexplained**: Stack canary checks (`__readgsdword(0x14u)`) present without explanation despite claimed `-O0` compilation
+
+### Best Quality Aspect
+- **Code Linearization (7/10)**: Control flow generally reads top-to-bottom with recognizable loop constructs; minimal goto usage and logical statement ordering despite optimization artifacts.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: Complete absence of any comments means readers must infer all semantics from code alone; no decompiler confidence indicators, no algorithm explanations, no anomaly warnings.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite types from access patterns**: Analyze consistent offset accesses (e.g., `v0[0]`, `v0[1]` with specific sizes) to reconstruct struct definitions with field names based on usage context.
+2. **Add semantic annotations for optimization artifacts**: Flag stack canary checks, constant-folded functions, and inlined code with comments explaining these are compiler transformations, not original source logic.
+3. **Infer variable names from usage patterns**: Variables used in size checks should be named `size`/`length`, pointers used in iteration should be `ptr`/`iter`, return values from `malloc` should be named by their apparent purpose.

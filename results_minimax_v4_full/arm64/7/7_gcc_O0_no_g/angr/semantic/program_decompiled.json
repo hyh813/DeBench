@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O0_no_g/angr/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "Test: Fake Branch\n\ncall_fake_branch: 10\ncall_opaque_predicate: 35\ncall_instruction_substitution: 225\ncall_string_encryption: 3423821416\ncall_tail_call_optimized: 500500\ncall_non_tail_call: 5050\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

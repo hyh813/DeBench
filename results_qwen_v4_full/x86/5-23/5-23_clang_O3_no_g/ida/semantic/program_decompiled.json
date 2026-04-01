@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_O3_no_g/ida/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing preprocessing features\nPrep L201Prep L202Prep L203Prep L204Prep L301Prep L302Prep L303LOG: Values: 10, 20, 30\nPrep L304Prep L305Prep L306file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:17\nPrep L307Testing ASM features\nASM L401: 15\nASM L402: 15\nASM L403: 42\nASM L404: 0\nASM L405: 30\nASM L406: -1\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

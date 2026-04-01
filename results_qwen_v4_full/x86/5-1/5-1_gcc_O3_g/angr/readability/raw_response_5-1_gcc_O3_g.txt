@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `v5`, `v6`) with zero semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions named `sub_XXXXXX` with addresses. Some C++ mangled names recovered (`_Z20test_cpp_member_funcv`) but not demangled to readable form. Only a few like `test_cpp_exception` and `main` are recognizable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (42, 100, 200, 4700, 4704) without explanation. String literal "Test" preserved but context lost. No named constants recovered from original code.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe decompilation artifacts (`[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(136:I8x8)`). Compiler runtime functions (`__x86.get_pc_thunk.*`, `deregister_tm_clones`) mixed with application code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements (`goto v1->field_54`, `goto *((int *)*((int *)arg_0))`) instead of proper loops/conditionals. Many functions are just single-call wrappers disrupting natural flow.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Poor granularity - dozens of tiny wrapper functions (`sub_40104e`, `sub_40105e`) that just call one other function. Many test functions are empty stubs (`test_cpp_virtual_func`, `test_cpp_lambda` return immediately).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Frequent forward jumps and goto statements disrupt top-to-bottom reading. Stack canary checks create unnatural branching (`if (v7 != *((int *)_ccall(...)))`).
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy with 2210 LOC vs 540 LOC original (4x bloat). Many duplicate struct definitions with different padding values. Wrapper functions add no value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy type erosion - everything is `int`, `unsigned int`, `void*`, or `char*`. Original C++ types (`std::unique_ptr`, `Container<int>`, class hierarchies) lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs mostly generic (`padding_0[84]`, `field_54`) with no semantic field names. Some class names recovered (Base, Derived, MultiDerived) but member functions poorly typed (`void* this` instead of proper `this` pointer).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int)v1[4](ptr)`, `(struct struct_0 *)&v7->padding_0[80]`). Pointer arithmetic without bounds checking. Virtual function calls through raw pointer dereferencing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only decompiler-generated noise comments. Original source comments (Chinese explanations, expected values) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns partially recognized (vtable calls, thunk functions for multiple inheritance) but not identified or explained. Template instantiations present but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (`[D] unsupported_`, `[D] Failed to decompile function`) which is honest, but these markers don't help understanding - they just indicate failure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Stack canary checks present but not explained as safety mechanisms. Exception handling logic opaque.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function relationships unclear. Many functions call `sub_XXXXXX` with no indication of purpose. Virtual dispatch partially recovered (thunk functions) but call graph opaque.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Runtime initialization code (`_init`, `_start`, `__do_global_ctors_aux`) mixed with application logic. No logical grouping of related C++ class methods.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile - contains decompilation artifacts (`[D] unsupported_`), undefined external symbols, and platform mismatch (original ARM64, decompiled shows X86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+4+2)/4 = 2.75 × 0.30 = 0.825
+Level 2 (Structural):  (3+3+3+3)/4 = 3.00 × 0.25 = 0.750
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (3+3+2)/3   = 2.67 × 0.10 = 0.267
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.0/10
+```
+
+**Overall Readability Score: 3.0/10**
+
+### Critical Defects:
+- **Platform mismatch**: Original compiled for ARM64, decompiled output shows X86 architecture
+- **Variable names completely generic**: `v0`, `v1`, `ptr` instead of semantic names like `instance_count`, `multiplier`, `capture_by_value`
+- **Decompilation artifacts pollute code**: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears throughout making code unreadable
+- **4x code bloat**: 540 LOC original → 2210 LOC decompiled with mostly empty wrapper functions
+- **C++ semantics lost**: Templates, lambdas, smart pointers, exception handling all degraded to opaque function calls
+
+### Best Quality Aspect: **Anomaly Indication (5/10)**
+- At least the decompiler honestly flags unsupported constructs rather than silently producing incorrect code
+
+### Most Needs Improvement: **Variable Naming Quality (2/10)**
+- Complete loss of semantic variable names makes understanding data flow nearly impossible without cross-referencing original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ name demangling**: Recover readable function names from mangled symbols (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`)
+2. **Add semantic variable inference**: Analyze usage patterns to suggest names (variables used in size comparisons → `size`, `count`, `length`)
+3. **Filter decompilation artifacts**: Either successfully handle unsupported constructs or remove `[D]` markers and produce cleaner fallback code

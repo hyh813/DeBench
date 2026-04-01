@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_10`, `local_c` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some internal functions use generic names (`FUN_00101020`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals replaced with opaque references (`&DAT_00103020`). Magic numbers like `0x51eb851f` (float 3.14 representation) and hex values (`0x14`, `0x1e`) lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Excessive type casts (`(ulong)`, `(int)`, `(long)`) throughout. Stack variable declarations like `local_e8 [46]` add clutter. No dead code but verbose type conversions present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures generally preserved as `for` loops. Conditionals are clear. No excessive goto usage. Control flow is mostly idiomatic C.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but some signatures wrong (`call_cdecl` returns `void` instead of `int`). Function sizes are appropriate but return type mismatches indicate decomposition issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Forward references to data (`&DAT_00103020`) disrupt flow slightly. No deep nesting or confusing jump patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No major dead code observed. Some redundant casts present but not excessive. Loop structures not unnecessarily unrolled.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation - `undefined8`, `undefined4` used frequently. `func_mixed_args` has wrong parameter order (double before int). Original `double`, `char*`, `long long` types often lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure - `func_struct_byval` shows `void` parameter instead of `LargeStruct`. `SmallStruct` represented as `int *` instead of struct pointer. No struct definitions recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int *)`, `(long *)`, `(undefined4 *)`). Pointer arithmetic on generic types throughout. `func_struct_byptr` uses `int *` instead of proper struct pointer type.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive comments explaining each test case (CALL-L1-01, PARAM-L1-01, etc.). No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs handling not identified as such (complex stack manipulation shown without explanation). No pattern recognition for calling conventions or parameter passing patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite clear issues (wrong return types, missing struct info). `call_order_dep` shows `param_order_dep()` with no arguments when original had two parameters.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks present (`if (param_1 == (int *)0x0)`) but not documented as contracts. No preconditions/postconditions recovered despite original having clear test expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear but data references opaque (`&DAT_00103020`). Callback relationships not documented (`callback_func` called but relationship not indicated).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No clear module grouping or namespace structure. Related test functions not grouped with comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies not declared (`printf`, `strlen`, `memset`). Would not compile standalone. Data section references (`&DAT_*`) need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.19/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Struct type information completely lost** - `func_struct_byval` shows `void` parameter instead of `LargeStruct s`, making the function's purpose unclear
+- **Zero comments recovered** - Original had extensive test case documentation (CALL-L1-01, PARAM-L1-01, etc.) all lost
+- **String literals replaced with opaque references** - `&DAT_00103020` instead of `"=== 测试基础调用约定 ===\n"`
+- **Function return type mismatches** - `call_cdecl` returns `void` instead of `int`, losing semantic information about return value usage
+- **Varargs handling not identified** - Complex stack manipulation shown without indicating this is variable argument processing
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` preserved accurately from source, maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all test case documentation, expected values, and semantic context that made the original source self-explanatory.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve string literals** - Replace `&DAT_00103020` references with actual string content when identifiable from binary data section
+2. **Add confidence annotations for type recovery** - Flag uncertain type reconstructions (e.g., `// UNCERTAIN: struct type inferred from access pattern`) to help analysts identify potential errors
+3. **Recover function documentation from debug symbols** - Since compiled with `-g`, extract and preserve original comments, test case labels, and expected values from DWARF debug information

@@ -1,0 +1,18 @@
+=== Preprocessing Features Test ===
+L2.1: 64
+L2.2: 30
+L2.3: 32
+L2.4: 57122
+L3.1: 116
+L3.2: 19
+L3.3: 60
+LOG: Values: 10, 20, 30
+L3.4: 60
+L3.5: 16
+L3.6: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:04
+L3.7: 382
+=== ASM Features Test ===
+ASM L4.1: 15
+ASM L4.2: 15
+ASM L4.3: 42

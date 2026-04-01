@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `cur`, `ptr`) with no semantic meaning. Original source used meaningful names like `sum`, `len`, `current`, `head` which are completely lost. Complex functions like `__addtf3` have 80+ variables named `v5`, `v6`, `flag1`, `flag2` with no distinguishable purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`process_char`, `array_1d_stack`, `struct_simple`), but runtime functions use generic labels (`sub_400634`, `sub_4006f0`) and one is cryptically named `$x`. Function names don't indicate parameter types or purpose for helper functions.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Code is littered with unexplained magic numbers: `4294967295` (UINT_MAX), `18446744073709551614`, `32767`, `2251799813685247`. Test functions show constant-folded expected values (`printf("...%d\n", 15)`) instead of actual computation, obscuring the original logic entirely.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer setup (`v0 = &v1`), register annotations (`x0`, `x8`, `w14`), and redundant operations. Complex functions like `__addtf3` (400+ lines) contain excessive low-level operations that obscure semantic intent.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops use do-while with manual counter management instead of natural for-loops. Function pointer calls use `goto a0` instead of proper call syntax. Complex functions have excessive goto labels (`LABEL_401518`, `LABEL_40156c`) creating spaghetti-like flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries preserved for simple functions, but test functions are constant-folded losing actual logic. Helper functions like `__addtf3` and `__multf3` are monolithic (400+ lines) with no decomposition of floating-point operations.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Frequent forward jumps disrupt reading flow. Complex functions have deeply nested conditionals with labels scattered throughout. `test_array_types` and `test_composite_types` have multiple goto targets that break top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show constant-folded results (redundant with actual computation). Complex floating-point functions have repeated bit manipulation patterns. Some dead code from register spilling visible in variable assignments.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `process_char` returns `long long` instead of `char`, `process_float`/`process_double` return `long long` instead of float/double. Pointer types often reduced to `unsigned long` or `unsigned int*`. Original `volatile int*` becomes plain `unsigned int*` losing volatile semantics.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with fields named `field_0`, `field_8`, `padding_4[4]`. Original field names (`x`, `y`, `z`, `data`, `next`, `left`, `right`) completely lost. Union types not distinguished from structs in many cases.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointers called via `goto a0`, pointer arithmetic on generic `unsigned long`, implicit casts throughout. `ptr_func_simple` and `struct_func_ptr` use goto for indirect calls instead of proper function pointer syntax.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only auto-generated function headers with addresses.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition for common structures. Linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and graph traversal (`graph_traverse`) not identified or documented. Floating-point operations not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for suspicious code patterns. Complex floating-point functions (`__addtf3`, `__multf3`) not marked as uncertain despite being essentially unreadable. Indirect calls via goto not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Null pointer checks present in code but not documented as contracts. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables named generically (`g_413ff8`, `g_402f1f`, `g_402980`) with no semantic meaning. Callback relationships not identified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Related functions (data types, arrays, pointers, composites) not organized into sections. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies (`__libc_start_main`, `puts`, `printf`, `__addtf3`, `__multf3`) not properly declared. Would require significant stubbing to compile. Some functions marked `/* do not return */` but no proper noreturn attribute.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+3+5)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type System): (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 3.41/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Type degradation**: `process_float` and `process_double` return `long long` instead of floating-point types, completely breaking semantic meaning
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`) making data flow impossible to trace
+- **Test function constant-folding**: Test functions show expected values instead of actual computation, losing all test logic
+- **Struct field names lost**: All struct fields named `field_0`, `field_8`, `padding_4` instead of semantic names like `data`, `next`, `left`, `right`
+- **No comments or documentation**: Zero semantic documentation for any non-trivial logic
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test functions retained original source names (`process_char`, `array_1d_stack`, `struct_simple`), providing some anchor points for understanding
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes the code essentially self-documenting only for trivial functions
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols**: Since compiled with `-O0 -g`, floating-point return types and struct field names should be recoverable from DWARF debug info
+2. **Implement pattern recognition for common structures**: Detect linked list traversal, tree recursion, and array iteration patterns to add explanatory comments
+3. **Preserve test function logic**: Avoid constant-folding test functions; instead show actual function calls with comments indicating expected values

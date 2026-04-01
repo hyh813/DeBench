@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `a0`, `v0`, `v1`, and `v2`, completely stripping semantic meaning found in the source (e.g., `temp1`, `sum`, `count`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `single_if`, and `duffs_device` are perfectly preserved from the source, likely due to symbol table availability, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with unexplained magic numbers like `4294967294` (0xFFFFFFFE) and `1717986919` (inverse for division by 10), which obscure the original arithmetic operations (multiplication by 2, division by 10).
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiler introduces significant noise through VEX/IR artifacts like `__ROL__`, `arm64g_calculate_condition`, and `__stack_chk_fail` calls, which clutter the logic and make it read like assembly rather than C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple loops are recovered, complex structures like `duffs_device` are reduced to a mess of `goto` statements, and `switch_large` is transformed into a mathematical formula (`__ROL__(a0 * 5, 1)`), losing the original switch semantics.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Function boundaries generally match the source, and helper functions like `op_add` are correctly identified, though some wrapper functions (`sub_400xxx`) are present but do not significantly hinder understanding.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code frequently relies on `goto` for control flow (e.g., in `duffs_device` and `conditional_func_ptr`), disrupting the top-to-bottom reading experience expected in high-level code.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler accurately reflects compiler optimizations (e.g., tail recursion in `recursion_factorial` becoming a loop), but fails to abstract these optimizations back into readable source-like patterns, leaving raw optimized arithmetic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `unsigned int` are used, but the decompiler frequently resorts to `uint128_t` for stack variables (e.g., in `large_jump_table`) where standard structs or arrays would be appropriate, indicating confusion about memory layout.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are completely lost; the `matrix` array in `loop_multi_exit` and the function pointer arrays are represented as raw `uint128_t` blobs and pointer arithmetic rather than structs or typed arrays.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on manual bit masking (e.g., `& 4294967294`) to handle overflow/truncation instead of using standard types, and computed jumps (`goto *...`) bypass type safety mechanisms.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the heavy optimizations, or the purpose of complex arithmetic sequences, leaving the user to decipher the intent solely from the code.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are missed; division by 10 is represented as multiplication by a magic constant (`1717986919`), and Duff's Device is not recognized, resulting in spaghetti code rather than the structured switch-in-loop pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging potential issues, such as the transformation of recursion to iteration or the use of opaque predicates, even where the control flow is clearly synthetic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `n > 0` in `duffs_device` is present in the logic but not stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are direct, but data references like `CSWTCH.55` or global jump tables are opaque and do not clearly indicate their relationship to the switch statements they implement.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a logical order matching the source flow, and related functions (like the state machine handlers) are grouped together, which aids navigation.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on non-standard intrinsics like `__ROL__` and `arm64g_calculate_condition` and would require significant patching or a specific runtime library to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Simple arithmetic operations (e.g., `* 2`, `/ 10`) are obscured by magic numbers and bit-masking intrinsics (`__ROL__`, `1717986919`).
+- Composite types (arrays, structs) are lost, replaced by `uint128_t` integers and raw pointer arithmetic.
+- Complex control flow structures like Duff's Device are flattened into unstructured `goto` labyrinths.
+- No comments or semantic annotations are provided to explain compiler optimizations or IR artifacts.
+- Switch statements are often converted into mathematical formulas or array lookups without retaining the `switch` syntax.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names, which is crucial for navigating the code and understanding the high-level intent of each unit.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The complete lack of comments, combined with the failure to recognize and annotate common idioms (like division-by-constants or Duff's Device), makes the optimized logic extremely difficult to reverse engineer.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to recognize compiler-specific arithmetic optimizations (e.g., magic number division) and replace them with standard C operators.
+2. Add a lifting pass to convert VEX/IR intrinsics (like `__ROL__` and `arm64g_calculate_condition`) into standard C control flow and arithmetic expressions.
+3. Improve composite type recovery to identify stack arrays and structs, avoiding the use of oversized integer types (`uint128_t`) to represent memory blocks.

@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 9,
+  "source_file": "decompiled/ida_out/x86/1/1_clang_O1_g.c",
+  "fixed_file": "results_qwen_v4_full/x86/1/1_clang_O1_g/ida/syntactic/fix_1_clang_O1_g.c"
+}

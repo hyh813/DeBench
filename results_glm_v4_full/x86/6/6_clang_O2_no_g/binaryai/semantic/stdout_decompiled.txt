@@ -1,0 +1,18 @@
+=== Testing Standard Library Functions ===
+Length: 8
+Strcmp result: 0
+Strlen result: 12
+Memcpy result: 90
+Memcmp result: 0
+Value: 42, Name: TestString
+Printf chars: 28
+Scan sum: 579
+File open: 0x2a
+File R/W: 0x2a
+Malloc free: 0x5a
+Memset sum: 0x0
+Strchr/strstr: 0xf
+=== Testing System Calls ===
+Syscall open: 0x2a
+Stat result: 0x2a
+Fork/exec: 0x2a

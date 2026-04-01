@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `a0`, `a1`, `a2` instead of original names like `a`, `b`, `c`, `x`, `n`. Local variables are `v0`, `v1`, `v2`, `i`, etc. The original had meaningful names like `temp1`, `temp2`, `sum`, `count`, `result`. This is a severe degradation making tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions correctly recovered (sequential_ops, single_if, if_else, loop_for_fixed, recursion_factorial), but many use address-based names (sub_400b14, sub_400944) or lose semantic meaning. The test functions are named correctly but internal helper functions lack proper naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) appear frequently for -1 returns but aren't explained. The original had clear constants like `10`, `5` for switch cases. Some literals like `1000` in infinite_loop are preserved but unsigned casting obscures the intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: stack_chk_guard references, bizarre `__ROL__` operations in division (should be simple `/10`), convoluted array access patterns using bit manipulation, and redundant return statements. The loop_while function has extremely obfuscated division logic that should be `result / 10`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops recognized as for/while, if-else chains are clear. However, switch statements are decompiled as if-else chains rather than switch constructs. The `loop_break` and `loop_multi_exit` functions have convoluted while loops with complex conditions that obscure the simple array traversal logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - none are monolithic. Each function from the original is preserved as a separate unit. The decomposition matches the source well, with test functions properly separated from implementation functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Early returns are present but appropriate. The main issues are in complex functions like `loop_break` where the while loop structure with embedded if-else makes tracing difficult. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present, particularly in the switch statements where conditions are checked multiple times. The division operations in loop_while/loop_dowhile are unnecessarily complex (should be single `/10` operation). No significant dead code but some expressions could be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - original `int` becomes `unsigned int` throughout, losing sign information. Parameters like `x` that should be signed are now unsigned, changing semantics for negative numbers. Function return types are inconsistent (some `int`, some `unsigned long long`). The original had `volatile int*` but decompiled loses volatile qualifier.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex struct recovery needed as source didn't use them extensively. Arrays in functions like `loop_break` are handled via pointer arithmetic. The decompiler correctly identifies array bounds in loops. Simple types are reasonably preserved.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: unsigned/signed mismatch throughout (comparing unsigned to signed literals), pointer arithmetic in array access (loop_break uses complex pointer arithmetic), function pointer type mismatches (call_func_ptr has incorrect signature). The `call_func_ptr` function has wrong parameter types - takes `unsigned long long*` instead of function pointer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments present. Only auto-generated function headers. No explanation of algorithm intent, no documentation of parameters or return values. The original had extensive comments explaining each function's purpose and test cases. This is a major gap.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - loops, if-else chains. However, switch statements not identified (decompiled as if-else). The Duff's device in duffs_device is partially recognized but the switch-case structure is lost. State machines are partially decompiled but the switch semantics are unclear.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of suspicious code or uncertain decompilation. The complex `__ROL__` operations in division should be flagged as potential decompilation issues. No warnings about unsigned/signed mismatches that change semantics. The indirect recursion could not be properly resolved but no indication given.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Original had parameter validation (e.g., "n must be > 0" for duffs_device) but none recovered. No documentation of error return values or edge case handling. The multi_return function's contract is completely opaque.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear within test functions. However, callback relationships (call_func_ptr, process_with_callback) are not documented. The relationship between indirect_recursion_a and indirect_recursion_b is not explained. Global variable usage is minimal but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in address order rather than logical grouping. Test functions (test_control_flow_l1/2/3) are separated but implementation functions are scattered. No logical grouping matching the original's CF-L1, CF-L2, CF-L3 sections. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with minor modifications. External declarations are present for standard library functions. Some issues: function pointer types incorrect, unsigned/signed mismatches would cause warnings. No header file structure recovered.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of meaningful names like `a`, `b`, `sum`, `count`
+- Type precision severely degraded: all `int` become `unsigned int`, losing sign semantics for negative numbers
+- Division operations obfuscated with `__ROL__` bit manipulation in loop_while/loop_dowhile (should be simple `/10`)
+- No comments explaining algorithm intent, parameters, or return values
+- Function pointer types incorrect (call_func_ptr signature wrong)
+- Array access patterns in loop_break/loop_multi_exit use convoluted pointer arithmetic
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- Loops and conditionals are generally recognized and structured correctly; the decompiler preserves the basic control flow structure well despite other issues.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic variable names completely obscure variable purpose; combined with type degradation, this makes understanding function logic extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0 + a1` suggests parameters should be named `a` and `b`, `v0 += i` suggests `sum` accumulator
+2. Recognize and simplify division operations - detect `x / 10` pattern instead of generating complex bit manipulation
+3. Preserve sign information from comparison operations - detect when parameters should be signed based on comparisons like `x > 0`

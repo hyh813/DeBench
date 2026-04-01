@@ -1,0 +1,5 @@
+Testing obf_opt_edge:
+
+call_opaque_predicate: 10
+param_opaque_predicate(5): 20
+call_instruction_substitution: 0xe1

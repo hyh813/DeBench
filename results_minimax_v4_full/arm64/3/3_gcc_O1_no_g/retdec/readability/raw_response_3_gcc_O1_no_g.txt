@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc. with no semantic meaning. For example, in `local_vars` the parameter should be named `x` but is just `v1`. This makes tracking variable purpose nearly impossible across the 1308-line output.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `double_value`, `local_vars`, `heap_basic`, `vla_stack`, `stack_alias`). However, some internal helper functions have generic names like `function_9d0`, `function_9e0`. The test wrapper functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many unexplained address literals like `0x13fe0`, `0x13fe8` for global variables. The decompiler inlined expected output values (e.g., `20` for local_vars result) which is confusing. Magic numbers like `0xffffffff` for error returns lack explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__asm_sbfiz` intrinsics, `__stack_chk_fail` calls, `__asm_ubfx`/`__asm_sbfx` for bitfield operations, `__asm_dmb` for memory barriers. Excessive type casts between int64_t and int32_t obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The `local_array` function uses a complex pointer-based loop instead of the original for-loop. VLA functions (`vla_stack`, `alloca_usage`) have convoluted control flow with manual stack management. Some while loops could be recognized as for-loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good decomposition matching source - each test case remains a separate function. However, test wrapper functions like `test_stack_memory` are large (80+ lines) with many printf calls. Parameter lists are reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with appropriate early returns for error conditions. The linked list code has goto-like jumps between cleanup sections. Some forward jumps disrupt flow but are manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Loop unrolling is present in `local_array` and `heap_array` but not excessively commented. Common patterns like `v5 = v5 + 1` could be simplified to `v5++`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` for most values even when `int` (32-bit) would be correct for ARM64 at -O0. Function parameters often use `int64_t` instead of proper types. Some proper use of `uint32_t` and `int32_t` but inconsistent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. The original `Point`, `Node`, and `TreeNode` structs are completely lost. The decompiled code uses raw pointer arithmetic like `*(int32_t *)(v1 + 8)` instead of `node->next`. This is the worst-scoring dimension.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts between pointer and integer types (e.g., `(int64_t)mem`). Pointer arithmetic like `v4 += 4` without explicit size documentation. Some potentially dangerous operations in `dangling_pointer` and `double_free` but these match the intentional bugs in source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., `// Address range: 0xc14 - 0xc1c`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments are completely useless for understanding logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal are recognizable in the code structure but not explicitly named or commented. Memory allocation patterns (malloc/calloc/realloc) are identified but not labeled as patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly detection whatsoever. The decompiler silently produces incorrect code for some functions (e.g., `global_var_access` returns `&g9` instead of incrementing `global_counter`). No warnings about undefined behavior or uncertain reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. Error handling is present (NULL checks before dereference) but not documented as contracts. The `if (mem == NULL)` checks are preserved but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function prototypes listed at top show call relationships. Global variables declared. However, no comments about who calls which function, no callback relationships documented, no usage patterns explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single monolithic file but functions are grouped logically (stack functions, heap functions, static functions, memory ops). Static functions properly marked. No header file recovery.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (stdio.h, stdlib.h, string.h, etc.). Function prototypes provided. Should compile with `gcc -c`. External dependencies (libc) are implicit. No build instructions provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Struct recovery completely failed**: Original `Point`, `Node`, `TreeNode` structs are lost; all access is raw pointer arithmetic like `*(int32_t *)(v1 + 8)` instead of `node->next`
+- **Variable naming is unusable**: All variables are `v1`, `v2`, `v3` etc. with no semantic meaning - impossible to track purpose
+- **No comments whatsoever**: Only address range comments present; no algorithm explanations or decompilation confidence indicators
+- **Anomaly detection completely absent**: Functions like `global_var_access` produce semantically wrong code (returns `&g9` instead of incrementing counter) with no warning
+- **Type precision poor**: Uses `int64_t` for almost everything, losing the original `int` semantics
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler recovered almost all original function names correctly, making it easy to locate specific test cases.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+Structures like `Point {int x, y}`, `Node {int data, struct Node *next}`, and `TreeNode` are completely lost. The decompiler treats them as raw memory chunks with pointer arithmetic, destroying all semantic meaning.
+
+**Top 3 Recommendations:**
+1. **Recover struct layouts with field names**: Use type propagation and allocation size analysis to reconstruct `Point`, `Node`, `TreeNode` with proper field names instead of raw `*(int32_t *)(ptr + offset)`
+2. **Infer variable names from usage patterns**: When `v1` is used as array index, name it `index` or `i`; when it's used as size, name it `size` or `count`
+3. **Add anomaly warnings**: Flag functions where decompilation produces semantically different results (e.g., `global_var_access` should warn about potential counter increment)

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `r1`, `r2`, `v0`, `v4` are generic temporaries, but some semantic names preserved (`capture_by_value`, `capture_by_ref`, `obj`, `ptr1`, `ptr2`). Class member access uses meaningful names (`this->value`, `this->size`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions well-named (`test_cpp_member_func`, `test_cpp_virtual_func`). Class methods properly demangled (`SimpleClass::getValue`, `Derived::virtual_func`). Some stubs remain generic (`sub_2020`, `sub_2030`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0x1234` becomes `4660` without explanation. String literals preserved ("Test", "Base", "Derived"). Array bounds like `0x1Fu` (31) lack semantic naming.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) in every function. 26 external functions marked "FAILED to decompile". Extensive STL template helper functions add significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow natural for -O0, but `test_cpp_exception` incorrectly marked `__noreturn`. Lambda closure handling is awkward with explicit struct representation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Class methods properly separated. However, STL templates create excessive helper functions (`std::_Tuple_impl`, `std::_Head_base`) that fragment the code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Constructor/destructor call sequences are clear. Some forward references due to C++ vtable initialization.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple similar template instantiations create redundancy. Vtable setup code repeated across constructors. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, double, size_t). Template types verbose but accurate (`std::unique_ptr<int,test_cpp_smart_ptr()::<lambda(int*)> >`). Some pointer types generic.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class structures well-recovered with field names (`value`, `name`, `size`, `data`, `multiplier`). Vtable pointers visible (`_vptr_Base`, `_vptr_BaseA`). Inheritance layouts preserved.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Vtable calls use unsafe casts (`(int (**)(...))&off_8B50`). Inheritance adjustments use pointer arithmetic (`(char *)this - 16`). Generally safe for decompiled C++.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only function headers with addresses. No algorithm explanations or API contracts. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ patterns recognized (constructors, destructors, virtual calls, lambdas). Template instantiations visible. But no explicit pattern naming or explanations.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("local variable allocation has failed", "positive sp value has been detected"). 26 failed decompilations listed. But no inline anomaly markers.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Exception handling partially visible but contracts not recovered. Bounds checks present but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clearly visible. Class method relationships clear through naming convention. Virtual dispatch visible through vtable pointers. Call graph inferable.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output. Related class methods grouped. No header file separation. STL helpers interspersed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 26 external functions failed to decompile (printf, strlen, operator new, etc.). Would need significant stubs. STL dependencies not fully resolved. Cannot compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+6+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (3+6+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (7+6+4)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                              6.14/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **26 functions failed to decompile** including critical runtime functions (printf, strlen, operator new/delete, exception handling)
+- **Variable names mostly generic** (`v0`, `v1`, `r1`, `r2`) obscuring semantic purpose
+- **No comments recovered** from original source despite `-g` debug flags
+- **STL template instantiation creates excessive noise** with verbose helper functions
+- **Exception handling incomplete** - `test_cpp_exception` marked `__noreturn` incorrectly, catch blocks not recovered
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Class structures, field names, and vtable layouts accurately recovered with meaningful names
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Despite `-g` debug flags, zero semantic comments recovered from original source documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol comments** - The `-g` flag contains function/variable documentation that should be extracted and inserted as comments
+2. **Consolidate STL template helpers** - Group or collapse repetitive template instantiation code with summary comments
+3. **Improve exception handling recovery** - Detect and reconstruct try/catch blocks from exception tables rather than showing raw `__cxa_throw` calls

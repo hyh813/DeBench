@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `puVar1`, `__ptr`, `pvVar1` throughout. The original source had meaningful names like `arr`, `n`, `i`, `result`, `sum`, `leak`, `p1`, `p2` - all completely lost in decompilation. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `double_value`, `local_vars`, `heap_basic`, `test_stack_memory`, `test_heap_memory`, `global_var_access` all match the original source exactly. The decompiler correctly recovered all function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x14` (20), `0x2a` (42), `0xf` (15), `0x800` (2048), `0x28` (40), `0xc` (12). While some like `0x2a` can be inferred from context (42 decimal), most lack explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact pollution including: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var: int i@[???]", injected functions like `get_pc_thunk_bx`, `get_pc_thunk_dx`, and `__stack_chk_fail_local`. These 50+ warning comments severely clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with recognizable loops and conditionals. However, some artifacts like the unusual loop in `heap_basic` using `iVar1 * 2` instead of proper indexing show optimization effects. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Test wrapper functions (`test_stack_memory`, `test_heap_memory`) correctly separate from implementation functions. No excessive inlining or outlining at -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `vla_stack` and `linked_list_heap`, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present in `heap_basic` (`iVar1 * 2` stride) and `test_heap_memory` (manual array initialization). This creates redundant code patterns that could be recognized as unrolled loops.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types extensively: `int` for most values, `void*` for pointers, `undefined1` for bytes. Function signatures mostly correct but parameter types generic. Original had specific types like `size_t`, `Point*`, `Node**` - mostly lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types `Point`, `Node`, `TreeNode` partially recovered with correct sizes, but field names lost - uses generic access like `*piVar2`, `piVar2[1]` instead of `->data`, `->next`. Some structure inference present.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: pointer arithmetic like `*(int *)((int)__ptr + iVar1 * 2)`, raw `void*` casting throughout, no const correctness. The code would likely trigger compiler warnings about type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No meaningful comments explaining algorithm logic, purpose, or recovered intent. Original source had no comments either, but decompiler could add explanatory notes.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Data structure patterns (linked list, binary tree) are structurally present but not explicitly identified or named. No recognition comments like "// Linked list implementation" or "// Binary tree with left/right children".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings for unresolved variables and unknown calling conventions, but inconsistent. Indirect calls not clearly flagged as uncertain. Could better indicate "ANOMALY: could not resolve" for ambiguous code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original source had bounds checking (`if (n <= 0 || n > 1000)`) but decompiled code shows only the result, not the contract. No documentation of requirements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variable usage visible (`global_counter`, `file_scope_static`). However, no explicit documentation of "called by X" or "calls Y" relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, heap functions together, static functions together. Matches source file organization reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile as-is due to: `undefined4`/`undefined1` types, unresolved `extern_global_var` and `extern_function`, missing function prototypes. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 3) / 4 = 4.5
+L2_avg = (7 + 8 + 7 + 5) / 4 = 6.75
+L3_avg = (5 + 6 + 5) / 3 = 5.33
+L4_avg = (3 + 5 + 5 + 2) / 4 = 3.75
+L5_avg = (6 + 7 + 4) / 3 = 5.67
+
+Overall = (4.5 × 0.30) + (6.75 × 0.25) + (5.33 × 0.20) + 
+          (3.75 × 0.15) + (5.67 × 0.10)
+        = 1.35 + 1.69 + 1.07 + 0.56 + 0.57
+        = 5.24/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- Variable naming is completely generic (`iVar1`, `puVar1`, `__ptr`) - original names like `arr`, `n`, `i`, `result` completely lost
+- Heavy noise pollution with 50+ "WARNING" comments about unknown calling conventions and unresolved variables
+- No meaningful comments explaining algorithm logic or recovered intent
+- Type precision severely degraded - original `size_t`, `Point*`, `Node**` become generic `int`, `void*`
+- No contract/precondition recovery despite explicit bounds checking in source
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (scored 9/10)** - All function names perfectly match the original source (`double_value`, `local_vars`, `heap_basic`, etc.)
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (scored 2/10)** - Generic names like `iVar1`, `puVar1`, `__ptr` make code nearly incomprehensible; original meaningful names completely lost
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → `arr`/`index`, multiplication by 2 → `doubled_value`, pointer to heap → `heap_ptr`) to generate semantically meaningful names
+2. **Reduce compiler artifact noise**: Filter or consolidate warnings about "unknown calling convention" - these add no value and clutter output; only show actionable anomalies
+3. **Recover type information**: Use debug symbols (present at -O0 -g) to recover precise types like `size_t`, `Point*`, `Node**` instead of generic `int`, `void*`

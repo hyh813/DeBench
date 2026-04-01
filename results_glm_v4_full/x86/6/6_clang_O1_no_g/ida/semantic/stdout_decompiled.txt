@@ -1,0 +1,29 @@
+Testing Standard Library Functions
+strcpy test: 8
+strcmp test: 0
+strlen test: 12
+memcpy test: 90
+memcmp test: -1
+Value: 42, Name: Test
+printf test: 22
+scanf test: 579
+fopen test: 42
+fread_fwrite test: 42
+malloc_free test: 90
+memset test: 0
+strchr_strstr test: 15
+Testing System Calls
+syscall test: 42
+stat test: 42
+fork_exec test: -1
+pipe test: 42
+socket test: 42
+shm test: 42
+signal_handling test: 42
+Testing Thread Concurrency
+pthread_create test: 49
+pthread_join test: 0
+mutex_lock test: 42
+condition_variable test: 42
+atomic_ops test: 500
+thread_local_storage test: -3

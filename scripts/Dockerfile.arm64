@@ -1,0 +1,32 @@
+# ARM64 Dockerfile for BinBench Evaluation
+# 专为 macOS Apple Silicon 上的 podman (ARM64 VM) 设计
+# 在 ARM64 原生环境下运行 Frida，避免 QEMU 模拟导致的 ptrace 问题
+
+FROM --platform=linux/arm64 swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 使用阿里云镜像源加速
+RUN sed -i 's/ports.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
+
+# 安装编译工具
+# 在 ARM64 原生环境下：
+# - gcc/g++ 是原生 ARM64 编译器
+# - 同时安装交叉编译器以备其他架构
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    build-essential \
+    gcc g++ \
+    gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 Python 依赖
+# frida-tools: 语义评估插桩
+# requests: LLM API 调用
+# openai: LLM 客户端
+RUN pip3 install frida-tools requests openai
+
+WORKDIR /work

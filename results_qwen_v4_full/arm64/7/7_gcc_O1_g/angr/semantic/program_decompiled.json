@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_gcc_O1_g/angr/syntactic/bin/7_gcc_O1_g_fixed",
+  "stdout": "Test complete\n\n10\n20\n225\n-582622366\n500500\n5050\n-1211108543\n20\n2\n41\n30\n2000000000\n10\n48\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

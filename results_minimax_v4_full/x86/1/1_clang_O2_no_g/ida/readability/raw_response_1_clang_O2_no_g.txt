@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v1`, `v2`, `v3`, `v4`, `v5`). Compare to source where parameters like `a`, `b`, `c` in `sequential_ops` have semantic meaning - the decompiler completely lost this.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions correctly named (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`). However, some internal helpers use auto-generated names like `sub_1030`, `sub_1090`. Main function names match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xA` (10), `0x65` (101), `0x32` (50) appear without explanation. Array `dword_3700[a1]` used in `switch_small` without context. Some expressions like `100 * a1 + 100` could be `100 * (a1 + 1)` for clarity.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, debug instrumentation, or frame pointer manipulation visible in main functions. Some auto-generated helper functions present but expected.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while`/`do-while`, conditionals use `if`. However, `loop_for_fixed` uses a complex arithmetic formula instead of recognizing the loop pattern. At `-O0` this should be a simple for loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each test function is separate. No 500-line monoliths. Parameter counts match original (e.g., `sequential_ops(int a1, int a2, int a3)` has 3 params).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns present in `multi_return`. Some forward jumps in `duffs_device` via `goto LABEL_*` but this is necessary for that pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `loop_for_fixed` shows loop unrolling as complex formula - should be commented. Some common subexpression patterns but generally manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most values. Some unsigned/signed mixing (`unsigned int a1` in `if_elseif_chain`). Function pointers declared as `int (__cdecl *a1)(int)` which is adequate but not precise. No `size_t`, `uint32_t` etc.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays accessed via pointer arithmetic: `dword_3700[a1]`, `dword_30D8[a1]`. No struct recovery visible. The hardcoded arrays in test functions suggest data sections but field names lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic in array access. Function pointer calls like `funcs_1B57[a1](a2)` have no bounds validation. Minor issues but generally safe for decompiled code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. The source had extensive comments (Chinese annotations) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like switch statements, loops recognized. `duffs_device` partially identified with labels but not named as such. No explicit pattern naming (e.g., "State machine pattern").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The test functions that don't actually call the functions (hardcoded values) should be flagged as anomalous. No indication of indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No error condition documentation. The source had explicit test cases with expected values - this semantic information completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (`printf`, `puts`). But no documentation of which functions call which. Callback relationships (e.g., `process_with_callback` using function pointer) not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions separate, helper functions grouped. Static functions properly scoped. Reasonable file organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable as standard C. External dependencies (`printf`, `puts`) are standard library. No compiler-specific hacks visible. Should compile with minimal stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 8) / 4 = 5.75
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.00
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (2 + 5 + 2 + 2) / 4 = 2.75
+L5_avg = (4 + 7 + 7) / 3 = 6.00
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (6.00 × 0.10)
+        = 1.725 + 1.75 + 0.934 + 0.413 + 0.60
+        = 5.42/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Test functions are non-functional**: `test_control_flow_l1` prints hardcoded values (`printf("CF-L1-01 (sequential_ops): %d\n", 21)`) instead of calling `sequential_ops(5, 7, 3)`. This is a complete semantic failure.
+- **Variable naming is unusable**: All parameters are `a1`, `a2`, `a3` - the decompiler made no attempt to infer semantic meaning from usage patterns.
+- **`loop_while` has incorrect logic**: The decompiled condition `(unsigned int)(v1 + 9) <= 0x12` doesn't match the source `while (x != 0)`. This is a semantic error.
+- **`if_else` returns wrong type**: Returns `_BOOL4` instead of `int`, losing the integer return semantics.
+- **No comments or documentation**: All source code annotations (Chinese comments explaining test scenarios) completely lost.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2-6)** scored highest at 8/10
+- **Why?** Functions maintain appropriate granularity with clear separation between test functions and implementation. No excessive inlining or fragmentation.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (L4-12)** scored lowest at 2/10
+- **Why?** The decompiled output has almost no comments. The original source had extensive documentation (961 lines with detailed Chinese annotations explaining each test case, difficulty ratings, and expected values) - all completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Parameters `a1, a2, a3` in `sequential_ops` should be named `a, b, c` based on the simple expression `2 * (a1 + a2) - a3`. The decompiler should analyze arithmetic patterns to recover meaningful names.
+2. **Recover loop constructs from backward jumps**: At `-O0`, `loop_for_fixed` should decompile as a for loop, not a complex arithmetic formula. The decompiler failed to recognize the loop pattern.
+3. **Fix test function decompilation**: The test functions should call the actual functions and print real results, not hardcoded expected values. This is a fundamental semantic recovery failure.

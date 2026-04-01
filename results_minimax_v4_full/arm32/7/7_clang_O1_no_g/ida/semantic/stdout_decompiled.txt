@@ -1,0 +1,9 @@
+test_obf_opt_edge
+Obfuscated function 1: 10
+Obfuscated function 2: 20
+Obfuscated function 3: 225
+String length: 77
+Tail call result: 500500
+Non-tail call result: 5050
+Vectorized loop sum: 396
+LTO result: 20

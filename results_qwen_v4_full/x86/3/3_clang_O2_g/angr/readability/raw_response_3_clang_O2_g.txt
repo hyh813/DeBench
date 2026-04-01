@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `addr`) with no semantic meaning. Original source had meaningful names like `large_buf`, `global_counter`, `head`, `current` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—core functions like `local_vars`, `heap_basic`, `linked_list_heap` preserved, but many wrapper functions use mechanical names (`sub_4012b1`, `sub_4012ca`). Critical function `double_value` exists but appears twice with different implementations.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of confusing magic numbers: `4294967295` (unsigned -1), `4294967294` (unsigned -2), `4294967293` (unsigned -3). String literals are external references (`g_4035c1`) with no readable content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__x86.get_pc_thunk.*` functions), redundant wrapper functions that just call real functions, conflicting struct definitions scattered throughout. Platform mismatch (ARM64 source → X86 decompilation).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops transformed into awkward do-while with complex conditions. Some functions use goto (`sub_401030`, `sub_401130`). Many functions oversimplified to constant returns (`stack_alias` returns 20, `tree_heap_traversal` returns 60).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions mostly preserved but many unnecessary wrapper functions created. Some functions completely collapsed (`heap_overflow` just returns 0). Parameter types mismatch original (`local_vars` takes `unsigned int` instead of `int`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom reasonably well. Loop structures recognizable but awkward. Deep nesting in `linked_list_heap` with multiple error-handling branches.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present but not recognized or commented. Wrapper functions create redundancy. Multiple conflicting `struct_0` definitions. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of specific types. Pointer types often `void*` or `char*`. Function pointer `global_func_ptr` typed as `unsigned int` not function pointer. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`). Multiple conflicting `struct_0` definitions. `Point` struct lost (arithmetic only). `Node` struct partially recovered as `struct_0` with `field_0`/`field_4`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts present. `dangling_pointer` accesses freed memory without warning. `double_free` logic simplified incorrectly. Buffer overflow patterns not flagged. Function pointer calls without proper signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API contracts. One anomaly marker (`[D] Unsupported jumpkind`) but critical issues unflagged.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns not recognized. Linked list traversal not identified. Tree structures not named. Loop unrolling not commented. No design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`Unsupported jumpkind`) but dangerous patterns unmarked (dangling pointer access, double free simplified away). Type mismatches not indicated. Simplified functions not marked as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented. No postconditions inferred. Error return values not explained (4294967295 = -1 unclear). NULL checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, global variables declared as extern. Callback relationships unclear (`global_func_ptr` usage). No call graph documentation. `printf` calls missing format arguments.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims compilation succeeds. External dependencies declared. Platform mismatch (X86 vs ARM64) would cause issues. Would need significant patching for practical use.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+3+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.21/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Magic number confusion**: `4294967295` used throughout instead of `-1`, making error handling incomprehensible
+- **Function logic collapse**: Critical functions return constants instead of actual logic (`stack_alias`→20, `tree_heap_traversal`→60, `heap_overflow`→0)
+- **printf format arguments missing**: Test functions call `printf("MEM-L1-01: %d\n")` without actual values
+- **Platform mismatch**: Source compiled for ARM64 but decompiled as X86, indicating fundamental analysis error
+- **Type system degradation**: Function pointers typed as `unsigned int`, losing callable semantics
+
+### Best Quality Aspect: **Build System Compatibility (6/10)**
+- Code structure allows compilation with external dependencies properly declared, despite other issues
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no semantic documentation; a reader cannot understand intent without comparing to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover signed/unsigned semantics**: Convert `4294967295` back to `-1` for error codes to restore semantic meaning
+2. **Preserve function logic integrity**: Do not collapse functions to constant returns when actual computation exists in binary
+3. **Add decompilation confidence annotations**: Mark simplified functions, unresolved calls, and type uncertainties with comments like `// DECOMPILER: Logic simplified, original may differ`

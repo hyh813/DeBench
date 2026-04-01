@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_clang_O3_no_g/ida/syntactic/bin/6_clang_O3_no_g_fixed",
+  "stdout": "=== Testing Standard Library Functions ===\nLibL101: 8\nLibL102: 0\nLibL103: 12\nLibL104: 90\nLibL105: 0\nValue: 42, Name: Test\nLibL106: 22\nLibL107: 579\nLibL108: 42\nLibL109: 42\nLibL110: 90\nLibL111: 0\nLibL112: 15\n=== Testing System Calls ===\nSysL301: 42\nSysL302: 42\nSysL303: 42\nSysL304: 42\nSysL305: 42\nSysL306: 42\nSysL307: 42\n=== Testing Thread Concurrency ===\nThrL301: 49\nThrL302: 0\nThrL303: 42\nThrL304: 42\nThrL305: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

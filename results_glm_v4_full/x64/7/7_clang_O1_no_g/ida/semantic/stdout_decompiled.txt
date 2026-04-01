@@ -1,0 +1,15 @@
+Starting test_obf_opt_edge...
+Test fake branch: 10
+Opaque predicate result: 20
+Instruction substitution: 225
+Decrypted string: 133
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop: sum=396, last=88, arrays: 0x6517c818f070 0x14 (nil) 0x160000000b
+LTO result: 20
+Division by zero: 1
+Null pointer deref: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 47

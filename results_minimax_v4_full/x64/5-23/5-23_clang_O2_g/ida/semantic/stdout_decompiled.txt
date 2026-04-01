@@ -1,0 +1,21 @@
+Preprocessor Test
+Param macro result: 64
+Call macro result: 30
+Conditional compile: 32
+Multi-branch compile: 57122
+Macro recursion: 116
+Stringize result: 19
+Token paste: 60
+LOG: Values: 10, 20, 30
+Variadic macro: 60
+Macro override: 16
+Include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:50
+Builtin macros: 382
+=== ASM Feature Test ===
+ASM basic: 15
+ASM clobber: sum=2373631648, v0=0, i=5, v1=14, v2=0, low=1, simd=5
+ASM SIMD check: v7=4294967295, ptr=, byte=10, v5=67, v6=0, v12_low=1819043144, v13=0, v14=1819043144
+ASM SIMD result: 14
+ASM atomic: 30
+ASM privileged: 77

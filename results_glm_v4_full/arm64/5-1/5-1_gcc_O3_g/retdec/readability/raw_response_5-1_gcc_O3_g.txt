@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `result`, and `a1`. In `test_cpp_template_func`, `v1` is used as an argument to `template_max` but appears uninitialized in the decompiled view, completely losing the semantic meaning of the source's `2.5` and `1.5` literals.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Functions are identified by their mangled C++ names (e.g., `_Z18test_cpp_exceptionv`), which are technically accurate but unreadable without external tools. However, the decompiler consistently provides demangled names in comments (e.g., `// Demangled: test_cpp_exception()`), which significantly aids readability.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered perfectly (e.g., `"=== 测试C++面向对象特性 ==="`), but magic numbers representing object sizes (e.g., `8`, `16`, `32`, `48` in destructors) and vtable offsets are used without explanation or named constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with compiler-generated artifacts such as `__stack_chk_fail` calls, thunks (e.g., `_ZThn16_N12MultiDerived5funcBEv`), and `__asm__` blocks (e.g., in `template_max`), which obscure the high-level logic of the program.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: The control flow is highly unnatural, particularly in `test_cpp_exception`, which relies heavily on `goto` labels (`lab_0x10e0`, `lab_0x10e4`) to simulate exception handling flow, making the try-catch structure extremely difficult to follow.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While the decompiler correctly separates thunks and template instantiations into individual functions, the main logic functions (like `test_cpp_member_func`) are often reduced to stubs or incomplete implementations, failing to represent the source's cohesive structure.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly; forward jumps to labels (e.g., in `test_cpp_rtti` and `test_cpp_exception`) disrupt the top-to-bottom reading flow, requiring constant cross-referencing to understand execution order.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is little obvious redundancy like loop unrolling, but the code is verbose due to the lack of high-level abstractions (e.g., explicit vtable lookups instead of method calls), which adds a layer of manual interpretation overhead.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are generally correct (e.g., `int32_t`, `float64_t`, `int64_t` for pointers on ARM64), but high-level types are lost; objects are represented as generic pointers (`int64_t *`), and `this` pointers are passed explicitly as the first argument.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: The decompiler completely fails to recover class definitions (e.g., `SimpleClass`, `Base`, `Derived`). No structs are defined to represent class layouts, leaving data members accessed purely via pointer arithmetic (e.g., `*(int32_t *)(v1 + 8)`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts, such as casting string literals to `int64_t` for comparisons in `test_cpp_rtti` and casting `int64_t*` to `void*` for deletion, which obscures the original type-safe C++ semantics.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: The inclusion of demangled function names and source line ranges (e.g., `// Line range: 398 - 425`) is excellent and provides crucial context for mapping the decompiled code back to the original source.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While low-level idioms like "non-virtual thunk" are named, high-level C++ idioms like virtual dispatch or RAII are not explicitly recognized; virtual function calls appear as indirect memory accesses rather than semantic method invocations.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag potential logic errors, such as the suspicious pointer comparison `if (v3 == (int64_t)"12RTTIDerivedA")` in `test_cpp_rtti`, which looks like a failed reconstruction of a `typeid` check.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds checking logic in `Container::get` is not explicitly represented as a contract in the decompiled output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function prototypes are listed at the top, and calls are direct, but the relationship between class methods and their class definitions is lost due to the absence of struct definitions, making it hard to visualize the object model.
+
+**17. Module Organization:** Score: 7/10
+Justification: The code is organized into standard sections (Structures, Classes, Prototypes, Functions, Globals), which is logical, though the "Classes" section is empty despite the code being object-oriented.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The output is C code attempting to represent C++ logic; it would not compile as C++ without significant rewriting to reconstruct classes, and the logic (e.g., uninitialized variables) suggests it might not even run correctly as C.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- **Missing Class Structures**: The decompiler failed to recover any class definitions (structs), reducing complex objects like `SimpleClass` and `Derived` to raw `int64_t*` pointers.
+- **Incorrect Logic Reconstruction**: In `test_cpp_template_func`, variables like `v1` are uninitialized in the decompiled view but passed to functions, whereas the source uses specific literals (`2.5`, `1.5`).
+- **Spaghetti Control Flow**: Exception handling in `test_cpp_exception` is reduced to a mess of `goto` labels and `__cxa` calls, completely obscuring the original try-catch structure.
+- **Generic Variable Naming**: Variables are named `v1`, `v2`, `result`, etc., losing all semantic context (e.g., `capture_by_value`, `multiplier`).
+
+**Best Quality Aspect:** Comment Quality & Presence (Score: 8/10)
+- The decompiler excels at providing metadata, specifically the demangled function names and source line ranges, which are essential for navigating the otherwise opaque output.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- The complete absence of recovered class structures makes it nearly impossible to understand the data layout or relationships between the code and the data it operates on.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Class Layouts**: Analyze constructor/destructor code and member access patterns to synthesize struct definitions for classes, rather than leaving them as raw pointers.
+2.  **Improve Variable Initialization Tracking**: Ensure that literals passed to functions (like in `template_max`) are correctly represented as initialized variables or constants, not uninitialized garbage.
+3.  **Pattern Match Exception Handling**: Detect the standard `__cxa_begin_catch` / `__cxa_throw` patterns and reconstruct them into higher-level `try` / `catch` / `throw` blocks or at least annotate them clearly.

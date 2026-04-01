@@ -1,0 +1,17 @@
+=== Testing Standard Library ===[PASS] strncpy test
+
+[PASS] strncpy test
+[PASS] strcmp test
+[PASS] scanf test
+[PASS] memcpy test
+[PASS] printf test
+Value: 0, Name: Test
+[PASS] fopen/fclose test
+[PASS] strlen test
+[PASS] fread/fwrite test
+/tmp/binbench_test_tmp[PASS] strchr test
+=== Testing System Calls ===
+
+[PASS] Linux syscall test
+[PASS] stat test
+[PASS] fork/exec test

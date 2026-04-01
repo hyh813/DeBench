@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `v4`. For example, in `test_cpp_member_func`, the `SimpleClass obj` is lost, replaced by `unsigned int v0` and `char v1[15]`, completely obscuring the object-oriented nature of the code.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: While C++ mangled names (e.g., `_Z20test_cpp_member_funcv`) are recovered, they are not demangled, leaving the user to manually decode them. Other functions are reduced to generic names like `sub_401644` or `$x`, providing no semantic hint.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals like `"Test"` and format strings are preserved and readable. However, magic numbers such as `4700` in `test_cpp_oo_features` appear without context, and the logic `strlen(&v0 | 4)` contains a suspicious bitwise OR on a stack address that reduces clarity.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant stack frame noise, such as `v4 = &v5` and `char v1; // [bp+0x0]` in almost every function. The expression `&v0 | 4` in `test_cpp_member_func` suggests a failure to correctly track stack variable offsets or unions, adding confusion.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic loops like the `do...while` in `test_cpp_constructor` are recovered reasonably well. However, control flow for C++ specific features is poor; `test_cpp_exception` shows the raw `__cxa_throw` mechanism rather than the structured `try/catch` blocks, making the logic hard to follow.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Class methods are often flattened or lost. For instance, the logic for `SimpleClass` constructor and `setValue` is inlined directly into `test_cpp_member_func` rather than being presented as a cohesive class method or a separate called function, destroying the object-oriented structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the lack of structured class definitions forces the reader to jump between raw memory manipulations. The forward jumps in `register_tm_clones` are confusing, though likely part of the runtime initialization.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is apparent redundancy in variable assignments, such as `v0 = v2; v1 = v3;` in `$x`, which likely represents register saving. The logic in `test_cpp_oo_features` repeats calculation patterns found in individual test functions, suggesting inlining that wasn't abstracted away.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: High-level types are aggressively downgraded. `std::unique_ptr` is completely lost, treated as raw pointers or optimized away. `SimpleClass` is broken into primitive types (`unsigned int`, `char[15]`), and `this` pointers are frequently treated as `void*` or `char*`, losing type safety.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is very poor. `class Base` is defined as an empty struct `class Base {}`, and `SimpleClass` is not recovered at all. Generic types like `struct_0` are used for vtable pointers, failing to reconstruct the original class layouts or inheritance hierarchies.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic. Examples include `*((unsigned int *)&ptr[40])` and `*((long long *)*((long long *)&arg_0))()` for virtual calls. These patterns mimic the assembly but erase the type boundaries provided by the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The complex logic for virtual inheritance or exception handling is presented without any high-level explanation, leaving the user to interpret raw library calls like `__cxa_begin_catch`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: C++ idioms are not recognized. Virtual function calls are rendered as raw vtable dereferences (`(*((long long *)*((long long *)&arg_0)))()`) rather than `obj->virtual_func()`. The RAII pattern in `test_cpp_constructor` is invisible, shown only as manual `new`/`delete` calls.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents confusing code like `strlen(&v0 | 4)` or `__ROL__(0, 1)` without any warning or anomaly flag. The user is not alerted that these might be decompilation errors or artifacts of stack tracking failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For example, the bounds checking in `Container::get` (`if (idx >= 0 && idx < size)`) is lost or obscured in the decompiled `Container<int>::get`, which is just a stub returning void.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: The presence of mangled names (`_ZN...`) allows for cross-referencing if the user understands name mangling. However, the lack of demangling and the use of generic `sub_` names for helpers make tracing the call graph difficult.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While it roughly follows the source order, there is no logical grouping of class members or separation of test infrastructure, making it hard to navigate the 1133 lines of decompiled output.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile. Definitions like `class Base {}` are incomplete, and external references like `g_413ff8` are unresolved. The types are so primitive that recompiling into a functional C++ program would require massive manual intervention.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 7 + 4) / 4 = 4.5
+L2_avg = (6 + 5 + 6 + 5) / 4 = 5.5
+L3_avg = (3 + 2 + 3) / 3 = 2.67
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (4 + 5 + 2) / 3 = 3.67
+
+Overall = (4.5 × 0.30) + (5.5 × 0.25) + (2.67 × 0.20) + 
+          (1.25 × 0.15) + (3.67 × 0.10)
+Overall = 1.35 + 1.375 + 0.534 + 0.1875 + 0.367
+Overall ≈ 3.81
+```
+
+### Overall Readability Score: **3.8/10**
+
+### Critical Defects
+- **Class Structure Loss**: `SimpleClass` and `LifecycleClass` are completely flattened into raw stack variables (`v0`, `v1`), destroying the object-oriented model.
+- **Virtual Call Obscurity**: Virtual function calls are decompiled to raw memory dereferences of vtables (e.g., `(*((long long *)*((long long *)&arg_0)))()`) instead of C++ method calls.
+- **Exception Handling Failure**: `try/catch` blocks are not recovered; the code only shows the underlying `__cxa_throw` and `__cxa_begin_catch` library calls.
+- **Missing Type Information**: `std::unique_ptr` and template types are erased, replaced by generic `void*` or primitive types.
+- **Symbol Demangling**: C++ mangled function names are present in the output but not demangled, significantly hindering readability.
+
+### Best Quality Aspect
+- **Literal Clarity (Score: 7/10)**
+- **Why?**: String literals and immediate values are preserved accurately, which helps identify the general purpose of functions like `test_cpp_member_func` where "Test" is visible.
+
+### Most Needs Improvement
+- **Semantic Transparency (Score: 1.25/10)**
+- **Why?**: The decompiler fails to recognize high-level C++ idioms like virtual dispatch, RAII, and exceptions, presenting them as low-level pointer arithmetic and library calls without comments.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement C++ Class Recovery**: Analyze constructor/destructor patterns and `this` pointer usage to reconstruct class definitions and member variables instead of flattening them to stack offsets.
+2.  **Demangle Symbols**: Automatically demangle C++ function and variable names (e.g., convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()`) to improve navigation and understanding.
+3.  **Recover High-Level Control Flow**: Enhance pattern matching for C++ exception handling (`try/catch/throw`) and virtual function calls to emit idiomatic C++ code rather than raw library calls and vtable lookups.

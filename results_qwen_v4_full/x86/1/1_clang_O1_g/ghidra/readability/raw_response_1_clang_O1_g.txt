@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar3`, `bVar6`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` which are completely lost. Many variables marked as "Unresolved local var" with no names at all.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`). Some initialization functions have generic names (`FUN_00011030`, `_init`) but core test functions retain original semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x3e9`, `0x65`, `0x12` in loop conditions). Original constants like loop bounds are preserved as literals but lack named constant recovery. Some hex values in test output (`0x15`, `0x2d`) obscure expected decimal values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts like `__i686.get_pc_thunk.bx` warnings, "Removing unreachable block" comments, and "WARNING: Unknown calling convention" messages. However, core logic functions are relatively clean without excessive register spilling artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Many natural constructs lost - `single_if` becomes bit shift `x << (0 < x)`, `if_else` becomes cast `(uint)(0 < x)`. Loops often converted to do-while with complex conditions. `switch_fallthrough` partially recovered but uses nested ifs instead of fall-through. At -O0, this degradation is excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified with appropriate granularity. Helper functions (`double_value`, `triple_value`, `op_add`, etc.) properly separated. No monolithic functions observed, though some test functions are large.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains awkward patterns like `goto LAB_00011822` in `loop_multi_exit`. Some functions use early returns appropriately, but others have confusing jump labels that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling correctly identified and converted to formulas (`loop_for_fixed`). No obvious dead code in core functions. Some redundant variable assignments present but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic `int` instead of precise types. Function pointers partially recovered (`_func_int_int *`) but many cast to `(code *)`. Mixed signed/unsigned usage (`uint)x < 3` vs `x < 0`). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays shown as pointer arithmetic (`piVar2 = piVar2 + 1`). Matrix in `loop_multi_exit` not recovered as 2D array. Struct types not present in this code sample. Local arrays marked "Unresolved local var: int[5] arr@[???]".
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(undefined **)`, `(code *)`). Function pointer calls use generic `code *` type. No buffer overflow protections visible. Pointer arithmetic on function pointers is risky.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated warnings like "Unresolved local var" and "WARNING: Subroutine does not return". No algorithm explanations, no parameter documentation, no semantic hints about function purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Duff's device structure partially recognized but not named. State machine pattern in `state_machine` not identified. Loop patterns converted to formulas without noting the optimization. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unresolved variables ("Unresolved local var: int temp1@[???]"). Architecture mismatch not flagged (ARM64 source → x86 decompilation). Some "WARNING: Removing unreachable block" messages present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n > 0` but this isn't noted. No error condition documentation. Test expected values hardcoded without explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Function pointer arrays show targets (`PTR_double_value_00015ec8`) but no call graph. Global variables referenced but usage patterns unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source. Test functions grouped separately. Initialization/finalization functions at beginning/end. Static helper functions properly placed near users.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Contains external dependencies (`__libc_start_main`, `__cxa_finalize`, `puts`, `printf`) without declarations. Architecture-specific thunks present. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+7+6+7)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────
+Overall Score:                              5.37/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Variable names completely lost**: All locals are `iVar1`, `iVar2`, `uVar3` instead of semantic names like `sum`, `count`, `result`
+- **Control flow semantics degraded**: `single_if` converted to bit shift, `if_else` to cast, losing original intent
+- **Logic errors in decompilation**: `nested_if_2` and `nested_if_deep` return incorrect values compared to source
+- **No semantic comments**: Zero documentation about algorithm purpose, only auto-generated warnings
+- **Architecture mismatch unflagged**: Original ARM64 compiled to x86 decompilation without warning
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source, making function identification straightforward
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or error handling contracts documented despite many functions having implicit requirements
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., `iVar1` used as accumulator → `sum`)
+2. **Preserve original control flow structures** at -O0 optimization level rather than converting to equivalent but less readable expressions
+3. **Add semantic documentation generation** including function purpose, parameter constraints, and return value meanings based on code analysis

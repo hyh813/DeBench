@@ -1,0 +1,17 @@
+TRACE_ENT|0|test_stack_memory|0|Arg0=1,Arg1=996877720,Arg2=996877736,Arg3=-736477872|rax=0x0,rbx=0x7fff3b6b2598,rcx=0x637dd41a3d50,rdx=0x7fff3b6b25a8,rsi=0x7fff3b6b2598,rdi=0x1,r8=0x0,r9=0x790e45629380
+TRACE_PRINT|0|%53%74%61%63%6B%20%4D%65%6D%6F%72%79%20%54%65%73%74
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|local_vars|1|Arg0=5,Arg1=1161840195,Arg2=1,Arg3=0|rax=0x12,rbx=0x7fff3b6b2598,rcx=0x0,rdx=0x1,rsi=0x790e45404643,rdi=0x5,r8=0x0,r9=0x790e45629380
+TRACE_EXT|1|local_vars|1|20
+TRACE_PRINT|0|%4D%45%4D%2D%4C%31%2D%30%31%20%28%6C%6F%63%61%6C%5F%76%61%72%73%29%3A%20%32%30%0A
+TRACE_ENT|2|local_array|1|Arg0=2,Arg1=996876832,Arg2=0,Arg3=0|rax=0x1b,rbx=0x7fff3b6b2598,rcx=0x0,rdx=0x0,rsi=0x7fff3b6b2220,rdi=0x2,r8=0x1b,r9=0x0
+TRACE_EXT|2|local_array|1|10
+TRACE_PRINT|0|%4D%45%4D%2D%4C%31%2D%30%32%20%28%6C%6F%63%61%6C%5F%61%72%72%61%79%29%3A%20%31%30%0A
+TRACE_ENT|3|local_struct|1|Arg0=5,Arg1=996876832,Arg2=0,Arg3=0|rax=0x1c,rbx=0x7fff3b6b2598,rcx=0x0,rdx=0x0,rsi=0x7fff3b6b2220,rdi=0x5,r8=0x1c,r9=0x0
+TRACE_EXT|3|local_struct|1|15
+TRACE_PRINT|0|%4D%45%4D%2D%4C%31%2D%30%33%20%28%6C%6F%63%61%6C%5F%73%74%72%75%63%74%29%3A%20%31%35%0A
+TRACE_ENT|4|address_of_local|1|Arg0=996877276,Arg1=996876832,Arg2=0,Arg3=0|rax=0x7fff3b6b23dc,rbx=0x7fff3b6b2598,rcx=0x0,rdx=0x0,rsi=0x7fff3b6b2220,rdi=0x7fff3b6b23dc,r8=0x1d,r9=0x0
+TRACE_EXT|4|address_of_local|1|42
+TRACE_PRINT|0|%4D%45%4D%2D%4C%31%2D%30%34%20%28%61%64%64%72%65%73%73%5F%6F%66%5F%6C%6F%63%61%6C%29%3A%20%34%32%0A
+TRACE_ENT|5|address_of_array|1|Arg0=996877328,Arg1=0,Arg2=24,Arg3=0|rax=0x7fff3b6b2410,rbx=0x7fff3b6b2598,rcx=0x0,rdx=0x18,rsi=0x0,rdi=0x7fff3b6b2410,r8=0x21,r9=0x0
+TRACE_EXT|5|address_of_array|1|2

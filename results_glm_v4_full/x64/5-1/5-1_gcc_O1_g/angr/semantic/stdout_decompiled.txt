@@ -1,0 +1,2 @@
+Test 1: Member Function
+Test 2: ConstructorTest 3: Virtual FunctionTest 4: Multiple InheritanceTest 5: Diamond InheritanceTest 6: Operator OverloadTest 7: Template FunctionTest 8: Template ClassTest 9: LambdaTest 10: ExceptionTest 11: Smart PointerTest 12: RTTIAll tests completed!

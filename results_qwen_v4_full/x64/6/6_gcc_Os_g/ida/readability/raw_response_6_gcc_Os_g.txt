@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `temp_1` instead of semantic names (e.g., `buffer`, `fd`, `thread_ret`). In `param_strcpy`, `v2` should be `copied_string` based on its usage as strcpy's return value.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `param_strcpy`, `thread_sum`, `signal_handler` are recovered correctly, but 40+ functions use mechanical names like `sub_2020`, `sub_2030` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: syscall numbers (2, 3, 10, 14), socket constants (2, 1, 0), and signal numbers appear without explanation. `socket(2, 1, 0)` should be `socket(AF_INET, SOCK_STREAM, 0)`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readfsqword(0x28u)`) in every function, redundant type casts (`(_DWORD)v5 - (_DWORD)str`), and unused variables clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures recovered as proper if/while/for, but some awkward patterns exist (e.g., `param_strcmp` uses `-(v2 != 0)` instead of clean ternary). At -O0, this level of transformation is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; thread functions and test functions are properly separated. However, 58 functions failed to decompile entirely, breaking the call graph.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but nested conditionals in `param_signal_handling` create deep indentation (5+ levels). Some functions have early returns that could be flattened.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_strlen` was constant-folded to `return 12` losing the actual strlen call. Stack canary code is duplicated in every function without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `size_t` becomes `int`, `pthread_t` becomes array, `atomic_int` becomes plain `int`. Pointer arithmetic uses `(_DWORD *)` casts losing type safety.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct partially recovered but field names lost (`start`, `end`, `result` became array indices). `sockaddr_in` accessed via direct field assignment without struct definition.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD)v5 - (_DWORD)str` for pointer subtraction, `(_QWORD *)src` for array initialization. No const-correctness preserved on string parameters.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. Only auto-generated function headers exist. No explanation of syscall numbers, signal constants, or algorithm intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library patterns (strcpy+strlen, fork+waitpid) not identified as idioms. Producer-consumer pattern in `param_condition_variable` not recognized or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 58 failed decompilations listed at end but no inline warnings. Stack canary checks present without explanation of their purpose. No uncertainty markers on recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for strcpy). Return value semantics not explained. Error conditions (-1, -2, -3) have no documented meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but 58 external functions failed to decompile (strcpy, malloc, pthread_create, etc.). Global variables (`signal_received`, `atomic_counter`) referenced without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file or API boundary indicated.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does NOT compile - 58 external functions undefined. Missing includes for pthread, syscalls, atomics. Architecture mismatch (ARM64 source → x64 decompilation).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 3, 5, 4, 4 | 4.0 | 30% | 1.20 |
+| L2: Structural | 6, 7, 6, 5 | 6.0 | 25% | 1.50 |
+| L3: Type System | 4, 5, 4 | 4.3 | 20% | 0.87 |
+| L4: Semantic | 2, 3, 3, 2 | 2.5 | 15% | 0.38 |
+| L5: Contextual | 5, 4, 2 | 3.7 | 10% | 0.37 |
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **58 functions failed to decompile** including critical libc functions (strcpy, strlen, malloc, free, pthread_create)
+- **Variable names are entirely generic** (`v0`, `v1`, `v2`) losing all semantic meaning
+- **Magic numbers everywhere** - syscall numbers (2, 3, 10, 14), socket constants, signal numbers unexplained
+- **Architecture mismatch** - ARM64 source compiled but x64 registers in decompilation output
+- **Zero documentation** - no comments explaining algorithm intent, error codes, or API contracts
+- **Type degradation** - `size_t`→`int`, `atomic_int`→`int`, `pthread_t`→array
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Function boundaries are correctly identified with appropriate granularity; thread functions and test harnesses are properly separated despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding algorithm intent, error handling, and API contracts nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in syscall context should be named `fd`, variables in string operations should be `buffer`, `length`)
+2. **Replace magic numbers with named constants** by detecting standard library patterns (syscall numbers, socket constants, signal numbers) and emitting `#define` or enum declarations
+3. **Add uncertainty annotations** for recovered code, especially where 58 functions failed - inline warnings like `// EXTERNAL: strcpy - signature inferred` would help analysts understand recovery confidence

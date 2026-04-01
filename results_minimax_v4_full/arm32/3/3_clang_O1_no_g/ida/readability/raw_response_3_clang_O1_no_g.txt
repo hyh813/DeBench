@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic single-letter names (`a1`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v0`) throughout. For example, in `local_vars`, parameter `a1` should be named `x`, and in `heap_basic`, variables `v2`, `v3`, `v4`, `v5` obscure their roles as `buffer`, `index`, `count`, and `result` respectively. These names provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Many functions retain their original names (`local_vars`, `heap_basic`, `global_var_access`, `double_value`), which is excellent. However, some functions like `sub_568`, `sub_401000` use mechanical naming, and the test functions have lost their semantic clarity (e.g., `test_stack_memory` is correct but internal logic uses generic names).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions hardcode expected values directly (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)` instead of computing `local_vars(5)`). Magic numbers like `0x14u` (20 for realloc), `0x28u` (40), `8u` (sizeof Node) are not explained. The constant `42` appears in multiple places without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise present. Redundant casts like `*(_DWORD *)&v4[-4 * i]` are verbose. The `_sync_synchronize()` calls for memory barriers are correctly preserved but could be annotated. Some dead code patterns exist but are manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is generally natural. Loops use `while` constructs appropriately. However, some awkward patterns exist like the backward loop in `local_array` (`for (i = 0; i != -10; --i)`) which is an inverted loop that requires mental inversion to understand.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and decomposed. The original source's function boundaries are preserved well. Test functions correctly call sub-functions. Minor issue: some static helper functions like `create_tree_node` are properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error-checking code (e.g., `if (!v2) return -1;`). Some nested conditions exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant computations visible. The pattern `(2 * (a1 + ((unsigned int)a1 >> 31))) & 0xFFFFFFFD` appears repeatedly for computing `n/2` with floor division - this could be abstracted. Loop unrolling is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `_DWORD` (32-bit), `_BYTE` (8-bit), `char*`, `void**`. The original `int` is preserved in function signatures, but size-specific types (`size_t` for memory sizes, `uint8_t` for byte buffers) are lost. Parameter types like `int a1` lose semantic meaning (is it a count? a value?).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The `Point` struct is completely lost - `local_struct` returns `3 * a1` instead of showing struct field access. The `Node` struct is partially recovered but fields are accessed via raw offsets (`*v4 = 20; v4[1] = 0;` instead of `node->data = 20; node->next = NULL;`). The `TreeNode` struct is similarly degraded.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic like `*(_DWORD *)&v2[2 * v3]` is common and error-prone. The cast `*(_DWORD *)v2` after `free(v2)` in `dangling_pointer` correctly shows the undefined behavior but could be flagged. Function pointer types are generic (`void *result` in callbacks).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled functions. The only comments are auto-generated headers. No explanation of algorithm intent, no @param/@return documentation, no decompilation confidence indicators. The test functions have hardcoded values but no comments explaining why.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list traversal, tree traversal) but not explicitly named or documented. The memory leak pattern in `memory_leak` is correctly shown (no free), and dangling pointer is preserved, but these aren't flagged as security concerns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. The `stack_alias` function is completely wrong (returns constant 20 instead of implementing pointer aliasing logic), but there's no warning. The `double_free` function is incorrectly simplified to just return -2. No flags for undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "n > 0" in `alloca_usage` are partially visible in the `if (a1 < 1) return -1;` check, but not documented. Postconditions (e.g., "returns heap-allocated value") are not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are preserved (`malloc`, `free`, `printf`). Global variables like `global_counter`, `global_array` are correctly referenced. However, the relationship between functions (who calls whom) is not documented. Callback relationships (e.g., `set_global_callback` setting `global_func_ptr`) are visible but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - stack functions together, heap functions together, static/global functions together. The test functions are properly separated. Static functions like `static_helper` are correctly marked. However, all functions are in one flat namespace.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code uses standard library functions (`malloc`, `free`, `printf`) that would compile. However, types like `_DWORD`, `_BYTE` are IDA-specific and would need translation. External declarations for `extern_global_var` and `extern_function` are correctly handled. The code would require moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming uses meaningless single letters (`a1`, `v1`, `v2`) throughout, making semantic purpose impossible to infer
+- `stack_alias` function is completely wrong - returns constant 20 instead of implementing pointer aliasing logic
+- `local_struct` returns `3 * a1` instead of the correct `x + x*2` (should be `p.x + p.y`)
+- `heap_struct` similarly returns `3 * a1` instead of `x + x*2`
+- Test functions hardcode expected values instead of calling the functions being tested (e.g., `printf("...: %d\n", 20)` instead of `local_vars(5)`)
+- `Point` struct completely lost - no struct recovery, just raw arithmetic
+- `double_free` incorrectly simplified to just return -2
+- No comments or documentation anywhere in the decompiled code
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function boundaries from the original source are well preserved, with appropriate granularity and static function scoping maintained.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic single-letter variable names (`a1`, `v1-v9`) completely obscure semantic purpose. Combined with Anomaly Indication (2/10), these fundamental readability issues make the code extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 * 2` suggests doubling, `a1 + 10` suggests offset) to generate semantically meaningful names like `input_value`, `buffer_size`, `result`
+2. **Recover struct types from allocation sizes**: When seeing `malloc(8)` followed by field accesses, recognize this as a 2-field struct and attempt recovery (e.g., `Node*`, `Point*`)
+3. **Flag semantic anomalies**: When decompiled logic differs significantly from expected patterns (e.g., `stack_alias` returning constant), add uncertainty comments like `// WARNING: Logic may be incorrect`

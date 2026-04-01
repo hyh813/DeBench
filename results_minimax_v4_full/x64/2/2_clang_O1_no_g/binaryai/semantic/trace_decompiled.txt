@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_composite_types|0|Arg0=1,Arg1=1564738248,Arg2=1564738264,Arg3=-1909223912|rax=0x64e18e336800,rbx=0x7ffd5d4402c8,rcx=0x64e18e338e18,rdx=0x7ffd5d4402d8,rsi=0x7ffd5d4402c8,rdi=0x1,r8=0x0,r9=0x741860e44380

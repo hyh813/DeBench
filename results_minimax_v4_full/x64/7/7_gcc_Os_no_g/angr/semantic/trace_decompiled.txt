@@ -1,0 +1,12 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=883739016,Arg2=883739032,Arg3=857451896|rax=0x0,rbx=0x7fff34acc988,rcx=0x5715331bad78,rdx=0x7fff34acc998,rsi=0x7fff34acc988,rdi=0x1,r8=0x0,r9=0x79f98c0f9380
+TRACE_PRINT|0|%54%65%73%74%20%30%3A%20%4F%70%61%71%75%65%20%70%72%65%64%69%63%61%74%65%0A
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%54%65%73%74%20%31%3A%20%43%61%6C%6C%20%6F%70%61%71%75%65%20%70%72%65%64%69%63%61%74%65%3A%20%31%30%0A
+TRACE_ENT|1|call_opaque_predicate|1|Arg0=883738176,Arg1=857452992,Arg2=0,Arg3=0|rax=0x0,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x5715331bb1c0,rdi=0x7fff34acc640,r8=0x22,r9=0x0
+TRACE_ENT|2|param_opaque_predicate|2|Arg0=5,Arg1=857452992,Arg2=0,Arg3=0|rax=0x0,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x5715331bb1c0,rdi=0x5,r8=0x22,r9=0x0
+TRACE_EXT|2|param_opaque_predicate|2|35
+TRACE_EXT|1|call_opaque_predicate|1|35
+TRACE_PRINT|0|%54%65%73%74%20%32%3A%20%49%6E%73%74%72%75%63%74%69%6F%6E%20%73%75%62%73%74%69%74%75%74%69%6F%6E%3A%20%33%35%0A
+TRACE_PRINT|0|%54%65%73%74%20%33%3A%20%43%6F%6E%73%74%61%6E%74%20%66%6F%6C%64%69%6E%67%3A%20%32%32%35%0A
+TRACE_ENT|3|param_string_encryption|1|Arg0=0,Arg1=0,Arg2=0,Arg3=0|rax=0x1e,rbx=0x0,rcx=0x0,rdx=0x0,rsi=0x0,rdi=0x0,r8=0x0,r9=0x0
+TRACE_ENT|4|decrypt_string|2|Arg0=857453632,Arg1=883738632,Arg2=32,Arg3=90|rax=0x0,rbx=0x7fff34acc808,rcx=0x5a,rdx=0x20,rsi=0x7fff34acc808,rdi=0x5715331bb440,r8=0x0,r9=0x0

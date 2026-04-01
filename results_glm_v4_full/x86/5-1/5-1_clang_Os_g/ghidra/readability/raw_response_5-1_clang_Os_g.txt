@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `local_28`, `iVar1`, `piVar1`). In `test_cpp_constructor`, `piVar1` represents the `data` pointer but loses the semantic name. The `SimpleClass` object is flattened to `local_28`, completely losing the object context.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: High-level test functions like `test_cpp_member_func` and `test_cpp_virtual_func` retain their original names. Template instantiations like `template_max<int>` are also recovered well. However, low-level helpers like `FUN_00011030` remain generic.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The code is dominated by magic numbers that are the *results* of optimized-out logic (e.g., `0x125c` for 4704, `0x2a` for 42). The original logic and constants (like `0x1234` for ClassID) are gone, replaced by computed values that obscure the source intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts pollute the output, such as `__x86.get_pc_thunk.bx` injections and repeated `WARNING: Unknown calling convention` messages. Dead code elimination warnings are present but the artifacts themselves remain.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: In functions where logic survived optimization (e.g., `test_cpp_constructor`), the `do-while` loop is natural. However, most functions are reduced to single `return` statements or low-level exception handling calls (`__cxa_throw`), completely losing the high-level `try/catch` or conditional structures.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Class methods like `Container<int>::push` and `RTTIDerivedA::~RTTIDerivedA` are correctly separated. However, the main test functions are reduced to stubs, meaning the internal decomposition of the test logic (steps 1, 2, 3) is lost.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code that remains reads linearly without complex jumps or spaghetti logic, largely because the complex branching was optimized away into constants.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler accurately reflects the optimized binary, which contains no redundancy. It does not introduce spurious variables or dead code, presenting the streamlined (albeit information-poor) logic cleanly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types are recovered where possible (e.g., `Base *obj`, `Container<int> *this`), but many locals are generic (`undefined4`, `undefined1`). The `SimpleClass` object is typed as a raw `char` array, losing type safety.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Composite types are poorly recovered in optimized functions. `SimpleClass` and `Point` objects are flattened into raw byte arrays (e.g., `char local_28 [31]`) rather than being reconstructed as structures with named fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: C++ type safety is reduced to C-level pointer manipulation. Virtual function calls are exposed as raw vtable dereferences (`(**obj->_vptr_Base)(obj,x)`), and RTTI checks are explicit `__dynamic_cast` calls rather than implicit language features.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Ghidra provides useful warnings about "Unresolved local var" and "Unknown calling convention," which helps identify decompilation limits. However, there are no comments explaining the *semantic* purpose of the magic numbers or the optimized-out logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Low-level implementations of C++ idioms are visible (e.g., `__cxa_throw` for exceptions, vtable offsets for virtual calls), but the decompiler fails to map these back to high-level C++ syntax like `try/catch` or `virtual` keywords.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: The decompiler excels at flagging issues, clearly marking "Removing unreachable block," "Do nothing block with infinite loop," and "Unknown calling convention," which effectively communicates the uncertainty of the analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are recovered. The logic is too simplified (often just a constant return) to infer any meaningful contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Standard library calls (`operator_new__`, `strlen`) and global statics (`LifecycleClass::instance_count`) are visible. However, the relationships between the high-level test objects are lost due to inlining.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in memory address order. There is no logical grouping by class or namespace (e.g., all `Container` methods are scattered), making it hard to navigate the OOP structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code relies on `undefined` types and compiler-specific runtime thunks. It would not compile without significant manual refactoring to define the missing types and headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Logic Elimination by Optimization**: Most test functions (e.g., `test_cpp_virtual_func`) are reduced to constant returns (`return 0x2a`), completely hiding the source logic and making the code unreadable relative to the original source.
+- **Flattened Composite Types**: Class objects like `SimpleClass` are represented as raw byte arrays (`char local_28 [31]`) instead of structured types, destroying the object-oriented context.
+- **Low-Level C++ Constructs**: High-level features like exceptions and virtual calls are decompiled to library calls (`__cxa_throw`) and pointer arithmetic, obscuring the original C++ syntax.
+
+**Best Quality Aspect:** Anomaly Indication (Score: 8/10)  
+- **Why?** Ghidra effectively warns the user about unresolved variables, unknown calling conventions, and compiler artifacts, which is crucial when dealing with heavily optimized code where logic is missing.
+
+**Most Needs Improvement:** Literal Clarity (Score: 2/10)  
+- **Why?** The code is filled with magic numbers (e.g., `0x125c`, `0x2a`) that represent the results of optimized-out calculations, making it impossible to understand the original algorithmic intent without cross-referencing the binary address.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Variable Type Recovery from DWARF**: Leverage the available DWARF info (seen in some functions like `Container`) more aggressively to recover stack variable types in optimized functions where possible, rather than defaulting to `undefined` arrays.
+2.  **Constant Propagation Annotation**: When a function returns a constant due to optimization, annotate the return value with the original expression if debug symbols map to it, or flag it as "Optimized to constant" to distinguish it from a hardcoded source value.
+3.  **C++ Exception Reconstruction**: Attempt to identify patterns of `__cxa_allocate_exception` and `__cxa_throw` paired with landing pads to reconstruct pseudo-`try/catch` blocks or at least comment "Exception thrown here" to improve semantic transparency.

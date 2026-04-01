@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic names like `v0`, `v1`, `v2`, `ptr`, `index`, `i`, `j`, and parameter names `a0`, `a1`, `a2`. These obscure semantic purpose - for example, `v0` in `large_stack_frame` should indicate buffer access, and `ptr` in heap functions should specify what type of data it holds.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: About 40 functions have correct names matching source (e.g., `local_vars`, `heap_basic`, `linked_list_heap`, `double_value`), but ~50 functions retain generic names like `sub_401020`, `sub_40102c`, `sub_401771`. The mix is inconsistent - some test functions properly named while CRT/callback stubs remain obfuscated.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (error return), `0x800` (2048), and `16` (struct size) appear without explanation. However, string literals from printf statements are preserved from source. The constant `-1` as unsigned (`4294967295`) is a common pattern but not documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains decompiler artifacts including `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] MBusEvent-Imbe_Fence()` markers. Some redundant casts present. However, no debug instrumentation or obvious compiler artifacts like register spilling debris.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with recognizable loops (for/while) and conditionals. Some goto statements present (e.g., `goto global_func_ptr` in `call_global_callback`, `goto LABEL_40142b`). At O2 optimization, loop unrolling in `large_stack_frame` and `vla_stack` is expected but makes logic harder to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - most are under 100 lines with single responsibility. Test wrapper functions (e.g., `sub_401209` calling `local_vars()`) are minor overhead. The `linked_list_heap` function properly encapsulates creation, traversal, and cleanup in one place.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns used appropriately in error checking (e.g., `if (!ptr) return 4294967295;`). No severe nesting beyond 3-4 levels. The flow is mostly straightforward.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop unrolling in `large_stack_frame` and array initialization functions is present but represents legitimate optimization. No significant duplicate expressions that would impede understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of precise types (`unsigned int`, `unsigned long`, `unsigned long long`) and generic types (`uint128_t`, `void*`). Integer types generally correct (using unsigned for sizes). Function parameters use generic `unsigned long a0` instead of specific types. Const correctness not preserved in most places.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered with generic names (`struct_0`, `struct_1`, `struct_2`, `struct_3`, `struct_4`). The `Node` struct in `linked_list_heap` lost its name and became `struct_0` with generic fields (`field_0`, `field_8`). However, layout is correct and usable. The `Point` struct was not recovered in `heap_struct`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: raw pointer arithmetic like `*((void*)((char *)ptr + 4 * idx))`, casting to `void*` for any data, and accessing freed memory in `dangling_pointer()` (which is actually the bug being tested). No `restrict` or alignment annotations. Some operations risk undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only decompiler annotations like `[D] MBusEvent-Imbe_Fence()` and `[D] Unsupported jumpkind`. No explanation of algorithm intent, preconditions, or non-obvious logic. The source code had extensive comments (MEM-L1-01, HEAP-L2-01, etc.) but none were recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: linked list creation/traversal, binary tree operations, memory allocation patterns. However, no explicit naming or documentation of these patterns. The "state machine" or "iterator" idioms are not identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged with `[D]` prefix (e.g., `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] MBusEvent-Imbe_Fence()`). However, these are generic and don't explain implications. The dangling pointer access in `dangling_pointer()` is presented as normal code without warning about the undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (e.g., `-1` as `4294967295`) not explained. The source had input validation (e.g., `if (n <= 0 || n > 1000) return -1`) but contracts aren't recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some external relationships clear through `extern` declarations (e.g., `extern unsigned int global_counter`, `extern unsigned int extern_global_var`). Function call relationships partially visible. However, callback relationships (like `set_global_callback` / `call_global_callback`) not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped in output - stack tests, heap tests, static tests, memory ops tests. Static functions properly marked. However, CRT initialization functions (`_init`, `_start`, `_fini`) mixed with application code. No clear separation between test harness and tested functions.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code has proper `extern` declarations for external dependencies. Appears to compile with standard library linking. Dependencies are standard C (stdio.h, stdlib.h, string.h, unistd.h). Some stub functions needed for undefined externs. The decompiled main function would compile with appropriate linking.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`v0`, `v1`, `ptr`, `a0`) making semantic purpose unclear
+- Struct/union field names lost - all become `field_0`, `field_1`, etc.
+- No comments explaining algorithms, preconditions, or non-obvious logic
+- Type precision degraded - many `void*` and `uint128_t` instead of specific types
+- Anomalies like memory barriers and unsupported jumps marked but not explained
+
+**Best Quality Aspect:** Structural Intelligibility (scored 7.75/10)  
+Control flow is natural with recognizable loops and conditionals. Functions have appropriate granularity and the code generally reads top-to-bottom without excessive jumps.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.25/10)  
+Comments are almost entirely absent, no idiom recognition, anomalies poorly documented, and no contract/precondition recovery. The decompiler provides no semantic context about what the code does or why certain patterns exist.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., `ptr` used in `malloc(a0 * 4)` should suggest `int_array` or `int_buffer`
+2. Recover struct field names from initialization patterns and usage - `field_0` set to `10`, `field_8` to `NULL` in Node struct should become `data` and `next`
+3. Add semantic comments explaining non-obvious patterns like memory barriers, optimization artifacts, and potential undefined behavior (dangling pointer)

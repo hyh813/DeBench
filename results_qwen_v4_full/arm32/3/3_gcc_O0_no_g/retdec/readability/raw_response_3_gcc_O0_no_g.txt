@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`v1`, `v2`, `v3`, `temp`, `result`) with no semantic meaning. Original source had meaningful names like `arr`, `large_buf`, `head`, `current`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`local_vars`, `heap_basic`, `global_var_access`). Some helper functions have generic names (`function_ffff0fa0`) but core functionality is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals shown as hex escapes (`g1 = "=== \xe6\xb5\x8b..."`). Magic numbers for sizes (4, 8, 10, 20, 40) lack explanation; `sizeof(int)` not recovered as constant.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Redundant casts present (`(int32_t)&v1`, `(int32_t)mem`). Frame pointer manipulation visible. Generally clean but compiler artifacts remain.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `linked_list_heap` uses explicit `goto` labels (`lab_0x1141c`, `lab_0x1144c`) instead of structured loops. At `-O0` this is unacceptable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. Original structure mostly preserved. Some functions like `linked_list_heap` are overly complex due to goto usage.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom. Goto statements in complex functions (`linked_list_heap`, `tree_heap_traversal`) disrupt linear reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop patterns reasonable. Some redundant type casts could be eliminated but don't severely impact readability.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int32_t` or `int32_t*`. Lost distinction between `int`, `size_t`, `char*`, `void*`. Original `size_t` parameters now `uint32_t` inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure.** Struct types (`Point`, `Node`, `TreeNode`) NOT recovered. All struct access through pointer arithmetic (`*(int32_t *)(v1 + 4)`). Original `p->x` becomes `*mem`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int32_t)mem`, `(char*)buf`). Pointer arithmetic on `int32_t` instead of proper pointer types. No const correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments in decompiled code.** Original had extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.). Complete loss of documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation/traversal, tree structures, memory allocation patterns not identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about potential issues (dangling pointer in `dangling_pointer`, memory leak in `memory_leak`, double-free patterns). Code presents unsafe operations confidently.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. NULL checks present but not documented as contracts. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear. Global variable usage opaque (`g1`, `g2`, `g17` instead of `global_counter`, `const_string`). Callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized by category (stack/heap/static). No header file structure. All in single file.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable (metadata confirms). Has necessary includes. Some external functions need stubs (`__aeabi_read_tp`, `__sync_synchronize`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (5+7+6+7)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+3+3)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+7)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` structures not recovered; all access via pointer arithmetic (`*(int32_t *)(v1 + 4)`)
+- **Variable names generic**: `v1`, `v2`, `v3` instead of `arr`, `head`, `current`, `new_node`
+- **No comments preserved**: Original had extensive test documentation (MEM-L1-01, HEAP-L2-01 markers) completely absent
+- **Global variables opaque**: `g17`, `g21`, `g22` instead of `global_counter`, `global_func_ptr`, `global_heap_ptr`
+- **Goto statements in complex functions**: `linked_list_heap` uses `lab_0x1141c` labels instead of structured loops at `-O0`
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`local_vars`, `heap_basic`, `global_var_access`), making basic navigation possible.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation; original source had extensive test case explanations that would aid understanding significantly.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite types from access patterns** - Detect struct field access patterns (`*(ptr+0)`, `*(ptr+4)`) and reconstruct `Point {x, y}`, `Node {data, next}` types with field names.
+2. **Preserve or infer variable names from usage context** - Analyze variable usage (array indexing, pointer dereference, loop counters) to suggest semantic names like `arr`, `index`, `head`.
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (indirect calls, struct layouts) and preserve original comments when debug symbols (`-g`) are available.

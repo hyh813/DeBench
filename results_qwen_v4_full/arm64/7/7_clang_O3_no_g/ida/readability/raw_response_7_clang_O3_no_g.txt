@@ -1,0 +1,112 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning recovered. For example, `param_opaque_predicate` uses `v1` through `v6` instead of meaningful names like `predicate_result` or `gcd_value`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names like `param_fake_branch`, `param_opaque_predicate` were preserved from symbols, but helper functions like `sub_730` and `_do_global_dtors_aux` use mechanical naming. The preserved names don't indicate functionality clearly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A` (XOR key), `0xDEADBEEF` (lost entirely), and `0x12345678` (canary value) appear without explanation. Some constants like `0xFFFFFFF8` for loop unrolling are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: redundant casts (`(unsigned int)`, `LOBYTE()`), register variable hints (`// w8`, `// x10`), and stack frame annotations (`[xsp+0h] [xbp-20h] BYREF`) clutter the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use natural if-else structures, but `param_vectorized_loop` has complex goto-based loops (`LABEL_9`, `LABEL_11`, `LABEL_17`) instead of clean for/while constructs. At O3 optimization, this is expected but reduces readability.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `param_fake_branch`, `param_buffer_overflow_stack`, and `param_buffer_overflow_heap` are empty stubs (`{ ; }`). The decompiler eliminated entire functions due to optimization, losing semantic structure entirely.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt linear reading (e.g., `goto LABEL_9` in vectorized loop). Early returns exist but are mixed with goto patterns, making execution flow harder to trace.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminated redundant code (good), but loop unrolling in `param_vectorized_loop` creates duplicated logic without abstraction. Some functions like `call_fake_branch` return constants instead of calling underlying logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision: `int32x4_t` recovered for SIMD types (good), but generic `int`, `__int64`, and `unsigned int` used inconsistently. `param_null_pointer_deref` uses `unsigned int *a1` instead of `int *p` from source.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely optimized away (returns constant 48). No struct definitions recovered; all composite types lost to optimization.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(unsigned int)(a1 - 1)`, `(__sighandler_t)div_zero_handler`). Pointer arithmetic in vectorized loop uses raw byte offsets. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated type hints (`// w8`, `// x10`) and register annotations. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: SIMD vectorization pattern in `param_vectorized_loop` is visible but not identified as such. GCD algorithm in `param_opaque_predicate` not recognized. No design patterns named or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: strlen @ 0x12340`) but no inline warnings. Empty function stubs (`param_fake_branch`) not flagged as suspicious or optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note `a1 != 0` for normal path). No postconditions or error condition documentation. Signal handler contracts completely missing.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible in code but not documented. `call_fake_branch` returns constant 10 instead of showing it calls `param_fake_branch(10)`. Global variables like `jmp_buffer` referenced without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source, but no file/module structure recovered. Static functions not distinguished from public API. No header file or interface declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 11 external functions failed to decompile (`strlen`, `signal`, `printf`, etc.). Code references undefined symbols (`param_string_encryption_encrypted`). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 6 + 5 + 4) / 4 = 4.50
+Level 2 (Structural):  (5 + 4 + 5 + 6) / 4 = 5.00
+Level 3 (Type):        (5 + 4 + 6) / 3     = 5.00
+Level 4 (Semantic):    (2 + 3 + 3 + 2) / 4 = 2.50
+Level 5 (Contextual):  (5 + 6 + 3) / 3     = 4.67
+
+Overall = (4.50 × 0.30) + (5.00 × 0.25) + (5.00 × 0.20) + 
+          (2.50 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.25 + 1.00 + 0.375 + 0.467
+        = 4.44/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Empty function stubs**: `param_fake_branch`, `param_buffer_overflow_stack`, `param_buffer_overflow_heap` decompiled as `{ ; }` losing all logic
+- **Constant folding over-recovery**: `call_fake_branch` returns `10` instead of showing `param_fake_branch(10)` call, hiding program structure
+- **Generic variable naming**: All variables are `v0`, `v1`, `a1`, `a2` with zero semantic meaning recovered
+- **No comments or documentation**: Zero algorithm explanations, no decompilation confidence indicators
+- **11 failed external functions**: Critical library functions (`strlen`, `signal`, `printf`) not decompiled, breaking standalone compilation
+
+### Best Quality Aspect:
+- **Type System Fidelity (Level 3: 5.0/10)** - SIMD types (`int32x4_t`) were correctly recovered for vectorized functions, showing the decompiler can identify specialized types when present in binary.
+
+### Most Needs Improvement:
+- **Semantic Transparency (Level 4: 2.5/10)** - Complete absence of comments, no idiom recognition, no anomaly flagging for empty functions, and no contract recovery makes the code practically unusable for understanding intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag optimization artifacts explicitly**: When functions are constant-folded or eliminated (like `param_fake_branch`), add comments like `// OPTIMIZED: Function body eliminated by compiler - original logic preserved in caller`
+2. **Recover variable semantics from usage patterns**: Analyze how variables are used (e.g., `v1` in GCD loop) and suggest names like `gcd_temp`, `loop_counter`, `predicate_result`
+3. **Add decompilation confidence annotations**: Mark uncertain reconstructions with `// DECOMPILER_UNCERTAIN` and failed external calls with `// EXTERNAL: <function_name> - stub required`

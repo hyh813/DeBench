@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_clang_O0_g/binaryai/syntactic/bin/7_clang_O0_g_fixed",
+  "stdout": "call_fake_branch: 0\ncall_fake_branch: 10\ncall_opaque_predicate: 20\ncall_instruction_substitution: 225\ncall_string_encryption: 0\ncall_tail_call_optimized: 500500\ncall_non_tail_call: 5050\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

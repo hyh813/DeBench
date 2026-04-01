@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, `piVar2`, and `local_10`, providing no semantic hint about their purpose (e.g., `sum`, `index`, `node`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols (e.g., `process_char`, `array_1d_stack`, `binary_tree_sum`), matching the original source exactly and clearly indicating intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Heavy constant propagation and loop unrolling introduced magic numbers (e.g., `0x61` for 'a', `0x2d` for 45, `0x7d` for 125) that obscure the original logic, though some constants like `0x20` (32) are recognizable.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling artifacts, but uses generic types like `undefined8` and `undefined4` which act as noise, and `__printf_chk` instead of standard `printf`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Aggressive optimization (`-O3`) resulted in massive loop unrolling (e.g., `array_3d` is a single statement summing 125 elements) and complex flattened recursion in `binary_tree_sum`, destroying the original loop structures.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are distinct and boundaries are preserved well; however, `test_data_types_l1` is reduced to a series of print statements with constant arguments, losing the structure of the original test calls.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The unrolled loops create extremely long linear expressions (e.g., `array_3d` spans multiple lines) that are difficult to parse visually, and `binary_tree_sum` contains deep nesting that disrupts top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler eliminated redundancy, the decompiler presents the unrolled code (e.g., `array_1d_stack` processing 4 items per loop iteration) as repetitive source code, which looks redundant to the reader even if it's efficient binary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types (`int`, `long`, `float`) are mostly correct, but composite types are degraded; structs are passed as `int*` or `undefined8*`, and specific types like `long double` in `process_ld` are lost (function returns void).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely flattened into pointer arithmetic; `struct_simple` accesses `param_1[0]`, `param_1[1]` instead of `p->x`, `p->y`, and `struct_nested` uses raw offsets like `param_1[3]`, losing all semantic field information.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is generally safe but relies on casts like `(int *)*param_1` in `ptr_double` and `(undefined4 *)` casts for memory access, which, while accurate to the binary, reduce type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and limited to compiler warnings (e.g., "WARNING: Removing unreachable block"), with no explanation of the complex unrolled logic or flattened struct access patterns.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level patterns are obscured; the diagonal sum in `array_2d_stack` is presented as a sum of hardcoded indices rather than a loop, and the tree traversal in `binary_tree_sum` is unrecognizable as recursion.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra correctly flags issues like "WARNING: Could not recover jumptable" in `ptr_func_simple` and "WARNING: Subroutine does not return" for `__stack_chk_fail`, alerting the user to decompilation failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., array bounds checks in `array_complex_index` are present but not documented as contracts) or invariants.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear because symbols were preserved (e.g., `test_data_types_l1` calls `process_char`), making the call graph easy to follow despite the internal obfuscation.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions; while grouped by the binary's section order, it lacks the logical separation (e.g., "Data Types", "Arrays") present in the original source comments.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses `undefined` types and `__printf_chk`, requiring manual type definition and header fixes to compile, as it is not standalone C code.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 10 + 4 + 7) / 4 = 5.75
+L2_avg: (3 + 8 + 4 + 5) / 4 = 5.00
+L3_avg: (5 + 2 + 6) / 3 = 4.33
+L4_avg: (2 + 2 + 7 + 1) / 4 = 3.00
+L5_avg: (8 + 5 + 4) / 3 = 5.67
+
+Overall = (5.75 × 0.30) + (5.00 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (5.67 × 0.10)
+Overall = 1.725 + 1.25 + 0.866 + 0.45 + 0.567
+Overall = 4.858
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects
+- **Struct Flattening**: Composite types like `Point3D` are completely lost, accessed via raw pointer arithmetic (e.g., `param_1[1]` instead of `p->y`).
+- **Loop Unrolling**: Functions like `array_3d` are reduced to a massive single-line sum of 125 elements, completely obscuring the iterative logic.
+- **Variable Naming**: All variables are generic (`param_1`, `iVar1`), making it nearly impossible to track data flow without the source.
+- **Recursion Obfuscation**: The recursive `binary_tree_sum` is transformed into a deeply nested, complex loop structure that is unrecognizable as a tree traversal.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?**: The binary symbols were preserved, allowing the decompiler to recover exact function names like `process_char` and `linked_list`, which is crucial for high-level understanding.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**
+- **Why?**: The failure to reconstruct `struct` definitions, instead representing them as flat arrays accessed by index, destroys the semantic meaning of the data structures.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Pattern-Based Struct Recovery**: Implement analysis to detect sequential array access patterns (e.g., `p[0]`, `p[1]`, `p[2]`) and suggest or automatically reconstruct struct definitions.
+2.  **Loop Re-rolling**: Detect fully unrolled loops (like the massive sum in `array_3d`) and offer an option to collapse them back into a `for` loop representation for readability.
+3.  **Variable Type Inference**: Improve type inference for `undefined` types by tracking usage (e.g., if a variable is used in pointer arithmetic, infer a more specific pointer type than `undefined8`).

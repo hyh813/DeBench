@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 9,
+  "source_file": "decompiled/ida_out/x64/2/2_gcc_O3_g.c",
+  "fixed_file": "results_glm_v4_full/x64/2/2_gcc_O3_g/ida/syntactic/fix_2_gcc_O3_g.c"
+}

@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `result`) with no semantic meaning recovered. For instance, in `test_cpp_member_func`, `v1` holds the name string and `result` holds the return value, but these names are purely generic.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z18test_cpp_exceptionv` to `test_cpp_exception`), which is a significant strength. However, library functions and thunks retain mechanical names like `sub_401664` or `non-virtual thunk to...`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, and magic numbers like `42` in the exception test are visible. However, constants like `0x1234` (ClassID) are lost or obscured, and numeric literals lack context.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with stack canary checks (`__stack_chk_guard`) in almost every function. Redundant casts and pointer arithmetic (e.g., `(char *)a0 + (*(a0))[24]`) add significant noise without clarifying intent.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Most function bodies are missing or reduced to `return;`, making flow impossible to follow. Where logic exists (e.g., `test_cpp_exception`), it relies on low-level `__cxa` calls and `goto` rather than structured `try/catch` blocks.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The decompiler correctly identifies C++ thunks (e.g., `thunk to DiamondDerived::func()`), which is good for inheritance analysis. However, the main logic functions are effectively empty stubs, failing to decompose the actual algorithms.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is highly non-linear due to missing bodies and abrupt returns. In `test_cpp_rtti`, the flow jumps between `operatornew`, casts, and indirect calls without a clear linear narrative.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is no obvious loop unrolling or dead code, but this is largely because the logic itself is missing. The redundancy comes from repeated stack guard checks and pointer arithmetic patterns.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Primitive types like `int`, `double`, and `unsigned int` are recovered correctly. However, the `this` pointer is consistently demoted to `void*` (e.g., `void Base::virtual_func(void* this, int arg_0)`), losing type safety.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class definitions are recovered as empty structs (e.g., `class Base { } Base;`). Critical members like `value`, `name`, or `multiplier` are completely missing, reducing complex objects to generic pointers.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe pointer arithmetic on `void*`. For example, `*((unsigned long long *)((char *)p + v13)) = v14` performs a raw memory write without type context, risking misinterpretation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The only text is the auto-generated header.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler identifies low-level C++ idioms like `operatornew` and `__cxa_throw` (exceptions). However, it fails to recognize high-level patterns like RAII, smart pointers, or lambdas, presenting them as raw memory operations.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents empty function bodies (e.g., `Base::virtual_func` just returning) with absolute confidence, providing no warning that the logic recovery failed or is incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For instance, the requirement for `ptr != nullptr` in `test_cpp_smart_ptr` is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, and `extern` declarations are provided for globals. Virtual table calls are exposed as indirect jumps, which is technically accurate but low-level.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in address order rather than logical grouping. While related class methods are somewhat adjacent, the overall file structure is flat and lacks the original class-based organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile as-is. Class definitions are empty shells, and `this` pointers are `void*`, which would cause compilation errors if attempting to rebuild the source.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 6 + 5 + 3) / 4 = 4.0
+L2_avg: (2 + 4 + 3 + 4) / 4 = 3.25
+L3_avg: (5 + 2 + 3) / 3 = 3.33
+L4_avg: (1 + 3 + 1 + 1) / 4 = 1.5
+L5_avg: (5 + 4 + 2) / 3 = 3.67
+
+Overall = (4.0 × 0.30) + (3.25 × 0.25) + (3.33 × 0.20) + 
+          (1.5 × 0.15) + (3.67 × 0.10)
+Overall = 1.2 + 0.8125 + 0.666 + 0.225 + 0.367
+Overall = 3.27 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.3/10
+
+### Critical Defects (Bullet List)
+- **Missing Function Logic**: Core logic in functions like `Base::virtual_func` and `test_cpp_constructor` is completely absent, reduced to `return;`.
+- **Empty Class Definitions**: Classes are recovered as empty structs (e.g., `class Base {}`), losing all member variables and context.
+- **Loss of High-Level Control Flow**: C++ exceptions are reduced to raw `__cxa_throw` calls without the corresponding `try/catch` structure.
+- **Unsafe Pointer Arithmetic**: Object access is performed via raw offsets on `void*` (e.g., `(char *)a0 + 16`), obscuring member access.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (6/10)
+- **Why?** The decompiler successfully demangles C++ mangled names (e.g., `_Z18test_cpp_exceptionv` to `test_cpp_exception`), preserving the original semantic identifiers.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Anomaly Indication (1/10)
+- **Why?** The decompiler fails to flag the massive loss of information (empty function bodies) and presents incorrect code confidently, misleading the user about the decompilation's completeness.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Control Flow Recovery**: Address the issue causing function bodies to be truncated or identified as empty; ensure basic blocks are correctly linked.
+2.  **Recover Class Members**: Analyze constructor/destructor code and memory access patterns to populate class structures with actual member fields and offsets.
+3.  **Reconstruct High-Level Exception Handling**: Map `__cxa` runtime calls and landing pads back into structured `try/catch/throw` blocks.

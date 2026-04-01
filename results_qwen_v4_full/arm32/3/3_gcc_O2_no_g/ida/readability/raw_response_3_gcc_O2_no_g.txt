@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. Original source had meaningful names like `arr`, `local`, `head`, `current`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`double_value`, `local_vars`, `heap_basic`), but some test functions show issues and 18 functions failed to decompile entirely with `__imp_*` prefixes.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout (e.g., `0x28u`, `0xCu` for struct sizes) without explanation. Some constants like `42` are preserved but lose context (should be `const_global`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: redundant pointer arithmetic (`v2 = v3 - 1; v2[1]`), architecture-specific casts (`_DWORD *`), and loop patterns that don't match source structure.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Clean `for` loops converted to awkward `do-while` with pointer arithmetic (e.g., `local_array` uses `v2 += 4; v1 += a1` instead of `arr[i] = i * n`). At `-O0` this restructuring is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `stack_alias` collapsed to constant return (20), and `static_local` has wrong signature with 4 parameters instead of 1.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally readable top-to-bottom, but pointer arithmetic loops disrupt flow. Some functions like `linked_list_heap` have nested loops that are harder to follow than source.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from pointer arithmetic patterns, but no severe dead code. Loop unrolling not present (appropriate for -O0).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `Point` struct becomes `malloc(8u)`, `Node` becomes `_DWORD *`, function pointers lose signatures (`int (*)(void)` instead of `int (*)(int)`). Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point`, `Node`, `TreeNode` structs completely lost. All struct access becomes raw pointer arithmetic (`v3[1] = v4` instead of `node->next`). This is the most severe issue.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts present (`(_DWORD *)`, `(char *)`), pointer arithmetic on void pointers, and type-confused function calls. However, no obvious buffer overflow patterns introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated type annotations (`BYREF`, `r0`). No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree creation) not recognized or named. Memory allocation patterns visible but not identified as heap operations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies noted (`positive sp value has been detected`), but critical issues like `stack_alias` returning constant aren't flagged. 18 failed decompilations listed but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. NULL checks present in code but not documented. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. Global variables referenced but not documented. Callback relationships (`global_func_ptr`) visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source sections, but no file organization, no header declarations, no namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 functions failed (`__imp_*`), external dependencies not declared, architecture mismatch (ARM32 vs ARM64), won't compile standalone without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+5+6)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` all degraded to raw pointer arithmetic (`malloc(8u)`, `v3[1]`)
+- **Function logic corrupted**: `stack_alias` returns constant 20 instead of actual aliasing logic; `static_local` has wrong 4-parameter signature
+- **Variable names meaningless**: All locals are `v0`, `v1`, `a1`, `a2` with no semantic inference from usage patterns
+- **Test functions hardcoded**: `test_stack_memory` and `test_heap_memory` print constant values instead of calling actual functions
+- **Architecture mismatch**: Header claims ARM32/IDA Pro but metadata says ARM64/Ghidra; 18 critical functions failed decompilation
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (`double_value`, `local_vars`, `heap_basic`), making navigation possible despite other issues.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct/union types transforms readable object-oriented code into incomprehensible pointer arithmetic, fundamentally breaking semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference**: Analyze consistent memory access patterns (e.g., `malloc(8)` + `ptr[0]`, `ptr[1]` access) to recover struct definitions with field names based on usage context.
+
+2. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables used in `malloc` size calculations should be named `size` or `count`; loop indices should be `i`, `j`, `idx`).
+
+3. **Flag logic corruption anomalies**: When decompiled logic doesn't match expected patterns (e.g., `stack_alias` with pointer parameters returning constant), add confidence warnings like `// WARNING: Logic may be incorrect - constant return from pointer function`.

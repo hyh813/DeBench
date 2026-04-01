@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `piVar1`, `pLVar4`, `local_10`, `auStack_118`) obscuring their semantic purpose. Original parameter names (`count`, `x`, `p`, `str`, `seed`) are preserved but local variables lack meaningful names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some compiler-generated functions use generic names (`FUN_00011030`) but core test functions retain semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy constant folding replaces computations with magic numbers (`0xf`, `0x32`, `0x2a`, `0x12345678`). `call_cdecl()` returns `0xf` instead of showing `cdecl_func(5, 10)`, obscuring the original test intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx` injections, stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`), and "WARNING: Removing unreachable block" comments clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as do-while constructs, but some use awkward counter patterns (`uVar2 = uVar2 + 1; iVar1 = iVar1 + (uint)bVar5`). Constant folding eliminates actual control flow in wrapper functions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries well-preserved; helper functions (`callback_func`, `func_a`, `func_b`) remain separate. No problematic inlining or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Stack canary checks create epilogue branches but don't severely disrupt flow. Loop structures are recognizable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `ret_large_struct` has 16 repetitive field assignments that should be a loop. Constant folding creates redundancy where original computation logic is lost entirely.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double, longlong). Function pointer type partially recovered (`_func_int_int *`). Some type erosion with `void*` for generic pointers and `undefined4` for return values.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct definitions well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`). Field access uses proper syntax (`s.data[i]`, `p->x`, `p->y`) with preserved field names from debug info.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Legitimate casts present but some unsafe patterns (`(int *)&stack0x00000008` for varargs). Pointer arithmetic visible in struct field access. No egregious type confusion but lacks safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Technical warnings exist ("WARNING: Unknown calling convention", "Unresolved local var") but no semantic documentation explaining algorithm purpose or test intent. Missing original source comments entirely.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern partially recognized (stack pointer iteration) but not explicitly identified. Loop patterns recovered but not named. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good uncertainty flagging ("Unknown calling convention -- yet parameter storage is locked", "Unresolved local var"). Stack canary checks noted. Decompiler appropriately signals recovery limitations.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved (`p != (SmallStruct *)0x0` in `func_struct_byptr`) but no precondition/postcondition documentation. Error conditions not explicitly documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved with original names. Global variable references shown (`handle1_1`, `handle2_0`, `DAT_00012008`). No call graph documentation or relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output. Original test category grouping (calling conventions, parameter passing, return values) not preserved. No logical module separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies referenced (`__printf_chk`, `strlen`, `puts`, `__libc_start_main`) but undefined. Symbols like `handle1_1`, `handle2_0` need stubs. Requires significant work to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+3+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (4+5+7+4)/4 = 5.00 × 0.15 = 0.75
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.775 ≈ 5.8/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Constant folding obscures test logic**: `call_cdecl()` returns `0xf` instead of showing `cdecl_func(5, 10)` call, losing semantic meaning
+- **Generic variable names**: `iVar1`, `iVar2`, `piVar1` throughout obscure variable purposes (should be `sum`, `counter`, `arg_ptr`)
+- **Magic numbers without context**: `0x2a`, `0x32`, `0x12345678` replace meaningful computations
+- **Missing semantic comments**: Original source documentation completely absent; no explanation of test purposes
+- **Redundant struct field assignments**: `ret_large_struct` has 16 individual assignments instead of a loop
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) accurately recovered with preserved field names and proper access syntax from debug information.
+
+### Most Needs Improvement:
+- **Literal Clarity (3/10)** - Aggressive constant folding replaces all computations with hex literals, making it impossible to understand the original test logic without referring to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable or annotate constant folding**: Either preserve original computations or add comments showing the folded expression (e.g., `return 0xf; // cdecl_func(5, 10) = 5 + 10`)
+2. **Infer variable names from usage patterns**: Variables used in accumulation should be named `sum`, loop counters should be `i`, pointer iterations should indicate their target type
+3. **Preserve or recover source comments**: Integrate debug info comments or infer test purpose from function naming patterns (e.g., `// Tests cdecl calling convention with 2 int parameters`)

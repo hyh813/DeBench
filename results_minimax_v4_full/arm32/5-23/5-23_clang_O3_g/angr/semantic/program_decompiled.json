@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_clang_O3_g/angr/syntactic/bin/5-23_clang_O3_g_fixed",
+  "stdout": "Testing preprocessing features:\n\nLOG: Values: 64, 1, 68796\nLOG: Values: 30, 1006958080, 1006958080\nLOG: Values: 32, 1006958080, 1006958080\nLOG: Values: 57122, 1006958080, 1006958080\nLOG: Values: 116, 1006958080, 1006958080\nLOG: Values: 19, 1006958080, 1006958080\nResult: 60\nLOG: Values: 10, 20, 30\nResult: 60\nLOG: Values: 16, 1006958080, 1006958080\nLOG: Values: 500, 1006958080, 1006958080\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

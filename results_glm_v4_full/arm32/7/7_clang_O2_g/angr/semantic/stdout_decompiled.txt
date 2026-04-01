@@ -1,0 +1,5 @@
+Starting tests...
+
+param_opaque_predicate: 10
+call_opaque_predicate: 35
+param_instruction_substitution: 225

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables in complex functions like `duffs_device` are reduced to generic names `v1` through `v19`, completely obscuring the source/destination pointer logic. Global strings are named `g1`, `g2`, etc., instead of their content.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `recursion_factorial`, `duffs_device`, and `loop_multi_exit` are perfectly preserved from the source, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are hex-encoded (e.g., `\xe6\xb5\x8b...`), making them unreadable. Magic numbers appear in `printf` calls (e.g., `21`, `20`) due to constant propagation, replacing the original function calls.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler-specific artifacts like `__printf_chk`, `__stack_chk_fail`, and complex struct initializations for `_setjmp` that add significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: `duffs_device` is decompiled into a nonsensical switch statement with negative cases (`-2`, `-3`) instead of the classic Duff's device pattern. `computed_goto` is reduced to a ternary expression returning an address, losing the jump table structure.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While individual functions are separated, the test functions (`test_control_flow_l1`) are monolithic lists of `printf` statements with inlined logic, losing the modular structure of the original test harness.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `duffs_device` and `loop_multi_exit` are disrupted by pointer arithmetic and goto labels that break the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: `duffs_device` declares 19 variables (`v1`-`v19`) where only 2 pointers and a counter are needed in the source, indicating a failure to track variable lifetimes effectively.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: The decompiler invents a type `int3_t` for the switch expression in `duffs_device`, which is incorrect. Array accesses like `matrix[i][j]` are cast to `int32_t*` and accessed via pointer arithmetic (`v3 += 4`).
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: The `matrix` array in `loop_multi_exit` is correctly identified as `int32_t[3][4]`, preserving the composite structure despite the subsequent pointer abuse.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code frequently casts pointers to integers and back (e.g., `v1 = (int32_t)&matrix; *(int32_t*)v3`), which is unsafe and obscures the original array indexing logic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata (module, address range, line numbers) and provide no explanation of the algorithm logic or the purpose of complex constructs like Duff's device.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler fails to recognize standard idioms: `recursion_factorial` is shown as a loop, `duffs_device` is unrecognizable, and `computed_goto` is flattened into a conditional expression.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the broken `computed_goto` logic (returning an address literal) and the weird `int3_t` type without any warning or uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., `n > 0` for Duff's device) or postconditions; the code is presented as-is without semantic context.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to `double_value` and `recursion_factorial` are clear, but the relationship between the test functions and the logic being tested is broken by constant propagation.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and the separation between Level 1, 2, and 3 test functions is preserved, though the order differs slightly from the source.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The use of non-standard types (`int3_t`) and GLIBC internal functions (`__printf_chk`) would likely cause compilation errors on a standard system without modifications.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable naming in `duffs_device` uses generic `v1`-`v19`, obscuring pointer logic.
+- `duffs_device` control flow is completely mangled with negative switch cases.
+- `computed_goto` is reduced to a ternary expression returning a raw address (`0x11668`), losing the jump table semantics.
+- `test_control_flow_l1` replaces function calls with constant results (e.g., `21`), hiding the test logic.
+- String literals are hex-encoded, making them unreadable.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, which is the only reliable link back to the source intent.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The decompiler fails to recognize or explain any high-level patterns (recursion, Duff's device, computed gotos) and presents broken code without warnings.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement specific pattern recovery for Duff's device to reconstruct the `switch` inside `do-while` loop structure.
+2. Disable aggressive constant propagation in decompilation output for function calls within test harnesses to preserve the original control flow.
+3. Decode hex-encoded string literals to UTF-8/ASCII to improve lexical clarity.
+4. Improve variable naming heuristics to reuse names (like `src`, `dst`) when pointer arithmetic patterns are detected.

@@ -1,0 +1,107 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Local variables are predominantly generic (e.g., `iVar1`, `puVar1`, `sVar2`, `uVar6`), obscuring their semantic roles like "result" or "exception_object." While class member variables like `multiplier` and `size` are recovered, the heavy use of generic locals significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ mangled names are demangled perfectly (e.g., `test_cpp_member_func`, `std::unique_ptr<int,_std::default_delete<int>_>::~unique_ptr`), providing clear semantic context. Thunk functions are also descriptively named (e.g., `virtual thunk to DiamondDerived::func()`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` and `"Derived"` are preserved, but integer constants are largely magic numbers in hex (e.g., `0x2a`, `0x3e9`, `0x125c`) without symbolic names, forcing manual calculation to understand their meaning (e.g., `0x3e9` is 1000).
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler runtime artifacts such as `__x86.get_pc_thunk.bx`, `__stack_chk_fail_local`, and stack canary checks (`in_GS_OFFSET`). While these are part of the binary, they substantially reduce the readability of the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While exception handling is represented with `try/catch` comments, several functions (e.g., `test_cpp_constructor`, `test_cpp_multiple_inheritance`) are reduced to simple constant returns (e.g., `return 0x47;`). This hides the actual control flow logic (loops, branches) due to compiler optimization or analysis simplification.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: C++ constructs are well-decomposed; template instantiations (e.g., `template_max<int>`) and class methods are separated into distinct functions. The granularity is appropriate, though the proliferation of thunks and destructors adds verbosity.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal spaghetti logic. However, the presence of `get_pc_thunk` calls and the abrupt constant-return functions interrupt the natural reading flow in places.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little obvious dead code or loop unrolling artifacts. However, the "redundancy" here is negative: the compiler appears to have optimized away the bodies of several test functions into constants, removing the logic entirely from view.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Complex C++ types like `unique_ptr` and `Container` are recovered with high precision, including template parameters. However, primitive types are frequently defaulted to `undefined4` or `undefined1`, and parameters are often locked as `undefined4` despite DWARF info being available.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs and classes are reconstructed accurately with correct field names (e.g., `SimpleClass`, `DiamondDerived`). The decompiler correctly identifies inheritance hierarchies and vtable pointers (`_vptr_Base`), though it warns about overlapping fields in diamond inheritance.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains numerous unsafe casts, such as casting pointers to `int` (e.g., `(int)&PTR__RTTIDerivedA_00015dd0`) and accessing memory via `undefined4`. While this reflects the low-level implementation of C++ features like RTTI, it results in type-unsafe looking C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: Ghidra provides useful warnings about compiler artifacts (e.g., `/* WARNING: Function: __x86.get_pc_thunk.bx replaced... */`) and marks `try/catch` blocks. However, there are no high-level comments explaining the *purpose* of the algorithms (e.g., "Tests diamond inheritance resolution").
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: C++ idioms are clearly mapped to their low-level implementations: `__cxa_throw` for exceptions, `__dynamic_cast` for RTTI, and explicit vtable usage for virtual functions. The decompiler successfully identifies these patterns even if they look complex.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler explicitly flags issues like "Unknown calling convention," "Could not recover jumptable," and "ignoring overlapping field." These warnings are crucial for a reverse engineer to know where the analysis might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `ptr` be non-null in smart pointer operations is not documented, nor are the constraints on template parameters.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and virtual dispatch is represented via vtable pointers. The relationship between base and derived classes is visible in the struct definitions and function signatures (e.g., `Base *obj`).
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in memory address order rather than logical grouping. Related test functions are scattered, and there is no separation between the user code and the heavy standard library implementation details.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not compilable due to Ghidra-specific types (`undefined4`), injected functions (`get_pc_thunk`), and missing standard library headers. It requires significant patching to even resemble valid C/C++.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 5 + 4) / 4 = 5.5
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.0
+L3_avg = (6 + 8 + 5) / 3 = 6.33
+L4_avg = (7 + 8 + 8 + 3) / 4 = 6.5
+L5_avg = (7 + 5 + 2) / 3 = 4.67
+
+Overall = (5.5 × 0.30) + (7.0 × 0.25) + (6.33 × 0.20) + 
+          (6.5 × 0.15) + (4.67 × 0.10)
+Overall = 1.65 + 1.75 + 1.27 + 0.98 + 0.47 = 6.12
+```
+
+### Overall Readability Score: 6.1/10
+
+### Critical Defects
+- **Logic Elimination**: Several functions (`test_cpp_constructor`, `test_cpp_multiple_inheritance`) are reduced to constant returns, completely hiding the algorithmic logic.
+- **Generic Typing**: Primitive types are frequently `undefined4` or `undefined1`, losing type safety and semantic information.
+- **Excessive Noise**: Compiler artifacts like `__x86.get_pc_thunk` and stack canary checks clutter the output, distracting from the business logic.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: Ghidra excels at demangling C++ symbols, accurately recovering class names, template arguments, and distinguishing between thunks and actual methods.
+
+### Most Needs Improvement
+- **Build System Compatibility (2/10)**: The output is far from valid C code, filled with Ghidra-specific types and injected assembly stubs, making it unusable for recompilation or direct inclusion in a project.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Primitive Type Propagation**: Leverage DWARF debug information more aggressively to assign concrete types (e.g., `int`, `char*`) instead of defaulting to `undefined4`.
+2.  **Annotate Optimized-Away Functions**: When a function body is reduced to a constant return, insert a comment indicating that the logic was likely optimized out (e.g., `/* Logic optimized to constant by compiler */`).
+3.  **Option to Hide Runtime Artifacts**: Provide a toggle or filter to suppress standard compiler runtime injections (like `get_pc_thunk` and stack canaries) to focus on the user's code.

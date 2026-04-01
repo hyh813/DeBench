@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `a1`, `a2`, `a3`, `a4`, `result`, `str`. No semantic meaning is conveyed - for example, `v1` in `_Z13test_cpp_rttiv` should be named `obj1` or `base_ptr` based on its usage as an RTTIBase pointer.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions are properly demangled (`test_cpp_exception`, `test_cpp_constructor`, `test_cpp_rtti`), but others remain cryptic like `function_109f4` which implements `template_max<int>` conversion. The mix of demangled and mangled names is inconsistent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `42` (thrown exception value), `100`, `200` appear without explanation. The value `21` in constructor test is used directly. Some strings are encoded in hex (`\xe6\xb5\x8b\xe8\xaf\x95`). Constants like `g19`, `g20` have no semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts present. Some unnecessary variables like `v3 = v2` in exception handling, but overall noise level is manageable. No excessive register spilling or debug instrumentation visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The exception handling code in `_Z18test_cpp_exceptionv` is extremely convoluted with confusing conditionals like `(int32_t)&g19 != 1 ? 0 : v4`. Control flow doesn't match the original try-catch-throw pattern. Some functions like `test_cpp_diamond_inheritance` are reduced to trivial constant returns.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Major decomposition failures - most test functions are completely missing (`test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`). Only 6 of 12 test functions are present. The class member functions are present but disconnected from their classes.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable linearity. The exception handling has some backward jumps but overall flow is traceable. No excessive goto abuse or deep nesting.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy observed. Dead code is minimal. Some expressions could be simplified but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is appropriate for ARM64. However, `float64_t` should simply be `double`. Function signatures are incorrect - `_Z12template_maxIdET_S0_S0_` has spurious `this` and `result` parameters that shouldn't exist for a non-member template function.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtable structures are present (`vtable_1162c_type`, `vtable_11640_type`) but with meaningless names and generic field names (`e0`, `e1`, `e2`). No class structures recovered - classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are completely absent. Only RTTI-related classes have partial recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: `(int32_t)a2` cast in `template_swap` where `a2` is actually a pointer, `(int32_t *)&g19` used as exception type info, pointer arithmetic with `(int32_t)(float32_t)v2`. Not catastrophic but concerning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only minimal auto-generated comments present (address ranges, demangled names). No explanation of algorithms, vtable mechanism, exception handling patterns, or RTTI/dynamic_cast implementation. No indication of uncertainty or confidence levels.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or C++ idioms identified. Virtual function calls through vtables not explained. Exception handling mechanism not documented. Template instantiation not recognized as such. Smart pointer patterns completely absent.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The confusing exception handling control flow is presented without warning. Missing test functions not indicated. The spurious `this` pointer in template function not flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of what `test_cpp_rtti` expects or returns in terms of RTTI contracts. No error handling documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships between functions are not documented. No indication that `test_cpp_oo_features` calls all other test functions. Virtual dispatch relationships not explained. No call graph information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped but appear in arbitrary order. Classes are not properly organized - RTTI classes appear at top but their member functions are scattered. No namespace or class grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears to compile with minimal stubs. External dependencies (`__cxa_*` functions, `__dynamic_cast`) are declared. However, missing many test functions means the program would not run correctly.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Missing 50% of test functions**: `test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda` are completely absent
+- **Variable naming is unusable**: All variables use generic names (`v1`, `v2`, `a1`, `a2`) with no semantic meaning
+- **Class structures not recovered**: 10+ classes from source (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `Point`, `Container`, etc.) are completely missing
+- **Exception handling is incomprehensible**: The try-catch-throw logic is rendered as convoluted conditional spaghetti
+- **No comments or documentation**: Zero explanation of algorithms, patterns, or anomalies
+
+### Best Quality Aspect: Noise Reduction (scored 6/10)
+- Minimal compiler artifacts like register spilling or debug instrumentation
+- Code is relatively clean from that perspective
+
+### Most Needs Improvement: Function Decomposition (scored 3/10)
+- Half of the test functions are completely missing from decompiled output
+- Classes are not properly reconstructed - only RTTI classes have any recovery
+- The decompiler failed to extract the majority of the source code functionality
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class structures**: Extract class definitions with proper member functions and data members from vtable analysis
+2. **Infer variable names from usage**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names like `obj`, `index`, `count`
+3. **Flag missing functions**: When significant portions of code are missing, indicate this clearly rather than presenting incomplete output

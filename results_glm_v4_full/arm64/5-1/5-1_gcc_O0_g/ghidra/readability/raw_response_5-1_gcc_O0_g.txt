@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Most variables like `obj`, `base`, `derived`, and `capture_by_value` are recovered accurately from DWARF debug symbols. However, generic names like `iVar1`, `iVar2`, and `lVar1` are used for intermediate return values, and complex inheritance fields sometimes resort to offsets like `_40_4_`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered, including class scopes (e.g., `SimpleClass::SimpleClass`, `Base::virtual_func`, `test_cpp_member_func`). This is excellent due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 9/10
+Justification: String literals ("Test") and numeric constants (0x1234, 5) are preserved clearly. Magic numbers like `0x1f` (31) in `strncpy` are correctly calculated from `sizeof(name)-1`, though they appear as raw hex literals.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but compiler-inserted stack canary checks (`___stack_chk_guard`) appear in almost every function. C++ ABI artifacts like the `__in_chrg` parameter in destructors and explicit vtable pointers (`_vptr_Base`) add clutter compared to the high-level source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Standard loops and conditionals are natural, but exception handling is flattened into runtime calls (`__cxa_throw`, `__cxa_allocate_exception`) without reconstructing the high-level `try-catch` blocks. The function `test_cpp_exception` appears to terminate at the throw, missing the control flow for the catch handlers.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods are correctly separated, but template usage (e.g., `std::unique_ptr`) results in massive inlined expansions within test functions. `test_cpp_smart_ptr` exposes dozens of internal `std` tuple and move helper calls, obscuring the simple logic of the original source.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or `goto` statements, which is expected for `-O0` compilation. The flow is easy to follow outside of the exception handling sections.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or obvious redundancy. The decompiler successfully removes the boilerplate usually associated with unoptimized builds, presenting the core logic clearly.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are highly precise, correctly distinguishing `int`, `size_t`, `bool`, and specific pointer types. Function signatures match the source, including `const` correctness in some contexts (e.g., `const char*`).
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs like `SimpleClass` and `Point` are recovered with correct field names. However, virtual inheritance causes issues; in `test_cpp_diamond_inheritance`, the field `shared_data` is accessed via an offset `obj._40_4_` rather than its semantic name, and the lambda closure is named `anon_struct_16_2_484633fb`.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer arithmetic and casts are handled correctly. The decompiler accurately represents the `this` pointer passing convention and vtable lookups without introducing unsafe type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 9/10
+Justification: Ghidra provides excellent DWARF-based comments (e.g., `/* DWARF original prototype: ... */`) which reveal the original C++ signatures. Warnings about overlapping symbols (vtables) are also helpful.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: C++ idioms like operator overloads (`operator+`, `operator++`) are explicitly named. Standard library calls like `std::move` and `std::forward` are recognized, though the abstraction of `unique_ptr` is lost to its implementation details.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler flags potential issues like "Removing unreachable block" and warns about "Globals starting with '_' overlap smaller symbols," which accurately reflects the complexity of the vtable layout.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: While types imply contracts, there is no explicit recovery of preconditions or invariants (e.g., the requirement that `ptr` be non-null in `unique_ptr` constructor is not stated, only the code flow).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Calls to class methods are explicit (e.g., `SimpleClass::getValue(&obj)`). The relationship between base and derived classes is visible through the vtable assignments and function calls.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by class naming conventions (e.g., all `SimpleClass` methods are adjacent). The separation between user code and standard library internals is clear.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The output is pseudo-C representing C++ binaries. It is not compilable as C++ (e.g., explicit `this` pointers, mangled template names, `__in_chrg` parameters) and serves only as an analysis aid.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 8.0/10
+
+**Critical Defects:**
+- **Exception Handling Loss**: In `test_cpp_exception`, the `try-catch` structure is flattened; the decompiled code ends at `__cxa_throw` and fails to represent the logic within the `catch` blocks.
+- **Virtual Inheritance Field Access**: In `test_cpp_diamond_inheritance`, the semantic field name `shared_data` is lost, replaced by the offset `obj._40_4_`, making the code harder to understand.
+- **Template Bloat**: The use of `std::unique_ptr` and templates results in the exposure of dozens of low-level internal library calls (e.g., `_Head_base`, `_Tuple_impl`), obscuring the high-level intent of the source code.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The presence of debug symbols (`-g`) allowed Ghidra to perfectly recover the original C++ function names, namespaces, and class scopes, making navigation trivial.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 7/10)
+- **Why?** The failure to reconstruct high-level `try-catch` blocks from the exception handling tables results in a significant loss of semantic structure for exception-heavy code sections.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Exception Handling Reconstruction**: Enhance the analysis of `.gcc_except_table` or LSDA to reconstruct `try-catch` blocks in the pseudo-C output rather than just emitting `__cxa_throw` calls.
+2.  **Virtual Inheritance Field Mapping**: Improve the mapping of data members in virtual inheritance scenarios to use semantic names (e.g., `shared_data`) instead of raw offsets (e.g., `_40_4_`), potentially by leveraging DWARF inheritance information more aggressively.
+3.  **Template Abstraction**: Implement pattern matching to recognize common standard library template instantiations (like `std::unique_ptr` or `std::vector`) and collapse their internal implementation details into higher-level intrinsic calls or comments to reduce visual clutter.

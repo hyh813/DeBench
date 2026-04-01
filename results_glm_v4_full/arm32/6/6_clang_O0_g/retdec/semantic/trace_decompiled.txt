@@ -1,0 +1,4 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=0,Arg1=-1096402892,Arg2=-1096402884,Arg3=82648|r0=0x0,r1=0xbea63834,r2=0xbea6383c,r3=0x142d8,r4=0xbea636f8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|1|call_strcpy|1|Arg0=3,Arg1=0,Arg2=1791156224,Arg3=1791156224|r0=0x3,r1=0x0,r2=0x6ac2e000,r3=0x6ac2e000,r4=0xbea636f8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|2|param_strcpy|2|Arg0=-1096403361,Arg1=83408,Arg2=1791156224,Arg3=1791156224|r0=0xbea6365f,r1=0x145d0,r2=0x6ac2e000,r3=0x6ac2e000,r4=0xbea636f8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|2|param_strcpy|2|8

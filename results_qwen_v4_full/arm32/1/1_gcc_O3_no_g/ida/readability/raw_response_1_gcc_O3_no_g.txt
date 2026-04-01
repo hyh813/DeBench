@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `result` throughout (e.g., `sequential_ops(int a1, int a2, int a3)` instead of `a, b, c`). Original source had semantic names like `temp1`, `temp2`, `sum`, `count` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`), but some are mangled (`non_local_jump.constprop.0`, `sub_10454`). Action verbs and purpose generally clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions print hardcoded expected values instead of computing results (e.g., `_printf_chk(1, "CF-L1-01... %d\n", 21)`). Magic numbers like `100`, `1001`, `0x12345678` appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (register variables `v1`, `v2`, `v3` with comments like `// r0`, `// r3`), but generally clean. Excessive temporary variables in complex functions like `divsi3_skip_div0_test` (36+ temp variables).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (`sequential_ops` as single expression), but critical failures exist: `loop_break` converted to switch statement (semantic change), `switch_fallthrough` logic incorrect, `indirect_recursion_a` completely garbled with nested conditionals.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions appropriately sized, but test functions don't actually call the functions being tested—they just print expected values. Helper functions like `double_value`, `triple_value` properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `duffs_device` uses goto labels (`LABEL_4`, `LABEL_5`, etc.), and `loop_multi_exit` has complex goto chains that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from optimization visible (`loop_multi_exit` has repeated case handlers with goto), but no obvious dead code. Loop unrolling in `divsi3_skip_div0_test` creates 30+ similar comparison blocks.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` throughout instead of specific types. Some parameter types wrong (`op_shl(int a1, char a2)` should be `int`). No const-correctness. Function pointer signatures sometimes incorrect (`state_done()` takes no params but should take `event`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in this codebase. Arrays handled reasonably (`v8[8]`, `s[8]` for test data). Function pointer arrays recovered but with type casting issues (`v4[a1 - 4]` with suspicious offset).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: function pointer array indexing without bounds check in some paths, inline assembly in `computed_goto` (`__asm { LDR PC, [R1,#-0x14] }`), potential stack corruption in `call_func_ptr_array`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. Only register hints (`// r0`, `// r3`) present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, switches), but complex patterns fail: Duff's device partially recovered but unreadable, state machines not identified as such, recursion converted to loops without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: __imp_puts`), but no inline warnings about uncertain code. `computed_goto` uses inline assembly without explanation of why decompilation failed.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Original source had test validation comments (e.g., "输入5,7,3应返回21"). No error condition documentation in decompiled code.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, but relationships not documented. No call graph information. Callback relationships (`process_with_callback`) visible but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without clear organization. Original source had clear sections (L1, L2, L3 control flow features). No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 10 functions failed to decompile (external imports). External dependencies not clearly documented. Inline assembly in `computed_goto` prevents portable compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+7+4+6)/4 = 5.0/10  → 5.0 × 0.30 = 1.50
+Level 2 Average: (5+6+6+6)/4 = 5.75/10 → 5.75 × 0.25 = 1.44
+Level 3 Average: (5+7+6)/3 = 6.0/10    → 6.0 × 0.20 = 1.20
+Level 4 Average: (2+5+4+3)/4 = 3.5/10  → 3.5 × 0.15 = 0.53
+Level 5 Average: (5+5+4)/3 = 4.67/10   → 4.67 × 0.10 = 0.47
+
+Overall Score: 5.14/10 ≈ 5.1/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **`loop_break` semantically incorrect**: Converted array search loop to switch statement, completely changing the algorithm's nature
+- **`switch_fallthrough` logic broken**: Fall-through cases computed incorrectly (`v2 = 12` for case 3 instead of accumulating)
+- **Test functions don't test**: Print hardcoded expected values instead of calling functions with test inputs
+- **Variable names completely generic**: `a1`, `a2`, `v1`, `v2` provide no semantic information about purpose
+- **No documentation recovered**: Original 961 LOC had extensive comments; decompiled code has virtually none
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding complex functions like `indirect_recursion_a` and `duffs_device` extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators, array indices) to suggest meaningful names like `i`, `sum`, `index`
+2. **Preserve test function semantics** - Don't optimize away actual function calls in test code; the purpose of test functions is to demonstrate behavior, not just print expected values
+3. **Add confidence annotations for uncertain decompilations** - Mark code regions where decompiler is uncertain (e.g., complex recursion, computed gotos) with warnings to guide manual review

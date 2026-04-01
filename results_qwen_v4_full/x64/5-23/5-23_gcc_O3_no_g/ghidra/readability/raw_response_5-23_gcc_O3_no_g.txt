@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `local_28`) with zero semantic meaning recovered. For example, `param_1` in `param_macro_constants` should be `size`, and `iVar1` in `param_asm_clobber` should be `sum`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `test_preprocessing_features`), accurately reflecting purpose. Only runtime functions like `FUN_00101020` are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x400` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0xdef0` instead of named constants. Source comments explaining `16*4=64` are completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) in every function, frame pointer manipulation (`in_FS_OFFSET`), and Ghidra-specific types (`undefined8`, `undefined4`) create significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs (e.g., `param_asm_clobber`), conditionals are clear. However, `_start` has an infinite `while(true)` loop artifact from entry point handling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - no excessive inlining or fragmentation. Each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack checking introduces non-linear early-exit patterns (`if (local_10 == *(long *)(in_FS_OFFSET + 0x28))` before `__stack_chk_fail()`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code duplicated in ~20 functions. Some constant folding is excessive (`call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants`).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Ghidra-specific types (`undefined8`, `undefined4`, `undefined1`) replace proper C types. Return types should be `int` not `undefined8`. Pointer types mostly correct but degraded.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code, but array handling is correct (`local_28[6]`, `local_38[16]`). No struct recovery issues to evaluate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(undefined8 *)((long)puVar2 + 1)`). Pointer arithmetic on `undefined1*` is correct but verbose. No buffer overflow patterns introduced.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. All source documentation about preprocessing, macro semantics, and expected values completely lost. Only Ghidra warnings present ("WARNING: Subroutine does not return").
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns recognized but not named. Assembly-to-C recovery is good (e.g., `param_asm_clobber` loop recovered), but no algorithm identification or pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "Subroutine does not return") but no explanation of WHY or confidence levels. Inline assembly recovery has no uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1` constraints). Error return values (`0xffffffff`, `0xfffffffe`) not explained. Expected values from source comments lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear, but no call graph documentation. Global variable `global_var` usage not highlighted. Test functions call helpers without relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but no logical grouping comments. All 50 functions in single output without section markers from source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone - `undefined8`, `undefined4` types need definition. Missing headers (`<stdio.h>`, `<sys/mman.h>`). `LOCK()`/`UNLOCK()` macros undefined. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (7+8+6+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 5.48/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information about purpose
+- **All magic numbers**: `0x400`, `0x40`, `0xdef0` instead of `MAX_SIZE`, `BUFFER_COUNT`, platform constants
+- **Zero comments**: All source documentation about preprocessing behavior, expected values, and macro semantics lost
+- **Ghidra-specific types**: `undefined8`, `undefined4` prevent standalone compilation
+- **Constant folding obscures logic**: `call_macro_constants` returns `0x40` directly instead of showing the call relationship
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Source function names preserved accurately, making it easy to identify test purposes and match to original code structure.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation, preprocessing explanations, and expected value comments makes understanding intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns**: Analyze how `param_1` is used (compared to `0x400`) to suggest `size`; detect loop accumulators to name `sum`.
+2. **Detect and annotate magic numbers**: Cross-reference constants against common values (1024=MAX_SIZE, 0xdef0=platform constant) and add comments suggesting original macro names.
+3. **Preserve source-level documentation**: When debug symbols (`-g`) are available, extract and embed source comments into decompiled output, especially for preprocessing test cases where macro semantics are critical.

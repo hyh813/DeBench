@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names like `iVar1`, `uVar2`, `lVar1` instead of semantic names (`result`, `sum`, `count`). Many variables marked as "Unresolved local var: [???]" losing all naming information.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names preserved accurately (`param_macro_constants`, `call_asm_basic`). However, helper functions like `FUN_001007a0` and `FUN_0010097c` have generic auto-generated names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x40` instead of `BUFFER_COUNT * 4`, `0x200` instead of `MAX_SIZE / 2`, `0x10` instead of `16`. Original constants completely lost during preprocessing and decompilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Unknown calling convention" and "Unresolved local var: [???]" comments clutter the code. Runtime initialization functions (`_init`, `_start`, `__do_global_dtors_aux`) add noise unrelated to source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures mostly natural (if-else, do-while loops). However, `param_macro_constants` inverts logic (`size < 0x401` vs original `size > MAX_SIZE`), requiring mental translation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. No inappropriate inlining or fragmentation. Each function maintains single responsibility as in original.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some disruption from unresolved variable comments interrupting flow, but no excessive goto or jump patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop structures in `param_asm_clobber` and `param_asm_simd` differ from source but represent equivalent logic without unnecessary duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`). Loses const-correctness and specific integer widths. Pointer arithmetic uses generic `long` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Array parameters recognized (`int *arr`), but stack arrays marked as "Unresolved local var: int[5] arr@[???]". No struct/union recovery needed for this code but local arrays poorly represented.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts observed. Pointer arithmetic in SIMD functions uses `(long)` casts but remains functionally correct. Atomic operations properly typed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments only indicate problems ("Unresolved local var", "WARNING") without explaining semantics. No algorithm documentation or intent recovery from original source comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Atomic operations recognized as `__aarch64_ldadd4_acq_rel` but not explained as atomic patterns. Macro expansion patterns (SQUARE, MAX) not identified despite clear arithmetic patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Unresolved variables and calling convention warnings properly flagged. However, no explanation of why resolution failed or how to manually investigate.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. Error conditions (mmap failure returns -1) not documented. Original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Global variable `global_var` used without context. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. However, runtime initialization functions interspersed with application logic without clear separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions (`printf`, `mmap`, `sysconf`) used without declarations. Would require significant stubbing to compile standalone. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+4+5)/4 = 5.00
+Level 2 (Structural):   (7+8+7+7)/4 = 7.25
+Level 3 (Type):         (6+5+7)/3 = 6.00
+Level 4 (Semantic):     (4+5+6+3)/4 = 4.50
+Level 5 (Contextual):   (6+6+5)/3 = 5.67
+
+Overall = (5.00 × 0.30) + (7.25 × 0.25) + (6.00 × 0.20) + (4.50 × 0.15) + (5.67 × 0.10)
+        = 1.50 + 1.81 + 1.20 + 0.68 + 0.57
+        = 5.76/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects
+- **Magic numbers replace all constants**: `0x40`, `0x200`, `0x10` instead of `BUFFER_COUNT * 4`, `MAX_SIZE / 2`, `16` - requires manual reverse-engineering of original values
+- **Unresolved local variables**: Dozens of "Unresolved local var: [???]" comments obscure variable purpose and type information
+- **Generic variable naming**: `iVar1`, `uVar2`, `lVar1` provide no semantic information about variable purpose
+- **Lost preprocessing semantics**: Original macro definitions and conditional compilation logic completely unrecoverable from binary
+- **No contract documentation**: Expected return values and error conditions from original comments not preserved
+
+### Best Quality Aspect
+- **Function Decomposition (8/10)** - Function boundaries and granularity match original source exactly, with appropriate single-responsibility functions preserved
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or expected value documentation recovered despite extensive original comments
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Constant recovery from usage patterns**: Detect repeated magic numbers and suggest named constants based on arithmetic patterns (e.g., `0x40` used in size comparison → suggest `MAX_SIZE`)
+2. **Variable name inference from context**: Use data flow analysis to name variables based on usage (e.g., variable used in return after accumulation → `sum`, variable compared against threshold → `limit`)
+3. **Comment preservation from debug symbols**: When `-g` flag is present, extract and preserve original source comments and documentation in decompiled output

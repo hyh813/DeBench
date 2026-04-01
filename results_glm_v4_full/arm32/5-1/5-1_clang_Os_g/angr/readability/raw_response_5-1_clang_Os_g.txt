@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, `v0` holds the value `10` (corresponding to `obj.value`), but the semantic name is completely lost.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: While many functions are demangled correctly in the signature (e.g., `void test_cpp_member_func()`), several helper functions retain generic names like `sub_400854` or `$a.27`, and the mangled names appear in the address lines, creating a mix of readable and cryptic identifiers.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, but magic numbers resulting from constant propagation (e.g., `4700` in `test_cpp_oo_features`, which is `4704 - 4`) appear without explanation, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with `armg_calculate_condition` calls (e.g., in `test_cpp_exception` and `template_max<double>`), which are decompiler artifacts representing condition code evaluation that severely hinder readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily reliant on `goto` statements and artificial labels (e.g., `LABEL_400c6a`) rather than structured loops or if-else blocks, making execution paths difficult to follow.
+
+**6. Function Decomposition:** Score: 1/10
+Justification: Most test functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`) are decompiled as empty functions containing only `return;`, completely failing to recover the logic present in the source.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The frequent use of forward jumps (e.g., `goto LABEL_400c6a`) and the non-linear structure caused by `armg_calculate_condition` checks disrupt the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated `armg_calculate_condition` calls and verbose pointer arithmetic that could have been simplified into array accesses or structure member references.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: The `this` pointer for class methods is consistently typed as `void*` (e.g., `Container<int>::push(void* ptr, int arg_0)`), losing the class type context and member type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered; member access is replaced by raw pointer arithmetic and hardcoded offsets (e.g., `*((unsigned int *)&ptr[40]) = 0` instead of `container->size = 0`).
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts and pointer arithmetic on `void*` (e.g., `*((int *)((char *)ptr + 4 * index))`), which erases type safety boundaries present in the original C++ source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; the only comments are header artifacts like "Angr Decompilation of 5-1_clang_Os_g".
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. For example, the virtual function call in `call_virtual_func` is decompiled as a raw indirect jump `goto *((int *)*((int *)arg_0));` without indicating it is a vtable dispatch.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging the suspicious empty function bodies or the `armg_calculate_condition` artifacts as potential issues or lifting failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants (e.g., the checks in `Container::get` are lost in `armg_calculate_condition` noise).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While mangled names allow identification of functions, the relationships (like inheritance or class membership) are lost because the types are reduced to `void*`.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While they are roughly in address order, there is no logical grouping or namespace recovery that mirrors the source structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on numerous `extern` declarations for standard library types and functions (e.g., `_ZStL8__ioinit`) and would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Most test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) are decompiled as empty (`return;`), completely losing the implementation logic.
+- C++ class structures are not recovered; member access is performed via raw pointer arithmetic and hardcoded offsets (e.g., `ptr[40]`).
+- The code is cluttered with `armg_calculate_condition` artifacts that obscure the actual control flow logic.
+- Virtual function calls are represented as raw indirect jumps without semantic context (vtable lookup).
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)
+- The decompiler successfully demangled C++ symbols in the function headers (e.g., `test_cpp_member_func`), providing the only clear link back to the original source structure.
+
+**Most Needs Improvement:** Function Decomposition (scored 1/10)
+- The failure to recover the bodies of the majority of the test functions renders the decompilation effectively useless for understanding the program's behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve the lifting engine to recover function bodies that appear empty or are optimized away, potentially by analyzing inlined code in callers (like `test_cpp_oo_features`).
+2. Implement a C++ class recovery analysis to reconstruct `struct` types from member access patterns (offsets) and `this` pointer usage.
+3. Filter or simplify `armg_calculate_condition` intrinsics into native C comparison operators (`<`, `>`, `==`) to restore natural control flow.

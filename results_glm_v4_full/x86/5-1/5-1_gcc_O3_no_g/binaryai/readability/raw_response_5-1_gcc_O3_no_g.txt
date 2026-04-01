@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `local_30`, `uVar2`, `piVar1`, `auStack_80`), providing no semantic hint about their purpose in the C++ context.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully demangled most C++ symbols (e.g., `Base::virtual_func`, `Container<int>::push`, `test_cpp_exception`), though some library wrappers remain generic (e.g., `FUN_00011190`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are often obfuscated; for example, the string "Test" in `test_cpp_member_func` is represented as hex integer assignments (`local_30 = 0x74736554`), and magic numbers like `0x125c` (4700) are used without context.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts such as stack canary checks (`in_GS_OFFSET`), exception handling frame setup (`uStack_40`, `puStack_3c`), and `undefined` types that obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is severely disrupted by low-level exception handling implementations in `test_cpp_exception`, replacing `try/catch` blocks with complex setup and jump logic, and virtual calls are shown as raw pointer dereferences.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated, correctly identifying constructors, destructors, and template instantiations (e.g., `template_max_int_`) as distinct units, matching the source structure well.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code flow is non-linear, particularly in exception handling routines where execution jumps between setup blocks and landing pads, making top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: With `-O0`, there is little loop unrolling or optimization redundancy; however, the verbose stack manipulation required for C++ object creation adds a layer of necessary but cluttering instructions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While class types like `Base*` and `Container_int_` are recovered, many specific types are degraded to `undefined4` or `undefined *`, and `longdouble` is incorrectly used for a `double` return in `Container<double>::get`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Although types are named (e.g., `Derived`, `MultiDerived`), member access is frequently shown as pointer arithmetic offsets (e.g., `*(int *)(this + 4)`) rather than struct field access, losing semantic field names.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, such as casting `undefined *` to function pointers or `int*`, and accessing class members via raw byte offsets, which is type-unsafe compared to the original C++.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex C++ runtime mechanisms (like vtable lookups or exception handling) or the logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms are not recognized; virtual function calls appear as indirect calls (`(**(code ***)param_1)()`), and exception handling is presented as library calls rather than language constructs.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the complex exception flow and pointer arithmetic with high confidence, failing to flag these areas as potentially difficult to understand or reconstructed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-null requirements for `dynamic_cast` or object validity are absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear, and the relationship between classes and their methods is preserved through naming, though the virtual dispatch mechanism is implicit.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped by address, which roughly correlates with the source order, but there is no logical namespace or module grouping beyond the implicit class naming.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not standalone; it relies on undefined external functions (e.g., `FUN_00011190`) and specific compiler runtime structures that prevent recompilation without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 8 + 3 + 4) / 4 = 4.5
+L2_avg: (3 + 8 + 4 + 7) / 4 = 5.5
+L3_avg: (6 + 5 + 4) / 3 = 5.0
+L4_avg: (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg: (7 + 6 + 2) / 3 = 5.0
+
+Overall = (4.5 × 0.30) + (5.5 × 0.25) + (5.0 × 0.20) + 
+          (1.75 × 0.15) + (5.0 × 0.10)
+Overall = 1.35 + 1.375 + 1.0 + 0.2625 + 0.5
+Overall = 4.49 (approx 4.5/10)
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.5/10
+
+### Critical Defects (Bullet List)
+- **Exception Handling Obfuscation**: The `test_cpp_exception` function is reduced to low-level `__cxa` calls and jump tables, completely hiding the `try/catch` structure.
+- **String Literal Loss**: The string "Test" is compiled into integer hex assignments (`0x74736554`), making the initialization of `SimpleClass` unreadable.
+- **Member Access via Offsets**: Class member access is consistently represented as pointer arithmetic (e.g., `*(int *)(this + 4)`), destroying the semantic meaning of field names like `value` or `multiplier`.
+- **Missing Comments**: The absence of comments explaining the C++ runtime mechanisms (vtables, RTTI, exceptions) significantly hinders understanding.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (8/10)
+- **Why?** The decompiler successfully demangled C++ mangled names, accurately recovering class names, method names, and template instantiations.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (1/10)
+- **Why?** The complete lack of comments makes the complex low-level implementation of C++ features (exceptions, RTTI) extremely difficult to reverse engineer.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **C++ Exception Pattern Recovery**: Implement pattern matching to detect `__cxa_begin_catch`/`__cxa_throw` sequences and reconstruct them into `try/catch/throw` blocks.
+2.  **String Literal Analysis**: Improve stack variable initialization analysis to recognize hex constants that represent packed string literals and display them as strings.
+3.  **Class Layout Recovery**: Utilize RTTI and constructor/destructor code to reconstruct struct definitions with field names, replacing pointer arithmetic offsets with direct member access (e.g., `this->value` instead of `*(int *)(this + 4)`).

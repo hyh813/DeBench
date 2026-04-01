@@ -1,0 +1,7 @@
+Testing Standard Library Functions
+
+Lib_L101: strlen=8
+Lib_L102: 0
+Lib_L103: 12
+Lib_L104: 90
+Lib_L105: 1

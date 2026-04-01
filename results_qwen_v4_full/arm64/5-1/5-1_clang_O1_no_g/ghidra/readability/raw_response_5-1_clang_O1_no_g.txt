@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_38`, `uStack_2c`, `iVar1`, `pvVar1`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retained original names (`test_cpp_member_func`, `test_cpp_virtual_func`) which is good, but many helper functions are generic (`FUN_00101630`, `FUN_0018bc`). Class methods recovered with class prefixes (`Base::virtual_func`) which is helpful.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (`0x125c`, `0x14`, `0x32`, `0x2bf`). Original constants like `0x1234` for `getClassID()` are buried in calculations. String literals like `"Test"` recovered as hex (`0x74736554`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Unknown calling convention" and "WARNING: Removing unreachable block" comments clutter output. Runtime initialization functions (`_init`, `_GLOBAL__sub_I_5_1_cpp`) included unnecessarily for function-level analysis.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions show natural loops (`test_cpp_constructor` has do-while), but many are constant-folded to single returns (`test_cpp_operator_overload` just `return 0x16`). Exception handling in `test_cpp_exception` loses try-catch structure entirely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but class methods are separated from test functions losing cohesion. Template instantiations recovered as separate functions (`template_max<int>`, `template_max<double>`) which is good recovery.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Some functions have confusing stack variable initialization sequences (`local_15 = 0; local_38 = 10; uStack_2c = 0;`) that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy - `test_cpp_oo_features()` duplicates code from individual test functions instead of calling them. Multiple destructor thunks generated for same class (`MultiDerived::~MultiDerived` appears 4+ times).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `undefined4`, `undefined8`, `undefined1` everywhere instead of `int`, `long`, `char`. Pointer types often just `void*` or `undefined**`. Original `size_t`, `int32_t` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes essentially lost - shown as pointer arithmetic (`*(int *)(this + 8)`) instead of member access (`this->multiplier`). No struct definitions recovered. Stack objects shown as `undefined4 local_38` arrays instead of `SimpleClass` objects.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts implicit in pointer arithmetic. Function pointer calls use `(*(code *)**(undefined8 **)param_1)` pattern which is type-unsafe. No const-correctness preserved despite original `const` methods.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present (function signatures, warning messages). No algorithm explanations. Original source had extensive Chinese comments explaining each test case - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms completely lost - RAII patterns, virtual dispatch, operator overloading all reduced to raw operations. Lambda expressions not recognized (just constant returns). Template patterns partially recovered as separate functions.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues ("WARNING: Unknown calling convention", "WARNING: Subroutine does not return"). Exception handling shows try-catch boundaries in comments. However, many semantic anomalies (constant folding) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had expected return values in comments (e.g., "期望: 10 + 34 + 4660 = 4704") - completely lost. No null checks or bounds validation documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch shown as pointer dereferences (`(*(code *)*local_30)`) without vtable explanation. Inheritance relationships not documented in decompiled output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 85 functions in single output without logical grouping. Runtime initialization functions mixed with application code. No namespace or class grouping visible in output structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references external symbols (`operator_new__`, `__cxa_throw`, `std::ios_base::Init`) without declarations. Would not compile standalone. Missing header includes and namespace qualifications.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (4+3+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.45/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** - `local_38`, `iVar1`, `uStack_2c` provide zero semantic information compared to original `capture_by_value`, `instance_count`, `multiplier`
+- **Class/struct types lost** - All member access reduced to pointer arithmetic (`*(int *)(this + 8)`) instead of `this->multiplier`
+- **Constant folding obscures logic** - Functions like `test_cpp_operator_overload` return `0x16` directly instead of showing the computation
+- **Exception handling structure lost** - `test_cpp_exception` shows `__cxa_throw` call but no try-catch blocks visible
+- **Template/lambda semantics erased** - Lambda expressions and template logic completely reduced to constant returns
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names preserved from original source (`test_cpp_member_func`, `test_cpp_virtual_func`), providing some semantic anchors for navigation.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero documentation of expected behaviors, preconditions, or return value semantics - original source had extensive expected value comments that are completely absent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions from vtable layouts** - Analyze virtual function tables to reconstruct class hierarchies with proper member field names based on access patterns.
+2. **Preserve computation over constant folding** - When constants can be computed at compile time, still show the original computation structure with comments indicating foldable expressions.
+3. **Infer variable semantics from usage patterns** - Variables used in `strlen()` calls should be named `string_*`, loop counters should be `i`, `idx`, etc., based on their role in the code.

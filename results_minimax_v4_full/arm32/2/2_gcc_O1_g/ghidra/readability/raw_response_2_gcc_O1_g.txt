@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic Ghidra-generated names like `iVar1`, `piVar2`, `pPVar2`. Many have "Unresolved local var" annotations (e.g., "int sum@[???]", "int i@[???]"). Function parameters like `x`, `p`, `arr`, `n` are preserved, but loop accumulators and temporary variables lack semantic names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`. The decompiler successfully recovered the symbolic function names from the binary.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear - enum values like `STATE_IDLE`, `STATE_RUNNING` are properly recovered. Some magic numbers like `0x41` (65, 'A') and `0x61` (97, 'a') are left as hex. However, computed values like `0xb` (11) and `0x14` (20) lack explanation of their origin.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: "Unresolved local var" annotations throughout (e.g., "int a@[???]", "int b@[???]"), "WARNING: Removing unreachable block" messages, "WARNING: Unknown calling convention" comments, and compiler helper functions (`__mulsf3`, `__addsf3`, `__muldf3`) inlined into the main code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper loops and conditionals. However, some patterns are awkward - `array_1d_stack` uses a do-while with pointer arithmetic instead of a for-loop. The bit-field access in `struct_bitfields` uses complex bit manipulation rather than named fields. At -O0, these should be more idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition maintained - each function from the original is preserved as a separate function. Functions like `test_data_types_l1` are long (expected for test harness code) but logically cohesive. Static functions like `double_value` are properly scoped.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some functions have early returns (e.g., `array_complex_index`). Minor forward jumps exist but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling present in array functions (e.g., `array_3d` manually unrolls inner loops). No dead code detected. Redundancy is manageable but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate: `int`, `short`, `char`, `long`, `long long`, `float`, `double`, `_Bool`, pointer types all correctly recovered. However, `long double` is treated as `double` in some places. Integer types are generic `int` rather than platform-specific widths.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs like `Point3D`, `Rect`, `Node`, `TreeNode`, `DNode` are well-recovered with correct field names. Enums like `State` are properly reconstructed. Nested structs like `Widget` and `Device` have mostly correct field names. Bit-fields use raw bit manipulation rather than named fields.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. Some casts present in floating-point operations (necessary for calling compiler helpers). Pointer types are correct. No major type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: File header comment present ("Decompiled by Ghidra 12.0"). No explanatory comments for algorithms or non-obvious logic. "WARNING" messages serve as anomaly indicators but aren't true documentation. No API contracts (@param, @return) recovered.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognizable: linked list traversal (`while (head != NULL)`), binary tree recursion, array indexing patterns. However, no design patterns or algorithms are explicitly named or documented. The code shows the patterns but doesn't identify them.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations. However, indirect calls that couldn't be resolved aren't clearly flagged. Some suspicious patterns (like the bit-field manipulation) aren't explained.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No explicit preconditions, postconditions, or invariants documented. Error conditions aren't annotated. The decompiled code shows what happens but not what constraints apply (e.g., "requires: n > 0").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are preserved (e.g., `array_1d_stack(arr1,5)`). However, there's no documentation of which functions call which, or global variable usage. Callback relationships (like `ptr_func_simple` calling `double_value`) aren't explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. Test functions are separated from implementation functions. However, this reflects the decompiled structure rather than the original source organization (which had clear section comments).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code requires linking against libc (`__printf_chk`, `puts`). Some type definitions are missing (e.g., `Point3D`, `Node` need to be defined). Compiler helper functions like `__mulsf3` are inlined. Moderate patching needed to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming: Most local variables use generic names (`iVar1`, `piVar2`, `sum@[???]`) instead of semantic names
+- Noise: Extensive "Unresolved local var" annotations and compiler warnings clutter the output
+- Comments: No explanatory comments for algorithms or non-obvious logic
+- Type precision: `long double` treated as `double`, generic `int` instead of specific widths
+- Anomaly indication: Indirect calls and suspicious patterns not clearly flagged
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler excellently recovered function names from symbols, preserving nearly all original function names exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+Local variables are almost universally generic (`iVar1`, `piVar2`, `pPVar2`) with "Unresolved local var" annotations, making it difficult to track variable purpose without significant effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `sum += arr[i]` → `sum`, `for (int i = 0` → `i`) to generate semantic names instead of generic `iVar1`
+2. **Clean up unresolved annotations**: Suppress or consolidate "Unresolved local var" comments; they add noise without providing actionable information
+3. **Add algorithm documentation**: Recognize common patterns (linked list traversal, binary tree recursion) and add explanatory comments to aid understanding

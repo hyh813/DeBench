@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named generically as `param_1`, `param_2`, `local_c`, `iVar1`, `piVar1`, `uVar1`, `uVar2`. These cryptic names completely obscure semantic meaning. The original source used meaningful names like `a`, `b`, `count`, `args`, `sum` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names accurately match the original source: `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `param_by_value_int`, etc. The decompiler correctly recovered all function names from the binary.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return values shown as hex (0xf, 0x32, 0x2a) instead of decimal (15, 50, 42). String literals replaced with `&DAT_000117d6` references. Some computed values like `0x15` (21) are readable, but most constants lack semantic explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive compiler-generated code dominates output: `__aeabi_drsub`, `__subdf3`, `__adddf3`, `__floatsidf`, `__floatdidf`, `__fixdfsi`, `__extendsfdf2`, `__floatundidf` - hundreds of lines of floating-point library functions. Runtime functions (`_init`, `_start`, `register_tm_clones`) add more noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow. `varargs_func` uses proper do-while loop. `param_ptr_array` has clear iteration. Some functions like `ret_large_struct` have scattered assignments rather than loops, but this is acceptable at -O0.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions are reasonable size (10-50 lines). However, functions are in binary order rather than logical grouping. The original source's clear sections (calling conventions, parameter passing, return values) are lost.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. `param_double_ptr` has multiple early returns but this is acceptable. No excessive goto or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling is minimal at -O0. Some scattered assignments in `ret_large_struct` could be consolidated but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type erosion. Uses `undefined4` for 32-bit, `undefined8` for 64-bit, `byte` for chars. Original types (int, char*, double, long long, SmallStruct*, LargeStruct) are lost. Function pointers shown as `code *` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct recovery. `func_struct_byval` has 30+ individual parameters (param_1 through param_31) instead of struct `LargeStruct`. `func_struct_byptr` uses `int *param_1` instead of `SmallStruct *p`. Original source had meaningful struct definitions completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety issues: `param_string` uses `byte *` for char*. `ret_pointer` does pointer arithmetic returning `int` (should be `int*`). Mixed `int` and `undefined4` usage. No obvious buffer overflows, but type confusion exists.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only function names as "comments". No explanation of parameter meanings, return value semantics, or algorithm purpose. Ghidra header present but provides no value. No documentation of what functions do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms identified. Varargs handling appears as raw pointer arithmetic. No recognition of calling convention patterns or common C idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra shows "WARNING: Removing unreachable block" messages, but these are just dead code elimination notices, not actual semantic anomalies. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: ptr != NULL"), postconditions, or invariants documented. The original source had clear semantics completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No call graph or function relationship documentation. Can't see which functions call which. No indication of global variable usage or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions in arbitrary binary address order, not logical grouping. Original source had clear sections: calling conventions (lines ~10-60), parameter passing (~200-350), return values (~400-500). This organization completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined8`, `byte`, `code *`) that won't compile. Many functions return `undefined4` instead of `int`. External functions (puts, printf) used without declarations. Would require extensive patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `iVar1`, `local_c`) - no semantic meaning recovered
+- Zero struct recovery - `func_struct_byval` has 31 individual parameters instead of `LargeStruct` type
+- Massive compiler noise - 500+ lines of floating-point library functions overwhelm actual code
+- No type precision - uses `undefined4`/`undefined8` instead of actual types (int, double, long long)
+- No comments explaining function purpose, parameters, or return values
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are accurately recovered and match the original source exactly (cdecl_func, varargs_func, param_by_value_int, etc.)
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Composite Type Recovery (2/10)  
+Variables use cryptic generic names that make code comprehension extremely difficult. Struct types are completely lost, flattened to individual parameters.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `param_1` used in multiplication → `multiplier`, `local_c` as counter → `count`)
+2. Recover struct definitions by analyzing parameter patterns - 31 consecutive int parameters strongly indicate a 128-byte struct
+3. Filter or separate compiler-generated library functions (`__adddf3`, `__floatsidf`, etc.) from user code to reduce noise

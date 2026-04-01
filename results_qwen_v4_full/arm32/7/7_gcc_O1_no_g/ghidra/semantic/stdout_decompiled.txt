@@ -1,0 +1,3 @@
+Test started
+
+param_opaque_predicate result: 10

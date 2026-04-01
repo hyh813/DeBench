@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generic (`param_1`, `param_2`, `iVar1`, `local_8`) with no semantic meaning. Original source had meaningful names like `count`, `args`, `sum`, `x`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some generic names exist (`FUN_00011030`, `FUN_00011080`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex (`0xf`, `0x32`, `0x2a`) instead of decimal. String literals replaced with `&DAT_00012352` references instead of actual strings like `"=== 测试基础调用约定 ==="`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__i686.get_pc_thunk.bx`, `__do_global_dtors_aux`, `_init`, `_fini`). External function stubs are circular (printf calls printf).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures mostly preserved (do-while patterns). However, constant folding obscures original logic (call_cdecl returns `0xf` directly instead of calling `cdecl_func(5, 10)`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source. However, optimization merged some logic (caller functions return constants instead of making actual calls), losing call relationships.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with minimal gotos. Stack variable access patterns (`stack0x00000008`, `aiStack_8c`) create minor disruption to flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding created redundancy where computed values became literals. `test_calling_conventions` has 10+ printf calls with hardcoded values instead of function calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degradation exists. `func_mixed_args` splits `double` into `undefined4 param_4, param_5`. Return types sometimes changed (`int` to `undefined4`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost (`LargeStruct`, `SmallStruct`, `BigStruct` not recovered). `func_struct_byval` uses raw stack access instead of struct field access. `func_struct_byptr` uses `int*` instead of `SmallStruct*`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`CONCAT44`, `ROUND` in `func_mixed_args`). Pointer arithmetic without type safety. `param_double_ptr` has type confusion (`int*` vs `undefined4*`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive comments explaining each test case (CALL-L1-01, PARAM-L1-01, etc.). No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern somewhat recognized but not explicitly noted. No design patterns or algorithm patterns identified. Calling convention differences not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. Critical architecture mismatch (arm64 source vs x86 decompiled with `__i686.get_pc_thunk.bx`) not indicated. Constant folding results unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks not explained). No postconditions inferred. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage opaque (`DAT_00012352`, `DAT_000120a8`). No call graph information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source roughly. No header file structure. No namespace or logical grouping beyond function order.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions declared as circular stubs (printf calls printf). Would not compile standalone without significant modification. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+3+5)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.23/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation explaining each test case; decompiled code has none
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `BigStruct` not recovered; raw pointer arithmetic instead
+- **Variable names generic** - `param_1`, `iVar1`, `local_8` obscure semantic purpose (should be `count`, `sum`, `args`)
+- **Circular external stubs** - `printf` calls `printf`, making code non-compilable without modification
+- **Architecture mismatch unflagged** - Source is arm64 but decompiled shows x86 artifacts (`__i686.get_pc_thunk.bx`) with no warning
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic clarity for function purposes.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding test purposes and expected behaviors extremely difficult without referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how `param_1` is used in `varargs_func` (loop counter) to suggest `count`; track `local_8` as `args` pointer
+2. **Reconstruct struct types from memory access patterns** - Detect repeated offset patterns (`param_1[0]`, `param_1[1]`) to suggest `SmallStruct { int x; int y; }`
+3. **Add decompilation confidence annotations** - Flag architecture mismatches, constant-folded results, and unresolved external calls with comments like `// DECOMPILER: constant-folded from cdecl_func(5, 10)`

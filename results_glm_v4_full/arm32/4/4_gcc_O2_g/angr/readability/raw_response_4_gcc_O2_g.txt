@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters are generic (`a0`, `a1`), and local variables often use single letters (`i`, `ptr`) or generic names (`v0`, `v1`). While `cdecl_func` is simple, complex functions like `varargs_func` use `ptr` and `v8` which obscures the `va_list` semantics.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `ret_complex_expr` are perfectly recovered from the symbol table, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals (e.g., `"CALL-L1-01: %d\n"`) are recovered well. However, constants are propagated due to optimization (e.g., `return 15` instead of `return cdecl_func(5, 10)`), which removes the context of the original literals.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with `armg_calculate_condition` calls (e.g., in `ret_func_ptr` and `ret_complex_expr`), which represent intermediate representation artifacts for flag calculations, severely impacting readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions like `cdecl_func` are natural, complex logic is obscured by `armg_calculate_condition` calls and nested `if` statements that don't clearly map to the original ternary operators or switch statements.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and correspond to the source structure. The decompiler correctly identifies library functions like `__aeabi_dadd` and keeps them distinct.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code generally reads top-to-bottom without excessive spaghetti jumps. `test_calling_conventions` is a linear sequence of calls, matching the source.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The compiler's optimizations (constant propagation) are reflected cleanly (e.g., `call_cdecl` returning `15`). There is no apparent dead code or redundant variables left over from the decompilation process itself.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Signedness is frequently lost; `cdecl_func` takes `unsigned int` instead of `int`. Function pointers are demoted to `unsigned int *` (e.g., in `param_func_ptr`), losing signature information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are poorly recovered. `func_struct_byval` takes 16 separate `unsigned int` arguments instead of a `LargeStruct`, and `func_struct_byptr` accesses fields via array indexing (`ptr[1]`) rather than struct member access.
+
+**11. Type Safety:** Score: 4/10
+Justification: Function pointers are cast to data pointers (`unsigned int *`), and struct accesses are performed via raw pointer arithmetic on `unsigned int`, which is type-unsafe and obscures the original memory layout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no semantic comments explaining logic. Only address comments (e.g., `// Function: cdecl_func at 0x1057c`) are present.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard calling conventions are recognized, but varargs logic in `varargs_func` is represented as pointer arithmetic (`ptr = &v2`, `ptr = v8`) rather than the `va_list` idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The `armg_calculate_condition` calls are presented as normal code without any warning that they represent failed lifting of condition flags or complex arithmetic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions, even where the source implies them (e.g., `param_by_value_ptr`).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but the inlining of `call_cdecl` into a constant return value obscures the relationship to `cdecl_func` in the optimized binary.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and standard library functions are separated. The order roughly follows the source, though optimized.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code references undefined symbols like `armg_calculate_condition` and `g_22008`, making it impossible to compile without significant modification or defining these stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 10 + 7 + 3) / 4 = 6.25
+L2_avg = (4 + 8 + 9 + 9) / 4 = 7.5
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (2 + 4 + 1 + 1) / 4 = 2.0
+L5_avg = (6 + 7 + 2) / 3 = 5.0
+
+Overall = (6.25 * 0.30) + (7.5 * 0.25) + (3.67 * 0.20) + (2.0 * 0.15) + (5.0 * 0.10)
+Overall = 1.875 + 1.875 + 0.734 + 0.3 + 0.5
+Overall = 5.28
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- **Type Loss**: `cdecl_func` parameters are `unsigned int` instead of `int`, and function pointers are demoted to `unsigned int *`.
+- **Struct Recovery Failure**: `func_struct_byval` explodes a struct into 16 integer arguments, completely losing the composite type.
+- **IR Artifacts**: `armg_calculate_condition` calls litter the code (e.g., in `ret_func_ptr`), representing failed lifting of low-level condition flags to high-level C.
+- **Optimization Mismatch**: The decompiled code reflects `-O2` optimizations (constant propagation), while the source metadata claims `-O0`, making structural comparison difficult.
+
+### Best Quality Aspect
+- **Function Naming (10/10)**: The decompiler perfectly recovered all function symbols from the binary, making the high-level flow easy to trace despite other issues.
+
+### Most Needs Improvement
+- **Semantic Transparency (2.0/10)**: The presence of `armg_calculate_condition` and lack of comments or anomaly flags makes understanding the logic of complex functions nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Lift Condition Flags**: Implement a pattern matcher to convert `armg_calculate_condition` sequences into standard C comparison operators (e.g., `==`, `<`, `>`).
+2. **Aggregate Type Recovery**: Improve heuristics to recombine consecutive register/stack arguments into structs based on size and access patterns (e.g., `a0` through `a15` should be `LargeStruct`).
+3. **Signedness Inference**: Analyze usage patterns (e.g., comparisons with zero or right shifts) to infer `signed` vs `unsigned` types rather than defaulting to `unsigned int`.

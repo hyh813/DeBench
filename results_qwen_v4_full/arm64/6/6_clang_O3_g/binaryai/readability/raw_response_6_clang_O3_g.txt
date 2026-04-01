@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_30`, `uVar1`). Original semantic names like `dst`, `src`, `buffer`, `fd` are lost. For example, `param_strcpy` uses `param_1` and `param_2` instead of `dst` and `src`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_strcpy`, `call_strcpy`, `param_mutex_lock`). However, some functions have generic names (`FUN_001012e0`, `FUN_001017fc`) and external wrappers add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), `0x1000` (4096), `0x38`/`0x39` (syscall numbers). String literals sometimes referenced as `&DAT_00103366` instead of inline.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: 60+ external function stubs (`<EXTERNAL>::memcpy`, etc.) add significant noise. ARM64 atomic helpers (`__aarch64_cas4_acq_rel`) included but not clearly separated from application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow mostly follows C patterns but uses verbose conditionals. The `param_malloc_free` function has complex loop unrolling that obscures the simple original `for` loop logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved. Functions are appropriately sized. However, `test_standard_library_functions` inlines all test calls instead of calling `call_*` helpers, losing modularity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has awkward patterns like `param_signal_handling`'s nested do-while loops for polling that could be cleaner while loops.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_malloc_free` and `param_memset` creates 8x redundant code. The original simple loops are transformed into complex unrolled versions with multiple accumulator variables (`iVar8` through `iVar15`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degraded: `size_t` becomes `ulong`, `pthread_t` used correctly. Return types often wrong (`void` instead of `int` in `param_strcpy`). Signed/unsigned mixing causes issues.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct fields accessed generically: `local_38.sa_data[0]` through `sa_data[13]` instead of proper `sin_family`, `sin_port`, `sin_addr`. No struct definitions with named fields recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(undefined4 *)`, `(undefined *)0x0`. Pointer arithmetic without proper typing. `param_strcpy` returns `void` but original returns `int`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, strlen, pthread_create). Thread patterns visible but not named. No design pattern identification (producer-consumer in `param_condition_variable` not documented).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls, unresolved symbols, or potential issues. The decompiler presents uncertain code confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). Error return values (-1, -2, -3) not explained. Postconditions not inferred.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without clear declaration context. Callback relationships implicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: External functions grouped at top, then application code. No logical grouping by functionality (library tests, syscalls, threads mixed). No header file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared. ARM64-specific atomics present but may need platform-specific handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+4+4)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.91/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `param_2`, `iVar1` obscure semantic meaning (e.g., `dst`/`src` in strcpy lost)
+- **Zero comments**: Original source had extensive documentation; decompiled code has none
+- **Magic numbers everywhere**: `0x2a`, `0xffffffff`, `0x38`, `0x39` without symbolic names
+- **Struct field names lost**: `sockaddr` accessed as `sa_data[0-13]` instead of `sin_family`, `sin_port`
+- **Return type errors**: `param_strcpy` returns `void` but original returns `int` (strlen result)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `param_strcpy`, `param_mutex_lock`, `param_condition_variable` are preserved, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments makes understanding non-trivial logic extremely difficult, especially for complex functions like `param_signal_handling` and `param_thread_local_storage`.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and parameter positions (e.g., first char* param in copy function → `dst`, second → `src`)
+2. **Recover and preserve original comments** from debug symbols when `-g` flag is present in compilation
+3. **Replace magic numbers with symbolic constants** by detecting common patterns (syscall numbers, error codes, buffer sizes) and suggesting named equivalents

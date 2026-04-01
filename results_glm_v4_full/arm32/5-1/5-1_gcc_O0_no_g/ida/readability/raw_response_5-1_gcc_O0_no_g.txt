@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compilation with `-g` (debug symbols), local variables are overwhelmingly generic (e.g., `v3`, `v4`, `v5`), failing to recover names like `obj`, `ptr`, or `result`. While `lpsrc` in `test_cpp_rtti` shows the decompiler *can* infer names, it failed to do so consistently or utilize debug info effectively.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; functions like `SimpleClass::SimpleClass`, `test_cpp_member_func`, and `test_cpp_smart_ptr(void)::{lambda(int *)#1}::operator()` are perfectly recovered, preserving namespaces and class scopes.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals (e.g., `"Test"`, `"Base"`) are preserved, but magic numbers like `4660` (0x1234) and `50` remain unnamed constants. Floating-point literals are obscured by `COERCE_DOUBLE` macros due to ARM register passing conventions.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant casting noise, particularly for C++ object pointers (e.g., `(int (__fastcall ***)(_DWORD, int))`) and Hex-Rays artifacts like `__spoils<R1,R2,R3,R12>` and `COERCE_DOUBLE`, which clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Standard loops and conditionals are natural, but exception handling is completely flattened; `test_cpp_exception` is decompiled as a `__noreturn` function that only throws, losing the `try-catch` structure and the return logic entirely.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-decomposed; constructors, destructors, and operators are correctly separated into their own functions. Template instantiations are distinct, and lambda closures are extracted as unique callable types.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumps. Object initialization sequences are explicit, though the explicit `this` pointer passing in C++ methods (e.g., `SimpleClass::setValue((SimpleClass *)v3, 10)`) slightly disrupts the "object-oriented" flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code or redundancy. The verbosity comes from the C++ ABI (e.g., vtable initialization) rather than compiler artifacts, which is expected at `-O0`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are highly accurate; `std::unique_ptr`, `std::type_info`, and class types are correctly identified. The distinction between `int` and `size_t` is mostly preserved, and template types like `Container<int>` are fully resolved.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Class layouts are recovered well. The decompiler correctly identifies member access (e.g., `v3[1] = 100` for `dataA` in `MultiDerived`) and handles the complex layout of diamond inheritance (virtual base offsets) correctly.
+
+**11. Type Safety:** Score: 9/10
+Justification: The decompiled code respects type safety; pointers are cast appropriately for inheritance (e.g., `Base*` to `Derived*`), and `const` correctness is largely maintained in method signatures.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no meaningful comments explaining logic; only standard stack variable comments (e.g., `// [sp+4h] [bp-38h]`) are present. Complex logic like RTTI checks or exception handling lacks explanation.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: C++ idioms are recognized excellently. Operator overloads (`operator+`, `operator==`), RTTI (`typeid`, `dynamic_cast`), and smart pointer move semantics (`std::move`) are all explicitly represented in the decompiled output.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler correctly flags potential issues like `positive sp value has been detected` in `_start`. It does not falsely flag the complex C++ casts as anomalies, treating them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred or documented. For example, the requirement for non-null pointers in `dynamic_cast` or the exception guarantees are not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Virtual function calls reference vtable offsets (e.g., `off_145F0`), and standard library calls (`std::forward`, `operator new`) are named and linked clearly, showing the relationship with the C++ runtime.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by class and test case. The decompiler output maintains the separation between different test functions and their helper classes (e.g., `SimpleClass` methods are grouped).
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While the types are defined, the code relies heavily on standard library headers (`<memory>`, `<typeinfo>`) and compiler intrinsics (`_cxa_throw`) that would require significant stubbing or a full C++ environment to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- Variable naming is poor (e.g., `v3`, `v4`) despite the presence of debug symbols (`-g`), which should have provided original names.
+- Exception handling control flow is lost; `test_cpp_exception` is reduced to just the throw path, missing the catch blocks and return value logic.
+- Magic numbers (e.g., `4660`, `50`) are not replaced with named constants or enums, reducing semantic clarity.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly demangles complex C++ symbols, including template instantiations and lambda closure types, making the API surface extremely clear.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)
+- The failure to recover local variable names from debug info or infer them from usage (e.g., naming `v3` as `obj` when used to construct `SimpleClass`) significantly hampers readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize Debug Symbols**: Prioritize loading DWARF debug information to recover original local variable names, especially when compiled with `-g`.
+2. **Reconstruct Exception Control Flow**: Implement analysis of personality routines and landing pads to reconstruct high-level `try-catch` blocks instead of flattening them into `__noreturn` throws.
+3. **Infer Variable Names from Context**: When debug info is missing, infer names from constructors (e.g., `SimpleClass::Constructor(v3)` -> `v3` is likely a `simple_class` or `obj`) and usage patterns.

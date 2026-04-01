@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `param_2`, `iVar1`, `local_c`) with no semantic meaning. Original source used meaningful names like `count`, `sum`, `args`, `large`, `s` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved (`cdecl_func`, `call_cdecl`, `varargs_func`) matching original source. However, runtime helpers like `__adddf3` are low-level and obscure intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers (`0xf`, `0x32`, `0x2a`) replace original constants (15, 50, 42). String literals referenced as `&DAT_0001178b` instead of readable text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Floating-point runtime functions (`__adddf3`, `__floatsidf`) expanded to 200+ lines of bit manipulation. Compiler artifacts pollute otherwise simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops use do-while patterns adequately, but test functions are constant-folded losing actual call structure. Float functions have extremely complex branching.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but test functions over-simplified (return constants instead of calling). Runtime functions excessively large.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Float manipulation functions have many labels (`LAB_00011200`, `LAB_000110a8`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in float runtime functions with repeated bit manipulation patterns. Test functions over-optimized with constant folding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types (`undefined4`, `undefined8`) replace specific types. Float/double operations use integer parameters. `size_t` returned as generic `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost—`LargeStruct` becomes 4 separate `int` parameters. `SmallStruct` represented as `int *` with no field names. No struct definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout: `(int *)((int)local_10 + iVar2)`. Pointer arithmetic on generic int types. Float operations use integer parameters causing type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining calling conventions, test scenarios, and expected values.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (uses array iteration instead of `va_list`). Struct passing conventions not identified. No pattern documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about incorrect varargs handling or type mismatches. `func_mixed_args` has 6 parameters instead of 4 with no indication of error.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Null checks exist (`if (param_1 == (int *)0x0)`) but without contract explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions constant-folded obscuring relationships. External functions marked `<EXTERNAL>` but no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. No logical grouping by category (calling conventions vs. parameter passing vs. return values).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—missing struct definitions, external function declarations incomplete, runtime functions need implementation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.13/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` (128 bytes) decomposed into 4 separate `int` parameters (`param_1` through `param_4`)
+- **Varargs handling incorrect**: Uses local array iteration instead of `va_list`/`va_start`/`va_arg` pattern
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Constant folding obscures logic**: Test functions return hardcoded values (`0xf`, `0x32`) instead of showing actual function calls
+- **Float operations expanded**: Simple `x + d + ll` becomes 200+ lines of bit manipulation in `__adddf3`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts** - Detect struct patterns from parameter grouping and memory access patterns to reconstruct `struct LargeStruct { long long data[16]; }`
+2. **Recognize standard library patterns** - Identify `va_list` usage patterns and mark as varargs instead of array iteration; recognize `printf` format strings
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "// DECOMPILER UNCERTAINTY: varargs handling may be incorrect") and preserve original constant values in comments

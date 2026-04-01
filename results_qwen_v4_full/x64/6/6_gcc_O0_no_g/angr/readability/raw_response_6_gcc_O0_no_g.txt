@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had descriptive names like `dst`, `src`, `buffer`, `write_data`, `read_buffer` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`). However, boilerplate functions use generic names (`sub_402020`, `sub_402030`) obscuring their purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (represents -1), `42` (success code), `18446744073709551615` (SIG_ERR). Signal numbers shown as raw integers (10, 14) instead of `SIGUSR1`, `SIGALRM`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler initialization boilerplate present (`_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`). Duplicate unreachable return statements in `param_fread_fwrite`, `param_signal_handling`, `param_thread_local_storage`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most if/else and while loops recovered correctly. However, `param_signal_handling` has deeply nested conditionals that could be flattened. Some functions have unreachable code paths after returns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well—each test function is separate. Thread functions properly isolated. However, 40+ boilerplate `sub_402XXX` functions are fragmented unnecessarily.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear execution flow. Loop constructs recovered as proper `for`/`while`. Some forward jumps in signal handling polling loops disrupt readability slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple functions have duplicate return statements (`param_fread_fwrite` returns `4294967293` twice). Dead code after unconditional returns not eliminated by decompiler.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation—`size_t` becomes `unsigned long`, `int` becomes `unsigned int` or `unsigned long long`. `FILE*` partially recovered but `pthread_t` shown as `char` or `unsigned long long`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `FILE` struct defined but empty. `sockaddr` partially recovered. `ThreadData` struct completely lost—shown as array access `(&result)[3 * i]`. Custom structs use generic field names (`field_0`, `field_8`, `field_c`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int)pthread_create`, `(unsigned int)(ptr - a0)`, `(volatile int*)&atomic_counter`. Pointer arithmetic without type safety throughout thread functions. Return type mismatches (functions returning `unsigned long long` when source returns `int`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from source. No decompiler-generated explanations for complex logic. Only one anomaly comment exists (`[D] Unsupported jumpkind Ijk_SigTRAP`).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). However, design patterns (producer-consumer, mutex-protected counter) not identified or named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (SigTRAP). Duplicate returns, type mismatches, and architecture mismatch (ARM64 source → AMD64 decompilation) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc results). No postconditions inferred. Error return values visible but not explained (what does `4294967293` mean?).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_4050b0`, `signal_received`) without explanation. Thread callback relationships implicit rather than explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order. Test functions grouped logically (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. However, architecture mismatch (ARM64→AMD64) may cause runtime issues. External dependencies (pthread, libc) not documented. Platform-specific code (`#ifdef _WIN32`) lost.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25  × 0.25 = 1.5625
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+6+6)/3   = 5.67  × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.10/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`dst`, `src`, `buffer`, `write_data`)
+- **Magic numbers unexplained** (`4294967295` for -1, `18446744073709551615` for SIG_ERR, signal numbers as raw integers)
+- **Composite types poorly recovered** (`ThreadData` struct lost, shown as array indexing; `FILE` struct empty)
+- **Zero comments recovered** despite original having extensive documentation
+- **Architecture mismatch** (ARM64 source decompiled as AMD64) not flagged as anomaly
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most function names preserved accurately from source (`param_strcpy`, `thread_compute`, `signal_handler`), making high-level program structure immediately recognizable.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments means readers must infer all logic intent from code alone, significantly increasing cognitive load for understanding complex patterns like signal handling and thread synchronization.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., `v0` passed to `strlen` should be named `string_ptr` or `buffer`)
+2. **Recover and display magic number semantics** - Map common constants to named equivalents (`4294967295` → `-1`/`UINT_MAX`, signal numbers → `SIGUSR1`)
+3. **Add decompiler confidence annotations** - Flag uncertain recoveries (type mismatches, architecture differences, unresolved calls) with comments like `// DECOMPILER: Type may be incorrect`

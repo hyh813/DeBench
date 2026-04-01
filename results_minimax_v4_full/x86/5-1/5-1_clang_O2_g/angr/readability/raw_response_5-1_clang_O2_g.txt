@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`, `v3`, `v4`, `v5`, `i`). The decompiled code uses names like `unsigned int v0; // [bp-0x2c]` and `char v1[4]; // [bp-0x28]` with no semantic meaning. Compare to source where variables like `value`, `name`, `size`, `data` are meaningful.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions have proper C++ mangled names like `_Z20test_cpp_member_funcv`, `_Z17call_virtual_funcP4Basei`, `template_max<int>`, `template_swap<int>`, `Container<int>::push`, but the majority use generic addresses like `sub_401030`, `sub_401130`, `sub_401373`. The test functions are well-named but helper functions are not.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation (e.g., `throw 42` in exception code, `0x1234` in getClassID). String literals are replaced with global pointer references like `&g_402081`, `&g_40209f` with no indication of their content. The value `42` in `test_cpp_exception` should be documented.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. The output contains extensive VEX IR artifacts like `[D] PutI(72:F64x8)[t3,0] = t6()`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`. Multiple functions failed to decompile ("Failed to decompile function"). The code is nearly unreadable due to these artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is present - conditionals, loops exist. However, some functions like `register_tm_clones()` have complex goto-based flow with computed jumps that are difficult to follow. At -O0, control flow should be more straightforward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably separated. Template functions like `template_max<int>`, `template_swap<int>` are properly extracted. However, some functions like `test_cpp_oo_features` contain multiple operations that could be better decomposed. Parameter lists are sometimes awkward (e.g., `void Container<int>::push(void* ptr, int arg_0)`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps. Functions like `register_tm_clones()` have computed goto patterns that disrupt linear reading. Some early returns present but not consistently applied.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but some redundancy in struct definitions (multiple `struct_0` definitions with different padding sizes). Loop constructs are present but not heavily unrolled, which is appropriate for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type erosion. Most integers are `unsigned int` or `int` without specific widths. Pointers are often `void*` rather than typed. Template functions show some type recovery (`template_max<int>`, `Container<int>`), but member functions use `void* this` instead of proper class types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. The decompiler creates generic structs like `typedef struct struct_0 { char padding_0[4]; struct struct_1 *field_4; } struct_0;` with meaningless field names. Compare to source's `class SimpleClass { int value; char name[32]; }` - this semantic information is completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Many unsafe pointer casts like `*((int *)ptr)`, `*((char **)ptr)`. Pointer arithmetic is present without bounds checking. Some functions like `Container<double>::push` have unsupported operations that could be type-related.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are decompilation metadata like "// Function: sub_401030 at 0x401030" and "// Angr Decompilation". No explanation of algorithm logic, no recovery of original comments from source.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ patterns are visible (virtual function calls via vtable: `(*((int *)*((int *)arg_0)))(arg_0, arg_1)`), exception throwing with `__cxa_throw`, but these are not identified or named as patterns. The virtual call pattern should be labeled as "vtable dispatch".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies are flagged - "Failed to decompile function" messages, "[D] unsupported_<class 'pyvex.expr.GetI'>()" for unhandled operations. However, many issues are silently handled or produce incorrect output without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `Container<int>::get` should have bounds checking documented but don't. No recovery of assert statements or validation logic from source.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships are unclear. External dependencies are declared as `extern` but not documented (e.g., `extern char _ZNSt8ios_base4InitD1Ev;`). No call graph or usage documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address rather than logically. The original source has clear sections (CPP-L3-01, CPP-L3-02, etc.) but decompiled output is just a flat list sorted by address. No namespace or class grouping visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many unresolved externals (`extern char g_403ecc;`, `extern char g_403ee0;`). Template instantiations are present but incomplete. The code would require significant patching to compile. Multiple "Failed to decompile" functions mean missing code.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `result`) with no semantic meaning - should infer from usage like `ptr` being used as `this` pointer
+- **Struct recovery failure**: Composite types are completely lost - `class SimpleClass { int value; char name[32]; }` becomes generic `struct struct_0`
+- **Noise artifacts**: Extensive VEX IR output (`[D] PutI(72:F64x8)[t3,0] = t6()`) makes code unreadable
+- **Comment absence**: No algorithm explanations, no recovery of source comments, only decompilation metadata
+- **Type precision**: Heavy erosion to `void*`, `unsigned int` losing original types like `size_t`, `int*`, class pointers
+
+### Best Quality Aspect: Function Naming Quality (4/10)  
+Some C++ mangled names were properly decoded (`_Z20test_cpp_member_funcv`, `template_max<int>`), showing the decompiler can handle symbol information when present.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)  
+Every variable uses generic names. At -O0 with debug symbols, the decompiler should be able to infer meaningful names from usage patterns and debug info.
+
+### Top 3 Recommendations:
+1. **Infer variable names from debug info**: At -O0 with -g, use DWARF debug information to recover variable names like `value`, `name`, `size`, `data` instead of `v0`, `v1`, `ptr`
+2. **Recover struct/class layouts**: Parse vtable information and constructor patterns to reconstruct composite types with meaningful field names
+3. **Filter VEX IR artifacts**: Remove `[D] PutI(...)` and `[D] unsupported_<...>` patterns from output - these are decompilation internals, not readable code

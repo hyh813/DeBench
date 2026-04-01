@@ -1,0 +1,6 @@
+Test obfuscation and optimization edge cases:
+
+10
+35
+225
+1960258160

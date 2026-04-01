@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) instead of semantic names like `arr`, `local`, `counter`. Global variables are named `g1`, `g2`, `g3` instead of `global_counter`, `global_array`, `file_scope_static`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use mechanical names (`function_588`, `function_5ac`) and atomic stubs are verbose (`__sync_fetch_and_add_4`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g13 = "%d (\xe5\xad\x90..."`), magic numbers throughout without explanation (e.g., `g4 = 100`, `g5 = 23`), no named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive atomic operation stubs (30+ `__sync_*` functions), redundant wrapper functions for standard library calls (`function_5ac` just calls `memmove`), frame pointer manipulation visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops converted to while constructs instead of for loops (e.g., `large_stack_frame`), some functions over-optimized (`local_vars` returns `2 * a1 + 10` directly), backward jumps not recovered as idiomatic loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but unnecessary wrapper functions created for library calls, atomic stubs bloat the codebase, some functions too simplified (`stack_alias` just returns 20).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but complex while loops disrupt flow, some functions have excessive nesting from optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: 30+ atomic operation stubs never called in main code, duplicate wrapper functions for same library calls, constant-folded functions lose original structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type semantics, pointer types often just `int32_t *`, no `size_t` recovery, const-correctness lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `Point` struct completely lost (`local_struct` returns `3 * a1`), `Node` linked list struct not recovered (raw pointer arithmetic), `TreeNode` structure lost, all composite types reduced to memory offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int32_t *)a1`), pointer arithmetic without bounds checking, type information lost in heap operations, no const annotations preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, original source comments completely lost, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation pattern not identified, memory allocation patterns not documented, no algorithm naming, tree traversal not recognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about `dangling_pointer` undefined behavior, double-free not flagged, memory leak not indicated, potential crashes silent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`), no postconditions, error conditions not clearly documented, return value semantics unclear.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear, but global variable relationships obscured (`g7` = `global_counter`?), callback relationships not documented, no call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file, no logical grouping visible from decompilation, static functions not properly scoped, original section organization lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has necessary includes, external functions declared, should compile with minor modifications, but atomic stubs may need implementation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type System): (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+
+Overall = 1.35 + 1.31 + 0.73 + 0.26 + 0.57 = 4.22/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Global variables named `g1`, `g2`, `g3`** instead of semantic names like `global_counter`, `file_scope_static`, `extern_global_var`
+- **Composite types completely lost** - `Point`, `Node`, `TreeNode` structs reduced to raw pointer arithmetic
+- **Zero comments** - all original documentation and logic explanations removed
+- **30+ atomic operation stubs** never used in main code, bloating output significantly
+- **Functions over-optimized** - `local_vars`, `local_array`, `local_struct` return computed constants instead of showing original logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved, making it possible to identify purpose from names alone
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze memory access patterns to reconstruct `struct Point { int x, y; }` and linked list node structures instead of raw pointer arithmetic
+2. **Preserve or infer variable semantics** - Use data flow analysis to name variables based on usage (e.g., variables used in loop bounds should be named `i`, `count`, `size`)
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, potential undefined behavior (dangling pointers, double-free), and document optimization artifacts that changed original structure

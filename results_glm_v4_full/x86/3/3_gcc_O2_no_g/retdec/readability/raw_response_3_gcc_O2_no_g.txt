@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`), obscuring semantic meaning. While `mem` is used for heap allocations, critical variables like loop counters or struct fields are indistinguishable.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered nearly all original function names (e.g., `double_value`, `linked_list_heap`, `heap_overflow`), which significantly aids navigation despite the poor variable naming.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Magic numbers are pervasive and confusing; for example, the loop condition in `heap_overflow` compares against `(int32_t)&g16` (which resolves to `0x62696c00`, likely part of a string "lib") instead of the expected limit `10`.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with x86 Position Independent Code (PIC) artifacts like `__x86_get_pc_thunk_bx(v1)` and stack canary checks (`__readgsdword(20)`) in almost every function, severely impacting readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often obscured by low-level implementation details; for instance, `vla_stack` and `alloca_usage` contain complex stack probing loops that hide the simple allocation logic present in the source.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Functions are generally mapped 1:1 with the source, maintaining boundaries. However, some logic like `test_heap_memory` contains inlined operations that blur the decomposition.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code reads mostly top-to-bottom, the frequent insertion of PIC setup code (`__x86_get_pc_thunk`) at the beginning of functions disrupts the linear flow of the actual logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Some constant propagation occurred (e.g., `local_vars` returns `2 * a1 + 10`), but redundant stack checks and pointer arithmetic remain, making the code longer and harder to read than necessary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are generally degraded to `int32_t` or `void*`, losing the distinction between `int`, `unsigned int`, and specific size types found in the source. Pointers are often cast to integers for arithmetic.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct types (`Point`, `Node`, `TreeNode`) are completely lost. Accesses like `p->x` are replaced by raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 4)`), destroying the high-level data model.
+
+**11. Type Safety:** Score: 2/10
+Justification: Critical type safety violations are present; in `linked_list_heap`, `malloc` is called with `(int32_t)&g17` (an address) as the size argument, and pointers are frequently cast to `int32_t` for arithmetic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or data structures. The output is purely code without semantic annotation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns like linked list traversal are present but not recognized; the code performs manual pointer manipulation without indicating it is traversing a `Node` structure.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents suspicious code (like passing a global address as a malloc size) as valid logic without any warning or "UNCERTAIN" markers, misleading the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the null checks in the source are present in logic but not explicitly stated as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the relationship between global variables and their usage is obscured by the PIC offset calculations (e.g., `v1 + (int32_t)&g13 + 132`).
+
+**17. Module Organization:** Score: 5/10
+Justification: The code is presented as a flat list of functions. While the order roughly follows the source, there is no logical grouping or module separation (e.g., "Stack Memory Operations" section is lost).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without significant modification due to the use of compiler intrinsics (`__asm_hlt`, `__readgsdword`) and the semantic errors (e.g., `malloc(&g17)`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.25
+L2_avg: 5.00
+L3_avg: 2.33
+L4_avg: 1.25
+L5_avg: 3.67
+
+Overall = (4.25 × 0.30) + (5.00 × 0.25) + (2.33 × 0.20) + 
+          (1.25 × 0.15) + (3.67 × 0.10) = 3.58
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.6/10
+
+### Critical Defects (Bullet List)
+- **Struct Erasure**: Composite types (`Point`, `Node`) are completely lost, replaced by raw pointer offsets (e.g., `*(int32_t *)(v2 + 4)`).
+- **Semantic Error in `linked_list_heap`**: `malloc` is incorrectly passed the address of a global variable `(int32_t)&g17` as the size argument.
+- **Semantic Error in `heap_overflow`**: The loop condition compares against a global address `(int32_t)&g16` instead of the integer limit `10`.
+- **Semantic Error in `local_array`**: The function returns the stack address of the array (`v2`) instead of the value of the element at index 5.
+- **Architecture Noise**: x86 PIC artifacts (`__x86_get_pc_thunk`) and stack canaries clutter every function, despite the source being ARM64.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully recovered the original function names from the symbol table, which is the only feature that makes the output navigable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (1/10)**
+- **Why?** The complete failure to recover `struct` definitions reduces complex data manipulation to obscure pointer arithmetic, making the code nearly impossible to understand at a high level.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Composite Types**: Implement analysis to reconstruct struct layouts from stack offsets and heap access patterns, rather than emitting raw pointer arithmetic.
+2.  **Fix Constant/Global Propagation**: Resolve cases where global addresses or data symbols are incorrectly used as integer constants (e.g., the `malloc` size error).
+3.  **Abstract Architecture Artifacts**: Provide an option to hide or abstract PIC prologue/epilogue code (like `__x86_get_pc_thunk`) to improve code linearity.

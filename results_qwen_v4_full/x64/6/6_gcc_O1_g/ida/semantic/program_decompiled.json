@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/6/6_gcc_O1_g/ida/syntactic/bin/6_gcc_O1_g_fixed",
+  "stdout": "Testing standard library functions\nLib L101: 8\nLib L102: 0\nLib L103: 12\nLib L104: 90\nLib L105: -1\nValue: 42, Name: Test\nLib L106: 22\nLib L107: 579\nLib L108: 42\nLib L109: 42\nLib L110: 90\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

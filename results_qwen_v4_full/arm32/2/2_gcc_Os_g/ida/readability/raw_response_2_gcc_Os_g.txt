@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v5` dominate test functions obscuring purpose, though some functions use meaningful names (`data`, `next`, `head` in `linked_list`). Original source had semantic names (`arr`, `n`, `sum`) that are largely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved accurately (`double_value`, `process_char`, `struct_simple`, `test_array_types`). Internal helpers like `sub_103E8` and `sub_115A8` use generic address-based names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show constant-folded values (`_printf_chk(1, "DT-L1-01...", 97)` instead of calling `process_char('A')`), obscuring original computation logic. Magic numbers like `0x19` in `process_char` lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive temporary variables (`v0`-`v36` in `_muldf3`), 8 runtime functions marked "FAILED to decompile", and architecture-specific artifacts (`__fastcall`, register comments) create significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: **Critical error**: `binary_tree_sum` incorrectly decompiled as iterative loop instead of recursive (original: `return root->data + binary_tree_sum(root->left) + binary_tree_sum(root->right)`). `enum_switch` uses table lookup instead of switch statement.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well; helper functions preserved (`complex_callback`). Test functions remain monolithic as in original, which is appropriate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but test functions have excessive variable declarations at top. Some forward jumps in complex functions (`_muldf3`, `_subdf3`) disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding in test functions removes computation redundancy but loses semantic meaning. Some redundant assignments (`result = 0; result += v5;`) from register spilling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: `process_long` returns `int` instead of `long` (type degradation). `process_ld` returns `double` instead of `long double`. Pointer types generally preserved but `ptr_single` uses `_DWORD *` instead of `int *`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names preserved (`Point3D`, `Rect`, `Widget`, `Node`). Field names mostly recovered (`x`, `y`, `z`, `data`, `next`). **Bitfield struct** (`struct_bitfields`) degraded to raw byte access instead of named fields.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts visible (`*(_DWORD *)p`, `*(_BYTE *)f`, `*(_WORD *)f`). Function pointer types preserved correctly. Void pointer usage in `ptr_void` and `ptr_cast` loses type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Virtually no comments** despite original source having extensive documentation for each test case. No decompiler confidence indicators or algorithm explanations. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal recognized correctly. **Tree recursion NOT recognized** (critical failure). Switch-on-enum converted to table lookup without explanation. No pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 8 functions marked "FAILED to decompile" (good). Warning "positive sp value has been detected" present. **Critical**: `binary_tree_sum` recursion error NOT flagged as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `arr != NULL`). No postcondition inference. Original test expectations in comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Callback relationships (`ptr_func_simple`, `ptr_func_complex`) visible but not explained. Global variable usage not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped together. No file/module structure information. Static functions marked with `static` or `thunk` attribute.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 runtime functions failed (`__imp_puts`, `__imp_printf_chk`, etc.) requiring stubs. Architecture-specific (`arm`, `__fastcall`) limits portability. Not immediately compilable without significant fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (4+7+6+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.38/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **`binary_tree_sum` recursion destroyed**: Converted from recursive tree traversal to incorrect iterative loop, fundamentally changing semantics
+- **Zero comment recovery**: Original source had extensive documentation; decompiled code has none
+- **Test function constant folding**: Computations replaced with pre-computed values (`97` instead of `process_char('A')`), losing algorithmic intent
+- **Type degradation**: `process_long` returns `int` instead of `long`, `process_ld` returns `double` instead of `long double`
+- **8 runtime functions failed**: External dependencies (`printf`, `memset`, etc.) not recovered, requiring manual stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most user-defined function names preserved accurately from source, maintaining semantic identity across decompilation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original documentation; no decompiler-generated explanations for complex logic or uncertainty markers
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover recursive patterns**: Detect tail-call and tree recursion patterns to preserve original control flow semantics instead of converting to iterative loops
+2. **Infer variable names from usage**: Analyze variable roles (loop counters, accumulators, pointers) to generate semantic names instead of `v0`, `v1`, `v2`
+3. **Add confidence annotations**: Mark uncertain decompilations (like `binary_tree_sum`) with warnings and suggest manual review for critical transformations

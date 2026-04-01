@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `v5` instead of semantic names like `dst`, `src`, `buffer`. Some exceptions exist (`stream`, `filename`, `ptr`) but most are indecipherable without context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User function names preserved accurately (`param_strcpy`, `call_strcmp`, `param_fork_exec`). Thread helper functions (`thread_compute`, `thread_sum`) are descriptive. Only startup code uses generic names (`sub_2020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: signal numbers as `10`/`14` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2`/`1` instead of `AF_INET`/`SOCK_STREAM`, syscall numbers as `2`/`3` instead of `SYS_open`/`SYS_close`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Type casts abundant (`(__int64)`, `(unsigned int)`, `(_DWORD)`), stack annotations (`[rsp+8h] [rbp-18h] BYREF`), and 59 "FAILED to decompile" entries pollute output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures mostly natural (if/else, for/while loops preserved). Signal handling uses readable while-break patterns. Some nested conditionals could be flattened.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity appropriate; thread workers separated from main logic (`thread_compute` vs `param_pthread_create`). Test functions properly call parameterized functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with appropriate early returns. No excessive goto usage in user code. Some functions have deep nesting (signal handling: 6+ levels).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Error handling patterns repeat but are necessary. No obvious dead code in decompiled output. Loop structures are clean without unrolling artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`__int64`, `_DWORD`, `_BYTE`). `size_t` becomes `unsigned __int64`, `pthread_t` preserved but `atomic_int` lost. Pointer types often generic (`void *`, `char *`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct stat buf` recovered but `ThreadData` struct accessed as array (`s[0]`, `s[1]`, `s[2]`). TLS variables accessed via `__readfsdword(0xFFFFFFD0)` instead of proper TLS access. `sockaddr` partially recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(_DWORD)v7 - (_DWORD)a1` for pointer arithmetic, function pointer casts `(void *(*)(void *))thread_compute`. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only function headers with addresses present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). Thread patterns visible but not named as "producer-consumer" or "mutex-protected counter". Signal handling pattern not identified.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 59 failed decompilations listed at end but no inline warnings. One function has warning ("positive sp value has been detected"). No uncertainty markers in ambiguous code regions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error return values visible (-1, -2, -3) but not documented. No contract information about null checks or valid ranges.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used but not clearly identified as shared state.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Test functions grouped together, thread functions grouped. No header file organization visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 59 functions failed to decompile (all libc/syscall functions). Would require extensive stubs to compile. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 dims | 5.25 | 30% | 1.58 |
+| L2: Structural Intelligibility | 4 dims | 7.25 | 25% | 1.81 |
+| L3: Type System Fidelity | 3 dims | 4.33 | 20% | 0.87 |
+| L4: Semantic Transparency | 3 dims | 3.33 | 15% | 0.50 |
+| L5: Contextual Coherence | 4 dims | 4.75 | 10% | 0.48 |
+
+**Overall Readability Score: 5.24/10**
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v1`-`v7`** should be named semantically (e.g., `dst`, `src`, `buffer_size`) based on usage patterns
+- **Magic numbers** for signals (10, 14), sockets (2, 1), and syscalls (2, 3) obscure system API semantics
+- **59 library functions failed to decompile** including core functions (strcpy, malloc, printf, pthread_create)
+- **TLS access via `__readfsdword`** instead of proper `__thread` variable recovery loses thread-local semantics
+- **No comments** explaining algorithm intent, error conditions, or decompilation uncertainty
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function granularity is appropriate with logical separation between test harness, parameterized functions, and thread workers
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation exists to explain non-trivial logic, error handling, or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in `strcpy` destination should be named `dst` or `buffer`)
+2. **Replace magic numbers with symbolic constants** by cross-referencing system headers (SIGUSR1=10, AF_INET=2, SYS_open=2)
+3. **Add inline uncertainty annotations** for ambiguous code regions and failed library function resolutions instead of listing failures at end

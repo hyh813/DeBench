@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## Critical Observation
+**Binary Mismatch Detected**: The decompiled binary metadata shows `arm32/clang/O2` but source claims `arm64/gcc/O0`. This explains significant optimization artifacts despite debug-level source claims. Evaluation proceeds with this context.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `local_808`) with zero semantic meaning. For example, `local_808` in `large_stack_frame` should be `large_buf`, and `param_1` in `heap_basic` should be `n` or `element_count`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`local_vars`, `heap_basic`, `linked_list_heap`, `test_stack_memory`). Action-oriented names clearly indicate purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers without explanation: `0x2a` (42), `0x14` (20), `0x3c` (60), `0x41` (65/'A'). In `address_of_local`, `0x2a` should be `42` or `LOCAL_VALUE`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" comments clutter output. Type casts like `(undefined4 *)` and `(int *)&local_14` add visual noise without semantic value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops converted to awkward do-while patterns with complex conditions (`while (iVar3 != 0)` with manual decrement). `vla_stack` has convoluted loop logic that obscures the simple source `for (int i = 0; i < n; i++)`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, `linked_list_heap` became a 100+ line monolith with deeply nested conditionals that could be decomposed into helper functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `test_heap_memory` has fork/wait logic with multiple return paths that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding eliminated actual computation (e.g., `local_array` returns `param_1 * 5` instead of showing array access). This loses semantic clarity about the original algorithm.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `undefined4`, `undefined1`, `byte *` instead of `int`, `char`, `size_t`. Function `memop_memset` has wrong signature (4 params vs 3 in source). Pointer types lose const-correctness entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: `Point` struct completely lost (arithmetic `param_1 * 3` in `local_struct`). `Node` struct lost (raw `malloc(8)` and `__ptr[1]` access). `TreeNode` not recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)((int)__ptr + iVar1 * 2)` in `heap_basic` (wrong stride - should be `* 4`). `stack_alias` loses both pointer parameters entirely, returning constant `0x14`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return", "Could not recover jumptable"). Zero semantic comments explaining algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list creation in `linked_list_heap` not identified as such. Memory allocation patterns (`malloc` + loop + `free`) not annotated as heap management idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "indirect jump as call") but inconsistent. `dangling_pointer` use-after-free not flagged as dangerous despite being undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 > 0` requirements). Null checks present but not documented as contracts. `vla_stack` bounds check `0xfffffc17 < param_1 - 0x3e9U` is incomprehensible vs source `n <= 0 || n > 1000`.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `double_value` referenced in `test_static_global` but callback relationship not explained. Global variables (`global_counter`, `file_scope_static`) lack usage context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 112 functions in single output with no logical grouping. Source's clear sections (Stack/Heap/Static/Memory Operations) completely lost. Static functions not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing: struct definitions, global variable declarations, external function declarations (`extern_function`), proper includes. Would require extensive manual reconstruction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+9+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 4.375/10 ≈ 4.4/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+---
+
+### Critical Defects
+
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` structures not recovered; all access via pointer arithmetic (`__ptr[1]`, `param_1 * 3`)
+- **Variable names entirely generic**: Zero semantic naming (`param_1`, `iVar1`, `uVar2`) despite clear usage patterns
+- **Magic numbers pervasive**: `0x2a`, `0x14`, `0x3c` throughout without constant definitions or comments
+- **Type precision degraded**: `undefined4`, `undefined1` instead of proper C types; function signatures incorrect (`memop_memset` has 4 params)
+- **Optimization artifacts obscure logic**: `local_array` shows `param_1 * 5` instead of array iteration, losing algorithmic clarity
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (9/10)** - Function names preserved accurately from source, providing clear semantic anchors throughout the decompiled output.
+
+---
+
+### Most Needs Improvement
+
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions forces all composite access through opaque pointer arithmetic, fundamentally breaking code understanding.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement struct pattern recognition**: Detect consistent memory access patterns (e.g., `ptr[0]`, `ptr[1]` with fixed offsets) and propose struct definitions with field names based on usage context.
+
+2. **Add semantic variable naming from usage analysis**: Infer names from context (loop counters → `i`, size parameters → `n`/`count`, buffers → `buf`/`array`) rather than generic `iVar1`/`param_1`.
+
+3. **Recover constant definitions from repeated literals**: Detect frequently-used magic numbers (`0x2a`=42, `0x14`=20) and suggest named constants with comments explaining their semantic meaning.

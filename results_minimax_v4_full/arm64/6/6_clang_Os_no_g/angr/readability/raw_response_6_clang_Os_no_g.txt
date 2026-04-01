@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+After analyzing the decompiled code against the original source, I provide the following evaluation:
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `a0`, `a1` instead of descriptive `dst`, `src`. Local variables are `v0`, `v1`, `len` - uninformative. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_strcpy` exactly matches the original source. This is one of the few well-named elements. However, many other functions use generic names like `sub_4012f4`, `sub_401770`.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: No magic numbers in `param_strcpy` itself. However, elsewhere in the decompiled code there are unexplained constants like `4294967295` (0xFFFFFFFF) used as error return without documentation.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Significant noise present: (1) useless stack frame setup `v0 = &v1`, (2) redundant `strlen(strcpy(a0, a1))` called TWICE, (3) dead code patterns throughout. This severely impacts readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: For `param_strcpy`, control flow is natural - straightforward sequential execution. At -O0, no loop unrolling or goto patterns expected. Minor issue: the redundant call creates unnecessary complexity.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: `param_strcpy` is appropriately sized (8 lines). The overall file has reasonable function granularity. Some complex functions like `param_pthread_join` are 80+ lines but this is acceptable for decompiled code.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. No excessive forward jumps in `param_strcpy`. Some complex functions have nested loops but are traceable.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: CRITICAL ISSUE: `strlen(strcpy(a0, a1))` is computed twice - the decompiler failed to recognize this common subexpression. This is a fundamental decompilation failure that significantly degrades readability.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Return type is `long long` but source uses `int`. Parameters correctly typed as `char *`. The oversized return type creates type mismatch with source. Many other functions show similar issues (e.g., `unsigned long long` for functions returning `int`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: For `param_strcpy`, no composite types involved. However, in functions like `param_fread_fwrite`, buffer is represented as raw `char v0[8]` with manual offset calculations instead of proper struct recovery.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts in `param_strcpy`. Minor issues: the redundant function call could lead to subtle bugs if code is modified. Overall type-safe for this function.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in the entire decompiled output. No explanation of algorithm, no decompilation confidence indicators, no API contracts. The decompiler provides no semantic guidance to the analyst.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions `strcpy`, `strlen`, `memcpy` are correctly identified. The strcpy+strlen pattern is recognized as a unit, though the redundant call undermines this.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The code contains suspicious elements like `arm64g_calculate_condition` calls and indirect calls that couldn't be resolved, but these are presented without any warnings or flags.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. For `param_strcpy`, the contract "requires: dst has sufficient buffer space" is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls `strcpy` and `strlen` are clear. The relationship to `call_strcpy` is inferable from naming but not explicitly documented. No call graph or usage information provided.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped by category (standard library, system calls, threads) which roughly matches source organization. However, all in single monolithic output without clear section headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile as-is due to: (1) undefined `call_weak_fn`, `g_413ff8` references, (2) missing `#include` statements, (3) `arm64g_calculate_condition` is not a real function. Significant patching required.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Redundant function call**: `strlen(strcpy(a0, a1))` called twice - fundamental CSE failure
+- **Generic variable names**: `a0`, `a1`, `v0`, `v1` provide no semantic meaning
+- **No comments**: Entire decompiled output lacks any explanatory comments
+- **Type mismatch**: Return type `long long` vs source `int`
+- **No anomaly indication**: Suspicious code patterns presented without warnings
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The target function `param_strcpy` and many others correctly recover the original function names from debug symbols or pattern matching.
+
+**Most Needs Improvement:** Lexical Clarity (4.0/10 avg)  
+Variable naming is completely inadequate - single-letter generic names with no semantic inference. Combined with zero comments, the code is nearly incomprehensible without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement Common Subexpression Elimination (CSE)**: Detect when `strlen(strcpy(...))` is called twice and optimize to single call with cached result
+2. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., passed to `strcpy` → name it `dst` or `src`)
+3. **Add semantic comments**: Include decompilation confidence indicators, explain indirect calls, and document suspicious patterns like `arm64g_calculate_condition`

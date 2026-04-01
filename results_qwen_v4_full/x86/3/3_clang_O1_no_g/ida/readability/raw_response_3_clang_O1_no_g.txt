@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a1`, `v2`, `v3`) with no semantic meaning. Original names like `local`, `arr`, `head`, `current`, `new_node` are completely lost, making it difficult to track variable purpose across functions like `linked_list_heap`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`local_vars`, `heap_basic`, `global_var_access`), which is excellent. However, helper functions like `sub_1030`, `sub_1130`, `sub_116C` use mechanical addresses, and `double_value` appears at the end rather than with related code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFF0`, `0xFFFFFFFE`, `0x28u` appear without explanation. Some values are clear (`42`, `10`, `2048`), but bit manipulation constants in `vla_stack` and `alloca_usage` obscure the alignment logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `__usercall`, `__cdecl` calling conventions, stack comments (`[esp+0h] [ebp-8h]`), and warnings like "positive sp value has been detected, the output may be wrong!" add visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs, but `linked_list_heap` uses goto labels (`LABEL_11`) disrupting flow. `vla_stack` has complex nested conditionals that obscure the original simple VLA logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries well-preserved with appropriate granularity. `create_tree_node` properly separated. However, test functions are over-optimized with constant folding, losing original test structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `linked_list_heap` has forward jumps and `stack_alias` is completely collapsed to `return 20`, losing all original control flow structure.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Type casts are repetitive but necessary for type recovery. Test functions show duplicate patterns due to constant folding rather than true redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `Point`, `Node`, `TreeNode` structs all become `_DWORD *`. `size_t` becomes `int`, pointer types often just `void *` or `_DWORD *`. Function `set_file_static` returns `Elf32_Dyn **` incorrectly.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all struct types lost. `Node` access becomes `v3[1]`, `v3[2]` pointer arithmetic. No field names recovered (`data`, `next`, `left`, `right` all lost). Original `typedef struct { int x, y; } Point` completely unrecoverable.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD *)`, `(char *)`, `(void **)`. Function pointers degraded to `int` (`global_func_ptr = (int)double_value`). No const-correctness preserved. Dangling pointer access in `dangling_pointer` not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated type annotations present. Original source comments explaining test cases (MEM-L1-01, HEAP-L2-01, etc.) completely lost. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation/traversal in `linked_list_heap` not identified. Tree operations in `tree_heap_traversal` not named. Memory allocation patterns not documented as heap operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted ("positive sp value", "FAILED to decompile" for library functions). However, critical issues like dangling pointer access, double-free potential, and stack alias optimization collapse are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 > 0` checks not explained as contracts). NULL checks present but not documented as error conditions. No postconditions or invariants recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and global variables referenced (`global_counter`, `global_array`). However, callback relationships (`set_global_callback` → `call_global_callback`) not explicitly documented. External functions (`extern_function`) present but relationship unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Original section organization (3.1 Stack, 3.2 Heap, 3.3 Static) completely lost. Static functions properly marked but no logical grouping comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 16 library functions marked "FAILED to decompile" requiring stubs. Type mismatches (`Elf32_Dyn **` return types) would prevent compilation. Global variable declarations missing. Requires extensive patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+5+5)/4 = 5.0  × 0.30 = 1.50
+Level 2 (Structural):   (6+7+6+7)/4 = 6.5  × 0.25 = 1.625
+Level 3 (Type System):  (4+2+3)/3   = 3.0  × 0.20 = 0.60
+Level 4 (Semantic):     (2+3+4+3)/4 = 3.0  × 0.15 = 0.45
+Level 5 (Contextual):   (6+5+4)/3   = 5.0  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.675 ≈ 4.7/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Complete struct type loss**: `Point`, `Node`, `TreeNode` all degraded to `_DWORD *` with pointer arithmetic (`v3[1]`, `v3[2]`)
+- **Generic variable naming**: All locals named `v0`, `v1`, `a1` with no semantic meaning
+- **Zero documentation**: No comments explaining test purposes, algorithms, or decompilation confidence
+- **Function collapse**: `stack_alias` reduced to `return 20`, losing all original alias detection logic
+- **Type safety violations**: Function pointers cast to `int`, unsafe casts throughout without warnings
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `global_var_access`), maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types; all composite data structures lost to raw pointer arithmetic, making complex data structure code nearly unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from consistent field access patterns (e.g., `v3[0]`, `v3[1]` with consistent sizes should suggest struct recovery)
+2. **Add semantic variable naming** based on usage context (variables used in size checks → `size`, loop counters → `i`, pointers → `ptr`)
+3. **Generate decompilation confidence annotations** for optimized/collapsed functions indicating where original logic may be lost (e.g., `// OPTIMIZED: original alias detection logic collapsed`)

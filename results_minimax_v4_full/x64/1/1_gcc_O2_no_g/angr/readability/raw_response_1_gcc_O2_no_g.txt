@@ -1,0 +1,158 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use exclusively generic names (a0, a1, a2, v1, v2, v3, v4, v5, v6) with no semantic meaning. Compare: source uses `temp1`, `temp2`, `temp3` while decompiled uses `v1`, `v2`, `v3`. The decompiler makes no attempt to infer purpose from usage patterns like `a0 + a1` suggesting addition operands.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: Mixed results - 20+ functions correctly recovered (sequential_ops, single_if, if_else, nested_if_2, loop_for_fixed, etc.) matching source exactly, but many wrapper/thunk functions use generic sub_XXXXXX pattern (sub_401020, sub_40102d). The correctly named functions demonstrate the decompiler CAN recover names when symbols exist.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Heavy use of unexplained magic numbers. The constant `4294967295` (0xFFFFFFFF) appears repeatedly as return value for -1 without explanation. Numbers like 100, 1000, 1001 in loop bounds lack context. No attempt to convert to meaningful constants like MAX_RETRIES or BUFFER_SIZE.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Relatively clean output with minimal compiler artifacts. Some redundant constructs like `& 4294967295` (masking to 32-bit) appear frequently but are manageable. No debug instrumentation or frame pointer manipulation clutter visible. Overall acceptable for -O0.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Most control flow is natural - loops use do-while, conditionals use if-else. However, some issues: goto used for function pointer calls (`goto a0;` in call_func_ptr), ternary operator not always recovered (single_if uses `(a0 <= 0 ? a0 : a0 * 2)` which is correct but could be clearer). At -O0, control flow should be nearly perfect.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Function granularity is appropriate - each function handles single responsibility. Wrapper functions (sub_40102d calling sub_401030) exist but are minimal. Some functions like test_control_flow_l1 are large (60+ lines) but this matches source. Parameter counts generally match source (3 params for sequential_ops).
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some goto statements in function pointer dispatch (`goto (&v0)[a0];`) disrupt linear flow. Deep nesting in nested_if_deep is preserved correctly. Early returns used appropriately.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some redundant expressions like repeated `& 4294967295` masks. Loop unrolling not present (correct for -O0). Dead code minimal. The pattern `v1 = v3; v5 = v3 * v1;` in goto_backward could be cleaner but is semantically correct.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Heavy type degradation - almost all integers are unsigned int or unsigned long long. Source uses `int` but decompiled uses `unsigned int`, losing sign information. Parameters like `single_if(unsigned int a0)` should be `int` for proper negative handling. Function return types vary between int/long long/unsigned int inconsistently.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No struct/union recovery. The source has `int arr[] = {10, 20, 30, 40, 50}` in loop_break, but decompiled uses hardcoded values `v0 = 128849018900` (which is 10*2^32 + 20) with pointer arithmetic. Matrix in loop_multi_exit similarly lost - uses v9[1], v9[2] without structure context.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Moderate type safety issues. Unsafe pointer arithmetic in loop_break: `(&v9)[v3]` accessing array elements. Function pointer calls use `goto` instead of proper function call syntax. Mixed signed/unsigned in comparisons (a0 <= 0 with unsigned a0). Some conversions like `(unsigned int)a0` appear frequently.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no comments present. Only auto-generated function headers like "Function: sequential_ops at 0x401370". No explanation of algorithm intent, no recovery confidence indicators, no @param/@return documentation. Source had extensive Chinese comments explaining test scenarios - completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns recognized but not named. State machine in state_machine function is clear from switch-like structure but not labeled. Recursion recognized in recursion_factorial but not named as "factorial pattern". Duff's device partially recognized but incorrectly implemented (returns early with -1). No explicit pattern naming.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly flags. Indirect function calls (call_func_ptr, call_virtual_func) not flagged as uncertain. The goto-based function pointer invocation should have warning. No indication of potential undefined behavior in loop_while's division by zero (though optimized to shift).
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No contract information. Preconditions like "n > 0" for duffs_device not documented. Postconditions not inferred. Error conditions from multi-return not explained. The source had explicit test cases with expected values - this semantic info completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships partially clear - test_control_flow_l1 calls all L1 functions. But global variable usage unclear (g_405fe8, g_405fa0). Callback relationships in process_with_callback not explicitly documented. External dependencies not listed.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions grouped by address, roughly matching test organization (L1, L2, L3 functions grouped). Static functions properly scoped. No header file structure recovered. Organization is logical but matches binary layout not source intent.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: Code has many extern declarations requiring linking. Function signatures use wrong types (unsigned vs signed). Some functions like call_func_ptr use goto which won't compile as-is. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+3+7)/4 = 4.50
+L2_avg = (6+7+6+6)/4 = 6.25
+L3_avg = (4+2+5)/3 = 3.67
+L4_avg = (2+4+2+2)/4 = 2.50
+L5_avg = (5+6+5)/3 = 5.33
+
+Overall = (4.50 × 0.30) + (6.25 × 0.25) + (3.67 × 0.20) + 
+          (2.50 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.5625 + 0.734 + 0.375 + 0.533
+        = 4.54/10
+```
+
+**Overall Readability Score: 4.54/10**
+
+### Critical Defects
+
+1. **Variable naming completely generic**: All variables use a0-a2, v1-v9 pattern - zero semantic inference from usage (e.g., `a0 + a1` should suggest "addend1", "addend2")
+
+2. **Type precision severely degraded**: All `int` converted to `unsigned int`, losing sign semantics critical for functions like `single_if` which must handle negative numbers correctly
+
+3. **No struct/union recovery**: Array `int arr[] = {10,20,30,40,50}` in loop_break decomposed into magic constants `128849018900` (10<<32|20) with pointer arithmetic
+
+4. **Zero comments**: Source had extensive documentation (961 LOC with Chinese comments explaining each test case) - completely lost in decompilation
+
+5. **Function pointer calls use goto**: `call_func_ptr` uses `goto a0;` which is non-compilable and obscures the actual function call semantics
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (6/10)** - At -O0, most loops, conditionals, and branches are correctly recovered. The decompiler preserves the fundamental structure of if-else, while, do-while, and nested conditionals reasonably well.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - This is the most critical failure. With -O0 and -g flags, the decompiler has maximum debug information available, yet produces generic names like `var_1`, `v1`, `a0`. The decompiler should leverage usage patterns: `a0 + a1` suggests operands, `a0 * 2` suggests doubling, `&arr[a0]` suggests indexing.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze expressions like `a0 + a1`, `x * 2`, `arr[i]` to suggest `sum`, `doubled_value`, `index`. Even basic heuristics would dramatically improve readability.
+
+2. **Preserve signed types when debug info available**: With -g flag, the decompiler knows original types. Don't default to unsigned int for all integers - preserve `int` for parameters that are used in signed comparisons.
+
+3. **Recover composite types from array initializations**: When encountering `int arr[] = {10,20,30,40,50}`, reconstruct as `int arr[5] = {10,20,30,40,50};` rather than decomposing into magic constants with pointer arithmetic.

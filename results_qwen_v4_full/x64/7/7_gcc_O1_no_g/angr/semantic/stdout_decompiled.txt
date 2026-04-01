@@ -1,0 +1,7 @@
+Test output
+Opaque predicate: 10
+Instruction substitution: 35
+String encryption: 225
+Division by zero: 1398117121
+Tail call: 500500
+Non-tail call: 5050

@@ -1,0 +1,15 @@
+Testing Standard Library Functions
+
+Strlen: 15
+Strcmp: 0
+Strlen call: 12
+Memcpy call: 90
+Memcmp call: 0
+Value: 42, Name: Test Name
+Printf call: 27
+Scanf call: 579
+File open call: 42
+File read/write: 42
+Malloc/free: 90
+Memset call: 0
+Strchr/strstr: 15

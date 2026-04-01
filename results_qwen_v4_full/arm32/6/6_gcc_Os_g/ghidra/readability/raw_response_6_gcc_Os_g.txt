@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables are generic (`iVar1`, `iVar2`, `sVar1`) despite `-O0 -g` debug symbols being available. Many "Unresolved local var" comments show original names were lost (e.g., `ThreadData * data@[DW_OP_reg0(r0)]`). Function parameters like `dst`, `src`, `buffer` are preserved well.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are excellently preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`, `param_mutex_lock`). Action-oriented naming clearly reflects purpose. Helper functions like `__sync_fetch_and_add_4` are appropriately descriptive for compiler intrinsics.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Excessive magic numbers throughout: `0x2a` (42), `0x12` (18), `0x10` (16), signal numbers as `10` and `0xe` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2` and `1` instead of `AF_INET`/`SOCK_STREAM`. Debug symbols should have enabled constant recovery.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) add noise. Multiple "WARNING: Unknown calling convention" and "WARNING: Removing unreachable block" annotations clutter output. Redundant type casts like `(int)arg` and `(void *)0x0` present throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures mostly natural with proper if/else and for loops. Some ternary operators expanded to verbose if/else chains (e.g., `param_strcmp` return normalization). At `-O0`, flow should match source more closely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source exactly. Thread functions properly separated (`thread_sum`, `thread_compute`, `thread_increment`). No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate returns. Stack check epilogues at function ends interrupt flow slightly. Some functions have forward jumps for error handling that could use early returns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in main logic paths. Stack canary checks add redundancy at every function exit. Some redundant zero-initialization patterns visible in thread functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation despite debug info: `const char *` becomes `char *` (lost const-correctness in `param_strcpy`), `size_t` becomes `int`, `__pid_t` used inconsistently. Pointer types often generic `void *` where specific types exist.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` partially recovered. However, many struct accesses use pointer arithmetic: `*(int *)((int)arg + 8)` instead of `data->result`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int)arg`, `(pthread_mutex_t *)&counter_mutex`, `(sockaddr *)&addr`. Pointer arithmetic on `void *` (non-standard C). Type-confused operations in atomic functions with `__sync_*` intrinsics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: "Unresolved local var" comments helpful but indicate information loss. No algorithm explanations or API contract documentation. Decompiler warnings as comments (`WARNING: Subroutine does not return`) are useful but sparse.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `malloc`, `free`). pthread patterns identified correctly. No explicit pattern naming (e.g., "producer-consumer" for condition variable code not documented).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly flagging with "WARNING: Unknown calling convention" and "Unresolved local var" comments. Unreachable block warnings indicate optimization artifacts. However, no confidence levels or manual review suggestions provided.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Error return values visible but not documented (e.g., `-1`, `-2`, `-3` meanings unexplained). No invariant recognition for shared state.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variables referenced directly (`signal_received`, `atomic_counter`, `shared_counter`). No explicit call graph documentation or callback relationship annotations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no header separation. No logical grouping comments between test sections. Standard library, syscall, and thread functions intermixed without organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. External dependencies (pthread, libc) not explicitly documented. Platform-specific code present without conditional compilation hints for portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (4+6+4)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (5+6+6+3)/4 = 5.00 × 0.15 = 0.750
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.82/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x2a`, `0x12`, `10`, `0xe` should be named constants (debug symbols available at `-O0 -g`)
+- **Type precision lost**: `const char *` → `char *`, `size_t` → `int`, breaking const-correctness semantics
+- **Local variable names generic**: `iVar1`, `iVar2` instead of recovered names from debug info (`len`, `ret`, `fd`)
+- **Pointer arithmetic instead of struct access**: `*(int *)((int)arg + 8)` instead of `data->result`
+- **No contract documentation**: Error codes (`-1`, `-2`, `-3`) unexplained despite being consistent patterns
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved almost perfectly from source, making high-level navigation straightforward
+
+### Most Needs Improvement:
+- **Type Precision (4/10)** - Significant type degradation despite `-O0 -g` debug symbols; const-correctness lost, generic int types replace specific types
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable names** - DWARF info contains original variable names that should replace `iVar1`, `iVar2` patterns
+2. **Recover named constants from debug info** - Signal numbers, socket constants, and magic values (42→0x2a) should be replaced with symbolic names
+3. **Preserve const-correctness and precise types** - Type information from debug symbols should maintain `const char *` vs `char *` distinctions and proper `size_t` usage

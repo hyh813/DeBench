@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `a0`, `a1`, `a2`. Parameters are all `a0`, `a1` etc. No semantic meaning recovered - e.g., `ptr` should be `arr` based on usage in `array_1d_stack`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions correctly named (`test_data_types_l1`, `test_array_types`) and some utility functions recovered (`double_value`, `process_int`). However, many functions use generic `sub_4010XX` naming, and the architecture mismatch (metadata says arm64 but decompiled is X86) suggests fundamental issues.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals in printf calls preserved correctly. Magic numbers like `65` and `25` for ASCII range in `process_char` lack explanation. Some constants like `10` for loop bounds are clear from context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy pollution from `[D] unsupported_<class 'pyvex.expr.GetI'>()` annotations throughout float/double functions. Spurious goto statements in many functions. Stack canary checks add noise. Multiple struct definitions with padding fields create clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops properly recovered as `for` constructs in most array functions. However, `ptr_func_simple` uses goto instead of function call idiom. Some control flow in complex functions like `binary_tree_sum` is convoluted with goto.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized - test functions call individual test cases. Some granularity issues: `complex_callback` is inlined into caller. Parameter lists expose implementation (e.g., `unsigned int ptr` instead of `int *arr`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Forward jumps present in `array_2d_stack` do-while loop. Some goto statements in `register_tm_clones` and similar CRT functions disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No major dead code. Some loop unrolling visible in `array_3d` but not excessive. Common subexpression patterns present but manageable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. `double_value` returns `unsigned int` instead of `int`. `process_char` uses `unsigned int` instead of `char`. `process_short` uses `unsigned int` instead of `short`. All pointers are `unsigned int` instead of proper pointer types. No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery present (`struct_0`, `struct_1` with `field_0`, `field_1`, etc.) but field names are generic. Union types not properly recovered - `union_type` uses `void*`. Bitfield handling is poor with raw bit manipulation.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations. Pointer arithmetic uses raw integer math (`ptr + idx * 4`) instead of array indexing. Function pointers treated as `unsigned int` in `ptr_func_simple`. No type safety for void pointers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. No algorithm explanations. No decompilation confidence indicators. The `[D]` annotations are auto-generated noise, not useful comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`) but not explicitly named or documented. No recognition of state machine, callback patterns, or data structure idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D] unsupported_<class 'pyvex.expr.GetI'>()` annotations flag some unhandled operations in float/double functions. However, no warnings about potential undefined behavior in `array_oob` (intentional out-of-bounds). No flagging of indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_oob` has intentional UB. No contract for `ptr_void` type handling.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in test functions. Callback relationships partially clear (`ptr_func_simple` calls function pointer). But no documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by type (data types, arrays, pointers, composites). Static functions properly scoped. But no clear module structure or header file organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for globals. Requires CRT stubs (`register_tm_clones`, `frame_dummy`). Won't compile standalone without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- All parameters use generic names (`a0`, `a1`, `a2`) losing semantic meaning
+- Type precision severely degraded - all pointers are `unsigned int`, all chars/shorts are `unsigned int`
+- No comments explaining algorithms or decompilation confidence
+- Float/double functions flooded with `[D] unsupported` noise making them unreadable
+- Struct field names are generic (`field_0`, `field_1`) losing semantic meaning
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 5/10)  
+- Loop constructs mostly properly recovered as for/while loops rather than goto spaghetti
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- All variables use generic single-letter or address-based names making code comprehension extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `ptr` used in array indexing should be named `arr` or `array`
+2. Recover precise types from debug symbols - at -O0, types should be nearly perfect
+3. Add semantic comments for complex operations - explain what `[D] unsupported` means and flag potential undefined behavior

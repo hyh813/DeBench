@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `piVar1` instead of semantic names like `sum`, `len`, `current`. At `-O0` with debug symbols, this is severe degradation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`process_char`, `array_1d_stack`, `ptr_single`), but some lost to `FUN_00011030`, `FUN_0001123f`. Test functions like `test_data_types_l1` retained.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x61`, `0x20`, `0xbfU` replace meaningful constants (`'a'`, `32`). Test functions show constant-folded values (`0xf` instead of actual computation).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*`, `_init`, `__do_global_dtors_aux`). Core logic relatively clean but initialization boilerplate adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while patterns. Critical bugs: `array_string`, `ptr_const_ptr`, `ptr_func_simple` changed from returning `int` to `void`, breaking semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but test functions constant-folded into print statements losing actual function call relationships. Helper `complex_callback` missing.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Do-while loops slightly disrupt natural flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions show redundant constant-folded output. Some redundant type casts present. No dead code elimination in core logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe degradation: `process_char` (char→uint), `process_long` (long→int, lost 64-bit), `process_ll` split into two parameters. `const` and `volatile` qualifiers completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **CRITICAL FAILURE**: ALL struct/union definitions lost. `struct_simple` uses `param_1[1] + *param_1 + param_1[2]` instead of `p->x + p->y + p->z`. No `Point3D`, `Rect`, `Widget` types recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple return type mismatches (int→void). Pointer arithmetic replaces struct access. Unsafe casts throughout. `ptr_triple` uses `undefined4*` instead of `int***`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **NO comments recovered** despite `-g` debug symbols. Original had extensive documentation for each test case. Only file header comment present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list and tree traversal patterns partially recognizable through loop structure, but struct field access obscures the data structure intent.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for type mismatches, return type corruption, or lost struct information. Decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or bounds checking documentation. Array bounds checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions constant-folded, losing actual call relationships. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in similar order to source. No file/module structure recovered but logical grouping maintained.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile cleanly due to return type mismatches and missing struct definitions. External dependencies (`printf`, `puts`) declared but incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+7+5+6)/4 = 5.25  × 0.30 = 1.575
+L2 Average: (5+6+7+6)/4 = 6.00  × 0.25 = 1.500
+L3 Average: (4+2+3)/3   = 3.00  × 0.20 = 0.600
+L4 Average: (1+4+2+2)/4 = 2.25  × 0.15 = 0.338
+L5 Average: (5+6+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────
+Overall Score:                    4.51/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **ALL struct/union type definitions lost** - converted to raw pointer arithmetic (`param_1[1]` instead of `p->x`)
+- **Multiple return type corruptions** - `array_string`, `ptr_const_ptr`, `ptr_func_simple` changed from `int` to `void`
+- **Zero comments recovered** despite `-g` debug symbols being present at compilation
+- **Test functions constant-folded** - actual function calls replaced with pre-computed print values, losing call relationships
+- **Generic variable naming** - `param_1`, `iVar1` instead of semantic names despite debug info availability
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved correctly, making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation despite debug symbols; original had extensive comments for every test case
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions from debug symbols** - DWARF info at `-O0 -g` contains complete type layouts that should be reconstructed
+2. **Preserve return types from function signatures** - Multiple functions incorrectly changed from `int` to `void`, breaking semantic correctness
+3. **Extract and preserve source comments from debug sections** - Debug builds often contain comment metadata that should be recovered

@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Extensive use of "Unresolved local var" annotations (e.g., `int sum@[???]`, `int i@[???]`, `int value@[???]`). Generic variable names like `iVar1`, `iVar2`, `piVar2` dominate. Only loop indices and some temporaries are named, but most semantic meaning is lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. Internal functions like `FUN_00011030` and `FUN_000112b0` are cryptic but don't impede analysis of the target functions.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Most literals are meaningful. Magic numbers like `0x2c` (40 bytes for 10 ints) for array stride are present but inferable. Constants like `0x14` (20) for volatile_access output are correct. Some array size calculations use hex (0x1b8 = 440 for 10×10×4+padding).
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. Some warnings about "Unknown calling convention" and "Variable defined which should be unmapped". No excessive register spilling or debug instrumentation visible in the target functions. Minor noise from DWARF offset annotations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural. Loops use do-while constructs correctly. The `array_2d_stack` uses pointer arithmetic (`iVar2 + 0x2c`) instead of cleaner array indexing, which is an optimization artifact. `process_char` uses a confusing conditional expression but is semantically correct.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines each). The test functions are properly separated. No monolithic functions observed. Static helper function `double_value` is correctly preserved. Minor issue: `binary_tree_sum` and `binary_tree` could be combined but are correctly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Early returns in `array_1d_stack` and `array_vla` are appropriate. Some pointer arithmetic in `array_2d_stack` and `array_3d` disrupts linear reading. No excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling is minimal. Some redundant calculations in `process_ll` (complex 64-bit multiplication) but that's due to type handling, not redundancy. The `volatile_access` function correctly shows two reads but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool`. Function pointer types use `_func_int_int *` which is reasonable. Some issues: `process_ld` returns `longdouble *` incorrectly (should be `long double`). `ptr_diff` uses `(int)p1 - (int)p2 >> 2` which loses pointer subtraction semantics.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Device`, `Flags`. Field names preserved: `x`, `y`, `z`, `width`, `height`, `data`, `next`, `left`, `right`. Union `UnionData` correctly identified. Bitfield handling in `struct_bitfields` shows manual extraction.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several type safety issues: `ptr_diff` has incorrect operator precedence (`(int)p1 - (int)p2 >> 2` should be `((int)p1 - (int)p2) >> 2`). `array_2d_stack` uses raw pointer arithmetic `*(int *)((int)*arr + iVar2)` instead of proper array indexing. `process_ll` has complex and potentially unsafe 64-bit operations. Some void pointer casts are unchecked.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Very few useful comments. Ghidra adds "WARNING" comments for unknown calling conventions and unresolved variables, but these are decompiler-centric, not helpful for understanding the code. No algorithm explanations or semantic documentation. The "WARNING: Variable defined which should be unmapped: k" is noise.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized: linked list traversal in `linked_list` uses for-loop correctly. Bitfield operations are manually reconstructed. However, no explicit naming of patterns (e.g., "Implements linked list traversal"). The `enum_switch` uses a jump table pattern but it's not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "Unresolved local var", "Unknown calling convention", "Variable defined which should be unmapped". However, no indication of potential undefined behavior in `array_oob` (the intentional out-of-bounds access). The `process_ld` function has a suspicious implementation (just returns `in_EAX`) but no warning.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Almost no contract information recovered. No preconditions (e.g., "requires: n > 0"), no postconditions. The `array_complex_index` correctly checks bounds but doesn't document the contract. Error returns (like -1 for invalid coordinates) aren't explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible in test functions. Callback relationships are partially clear: `ptr_func_simple` takes function pointer, `struct_func_ptr` calls `dev->process`. However, no documentation of who calls whom or global variable usage. The `complex_callback` is used but not shown as related.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: data type functions first, then array, pointer, composite types. Test functions are at the end. Static function `double_value` is correctly placed. However, all functions are in one flat namespace with no header file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs. Standard library functions (`printf`, `puts`) are used correctly. Some types like `_func_int_int` may need typedefs. The `process_ld` function has a return type issue that would cause compilation failure. No external dependencies beyond libc.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming: "Unresolved local var" annotations throughout, losing all semantic variable names like `sum`, `i`, `value`
+- `ptr_diff` has incorrect operator precedence: `(int)p1 - (int)p2 >> 2` is parsed as `(int)p1 - ((int)p2 >> 2)` instead of `((int)p1 - (int)p2) >> 2`
+- `process_ld` returns `longdouble *` instead of `long double`, and the implementation is incorrect (just returns a register)
+- `volatile_access` shows `return *p + *p` but should document the two separate reads required by volatile semantics
+- No comments explaining algorithm intent or contracts
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct types like `Point3D`, `Node`, `TreeNode`, `Graph` are well-reconstructed with accurate field names. Union and bitfield handling shows good decompilation quality.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The extensive use of "Unresolved local var" annotations and generic names like `iVar1`, `iVar2` severely impedes understanding. At -O0, variables should be fully recoverable with meaningful names.
+
+**Top 3 Recommendations:**
+1. Infer variable names from DWARF debug info - at -O0, all local variables should have semantic names (sum, i, n, arr, etc.)
+2. Fix operator precedence issues in pointer arithmetic expressions - `ptr_diff` calculation is mathematically incorrect
+3. Add semantic comments explaining volatile semantics, out-of-bounds access detection, and algorithm purpose
+4. Fix `process_ld` return type and implementation - currently returns pointer instead of value

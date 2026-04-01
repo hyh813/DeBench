@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic names like `local_4`, `local_8`, `uVar1`, `iVar1`, `sVar1`. The original source used meaningful names like `x`, `sum`, `arr`, `n`, `c` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions retain their original names: `double_value`, `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Internal functions like `FUN_001006d0` are appropriately generic. Minor deduction for some library wrapper names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x40`, `0x5b`, `0x20` for ASCII uppercase-to-lowercase conversion are unexplained. Loop bounds like `10` are clear, but no named constants recovered. The original had clear constants like `'A'`, `'Z'`, `32` (for ASCII offset) - all converted to hex literals.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some warnings about unreachable blocks and type propagation issues. Stack protector functions present but expected. Overall relatively clean output without excessive compiler artifacts, though some internal Ghidra warnings clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as `for` loops. Conditionals are clear with natural if-else structures. At -O0, control flow should closely match source, and Ghidra achieves this well. Minor deduction for some complex boolean expressions in `process_bool`.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is properly separated with clear boundaries. At -O0, no inlining should occur, and decompilation correctly keeps functions separate. Function sizes are appropriate (not monolithic). Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without forward jumps into loop bodies. Early returns used appropriately. Some nested loops in array functions but structure is clear. No spaghetti code patterns observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. At -O0, no loop unrolling should occur, and indeed none is present. Some repeated expressions but nothing significant. Clean output overall.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - `int`, `short`, `byte` (for char), `uint` (for unsigned), `long`, `float` are correctly typed. However, many uses of `undefined4`, `undefined8` instead of proper types. Function pointers use generic `code *` type. Const/volatile not recovered in parameter types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - no struct/union types recovered. Structs accessed via raw pointer arithmetic: `param_1[1]`, `param_1[2]` instead of `p->y`, `p->z`. The original had clear `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode` structs - all lost. Unions accessed as float/int interchangeably without type recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic appears correct for element sizes. Function pointer calls use generic `code *` type. Some implicit conversions between int and pointer types. No `restrict` or alignment annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments. Only auto-generated warnings like "WARNING: Globals starting with '_' overlap smaller symbols" and "WARNING: Type propagation algorithm not settling". No explanation of algorithm logic, no decompilation confidence indicators, no @param/@return documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Basic operations not labeled (e.g., no "implements linked list traversal" comment). The original had clear data structure patterns (linked list, binary tree, graph) - these are just raw pointer chasing without semantic labels.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present about type propagation and globals. However, no indication of uncertain indirect calls, potential undefined behavior (like the array_oob function with intentional out-of-bounds), or manual stack frame manipulation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear semantics (e.g., "returns x * 2", "requires: ptr != NULL" for const_param) - all lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call graph documentation. No indication of which functions call which. Callback relationships (like `ptr_func_simple` calling function pointer) not documented. Global variable usage not clarified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by decompilation order rather than logical grouping. All in single file. No header file structure. Original had clear test functions grouped by type category - not recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses standard C library functions (printf, puts, etc.). Should compile with libc. Some type issues may cause warnings. External dependencies not documented. No clear separation between user code and library stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`param_1`, `local_4`, `uVar1`) - original names like `x`, `sum`, `arr`, `n` completely lost
+- **Composite type recovery**: No struct/union types recovered - accessed via raw pointer arithmetic (`param_1[1]`, `param_1[2]`) instead of named fields (`p->y`, `p->z`)
+- **Comment absence**: No meaningful comments explaining algorithm logic, decompilation confidence, or contracts
+- **Literal clarity**: Magic numbers like `0x40`, `0x5b`, `0x20` unexplained - original had clear ASCII constants
+- **Type precision**: Extensive use of `undefined4`, `undefined8` instead of proper types
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are properly separated with clear boundaries. At -O0, decompilation correctly keeps functions separate and doesn't create monoliths or outline artifacts.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+Structures and unions are completely lost - the most critical readability failure. Original had clear `Point3D`, `Node`, `TreeNode`, `Graph` etc. with meaningful field names; decompilation reduces everything to raw pointer arithmetic.
+
+### Top 3 Recommendations:
+1. **Recover struct/union types**: Infer structure layouts from field access patterns and create named type definitions with field names
+2. **Improve variable naming**: Use usage analysis to infer meaningful names (e.g., loop counters named `i`, accumulators named `sum`)
+3. **Add semantic comments**: Include algorithm explanations, decompilation confidence indicators, and any recovered contracts/preconditions

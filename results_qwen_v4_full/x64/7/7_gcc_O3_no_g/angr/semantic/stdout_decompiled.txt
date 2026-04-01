@@ -1,0 +1,5 @@
+Test started
+
+Fake branch result: 10
+Opaque predicate result: 35
+Instruction substitution result: 225

@@ -1,0 +1,8 @@
+TRACE_ENT|0|test_preprocessing_features|0|Arg0=-1209026192,Arg1=-1078735312,Arg2=0,Arg3=-1211072607|eax=0x4aefdc,ebx=0x0,ecx=0xbfb3ce30,edx=0xbfb3ce54,esi=0xb7ec7000,edi=0x0
+TRACE_ENT|1|call_macro_constants|1|Arg0=-1078735348,Arg1=0,Arg2=-1078735276,Arg3=-1078735312|eax=0x4aefdc,ebx=0x4aefdc,ecx=0xbfb3ce30,edx=0xbfb3ce54,esi=0xb7ec7000,edi=0x0
+TRACE_ENT|2|param_macro_constants|2|Arg0=2048,Arg1=-1078735352,Arg2=-1209218801,Arg3=-1078735348|eax=0x4aefdc,ebx=0x4aefdc,ecx=0xbfb3ce30,edx=0xbfb3ce54,esi=0xb7ec7000,edi=0x0
+TRACE_EXT|2|param_macro_constants|2|64
+TRACE_EXT|1|call_macro_constants|1|64
+TRACE_ENT|3|call_macro_functions|1|Arg0=-1078735348,Arg1=0,Arg2=-1078735276,Arg3=64|eax=0x4aefdc,ebx=0x4aefdc,ecx=0xbfb3ce30,edx=0xbfb3ce54,esi=0xb7ec7000,edi=0x0
+TRACE_ENT|4|param_macro_functions|2|Arg0=5,Arg1=3,Arg2=-1078735352,Arg3=-1209218289|eax=0x4aefdc,ebx=0x4aefdc,ecx=0xbfb3ce30,edx=0xbfb3ce54,esi=0xb7ec7000,edi=0x0
+TRACE_EXT|4|param_macro_functions|2|30

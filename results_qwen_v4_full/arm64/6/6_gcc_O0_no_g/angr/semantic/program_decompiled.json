@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/6/6_gcc_O0_no_g/angr/syntactic/bin/6_gcc_O0_no_g_fixed",
+  "stdout": "=== Standard Library Functions ===\n\nstrcpy result: 8\nstrcmp result: 2\nstrlen result: 12\nmemcpy result: 0\nmemcmp result: 1\nValue: 42, Name: Test\nprintf result: 22\nscanf result: 323\nfopen_fclose result: 42\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

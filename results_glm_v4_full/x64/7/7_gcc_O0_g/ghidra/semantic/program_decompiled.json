@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_gcc_O0_g/ghidra/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "Fake branch test\n  Result: 10\nOpaque predicate testInstruction substitution test",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

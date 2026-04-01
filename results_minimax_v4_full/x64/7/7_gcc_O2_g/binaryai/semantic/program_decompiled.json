@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_gcc_O2_g/binaryai/syntactic/bin/7_gcc_O2_g_fixed",
+  "stdout": "Test: Opaque Predicate\nTest: Instruction SubstitutionResult: Opaque Predicate = 20\nResult: Instruction Substitution = 0xe1\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

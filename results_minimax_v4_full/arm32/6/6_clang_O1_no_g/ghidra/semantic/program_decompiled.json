@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/6/6_clang_O1_no_g/ghidra/syntactic/bin/6_clang_O1_no_g_fixed",
+  "stdout": "=== Standard Library Functions Test ===\n\nString length: 15\nstrcmp result: 0\nstrlen result: 12\nmemcmp result: 90\nmemcmp combined: -1\nValue: 42, Name: TestName\nprintf return: 26\nscanf result: 579\nfopen result: 42\nfread_fwrite result: 42\nmalloc result: 90\nmemset sum: 0\nstrchr_strstr result: 15\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

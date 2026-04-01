@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `param_1`, `param_2`, `local_24`, `iVar1`, `pcVar1`. The original source uses semantic names like `dst`, `src`, `buffer`, `len`. These cryptic names make tracking variable purpose nearly impossible without constant cross-referencing.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly named (`param_strcpy`, `call_strcpy`, `param_strcmp`, `thread_compute`). However, internal helper functions use generic names like `FUN_00011030`, `FUN_000113e0`. Library function stubs are correctly named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "Value: %d, Name: %s\n" preserved correctly. Return value `0x2a` (42) used without explanation. Error codes like `0xffffffff` (-1) are standard. Magic number `0x12` (18) for string length not explained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Some unusual annotations like `__regparm1`, `__regparm3` for calling conventions. No obvious debug instrumentation or register spilling artifacts in main functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures. Loops use while/do-while constructs appropriately. At `-O0` optimization, the flow closely matches source. One unusual pattern: `param_strcpy` returns void but source returns int (strlen result lost).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with reasonable granularity. `param_strcpy` is 3 lines, appropriate. Thread functions (`thread_compute`, `thread_sum`) correctly extracted. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling. No goto statements or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling present in `param_malloc_free` but it's a compiler artifact at any optimization level. No obvious duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int`, `char*`, `void*` instead of precise types. `size_t` used for some size parameters. `pthread_t` correctly identified. No `const` correctness preserved (e.g., `param_strcmp` should take `const char*`). Uses `undefined4` for untyped values.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. `ThreadData` structure in source becomes separate variables `local_34`, `local_30`, `local_28`, `local_24` with no grouping. Socket address structures partially reconstructed with field access like `local_1c.sa_family = 2`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: `(int)param_1` casts, `(pthread_mutex_t *)counter_mutex` raw address casting, `(void **)0x0` null pointer with cast. Some pointer arithmetic without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in decompiled output whatsoever. Source had extensive documentation explaining each function's purpose, test scenarios, and expected values. Zero recovery of explanatory text.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (pthread create/join, fork/exec, mutex lock/unlock) but not explicitly named or documented. No indication that these are established concurrency patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for uncertain decompilation. `param_strcpy` returns void but source returns int - no indication of this semantic mismatch. Indirect calls not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. Error return semantics not explained. No documentation of what conditions lead to -1, -2, etc. returns.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible (e.g., `pthread_create` with `thread_compute` callback). Global variables like `signal_received`, `shared_counter`, `atomic_counter` correctly identified as globals. No documentation of call graph or usage patterns.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically matching source sections (standard library, system calls, threading). Static functions properly scoped. External function declarations present but mixed with internal functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile - uses undefined types (`undefined4`, `undefined`, `bool`). Missing includes. Non-standard constructs like `FILE *` without definition. Some functions have incorrect signatures (e.g., `param_strcpy` returns void instead of int).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `local_24`, `iVar1`) making code nearly incomprehensible
+- `param_strcpy` returns void but source returns `strlen(dst)` - semantic information lost
+- No comments or documentation recovered from source
+- Type precision severely degraded (uses `undefined4`, generic `int` instead of specific types)
+- No struct recovery - `ThreadData` becomes scattered local variables
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At `-O0` optimization, control structures closely match source with proper loops and conditionals
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Zero comments recovered despite extensive source documentation explaining each function's purpose and test scenarios
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `param_1` used as destination in `strcpy(param_1, param_2)` should be named `dst`)
+2. Recover function return values from calling contexts - `param_strcpy` called in contexts expecting a return value
+3. Preserve source comments where debug symbols available - the `-g` flag was used but no comments recovered

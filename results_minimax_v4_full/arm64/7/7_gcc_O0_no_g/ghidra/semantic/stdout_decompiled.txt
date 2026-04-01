@@ -1,0 +1,8 @@
+Test: obfuscation optimizations
+
+fake_branch: 10
+opaque_predicate: 23
+instruction_sub: 499
+string_enc: 32
+tail_call: 1000
+non_tail_call: 5050

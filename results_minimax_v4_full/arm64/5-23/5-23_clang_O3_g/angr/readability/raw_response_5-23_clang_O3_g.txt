@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` and local variables are `v0`, `v1`, `v2`, `ptr`, `i`, `j`. While some function names match the source, variable names provide no semantic indication of their purpose (e.g., `v0` should be `size` or `result` based on usage in `param_macro_constants`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions like `param_macro_constants`, `param_asm_basic`, `param_asm_clobber` match the original source names exactly. However, infrastructure functions use generic names like `sub_4007b4`, `sub_4008a4` for startup/initialization code. The verb-noun pattern is mostly preserved for the main functions.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are correct but unexplained - `0x400` (should be MAX_SIZE=1024), `64` (BUFFER_COUNT*4), `57072` (0xDEF0). The value `30` for sysconf(_SC_PAGESIZE) and `7` for mmap PROT flags are magic numbers without explanation. Some computed results are shown but the source constants are lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant code present - `sub_4007b4` calls memcpy twice with identical results. Unnecessary stack frame setup (`v0 = &v1`) appears throughout. The `unsupported_Iop_ZeroHI96ofV128()` in `param_asm_clobber` indicates decompilation failure. Some dead code from optimization artifacts present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - if/else statements, do-while loops, early returns all used appropriately. The loop in `param_asm_clobber` uses backward jumps but is recognizable as a loop. At -O0, control flow should be nearly identical to source, which is mostly achieved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - small, focused functions like `param_macro_constants`, `call_macro_constants` are separate. Test wrapper functions properly call the parameterized versions. No 500-line monoliths; each function has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `param_dynamic_code`). Some forward jumps in error paths but minimal disruption to reading flow. No deep nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions - `memcpy` called twice with same args in `sub_4007b4`. Loop unrolling in `param_asm_clobber` is present but not commented. Minor dead code from register spilling. Overall manageable but not perfectly clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly appropriate - `unsigned int`, `unsigned long`, `unsigned long long`, `int` used correctly. However, mixing occurs: some functions return `int`, others `unsigned long long` inconsistently. The original `int` parameters become `unsigned int` in some places. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original source has minimal complex structs. Arrays are handled via pointer arithmetic which is appropriate. No struct recovery needed for this code. The `int*` parameters in asm functions correctly represent arrays.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety concerns - mixing signed/unsigned in comparisons (e.g., `if (a1 < 1)` with unsigned a1). The `param_clobber_importance` has unusual bit manipulation `& 4294967294` that seems like artifact. No severe violations but some questionable operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in decompiled output. No explanation of what functions do, no parameter documentation, no indication of what magic numbers mean. Only auto-generated variable declarations present. The original source's rich comments about macro behavior are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible but not named. Atomic operations use `__aarch64_ldadd4_acq_rel` which is correct for ARM64. SIMD is expanded to scalar operations (recognizable pattern). However, no explicit identification of "macro expansion", "inline assembly", or "atomic operation" patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `unsupported_Iop_ZeroHI96ofV128()` in `param_asm_clobber` indicates a decompilation failure but is presented as code rather than a warning. No flags for indirect calls, unusual stack layouts, or potential undefined behavior. Code presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no explicit assertions, but the decompiler could infer some (e.g., "requires: size > 0" for some functions). None recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., `test_preprocessing_features` calls `printf`, `puts`). However, no documentation of call graph, caller/callee relationships, or global variable usage. The `extern` declarations show dependencies but not relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - preprocessing functions (param_macro_*, call_macro_*) together, asm functions (param_asm_*, call_asm_*) together, test functions at end. Matches source organization of "5.2 preprocessing" and "5.3 asm" sections reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: `extern` declarations present for library functions (printf, puts, mmap, mprotect, sysconf). However, some incomplete prototypes (e.g., `mprotect()` called without proper args in `param_memory_protection`). Missing stdio.h, stdlib.h declarations. Would require patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `i`, `j`) providing no semantic meaning
+- No comments explaining macro semantics, inline assembly behavior, or magic numbers
+- The `param_asm_clobber` function has a decompilation failure (`unsupported_Iop_ZeroHI96ofV128`) presented as code
+- Redundant code (memcpy called twice) in `sub_4007b4`
+- Type mixing (signed/unsigned) in comparisons creates potential safety issues
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function granularity closely matches the original source - small, focused functions with clear single responsibilities. Test wrapper functions properly separate from parameterized implementations.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompiled code has almost no useful comments. All semantic information about macros, inline assembly constraints, and magic numbers is lost. A reader cannot understand what `0x400` means or why the atomic operation uses specific intrinsics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - `a0` used in comparison with `0x400` should suggest `size` or `max_size`; `v0` accumulating results should suggest `result` or `sum`
+2. **Recover macro semantics** - Detect constant expressions like `1024`, `16*4`, `0xDEF0` and suggest original macro names (MAX_SIZE, BUFFER_COUNT*4, default case value)
+3. **Add semantic comments for inline assembly** - Document what constraints mean, explain atomic operation patterns, flag decompilation failures rather than generating invalid code

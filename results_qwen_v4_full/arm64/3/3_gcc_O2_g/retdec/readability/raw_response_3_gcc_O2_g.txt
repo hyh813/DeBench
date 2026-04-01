@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost universally named `v1`, `v2`, `v3` with no semantic meaning (e.g., `large_buf[2048]` becomes unnamed stack allocation). Only occasional meaningful names like `mem`, `result` appear, making variable tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`double_value`, `heap_basic`, `test_stack_memory`), but many helper functions are generically named (`function_9d0`, `function_9e0`). Parameter information is lost in many signatures (e.g., `double_value(void)` instead of `double_value(int x)`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0xfffffffe`, `0xffffffff`, `0x10000`). String literals are stored as hex-encoded globals (`g9`, `g10` with UTF-8 bytes). No named constants recovered from original code.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_fail()`) in nearly every function, excessive bit masking (`& 0xffffffff`), and assembly intrinsics (`__asm_sbfiz`, `__asm_dmb`, `__asm_ubfx`) scattered throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops partially recovered as while-loops, but confusing conditionals appear (e.g., `v2 >= 9 == (v2 != 9)`). Goto statements used in `linked_list_heap` (`lab_0x12d8`) instead of structured loops. At `-O0`, this should be near-perfect.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but many are just library wrappers (`function_9d0` = memcpy). Original cohesive functions fragmented with excessive return paths and stack check branches.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but goto labels disrupt flow. Stack canary checks create artificial non-linear exit paths in every function. Forward jumps into loop bodies observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive bit masking operations throughout (`& 0xfffffffe`, `& 0xffffffff`). Stack canary checks duplicated in every function. Type casting redundancy obscures logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t`, `int32_t` but often incorrectly (functions return `int64_t` when `int32_t` or `void` appropriate). Pointer types degraded to `int64_t *` instead of specific types. Function signatures lose parameter information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct definitions lost (`Point`, `Node`, `TreeNode`). Struct access reduced to pointer arithmetic (`*(int32_t *)mem`, `*(int64_t *)(v1 + 8)`). No field names recovered whatsoever.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int64_t)mem`, `(int32_t)v1`). Pointer arithmetic without type safety. No const-correctness preserved. Buffer overflow patterns in original code not flagged as dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only address ranges and line numbers in some functions. Original comprehensive comments completely lost. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Memory allocation patterns, linked list traversal, and tree traversal not recognized. Algorithm patterns completely obscured.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Unsafe operations (dangling pointer, double free, heap overflow) not warned about. Stack canary checks present but not explained as security features. No undefined behavior indications.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. NULL checks present but not explained as contracts. Error conditions not documented. Original input validation semantics lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Global variable usage unclear (`g1`, `g2`, `g3`). Callback relationships opaque (`global_func_ptr` usage unclear).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. Original section organization (stack/heap/static/memory ops) lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but some incorrect. External function declarations exist. Would require significant patching to compile standalone. Function signatures often mismatch expected types.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (2+2+3+3)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.16/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **All struct types lost** - `Point`, `Node`, `TreeNode` definitions completely missing; access via raw pointer arithmetic
+- **Function parameter names lost** - `double_value(void)` instead of `double_value(int x)`, breaking semantic clarity
+- **Generic variable naming** - `v1`, `v2`, `v3` throughout with no semantic meaning inferable from context
+- **Assembly intrinsics scattered** - `__asm_sbfiz`, `__asm_dmb`, `__asm_ubfx` without explanation or abstraction
+- **No comments recovered** - Original comprehensive documentation completely absent
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `heap_basic`, `test_stack_memory`, `global_var_access` were preserved, providing some semantic anchors in an otherwise degraded codebase.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite type access through opaque pointer arithmetic, making the code nearly unmaintainable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze consistent offset patterns (`+8`, `+16`) to reconstruct struct definitions with field names based on access patterns
+2. **Preserve function parameter semantics** - Use debug symbols (`-g` flag present) to recover original parameter names and types instead of generic `void` signatures
+3. **Add semantic annotation layer** - Flag unsafe patterns (dangling pointers, double-free) with warnings and recover original comments from debug information when available

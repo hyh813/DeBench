@@ -1,0 +1,107 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`; local variables use cryptic names like `iVar1`, `uVar2`, `local_4e0`. The original source had meaningful names like `x`, `c`, `arr`, `n`, `sum`, but these are completely lost. Not a single variable in the decompiled output retains semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. These accurately reflect the original function names and purposes. Minor deduction for some generated names in helper functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (ASCII values like `0x61` for 'a' are inferable), but many magic numbers lack explanation: `0xbfU`, `0x2c` (array stride), `0x1b8` (matrix size), `0x14` (20). The original source had explicit constants like `'A'`, `'Z'`, `32` (for case conversion) that became obfuscated hex values.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Some warnings about unreachable blocks and type propagation, but overall clean. No excessive register spilling artifacts or debug instrumentation visible. The decompiled code is readable without significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use do-while constructs instead of the original for loops (e.g., `array_1d_stack` iterates with do-while), but the logic is traceable. Original code had `for (int i = 0; i < n; i++)` but decompiled uses decrementing counters with do-while. Control flow is understandable but differs from source idiom.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated and maintain appropriate granularity. The original small functions like `double_value` (one line) and `process_char` are preserved. Test helper functions are inlined appropriately. No monoliths or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are handled naturally in functions like `array_1d_stack`. No excessive forward jumps or computed gotos disrupting flow. The code is easy to follow sequentially.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Test functions compute values at compile-time (like `printf("DT-L1-01 (process_char): %c\n",0x61)`) which is reasonable. Some loop unrolling present in test code but not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation observed:
+- Original `char` parameters become `char` in definition but `int` in comparisons
+- Original `short` becomes `int` (type promotion)
+- Original `long` displayed as `int` (should be 64-bit on ARM64)
+- Original `float` shows as `undefined4`
+- Original `double` uses split representation
+- Original `long double` completely lost
+- Generic `int` used everywhere without size specification
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery at all. Original source has `Point3D`, `Rect`, `Node`, `TreeNode`, etc., but decompiled code uses raw pointer arithmetic like `param_1[0]`, `param_1[1]`, `param_1[2]` for struct field access. No struct names, field names, or union distinctions are recovered. The code shows `int *param_1` where original had `Point3D *p`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple type safety issues:
+- Unsigned/signed mismatches (e.g., `uint` vs `int` comparisons)
+- No const/volatile preservation from original source
+- Unsafe pointer arithmetic in array functions
+- Function pointer types shown as `code *` instead of proper signatures
+- Some pointer casts may be unsafe
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra header provides decompiler version and binary info, but no meaningful logic comments. Some auto-generated warnings: "WARNING: Type propagation algorithm not settling" in `test_array_types`. No algorithm explanation, parameter descriptions, or semantic context provided.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The original source has clear data structure patterns (linked lists, binary trees, graphs) but these are not recognized or annotated. Just shows raw pointer manipulation without naming the patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present:
+- "WARNING: Removing unreachable block" appears multiple times
+- "WARNING: Type propagation algorithm not settling" in test_array_types
+- "WARNING: Subroutine does not return" in processEntry
+However, these are generic and don't flag all potential issues (e.g., the array_oob out-of-bounds access isn't flagged).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Original source has no formal contracts, but decompiler could infer things like "requires: n > 0" for array functions. None of this is recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function names suggest relationships (e.g., `test_data_types_l1` calls various `process_*` functions), but no explicit call graph or caller/callee documentation. Callback relationships in function pointers are not explained (e.g., `ptr_func_complex` takes a function pointer without explaining the contract).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Output is a single large file. Functions are listed sequentially without clear logical grouping. Original source had clear sections (Data Types, Array Types, Pointer Types, Composite Types) that aren't reflected in the decompiled output organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will NOT compile as-is:
+- Many functions have wrong return types (e.g., `void process_float` but actually returns a value)
+- Compiler intrinsics like `__mulsf3`, `__adddf3`, `__muldf3` are not declared
+- Undefined types like `undefined4`, `undefined8` need resolution
+- Would require significant patching to compile
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- All variable names are generic (param_1, iVar1, local_4e0) - losing all semantic meaning from original source
+- Zero struct/union recovery - all composite types converted to raw pointer arithmetic with array indexing
+- Type precision severely degraded - original char, short, long, float, double, long double all become generic or undefined types
+- Function return types incorrect (void functions that should return values)
+- No comments explaining algorithm logic or data structures
+- Build incompatible - won't compile without extensive fixes
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Function names from the original source are almost perfectly preserved, making it easy to identify what each function should do conceptually.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10) and Variable Naming Quality (scored 2/10) - these are tied for lowest. The decompiled code presents struct field access as `param_1[0]`, `param_1[1]`, `param_1[2]` with no indication these are fields like `x`, `y`, `z` of a Point3D struct. Variable names are completely generic, making it impossible to track purpose without analyzing usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., a variable used as loop counter in `for (int i = 0; i < n; i++)` should be named `i` or `index`)
+2. Recover struct types from allocation sites and field access patterns - detect regular offset patterns and reconstruct struct layouts with field names
+3. Fix return type inference - functions that clearly return values (like `process_float` returning `f * 1.5f + 0.5f`) should not be declared as void
+4. Add compiler intrinsic declarations or wrap them in portable abstractions to enable compilation
+5. Infer and document preconditions from boundary checks (e.g., "requires: n >= 0" for array functions)

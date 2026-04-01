@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning recovered. Original variables like `sum`, `len`, `current` are lost; even loop counters lack descriptive context.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`), but runtime functions use mechanical names (`sub_401030`, `sub_401070`). Test functions correctly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals replaced with global references (`&g_4025bf`). Magic numbers pervasive (`4294967295`, `0x400c0000`, `1073794252`) with no constant recovery. Floating-point literals completely lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler runtime functions included (`_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`). Stack frame variables (`v0`, `v1` at `[bp-0x8]`) are compiler artifacts polluting output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs appropriately, but some functions use goto (`sub_401030`: `goto ptr[2]`). Floating-point functions have broken control flow with `[D] unsupported_` branches.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. Each test function remains separate. Runtime helper functions are appropriately isolated though they add noise.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Test functions have some forward jumps disrupting flow. Floating-point code has severe linearization breaks from unsupported operations.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments common (`v0 = v1; v1 = v2` patterns). No dead code elimination. O0 compilation means no loop unrolling, but decompiler introduces its own redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`unsigned int`, `long long`→two `unsigned int`, all floats lost. `process_short(unsigned short, unsigned short)` partially correct but return type wrong. Pointer types often just `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_4` naming. No field names (`x`, `y`, `z` lost). Bitfields converted to bit operations. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit unsafe casts throughout (`(char *)`, `(int *)`). `void*` becomes `unsigned int`. Function pointer signatures degraded. Pointer arithmetic uses raw offsets instead of typed operations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case. No decompilation confidence indicators except `[D]` markers.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop patterns recognized. No algorithm or design pattern identification. Linked list traversal recovered but not named as such. Tree recursion preserved but unlabeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers indicate floating-point decompilation failures. However, no explanation of what operations failed or suggested manual review.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. Bounds checks present in code but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved correctly. Global variables referenced with opaque names (`g_4025bf`, `g_404ff0`). No call graph documentation. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output. Runtime functions mixed with user code. No logical grouping beyond original function boundaries. No header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Metadata claims "Compilation Result: Yes" but `[D] unsupported_` markers would prevent actual compilation. External dependencies declared but floating-point code is non-compilable pseudocode.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (3+3+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                              4.30/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Floating-point functions completely broken**: `process_float`, `process_double`, `process_ld` contain `[D] unsupported_` markers making them unreadable pseudocode
+- **Type system severely degraded**: All types collapsed to `unsigned int`; `char`, `short`, `long long`, `float`, `double` distinctions lost
+- **String literals replaced with globals**: Test output strings became `&g_4025bf` references, losing all human-readable context
+- **Struct field names lost**: All composite types use `field_0`, `field_4` instead of semantic names like `x`, `y`, `data`, `next`
+- **Architecture mismatch**: Original compiled for arm64 but decompiled as X86, indicating potential binary mismatch
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Original function boundaries preserved correctly with appropriate granularity; each test function remains separate and cohesive.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero comments recovered despite original source having extensive documentation; no decompilation confidence indicators for uncertain regions.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover floating-point operations properly**: The `[D] unsupported_` markers indicate fundamental IR translation failures that must be resolved for any numeric code.
+2. **Implement type inference from usage patterns**: Variables used in character comparisons should be typed as `char`; loop accumulators should be `int`; detect and restore original type distinctions.
+3. **Preserve string literals and suggest constant names**: Replace global references like `&g_4025bf` with actual string content and suggest named constants for magic numbers.

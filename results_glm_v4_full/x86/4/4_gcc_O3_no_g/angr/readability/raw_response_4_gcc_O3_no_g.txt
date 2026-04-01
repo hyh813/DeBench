@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `ptr`). In `func_struct_byval`, the 32 struct members are flattened into `a0` through `a30`, completely obscuring the structure's semantic boundaries.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: User-defined function names like `cdecl_func`, `test_calling_conventions`, and `main` are preserved accurately. However, standard library calls like `printf` are reduced to anonymous addresses (`sub_4010c0`), and many helper functions are named `sub_XXXXXX`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved and readable (e.g., `"CALL-L1-01: %d\n"`). However, integer constants resulting from optimization (e.g., `return 15` instead of `return cdecl_func(5, 10)`) appear as magic numbers, and `-1` is represented as `4294967295`.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with Position Independent Code (PIC) artifacts like `__x86.get_pc_thunk.ax()` and `__x86.get_pc_thunk.dx()`. Additionally, decompiler failure tags like `[D] unsupported_<class 'pyvex.expr.GetI'>()` appear inline, rendering sections unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions like `cdecl_func` are readable, `func_mixed_args` is broken by unsupported instruction tags, and `varargs_func` exposes low-level stack walking logic (`(&v0)[4 * idx]`) instead of abstracting `va_arg`.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The decompiler failed to reconstruct structure passing, resulting in `func_struct_byval` having a signature with 32 separate integer arguments. This destroys the function's logical interface and makes it monolithic to call.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but flow is frequently interrupted by PIC calculations (e.g., `v0 = __x86.get_pc_thunk.ax() + 9319`) which are scattered throughout functions like `ret_func_ptr`.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler optimized away function calls (e.g., `call_cdecl` just returns `15`). While this is "clean" code, it represents a loss of semantic context regarding the calling convention test, though it is an accurate reflection of the optimized binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Significant type information is lost. The `double` parameter in `func_mixed_args` is mishandled, leading to decompiler errors. `LargeStruct` is completely disintegrated into primitive integers. `char*` is often demoted to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The decompiler failed to recover the `LargeStruct` definition, flattening it into 32 separate arguments. `SmallStruct` return values are handled via raw pointer writes (`*(ptr) = a1; ptr[1] = a2;`) rather than struct assignment syntax.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic to simulate structure access. The `func_mixed_args` function contains `unsupported` expressions related to floating-point/SIMD types, indicating a failure to maintain type safety during lifting.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only "comments" are decompiler error messages (`[D] unsupported...`), which indicate failure rather than explaining intent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. `varargs_func` is not identified as a variadic function but rather as a loop accessing stack offsets. PIC logic is not abstracted away.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly marks where it failed with `[D] unsupported...` tags. While this accurately indicates a problem, it does so in a way that breaks the syntax and readability of the surrounding code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `param_double_ptr` that `pp` not be NULL is present in the logic but not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Calls to `printf` are obfuscated as calls to `sub_4010c0`. Without analyzing the arguments, it is impossible to know this is a standard I/O function. Global variables are referenced by address (e.g., `g_402008`) rather than symbolic name.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are presented in address order (e.g., `_init`, `sub_401030`, `main` appears much later). This scatters related test functions (`cdecl_func`, `stdcall_func`) apart from their callers (`call_cdecl`, `call_stdcall`).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It contains inline decompiler error tags, non-standard syntax (`unsigned int [2]` as a return type), and references to compiler intrinsics (`__x86.get_pc_thunk`) that are not valid C without specific headers/asm.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- **Struct Flattening:** `func_struct_byval` is decompiled with 32 integer arguments (`a0`-`a30`) instead of a single `LargeStruct` parameter, destroying the function's interface.
+- **Decompiler Failures:** `func_mixed_args` contains `[D] unsupported_<class 'pyvex.expr.GetI'>()` errors inline, rendering the function logic completely opaque.
+- **PIC Noise:** Position Independent Code arithmetic (e.g., `__x86.get_pc_thunk.ax() + 9319`) is exposed in high-level logic, obscuring the intent of returning function pointers.
+- **Lost Types:** Floating-point and double types are mishandled or lost, replaced by `unsigned int` or `nan` literals.
+- **Library Obfuscation:** Standard library functions like `printf` are renamed to generic addresses (`sub_4010c0`), removing context.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 6/10)
+- **Why?** The decompiler successfully preserved the names of user-defined test functions (e.g., `cdecl_func`, `test_calling_conventions`), which provides at least some anchor points for understanding the code.
+
+**Most Needs Improvement:** Type System Fidelity (Score: 2.3/10)
+- **Why?** The complete failure to recover composite types (flattening structs to 32 arguments) and the mishandling of floating-point types make the code semantically distant from the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Structure Argument Recovery:** Implement analysis to re-aggregate flattened function arguments back into structure types based on access patterns and ABI rules.
+2.  **VEX/SIMD Lifting:** Fix the lifting engine to properly handle floating-point and SIMD instructions (the source of `[D] unsupported` errors) so they are translated into valid C operations.
+3.  **PIC Abstraction:** Detect and abstract Position Independent Code patterns (like `get_pc_thunk` + offset) into symbolic references or global variable accesses to hide low-level address arithmetic.

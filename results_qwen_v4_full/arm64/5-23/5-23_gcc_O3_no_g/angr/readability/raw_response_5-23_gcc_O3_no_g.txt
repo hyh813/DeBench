@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `v2`, `ptr`, `index`, `pos`) with no semantic meaning. For example, `param_macro_constants` uses `a0` instead of `size`, losing the original parameter intent.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`param_macro_constants`, `call_macro_constants`), but many wrapper functions have mechanical names (`sub_400824`, `sub_40091c`). Good recovery on ~60% of functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE=1024), `0x200` (512), `57072` (0xDF22-0x1234) appear without explanation. Some constants like `64` and `500` are recognizable from context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: ARM64-specific artifacts pollute code (`arm64g_calculate_condition`, `__ROL__`, `unsupported_Iop_ZeroHI96ofV128()`). Stack canary checks and frame pointer manipulation add unnecessary complexity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but complex assembly functions use `goto` and condition calculations. `param_asm_clobber` has convoluted loop logic with `arm64g_calculate_condition` calls.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive wrapper functions exist (`sub_400824`, `sub_40091c`) that just call other functions. Some functions are completely constant-folded (`call_macro_constants` returns literal `64`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Some forward jumps exist but don't severely disrupt flow. Assembly functions have more complex branching.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls observed (`memcpy` called twice in `sub_400824`). Constant-folded caller functions create redundancy with their callee counterparts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`unsigned long long`, `unsigned int`) instead of specific types (`int32_t`, `size_t`). Pointer types lack specificity. Some functions use `long long` inconsistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. Code relies on raw pointer arithmetic (`*((int *)(ptr + (v4 & 4294967295) * 4))`). Original array and struct semantics lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout. No const-correctness. Mixed signed/unsigned comparisons without warnings. Function pointer types degraded to generic signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only one decompilation failure note ("Failed to decompile function __aarch64_ldadd4_acq_rel"). No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm idioms identified. Macro expansions (SQUARE, MAX) not recognized as such. Assembly patterns not labeled as SIMD or atomic operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One explicit decompilation failure noted. However, suspicious patterns like `arm64g_calculate_condition` calls not flagged as potential decompilation artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (mmap failures, mprotect errors) not explained. No parameter validation hints.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function relationships not documented. Global variables use opaque names (`g_4014d0`, `g_4014f8`). Call graph not visible in output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Related test functions scattered. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple undefined external functions (`__printf_chk`, `__aarch64_ldadd4_acq_rel`, `sysconf`, `mmap`). Requires significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `a0`, `v0`, `v1`** should be named semantically (e.g., `size`, `result`, `counter`) based on usage patterns
+- **ARM64 decompilation artifacts** (`arm64g_calculate_condition`, `__ROL__`) obscure actual logic in assembly functions
+- **Zero comments** throughout - no explanation of macro expansions, assembly semantics, or test purposes
+- **Constant-folded functions** (`call_macro_constants` returns literal `64`) lose call relationship visibility
+- **Generic global variable names** (`g_4014d0`, `g_4014f8`) should be recovered as format strings
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test function names were successfully recovered from symbols, preserving semantic intent for ~60% of functions
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding macro expansions, assembly semantics, and test purposes extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., parameters used in size comparisons should be named `size` or `length`)
+2. **Add decompilation confidence annotations** - Flag ARM64-specific artifacts and assembly recovery uncertainty with comments like `// DECOMPILER: ARM64 condition code recovery`
+3. **Recover macro semantics** - Detect constant-folded patterns and add comments showing original macro expressions (e.g., `// Original: MAX_SIZE / 2 = 1024 / 2 = 512`)

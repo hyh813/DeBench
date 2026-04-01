@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Original source used meaningful names like `x`, `result`, `str`, `encrypted`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved well (`param_fake_branch`, `call_opaque_predicate`, `param_instruction_substitution`). However, helper functions use mechanical names (`function_10f0`, `function_1150`) and there's a metadata discrepancy (claims Ghidra but header shows RetDec).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (XOR key `90` instead of `0x5A`, array sizes as raw numbers). Original constants like `0xDEADBEEF` are eliminated entirely from dead code branches.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__readgsdword(20)` stack canary checks, and numerous single-line wrapper functions (`function_1150` for malloc, `function_1170` for strlen) that add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Recursive functions converted to while loops (`param_tail_call_optimized`), and complex modulo expressions replace simple conditions (`param_opaque_predicate`). Original simple conditionals like `x * x < 0` are eliminated entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with many trivial wrapper functions. Some functions are too simplified (`param_fake_branch` is just `return result;`), losing the original dead-code branch structure that was intentional for obfuscation testing.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate while loops. No excessive goto usage, though some functions have awkward variable initialization patterns that disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated across functions. Wrapper functions for standard library calls create redundancy. No major dead code, but the simplification removes intentional obfuscation patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is good. However, some type mismatches exist (`param_division_by_zero` takes `uint32_t` but original was `int`). Pointer types generally preserved but with generic naming.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` reconstructed but with meaningless field names (`e0`, `e1`, `e2`). Original `jmp_buf` usage is visible but field semantics are lost. No bit-field recovery for the implementation_defined test.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(char *)`, `(int32_t *)`, `(void (*)(int32_t))`). Pointer arithmetic without bounds checking. Signal handler casts are particularly opaque.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. All semantic context is lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern not labeled. Tail-call optimization transformation not noted.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about signal handlers, setjmp/longjmp usage, or potential undefined behavior. Dead code elimination in `param_fake_branch` not flagged as optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note division by zero risk). Return value expectations not captured. Error conditions not marked.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`, `g2`, `g3`, etc.) have no semantic meaning. Call graph not provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original source had clear section headers (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) that are completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers correctly. Metadata indicates compilation succeeds. However, platform-specific functions like `__readgsdword` may need stubs on non-x86 systems.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (5+5+7+6)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type System):  (6+5+5)/3 = 5.33    × 0.20 = 1.07
+Level 4 (Semantic):     (2+3+3+3)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):   (4+5+7)/3 = 5.33    × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.95/10
+```
+
+**Overall Readability Score:** 4.95/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `loop_counter`, `temp_result`, `xor_key`)
+- **`param_fake_branch`** reduced to `return result;` - dead code branches completely eliminated, losing obfuscation intent
+- **Zero comments** - all original documentation about obfuscation techniques and expected values lost
+- **Global variables `g1`-`g6`** have no semantic meaning, should reference original variable purposes
+- **Signal handler functions** (`div_zero_handler`, `segv_handler`) use generic register variables (`v1`) obscuring PC-relative addressing
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main test function names preserved accurately from source, making it possible to identify which obfuscation technique each function tests.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic context about obfuscation intent, expected values, and test scenarios that were well-documented in source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover dead code patterns** - When optimization eliminates branches (like `x * x < 0`), add comments indicating original condition was always false rather than silently removing it.
+2. **Infer variable names from usage context** - Variables used in XOR operations should be named `xor_key`, loop counters should be `i`, and accumulator variables should reflect their purpose.
+3. **Preserve source documentation** - When debug symbols (`-g`) are available, extract and embed original comments explaining obfuscation techniques and expected test values.

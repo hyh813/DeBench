@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_Os_no_g/binaryai/syntactic/bin/7_gcc_Os_no_g_fixed",
+  "stdout": "Testing obfuscated code optimization...\n\ncall_opaque_predicate() = 10\nExpected: 10\ncall_instruction_substitution() = 225\nDecrypted string length: 31, printf return: 44\ncall_non_tail_call() = 5050\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

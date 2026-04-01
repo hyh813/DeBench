@@ -1,0 +1,18 @@
+Testing Standard Library Functions
+strlen result: 8
+strcmp result: 0
+call_strlen result: 12
+call_memcpy result: 90
+call_memcmp result: 1
+Value: 42, Name: BinBench
+call_printf result: 26
+call_scanf result: 579
+call_fopen_fclose result: 42
+call_fread_fwrite result: 42
+call_malloc_free result: 90
+call_memset result: 0
+call_strchr_strstr result: 15
+Testing System Calls
+call_linux_syscall result: 42
+call_win32_api result: 42
+call_fork_exec result: 42

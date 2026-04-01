@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `obj`, `result`, `a1`, `a2`) with minimal semantic meaning. Some context-appropriate names exist (`lambda1`, `ptr1`, `deleter`) but class members like `value` and `name` become offset-based access (`*(int32_t *)result`).
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: All functions use C++ mangled names (`_Z20test_cpp_member_funcv`, `_ZN11SimpleClassC2EiPKc`) instead of original names. Demangled comments exist but the actual identifiers remain opaque. Helper functions use mechanical names (`function_2030`, `function_2040`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are hex-encoded UTF-8 (`g3 = "=== \xe6\xb5\x8b\xe8\xaf\x95..."`). Magic numbers like `0x1234` appear as global `g1` without explanation. Some values have comments (`// 0x1234`) but most lack semantic context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive STL template instantiation functions (50+ `std::unique_ptr`, `std::tuple` helpers). Assembly intrusions (`__asm_movsd`, `__asm_cvttsd2si`). Thunk functions for virtual calls (`_ZThn16_...`, `_ZTv0_n24_...`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are recoverable but exception handling uses raw `__cxa_*` calls instead of try-catch. Lambda expressions become separate functions rather than inline closures. At -O0, more natural structure was expected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations create excessive helper functions. Individual test functions are reasonable size but lambda bodies split into separate functions (`_ZZ15test_cpp_lambdavENK3_24__1clEi`). Over-fragmentation from STL expansion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Functions generally read top-to-bottom with sequential execution. Exception handling introduces non-linear paths through `__cxa_throw` and `_Unwind_Resume`. Most control flow is traceable with moderate effort.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template code repeats across int/double instantiations. Vtable structures duplicate across class hierarchies. Some redundancy is legitimate (different template instantiations) but not consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Primitive types use explicit sizing (`int32_t`, `int64_t`, `float64_t`) which is good. However, class types degrade to `int64_t *` with offset arithmetic. Template types become mangled strings losing generic type information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures partially recovered with function pointer fields (`struct vtable_8878_type`). Class layouts reduce to offset-based access (`*(int32_t *)((int64_t)result + 8)`). Inheritance noted in comments but not enforced in types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive pointer casting throughout (`(int64_t *)result`, `(int32_t *)v1`). `this` pointers passed explicitly as first parameter rather than implicit member access. Virtual calls through manual vtable dereferencing loses type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Demangled function names in comments (`// Demangled: test_cpp_member_func()`). Line range mappings to source provided. No algorithmic explanations or behavioral documentation. Comments are structural, not semantic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns (constructors, destructors, virtual dispatch) identifiable through naming conventions. No explicit pattern documentation. RAII patterns in smart pointers visible but not named as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about decompilation uncertainty. Problematic code sections (thunk functions, exception handling) unmarked. Code presents confidently without indicating potential reconstruction issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition or postcondition documentation. Exception contracts absent. No null checks documented. Class invariants not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships opaque. Vtable connections visible through global variables (`g19`, `g20`). Inheritance shown in comments (`// From class: Base`) but not in type system.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single output file contains everything (2816 lines). No logical grouping by class or feature. Related functions scattered (test functions mixed with STL helpers).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers (`stdio.h`, `stdlib.h`, `string.h`). External function declarations present. Would require substantial stubbing to compile independently due to missing C++ runtime.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+3+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (5+4+3+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.23/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Mangled function names** (`_Z20test_cpp_member_funcv`) obscure all semantic meaning; should demangle to `test_cpp_member_func()`
+- **Generic variable names** (`v1`, `v2`, `obj`) lose class member semantics; `value` and `name` fields become offset arithmetic
+- **Excessive STL template bloat** (50+ helper functions) obscures core logic; template instantiations should be consolidated
+- **No contract documentation** for exception handling, null checks, or class invariants
+- **String literals hex-encoded** instead of readable text; Chinese comments become `\xe6\xb5\x8b...`
+
+### Best Quality Aspect:
+- **Type Precision (5/10)** - Primitive types correctly use explicit sizing (`int32_t`, `int64_t`, `float64_t`) rather than generic `int`, providing some type clarity despite class type degradation.
+
+### Most Needs Improvement:
+- **Function Naming Quality (3/10)** - Every function uses C++ mangled names instead of original source names, making code navigation and understanding extremely difficult without constant demangling reference.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ name demangling** - Automatically convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` and `_ZN11SimpleClassC2EiPKc` to `SimpleClass::SimpleClass(int, const char*)`
+2. **Recover class member semantics** - Analyze offset patterns to restore field names (`value`, `name`, `data`, `size`) instead of raw pointer arithmetic
+3. **Consolidate template instantiations** - Group related template helper functions and add comments indicating which source template they originate from

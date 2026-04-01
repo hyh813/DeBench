@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `cur`. However, some globals are correctly named (`global_counter`, `file_scope_static`). The decompiler frequently uses register-derived names (`x0`, `w19`, `x20`) as variable names, obscuring semantic purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions are correctly named (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`, `tree_heap_traversal`), but numerous wrapper/thunk functions retain generic names like `sub_400b24`, `sub_400c48`. The mix of well-named and generic functions creates inconsistency.**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) appear frequently without explanation. Some values like `42`, `20`, `10` are meaningful but not documented. The decompiler uses complex bit manipulation expressions (`__ROL__`, `arm64g_calculate_condition`) that obscure literal meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: duplicate returns (`return memcpy(v0,v1,v2)` appears twice in `sub_4009c4`), register-related noise (`cc_op`, `cc_dep1`), stack check guards, and memory barrier annotations (`[D] MBusEvent-Imbe_Fence()`). Redundant function calls also pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are generally well-recovered using `while` and `do-while` constructs. Some goto usage exists (`goto g_413f20`, `goto global_func_ptr`) but is limited. At -O0, control flow closely matches source, which is appropriate.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity with single responsibilities. Test functions like `test_heap_memory` are larger but that's expected. Parameter lists are reasonable and no over-fragmentation is evident.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with manageable forward jumps. Early returns are used appropriately. No excessive nesting (>4 levels) observed. Flow is reasonably linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some duplicate return statements exist (`sub_4009c4` returns twice), and duplicate function calls appear (`extern_function(5)` called twice in `call_extern_func`). Loop unrolling is present but not excessive. These issues don't severely impact readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types are generic (`unsigned int`, `unsigned long`, `unsigned long long`) rather than specific (`int32_t`, `uint32_t`, `size_t`). Pointer types are reasonably clear. Function signatures use generic types. Some type precision is lost compared to source.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs are recovered with generic names (`struct struct_0`, `struct struct_1`) and numbered fields (`field_0`, `field_8`, `field_10`). The original `Point` struct is not recovered - fields are accessed directly. The `Node` struct has generic field names. Some structure is recovered but semantic meaning is lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code contains dangerous patterns matching the source (dangling pointer access in `dangling_pointer`, double free in `double_free`). Pointer arithmetic is present but generally safe. No obvious type confusion between function pointers. Type safety issues reflect the original code rather than decompiler errors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments exist in the decompiled code. Only auto-generated annotations like `/* do not return */` appear. No explanation of algorithms, magic numbers, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list traversal in `linked_list_heap`, tree operations in `tree_heap_traversal`), but they are not explicitly named or documented as patterns. Memory operations are clear but not identified as common idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The dangerous operations (dangling pointer, double free, heap overflow) are presented without any flags or cautions. The decompiler shows full confidence in code that has undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. Error conditions (NULL checks, bounds checks) are handled in code but not documented as contracts. The implicit contracts from the source are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear through direct invocation. Global variable usage is transparent via `extern` declarations. However, there's no explicit documentation of call graphs, callback relationships, or usage patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (stack functions together, heap functions together, static functions together). Static functions are properly marked. However, there's no explicit module or header structure - just a flat listing.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations for external symbols. Some functions would require stubs to compile standalone. The code references library functions (`malloc`, `free`, `memcpy`, etc.) but these are properly declared. Moderate patching would be needed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `ptr`, `i`) obscuring semantic purpose
+- No comments explaining algorithms, magic numbers, or non-obvious logic
+- Struct field names are generic (`field_0`, `field_1`) losing original semantic meaning
+- Duplicate/redundant code (duplicate returns, duplicate function calls) pollutes output
+- No anomaly indication for dangerous operations (dangling pointer, double free, heap overflow)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- Loops are well-recovered as while/do-while constructs, and goto usage is minimal. At -O0, the control flow closely matches the source.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)  
+- Complete absence of comments, no pattern recognition, no anomaly warnings, and no contract recovery. The decompiler provides no semantic context to help analysts understand the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used in malloc/free pairs, loop counters, array indices) to assign meaningful names instead of generic `v0`, `v1`.
+2. **Add comments for non-obvious logic**: Explain magic numbers, document dangerous operations, and describe algorithm steps that aren't immediately clear from code structure.
+3. **Recover struct field names**: Use type information and field access patterns to infer meaningful field names (e.g., `next` instead of `field_8` for linked list nodes).

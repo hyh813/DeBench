@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2`; local variables are `v0`-`v26`. Some descriptive names exist (`len`, `ptr`, `result`, `index`, `i`), but the majority are generic placeholders that obscure semantic purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions correctly recovered: `cdecl_func`, `stdcall_func`, `varargs_func`, `func_many_args`, `param_by_value_int`, `ret_pointer`, etc. Some internal functions remain as `sub_XXXX` but core functionality is well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (-1), `4294967294`, and `0x100000000` appear without explanation. Format string references like `&g_401678` are opaque. Some literal results (15, 50, 42) are correct but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: `__stack_chk_guard` references throughout, redundant double-returns (`return func(); return func();`), verbose variable declarations, and `__ROL__` macro obfuscating simple operations. Dead code from register spilling present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper loops and conditionals. Some goto patterns exist but are manageable. The `__ROL__` macro usage for multiplication by 2 is non-idiomatic but understandable at -O0.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well from source. Functions are reasonably sized (20-80 lines). Some thin wrapper functions (e.g., `sub_400948` calling `call_cdecl`) add unnecessary indirection.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Minor forward jumps in complex functions like `varargs_func` and `param_varargs`. No severe disruption to linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant patterns present: `test_calling_conventions` returns same value twice; some unused variable assignments. Loop unrolling minimal at -O0. Some dead code but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameters use `unsigned int`/`unsigned long` where source used `int`. Function signatures mostly correct but signed/unsigned mismatches exist (e.g., `cdecl_func(unsigned int a0, unsigned int a1)` vs source `int`). Some `long long` vs `int` mismatches.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Poor struct recovery - `func_struct_byval` treated as pointer parameter instead of by-value struct. `SmallStruct` not recovered. `param_double_ptr` has fabricated `struct_0 { unsigned int field_0; }` typedef. Most composite types lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations: `*(ptr)->field_0` syntax is questionable; pointer arithmetic in `param_ptr_array` complex but correct. No severe type safety violations that would cause undefined behavior, but some expressions are confusing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the entire decompiled output. Zero documentation of algorithm intent, parameter meanings, or return value contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified or named. The calling convention tests (cdecl, stdcall, fastcall) are not annotated. No recognition of varargs, struct passing, or callback patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or anomalous code. All indirect calls presented as confident. No flags for potential undefined behavior (e.g., the `param_order_dep` with undefined evaluation order).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of NULL checks needed, buffer requirements, or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names allow tracing call relationships (`call_cdecl` calls `cdecl_func`). No explicit documentation of call graph, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address (0x400710, 0x400724, etc.), not logically grouped. Related test functions scattered throughout. No logical grouping matching source sections (calling conventions, parameter passing, return values).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has `extern` declarations but no headers. Missing standard library includes. Likely won't compile standalone. Dependencies on `__printf_chk`, `__stack_chk_fail`, etc. not clearly documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v26` and `a0`-`a7` obscuring semantic purpose
+- No comments whatsoever - zero documentation of algorithm intent
+- Composite type recovery failure - structs treated as pointers, field names lost
+- Magic numbers like `4294967295` unexplained (should be named constants)
+- Redundant code patterns (double returns) add noise without value
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core test functions correctly identified and named matching source
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments makes understanding algorithm intent impossible without cross-referencing source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Add comments explaining algorithm intent, parameter purposes, and return value semantics
+2. Recover struct/union types with meaningful field names instead of treating as opaque pointers
+3. Replace magic numbers with named constants where purpose is inferable from usage (e.g., 4294967295 → UINT_MAX or -1)

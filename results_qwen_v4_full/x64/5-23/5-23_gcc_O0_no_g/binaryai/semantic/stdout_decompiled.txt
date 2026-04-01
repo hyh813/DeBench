@@ -1,0 +1,8 @@
+Testing Preprocessing Features
+call_macro_constants: 0
+call_macro_functions: 0
+call_conditional_compile: 0
+call_multi_branch_compile: 0
+call_macro_recursion: 0
+call_stringize: 0
+call_token_paste: 0

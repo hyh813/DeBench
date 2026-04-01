@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3` throughout. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `counter`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered names (e.g., `param_macro_constants`, `call_asm_basic`), but many are auto-generated as `function_8a0`, `function_930` (which is `mmap`). The original source had clear names like `param_asm_clobber`, `param_dynamic_code`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some string literals preserved ("Hello World", "1.2.3"), but magic numbers like `0xdef0`, `0x20`, `7` (for PROT_READ|WRITE|EXEC) appear without explanation. The original source had named constants like `MAX_SIZE`, `BUFFER_COUNT`, `MAP_ANONYMOUS`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive address range comments (e.g., "// Address range: 0x860 - 0x878") clutter the output. Redundant casts like `(int32_t)v1 & 0xffffffff` appear frequently. Stack check instrumentation adds noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is well preserved. Loops use while/for constructs appropriately. The original source's simple if-else and for loops are recognizable in decompiled form.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity. The original source's helper functions like `call_macro_constants()` calling `param_macro_constants()` are preserved. Some parameter list issues (passing `&g29` instead of actual values).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto abuse. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant expressions from optimization but manageable. At -O0, minimal redundancy is expected.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` and `int32_t` appropriately in most places. However, pointer types are imprecise - `int64_t *` used where `int32_t *` would be correct (e.g., `param_asm_atomic(int32_t * a1, int64_t a2)`). Some type erosion to generic types.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: This source uses mostly primitives; no complex structs to recover. The few struct-like patterns (like array access in `param_asm_clobber`) are handled adequately with pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int64_t)&g29`, `(int32_t)v1 & 0xffffffff`. The expression `(int64_t)memcpy(a1, a2, (int32_t)a3)` in `param_asm_multi_insn` is problematic. Some pointer arithmetic could overflow.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (e.g., "// Address range: 0xad0 - 0xad4"). No algorithm explanations, no recovery confidence indicators, no API contracts. The original source had extensive comments explaining macro expansion, conditional compilation branches.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of patterns. The inline assembly patterns, macro expansion results, conditional compilation branches are not identified. The source explicitly tests preprocessor behavior which is completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The decompiler silently produces incorrect code in some places (e.g., `param_macro_constants` compares `v1` to `&g28` address instead of constant value). No warnings about suspicious constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had explicit behavior expectations (e.g., "期望: 64", "期望: 30") that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls. However, no documentation of who calls whom or global variable usage. The test functions calling various param_* functions are traceable but not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped but somewhat arbitrarily. The original source had clear sections: "5.2 预处理与条件编译", "5.3 内联汇编与底层特性". The decompiled output mixes these without clear separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes headers but has compilation issues. Function signatures mismatch (e.g., `call_macro_constants` takes parameter but source doesn't). Some stub functions needed. The code would require patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is uniformly poor: all variables named `v1`, `v2`, `v3` with no semantic inference from usage
+- `param_macro_constants` incorrectly compares `v1` to `&g28` (address of boolean) instead of constant 1024
+- No comments explaining preprocessor macro expansion results or inline assembly semantics
+- Function `call_macro_constants` passes `(int64_t)&g29` as parameter but source takes no arguments
+- Magic numbers like `0xdef0`, `7` (mmap prot), `34` (mmap flags) unexplained
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, the decompiler preserved natural loop and conditional structures that match the original source's execution flow
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- The decompiler made no attempt to infer meaningful variable names from usage patterns. Even a simple heuristic like checking against constants (comparing to 1024 → name it "size" or "max_check") would dramatically improve readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from constants**: When a variable is compared against literal 1024, infer it as "size" or "max_size" based on the constant value matching MAX_SIZE in source
+2. **Recover preprocessor macro semantics**: For -O0 code, detect when a value is a constant (like 64, 512) and annotate that it came from macro expansion (MAX_SIZE, BUFFER_COUNT * 4)
+3. **Add semantic comments for inline assembly**: When decompiling asm blocks, add comments explaining what the assembly does (e.g., "// Atomic fetch-and-add operation") rather than just showing the assembly hint functions

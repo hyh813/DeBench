@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "arm32",
+  "src_name": "7",
+  "source_path": "src/7.c",
+  "target_src_names": [
+    "7"
+  ],
+  "build_cmd": "clang --target=arm-linux-gnueabi -O1 -g src/7.c -o build/arm32/7/7_clang_O1_g",
+  "original_bin": "results_qwen_v4_full/arm32/7/7_clang_O1_g/ghidra/semantic/native_arm32_bin/7_clang_O1_g_native",
+  "decompiled_bin": "results_qwen_v4_full/arm32/7/7_clang_O1_g/ghidra/syntactic/bin/7_clang_O1_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "results_qwen_v4_full/arm32/7/7_clang_O1_g/ghidra/semantic/native_arm32_bin/7_clang_O1_g_native",
+      "src_name": "7",
+      "target_src_names": [
+        "7"
+      ],
+      "error": null,
+      "event_count": 35,
+      "entry_count": 15,
+      "exit_count": 12,
+      "print_count": 8
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_qwen_v4_full/arm32/7/7_clang_O1_g/ghidra/syntactic/bin/7_clang_O1_g_fixed",
+      "src_name": "7",
+      "target_src_names": [
+        "7"
+      ],
+      "error": null,
+      "event_count": 6,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 5
+    }
+  }
+}

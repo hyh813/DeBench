@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Simple functions preserve parameter names (`c`, `x`, `p`), but complex functions use generic temporaries (`v0`, `v1`, `v4`, `result`). Test functions have excessive variables (`v0-v50+`) obscuring intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only startup code uses generic names (`sub_620`, `start`).
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers present (`65` for 'A', `32` for case conversion, `0x1Au`), but test functions show constant-folded values (e.g., `printf("...%d\n", 300)` instead of function calls), losing semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: register hints (`// w0`, `// x9`), type casts (`unsigned __int8`, `__int64`), and excessive temporary variables in test functions that obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use natural `if/return` patterns, but `binary_tree_sum` converts recursion to a `do-while` loop, and `volatile_access` simplifies two reads to `2 * *p`, losing volatile semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. Helper functions recovered (`opaque_handle_create`, `opaque_handle_op`), but test functions are monolithic with 50+ local variables.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but complex functions use forward labels (`LABEL_34`, `LABEL_6`, `LABEL_102`) disrupting flow. Long double operations have extreme non-linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code, but test functions have redundant variable declarations. Type casts from decompilation add visual noise without semantic value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char`, `float`, `double`), but `long long` becomes `__int64`, and `long double` uses `__n128`. Pointer types mostly accurate with some generic `void*` usage.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery (`Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`). Unions (`UnionData`) and enums (`State`) recovered with field names. Bitfields shown as manual operations.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`void*` to `int*`, `char*` conversions in `ptr_void`, `ptr_cast`). Pointer arithmetic explicit but correct. No major type confusion detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled code. One warning comment exists ("local variable allocation has failed"). No algorithm explanations or API documentation recovered from source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion, array summation) not explicitly identified. No design pattern naming. Reader must infer patterns from code structure alone.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly noted (`opaque_handle_create` allocation failure). Six functions listed as "FAILED to decompile" at end. No warnings about volatile semantics loss or recursion-to-loop conversion.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present in code but not documented as contracts. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, but no call graph documentation. Global variable references (`asc_2F1F`, `xmmword_28F0`) not explained. Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order (data types → arrays → pointers → composites). Related functions grouped, but no header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Six external functions failed to decompile (`printf`, `puts`, `__libc_start_main`, etc.). Architecture-specific intrinsics (`vdupq_n_s64`, `vmovn_s64`) require ARM NEON support. Needs significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (6 + 8 + 7 + 6) / 4 = 6.75
+Level 2 (Structural):   (6 + 7 + 6 + 7) / 4 = 6.50
+Level 3 (Type System):  (7 + 8 + 7) / 3 = 7.33
+Level 4 (Semantic):     (3 + 4 + 5 + 2) / 4 = 3.50
+Level 5 (Contextual):   (5 + 6 + 5) / 3 = 5.33
+
+Overall = (6.75 × 0.30) + (6.50 × 0.25) + (7.33 × 0.20) + (3.50 × 0.15) + (5.33 × 0.10)
+        = 2.025 + 1.625 + 1.466 + 0.525 + 0.533
+        = 6.17/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `printf` statements show computed values (e.g., `300`, `15`) instead of actual function calls, losing test semantics
+- **Recursion converted to loops**: `binary_tree_sum` uses `do-while` instead of recursive calls, obscuring tree traversal logic
+- **Volatile semantics lost**: `volatile_access` simplified from two reads to `2 * *p`, eliminating volatile behavior
+- **No source comments recovered**: All original documentation (DT-L1-01, scene tags, test descriptions) completely lost
+- **Excessive temporary variables**: Test functions have 50+ generic variables (`v0-v50`) making code unreadable
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Structs, unions, and enums recovered with accurate field names and nested structure preservation
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error contracts documented despite clear patterns in source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function call semantics in test code** - Avoid constant folding that replaces actual function calls with computed values
+2. **Recover source comments and documentation** - Parse debug symbols (-g flag) to restore original comments and test descriptions
+3. **Detect and preserve recursion patterns** - Identify tail-call and tree recursion patterns instead of converting to loops

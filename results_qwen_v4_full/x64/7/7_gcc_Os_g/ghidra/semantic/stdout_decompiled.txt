@@ -1,0 +1,5 @@
+Test starting
+
+Value: 10
+Opaque: 20
+Subst: 225

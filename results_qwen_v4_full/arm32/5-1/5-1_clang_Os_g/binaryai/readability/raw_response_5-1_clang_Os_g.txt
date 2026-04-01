@@ -1,0 +1,106 @@
+## EVALUATION: Decompiled C++ OOP Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`iVar1`, `local_28`, `uStack_24`, `puVar1`) with zero semantic meaning. Original names like `value`, `name`, `data`, `size`, `obj`, `r1` are completely lost despite -O0 debug compilation.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`), and template instantiations have reasonable names (`template_max_int_`). However, external functions marked `<EXTERNAL>` and some logic functions return constants instead of showing actual computation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`) without explanation. String literals become opaque references (`&DAT_00011294`). The decompiler returns pre-computed constants instead of showing actual calculations like `10*3 + 4 = 34`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack variables (`local_28`, `uStack_24`, `uStack_20`) are compiler artifacts. `undefined4`/`undefined8` types add noise. External function stubs (`operator_new`, `__cxa_throw`) clutter output without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions return constants, losing all original control flow. `test_cpp_exception` shows exception allocation but no proper try/catch structure. Virtual calls use confusing `(***(code ***)param_1)()` syntax instead of clean virtual dispatch.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many just return pre-computed constants. Class methods recovered (`Container<int>::push`, `RTTIDerivedA::getType`), but decomposition doesn't match original structure - logic was optimized away at compile time.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom without excessive gotos. However, this linearity is misleading since actual computation happened at compile time, not runtime.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack variable initialization is redundant (`local_28 = 0x74736554; uStack_24 = 0;`). Constant folding loses semantic meaning. Some redundancy exists but the optimization itself is problematic for readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types degrade to `undefined4`, `undefined8`, `undefined2`. Some original types preserved (`int`, `double`) but often lost. Pointer types are generic (`void*`, `undefined4*`). Class types partially recovered (`Container<int>`, `RTTIDerivedA`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures NOT recovered - no struct definitions for `SimpleClass`, `LifecycleClass`, `Base`, `Derived`. Fields accessed via offset (`this + 0x28`, `this + 0x50`) with no field names. Virtual table structures not recovered at all.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`(undefined4 *)`, `(int *)`, `(void*)`). Pointer arithmetic on class pointers without proper type information. Virtual calls use raw pointer dereferencing (`(**(code **)(*piVar2 + 4))(piVar2)`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No explanation of magic numbers. No decompilation uncertainty indication. Only SHA256 header comment present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns not recognized (RAII, virtual dispatch, exception handling). Template instantiation not clearly indicated. Lambda expressions completely lost. No pattern recognition at all.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. Virtual dispatch issues not indicated. Exception handling problems not noted. The decompiler presents incorrect/confident code without warning about uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception safety not indicated. No contract information recovered from original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch relationships not clear. Inheritance hierarchy not documented. Template relationships partially visible through naming only.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions in one file with no logical grouping. External dependencies listed but not organized. No header file structure. Class methods scattered without clear organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies present (`operator_new`, `__cxa_throw`, `__dynamic_cast`). Would not compile standalone. Many stubs needed. Type definitions missing for all classes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75
+Level 2 (Structural):  (3+5+6+5)/4 = 4.75
+Level 3 (Type):        (4+2+3)/3   = 3.00
+Level 4 (Semantic):    (2+2+2+1)/4 = 1.75
+Level 5 (Contextual):  (4+5+3)/3   = 4.00
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (3.00 × 0.20) + 
+          (1.75 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 1.1875 + 0.60 + 0.2625 + 0.40
+        = 3.58/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable names completely lost**: `local_28`, `uStack_24`, `iVar1` instead of `value`, `name`, `result`
+- **Class structures not recovered**: No struct definitions; fields accessed via raw offsets (`this + 0x28`)
+- **Magic numbers replace calculations**: Returns `0x125c` instead of showing `value * x + strlen(name)`
+- **C++ semantics lost**: Exception handling, virtual dispatch, and lambda expressions not properly represented
+- **No uncertainty indication**: Decompiler presents incorrect/confident code without flagging ambiguous regions
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names preserved from debug symbols, providing some semantic anchor points for understanding code purpose.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (1/10)**
+- Zero documentation of preconditions, postconditions, exception safety, or any behavioral contracts that were present in original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol variable names**: At -O0 with `-g` flag, original variable names should be preserved from DWARF debug information instead of generating `local_28`, `iVar1`.
+
+2. **Reconstruct class/struct definitions**: Analyze vtable layouts and field access patterns to recover `SimpleClass { int value; char name[32]; }` instead of raw pointer arithmetic.
+
+3. **Flag semantic uncertainty**: Add comments like `// ANOMALY: Virtual dispatch may be incorrect` or `// UNCERTAIN: Exception handling structure not fully recovered` when confidence is low.

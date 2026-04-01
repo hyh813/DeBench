@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar2`, `bVar3`), losing semantic meaning like `sum`, `count`, or `result`. Comments like "Unresolved local var: int temp1" indicate the decompiler detected the loss but failed to recover the names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names (e.g., `sequential_ops`, `duffs_device`) are perfectly preserved from the source symbols, making the high-level intent immediately clear despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers abound; for example, `0x12` (18) appears in `loop_while` as an obscure loop condition, and `0x15` (21) replaces the function call in `test_control_flow_l1` due to constant folding, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with "Unresolved local var" comments and redundant casts like `*(int *)(&DAT_00103654 + (long)op * 4)`, which add cognitive load without adding semantic value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: High-level control flow was destroyed by compiler optimization (despite the `-O0` label in metadata, the binary shows `-O1`/`-O2` traits). Loops like `loop_for_fixed` are replaced by arithmetic formulas, and `single_if` becomes a bit-shift `x << (0 < x)`, which is semantically correct but structurally foreign to the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are respected and match the source granularity perfectly. Even complex functions like `duffs_device` are kept intact rather than being inlined or fragmented.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While some functions like `goto_backward` are linearized nicely into `do-while` loops, others like `loop_multi_exit` contain nested `do-while` structures with `goto` labels (`LAB_001016be`) that disrupt the reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the compiler's optimized logic without redundant intermediate steps, though this sometimes results in "over-optimized" expressions (e.g., the closed-form sum in `loop_for_fixed`) that are hard to trace back to source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate (`int`, `uint`, `ulong`), but the distinction between signed and unsigned is sometimes obscured by casts (e.g., `(int)(0 < x)`), and function pointers are often cast to `code *`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Array structures are completely lost; `int arr[]` in `loop_break` is reduced to a pointer to a data segment `&DAT_00103040`, and `int matrix[3][4]` in `loop_multi_exit` is flattened into pointer arithmetic, destroying the semantic structure.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is mostly type-safe, though it relies on `undefined` types in some places (e.g., `_start`) and explicit pointer casts for data access, which is typical for decompilation but requires caution.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely auto-generated warnings (e.g., "WARNING: Removing unreachable block") or "Unresolved local var" markers. There are no comments explaining the *logic* or *intent* of the recovered code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: `duffs_device` is recognized well enough to show the switch structure, but standard idioms like `loop_for_fixed` (arithmetic series) or `single_if` (conditional move) are not identified or annotated, leaving the user to decipher the math.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags "Unknown calling convention" and "Subroutine does not return" for `longjmp`, which is helpful, but it fails to flag the suspicious arithmetic in `loop_while` (`x + 9 > 18`) as a potential optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., `n > 0` checks) or postconditions. The logic is presented "as-is" without inferred contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and references to global data (e.g., `PTR_double_value_00105d40`) are explicit, allowing the user to trace data flow, though the lack of struct definitions makes this harder.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source, and related functions (like the state machine handlers) are grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on hardcoded addresses (e.g., `DAT_00103040`) and `undefined` types, making it impossible to compile without significant manual patching or header generation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 9 + 4 + 5) / 4 = 5.5
+L2_avg: (5 + 8 + 6 + 8) / 4 = 6.75
+L3_avg: (7 + 3 + 7) / 3 = 5.67
+L4_avg: (2 + 5 + 6 + 2) / 4 = 3.75
+L5_avg: (7 + 8 + 4) / 3 = 6.33
+
+Overall = (5.5 × 0.30) + (6.75 × 0.25) + (5.67 × 0.20) + 
+          (3.75 × 0.15) + (6.33 × 0.10)
+Overall = 1.65 + 1.6875 + 1.134 + 0.5625 + 0.633
+Overall = 5.667
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Variables like `iVar1`, `uVar2`, and `bVar3` are generic, obscuring the logic (e.g., `sum`, `count`, `index`).
+- **Structure Loss**: `loop_for_fixed` is converted to a math formula `(n-2)*(n-1)/2...`, completely losing the loop semantics.
+- **Array Recovery**: Arrays like `int arr[]` are reduced to pointers to global data addresses (e.g., `&DAT_00103040`), losing dimension and type information.
+- **Optimization Artifacts**: `single_if` is represented as `x << (0 < x)`, a bit-shift trick that is hard to read compared to the source `if` statement.
+- **Constant Folding**: `test_control_flow_l1` contains hardcoded results (e.g., `0x15`) instead of the function calls, making the test logic unreadable.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully preserved all original function symbols from the binary, providing immediate context for every block of code.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (2/10)
+- **Why?** The output lacks any semantic comments explaining the recovered logic, relying solely on auto-generated warnings and "Unresolved local var" placeholders.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Variable Naming**: Implement heuristic analysis to infer variable names from usage patterns (e.g., variables incremented in loops should be `i` or `index`, accumulators should be `sum`).
+2.  **Array Recovery**: Detect and reconstruct array definitions from global data accesses (e.g., convert `*(int *)(base + idx*4)` back to `array[idx]`).
+3.  **Optimization Annotation**: When loops are replaced by closed-form arithmetic formulas, insert a comment noting "Loop optimized to arithmetic formula" to preserve the developer's original intent.

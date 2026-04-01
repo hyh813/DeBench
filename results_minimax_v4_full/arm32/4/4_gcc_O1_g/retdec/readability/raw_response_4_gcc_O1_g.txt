@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` are used extensively throughout the code (e.g., in `varargs_func`, `test_calling_conventions`, `param_ptr_array`). These generic names obscure their semantic purpose as loop counters, pointers, and results. Only a few variables like `count`, `result`, `arr`, `n`, `pp`, `new_val`, `callback`, `seed` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names are preserved accurately from the source: `varargs_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`, `call_by_value_ptr`, `call_double_ptr`, `param_ptr_array`, `param_varargs`, `ret_large_struct`, etc. The naming is action-oriented and semantically accurate, matching the original source almost perfectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test values like 15, 50, 6, 10, 21, 33 are appropriate for the test functions. However, Chinese strings are encoded as hex escapes (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95..."` for "=== 测试基础调用约定 ==="), making them unreadable. The magic number `0x12345678` appears without explanation in `call_complex_cast`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The code uses `__printf_chk` and `__stack_chk_fail` which are compiler-specific but expected. Some redundant casts like `(int32_t *)v2` appear, but overall the code is relatively clean without excessive debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow uses natural while loops (e.g., `varargs_func`, `param_ptr_array`). However, `call_ptr_array` has an unusual struct initialization pattern `strs = { "abc", NULL, NULL };` that doesn't match C syntax. The large struct initialization in `test_calling_conventions` uses complex pointer arithmetic instead of a simple loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source's many small functions are preserved as separate functions in the decompiled output. Function granularity is appropriate - no 500-line monoliths. The decomposition matches the source well, with cohesive functions like `varargs_func`, `param_double_ptr`, and `ret_large_struct` remaining separate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `varargs_func` (return 0 if count < 1). Some functions have complex pointer arithmetic that disrupts linear reading, but overall flow is manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy exists in the large struct initialization loop within `test_calling_conventions` - it uses manual pointer manipulation that could be abstracted. The varargs handling in both `varargs_func` and `param_varargs` shows similar patterns. Loop unrolling is not aggressively applied, which is appropriate for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: The decompiler correctly uses `int32_t` for most integers (appropriate for arm64). Function pointer types like `int32_t (*callback)(int32_t)` are properly typed. Minor issues include some generic `int` usage in the original that becomes `int32_t`, which is fine. Const correctness is mostly preserved in function signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: This is a critical weakness. The original source defined `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, and `SmallPoint` with meaningful field names, but the decompiled version uses raw `int32_t` with manual pointer arithmetic. For example, `LargeStruct large` becomes `int32_t large` with manual `memcpy` and pointer offsets. Struct field names like `data[i]` are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts exist throughout: `*(int32_t *)v2`, `*(int32_t *)v1`, `(int32_t *)&v6`. The `call_ptr_array` has a problematic initialization `strs = { "abc", NULL, NULL };` that would not compile. Pointer arithmetic like `v2 += 4` and `v2 += 8` is used without clear type safety. Function pointer casting `(int32_t (*)(int32_t))0x10554` is concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated and provide only metadata (module path, address range, line numbers). No useful algorithm explanations, parameter documentation, or semantic context. For example, `// From module: /work/src/4.c` and `// Address range: 0x10648 - 0x106d4` don't help understand what the function does.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns, algorithms, or idioms are identified or named. The varargs handling, which is a standard C pattern using va_list, is not commented as such. The callback pattern in `param_func_ptr` is not identified as a functional programming idiom.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The unusual `strs = { "abc", NULL, NULL };` initialization is presented without warning. The indirect function call `(int32_t (*)(int32_t))0x10554` is not marked as uncertain. Potential issues like the complex struct initialization in `test_calling_conventions` go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_double_ptr` has an implicit precondition that `pp` and `*pp` should not be NULL, but this is not indicated. The `varargs_func` has no documentation about expected parameter types.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at the top of the file provide some relationship information (e.g., `int32_t call_by_value_ptr(void);` and `int32_t param_double_ptr(int32_t ** pp, int32_t new_val);`). However, there's no documentation of call graphs, global variable usage, or callback relationships. The connection between `call_double_ptr` and `param_double_ptr` is clear from naming but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The code is reasonably organized with function prototypes at the top, global variables in the middle, and function implementations at the bottom. Related functions like the test functions are grouped together. However, it's a single monolithic file without any logical section markers beyond the auto-generated comments.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Function prototypes are declared. It should compile with minimal patching. The use of `int32_t` ensures portability. Minor issues include the non-compiling `strs = { "abc", NULL, NULL };` initialization.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Struct/Union Recovery Failure**: `LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint` are all lost - replaced with raw `int32_t` and manual pointer arithmetic, losing all semantic field names
+- **Variable Naming**: Extensive use of `v1`, `v2`, `v3`, `v4`, `v5`, `v6` makes tracking purpose extremely difficult
+- **Unflagged Anomalies**: The non-compiling `strs = { "abc", NULL, NULL };` initialization and indirect function call `(int32_t (*)(int32_t))0x10554` are presented without warnings
+- **Chinese String Encoding**: All Chinese text is hex-encoded, making printf output unreadable
+- **Type Safety Issues**: Multiple unsafe casts like `*(int32_t *)v2` without justification or comments
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names are preserved accurately with appropriate action verbs, matching the original source almost perfectly
+
+**Most Needs Improvement:** Composite Type Recovery (3/10)  
+- All struct types from the original source are lost; the decompiler produces raw `int32_t` arrays with manual pointer manipulation instead of recovered struct definitions with field names
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Analyze stack layout and heap allocations to reconstruct composite types with meaningful field names (e.g., `LargeStruct` with `data[16]`, not `int32_t large`)
+2. **Infer variable names from usage patterns**: When a variable is used as a loop counter, name it `i` or `index`; when used to accumulate results, name it `sum` or `result`
+3. **Flag anomalies and non-compiling code**: Mark suspicious patterns like the `strs = { "abc", NULL, NULL };` initialization and indirect function calls with uncertainty indicators

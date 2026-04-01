@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic generic names like `iVar1`, `iVar2`, `aSStack_2c`, `local_c`, `puVar1`, `pvVar1`. The source uses meaningful names like `value`, `name`, `size`, `data`, `result`. The decompiler's pattern-based naming (`iVar` for integers, `pVar` for pointers) completely obscures semantic purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately reflect their purpose - `SimpleClass::getValue`, `SimpleClass::compute`, `call_virtual_func`, `test_cpp_member_func`, `template_max_int_`. Constructors/destructors correctly identified. Minor issues with some template helper functions having mangled names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals like `0x1234` (class ID), `0x1f` (31 = sizeof(name)-1), and array sizes are used without explanation. However, the decompiler does preserve some meaningful constants. Magic numbers are present but partially inferable from context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from numerous compiler-generated helper functions: `std::forward`, `std::move`, `std::get`, `std::_Tuple_impl`, `std::_Head_base`, `__uniq_ptr_*`, `__get_helper_*`. These 50+ functions clutter the output and obscure the actual test logic. Dead code and redundant template instantiations pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for` constructs, conditionals are clear `if/else`, and function calls are straightforward. At -O0, the structure closely matches source. Minor issues with some computed jumps in virtual function dispatch.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized. The 12 test functions are well-separated. Template instantiations are correctly separated. However, the massive expansion (2243 vs 540 LOC) includes many tiny helper functions that could be inlined for clarity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto abuse. Forward jumps are minimal and don't disrupt understanding significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present but manageable. Template instantiations create duplicate code patterns. The massive expansion suggests some redundancy, but core logic is relatively clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses imprecise types like `undefined4` (should be `int32_t`), `undefined8` (should be `int64_t`), `byte` (should be `bool`). Pointers often shown as `int*` instead of proper types. Function parameters use generic types like `int param_1` instead of semantic types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Point`, `Container<int>`, `Container<double>` are correctly reconstructed. Member fields are accessible. Some field names lost (e.g., `name` array shown as offset). Virtual table pointers properly identified.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe casts present. Pointer arithmetic shown explicitly (e.g., `this + 4`, `param_1 * 4`). Virtual function calls use indirect dispatch `(**local_18[0])()` which is type-unsafe. Multiple `undefined4` casts could lead to issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only structural comments like `// Function: test_cpp_member_func @ 0x1104c` and `// Decompiled by BinaryAI`. No explanation of algorithm logic, no recovery of original comments from source. No indication of decompilation confidence.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms partially recognized - constructors, destructors, virtual tables, lambda operators, smart pointer operations. However, not explicitly named or documented as patterns. The `operator()` for lambdas is identified but not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The virtual function call `(***(code ***)param_1)(param_1,param_2)` in `call_virtual_func` should have a warning about indirect dispatch uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of original assertions or contracts from source. Null checks are present but not explained as preconditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear through direct invocation. Virtual dispatch relationships partially visible through vtable access. However, no documentation of call graph, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically by class (SimpleClass functions together, LifecycleClass functions together). Test functions in sequence. However, the massive template/STL helper functions are interspersed, disrupting organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile standalone. Heavy reliance on external declarations (`operator_new`, `std::*` functions). No header declarations. Many undefined types (`unique_ptr_int_*`, `tuple_int_*`). Dependencies not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming uses cryptic patterns (`iVar1`, `local_c`, `aSStack_2c`) instead of semantic names from source (`value`, `result`, `obj`)
+- Severe noise pollution from 50+ compiler-generated template/STL helper functions obscuring actual test logic
+- No comments explaining algorithm logic, only structural markers
+- Type precision poor - uses `undefined4`/`undefined8` instead of proper integer types
+- No anomaly indication for indirect virtual function calls
+- No compilation readiness - heavy external dependencies not resolved
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Most function names accurately reflect their purpose, matching or closely approximating the original source names
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Cryptic generic names completely obscure variable purpose, making it extremely difficult to trace data flow and understand logic
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `local_c += iVar1` suggests accumulator → name it `result`; `param_1 * 4` for array indexing → name it `index`)
+2. **Filter or collapse template/STL boilerplate**: Provide option to inline or hide compiler-generated helper functions, focusing on user code
+3. **Add semantic comments**: Include explanations for virtual dispatch, type casts, and recovered constants rather than just structural markers

@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related library functions)
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `local_10`. The original parameters `dst` and `src` are completely lost. Even loop indices use meaningless names like `iVar4`, `iVar5`. This makes tracking data flow extremely difficult.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Standard library functions are renamed to `FUN_00011510`, `FUN_00011440`, `FUN_00011630` etc. The original names `strcpy`, `strcmp`, `strlen`, `memcpy`, `printf` are completely lost. Even user functions like `param_strcpy` retain their names but with mangled parameters.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some string literals are preserved (e.g., "Value: %d, Name: %s\n", "/etc/passwd") but magic numbers like `0x2a` (42), `0xffffffff` (-1) lack explanation. The return value `8` in `call_strcpy` is hardcoded without explaining it's the string length.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some stack pointer manipulations present (`in_GS_OFFSET`) but not overwhelming. The main noise is the extensive use of `undefined4` type declarations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures are recognizable (if/else, while loops). However, some awkward patterns exist like the complex conditional in `param_strcmp`: `iVar2 = -(uint)(iVar1 != 0); if (0 < iVar1) { iVar2 = 1; }` which should be a simple ternary. At -O0, this level of awkwardness is excessive.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are mostly appropriately sized. However, `test_standard_library_functions` at ~100 lines is quite large. The decompiler correctly identifies separate functions but some are merged (e.g., `param_fork_exec.part.0` appears as an outline).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Some forward jumps in error handling paths. The `param_pipe_communication` function has complex nested logic that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some redundant checks present (e.g., stack canary checks repeated). Loop structures are mostly clean without excessive unrolling at -O0.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. `char*` becomes `int` or `undefined4`. Pointers are often represented as `int` (e.g., `int param_1` for `char *dst`). Const correctness is completely lost. Size types like `size_t` become `undefined4`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. The `ThreadData` struct used in `thread_sum` is completely lost - parameters are passed as raw `int*` with manual offset calculations (e.g., `param_1[2]` for `data->result`). The pthread structures are not reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations. Pointer arithmetic is done with integer types. The conversion `iVar1 - param_1` for calculating string length is error-prone. Many implicit casts between `int` and pointers without proper casting.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function addresses (e.g., `// Function: param_strcpy @ 0x12020`). No explanation of what `FUN_00011510` does or why the calculation `iVar1 - param_1` represents `strlen`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognizable (pthread create/join, mutex lock/unlock) but not named. The string operation idiom (strcpy + strlen) is not recognized as a common pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. Indirect calls through function pointers are not flagged. The many `FUN_000xxxxx` calls don't indicate uncertainty about their identity.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The contract of `param_strcpy` (requires valid buffers, returns length) is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No call graph or relationship documentation. It's unclear which functions call `param_strcpy`. Global variables like `signal_received`, `shared_counter` are not documented as being accessed by multiple functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are in a single large file with arbitrary ordering. Related functions (like all string functions) are not grouped together. No header file or API boundary separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code uses undefined types (`undefined4`) and undeclared functions (`FUN_00011510`). Would not compile without significant patching. External dependencies (libc functions) are not properly declared.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Function parameters use generic names (`param_1`, `param_2`) losing semantic meaning (`dst`, `src`)
+- Standard library functions completely unrecognizable (`FUN_00011510` instead of `strcpy`)
+- Type information severely degraded (`int` instead of `char*`, `undefined4` everywhere)
+- No struct recovery - `ThreadData` struct fields accessed via raw pointer offsets
+- No comments explaining the calculation `iVar1 - param_1` represents `strlen(dst)`
+- Missing pre/post conditions for functions like `param_strcpy` (valid buffer requirements)
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+The decompiled output is relatively clean without excessive compiler artifacts like register spilling or debug instrumentation. At -O0, this is acceptable.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10) and Type Precision (scored 2/10)  
+These are fundamental issues that make the code nearly unusable for analysis. A decompiler must recover parameter names and types to be useful.
+
+**Top 3 Recommendations:**
+1. **Infer parameter names from usage**: `param_1` is used as destination buffer (passed to strcpy), should be named `dst` or `dest`
+2. **Recognize standard library functions**: `FUN_00011510(param_1, param_2)` with return `iVar1 - param_1` is clearly `strcpy(dst, src)` followed by `strlen(dst)`
+3. **Recover struct types**: The `ThreadData` struct with fields `start`, `end`, `result` should be reconstructed instead of using `param_1[0]`, `param_1[1]`, `param_1[2]`

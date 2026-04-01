@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`-`v12` for locals. Only a few like `idx`, `iter`, `cur`, `result`, `ptr` are descriptive. The original source used meaningful names like `size`, `x`, `y`, `result`, `count` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered their original names (e.g., `param_macro_constants`, `call_macro_constants`, `param_asm_basic`), but many wrapper functions use cryptic addresses like `sub_401030`, `sub_4010b0`. The pattern of creating wrapper functions that just call other functions obscures the actual call graph.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants are clear (e.g., `30` for `_SC_PAGESIZE`, `7` for `PROT_READ|PROT_WRITE|PROT_EXEC`), but magic numbers like `1025`, `0x200`, `64`, `57122` appear without explanation. The original source had meaningful constants like `MAX_SIZE` (1024), `BUFFER_COUNT` (16) that are replaced with computed values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The output is relatively clean without excessive compiler artifacts. Some minor noise exists like the `uint128_t` type with "Other Possible Types" annotations, but overall the code is readable without significant clutter from register spilling or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else statements and for loops correctly recovered. At `-O0` optimization, the flow closely matches the original source. Minor issues include some complex expressions in loop conditions but nothing that impedes understanding.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation. The decompiler correctly separated the various test functions (`test_preprocessing_features`, `test_asm_features`). However, many small wrapper functions (like `sub_401256` calling `call_macro_constants`) create unnecessary indirection.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The `param_asm_multi_insn` function has a clean for-loop structure. Some forward jumps exist but don't significantly disrupt the flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy observed. Dead code is minimal. Loop constructs are properly formed rather than being unrolled, which is appropriate for `-O0` compilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` for most integers which is reasonable. The `uint128_t` type is used for SIMD operations. However, the original used `int` for some parameters which is lost. Some pointer types are generic `char*` when they could be more specific.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions exist (e.g., `struct_0`, `struct_1` in `register_tm_clones`) but field names are generic (`field_0`, `padding_0`). The original source had no complex structs in the main functions, but the decompiler created artificial structures that don't match the source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code with manageable pointer arithmetic. Some unsafe operations like casting between pointer types in SIMD functions (`*(int128_t *)&v1`). No severe type safety violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments present in the decompiled output.** This is a critical deficiency. The original source had extensive comments explaining each test case (e.g., "PP-L2-01: 宏定义常量", "ASM-L4-01: x86_64基础内联汇编"). These semantic annotations are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops and conditionals are recognized. The SIMD operations show `AddV` which suggests vector addition idiom. However, no explicit naming of patterns like "stringize operation", "token paste", or "variadic macro" is present.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit anomaly flags for suspicious code. Some "Other Possible Types" annotations appear (e.g., in `test_asm_features` for variable `v4`), but this is minimal. The decompiler doesn't flag the indirect calls or the hand-written assembly patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. The original source had clear expectations (e.g., "期望: 64", "期望: 30") which are completely lost. No preconditions, postconditions, or invariants are documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. External function declarations (like `puts`, `printf`, `mmap`, `munmap`, `sysconf`) are properly identified. However, the relationship between wrapper functions and their targets is unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. The `main` function correctly calls `test_preprocessing_features` and `test_asm_features`. Overall organization matches the source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code has `extern` declarations for external symbols. String literals reference external globals (`g_4020cb`, etc.) which would require linking against the original binary's data section. Some modifications needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **No comments** - All semantic annotations from the original source are completely lost
+- **Generic variable names** - Parameters named `a0`, `a1`, `a2` and locals named `v0`-`v12` obscure purpose
+- **Wrapper function proliferation** - Many unnecessary wrapper functions (e.g., `sub_401256` → `call_macro_constants`) create confusion
+- **String literals not inlined** - References to `&g_4020cb` instead of actual strings like "PP-L2-01: %d (期望: 64)\n"
+- **No contract/expectation recovery** - Original source had clear expected values ("期望: 64") that are lost
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- At `-O0` optimization, the decompiler correctly recovered natural if-else and loop structures that closely match the original source code flow.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- The complete absence of comments is the most severe issue. The original source had extensive documentation explaining each test case, macro semantics, and expected values that would greatly aid understanding if recovered.
+
+### Top 3 Recommendations:
+1. **Recover comments from string literals**: The format strings like "PP-L2-01: %d (期望: 64)" contain valuable semantic information that should be extracted and used as comments
+2. **Infer variable names from usage**: Parameters like `a0` used in comparisons with `1025` should be named `size` based on context; `a1`, `a2` in variadic contexts should be named more descriptively
+3. **Eliminate wrapper function noise**: Functions that simply call another function (e.g., `sub_401256` calling `call_macro_constants`) should be inlined or marked as thunks to reduce visual clutter

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `iter`) with no semantic meaning; original names like `large_buf`, `global_counter`, `head` are completely lost in complex functions like `vla_stack` and `linked_list_heap`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions retain original names (`local_vars`, `heap_basic`, `global_var_access`), but runtime helpers are generic (`sub_4008f4`, `sub_400a70`); debug symbols preserved user function names well.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers from optimization (`4294967295`, `4294967294`, `34359738352`, `0xfffffff8`) replace simple constants; string literals referenced as `&g_4022b9` instead of actual text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including frame pointer setup (`v0 = &v1`), vector operations (`AddV`, `MulV`, `ShlNV`, `CONCAT`), and inline assembly (`[D] MBusEvent-Imbe_Fence()`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but complex functions like `vla_stack` and `alloca_usage` use convoluted do-while loops with excessive branching from VLA handling optimization; original for-loops obscured.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with original granularity; `create_tree_node` correctly extracted; test functions are large but cohesive with printf sequences.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with recognizable patterns; `linked_list_heap` has deep nesting from error handling chains; some forward jumps disrupt flow in optimized functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible in `large_stack_frame` (128-bit vector operations writing 32 bytes per iteration); duplicate expressions from optimization create apparent redundancy without explanation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int` often becomes `unsigned int` or `unsigned long long`; `size_t` degrades to `unsigned long`; pointer types generally preserved but signedness frequently incorrect from optimization artifacts.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `padding_4`); `Node` struct becomes `struct_0` losing `data`/`next` semantics; multiple conflicting struct definitions for same type.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(char *)`, `(unsigned int *)`), void pointer arithmetic, and type-confused operations from optimization; no restrict or alignment annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments; only auto-generated type definitions; no algorithm explanations, decompilation confidence indicators, or documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns (malloc/free pairs) and linked list traversal recognizable but not explicitly identified; no design pattern naming or algorithm identification.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged; optimization artifacts unexplained; no uncertainty indicators for indirect calls or ambiguous patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions; no postcondition inference; error conditions not explained as contracts despite being recoverable from control flow.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented; global variables declared as `extern`; callback relationships (`global_func_ptr`) not clearly indicated; no call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output with no logical grouping; static functions not properly scoped; no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds; external dependencies declared; platform-specific code (`arm64g_calculate_condition`) requires stubs; would need moderate patching for standalone use.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+3+4)/4 = 4.50
+Level 2 (Structural):   (5+7+6+5)/4 = 5.75
+Level 3 (Type System):  (5+4+4)/3   = 4.33
+Level 4 (Semantic):     (2+5+2+3)/4 = 3.00
+Level 5 (Contextual):   (5+4+6)/3   = 5.00
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.35 + 1.44 + 0.87 + 0.45 + 0.50
+        = 4.61/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: Values like `4294967295`, `34359738352` replace simple constants from optimization, requiring reverse engineering to understand
+- **Generic struct field names**: `field_0`, `field_8`, `padding_4` lose all semantic meaning (should be `data`, `next`, etc.)
+- **No anomaly warnings**: Dangerous patterns (`dangling_pointer`, `double_free`) not flagged despite being recoverable
+- **Vector operation noise**: `AddV`, `MulV`, `ShlNV`, `CONCAT` operations obscure simple arithmetic from loop unrolling
+- **Variable names lost**: `v0`, `v1`, `ptr` provide no semantic information about purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Debug symbols preserved most user function names correctly, maintaining semantic connection to original source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments, confidence indicators, or documentation of non-obvious optimization artifacts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, array indices, pointers) to suggest meaningful names like `i`, `index`, `buffer_ptr`
+2. **Detect and annotate optimization artifacts** - Identify loop unrolling, vector operations, and bit-manipulation patterns from signed/unsigned conversion, adding comments explaining the transformation
+3. **Flag potentially dangerous code patterns** - Automatically detect use-after-free, double-free, buffer overflow patterns and add warning comments for security analysis

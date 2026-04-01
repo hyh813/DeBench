@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named `v1`, `v2`, `v3`, `a1`, `a2`, `a3` throughout the entire codebase. Even heap allocations use generic names like `mem`, `mem2`, `mem3` instead of descriptive names like `arr`, `node`, `tree`. Global variables are `g1`-`g43` with no semantic meaning. The original source uses meaningful names like `global_counter`, `local`, `arr`, `p1`, `p2`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered their names (e.g., `local_vars`, `heap_basic`, `heap_calloc`, `double_value`), but many are labeled as `function_1030`, `function_1040`, `function_1060`, etc. The original has descriptive names like `address_of_local`, `alloca_usage`, `stack_alias`, `vla_stack`, `linked_list_heap`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: global addresses `0x3010`, `0x3020`, function address `0x27c0`, error returns `0xffffffff`. String literals are encoded in UTF-8: `"\xe6\xb5\x8b\xe8\xaf\x95\xe6\xa0\x88"` instead of "测试栈内存操作". The original source has clear string literals and meaningful constants.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with inline assembly intrinsics: `__asm_movdqa`, `__asm_paddb`, `__asm_pxor`, `__asm_mfence`, `__asm_movups`. Excessive goto labels: `lab_0x142b`, `lab_0x1442`, `lab_0x1447`. Redundant casts and type conversions throughout. At -O0, this level of noise is unacceptable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses goto statements extensively for control flow (e.g., `goto lab_0x142b`, `goto lab_0x1586`). Loop structures are present but obscured by goto-based implementation. At -O0 optimization, the control flow should closely match source patterns (for/while loops), not use spaghetti-code goto patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is mostly preserved - small functions like `local_vars`, `address_of_local` remain separate. However, some test functions are very large (e.g., `test_stack_memory` is ~177 lines). The original source has well-organized, focused functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code has numerous forward jumps via goto labels that disrupt top-to-bottom reading. Labels like `lab_0x1447`, `lab_0x158b` appear in the middle of functions, making linear reading difficult. Early returns are used but buried among goto statements.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is present in `vla_stack`, `alloca_usage`, `heap_basic` - these are optimization artifacts that should be commented or abstracted. Some duplicate code patterns exist but are manageable. Not as severe as other issues.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` for most values (original uses `int` which is 32-bit on arm64). Some `uint32_t`, `int32_t` present. Function parameters use `int64_t` when original uses `int`. Const correctness is lost. Minor type mismatches but not severe.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The original defines `Point`, `Node`, `TreeNode` structs. None are recovered in decompiled code. All struct access is raw pointer arithmetic: `*(int32_t *)mem`, `*(int64_t *)(v1 + 8)`, `*(int64_t **)((int64_t)mem3 + 8)`. No field names, no struct definitions.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe void* casts throughout. Raw pointer arithmetic: `4 * v28 + v4`, `v1 + 8`, `(int64_t)mem3 + 8`. Some type-confused operations. Not severely dangerous but requires careful analysis to avoid undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only contains auto-generated address range comments (e.g., `// Address range: 0x1210 - 0x1217`) and occasional "UNREACHABLE" annotations. No algorithm explanations, no logic documentation, no decompilation confidence indicators. Original source has extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The linked list creation, tree traversal, memory operations are just presented as raw code without recognizing the patterns. Original source clearly labels "链表操作", "树结构".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The code presents everything as correct, even though there are issues like the dangling pointer in `dangling_pointer()` function that returns `*(int32_t *)mem` after `free(mem)`. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear contracts like "if (n <= 0 || n > 1000) return -1" for VLA, NULL checks for malloc. These are not recovered as comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships are not documented. No indication of who calls which function, no callback relationships, no global variable usage documentation. The original source shows clear call graphs in test functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some grouping exists (test functions at end), but the original's clear sections (Stack Memory, Heap Memory, Static & Global, Memory Operations) are not reflected. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has proper includes and function prototypes. Should compile with modifications. Issues: undefined `extern_function`, some globals referenced but not defined in this compilation unit. Not standalone-ready.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `a1`, `mem`, `g1`) - should infer semantic meaning from usage
+- No struct/type recovery - `Point`, `Node`, `TreeNode` completely lost, replaced with raw pointer arithmetic
+- Excessive noise from inline assembly intrinsics (`__asm_movdqa`, `__asm_paddb`) and goto labels
+- No comments explaining algorithms, logic, or decompilation confidence
+- String literals encoded in UTF-8 hex instead of readable Chinese text
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.3/10)  
+- Type precision is acceptable (uses int64_t, int32_t appropriately)
+- Type safety issues are present but not dangerous
+
+**Most Needs Improvement:** Lexical Clarity (scored 2.75/10)  
+- Variable and function naming is nearly unusable
+- Literal clarity is poor with magic numbers and encoded strings
+- Noise level is extremely high
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `mem` used with malloc/free should be named `heap_ptr` or similar; variables used as array indices should be named `i`, `j`, `idx`
+2. **Recover struct types**: Detect repeated field access patterns (e.g., `*(int32_t*)(ptr+8)`, `*(int64_t**)(ptr+8)`) and reconstruct struct layouts with field names
+3. **Eliminate assembly intrinsics**: Convert `__asm_movdqa`, `__asm_paddb` to comments or remove entirely at -O0; convert goto-based loops to proper while/for constructs

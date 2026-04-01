@@ -1,0 +1,15 @@
+test_fake_branch
+test_opaque_predicate
+test_instruction_substitution
+test_string_encryption
+test_tail_call_optimized
+test_non_tail_call
+test_vectorized_loop
+test_link_time_optimization
+test_division_by_zero: -1208505120
+test_null_pointer_deref: 1
+test_buffer_overflow: 41
+test_integer_overflow: 30
+test_undefined_behavior: 2000000000
+test_implementation_defined
+All tests completed

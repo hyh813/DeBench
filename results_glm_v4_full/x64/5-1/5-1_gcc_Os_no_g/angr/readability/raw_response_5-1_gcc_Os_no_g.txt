@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (e.g., `v0`, `v1`, `ptr`, `result`). While `result` appears, it is often uninitialized or unused in the decompiled view (e.g., in `test_cpp_member_func`), and struct fields are anonymous (`field_0`, `field_8`), losing semantic context like `value` or `name`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ mangled names are successfully demangled (e.g., `test_cpp_member_func`, `Base::virtual_func`), providing clear semantic labels that match the source. However, many internal helper functions remain generic (e.g., `sub_402020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals like `"Test"` and `"12RTTIDerivedA"` are recovered, but numeric literals like `8589934593` and `0x4004000000000000` appear as magic numbers without type context (e.g., identifying them as floating-point values).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The code is cluttered with compiler artifacts such as `extern` global references, unused arguments in exception handling calls (`v4, v5, v3...`), and low-level thunk functions that obscure the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Virtual function calls are represented as unnatural computed gotos (`goto *((long long *)*((long long *)&arg_0));`), and exception handling is shown as a complex state machine of `__cxa_*` calls rather than `try-catch` blocks.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: While the decompiler identifies functions, it exposes low-level thunks (e.g., `_ZThn16_N12MultiDerived5funcBEv`) and fails to inline or abstract them, making the class hierarchy difficult to follow.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: The flow is disrupted by computed jumps and exception handling dispatchers (`sub_402020`), making top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: There is redundancy in passing unused variables to ABI functions (e.g., `__cxa_end_catch(v4, v5, v3, v6, v7, v8)`), which adds noise without semantic value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Return types are incorrect (e.g., `void` for functions returning `int`), `this` pointers are raw `void*`, and class types are replaced with generic structs.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes like `SimpleClass` and `Container` are not reconstructed; instead, generic structs (`struct_0`, `struct_2`) with anonymous fields (`field_0`, `field_8`) are used, losing all semantic meaning.
+
+**11. Type Safety:** Score: 2/10  
+Justification: The code contains unsafe casts, such as casting `void*` to function pointers for virtual calls and direct memory writes to struct offsets without type checking.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no meaningful comments explaining the logic, algorithms, or data structures; only function headers are present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: High-level C++ idioms like RAII, smart pointers, and virtual dispatch are not recognized; they are presented as raw memory allocations and indirect jumps.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler does not flag the missing logic in functions like `test_cpp_constructor` or the architecture mismatch, presenting incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Global variables and external functions are declared, but the relationships between class methods and their implementations are obscured by thunks and generic types.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in memory address order, which provides some structure, but logical grouping by class or functionality is absent.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code uses non-standard constructs like `goto *((long long *)...)` and incorrect signatures for standard library calls, making it uncompilable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.0/10
+
+**Critical Defects:**
+- **Architecture Mismatch**: The source is `arm64` but the decompiled code is `AMD64`, leading to incorrect register usage and logic recovery.
+- **Missing Logic**: Functions like `test_cpp_constructor` are completely empty (`return;`) despite having complex logic in the source.
+- **Incorrect Types**: Return types are universally `void` instead of `int`, and `this` pointers are `void*`.
+- **Lost Class Structure**: Classes are replaced by generic structs (`struct_0`) with no field names.
+- **Unnatural Control Flow**: Virtual calls use computed `goto` instead of method invocation syntax.
+
+**Best Quality Aspect:** Function Naming (scored 7/10)  
+- The decompiler successfully demangled C++ symbols, allowing identification of high-level test functions despite the poor body recovery.
+
+**Most Needs Improvement:** Type System Fidelity (scored 2/10)  
+- The complete failure to recover class definitions, member types, and correct return types renders the code semantically meaningless.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Architecture Detection**: Ensure the decompiler correctly targets the binary architecture (ARM64 vs AMD64) to recover register mappings and calling conventions.
+2. **Class Recovery**: Implement robust reconstruction of C++ class hierarchies, including field names, types, and inheritance relationships, rather than emitting generic structs.
+3. **High-Level Idiom Abstraction**: Replace low-level exception handling (`__cxa_*`) and virtual dispatch (vtable lookups/gotos) with native C++ constructs (`try-catch`, `virtual` calls).

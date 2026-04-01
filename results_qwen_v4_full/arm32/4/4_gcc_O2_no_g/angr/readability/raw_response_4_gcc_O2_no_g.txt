@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, a0, a1, ptr, i) with zero semantic meaning. For example, in `varargs_func`, variables `v2`, `v3`, `v4` should be named based on their role in the varargs iteration but provide no insight into purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most original function names preserved (cdecl_func, varargs_func, test_calling_conventions), but helper functions use mechanical names (sub_103e8, sub_104ac). Function names accurately reflect original source for user-defined functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: 4294967295 (should be -1), hex addresses (0x114cc, 0x11590) for strings, and unexplained constants. Return values like 15, 50, 42 are clear but string references are opaque addresses.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from armg_calculate_condition calls (hundreds of nested calls in __aeabi_dadd), stack canary checks (__stack_chk_guard), and redundant operations. The floating-point functions are essentially unreadable due to this noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive goto usage throughout (LABEL_104d0, LABEL_11035, etc.) instead of structured loops/conditionals. The __aeabi_dadd function has deeply nested conditionals with armg_calculate_condition that obscure all logic flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but many test functions constant-folded to direct returns (call_cdecl returns 15 directly). Some functions like __aeabi_dadd are monolithic (500+ lines) with no decomposition.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearity with frequent forward jumps disrupting flow. The ret_multi_branch function has multiple LABEL jumps that make top-to-bottom reading impossible without tracing each branch.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in armg_calculate_condition calls (identical patterns repeated dozens of times in __aeabi_dadd). No dead code elimination visible; stack canary checks appear in every function unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion—everything is unsigned int. Original types (char*, double, struct pointers, int) all collapsed. func_mixed_args takes 6 unsigned int params instead of (int, char*, double, long long).
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure—LargeStruct, SmallStruct, TestIntPair all lost. Generic struct_0 with field_0, field_1 naming. func_struct_byval takes 16 separate unsigned int params instead of a struct.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Multiple unsafe patterns: func_struct_byptr takes unsigned int* instead of SmallStruct*, pointer arithmetic on void pointers, incorrect function pointer signatures (param_func_ptr takes unsigned int* instead of function pointer).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler annotations like "/* do not return */" present. No algorithm explanations, no parameter documentation, no context for complex operations.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition—varargs pattern not identified, struct passing conventions not noted, calling convention differences not documented. armg_calculate_condition calls are unexplained ARM emulation artifacts.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flagging despite severe issues. The bizarre armg_calculate_condition nesting in __aeabi_dadd should be flagged as decompiler uncertainty but isn't. Incorrect type signatures go unnoted.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions (e.g., ptr != NULL checks not documented), no postconditions, no invariants. func_struct_byptr's null check exists but isn't documented as a contract requirement.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables (g_114cc, g_11590) referenced by address with no semantic meaning. No call graph documentation or callback relationship identification.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related functions (test_calling_conventions and its callees) not grouped. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile—external dependencies (GLIBC_2.4::__stack_chk_guard, __printf_chk, armg_calculate_condition) undeclared. Architecture mismatch (ARMEL vs original arm64). Requires extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+5+3+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (2+1+2)/3   = 1.67 × 0.20 = 0.334
+Level 4 (Semantic):    (1+1+1+1)/4 = 1.00 × 0.15 = 0.150
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 2.85/10
+```
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **Complete type system collapse**: All types reduced to `unsigned int`, losing char*, double, struct distinctions
+- **Zero composite type recovery**: LargeStruct, SmallStruct completely lost; struct fields named field_0, field_1
+- **No documentation**: Zero comments explaining logic, algorithms, or decompiler uncertainty
+- **ARM emulation artifacts**: Hundreds of unexplained `armg_calculate_condition` calls making floating-point functions unreadable
+- **Constant folding over-optimization**: Test functions return constants directly instead of showing actual computation logic
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Most original function names preserved accurately (cdecl_func, varargs_func, test_calling_conventions), providing some semantic anchor points.
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct/union definitions; all composite types lost to raw parameter expansion or generic struct_0 placeholders.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns**: Analyze how variables are used (pointer arithmetic, struct field access) to recover original types instead of defaulting to unsigned int.
+2. **Add anomaly detection for ARM emulation artifacts**: Flag armg_calculate_condition chains as decompiler uncertainty and suggest manual review rather than outputting hundreds of nested calls.
+3. **Recover composite types from stack layouts**: Analyze stack frame patterns to reconstruct struct definitions with meaningful field names based on access patterns.

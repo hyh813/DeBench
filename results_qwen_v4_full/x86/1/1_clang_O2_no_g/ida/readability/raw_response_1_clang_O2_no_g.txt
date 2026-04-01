@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and locals use `v1`, `v2`, `result` - completely obscuring semantic meaning. Original had `temp1`, `temp2`, `temp3` which at least indicated computation sequence.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions retained original names (`sequential_ops`, `single_if`, `nested_if_deep`) accurately reflecting purpose. Only helper/runtime functions use generic names (`sub_1030`, `sub_1090`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x65` (101), `0x12` (18) appear without explanation. Test functions have hardcoded expected values which aids verification but obscures actual computation logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__cdecl`, `__usercall`, `@<eax>` register hints). Empty stub functions (`_x86_get_pc_thunk_bx`) add noise. However, no excessive dead code or debug instrumentation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Optimizations obscure original structure - `single_if` becomes `a1 << (a1 > 0)`, `loop_for_fixed` becomes closed-form formula. `duffs_device` uses goto labels (LABEL_3, LABEL_5) instead of structured switch. At O2 optimization, some transformation is expected but semantic clarity is lost.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching original source. Each test function is cohesive with single responsibility. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `duffs_device` and `goto_backward` use goto labels disrupting flow, but this reflects the original complexity. Test functions are very linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some redundant assignments exist (`result = -1` then immediately returned in switch cases). Loop unrolling in `goto_backward` is optimization artifact but not excessive.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of specific types. `_DWORD *` less precise than original pointer types. `_BOOL4` for booleans is reasonable. Some signed/unsigned distinctions preserved (`unsigned int a1` in switch functions).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Function pointer arrays recovered (`funcs_1B57`, `funcs_20A7`, `funcs_212B`). Array access patterns visible but as pointer arithmetic. No complex structs in this test suite to evaluate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(unsigned int)(a1 - 1)`, `(unsigned __int64)`). Signed/unsigned mixing in comparisons. Function pointer calls maintain type safety. No obvious buffer overflow patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and difficulty level. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Switch-case patterns recognized and recovered. Loop patterns mostly identified except optimized ones. Duff's device partially recognized but transformed to goto structure. No explicit pattern naming or algorithm identification.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Six functions marked "FAILED to decompile" at end (libc functions). No uncertainty warnings for optimized code. Silent about aggressive transformations (e.g., loop-to-formula conversion not flagged).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Test functions have hardcoded expected values which partially serves as contract verification.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variables visible (`jump_buffer`, `dword_3700`). No call graph documentation. Callback relationships visible in code structure.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Functions grouped by test level (L1, L2, L3) but no file separation. Static functions properly marked. No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Six external functions failed to decompile requiring stubs. Compiler-specific annotations (`__cdecl`, `__usercall`) reduce portability. Metadata claims "Compilation Result: Yes" but would need library stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+8+7+7)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (2+5)/2     = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (4+3+6+5+5)/5 = 4.60 × 0.10 = 0.46
+
+Overall Score: 5.66/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Zero comments** - Original had extensive documentation; decompiled has none
+- **Generic variable names** - `a1`, `a2`, `v1`, `v2` obscure all semantic meaning
+- **Aggressive optimization obscures intent** - `loop_for_fixed` converted to formula, `single_if` to bit shift
+- **Goto labels in structured code** - `duffs_device` uses LABEL_3, LABEL_5 instead of switch-case
+- **Magic numbers unexplained** - `0x65`, `0x12` appear without context
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from original source, maintaining semantic identity
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation makes understanding optimized transformations extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic variable name inference** - Analyze usage patterns to suggest names like `operand`, `counter`, `result` instead of `v1`, `v2`
+2. **Insert decompilation confidence annotations** - Flag aggressive optimizations (e.g., "// OPTIMIZED: loop converted to closed-form formula")
+3. **Recover and preserve original comments** - If debug symbols available, extract and embed source comments in decompiled output

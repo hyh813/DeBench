@@ -1,0 +1,21 @@
+Testing preprocessing features:
+
+Expected: 64
+Expected: 30
+Expected: 32
+Expected: 57122
+Expected: 116
+Expected: 19
+Expected: 60
+LOG: Values: 10, 20, 30
+Expected: 60
+Expected: 16
+Expected: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:52
+Result: 382
+Testing ASM features:
+
+ASM test: 15
+Sum: 5
+String test: -1
+SIMD result: 36

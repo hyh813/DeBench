@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`. The original source had meaningful names like `size`, `x`, `y`, `result`, `counter`, `increment` - all completely lost in decompilation. Even loop indices and temporary values retain their semantic purpose in source but become unreadable in decompiled form.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions like `param_macro_constants`, `call_asm_basic`, `param_builtin_macros` are correctly preserved. However, many helper functions are named mechanically (e.g., `function_1090`, `function_10b0`) with no semantic meaning. The original had descriptive names like `my_func` which was preserved, but the decompiler failed to recover meaningful names for infrastructure functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful (e.g., `64`, `512` in macro constant functions), but magic numbers like `0xdef0`, `0x1234`, `0xdf22` appear without explanation. The original source had comments explaining these as platform-specific constants and expected values, but the decompiled version presents them as raw numbers. String literals are preserved in global variables but lose their context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler/runtime artifacts pollute the code: `__asm_pxor`, `__asm_movaps`, `__asm_paddd` pseudo-functions for SIMD; `__readfsqword(40)` for stack canary checks; unnecessary bit manipulations like `& 0xffffffff`; unreachable code blocks with `UNREACHABLE` comments; and frame pointer manipulations. These artifacts make it difficult to distinguish actual logic from decompilation artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (if-else, while loops), but expressions are often convoluted. For example, `param_macro_constants` uses a complex nested ternary with bitwise operations instead of clear if-else: `v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g22)) < 0 == (v2 != 0) ? 64 : 512`. At -O0, such obfuscation is unnecessary and indicates decompilation difficulty.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original's modular design is well preserved. Each test case (macro constants, asm basic, etc.) remains as separate functions. Function granularity is appropriate - no 500-line monoliths. The decompiler correctly separated `param_*` from `call_*` functions. Minor issue: some parameter lists expose implementation details (e.g., `call_asm_clobber` has 4 parameters when it should have 0).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `param_asm_clobber`. Some forward jumps exist but are manageable. The main disruption is in `call_asm_multi_insn` where the loop structure is somewhat convoluted with pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal. Some common subexpression patterns exist but don't severely impact readability. The decompiler handles basic redundancy reasonably well for -O0 code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: The decompiler uses `int64_t` appropriately for arm64. However, it loses precision in some cases - using `int64_t` where `int` or `size_t` would be more accurate. Pointers are correctly typed. The original had `int` in many places which the decompiler promotes to `int64_t`, which is acceptable for 64-bit but loses the original type information.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: The original source doesn't define custom structs or unions (only uses basic types and arrays), so there's nothing to recover. The decompiler correctly handles the arrays used (e.g., `int arr[]` becomes pointer arithmetic). This is not a weakness in this particular case.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with no major violations. Minor issues include unnecessary casts like `& 0xffffffff` which suggest the decompiler is unsure about signed/unsigned distinction. Function pointer types are reasonable. No buffer-overflow-prone patterns or serious undefined behavior risks.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal useful comments. The decompiler adds metadata like "From module: /work/5-23.c" and "Line range: 704 - 708" which are helpful for source correlation but don't explain the logic. No comments explain what macros do, what inline assembly accomplishes, or why certain complex expressions exist. The original had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are recognized or named. The original demonstrated specific preprocessor patterns (macro expansion, token pasting, stringification), inline assembly patterns (clobber lists, memory barriers), and atomic operations - none of which are identified in the decompiled output. The decompiler presents everything as generic code.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The code presents potentially problematic patterns (like the complex ternary in `param_macro_constants` or the hand-written assembly simulation in `call_asm_multi_insn`) without any indication that these might be decompilation artifacts or require manual review. The `UNREACHABLE` comment is present but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear expectations (e.g., "期望: 64", "期望: 15") which are completely lost. No error condition documentation. The decompiler provides no guidance on what the functions expect or guarantee.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure but not documented. You can see that `test_preprocessing_features` calls other functions, but there's no explicit documentation of the call graph. Global variable `global_var` is used in `param_memory_clobber_demo` but this relationship isn't highlighted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are logically grouped - preprocessing tests together, asm tests together. However, infrastructure functions like `function_1090`, `function_10a0` are interspersed without clear purpose. The original had clear section comments (e.g., "5.2 预处理与条件编译") which are lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers and has function prototypes. It should compile with minimal patching. However, it uses `__printf_chk` instead of `printf`, which requires glibc. Dependencies on syscalls (mmap, mprotect, munmap, sysconf) are implicit but not documented. The code would need some adjustments to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful variable names lost (`size` → `a1`, `result` → `v1`, `counter` → `a1`)
+- **Complex expressions**: `param_macro_constants` uses convoluted nested ternary with bitwise operations instead of readable if-else
+- **No semantic context**: Comments don't explain what macros, inline assembly, or atomic operations accomplish
+- **SIMD pseudo-functions**: `__asm_movaps`, `__asm_paddd` clutter the code without explaining they're decompiled SIMD intrinsics
+- **Missing expected values**: Original had "期望: 64", "期望: 15" etc. - completely lost in decompilation
+
+### Best Quality Aspect: Type System Fidelity (7.7/10)
+Types are reasonably precise for arm64, using `int64_t` appropriately. No serious type safety violations. Composite types (arrays) are handled correctly.
+
+### Most Needs Improvement: Semantic Transparency (2.8/10)
+The decompiled code provides no explanation of what the original code was trying to demonstrate. No pattern recognition, no anomaly flagging, no contract recovery. It's technically accurate but semantically opaque.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If a parameter is compared to 1024 and used to return 64 or 512, name it `size` or `threshold` instead of `a1`
+2. **Simplify complex expressions**: The nested ternary in `param_macro_constants` should be decompiled to if-else; the bitwise trickery is a decompilation artifact, not original code
+3. **Add semantic comments**: Explain that this function tests macro expansion, that the assembly block implements atomic fetch-and-add, etc. The original's intent should be recoverable

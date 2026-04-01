@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `idx`, `ptr`) with no semantic meaning. For example, `test_data_types_l1` uses `v0-v7` instead of meaningful names like `float_result` or `double_result`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved for some functions (`double_value`, `process_int`, `array_1d_stack`) but many runtime functions use generic names (`sub_401020`, `sub_40102d`). Test functions retain names which helps.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (UINT_MAX), `8589934593`, `17179869187`. Float constants shown as hex (`0x3fc00000`) instead of decimal values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Multiple `[D]` decompilation error markers throughout code. Unsupported operations shown inline (`[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` for function pointer calls (`goto a0` in `ptr_func_simple`). Some loops recovered but `array_string` uses awkward do-while pattern. `enum_switch` uses indirect jump table instead of switch.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but some have incorrect signatures (`process_float()` has no parameters). Runtime initialization functions fragmented unnecessarily (`sub_401020` through `sub_40105f`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but forward jumps disrupt flow. `test_data_types_l1` has complex branching with unsupported operations interrupting linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant type casts visible (`(unsigned int)v1 + *(ptr)`). Test functions compute values at compile-time but decompiler shows runtime computation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `process_char` returns `long long` instead of `char`, `process_float()` loses parameter entirely, `volatile_access` simplified to `*(a0) * 2` losing volatile semantics. Many `unsigned long` where specific types needed.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`). Nested structs lose semantic meaning (`struct_0`, `struct_1`). Bitfield structure completely lost in `struct_bitfields`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(unsigned long long)(AddV(...))`). Pointer arithmetic uses generic types. `ptr_void` returns `unsigned long long` instead of `int`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no parameter documentation, no recovery of original source comments about test scenarios.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Linked list traversal not identified as such. Switch-on-enum pattern lost in `enum_switch`. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers indicate decompilation failures but inconsistently applied. `process_ld` shows extensive unsupported operations. Some anomalies silently ignored (volatile semantics lost).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not explained). No postconditions. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. `ptr_func_simple` and `struct_func_ptr` use `goto` obscuring call semantics. Global variables named generically (`g_403fe8`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization functions mixed with application code. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `__libc_start_main`) declared but not defined. Some functions contain uncompilable `[D]` error blocks. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+5+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                              3.84/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Function signature corruption**: `process_float()` and `process_double()` lost all parameters, making them unusable
+- **Type degradation**: `process_char` returns `long long` instead of `char`, breaking type semantics
+- **Decompilation failures**: Multiple `[D]` error blocks in `process_ld` and `test_data_types_l1` make code uncompilable
+- **Generic struct fields**: All struct fields named `field_0`, `field_8`, etc., losing all semantic meaning
+- **Control flow corruption**: Function pointer calls use `goto a0` instead of proper call syntax
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Original function names preserved for application code (`double_value`, `process_int`, `array_1d_stack`), providing some semantic anchor points.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero meaningful comments recovered; original source had extensive documentation about test scenarios and expected behavior that is completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter types from calling conventions** - `process_float` and `process_double` clearly take parameters based on their usage in test functions
+2. **Preserve original type information from debug symbols** - Since compiled with `-g`, char/short/int types should be recoverable instead of generic `unsigned long`
+3. **Replace `[D]` error blocks with graceful degradation** - Either omit unsupported code sections or provide clear fallback representations instead of inline error markers

@@ -1,0 +1,14 @@
+=== Testing Standard Library Functions ===
+strlen result: 8
+strcmp result: 0
+call_strlen result: 12
+memcpy result: 90
+memcmp result: -1
+Value: 42, Name: TestName
+printf returned: 26
+scanf sum: 579
+fopen result: 42
+fread_fwrite result: 42
+malloc_free result: 90
+memset result: 0
+strchr_strstr result: 15

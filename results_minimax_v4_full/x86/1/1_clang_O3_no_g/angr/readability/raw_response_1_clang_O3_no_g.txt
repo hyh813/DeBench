@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`. Parameters are named `a0`, `a1`, `a2`. Only a few exceptions like `iter`, `cur`, `result` have descriptive names. This is far below the O0 expectation where variable names should be nearly perfectly recoverable.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - target functions like `sequential_ops`, `single_if`, `if_else`, `nested_if_2` are correctly named, but many wrapper/thunk functions use address-based names like `sub_401030`, `sub_401090`. The main test functions are properly recovered but infrastructure functions are not.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (unsigned -1) appears frequently without explanation. Loop limits like `1000` are uncommented. Some constants like `1717986919` (magic multiplier for division) are unexplained. However, string format literals in printf are partially preserved.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. The output includes extensive boilerplate: `_init`, `frame_dummy`, `register_tm_clones`, `deregister_tm_clones`, `__do_global_dtors_aux`, `__do_global_ctors_aux`, and many other non-test functions. Auto-generated struct definitions with padding arrays (e.g., `struct_0 { char padding_0[20183]; }`) clutter the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - loops, conditionals, and switches are recognizable. However, some issues: `loop_while` uses confusing `do-while` with unusual condition `a0 + 9 > 18` instead of `a0 != 0`. The `single_if` uses bit shift with `_ccall` which is obscure. At O0, control flow should be nearly perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Target functions are properly separated and maintain reasonable granularity. Some wrapper functions exist (e.g., `sub_40122f` calling `single_if`) but these are minimal. Function sizes are appropriate - no excessive monoliths.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but some forward jumps disrupt flow. The `loop_while` and `loop_dowhile` functions have confusing control flow with computed conditions. Some goto statements present in `duffs_device` recovery.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant expressions present. The `loop_complex_cond` has complex nested conditions that could be simplified. Loop unrolling is not well-commented. However, no severe redundancy that makes code unmaintainable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most parameters and returns use `unsigned int` when original used `int`. No distinction between `int` and `unsigned int` in many places. Function pointers are often treated as `unsigned int*` rather than proper function pointer types. The original had `int` parameters but decompilation uses `unsigned int` throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Some struct definitions are auto-generated with meaningless names like `struct_0`, `struct_1` and generic field names like `field_0`, `padding_0`. The `duffs_device` function has raw pointer arithmetic without struct recovery. No meaningful struct/union reconstruction for the test functions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally acceptable type usage. Some unsafe patterns: pointer arithmetic in `duffs_device` uses raw `*iter` and `*cur` without type safety. Function pointer calls like `a0(a1)` in `call_func_ptr` lack type safety. No severe violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like "do not return" on `longjmp` calls. No explanation of algorithm intent, no recovery of original comments from debug symbols. The decompilation provides zero insight into what functions do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized - switch statements are properly recovered, `duffs_device` is partially recognized with labels. However, design patterns like state machines, callbacks, and recursion are not explicitly identified or named. The original had explicit state machine functions but they're not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies flagged: "Unsupported jumpkind Ijk_SigTRAP" at one location. However, many suspicious patterns are silently presented as normal code. The `_ccall` function usage in `single_if` and `goto_forward` is unexplained. No warnings about indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract or assertion recovery. No preconditions documented (e.g., "requires: n > 0" for factorial). No postconditions. No error condition documentation. The original had explicit parameter validation that is not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are visible in the code (e.g., `test_control_flow_l1()` calls `sequential_ops()`) but not documented. No comments indicating who calls whom or what globals are used. The callback relationships in `process_with_callback` are not explained.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions are organized by address rather than by functionality. The test functions are scattered among massive amounts of boilerplate code. No logical grouping - all 50+ functions appear in address order, mixing test functions with runtime infrastructure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations present for undefined references (`_GLOBAL_OFFSET_TABLE_`, `g_405ff4`, etc.). Would require significant patching to compile. No dependency documentation. The code cannot compile standalone without substantial work.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is uniformly poor: all locals are `v0`-`v7`, parameters are `a0`-`a2`
+- Massive noise pollution: ~60% of output is irrelevant boilerplate (init, frame_dummy, tm_clones, etc.)
+- Zero comment recovery: no explanation of what any function does
+- Type precision lost: original `int` parameters become `unsigned int` throughout
+- No struct recovery: complex data structures reduced to raw pointer arithmetic
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+The basic control flow structures (loops, conditionals, switches) are recognizable, and the core algorithmic logic is preserved even if obscured by naming issues.
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.3/10)  
+Variable naming, function naming, and noise reduction are all severely deficient. At O0 optimization, variables should have meaningful names derived from debug symbols, not generic address-based identifiers.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from debug symbols**: At O0, DWARF debug info contains variable names - use them instead of generating `v0`, `v1`, etc.
+2. **Filter infrastructure code**: Separate user-space test functions from CRT/bootstrap code to reduce noise by ~70%
+3. **Recover type information**: Use debug symbols to distinguish `int` from `unsigned int`, and reconstruct struct layouts with meaningful field names

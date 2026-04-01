@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all local variables use generic names like `iVar1`, `uVar2`, `lVar3`, `puVar5` with no semantic meaning. Many are marked "Unresolved local var" (e.g., `int a@[DW_OP_reg0(x0)]` in `local_vars`), completely obscuring original variable intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`local_vars`, `heap_basic`, `global_var_access`), but helper functions use generic names (`FUN_001008e0`, `FUN_00100afc`). The `double_value` function name is correctly recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60). Original constants like `2048` for buffer size lost; hex values obscure semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: "Unresolved local var" comments throughout, "WARNING: Unknown calling convention" repeated, CONCAT operations for loop unrolling, and undefined types (`undefined8`, `undefined4`) pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Aggressive loop unrolling creates unnatural CONCAT chains (see `large_stack_frame`). Goto labels like `LAB_00100c80` used instead of structured loops. Original simple for-loops transformed into complex do-while with manual unrolling.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but test functions (`test_stack_memory`, `test_heap_memory`) have hardcoded return values instead of actual function calls, losing the call structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to labels (`goto LAB_00100c80`) disrupt top-to-bottom reading. Complex loop exit conditions with multiple variables (`uVar6 != 0`) make flow harder to trace than original simple loops.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling redundancy: `local_array` original 10-iteration loop becomes 8-variable unrolled block with `iVar8` through `iVar15`. Same pattern repeated across `vla_stack`, `alloca_usage`, `heap_basic` with no abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `char*`, `void*`) but many degraded to `undefined8`, `undefined4`, `ulong`. Pointer arithmetic uses explicit casts (`(long)__ptr + uVar2 * 4`) instead of proper array indexing. Signed/unsigned distinctions often lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields visible in `heap_nested`. However, `Point` struct fields accessed as raw arithmetic in `local_struct` (returns `x * 3` instead of `p.x + p.y`). `TreeNode` recovery is incomplete.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined8 *)`, `(undefined4 **)`, `(ulong)(uint)n`. Pointer arithmetic explicit rather than array-safe. No const-correctness preserved for `const_string` or `const_global`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler-generated warnings present ("Unresolved local var", "WARNING: Treating indirect jump as call"). Zero semantic comments explaining algorithm purpose, unlike original source's detailed section headers and test expectations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized: malloc/free pairs not identified as memory management, linked list traversal in `linked_list_heap` not labeled, VLA/allocation patterns not distinguished. No pattern naming whatsoever.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Unknown calling convention", "Unresolved local var", "Could not recover jumptable") but inconsistently. Critical issues like `dangling_pointer` undefined behavior not warned. Memory leak in `memory_leak` not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions recovered (e.g., `n > 0` checks in `vla_stack` lost in optimization). No postconditions or error handling contracts documented. Null checks present but not explained as safety guards.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `global_func_ptr` callback mechanism recovered but type `_func_int_int` is generic. External functions (`extern_function`, `extern_global_var`) declared but no indication of cross-file dependency.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly original order (stack→heap→static→memop) but no section headers or grouping comments. Static functions (`static_helper` → `call_static_func`) relationship not documented.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`malloc`, `free`, `printf`, `memset`) present but no header includes. `DataMemoryBarrier` intrinsic not standard. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+5+3)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.53/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects
+- **Variable names completely lost**: `iVar1`, `uVar2`, `lVar3` convey zero semantic meaning; original `a`, `b`, `c`, `arr`, `local` all marked "Unresolved"
+- **Aggressive loop unrolling obscures logic**: Simple 10-iteration loops become 8-variable CONCAT chains with no recovery to original structure
+- **Magic numbers replace constants**: `0x2a`, `0x14`, `0xf` instead of `42`, `20`, `15`; original test expectations lost
+- **Test functions constant-folded**: `test_stack_memory` has hardcoded return values instead of actual function calls, losing call graph
+- **Zero semantic comments**: No algorithm explanations, no pattern identification, only decompiler warnings present
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core function names preserved accurately (`local_vars`, `heap_basic`, `double_value`), allowing basic navigation despite other issues
+
+### Most Needs Improvement
+- **Idiom Recognition (2/10)** - Common patterns (malloc/free, linked lists, VLA) completely unrecognized; no pattern naming or abstraction suggestions provided
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from debug symbols**: The `-g` flag was used but DWARF info not fully utilized; `local_vars` should show `a`, `b`, `c` not "Unresolved local var"
+2. **Detect and collapse loop unrolling**: Recognize unrolled loop patterns and present as original for/while constructs with optional "unrolled by compiler" annotation
+3. **Add semantic pattern detection**: Identify malloc/free pairs as memory management, linked list traversals as iteration patterns, and add explanatory comments for each

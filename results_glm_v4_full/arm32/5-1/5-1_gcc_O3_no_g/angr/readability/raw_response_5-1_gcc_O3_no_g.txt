@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `result`), obscuring the original semantic intent like `capture_by_value` or `shared_data`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z18test_cpp_exceptionv` to `test_cpp_exception`), preserving the original function names accurately.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Floating-point constants are represented as raw hex (e.g., `0x40040000` for 2.5), and string literals are often replaced with pointer addresses (e.g., `0x114d8`), severely impacting readability.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The code is polluted with artifacts like `armg_calculate_condition` and redundant stack guard checks (`__stack_chk_fail`) that interrupt the logical flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is heavily disrupted by `goto` statements and compiler-generated exception handling tables, making it difficult to follow the original source logic.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Most complex functions (e.g., `test_cpp_virtual_func`, `test_cpp_lambda`) are reduced to empty `return;` statements due to optimization, destroying the original structure.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: The code requires constant jumping back and forth due to the lack of structured control flow recovery (loops/ifs replaced by conditional jumps).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: While the code is sparse, there is little redundant logic within the functions that remain, though this is largely due to optimization removing code rather than decompiler cleanup.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Class instances are often treated as generic `void*` or `unsigned int`, and specific types like `size_t` are lost to generic integers.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Class definitions are completely absent; no fields (e.g., `value`, `name`, `multiplier`) are recovered, leaving only raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code relies on unsafe casts, such as `(int)(*(ptr))[4]`, to access class members, which is error-prone and lacks type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures used in the original source.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: High-level C++ idioms like RAII, smart pointers, and lambda captures are not recognized; they are reduced to low-level memory operations and function calls.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler presents optimized-out code as empty functions without warning, and does not flag the unusual control flow resulting from exception handling.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Virtual function calls are represented as indirect jumps (`goto *((int *)*((int *)arg_0))`), which is accurate for the binary but obscures the relationship to specific class methods.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are listed in a predictable order, and related thunks are grouped, but the lack of class definitions makes the module structure feel flat.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies on external runtime symbols (e.g., `__cxa_throw`) and lacks necessary headers or struct definitions, making standalone compilation impossible.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Class definitions and member fields are completely lost, replaced by raw pointer offsets.
+- Logic is heavily optimized away (e.g., `test_cpp_oo_features` prints constants instead of calculating results), making source recovery impossible.
+- Floating-point literals are displayed as raw hex values (e.g., `0x40040000`).
+- Control flow is obscured by `goto` statements and `armg_calculate_condition` artifacts.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler accurately demangled C++ symbols, allowing the reader to identify the original function names despite the poor body recovery.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)  
+- The failure to recover any class structures or member variables renders the object-oriented code nearly unintelligible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class recovery by analyzing vtables and RTTI data to reconstruct member fields and inheritance hierarchies.
+2. Convert raw floating-point hex literals back to human-readable double/float constants.
+3. Detect and flag constant propagation/optimization that removes source logic, or attempt to recover logic from debug symbols if available.

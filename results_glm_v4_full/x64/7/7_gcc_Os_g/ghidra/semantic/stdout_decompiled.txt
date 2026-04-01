@@ -1,0 +1,5 @@
+Running obfuscation and optimization tests:
+
+Opaque predicate test: 10
+Opaque predicate result: 20
+Instruction substitution: 225

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables are predominantly generic (e.g., `iVar1`, `lVar1`, `puVar1`, `sVar2`), obscuring the logic of variables like `result` or `capture_by_ref`. While struct members like `value` and `multiplier` are recovered, the loss of local variable semantics significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly recovered from debug symbols, accurately reflecting the original source (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Container<int>::push`). The names are semantically meaningful and use appropriate verbs.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers are used extensively without named constants (e.g., `0x1f` for `sizeof(name)-1`, `0x2a` for the exception value `42`, `0x125c` for the return value `4704`). While string literals like `"Test"` are preserved, the reliance on hex values for logic reduces readability.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The code is cluttered with compiler and runtime artifacts, such as `___stack_chk_guard` checks, `__cxa_throw` exception handling frames, and compiler-generated parameters like `__in_chrg`. These artifacts obscure the high-level logic of the C++ source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: High-level C++ control structures are lost; for example, `try/catch` blocks in `test_cpp_exception` are decompiled into low-level calls to `__cxa_allocate_exception` and `__cxa_throw`. The flow is accurate to the binary but difficult to map back to the original source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated, and template instantiations are correctly distinct (e.g., `template_max<int>` vs `template_max<double>`). The presence of compiler-generated "thunks" for virtual inheritance is unavoidable and accurately represents the binary structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom within functions. However, the insertion of stack guard checks and exception handling setup code disrupts the linear flow of the application logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some functions exhibit constant folding (e.g., `test_cpp_constructor` returns a calculated constant), which is a compiler optimization. However, other areas like `test_cpp_smart_ptr` expose verbose internal tuple assignments that could be abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Complex C++ types are recovered with high precision, including template instantiations like `Container<int>` and `unique_ptr<int, _std::default_delete<int>_>`. This is a strong point, likely aided by DWARF debug information.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Structs and classes are reconstructed accurately with correct field names (e.g., `SimpleClass` with `value` and `name`, `Derived` with `multiplier`). The layout of complex inheritance hierarchies is preserved.
+
+**11. Type Safety:** Score: 7/10  
+Justification: While types are precise, the use of generic types like `undefined4` and `undefined8` for local variables (e.g., `puVar1`) reduces type safety perception. However, the usage of these types is generally correct in context.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are sparse and mostly consist of automated warnings (e.g., `/* WARNING: Unknown calling convention */`). There are no explanatory comments regarding the algorithms or the purpose of complex C++ runtime mechanisms.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms are visible through the types and vtable pointers (e.g., `_vptr_Base`, `__dynamic_cast`). The decompiler correctly identifies the use of `std::unique_ptr` and RTTI structures, even if the high-level syntax is lost.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: The decompiler provides useful warnings for uncertain recoveries, such as `/* WARNING: Could not recover jumptable ... */` for virtual functions and `/* WARNING: Struct "DiamondDerived": ignoring overlapping field ... */` for inheritance complexities.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants. The logic of the original code (e.g., the expected return values) is not documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Virtual function calls reference vtable pointers explicitly (e.g., `PTR_virtual_func_00113868`), which helps trace execution. However, the relationship between high-level logic and these low-level pointers requires manual effort to resolve.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat list of functions. While related functions (like class methods) are grouped by name, there is no higher-level module or namespace grouping that reflects the source file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code relies on standard C++ library types and headers (e.g., `<memory>`, `<typeinfo>`) which are not included. While the types are defined, compiling this standalone would require significant stubbing or header inclusion.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable naming is poor (generic `iVar1`, `lVar1`), obscuring the logic of local variables.
+- High-level C++ control flow (exceptions, smart pointers) is reduced to low-level runtime calls (`__cxa_throw`, internal tuple access).
+- Magic numbers are used instead of named constants (e.g., `0x1f` instead of `sizeof(name)-1`).
+- Excessive compiler noise (stack canaries, `__in_chrg` parameters) clutters the code.
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.0/10)  
+- The decompiler excels at recovering complex C++ types, including templates, class hierarchies, and standard library container types, which is often the hardest part of C++ decompilation.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 4.0/10)  
+- The failure to reconstruct high-level control structures like `try/catch` blocks and the exposure of `unique_ptr` internals makes the code read like assembly rather than C++.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to reconstruct high-level `try/catch` blocks from `__cxa` runtime calls and personality routines.
+2. Improve variable name inference by analyzing usage patterns (e.g., variables involved in `strlen` or `sizeof` operations) and type information.
+3. Abstract standard library implementations (like `std::unique_ptr` internals) into high-level syntax or inline comments to reduce noise.

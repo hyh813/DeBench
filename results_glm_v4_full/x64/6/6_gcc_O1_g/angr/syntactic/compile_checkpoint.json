@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 13,
+  "source_file": "decompiled/angr_out/x64/6/6_gcc_O1_g.c",
+  "fixed_file": "results_glm_v4_full/x64/6/6_gcc_O1_g/angr/syntactic/fix_6_gcc_O1_g.c"
+}

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic names like `a0`, `v1`, `v2`, and `ptr`. In `varargs_func`, variables like `v18`, `v19`, and `v28` obscure the `va_list` semantics completely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: High-level test functions like `cdecl_func` and `test_calling_conventions` retain their names, but many wrapper functions are reduced to generic addresses like `sub_401020` or `sub_401159`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers are prevalent; for example, `4294967295` is used instead of `-1` or `UINT_MAX`, and `206158430216` appears in `varargs_func` without context, representing stack layout constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The code contains significant noise from register spilling and stack tracking, such as `unsigned long long v1; // rax` and dead stores like `v0 = v2;` which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally readable with standard `do-while` loops and `if-else` blocks, though `varargs_func` is convoluted due to the manual implementation of vararg logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are decomposed reasonably well matching the binary structure, though some small thunks (e.g., `sub_401159`) exist solely to call other functions, adding slight fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code reads mostly top-to-bottom with minimal forward jumps or spaghetti logic, making it easy to follow the execution path in most functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy exists, such as the dead store `v0 = v2;` in `func_mixed_args`, but the decompiler generally avoids excessive duplication of logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Pointer types are frequently degraded to `unsigned long` or `unsigned long long` (e.g., `param_func_ptr` takes `unsigned long long *a0` instead of a function pointer), and signedness is often lost (e.g., `unsigned int` for `int` parameters).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery fails significantly; `LargeStruct` in `func_struct_byval` is accessed via raw stack pointer arithmetic `(&v0)[idx]` rather than struct field access, completely losing the semantic structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointers are treated as data pointers (e.g., `a0(a1)` in `param_func_ptr`), and the `ret_opaque_handle` function returns a string literal `"d"` (likely misinterpreting integer 100 as 'd'), indicating type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are limited to register mappings (e.g., `// rax`) and stack offsets, providing no semantic insight into the algorithm's purpose or variable roles.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard idioms like `va_list`/`va_arg` in `varargs_func` are not recognized; instead, the decompiler outputs complex pointer arithmetic and register loading, obscuring the variable argument pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly is flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but other suspicious patterns like the type confusion in `ret_opaque_handle` are presented confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement for `ptr` to be non-null in `param_double_ptr` is checked but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Global variables are referenced by address (e.g., `extern char g_4020a4;`), making it difficult to understand what data they represent without cross-referencing the binary manually.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat list of functions; while related functions are often adjacent, there is no logical grouping or namespace structure reflecting the source file's sections.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile standalone due to missing headers, undefined types like `struct_0`, and the use of intrinsics like `AddV` without definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable `v0` in `func_struct_byval` should be a `LargeStruct` parameter, but is accessed as a raw stack array.
+- Function `varargs_func` completely fails to recover the `va_list` idiom, replacing it with magic numbers and pointer arithmetic.
+- Function pointer in `param_func_ptr` is typed as `unsigned long long *` instead of a proper function signature.
+- Global string references are replaced with opaque addresses like `g_4020a4` instead of the string literals.
+
+**Best Quality Aspect:** Function Naming (scored 7/10)  
+- Why? The decompiler successfully preserved the names of the main test functions (e.g., `cdecl_func`, `test_calling_conventions`), which anchors the analysis.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- Why? The failure to recover `LargeStruct` and `SmallStruct`, reducing them to raw stack memory accesses, makes understanding data structures nearly impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve stack-based structure recovery to identify `LargeStruct` usage patterns instead of defaulting to array indexing on stack pointers.
+2. Implement specific pattern matching for `va_list`/`va_arg` to restore variable argument function semantics instead of showing register spilling.
+3. Enhance type inference for function pointers to recover signatures rather than defaulting to generic integer/pointer types.

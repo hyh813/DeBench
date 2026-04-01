@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_gcc_O1_g/ghidra/syntactic/bin/7_gcc_O1_g_fixed",
+  "stdout": "Test Results:\n\nOpaque predicate: 10\nInstruction substitution: 20\nString encryption: 225\nTail call optimized: 0\nNon-tail call: 500500\nVectorized loop: 5050\nLink time optimization: 72\nDivision by zero: 20\nNull pointer deref: 2\nBuffer overflow: 41\nInteger overflow: 30\nUndefined behavior: 2000000000\nImplementation defined: 10\nFinal result: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

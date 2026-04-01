@@ -1,0 +1,164 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+Let me analyze the decompiled code against the original source for this specific function.
+
+### Original Source Analysis
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    // 永假条件：x*x < 0 对于实数x恒不成立
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // 另一个永假条件：字符串长度不可能为负
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Code
+```c
+int __cdecl param_fake_branch(int a1)
+{
+  return a1;
+}
+```
+
+---
+
+## Detailed Evaluation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The parameter was renamed from `x` to generic `a1`. The local variable `result` was completely eliminated - the decompiler collapsed the entire function to just `return a1;`, losing all variable semantics.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The function name `param_fake_branch` was correctly preserved from the original source. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: All literals are completely lost. The magic constant `0xDEADBEEF`, the string `"test"`, and the literal `1000` have all disappeared. The decompiler eliminated these as "dead code" without preserving them.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: No compiler artifacts, no redundant casts, no debug instrumentation. The code is clean (perhaps too clean - it lost actual code).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The decompiler eliminated both conditional branches entirely. The original has two `if` statements with always-false conditions, but the decompiled version shows no control flow whatsoever - just a direct return. This is a critical semantic loss.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized (single return statement). However, this is because the decompiler over-simplified, not because decomposition is good.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code is perfectly linear - just one statement. This is actually a negative in this case as it represents lost logic.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code exists - but only because the decompiler removed the actual logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: The parameter type `int` was correctly preserved as `int`. Minor deduction for losing the `const` qualifier from the string in the original (though that string is gone entirely).
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No structs/unions in this function, so nothing to recover. Not penalized.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts or operations. The simple `return a1;` is type-safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the "fake branch" obfuscation technique. The original source has detailed comments about the always-false conditions (`// 永假条件：x*x < 0`), but these are completely absent.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler failed to recognize the "fake branch" (永假分支) obfuscation pattern. This is a deliberate obfuscation technique where dead code branches are intentionally inserted. The decompiler treated them as actual dead code and removed them.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that branches were removed or that this represents obfuscated code. The decompiler silently eliminated what it perceived as unreachable code without flagging this as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No preconditions or postconditions documented. The implicit contract (input x, output x) is preserved but trivial.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch()` which passes the literal `10`. This relationship is preserved in the decompiled code.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function appears in a logical position among other obfuscation-related functions in the decompiled output.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function would compile cleanly as standalone C code. No external dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 1 + 10) / 4 = 5.5
+L2_avg = (1 + 10 + 10 + 10) / 4 = 7.75
+L3_avg = (8 + 10 + 9) / 3 = 9.0
+L4_avg = (1 + 1 + 1 + 5) / 4 = 2.0
+L5_avg = (8 + 8 + 9) / 3 = 8.33
+
+Overall = (5.5 × 0.30) + (7.75 × 0.25) + (9.0 × 0.20) + 
+          (2.0 × 0.15) + (8.33 × 0.10)
+        = 1.65 + 1.9375 + 1.8 + 0.3 + 0.833
+        = 6.52/10
+```
+
+**Overall Readability Score:** 6.52/10
+
+---
+
+### Critical Defects
+
+- **Variable Elimination**: The local variable `result` was completely eliminated, collapsing the function to `return a1;` and losing all semantic meaning of the obfuscation logic
+- **Branch Removal**: Both always-false conditional branches were silently removed without any indication or comment, destroying the obfuscation pattern
+- **Literal Loss**: Magic constant `0xDEADBEEF`, string `"test"`, and literal `1000` are all completely absent from the decompiled output
+- **Comment Absence**: No comments explaining the "fake branch" (永假分支) obfuscation technique that was intentionally in the source code
+- **Pattern Misrecognition**: The decompiler treated deliberate obfuscation (fake branches) as dead code and removed it, failing to recognize this as a security/obfuscation pattern
+
+---
+
+### Best Quality Aspect
+
+**Type System Fidelity (L3)** scored highest at 9.0/10  
+- The parameter type `int` was correctly preserved, and there are no type safety issues in the simplified output
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (L4)** scored lowest at 2.0/10  
+- The decompiler failed to recognize the obfuscation pattern, removed all branches and literals, and provided no comments or anomaly indicators about this intentional code removal
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve Dead Code Branches**: When branches appear unreachable (like always-false conditions), flag them as "potentially intentional" rather than automatically removing them. Add comments like "// LIKELY DEAD CODE - verify if intentional obfuscation"
+
+2. **Recover Literal Values**: Even in eliminated branches, preserve the literal values (like `0xDEADBEEF`) in comments or as unreachable code to maintain semantic completeness
+
+3. **Detect Obfuscation Patterns**: Implement pattern recognition for common obfuscation techniques (fake branches, opaque predicates, instruction substitution) and add explanatory comments about the detected pattern

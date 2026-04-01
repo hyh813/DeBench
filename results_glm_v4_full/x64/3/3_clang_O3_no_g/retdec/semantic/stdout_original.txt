@@ -1,0 +1,51 @@
+=== 测试栈内存操作 ===
+MEM-L1-01 (local_vars): 20
+MEM-L1-02 (local_array): 10
+MEM-L1-03 (local_struct): 15
+MEM-L1-04 (address_of_local): 42
+MEM-L1-05 (address_of_array): 2
+MEM-L2-01 (large_stack_frame): 0
+MEM-L2-02 (vla_stack): 10
+MEM-L2-03 (alloca_usage): 15
+MEM-L2-04 (stack_alias): 20
+=== 测试堆内存操作 ===
+HEAP-L2-01 (heap_basic): 10
+HEAP-L2-02 (heap_calloc): 0
+HEAP-L2-03 (heap_realloc): 50
+HEAP-L2-04 (heap_array): 15
+HEAP-L2-05 (heap_struct): 15
+HEAP-L2-06 (heap_nested): 0
+HEAP-L3-01 (linked_list_heap): 100
+HEAP-L3-02 (tree_heap_traversal): 60
+HEAP-L3-03 (memory_leak): 2
+HEAP-L3-04 (dangling_pointer): value before free: 42
+-216410641 (子进程)
+✓ 子进程正常退出，code=0
+=== 测试静态与全局内存 ===
+STM-L1-01 (global_var_access): 1
+STM-L1-01 (global_var_read): 2
+STM-L1-02 (global_array_access): 5
+STM-L1-03 (static_local): 1
+STM-L1-03 (static_local): 2
+STM-L1-04 (call_static_func): 11
+STM-L2-01 (access_extern_global): 123
+STM-L2-02 (call_extern_func): 15
+STM-L2-03 (read_const_data): 153
+STM-L2-04 (access_bss_var): 0
+STM-L2-04 (access_bss_buffer): 0
+STM-L2-05 (global_struct_access): 30
+STM-L2-06 (file_static): 50
+STM-L2-07 (global_func_ptr): 10
+STM-L2-08 (global_heap_store): 100
+STM-L2-09 (static_complex_init): 15
+STM-L3-01 (tls_access): 20
+STM-L3-02 (init_order_test): 20
+=== 测试内存操作函数 ===
+MEMOP-L2-01: 65
+MEMOP-L2-02: 50
+MEMOP-L2-03: H
+MEMOP-L2-04: -1
+MEMOP-L2-05: 0
+MEMOP-L2-06: 1
+MEMOP-L3-01: 0x4030201
+MEMOP-L3-02: 10

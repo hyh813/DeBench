@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `arg_0`), providing no semantic context about their role in the C++ objects or logic.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: While C++ mangled names are successfully demangled for some functions (e.g., `test_cpp_exception`, `Base::virtual_func`), a significant number of functions remain generic (e.g., `sub_402020`, `sub_40202d`), obscuring the program structure.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) and `0x4004000000000000` appear without explanation, though string literals like `"Test"` are recovered, offering minimal clarity.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with numerous "trampoline" functions (e.g., `sub_40202d` calling `sub_402030`) that add no value and significantly fragment the code listing.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Virtual function calls are represented as unsafe computed gotos (e.g., `goto *((long long *)*((long long *)&arg_0));`), and exception handling is reduced to low-level `__cxa` calls and conditional jumps, completely losing high-level structure.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: Critical logic is missing; functions like `test_cpp_constructor` and `test_cpp_lambda` are decompiled as empty `return;` statements, failing to recover the implementation despite being distinct functions in the source.
+
+**7. Code Linearization:** Score: 3/10
+Justification: Where logic exists (e.g., in `test_cpp_exception`), the flow is non-linear and disjointed, relying on obscure conditional checks rather than structured blocks.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of wrapper functions that simply call other functions without adding logic, bloating the decompilation output unnecessarily.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `unsigned long long` and `int` are used, but complex C++ types are lost; `std::unique_ptr` is demoted to a generic `struct_0`, and pointers are often treated as raw integers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Classes are not reconstructed; instead, generic structs like `struct_0` with numbered fields (`field_0`, `field_8`) are used, completely erasing the semantic layout of classes like `SimpleClass` or `Container`.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe type casts, particularly the use of computed gotos for virtual dispatch which bypasses type checking, and pointers are frequently cast to `void*` or integer types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures, leaving the user to decipher the low-level implementation blindly.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and exception handling are not recognized; the code exposes the underlying compiler implementation details (e.g., `__cxa_throw`) instead of the source idioms.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler does flag specific issues like `[D] Unsupported jumpkind Ijk_SigTRAP`, providing some insight into analysis failures, but it fails to flag the missing logic in empty functions as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the requirements for `dynamic_cast` or exception safety are completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While global variables and vtable addresses (e.g., `g_4058a8`) are visible, the semantic relationship between these addresses and the class definitions is not documented or clear.
+
+**17. Module Organization:** Score: 3/10
+Justification: The code is presented as a flat list of functions ordered by address, with no logical grouping or namespace structure reflecting the original source organization.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable due to the use of computed gotos (`goto *((long long *)...)`), missing headers, and undefined external types.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- **Missing Logic**: Functions like `test_cpp_constructor` and `test_cpp_lambda` are decompiled as empty stubs (`return;`), completely failing to recover the source logic.
+- **Lost C++ Semantics**: Virtual function calls are degraded to unsafe computed gotos, and classes are replaced by generic structs with numbered fields.
+- **Exception Handling Failure**: The `try-catch` blocks in `test_cpp_exception` are not reconstructed; instead, the code shows raw `__cxa` API calls and obscure control flow.
+
+**Best Quality Aspect:** Anomaly Indication (Score: 6/10)
+- **Why?** It is the only dimension where the decompiler provides explicit feedback about its limitations (e.g., "Unsupported jumpkind"), whereas other dimensions suffer from silent failures or missing information.
+
+**Most Needs Improvement:** Function Decomposition (Score: 2/10)
+- **Why?** The decompiler's failure to recover the body of major test functions, reducing them to empty stubs, makes the output functionally useless for understanding the program's behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve CFG Recovery for O0/Os Binaries**: Address the issue where function bodies are incorrectly interpreted as empty, ensuring that stack operations and logic are properly lifted.
+2.  **Implement C++ Virtual Dispatch Recovery**: Replace computed gotos and indirect calls with semantically correct virtual function calls based on vtable analysis.
+3.  **Enhance Class Reconstruction**: Utilize RTTI and constructor/destructor patterns to rebuild class definitions with meaningful field names instead of generic `struct_0` types.

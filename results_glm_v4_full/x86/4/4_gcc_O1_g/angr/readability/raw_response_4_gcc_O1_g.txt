@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `a1`), providing no semantic hint about their purpose. While `ptr` and `cur` appear in loops, they describe implementation details rather than the abstract logic (e.g., `sum` vs `v3`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully preserved the original function names for user-defined code (e.g., `cdecl_func`, `test_calling_conventions`), making the high-level intent immediately clear. Only runtime/internal functions use generic names like `sub_401030`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with global variable addresses (e.g., `&g_402008`), obscuring the actual text being printed. While integer constants like `15` and `50` are clear, they are often the result of constant propagation (e.g., `call_cdecl` returns `15` instead of showing the addition), hiding the original logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts, specifically calls to `__x86.get_pc_thunk.ax/bx/dx` and stack canary checks (`_ccall(...)`). These compiler intrinsics significantly clutter the logic and distract from the core functionality.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often low-level; for example, `varargs_func` is decompiled into a manual pointer arithmetic loop (`ptr = &v0`, `ptr += 1`) rather than using `va_list` idioms. Additionally, `func_mixed_args` contains `[D] unsupported...` blocks that break the flow entirely.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler maintains the original function boundaries and granularity well. Functions are not inlined or merged inappropriately, and the separation between test functions and implementation logic is preserved.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but forward jumps and the insertion of `get_pc_thunk` calls interrupt the flow. The `func_mixed_args` function is particularly non-linear due to the insertion of error placeholders.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully performs constant propagation (e.g., `call_cdecl` returns `15`), which simplifies the code by removing trivial arithmetic. However, this sometimes hides the *mechanism* (the actual function call) which might be relevant for a calling convention test.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are heavily generalized; most integers are `unsigned int` regardless of their original signedness or size in the source. Pointers are consistently typed as `unsigned int *`, losing the distinction between `int*`, `char*`, and `void*` in the signatures.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery fails significantly. `func_struct_byval` is decompiled as taking no arguments and accessing stack variables `v0`...`v1` directly, completely losing the `LargeStruct` parameter. `func_struct_byptr` treats the struct as a raw `unsigned int *`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on implicit pointer arithmetic on `unsigned int *`, which is technically unsafe in strict C but standard for decompilation. There are no obvious buffer overflows in the decompiled view, but the lack of struct types makes safety hard to verify.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no semantic comments explaining the logic. The only comments present are decompiler error messages like `[D] Unsupported jumpkind...` or `[D] unsupported_<class 'pyvex.expr.GetI'>()`, which indicate failure rather than aiding understanding.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms are not recognized. The `varargs` pattern is represented as raw stack walking rather than `va_start`/`va_arg`. The `printf` calls are abstracted to `sub_4010e0` with format string addresses, losing the semantic context of formatted output.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags where it failed, using `[D] unsupported...` markers in `func_mixed_args` and `test_calling_conventions`. This explicitly warns the user that the output is unreliable in those specific sections.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `func_struct_byptr` is present as code (`if (!a0)`) but not documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are clear, but string references are opaque global variable addresses (e.g., `g_402008`). The relationship between the format strings and the `printf` wrapper (`sub_4010e0`) is not visually linked.
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions are listed in a roughly logical order, matching the source flow. However, the file is presented as a flat monolith without the logical grouping or section headers present in the original source.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable. It relies on non-standard constructs like `__x86.get_pc_thunk` calls, `_ccall` macros, and inline IR statements (`[D] PutI...`), which are artifacts of the decompilation process rather than valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- **Struct Parameter Loss:** `func_struct_byval` completely loses its input parameter, representing it as a series of unlinked stack variables (`v0`...`v1`).
+- **Decompiler Failure in `func_mixed_args`:** The function is littered with `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `nan` literals, rendering it unreadable.
+- **Varargs Obscured:** The `varargs_func` logic is represented as low-level pointer arithmetic (`ptr += 1`) rather than the standard `va_list` idiom.
+- **PIC Noise:** Excessive `__x86.get_pc_thunk` calls clutter almost every function, distracting from the core logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original symbol names for all user-defined functions, making it trivial to map the decompiled output back to the source logic at a high level.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover struct definitions, particularly for pass-by-value arguments, turns structured data into raw stack manipulation, severely degrading semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Struct Parameter Analysis:** Implement logic to detect stack-based struct passing and reconstruct the struct definition and parameter signature instead of exposing raw stack offsets.
+2.  **Handle Floating Point/SIMD Instructions:** Fix the lifting of instructions that cause `pyvex.expr.GetI` errors to prevent the generation of `[D] unsupported...` blocks and `nan` literals.
+3.  **Abstract PIC Artifacts:** Automatically detect and hide or simplify `__x86.get_pc_thunk` patterns and stack canary checks to present cleaner, more readable C code.

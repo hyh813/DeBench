@@ -1,0 +1,21 @@
+Testing ASM features:
+
+Macro const: 64
+Macro func: 30
+Macro cond: 32
+Macro branch: 57122
+Macro recurse: 116
+Macro stringize: 19
+Macro variadic: 60
+LOG: Values: 10, 20, 30
+Macro token: 60
+Macro override: 16
+Macro include: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:54
+Macro builtin: 382
+Testing clobber importance: %lu
+
+ASM basic: 15
+ASM clobber sum: 5
+ASM multi-insn: 4294967295
+ASM SIMD: 36

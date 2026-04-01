@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a1`, `a2`, `temp_1`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `thread_count`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like `param_strcpy`, `param_strcmp`, `thread_compute` retained original names, but helper functions use generic names like `sub_2020`. 59 library functions show "FAILED to decompile" instead of proper names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967293LL` (should be `-3`), `0x12u` (18 bytes), syscall numbers `2`, `3`, `10`, `14` without explanation. String literals preserved but numeric constants obscure logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi32`) despite `-O0` compilation. Redundant type casts (`(__m128i)0LL`, `(_DWORD *)`), stack annotations (`[rsp+0h] [rbp-28h] BYREF`) clutter code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions natural, but complex ones use goto labels (`LABEL_16`, `LABEL_13`) instead of loops. `param_malloc_free` has nested conditionals that could be structured better. Signal handling uses do-while that obscures intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes generally appropriate, but `param_malloc_free` (~100 lines) contains SIMD optimization artifacts. 59 failed decompilations indicate decomposition failures for library functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to labels disrupt top-to-bottom reading in `param_malloc_free` and `param_memset`. Some functions use early returns well, others have deep nesting with label jumps.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: SIMD vectorization creates repetitive patterns in memory operations. `call_strcpy` and `call_strlen` are constant-folded to direct returns, losing original logic. Loop unrolling in atomic operations not abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `__int64` used instead of `size_t`, `int32_t`. `void *` lacks specificity. Some signed/unsigned confusion (`unsigned int` vs `int`). Function pointers partially typed (`void *(*)(void *)`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—accessed via array indexing (`a1[2]`, `*a1`). `sockaddr` becomes raw byte array. TLS variables use `__readfsdword(0xFFFFFFD0)` instead of proper type. No struct field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD *)thread_return`, `(char *)&v3 + 4` for stack access, `(__m128i)0LL`. Function pointer casts `(void *(*)(void *))thread_compute` present. No restrict or alignment annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers. One warning comment (`// positive sp value has been detected, the output may be wrong!`). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `memcpy`) recognized. Thread synchronization patterns (mutex, condition variable) not identified. No design pattern or algorithm naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: 59 "FAILED to decompile" warnings clearly listed. Stack anomaly flagged with warning comment. However, no detailed explanations for why failures occurred or manual analysis guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values present but meaning unexplained. No `@param` or `@return` documentation recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code body. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used but not documented. Callback relationships (thread functions) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order roughly. Test functions grouped together. No header file structure, no static function scoping visible, no namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 59 external functions failed to decompile requiring stubs. No dependency documentation. Code will not compile standalone without significant modification and library linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25
+Level 3 (Type):        (5+3+4)/3   = 4.00
+Level 4 (Semantic):    (2+3+6+2)/4 = 3.25
+Level 5 (Contextual):  (5+5+3)/3   = 4.33
+
+Overall = (4.25 × 0.30) + (5.25 × 0.25) + (4.00 × 0.20) + 
+          (3.25 × 0.15) + (4.33 × 0.10)
+        = 1.275 + 1.3125 + 0.80 + 0.4875 + 0.433
+        = 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a1`) losing all semantic meaning from original source (`dst`, `src`, `thread_count`)
+- **59 library functions failed to decompile** with no recovery attempt, breaking cross-reference clarity
+- **SIMD optimization artifacts** (`_mm_load_si128`, `_mm_unpacklo_epi8`) present despite `-O0` debug compilation
+- **No struct type recovery** - `ThreadData` accessed via array indexing instead of named fields
+- **Zero semantic comments** - no algorithm explanations, no contract documentation, no decompilation confidence indicators
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- Failed decompilations are clearly listed with "FAILED to decompile" markers, alerting analysts to unresolved code regions.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no comments beyond function headers; original source had extensive documentation explaining purpose, test scenarios, and expected values that is completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `packet_size` for variables used in size checks, `thread_count` for loop counters in thread creation.
+2. **Recover struct types from access patterns** - Detect consistent field offsets across functions to reconstruct `ThreadData { start, end, result }` instead of array indexing.
+3. **Add decompilation confidence annotations** - Mark uncertain regions with comments like `// CONFIDENCE: LOW - indirect call unresolved` and suggest manual review areas.

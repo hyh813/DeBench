@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All function parameters use generic names (`a1`, `a2`, `a3`) with no semantic recovery. For -O0 code, parameters like `size`, `x`, `y` should be preserved. Local variables like `v2`, `v4`, `v5` provide no indication of purpose (e.g., `v2` should be `sum` in param_asm_clobber).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions correctly recovered their original names (param_macro_constants, call_macro_constants, param_asm_basic). However, some CRT/initialization functions use generic names (sub_1020, sub_1030) which is acceptable for non-source functions.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Magic numbers are correctly resolved - MAX_SIZE (1024), BUFFER_COUNT*4 (64), and hex constants like 0xDEF0 (57072) are accurate. Minor issue: 57072 appears as decimal rather than hex constant notation.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean output with minimal compiler artifacts. Stack protection (`__readfsqword(0x28u)`) appears but is expected at -O1. No redundant casts or debug instrumentation cluttering the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - if/else structures, for loops, and while loops are correctly recovered. The param_asm_multi_insn uses while loop correctly. Minor: ternary operator in param_macro_functions could be more explicit.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching original source. Each function has single responsibility - test functions call their param_ counterparts, assembly functions are properly separated. No over-fragmentation.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in param_memory_protection are appropriate. No forward jumps into loop bodies. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in param_asm_clobber but it's minimal. The code is clean without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - `int` and `unsigned int` are correctly used, but `size_t` is not recovered (uses `__int64` for sysconf result). Pointers are generally correct but could be more specific (e.g., `int*` vs generic `__int64`). The parameter types are mostly correct but not precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery visible - arrays accessed via pointer arithmetic (e.g., `*(_DWORD *)(a1 + 4 * i)`). SIMD code shows __m128i types correctly, which is good. But most composite types lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with correct casts. Pointer arithmetic is explicit. Some unsafe patterns in memory operations but nothing severe. The atomic operations use proper volatile qualifiers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only the initial file header from IDA Pro. No explanation of algorithm intent, macro semantics, or assembly behavior. Critical for understanding preprocessor transformations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted but not named. The conditional compilation branches are not identified as #ifdef blocks. The macro expansions are not noted. No recognition of include guard behavior.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 9 functions failed to decompile (marked "FAILED to decompile") but no explanation of why or what the original might have been. No warnings about indirect calls or suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, param_asm_atomic should note "requires: counter != NULL" or "ensures: atomic add completes".
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call param_ functions or the test flow. Global variable `global_var` used but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - preprocessing functions first, then asm functions, then test functions. Static functions properly scoped. Reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles (marked "Compilation Result: Yes"). Dependencies are standard library (mmap, printf, sysconf). No compiler-specific hacks that would break portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming: All parameters use generic `a1`, `a2`, `a3` instead of semantic names (`size`, `x`, `y`, `arr`, `n`)
+- No comments explaining preprocessor macro expansions, conditional compilation branches, or inline assembly behavior
+- Type precision: `size_t` not recovered (uses `__int64`), some pointer types could be more specific
+- Anomaly handling: 9 functions failed to decompile with no explanation
+- Composite type recovery: All struct/array access uses raw pointer arithmetic
+
+**Best Quality Aspect:** Function Decomposition (9/10)  
+Functions maintain proper granularity matching original source with clear single responsibilities.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+At -O0, parameter names should be preserved from debug symbols. Generic `a1`/`a2`/`a3` makes it impossible to understand function purpose without cross-referencing source.
+
+**Top 3 Recommendations:**
+1. **Infer parameter names from debug symbols**: At -O0, parameter names like `size`, `x`, `y`, `arr`, `n` are available in DWARF info and should be recovered
+2. **Add semantic comments**: Document preprocessor transformations, conditional compilation branches (#ifdef DEBUG_MODE), and inline assembly purpose
+3. **Recover composite types**: Instead of `*(_DWORD *)(a1 + 4 * i)`, reconstruct array access as `arr[i]` with proper type information

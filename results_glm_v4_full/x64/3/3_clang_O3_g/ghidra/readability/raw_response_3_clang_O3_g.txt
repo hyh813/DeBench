@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are assigned generic mechanical names like `lVar1`, `bVar2`, `piVar1`, and `uVar6`, which provide no semantic context about their role in the algorithm (e.g., `bVar2` used as a loop counter instead of `i`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully recovered the original function names (e.g., `local_vars`, `heap_basic`, `test_stack_memory`) from the symbol table, making the high-level purpose of each unit immediately clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `0x2a` for 42, `0x14` for 20, `0x3e9` for 1001), replacing the original constants and logic with opaque hex values.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: While compiler warnings like "Removing unreachable block" are helpful, the decompiler failed to abstract aggressive loop unrolling, resulting in massive blocks of repetitive assignment statements that act as significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted by `-O3` optimization; simple loops are replaced by massive unrolled blocks or reduced to single arithmetic expressions (e.g., `local_array` becomes `return n * 5;`), obscuring the original logic.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: Aggressive inlining has destroyed the original modularity; for example, the logic of `large_stack_frame` is inlined directly into `test_stack_memory`, creating monolithic functions that mix testing infrastructure with implementation details.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code reads linearly but is disrupted by `goto` labels (e.g., `LAB_0010142b` in `vla_stack`) and the sheer length of unrolled loops, making it difficult to trace the execution path of the original source.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler presents the compiler's loop unrolling as-is; hundreds of lines of repetitive assignments in `large_stack_frame` and `vla_stack` represent significant redundancy that hinders understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are generally correct, but the decompiler frequently resorts to generic types like `undefined8`, `undefined4`, and `void*` instead of specific types like `size_t` or `char*`, reducing type safety clarity.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Struct recovery is excellent; complex types like `Node`, `TreeNode`, and `Point` are correctly reconstructed with accurate field names (`data`, `next`, `left`, `right`) and proper member access syntax.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains unsafe-looking pointer arithmetic on stack variables (e.g., `(int *)(&stack0xfffffffffffffff8 + lVar9 * 4 + lVar7 + 8)`) which, while accurate to the assembly, obscures the safe high-level array access of the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "Unknown calling convention") and "Unresolved local var" markers; there are no comments explaining the algorithm's purpose or the logic behind complex operations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `malloc`/`free` are visible, but higher-level patterns like linked list traversal or tree creation are obscured by inlining and unrolling, making them difficult to recognize as distinct algorithms.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra clearly flags potential issues such as unreachable blocks, unknown calling conventions, and unresolved local variables, which helps the analyst identify areas where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Basic null checks (e.g., `if (__ptr == (void *)0x0)`) are preserved, but more complex preconditions (like bounds checking in `vla_stack`) are often optimized away or buried in complex arithmetic, losing the original contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`, `global_func_ptr`) are clearly resolved, making the relationships between different parts of the code easy to trace.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are presented in address order rather than logical source groupings, though the descriptive function names allow the user to mentally reconstruct the original module organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on Ghidra-specific types (`undefined8`) and macros, and contains hardcoded stack offsets, making it non-compilable without significant manual refactoring.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **Loop Unrolling**: Functions like `large_stack_frame` and `vla_stack` are expanded into hundreds of lines of repetitive assignments, completely obscuring the loop logic.
+- **Variable Naming**: Extensive use of generic names (`lVar1`, `bVar2`) makes tracking data flow difficult.
+- **Inlining**: Test functions contain inlined implementations of the functions they are meant to test (e.g., `test_heap_memory` contains the logic of `heap_realloc`), breaking modularity.
+- **Magic Numbers**: Optimization replaced constants and function results with hex literals (e.g., `0x14`), removing semantic context.
+
+**Best Quality Aspect:** Composite Type Recovery (Score: 8/10)
+- Ghidra accurately reconstructed `Node`, `TreeNode`, and `Point` structures with correct field names and offsets, preserving the data layout effectively.
+
+**Most Needs Improvement:** Redundancy Elimination (Score: 2/10)
+- The failure to detect and re-roll unrolled loops makes the code exponentially longer and harder to read than necessary.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Loop Rolling**: Implement pattern matching to detect and re-aggregate aggressively unrolled loop bodies back into concise `for` or `while` loops.
+2.  **Variable Renaming Heuristics**: Improve local variable renaming by inferring names from usage context (e.g., identifying loop counters, array indices, or buffer pointers) rather than using purely mechanical names.
+3.  **Outlining**: Detect and extract inlined code blocks back into separate helper functions or clearly demarcate them as "INLINED" to restore the original function decomposition.

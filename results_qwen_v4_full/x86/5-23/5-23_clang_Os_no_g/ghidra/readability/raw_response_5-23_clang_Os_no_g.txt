@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `local_38`) with zero semantic meaning recovered. Original source had meaningful names like `size`, `counter`, `result`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`), but some are generic (`FUN_00011030`, `FUN_00011867`). Names indicate purpose but lack action verbs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x400` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0xdef0` (platform constant). Original macros completely lost; no constant recovery attempted.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__i686.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`). Ghidra warnings about inlined functions and unreachable blocks add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures mostly natural (if/else, for loops recovered from assembly). However, `call_macro_constants` is constant-folded to `return 0x40`, losing original conditional logic entirely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity appropriate; original structure mostly preserved. Some functions too simple due to aggressive constant folding (e.g., `param_stringize` returns constant `0x13`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with natural flow. Test functions have some forward jumps but generally maintain linear readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal redundancy observed. Constant folding eliminated computation redundancy. Test functions show repeated printf patterns but this mirrors original source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many `undefined4` types instead of `int` (e.g., `undefined4 param_macro_constants(int param_1)`). Return types often degraded. Some proper types (`size_t`, `void*`) preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays handled reasonably (`local_1c[6]`, `local_2c[36]`). No complex structs in this code sample, but stack arrays lose semantic field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(undefined4 *)`, `(int *)((int)piVar5 + 1)`). Pointer arithmetic present but reasonable. `LOCK()/UNLOCK()` macros undefined in output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated Ghidra warnings present. Zero semantic comments explaining logic. Original source had extensive documentation about macro behavior, preprocessing, and expected values.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. Assembly-to-C conversion done but not identified as "recovered from inline assembly". No algorithm identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about inlined functions and unreachable blocks. No indication of decompilation uncertainty or assembly recovery confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Original had expected values in comments (e.g., "期望: 64"). Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage (`global_var`) not explained in context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping visible. Original had section comments (`5.2 预处理`, `5.3 内联汇编`) organizing code by feature.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata says "Compilation Result: Yes" but undefined references exist (`LOCK()`, `UNLOCK()`, `builtin_strncpy`, `DAT_000122c9`). Requires stubs for external symbols.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (5+6+6)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+6)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.44/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar1` provide zero semantic information; should recover names like `size`, `counter`, `result` from usage patterns
+- **Macro constants lost** - `0x400`, `0x40`, `0xdef0` should be recovered as `MAX_SIZE`, `BUFFER_COUNT*4`, platform constants based on comparison with common patterns
+- **Zero documentation recovery** - Original source had extensive comments explaining macro behavior, expected values, and preprocessing semantics; none preserved
+- **Constant folding obscures logic** - `call_macro_constants` returns `0x40` directly instead of showing `param_macro_constants(2048)` call, hiding the test relationship
+- **Type degradation** - `undefined4` return types instead of `int`; loses type precision and IDE support
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`), making navigation and identification straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; decompiler should at minimum recover original comments from debug symbols when `-g` flag was used, or generate explanatory comments for recovered logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement macro constant recovery** - Analyze comparison patterns (e.g., `if (0x400 < param_1)`) and suggest named constants based on common values (1024, 256, etc.) with confidence indicators.
+
+2. **Recover debug symbol comments** - When `-g` flag is present, extract and preserve original source comments, variable names, and expected value annotations from DWARF debug information.
+
+3. **Preserve call relationships** - Instead of constant-folding `call_macro_constants()` to `return 0x40`, maintain the call structure with a comment like `// Constant-folded: param_macro_constants(2048) = 64` to preserve semantic relationships.

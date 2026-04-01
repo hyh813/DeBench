@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. For example, `local` in `address_of_local` becomes `v0`, and array pointers become generic `ptr` instead of `arr` or `buffer`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test function names preserved (`double_value`, `local_vars`, `heap_basic`), but helper functions use mechanical names (`sub_10598`, `sub_106d8`) and optimization artifacts appear (`alloca_usage.constprop.0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate: `4294967295` (unsigned -1), `4294967294` (unsigned -2), `0xfffffff8` for alignment. No named constants recovered; error codes should be `-1`, `-2` not unsigned equivalents.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompiler artifacts: `armg_calculate_condition()` calls throughout, stack canary checks (`__stack_chk_guard`), redundant assignments (`v1 = v2`, `v0 = v3`), and broken sync loops (`do { } while (4294905792());`).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mix of natural constructs and goto labels (`LABEL_106fc`, `LABEL_10718`). Some functions constant-folded entirely (`alloca_usage.constprop.0` returns `15`), losing original loop logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but `test_stack_memory` inlines all results instead of calling functions. `stack_alias` returns constant `20` instead of actual alias logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps and labels disrupt top-to-bottom reading. Complex functions like `test_heap_memory` have 20+ labels making execution flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate printf calls in `test_stack_memory` and `test_static_global`. Redundant variable assignments throughout. `armg_calculate_condition` calls repeated excessively for simple comparisons.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` or `char`. Lost distinction between `int`, `size_t`, and pointers. Function pointers become `unsigned int` (`global_func_ptr`). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered (`struct_0`, `struct_1`, `struct_2`, `struct_3`) but all fields have generic names (`field_0`, `field_4`, `padding_0`). Original `Point` and `Node` struct semantics lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic on generic types. Function pointer calls through `goto global_func_ptr`. No type safety annotations. Casts like `(char *)ptr + v2` without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal in `linked_list_heap` not identified. Tree traversal in `tree_heap_traversal` not named. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken code like `do { } while (4294905792());` not flagged. Potential undefined behavior (dangling pointer access) not indicated. No decompilation uncertainty warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. No error condition documentation. Return values like `4294967295` unexplained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables declared `extern` without usage context. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output file. No logical grouping by test category (stack/heap/static). Static functions not properly scoped with visibility indicators.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile cleanly - has `...` in return statements (e.g., `__sync_add_and_fetch_2`). `armg_calculate_condition` is decompiler-specific. Many external dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+4+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.69/10
+```
+
+**Overall Readability Score: 3.7/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on usage (e.g., `local_value`, `array_ptr`, `node`)
+- **Magic numbers** like `4294967295` should be `-1` or named error constants
+- **Zero comments** - no explanation of algorithm intent or decompilation confidence
+- **Broken sync functions** with `do { } while (4294905792());` not flagged as artifacts
+- **Struct fields** all generic (`field_0`, `field_4`) losing semantic meaning (should be `data`, `next`, `x`, `y`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test function names preserved from source (`double_value`, `local_vars`, `heap_basic`), maintaining some semantic connection to original intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Completely absent; no documentation of any kind makes understanding algorithm intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Add decompilation confidence annotations** marking uncertain reconstructions, unresolved indirect calls, and potential optimization artifacts
+3. **Recover semantic struct field names** by analyzing access patterns across functions (e.g., `field_4` used as link should be `next`)

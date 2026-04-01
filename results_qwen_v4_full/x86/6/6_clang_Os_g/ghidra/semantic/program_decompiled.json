@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/6/6_clang_Os_g/ghidra/syntactic/bin/6_clang_Os_g_fixed",
+  "stdout": "Testing standard library functions\nString length: 8\nStrcpy result: 0\nStrlen result: 12\nMemcpy result: 90\nMemcmp result: 0\nValue: 42, Name: TestName\nPrintf result: 26\nScanf result: 579\nFopen result: 42\nFread result: 42\nMalloc result: 90\nMemset result: 0\nStrchr result: 15\n/etc/passwd\nLinux syscall result: -1\nStat result: 42\nFork result: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3`. Local variables are named `local_10`, `local_18`, `local_28`, `local_38`, `local_50`, `local_58`, `iVar1`, `piVar2`, `uVar3`. These cryptic names provide no semantic meaning compared to source names like `a`, `b`, `count`, `args`, `sum`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly named (`cdecl_func`, `stdcall_func`, `varargs_func`, `callback_func`). However, some internal functions like `FUN_00101020` are generic. The main function names match source well.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers used throughout: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0x14` (20). No named constants recovered. String literals replaced with `&DAT_00102008` addresses, losing all semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack protection code (`__stack_chk_fail`) present but expected. Some redundant variable initializations. Overall moderate noise level with some compiler artifacts but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as do-while constructs. Conditionals use idiomatic if-else. At -O0, control flow closely matches source. Minor complexity in varargs handling due to stack/register differences.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with clear boundaries. No inlining at -O0. Parameter lists reasonable. Each function has single responsibility matching source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in varargs functions but manageable. Early returns used appropriately. Minor disruption from stack checking.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant stack manipulations in varargs functions. Loop unrolling visible in `test_calling_conventions` copying arrays element-by-element. Moderate redundancy from optimization artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int` for most integers correctly. `long` used for pointers (correct for arm64). Some type mismatches: `param_double_ptr` takes `long*` but should be `int**`. `undefined8`/`undefined4` used for unclear types. Mixed precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `LargeStruct` and `SmallStruct` completely lost. Code uses raw pointer arithmetic: `plVar2 = (long *)&stack0x00000008` instead of struct field access. Arrays accessed via pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations: `param_double_ptr` uses `long*` for `int*` causing potential issues. Pointer arithmetic without bounds. Function pointer type `code *` is generic. Mixed signed/unsigned in comparisons.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code. Only function names provide minimal context. No explanation of algorithm, purpose, or non-obvious logic. Source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Varargs handling is mechanical without recognizing stdarg pattern. No recognition of calling convention patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked with `<EXTERNAL>::` prefix. Some suspicious patterns like `if (*(long *)(in_FS_OFFSET + 0x28) == *(long *)(in_FS_OFFSET + 0x28))` not flagged. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. Null checks not explained as preconditions. No recovery of implicit contracts like "requires: ptr != NULL" or "ensures: return is heap-allocated".
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear within test functions. No documentation of which functions call which. Callback relationships (`callback_func` passed to `param_func_ptr`) not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address, not by functionality. Source organized by test category (calling conventions, parameter passing, return values) but decompiled output is arbitrary address ordering.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared but marked as `<EXTERNAL>`. Should compile with stubs for `puts`, `strlen`, `__printf_chk`. No dependency documentation. Some type mismatches may cause warnings.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `param_N` and locals use `local_N` - completely loses semantic meaning of original names like `count`, `args`, `sum`
+- **No struct recovery**: `LargeStruct` (128 bytes) and `SmallStruct` completely lost; accessed via raw pointer arithmetic
+- **Magic numbers**: All constants like `0xf`, `0x2a`, `0x32` unexplained - should be `15`, `42`, `50`
+- **No comments**: Zero explanatory comments despite complex calling convention tests
+- **Type precision loss**: `int**` becomes `long*`, losing type safety
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+- Loops and conditionals properly recovered at -O0
+- Execution flow closely matches source code structure
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Generic `param_1`, `param_2`, `local_10`, `local_18` names make code nearly incomprehensible
+- Compare to source: `count`, `args`, `sum`, `val`, `ptr` - all semantic meaning lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: `param_1` used in loop counter context should be named `count`; `local_50` used as pointer should be `args` or similar
+2. **Recover struct types from stack layout**: Detect sequential memory accesses and reconstruct `LargeStruct` with meaningful field names
+3. **Detect magic numbers and suggest constants**: Recognize computed values like `0x2a` (=42) and flag as potentially recoverable constants

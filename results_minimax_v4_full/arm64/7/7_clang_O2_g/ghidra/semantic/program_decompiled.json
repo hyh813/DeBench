@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_clang_O2_g/ghidra/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "Testing obfuscation optimizations:\n\nOpaque predicate: 10\nGCD(6,5) = 20\nInstruction substitution: e1\nString decryption: 28\nTail call sum: 7a314\nNon-tail call sum: 13ba\nVectorized loop: 48\nLTO result: 14\nDivision by zero: 2\nNull pointer: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation-defined: 30\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (a0, a1, a2, v1, v2, v3, v4, v5, v6, v7) with no semantic meaning. The original source uses meaningful names like `temp1`, `temp2`, `temp3`, `sum`, `i`, `j`, `count`, `target`, `arr` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names closely match the original source - sequential_ops, single_if, if_else, nested_if_2, nested_if_deep, if_elseif_chain, loop_for_fixed, etc. Only minor issues with some non-function code having generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number 4294967295 (0xFFFFFFFF) appears frequently as return value for "not found" or error cases without explanation. Constants like 100, 1000, 101 used without named equivalents. The original source uses meaningful values like -1 for errors, clearly preserved in some places but obscured in others.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some type casts present (e.g., `(unsigned int)a0`) but manageable. No debug instrumentation visible. The code is mostly readable without excessive noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many loops are highly obfuscated. For example, `loop_while` and `loop_dowhile` show bizarre constructs like `(unsigned int)(a0 * 1717986919 >> 34) + (unsigned int)(a0 * 1717986919 >> 63)` which is clearly division by 10 but completely unreadable. The `loop_continue` function has extremely complex SIMD operations that don't match the simple source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single responsibility. No 500-line monoliths. The decomposition matches the source well.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Many functions read reasonably top-to-bottom, but some have significant issues. The `loop_continue` function has extremely complex nested operations that make linear reading impossible. Some goto statements present (e.g., `goto a0` in call_func_ptr).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present but not properly recognized. The `loop_for_fixed` shows formulaic computation instead of loop structure. Common subexpression elimination visible but not commented. Mixed results.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are mostly `unsigned int` or `unsigned long long`, but the original uses signed `int`. This matters significantly - for example, `single_if(-5)` should return -5 but the unsigned version returns 4294967291. The decompilation loses sign information which changes semantics for negative inputs.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Arrays are not properly recovered. In `loop_break`, the original `int arr[] = {10, 20, 30, 40, 50}` becomes `v1 = "\n"` which is completely wrong - appears to be treating a pointer as a string. No struct recovery visible at all.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The `loop_break` function has `v1 = "\n"` which is clearly wrong. Pointer arithmetic present but mostly safe. Some implicit conversions between signed/unsigned that could cause issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no useful comments in the decompiled code. Only auto-generated annotations like "do not return" on longjmp calls. No explanation of algorithm logic, no documentation of what functions do, no indication of intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like switch statements are recognized and decompiled reasonably. But the core logic of many functions is lost - the simple `continue` pattern in `loop_continue` becomes unreadable SIMD operations. No design patterns identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The failed decompilation of `duffs_device` is flagged. However, the `v1 = "\n"` in loop_break is clearly anomalous but not flagged. Many functions produce semantically incorrect output (due to unsigned types) but no warnings present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No invariants visible. No error condition documentation. The original source has clear return value semantics (e.g., "返回-1表示未找到") completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some external references documented (e.g., `extern unsigned long long g_4020f0`, `extern unsigned int g_402090[4]`). But function call relationships not clearly documented. Callback relationships not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, helper functions together. Related functions appear in proximity. Some organization present matching source structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many extern declarations present but incomplete. Would require significant patching to compile. Missing standard library includes. The code references jump_buffer, g_402090, etc. without proper definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is completely generic (a0, v1, v2) with no semantic meaning - original used meaningful names like temp1, sum, target, arr
+- Type precision lost: unsigned types used where original had signed int, causing semantic differences for negative inputs (single_if(-5) returns 4294967291 instead of -5)
+- Composite type recovery failure: loop_break shows `v1 = "\n"` instead of the original array {10, 20, 30, 40, 50}
+- Loop constructs highly obfuscated: loop_while/dowhile show bizarre division emulation, loop_continue shows unreadable SIMD operations
+- No comments explaining algorithm logic or intent
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names closely match the original source - sequential_ops, single_if, if_else, nested_if_2, etc. are all preserved correctly.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All variables use generic names (a0, a1, v1, v2, v3) with no semantic meaning. The original source uses meaningful names like temp1, temp2, temp3, sum, i, j, count, target, arr that convey purpose.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `temp1 = a + b` should suggest `sum` or `result`, `count++` in a loop should suggest `count` or `index`
+2. Recover loop constructs from backward jump patterns - the division-by-10 pattern using 1717986919 is a known compiler optimization for division, should be recognized and simplified
+3. Recover composite types from initialization patterns - the array {10, 20, 30, 40, 50} should be recognized as an integer array initialization, not a string literal

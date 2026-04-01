@@ -1,0 +1,16 @@
+Test: %s
+
+Result: 10
+Opaque: 20
+Sub: 225
+Decrypted: 36
+Tail: 500500
+NonTail: 5050
+Vector: 72
+LTO: 20
+DivZero: 1
+NullPtr: 41
+Buffer: 30
+IntOverflow: 2000000000
+UndefBehav: 10
+ImplDef: 48

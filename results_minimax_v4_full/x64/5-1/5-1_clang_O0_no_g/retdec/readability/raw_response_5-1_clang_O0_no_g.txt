@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `result`, `result2`. These obscure semantic meaning - for example, in `SimpleClass::compute()`, the variable `v1` should be named `value` based on its usage `v1 * a2`. The original had meaningful names like `value`, `name`, `data`, `size`, `multiplier`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most functions are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`, `_ZN11SimpleClass8setValueEi` → `SimpleClass::setValue(int)`). However, some utility functions remain as `function_2030`, `function_2040` without proper naming. The demangled names are accurate but verbose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants are meaningful (e.g., `g1 = 0x8b3800000000 // 0x1234` for class ID), and string literals are preserved. However, magic numbers like `4` (for sizeof int), `31` (buffer limit), and `0x3e8` (1000 for instance count) appear without explanation. The decompiler doesn't infer named constants from usage patterns.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__asm_movsd`, `__asm_cvttsd2si`, `__asm_movsd_13` for floating-point operations; numerous redundant casts; `// UNREACHABLE` annotations; frame pointer manipulations. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while (v2 < a2)`, conditionals use `if (v2 <= 9)`. However, exception handling is awkward (`__cxa_throw` called directly in function body), and some computed jumps exist. At -O0, control flow should be nearly source-level.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (not monolithic), but some are over-fragmented. For example, `template_swap<int>()` is only 10 lines while `test_cpp_smart_ptr()` is ~100 lines. The ~248 functions in the output include many STL internal functions that could be better organized.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but some have confusing pointer arithmetic that disrupts flow (e.g., `test_cpp_diamond_inheritance()` uses complex `*(int64_t *)(v1 - 24)` patterns). Forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant code patterns visible, particularly in template instantiations. Loop unrolling isn't explicitly commented. However, no severe duplication that makes code unmaintainable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` and `int32_t` appropriately for ARM64. However, `int` is used inconsistently. Function pointers have proper signatures. Some type erosion exists where `char*` is used generically for strings. Const correctness is partially preserved in some `_ZNK` (const) functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: VTables are reconstructed as struct types with function pointers (e.g., `struct vtable_8878_type`), which is good. However, class data members are not recovered as named fields - they remain as raw pointer arithmetic. For example, `SimpleClass` should have `value` and `name[32]` fields, but instead we see `*(int32_t *)result` and `*(char *)(result2 + 4)`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: `(int64_t *)((int64_t)result + 8)` casts, `(int32_t *)v1` conversions, pointer arithmetic like `v1 + 40` without bounds checking. The code has significant risk of undefined behavior. No `restrict` or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal, mostly limited to function demangling (e.g., `// Demangled: test_cpp_member_func()`). No algorithm explanations, no preconditions/postconditions documented. The comment `// UNREACHABLE` appears but adds little value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns are visible (vtables as structures, virtual dispatch through function pointers), but they're not explicitly identified or named. RAII patterns (in smart pointers), exception handling mechanisms, and virtual inheritance aren't highlighted as idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only `// UNREACHABLE` is flagged. No warnings about indirect calls that couldn't be resolved, unusual stack layouts, potential undefined behavior, or hand-written assembly patterns. The decompiler presents potentially incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No implicit preconditions, postconditions, or invariants are documented. For example, `getData(idx)` should have precondition `idx < size` but this isn't indicated. Error conditions from exceptions aren't documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: VTables show virtual function relationships. Global variables like `g1` (class ID) are visible. However, function call relationships aren't clearly documented - no comments showing "Calls: X, Y" or "Called by: Z". Virtual dispatch is partially visible through vtable structures.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic file with ~2700 lines. No logical grouping of related functions. All 248 functions in one file with no separation between test functions, class methods, and STL internals. No namespace or class structure organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Appears to compile. However, relies on standard library functions like `__cxa_throw`, `__dynamic_cast` that may need stubs. No clear dependency documentation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable names are generic (`v1`, `v2`, `a1`, `a2`, `result`, `result2`) - should infer semantic names from usage patterns
+- Class data members not recovered as named struct fields - all accessed via raw pointer arithmetic
+- Significant compiler artifacts (`__asm_*` functions) obscure actual logic
+- No comments explaining algorithms, preconditions, or postconditions
+- Type safety issues with numerous unsafe casts and pointer arithmetic
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Most control structures (loops, conditionals) are readable and match source patterns
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic variable names completely obscure semantic meaning, making code very difficult to understand
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `v1` is used as `*(int32_t *)result` and multiplied by a parameter, name it `value` (the class member). When `a2` is used as array index, name it `index` or `idx`.
+2. **Recover struct fields from constructor patterns**: When constructor sets `*(int32_t *)result = a2` followed by `strncpy(result+4, str, 31)`, infer fields `value` and `name[32]`.
+3. **Eliminate compiler artifacts**: Replace `__asm_movsd`, `__asm_cvttsd2si` with standard C operations or at least wrap them in cleaner abstractions. Remove redundant casts and `// UNREACHABLE` annotations.

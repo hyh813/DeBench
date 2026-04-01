@@ -1,0 +1,8 @@
+Testing obfuscation and optimization
+
+Opaque predicate result: 10
+Opaque predicate call: 20
+Instruction substitution: 225
+String encryption: 62
+Tail call optimized: 500500
+Non tail call: 5050

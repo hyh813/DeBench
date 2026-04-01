@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+After analyzing both the original source code and the decompiled output, I observe that the decompiled code represents the entire binary (not just `param_strcpy`), and there's a significant architecture mismatch (source: ARM64, decompiled: AMD64). Let me provide a comprehensive evaluation.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameter names are generic (`a0`, `a1` in `param_strcpy`), local variables use uninformative names (`v1`, `v2`, `v3`). While some globals like `signal_received` and `shared_counter` are well-named, the majority obscure semantic purpose. For example, in `param_strlen`: `char *a0` should be `str`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Many functions correctly recovered (e.g., `param_strcpy`, `param_strcmp`, `signal_handler`, `thread_compute`), but significant number remain as `sub_40XXXX` mechanical addresses. Functions like `test_standard_library_functions` and `test_system_calls` are well-named, but internal helper functions lack semantic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals preserved ("Value: %d, Name: %s\n", "/etc/passwd", "HelloPipe"), but magic number `4294967295` used repeatedly without explanation (represents -1 as unsigned). Some constants like socket family values (2=AF_INET) could be named. The number 42 is used as success indicator but not explained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output. Minor issues include incomplete struct definitions like `typedef struct FILE { } FILE;` and some unused variables (`v3`, `v4` in certain functions). No extensive debug artifacts. The code is mostly readable without compiler noise pollution.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow generally natural with proper if/else and loops. However, `param_strcpy` uses `stpcpy` pattern which obscures the strcpy+strlen combination from source. Some computed jumps in switch-like structures. At -O0, more straightforward flow expected, but overall acceptable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (10-50 lines typically). `test_standard_library_functions` at ~60 lines is cohesive. Each function has single responsibility. Minor issue: some tiny wrapper functions (e.g., `sub_402ad1` calling `call_strcpy`) could be inlined.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Some early returns present (good). The `param_fork_exec` has nested if-else chain that creates moderate nesting depth. `call_strcmp` shows some goto-like jumps. Generally traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code. Loop unrolling not excessive. Some repeated patterns (error return values) but reasonable for error handling. The `param_malloc_free` shows complex pointer arithmetic that could be simplified but is not redundant.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation. Parameters mostly `unsigned long` or `void*` instead of specific types. `param_strcpy` uses `char *a0, char *a1` - acceptable but could be `const char *src`. Integer types use `unsigned long long` where `size_t` or `int` would be precise. `pthread_create` uses `char` for thread handle instead of `pthread_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Minimal struct recovery. Incomplete `FILE` struct declared as empty. `struct_0` used with generic field names. The `ThreadData` struct from source was not recovered - instead raw pointer arithmetic on `&data[i]` pattern. Some struct-like accesses in TLS code but not named.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns. In `param_strcpy`: `(stpcpy(a0, a1) & 4294967295) - a0` uses bitmask that could overflow. In `param_fork_exec`: casting `&v0` (stack array) to various types. The `signal_handler` takes `unsigned int a0` but source uses `int`. Some pointer arithmetic without bounds checking.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Almost no comments in decompiled output. What exists is minimal (e.g., "/* do not return */" on `_exit`). No explanation of algorithm intent, preconditions, or non-obvious logic. The source had extensive comments that are completely lost. No "UNCERTAIN" or confidence indicators.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions correctly identified (`strcmp`, `strlen`, `memcpy`, `fopen`, `pthread_create`). Some patterns recognized: mutex lock/unlock, condition variable wait/signal. However, the `param_strcpy` uses `stpcpy` idiom rather than strcpy+strlen which shows partial idiom recovery.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one explicit anomaly marked: `[D] Unsupported jumpkind Ijk_SigTRAP`. Many uncertain areas lack flags: indirect calls not resolved, potential undefined behavior in pointer arithmetic, TLS access through `fs` segment but not explained. Code presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions (null checks, valid file handles) not documented. Postconditions not specified. Error return values (-1, -2, etc.) not explained. Source had explicit error handling that could document contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through direct calls. Global variables like `signal_received`, `atomic_counter` declared as `extern`. However, no documentation of who calls whom, no callback relationships explained. The `thread_compute` callback passed to pthread_create not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions somewhat grouped logically (test functions together, thread functions together). However, file structure is single monolithic output. Related functions like `param_strcpy` and `call_strcpy` separated. Static vs. global not clearly distinguished.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses `extern` declarations appropriately for external symbols. Missing `#include` statements would need linking against libc, libpthread. Some incomplete types (empty `FILE`) would cause compilation issues. Not standalone compilable without significant additions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Weighted Calculation:**
+- L1 (30%): (3+5+6+7)/4 = 5.25 × 0.30 = 1.575
+- L2 (25%): (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+- L3 (20%): (4+3+5)/3 = 4.0 × 0.20 = 0.8
+- L4 (15%): (4+7+3+2)/4 = 4.0 × 0.15 = 0.6
+- L5 (10%): (4+6+5)/3 = 5.0 × 0.10 = 0.5
+- **Total: 5.04/10** (rounded to 5.0)
+
+**Critical Defects:**
+1. Variable naming is predominantly generic (`a0`, `a1`, `v1`, `v2`) obscuring semantic meaning
+2. Type precision severely degraded - most types are generic `void*` or `unsigned long`
+3. No comments or documentation explaining algorithm intent or contracts
+4. Composite types (structs) not recovered - `ThreadData` and other structures lost
+5. `param_strcpy` decompiled as `stpcpy` + length calculation instead of recognizing strcpy+strlen pattern from source
+
+**Best Quality Aspect:** Idiom Recognition (7/10)  
+- Standard library functions (strcmp, strlen, memcpy, pthread_* series) correctly identified by name, making the code semantically understandable at function call level.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- The pervasive use of generic names like `a0`, `a1`, `v1`, `v2`, `ptr`, `result` makes tracking data flow extremely difficult. Each variable's purpose must be inferred from usage rather than name.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0` passed to `strlen()` → should be named `str` or `input`)
+2. **Recover struct types from allocation/field access patterns**: The `ThreadData` allocation pattern and field accesses (start, end, result) should reconstruct the struct
+3. **Add basic documentation**: At minimum, document function parameters, return value meaning, and any implicit contracts (null checks, error codes)

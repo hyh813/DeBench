@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `result` with no semantic meaning. For example, `test_cpp_member_func` uses `v1[31]` instead of `name` and `result` instead of tracking the actual return value computation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mangled names preserve original intent (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`), but many functions are labeled `sub_401664` or `$x`. C++ method names are recovered (`Base::virtual_func`) but lack clarity.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `42` in exception handling, `200`, `50`, `100` in various tests. No constants recovered despite `-g` debug symbols being available.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive stack canary checks (`__stack_chk_guard`) in every function, frame pointer setup (`v0 = &v1`), and compiler runtime calls (`__cxa_atexit`, `deregister_tm_clones`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many functions use `goto` statements instead of structured control flow. `test_cpp_exception` has broken exception handling with unreachable catch blocks. Multiple functions are empty stubs returning immediately.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical functions like `test_cpp_constructor`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, and `test_cpp_lambda` are completely empty stubs. Thunk functions are separated but not explained.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but frequent `goto` statements and stack check epilogues disrupt natural flow. Some functions have unnecessary jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Thunk functions duplicate logic (e.g., `MiddleA::func` appears in both regular and thunk versions). Stack canary checks repeated in every function without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Extensive use of `void*`, `char*`, and generic `unsigned long long`. Class types partially recovered (`class Base`) but most member functions take `void* this` instead of proper `this` pointers.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_0`, `struct_2`, `struct_3`) but with generic field names (`field_0`, `field_8`, `padding_0`). Class hierarchies partially visible but inheritance relationships obscured.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout: `(long long)v4[8]`, `(char *)a0 + (*(a0))[24]`. Pointer arithmetic on `void*` without proper typing. Many function signatures use `void*` where specific types should exist.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments in decompiled output. No explanation of C++ mechanisms (vtables, thunks, RTTI). Original source had extensive documentation; none recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (vtable calls, thunks, virtual inheritance) partially visible but not identified or explained. No recognition of RAII, smart pointers, or exception handling patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Empty stub functions presented confidently without indicating recovery failure. `/* do not return */` comments present but no uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts completely lost. Original source had clear expected values; none preserved.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered (thunk functions) but vtable structure not explained. Global variables referenced as `g_413xxx` without meaning.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Related class methods scattered. No namespace or header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many external dependencies unresolved (`operatornew`, `__cxa_throw`, `__stack_chk_fail`). Cannot compile standalone. Runtime library calls not stubbed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+3+5+4)/4 = 3.75 × 0.25 = 0.94
+Level 3 (Type):        (3+4+2)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.19/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Empty stub functions**: `test_cpp_constructor`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda` return immediately with no logic recovered
+- **Variable naming**: All variables are `v0`, `v1`, `ptr`, `result` with zero semantic meaning
+- **Broken exception handling**: `test_cpp_exception` throws but catch blocks don't function correctly
+- **Type erosion**: Class methods use `void* this` instead of proper typed `this` pointers
+- **No comments**: Original source had extensive documentation; decompiled code has none
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Mangled C++ names were partially demangled to recover original function names like `test_cpp_member_func` and `Base::virtual_func`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompiler confidence indicators despite complex C++ features
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function body logic for stub functions** - Critical test functions are empty; implement better control flow reconstruction for C++ exception handling and object lifecycle code
+2. **Infer semantic variable names from usage patterns** - Use data flow analysis to name variables (e.g., `v1[31]` used with `strncpy` should be `name`)
+3. **Add decompiler confidence annotations** - Mark uncertain regions, explain C++ mechanisms (vtables, thunks, RTTI), and document recovery limitations

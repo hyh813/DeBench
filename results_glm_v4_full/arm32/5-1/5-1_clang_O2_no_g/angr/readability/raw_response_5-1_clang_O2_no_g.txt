@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`, providing no semantic insight into their usage (e.g., `v0` used for `capture_by_value` in lambda logic).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangled C++ symbols, recovering readable names like `test_cpp_member_func` and `Container<int>::push`, which accurately reflect the original source.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: While string literals like `"Test"` are preserved, magic numbers appear without context (e.g., `4700` in `test_cpp_oo_features`), and logic is often replaced by hardcoded results rather than the original expressions.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with non-standard artifacts like `armg_calculate_condition` and `__aeabi_dcmpgt`, which obscure the actual program logic and make the code look like an intermediate representation (IR) rather than C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is represented using low-level mechanisms like `goto *((int *)*((int *)arg_0))` for virtual calls and `armg_calculate_condition` for branches, completely failing to reconstruct `if`, `while`, or `switch` structures.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: Many functions that contain significant logic in the source (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) are decompiled as empty stubs with only a `return` statement, indicating a total failure to recover the function body.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is difficult to read linearly due to the prevalence of `goto` statements for control flow and the insertion of IR-level condition checks that break up logical blocks.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is little obvious redundancy, but this is largely because the actual logic is missing or abstracted away into helper calls like `armg_calculate_condition` rather than being cleanly represented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Complex types are lost; pointers are often cast to `void*` or `unsigned int`, and class instances are treated as raw byte arrays (e.g., `char v1[4]` for a class object).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No C++ classes or structs are recovered; instead, generic `struct_0` and `struct_1` with `field_0` are used, completely erasing the semantic layout of classes like `SimpleClass` or `Container`.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe casts and operations, such as dereferencing `void*` pointers and performing arithmetic on them without type context, mirroring assembly behavior rather than type-safe C++.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; the only comments are artifacts like `/* do not return */`, which provide no insight into the high-level algorithm.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms like RAII, smart pointers, and exception handling are not recognized; instead, the output shows raw calls to `__cxa_throw` and `operatornew` without semantic context.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the low-level artifacts (e.g., `armg_calculate_condition`) confidently as code, without flagging them as anomalies or lifting failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic is too low-level to infer any contracts from the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function names are demangled, the relationships are obscured because the bodies of called functions are often missing or reduced to stubs, breaking the call graph analysis.
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions appear in a roughly logical order matching the source, but the lack of recovered class structures makes the module organization feel disjointed.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to the presence of non-standard functions like `armg_calculate_condition` and the incorrect syntax used for low-level operations (e.g., `goto *((int *)...)`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.6/10
+
+**Critical Defects:**
+- Functions with significant logic (e.g., `test_cpp_constructor`) are decompiled as empty stubs.
+- Control flow is obscured by `armg_calculate_condition` calls and `goto` statements instead of standard C constructs.
+- C++ class structures are completely lost, replaced by generic `struct_0` and raw memory accesses.
+- Virtual function calls are represented as raw memory jumps (`goto *((int *)*((int *)arg_0))`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully demangled C++ symbols, preserving the original function names which is the only link to the source code's intent.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.0/10)
+- The decompiler failed to map the low-level instructions back to high-level C++ semantics, resulting in an output that resembles an intermediate representation (IR) more than readable C code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a lifting pass to convert `armg_calculate_condition` and similar IR artifacts into standard C `if/else` statements.
+2. Improve control flow reconstruction to identify and emit standard loop constructs and `switch` statements instead of `goto` chains.
+3. Enhance type recovery to identify and reconstruct C++ class layouts (vtables, member offsets) rather than emitting generic structs and raw pointer arithmetic.

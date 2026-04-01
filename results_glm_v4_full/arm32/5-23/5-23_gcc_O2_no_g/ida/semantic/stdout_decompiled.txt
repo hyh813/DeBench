@@ -1,0 +1,16 @@
+=== Preprocessing Test ===
+Macro constants: 64
+Macro functions: 30
+Conditional compile: 32
+Multi-branch compile: 57122
+Macro recursion: 116
+Stringize: 19
+Token paste: 60
+LOG: Values: 10, 20, 30
+Macro override: 60
+Include guard: 16
+Builtin macros: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:06
+All preprocessing tests passed! Final: 382
+=== ASM Test ===
+ASM basic: 15

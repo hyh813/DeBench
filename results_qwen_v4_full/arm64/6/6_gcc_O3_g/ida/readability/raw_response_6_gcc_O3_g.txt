@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v3`) with no semantic meaning. For example, in `param_strcpy`, `dst` and `src` are preserved but intermediate calculations use `v5`, `v6` obscuring their purpose as pointer arithmetic results.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_strcpy`, `thread_sum`, `signal_handler`), but some are generic (`sub_13A0`, `_do_global_dtors_aux`). Helper functions like `param_fork_exec_0` indicate extraction but naming is mechanical.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `syscall(56, 4294967196LL, ...)` where 56 is SYS_openat and 4294967196 is AT_FDCWD (-100). Signal numbers `10` (SIGUSR1) and `14` (SIGALRM) not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: 62 functions marked "FAILED to decompile" clutter output. Architecture-specific intrinsics (`_aarch64_cas4_acq_rel`, `_aarch64_ldadd4_acq_rel`) and redundant casts (`(_DWORD)`, `(__int64)`) pollute readable code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `thread_sum` uses goto (`LABEL_14`) instead of natural loop construct. SIMD-optimized code with `vaddq_s32`, `vdupq_n_s32` obscures simple summation logic. Some functions like `param_strcpy` remain clean.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Helper extraction present (`param_fork_exec_0` for execl+_exit), but `thread_sum` bloated to 100+ lines with SIMD unrolling. Original 10-line function became incomprehensible optimization artifact.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt flow (`goto LABEL_14` in `thread_sum`). Deep nesting in `param_memset` verification loop (15+ nested if statements) instead of simple for-loop.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: SIMD loop unrolling in `thread_sum` creates 8+ nearly identical conditional branches. `param_memset` has 15 redundant byte-checking if-statements that should be a simple loop.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision—`pthread_t`, `FILE*` preserved but many types degraded to `__int64`, `void*`. `atomic_counter` loses `atomic_int` type, becoming generic integer. Signed/unsigned often incorrect (`unsigned int` where `int` expected).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct partially recovered in `param_pthread_join` but fields accessed via array indexing (`data[2].result`). `sockaddr_in` fields manually constructed (`*(_QWORD *)&addr.sin_family = 2`) instead of struct initialization.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `*(_DWORD *)arg`, `(char *)(StatusReg + 16)` for TLS access. Pointer arithmetic on `StatusReg + 16` bypasses type system. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated annotations like `// attributes: thunk`. No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `pthread_create`) recognizable but not explicitly identified as patterns. Producer-consumer pattern in `param_condition_variable` not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" markers indicate problems but no explanation why. TLS access via `TPIDR_EL0` register not flagged as architecture-specific anomaly. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for `param_strcpy`). Return value contracts absent. Error conditions like `fd < 0` not explained as failure states.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear (`thread_compute` passed to `pthread_create` not documented as thread entry point). Global variables (`shared_counter`, `atomic_counter`) usage not traced.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions loosely grouped (library, syscall, thread) but no file organization. All 79 functions in single output. No header declarations or API boundaries.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 62 external functions "FAILED to decompile" preventing standalone compilation. Architecture-specific intrinsics (`_aarch64_cas4_acq_rel`) require special headers. Cannot compile without extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.49/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **62 functions failed to decompile** including all standard library calls (memcpy, strlen, fopen, etc.), making code non-compilable
+- **Variable names are generic** (`v0`, `v1`, `v2`) obscuring semantic purpose throughout all functions
+- **Magic numbers undocumented** (syscall 56, signal 10/14, AT_FDCWD as 4294967196LL)
+- **SIMD optimization artifacts** in `thread_sum` and `param_memset` obscure simple loop logic with 15+ nested conditionals
+- **No comments or documentation** explaining algorithm intent, preconditions, or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (`param_strcpy`, `thread_sum`, `signal_handler`) allowing semantic identification despite other issues
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no explanatory comments; code relies entirely on reader inferring intent from opaque variable names and magic numbers
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size`, `length`, `count`)
+2. **Document magic numbers** by cross-referencing system headers (syscall numbers, signal constants, socket options)
+3. **Simplify optimization artifacts** by recognizing SIMD loop unrolling and recovering original loop constructs with explanatory comments

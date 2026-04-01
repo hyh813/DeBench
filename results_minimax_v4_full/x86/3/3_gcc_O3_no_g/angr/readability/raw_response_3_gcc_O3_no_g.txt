@@ -1,0 +1,116 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2` for parameters, and `field_0`, `field_1`, `padding_0` for struct members. The original source uses meaningful names like `x`, `arr`, `n`, `local`, but these are completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered: `double_value`, `local_vars`, `local_array`, `heap_basic`, `test_stack_memory`. However, many use address-based naming like `sub_401030`, `sub_401272`, and wrapper functions that add noise (e.g., `alloca_usage.constprop.0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used for error returns without explanation. Some constants like `20` for stack canary checks remain unexplained. The original source's clear constants (like array sizes) are not recovered as named constants.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: repeated struct definitions with padding arrays (`struct_0 { char padding_0[80]; unsigned int field_50; }`), x86-specific artifacts (`__x86.get_pc_thunk.dx()`), stack canary checks (`_ccall(v2, v3, (unsigned int)v4, 20)`), and many spurious goto statements. The output is 3x larger than source (2753 vs 888 LOC) due to artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of goto statements (e.g., `goto v1->field_50`, `goto ptr[2]`) instead of proper loop/conditional constructs. Many functions use computed jumps that are difficult to follow. The original source's clean `for`/`while` loops are not well recovered.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries generally preserved from source. However, some functions are too large (e.g., `test_heap_memory` is 200+ lines with complex logic). Some wrapper functions (thunks) add unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Code frequently interrupted by forward jumps and computed gotos. Deep nesting in complex functions (e.g., `test_heap_memory`). The linear top-to-bottom reading is frequently disrupted.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy: identical struct definitions repeated (`struct_0` with `padding_0` appears dozens of times), duplicate field naming patterns, and no elimination of dead code from the decompilation process.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic `unsigned int` when original uses `int`. Pointers often typed as `unsigned int*` instead of specific types. No `size_t`, `uint32_t`, or other precise types recovered. Original `int` parameters become `unsigned int a0`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered but with meaningless names (`struct_0`, `struct_1`, `struct_2`) and generic field names (`field_0`, `field_1`, `padding_0`). The original `Point` struct and `Node` struct are not properly named. Nested structures like `TreeNode` are fragmented.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: extensive pointer arithmetic (e.g., `ptr + idx * 4`), unsafe casts via struct field access, and no bounds checking annotations. The original source's clear pointer usage is obscured by complex arithmetic expressions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The decompilation provides only function signatures and basic structure. No explanation of algorithm intent, no recovery of original comments from debug symbols, no uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (linked list traversal, tree operations) but not explicitly named or documented. The original source's clear patterns (malloc/free pairs, loop constructs) are present but not highlighted.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The dangling pointer access in `dangling_pointer()` is presented without warning. No indication of undefined behavior, potential crashes, or decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. Original source's error checking (NULL checks, bounds validation) is present but not documented as contracts. The safety checks in functions like `vla_stack` have no explanatory comments.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships unclear. No documentation of call graph, global variable usage, or callback relationships. The original's clear function call patterns are obscured.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions loosely grouped by type (stack, heap, static, memory ops) but organization is arbitrary. No header file structure, no namespace/scoping information. The original's clear section organization is lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many external dependencies (`extern` declarations unresolved), uses x86-specific constructs, and would require significant patching to compile. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 5 + 2) / 4 = 3.5
+L2_avg = (3 + 6 + 4 + 4) / 4 = 4.25
+L3_avg = (4 + 4 + 4) / 3 = 4.0
+L4_avg = (2 + 4 + 1 + 2) / 4 = 2.25
+L5_avg = (3 + 5 + 3) / 3 = 3.67
+
+Overall = (3.5 × 0.30) + (4.25 × 0.25) + (4.0 × 0.20) + (2.25 × 0.15) + (3.67 × 0.10)
+        = 1.05 + 1.0625 + 0.8 + 0.3375 + 0.367
+        = 3.617 ≈ 3.6/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects (Bullet List)
+- Variable naming completely generic: `v0`, `v1`, `a0`, `a1`, `field_0`, `padding_0` - original semantic meaning completely lost
+- Excessive goto statements and computed jumps instead of natural loop/conditional constructs
+- No comments or documentation - code provides zero guidance for understanding
+- Struct/union types recovered with meaningless names (`struct_0`, `struct_1`) losing all semantic information
+- No anomaly detection - dangerous patterns like dangling pointer access presented without warning
+- Type precision severely degraded - all types become `unsigned int` or generic pointers
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (6/10)** - Function boundaries mostly preserved from original source, maintaining reasonable granularity
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (1/10)** - Zero flagging of suspicious code, undefined behavior, or decompilation uncertainty. Dangerous operations presented as normal code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr + idx * 4` suggests array indexing, `*ptr = value` suggests pointer dereference) to generate semantically meaningful names instead of `v0`, `v1`
+2. **Recover loop constructs from jump patterns**: Convert backward jumps into `for`/`while` loops instead of using goto; recognize common loop patterns like `do-while`
+3. **Add confidence indicators and anomaly warnings**: Flag potential undefined behavior (dangling pointers, double-free), indicate uncertainty in indirect calls, and add annotations for complex control flow
+
+---
+
+**Note:** There's a significant architecture mismatch - source specifies `arm64` but decompiled code shows `x86` platform. This may indicate a tooling or metadata error in the task setup.

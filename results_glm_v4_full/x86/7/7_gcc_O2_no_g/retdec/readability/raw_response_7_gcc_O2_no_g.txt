@@ -1,0 +1,101 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are universally generic (`v1`, `v2`, `a1`, `result`), providing no semantic hint about their purpose (e.g., `x`, `str`, `len`), which forces the reader to manually trace logic to understand them.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are recovered perfectly from the binary's symbol table (e.g., `param_fake_branch`, `call_opaque_predicate`), matching the source exactly and providing immediate high-level context.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: String literals are completely lost, replaced by opaque pointer arithmetic offsets (e.g., `(char *)(v1 + 0x2afd)`), and magic numbers for buffer sizes and offsets are pervasive without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts like `__x86_get_pc_thunk_bx` and inline stack canary checks (`__readgsdword(20)`), which significantly obscure the business logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is generally recognizable with `while` loops and `if` statements, but the transformation of `param_tail_call_optimized` from recursion to a loop, while readable, represents a structural deviation from the source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions correspond well to the source structure with appropriate granularity; helper functions like `decrypt_string` are correctly separated, and there are no monolithic code blocks.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code reads mostly top-to-bottom with minimal forward jumps; early returns are used effectively, and loop structures are contained, though the PIC setup interrupts the flow at the start of functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code inside `param_fake_branch` was correctly removed, and the tail recursion in `param_tail_call_optimized` was converted to an iterative loop, which actually improves clarity by removing recursion depth concerns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are generally accurate (`int32_t`, `char *`, `int32_t *`), though `int32_t` is used ubiquitously even where `size_t` or `unsigned` might be more specific in the source.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The `struct __jmp_buf_tag` is recovered but with generic fields (`e0`, `e1`, `e2`), losing the semantic meaning of the buffer components (save area, mask, etc.) compared to a standard `jmp_buf`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Code contains necessary casts for signal handlers and function pointers, but the extensive use of `int32_t` for pointers and offsets (e.g., `v1 + 0x2afd`) creates type confusion and potential safety ambiguity.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic used for global variable access.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The decompiler fails to identify or label specific patterns like the "Opaque Predicate" or "Fake Branch" obfuscations, presenting them as standard (or simplified) code without annotation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings are provided for the architectural mismatch (Source says ARM64, decompilation is x86) or the suspicious pointer arithmetic used for string access.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no documentation of preconditions (e.g., buffer sizes) or postconditions, even for functions like `decrypt_string` which have clear contracts in the source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: While function calls are clear, global variable access is obfuscated by offsets relative to the PIC base register, making it hard to see which globals are being used without calculating offsets.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically, and standard library functions are prototyped at the top, maintaining a reasonable file structure despite the noise.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies on specific compiler intrinsics (`__x86_get_pc_thunk_bx`) and linker-generated offsets (`&g3`), making it unlikely to compile without significant modification or the exact build environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 2 + 3) / 4 = 4.25
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.00
+L3_avg = (7 + 5 + 6) / 3 = 6.00
+L4_avg = (1 + 3 + 2 + 2) / 4 = 2.00
+L5_avg = (5 + 7 + 3) / 3 = 5.00
+
+Overall = (4.25 × 0.30) + (7.00 × 0.25) + (6.00 × 0.20) + 
+          (2.00 × 0.15) + (5.00 × 0.10)
+Overall = 1.275 + 1.75 + 1.2 + 0.3 + 0.5 = 5.025
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects
+- **String Literal Loss**: String literals are replaced by opaque pointer arithmetic offsets (e.g., `v1 + 0x2afd`), destroying readability of string operations.
+- **Generic Variable Names**: Variables are named `v1`, `a1`, etc., instead of semantic names like `x` or `str`, requiring manual mapping to source.
+- **PIC Noise Pollution**: Position Independent Code boilerplate (`__x86_get_pc_thunk_bx`) is inlined in almost every function, acting as significant noise.
+- **Architectural Mismatch**: Source metadata claims ARM64, but decompiled code is clearly x86/x86-64 (evidenced by `get_pc_thunk` and `gs` segment access), causing confusion.
+- **Inline Stack Canaries**: Stack canary checks (`__readgsdword`) are inline, cluttering the control flow of simple functions.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully recovered the original function names from the binary's symbol table, which is the strongest link to the original source intent.
+
+### Most Needs Improvement
+- **Literal Clarity (2/10)**: The loss of string literals and the presence of raw offset magic numbers make understanding data flow and string manipulation nearly impossible without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **String Literal Recovery**: Implement analysis to recover string constants from the data section and replace pointer arithmetic offsets with the actual string literals.
+2. **Variable Name Inference**: Utilize debug information (if available) or heuristic analysis to infer variable names from usage context (e.g., `a1` in `param_fake_branch` should be `x`).
+3. **PIC Abstraction**: Abstract away Position Independent Code (PIC) register loading (`get_pc_thunk`) and global offset table (GOT) access into a macro or hidden variable to reduce visual noise in the decompiled output.

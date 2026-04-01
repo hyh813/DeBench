@@ -1,0 +1,6 @@
+TRACE_ENT|0|test_calling_conventions|0|Arg0=1,Arg1=-313634664,Arg2=-313634648,Arg3=-1964167536|x0=0x1,x1=0xed4e5098,x2=0xed4e50a8,x3=0x8aed2e90,x4=0xf92b51d,x5=0xf2b6bb9f1d90,x6=0xf2b6bb9f1d90,x7=0xf2b6bb9f0580
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|call_cdecl|1|Arg0=1,Arg1=-1147198240,Arg2=0,Arg3=1|x0=0x1,x1=0xf2b6bb9f24e0,x2=0x0,x3=0x1,x4=0xa,x5=0x0,x6=0x0,x7=0x0
+TRACE_EXT|1|call_cdecl|1|15
+TRACE_PRINT|0|%43%41%4C%4C%2D%4C%31%2D%30%31%3A%20%31%35%0A
+TRACE_ENT|2|call_stdcall|1|Arg0=15,Arg1=-1146786664,Arg2=0,Arg3=0|x0=0xf,x1=0xf2b6bba56c98,x2=0x0,x3=0x0,x4=0xf2b6bba4df20,x5=0xf2b6bb9f1430,x6=0xffffed4e4c28,x7=0x0

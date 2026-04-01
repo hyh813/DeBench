@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2` instead of semantic names (`dst`, `src`, `buffer`, `len`). For example, `param_strcpy(char *a1, const char *a2)` loses the meaningful `dst`/`src` distinction from source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined function names are well-preserved (`param_strcpy`, `call_strcmp`, `param_signal_handling`). However, 61 library functions show "FAILED to decompile" which limits completeness.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `syscall(5, a1, 0)` hides `SYS_open`, `signal(10, signal_handler)` hides `SIGUSR1`, `0x14u` for 20 bytes. No constants recovered from original `#define` statements.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean for `-O0` compilation. Some redundant variable assignments (`v3 = v4--` patterns) but no severe compiler artifacts or debug instrumentation pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures mostly preserved (if-else, for loops). Some awkward constructions like `while(!signal_received) { v1 = v4--; if(v1 <= 0) break; }` instead of cleaner `for` loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well. Thread functions (`thread_compute`, `consumer_thread`) properly separated. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some nested conditionals in `param_socket_create` create deep indentation but flow remains traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from compiler output. The `call_memcpy` function has unnecessary zero-initialization of `v3`, `v4`, `v5` that aren't properly used in return calculation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degraded. `param_strcpy` returns `size_t` (correct) but original returned `int`. Many parameters use generic `int` instead of specific types like `__pid_t`, `key_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat buf` struct recovered but fields accessed generically (`buf.st_size`). Thread data structures flattened to arrays (`_DWORD v6[3]`) losing struct semantics from `ThreadData`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(_DWORD *)thread_return`, `(unsigned __int8 *)v2`. Function pointer casts like `(void *(*)(void *))thread_compute` lose type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output vs. extensive documentation in source. No algorithm explanations, no parameter descriptions, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`strcpy`, `memcpy`, `pthread_create`) recognized but not explicitly documented as patterns. Atomic operations decompiled to `__sync_*` helpers without explanation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "FAILED to decompile" markers for 61 functions provide transparency. However, no warnings about potential semantic errors like the `call_memcpy` array access issue.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not annotated). No postconditions or error condition documentation recovered from source comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without context about their purpose.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source sections. However, no file organization info, no header declarations, no namespace grouping visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 61 external functions failed to decompile requiring stubs. Atomic helper functions (`__sync_fetch_and_add_4`, etc.) would need implementation. Cannot compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+4+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):   (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type System):  (6+5+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):     (2+5+6+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):   (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.74/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable names completely generic**: `a1`, `a2`, `v1` instead of `dst`, `src`, `buffer` - requires manual inference for every variable
+- **Magic numbers replace constants**: `syscall(5, ...)` instead of `SYS_open`, `signal(10, ...)` instead of `SIGUSR1`
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Semantic error in call_memcpy**: Returns `v2[0] + v3 + v5` instead of `v2[0] + v2[2] + v2[4]` - produces wrong result
+- **61 failed decompilations**: External library functions not recovered, requiring manual stub creation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately, maintaining semantic identity across decompilation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation that existed in source; no decompilation confidence indicators or algorithm explanations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and parameter positions (e.g., first char* param in copy function → `dst`, second → `src`)
+2. **Recover symbolic constants** from syscall numbers, signal numbers, and socket constants using platform-specific databases
+3. **Add decompilation confidence annotations** indicating which constructs are certain vs. inferred, especially for failed external function calls

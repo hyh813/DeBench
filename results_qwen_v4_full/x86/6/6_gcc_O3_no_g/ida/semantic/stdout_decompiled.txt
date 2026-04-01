@@ -1,0 +1,23 @@
+Testing standard library functions...
+LibL101D: 8
+LibL102D: 0
+LibL103D: 12
+LibL104D: 90
+LibL105D: -1
+Value: 42, Name: Test
+LibL106D: 22
+LibL107D: 579
+LibL108D: 42
+LibL109D: 42
+LibL110D: 90
+LibL111D: 0
+LibL112D: 15
+Testing system calls...
+SysL301D: 42
+SysL302D: 42
+SysL303D: 42
+SysL304D: 42
+SysL305D: 42
+SysL306D: 42
+SysL307D: 42
+Testing thread concurrency...

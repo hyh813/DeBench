@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 14,
+  "source_file": "decompiled/ida_out/arm32/5-23/5-23_clang_O2_g.c",
+  "fixed_file": "results_minimax_v4_full/arm32/5-23/5-23_clang_O2_g/ida/syntactic/fix_5-23_clang_O2_g.c"
+}

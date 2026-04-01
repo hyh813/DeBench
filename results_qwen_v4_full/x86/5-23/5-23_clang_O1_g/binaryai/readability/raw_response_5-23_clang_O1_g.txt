@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1` instead of semantic names like `size`, `counter`, `increment`. For example, `param_macro_constants(int param_1)` should be `param_macro_constants(int size)`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (e.g., `param_macro_constants`, `param_asm_basic`). Some helper functions have generic names (`FUN_00011030`, `FUN_000110b0`) but core functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x200` (should be `MAX_SIZE/2`), `0x40` (should be `BUFFER_COUNT*4`), `0xdef0` (platform constant). Original constants completely lost during preprocessing.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present: `LOCK()/UNLOCK()` pseudo-functions for atomics, external function wrappers that just call the real function (e.g., `mprotect` wrapper). Generally manageable but adds clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recovered as `for` constructs (e.g., `param_asm_clobber`). Conditionals are clear. At `-O0`, control flow should match source closely, which it mostly does.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with appropriate granularity. Some `call_*` functions are trivial (just return constants) which is expected from inlined calls at `-O0`.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some functions like `test_asm_features` have inline code that should be function calls, disrupting flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in test functions where code from called functions is duplicated inline. `test_asm_features` contains logic that should just call `param_*` functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` instead of `int32_t`, `size_t`. `undefined` and `undefined4` types used frequently. Pointer types generally correct but lack const-correctness.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in this code. Arrays handled reasonably (e.g., `local_1c[6]` for array). No complex struct recovery needed for this test case.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `undefined *` types used for pointers. Some implicit casts present. No unsafe cast warnings flagged. Atomic operations use pseudo `LOCK()/UNLOCK()` instead of proper types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **ZERO comments** in decompiled code. Original had extensive comments explaining macros, preprocessing behavior, expected values. Complete semantic information loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Macro expansions (SQUARE, MAX, ADD_16) not identified. Assembly patterns not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for uncertain code regions. Inline assembly recovered as C code without indicating original was assembly. `LOCK()/UNLOCK()` pseudo-functions not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or expected return values documented. Original had comments like "期望：64" (expected: 64) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. No indication of which functions call which. External dependencies not clearly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. No header separation. Original had clear section markers (5.2, 5.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would need significant work to compile standalone. External function declarations present but `LOCK()/UNLOCK()` are undefined. `undefined` types not standard C.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+4+6)/4 = 5.50
+Level 2 (Structural):   (7+7+7+6)/4 = 6.75
+Level 3 (Type):         (5+6+5)/3 = 5.33
+Level 4 (Semantic):     (1+3+3+2)/4 = 2.25
+Level 5 (Contextual):   (5+5+4)/3 = 4.67
+
+Overall = (5.50 × 0.30) + (6.75 × 0.25) + (5.33 × 0.20) + (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.65 + 1.6875 + 1.066 + 0.3375 + 0.467
+        = 5.21/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects:
+- **Zero comments recovered** - Original had 200+ lines of explanatory comments completely lost
+- **Magic numbers everywhere** - `0x200`, `0x400`, `0xdef0` instead of named constants like `MAX_SIZE`, `BUFFER_COUNT`
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` obscure semantic meaning (should be `size`, `result`, `counter`)
+- **Inline assembly recovered as C** - No indication that `param_asm_basic` originally contained `__asm__` blocks
+- **Test functions inlined** - `test_asm_features` contains duplicated logic instead of calling `param_*` functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making navigation possible despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all documentation, expected values, and semantic explanations that made original code understandable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant definitions** - Detect repeated magic numbers and suggest named constants (e.g., `0x400` → `MAX_SIZE`)
+2. **Preserve/restore comments** - Integrate debug symbols (`-g` flag) to recover original comments or generate semantic annotations
+3. **Flag assembly recovery** - When inline assembly is recovered as C, add comments indicating original was `__asm__` blocks with confidence level

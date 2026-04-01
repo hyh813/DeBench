@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `ptr`, `cur`) with no semantic meaning. For example, `local_vars` uses `a0` instead of `x`, and `heap_basic` uses `ptr` and `cur` instead of `arr` and `i`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`local_vars`, `heap_basic`, `double_value`), but many are mechanical (`sub_4008f4`, `$x`, `__do_global_dtors_aux`). Runtime functions like `_init`, `_start` are acceptable but test functions should retain names.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX), `4294967294`, `17179869180` obscure simple operations. The expression `(a0 * 2 | a0 >> 31) & 4294967294` should simply be `a0 * 2` for signed int.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Contains unsupported operations (`[D] unsupported_Iop_ZeroHI64ofV128()`), frame pointer manipulation (`v0 = &v1`), and complex bit operations for simple arithmetic that should be eliminated at `-O0`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex `do-while` with bit-manipulation conditions. `vla_stack` uses incomprehensible loop termination: `((__ROL__(v4, 1) & 18446744073709551614) + 2 & 17179869180) != i`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but some are over-complicated (`test_stack_memory` is 100+ lines with inline loop unrolling). Some functions like `tree_heap_traversal` are over-simplified to just `return 60`.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple `goto` statements (`goto g_412ff8`, `goto LABEL_401394`) disrupt flow. `linked_list_heap` has complex label-based control flow instead of clean while loops.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repeated bit-manipulation patterns for signed overflow handling appear in nearly every function. `double_value` shows `(a0 * 2 | a0 >> 31) & 4294967294` instead of simple `a0 * 2`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Excessive `unsigned long long` where `int` suffices. `local_vars` takes `unsigned int a0` but source uses `int x`. Function pointers lose signature information (`global_func_ptr` is `unsigned long long`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`, `padding_4`). `Node` struct becomes `struct_0` with `field_8` for the `next` pointer, losing semantic meaning entirely.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout. `heap_nested` has `ptr->field_8 = ptr` which is type-confused. Multiple implicit casts between pointer and integer types without warnings.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. No explanation of complex bit operations, no decompilation confidence indicators, no algorithm documentation. Only auto-generated variable type comments exist.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Simple idioms completely obscured. `x * 2` becomes signed overflow-safe bit manipulation. `malloc` + loop patterns not recognized as array initialization. No pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some unsupported operations marked (`[D] unsupported_Iop_ZeroHI64ofV128()`, `[D] MBusEvent-Imbe_Fence()`), but inconsistent. Many problematic patterns presented confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 > 0` for `alloca_usage`). Null checks present but not explained. No postcondition or invariant recovery.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but globals have cryptic names (`$d.3`, `g_412ff8`, `g_4022e9`). `extern_global_var` preserved but `extern_function` call site unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. No header file structure. Static functions not properly scoped (some marked `extern` incorrectly).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains unsupported operations that won't compile (`[D] unsupported_Iop_ZeroHI64ofV128()`). External dependencies (`__libc_start_main`, `call_weak_fn`) not properly declared. Multiple type mismatches.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+2+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+5+4+3)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.56/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Signed arithmetic obfuscated**: Simple `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294` in `double_value`
+- **Variable names completely generic**: `v0`, `v1`, `a0` throughout with no semantic inference
+- **Unsupported operations in output**: `[D] unsupported_Iop_ZeroHI64ofV128()` appears in multiple functions
+- **Struct field names lost**: `Node->next` becomes `struct_0->field_8` losing all meaning
+- **Global variables cryptically named**: `$d.3`, `g_412ff8` instead of `global_counter`, function pointers
+- **Loop conditions incomprehensible**: VLA loop uses 50+ character bit-manipulation expression
+- **Some functions over-simplified**: `tree_heap_traversal` returns constant `60` instead of showing tree logic
+
+### Best Quality Aspect:
+- **Anomaly Indication (5/10)** - At least some unsupported operations are marked with `[D]` prefixes, showing the decompiler acknowledges uncertainty in some areas.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero explanatory comments for complex transformations; a user cannot understand why simple arithmetic became bit manipulation without external knowledge.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement signed arithmetic pattern recognition** - Detect overflow-safe multiplication patterns and recover to simple `x * 2` expressions with optional overflow comments.
+2. **Add semantic variable name inference** - Use usage patterns (loop counters, array indices, pointer dereferences) to suggest names like `i`, `arr`, `size` instead of `v0`, `v1`.
+3. **Recover struct field semantics from usage** - Analyze how struct fields are used (e.g., `field_8` always assigned malloc result) to suggest names like `next`, `data`, `ptr`.
+
+---
+
+## Assessment Notes
+
+**Critical Observation**: This decompilation was compiled at `-O0` (debug mode) which should preserve maximum readability. The severe degradation observed suggests either:
+1. The binary was actually compiled with optimizations despite metadata
+2. The decompiler (Ghidra/Angr) has significant ARM64 recovery issues
+3. The decompilation configuration was not optimized for readability
+
+**Expected vs. Actual**: At `-O0`, we should see 8-10/10 readability. The 3.6/10 score indicates fundamental decompilation failures, not just optimization artifacts. The bit-manipulation for signed overflow should not appear in `-O0` compiled code.

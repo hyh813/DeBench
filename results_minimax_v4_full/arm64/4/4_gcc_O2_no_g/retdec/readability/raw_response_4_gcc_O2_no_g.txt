@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3` throughout the codebase. The original source uses meaningful names like `count`, `args`, `sum`, but the decompiled version obscures these completely with numbered variables that make tracking purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are accurately recovered from symbols - `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `func_many_args` all match the original source exactly. Minor deduction for some internal functions like `function_730` which could be `strlen`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiler replaced all function calls with hardcoded return values (e.g., `return 15;` instead of `cdecl_func(5,10)`). Magic numbers like `0xffffffc8`, `0x100000000` appear without explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary bit masking operations (`& 0xffffffff`) present but not severe. No __asm__ blocks or debug instrumentation visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The `varargs_func` and `param_varargs` use goto-based while loops with labels (`lab_0xad0`, `lab_0xadc`) instead of natural loop constructs. At -O0, this is unnecessary complexity. Other functions have straightforward if-else logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - most are 5-20 lines. Test functions like `test_calling_conventions` (~80 lines) are reasonable for their purpose. No obvious inlining or over-fragmentation issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with early returns. However, the goto-based loops in varargs functions create non-linear flow with forward jumps that disrupt readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or common subexpression duplication. Loop patterns in varargs functions are compiler-generated but not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All functions return `int64_t` regardless of actual return type (original uses `int`). Parameters are all `int64_t` losing distinction between `int`, `char*`, `double`, `long long`. No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions recovered. `SmallStruct` and `LargeStruct` from source are completely lost - accessed via raw pointer arithmetic like `*(int32_t *)(v2 + 4)`. No union recovery either.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t)v1`, `(int64_t)v1`, `(char *)str`. Pointer arithmetic without bounds checking: `v2 + 4`, `v3 + 8`. Function pointers like `void (*init)()` are generic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x6f0 - 0x708`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments provide no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. The varargs pattern is not recognized as such - implemented with goto loops instead of being identified as stdarg usage. No algorithm patterns named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No suspicious code flagged. No indication of indirect calls that couldn't be resolved. No warnings about unusual stack layouts or potential undefined behavior. Silent on all anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. No invariants. No error condition documentation. Complete absence of contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear (`test_calling_conventions()`). However, no documentation of call graph relationships, global variable usage, or callback relationships. Relationships are implicit through naming only.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Related functions (calling convention tests, parameter tests, return tests) are grouped together. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has necessary includes and function prototypes. Uses `__printf_chk` which requires linking libstdc++. Should compile with minor adjustments but dependencies not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`, `v2`, etc. throughout, losing all semantic meaning from original parameters like `count`, `args`, `sum`
+- All function calls replaced with hardcoded return values (e.g., `return 15;`), completely losing the computation logic
+- No struct/type recovery - `SmallStruct` and `LargeStruct` completely lost, accessed via raw pointer arithmetic
+- Type precision severely degraded - all types are `int64_t`, original `int`, `char*`, `double`, `long long` distinctions lost
+- No comments except address ranges - no algorithm explanation, no decompilation confidence, no API contracts
+
+**Best Quality Aspect:** Function Naming (scored 9/10)  
+Function names are accurately recovered from symbols, matching the original source exactly (cdecl_func, call_cdecl, varargs_func, etc.)
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+Complete absence of useful comments, pattern recognition, anomaly indication, and contract recovery makes the code opaque and difficult to understand semantically.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v1` used as loop counter should be named `i` or `count`; pointer parameters used in strlen should be named `str`
+2. Recover function call logic instead of constant folding - show `cdecl_func(5, 10)` rather than `return 15`
+3. Add semantic comments explaining algorithms, flagging uncertain decompilations, and documenting preconditions/postconditions

@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `local_28`, `__ptr`, and `piVar2`, completely obscuring semantic meaning (e.g., `local_28` represents `arr` in `local_array`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source symbols (e.g., `local_vars`, `heap_basic`, `global_var_access`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants are replaced by magic numbers (e.g., `0x2a` instead of `42`, `0x14` instead of `20`, `0x800` instead of `2048`), making the logic harder to follow.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Mostly clean, but some compiler artifacts leak through, such as the register name `in_r3` appearing as a variable in `memop_memset`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Loops are often represented as `do-while` structures with negative counters and confusing indexing (e.g., `local_28[-iVar2]` in `local_array`), deviating significantly from the source's `for` loops.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and correspond to the source structure, maintaining appropriate granularity despite internal optimizations.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but pointer arithmetic and stack manipulation (e.g., in `vla_stack`) disrupt the linear flow of logic.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Dead code is removed, but aggressive constant propagation in test functions (e.g., `test_stack_memory` printing `0x14` instead of calling `local_vars`) obscures the program's intended logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are mostly correct, but specific types like `size_t` are often demoted to `int` or `uint`, and `undefined4` appears in some contexts.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct usage is often lost or reduced to raw pointer arithmetic; for example, `Point` in `local_struct` is completely optimized away, and `Node` access in `heap_nested` relies on raw offsets.
+
+**11. Type Safety:** Score: 6/10
+Justification: Pointer casts are generally correct but frequent; however, the decompiler's use of `undefined4` and direct pointer arithmetic (e.g., `*(int *)(buf + 1)`) reduces perceived safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings (e.g., "WARNING: Unknown calling convention") and provide no insight into the algorithm's logic or purpose.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like Variable Length Arrays (VLA) and `alloca` are represented as complex stack pointer arithmetic (`*(int *)((int)&iStack_10 + ...)`), failing to convey the high-level idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags issues like "Unknown calling convention" and "Removing unreachable block," providing useful warnings about code certainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not semantically highlighted as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to external and internal functions are clear, and global variable accesses (e.g., `global_counter`) are easily identifiable.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's organization (stack, heap, static tests), which aids navigation.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on Ghidra-specific types like `undefined4` and would require significant patching (headers, type definitions) to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are generic (`iVar1`, `local_28`), completely losing the semantic context of the original source.
+- Loop structures are unnatural (e.g., negative indexing `local_28[-iVar2]`), making simple array iteration difficult to follow.
+- Magic numbers (`0x2a`, `0x14`) replace named constants, reducing code self-documentation.
+- Test functions contain hardcoded results instead of function calls (e.g., `printf(..., 0x14)`), hiding the test logic.
+- Composite types (structs) are frequently optimized away or accessed via raw pointer arithmetic, losing data structure context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function names from the binary symbols, making the high-level purpose of each block immediately clear.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on generic names like `iVar1` and `local_28` makes tracking data flow and understanding variable roles nearly impossible without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhanced Variable Recovery**: Utilize debug information (if available) or improved type propagation to infer semantic names (e.g., renaming `iVar1` to `index` or `sum` based on usage).
+2. **Loop Structure Normalization**: Transform compiler-optimized `do-while` loops with negative counters back into standard `for` loops with positive indices to improve readability.
+3. **Constant Propagation Control**: Provide an option to disable aggressive constant propagation for "test" or "main" functions so that the *logic* of the code (calling functions) remains visible rather than just the *results*.

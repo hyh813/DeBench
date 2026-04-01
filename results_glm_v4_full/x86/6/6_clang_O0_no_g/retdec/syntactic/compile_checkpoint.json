@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 10,
+  "source_file": "decompiled/retdec_out/x86/6/6_clang_O0_no_g.c",
+  "fixed_file": "results_glm_v4_full/x86/6/6_clang_O0_no_g/retdec/syntactic/fix_6_clang_O0_no_g.c"
+}

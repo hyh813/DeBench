@@ -1,0 +1,92 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `v1`, `v2`, `result`, `result2` throughout. The original source used meaningful names like `x`, `arr`, `n`, `sum`, `i`, `c`, `p`, but the decompiled code provides no semantic information about variable purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (e.g., `process_char`, `array_1d_stack`, `ptr_single`, `linked_list`). However, some internal functions have generic names like `function_3f8`, `function_404`, and library stubs have mangled names like `__aeabi_dmul`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x100000`, `0x800000`, `254`, `256` appear without explanation. The decompiler computed test output values (e.g., `printf("DT-L1-01 (process_char): %c\n", 97);`) but lost the original expressions. Constants like `g6`, `g7` are used without meaningful names.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from ~60 library functions not in original source (__aeabi_dmul, __addsf3, __mulsf3, etc.). These 700+ lines of compiler runtime code obscure the actual test functions. No filtering of compiler-generated artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are recognizable. However, some control flow is convoluted - e.g., `array_3d` uses complex while loops with repeated code blocks. At -O0, the control flow should more closely match source but some restructuring occurred.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated and match original granularity. However, the massive library function `__aeabi_dmul` (300+ lines) is included when it shouldn't be part of the decompilation output, and some functions like `array_3d` are bloated with unrolled code.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but some forward jumps exist. The `graph_traverse` function uses goto labels (`lab_0x11cc`, `lab_0x11b4`) which disrupts linear reading. Some nested conditions create depth issues.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in `array_3d` with repeated access patterns (`v3 = *(int32_t *)v2; v4 = *(int32_t *)(v2 + 4);` etc.). Loop unrolling is present but not commented or abstracted. The `__aeabi_dmul` function contains massive redundant code paths.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. All parameters use `int32_t` regardless of original type - losing char, short, long, long long, float, double, long double distinctions. Pointers are all `int32_t` instead of proper pointer types. No const/volatile preservation.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union types recovered. All access uses raw pointer arithmetic: `*(int32_t *)(a1 + 4)` instead of `p->y`. Original had `Point3D`, `Node`, `Rect`, `Widget`, `UnionData` structs - all lost. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe operations. Raw pointer arithmetic everywhere (e.g., `v1 += 4`, `v1 += 40`). Casts from int to pointer and back. No type checking. The `ptr_void` function has completely wrong implementation returning `-1` for type 0 instead of dereferencing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. No explanation of what functions do, no decompilation confidence indicators, no algorithm documentation. The original had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Some data structure patterns are somewhat recognizable (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`) but not explicitly named or documented. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The `ptr_void` function has completely wrong logic (returns -1 for type 0 instead of dereferencing as int) but no warning. No indication of indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanation. The original source had clear semantics (e.g., "returns x * 2") but these are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present in the code but relationships not documented. No indication of which functions call which, no global variable usage transparency. The test functions call sub-functions but this relationship isn't made clear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped somewhat logically (data types, arrays, pointers, composites) but the file is monolithic with 1800+ lines. Library functions are interspersed with test functions. No header/interface separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile as-is. Many missing declarations (e.g., `llvm_ctlz_i32` used but not defined). Dependencies on standard library functions not properly declared. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`a1`, `a2`, `v1`, `result`) providing no semantic meaning
+- **Type precision**: All types collapsed to `int32_t`, losing char, short, long, float, double, pointer distinctions
+- **Composite type loss**: No struct/union recovery - all access is raw pointer arithmetic like `*(int32_t *)(a1 + 4)`
+- **Noise pollution**: ~700 lines of compiler library functions (__aeabi_*, __addsf3, etc.) included unnecessarily
+- **No comments**: Zero explanatory comments about function purpose, algorithm, or decompilation confidence
+
+### Best Quality Aspect: Function Naming (7/10)
+- Most test function names match original source (process_char, array_1d_stack, linked_list, etc.)
+- The decompiler correctly identified and named the main test functions
+
+### Most Needs Improvement: Type System Fidelity (2.7/10)
+- Types are severely degraded - everything is int32_t
+- No struct/union recovery at all
+- Significant type safety issues with raw pointer arithmetic
+
+### Top 3 Recommendations:
+1. **Recover struct/union types** from memory layout analysis - field names and types should be inferred from access patterns
+2. **Infer variable names from usage** - e.g., variables used as array indices should be named `index` or `i`, loop accumulators should be `sum` or `total`
+3. **Filter compiler runtime** - library functions like __aeabi_dmul should be excluded or marked as external dependencies, not decompiled inline

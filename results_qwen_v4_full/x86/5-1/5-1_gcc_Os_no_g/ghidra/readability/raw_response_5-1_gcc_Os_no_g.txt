@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_10`, `local_30`, `iVar1`, `puVar1`, `uVar6`) with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods show class::method format (`Base::virtual_func`, `Container<int>::push`). However, helper functions use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers without explanation (`0x125c`, `0x3e9`, `0x47`, `0x2bf`). Some constants are recoverable (0x47 = 71 for multiple inheritance test), but most require manual calculation to understand.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `get_pc_thunk_*` injections, stack canary checks (`in_GS_OFFSET + 0x14`), unreachable block warnings, and `__stack_chk_fail_local()` calls throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions are completely constant-folded (`test_cpp_multiple_inheritance` returns `0x47` directly). Virtual calls show warnings ("Could not recover jumptable"). Try/catch blocks present but with warnings.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive fragmentation with multiple destructor thunks per class (virtual thunk, non-virtual thunk, regular). Some test functions optimized to single return statements losing all structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks at function ends disrupt flow. Exception handling blocks create non-linear paths with catch handlers.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor variants per class create significant redundancy (e.g., `~DiamondDerived` has 8+ variants). Template instantiations not consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of precise types (`int`, `double`, `size_t`) and generic types (`undefined4`, `undefined*`, `void*`). Template types partially recovered (`Container<int>`, `unique_ptr<int[]>`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures partially recovered with method names, but field names lost entirely. Object layouts shown through pointer arithmetic (`this + *(int *)(*(int *)this + -0xc)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4*)`, `(undefined**)`, `(Base*)&local_1c`). Pointer arithmetic on class objects without bounds checking. Raw `operator_new` calls without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Function...replaced with injection"). No semantic comments explaining what code does or algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized (virtual functions, destructors, templates, smart pointers) but not explicitly named as design patterns. RTTI and exception handling visible but not labeled.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for unresolved calls ("Could not recover jumptable"), unreachable blocks, and stack issues. Warnings are specific about what failed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts lost. No documentation of expected return values or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch unclear. Class inheritance relationships partially shown through method naming but vtable connections opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Related class methods scattered. No header/implementation separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires many external stubs (`operator_new`, `__cxa_throw`, `__dynamic_cast`, `std::unique_ptr` destructors). Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (4+5+7+2)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.53/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_10`, `iVar1`, `puVar1`) - original semantic names like `capture_by_value`, `instance_count`, `multiplier` entirely lost
+- **Aggressive constant folding** despite claimed -O0 compilation - `test_cpp_multiple_inheritance` returns `0x47` directly, losing all logic
+- **Excessive destructor thunk proliferation** - 8+ variants of `~DiamondDerived` create massive redundancy
+- **Pointer arithmetic replaces field access** - `*(int *)(this + *(int *)(*(int *)this + -0xc) + 4)` instead of `this->shared_data`
+- **Missing exception handling semantics** - try/catch blocks present but exception types and propagation logic obscured
+
+### Best Quality Aspect: **Anomaly Indication (7/10)**
+- Ghidra's warning system clearly flags unresolved indirect calls, unreachable blocks, and stack issues with specific messages
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or exception contracts documented; critical for understanding C++ exception safety guarantees
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `instance_count` for static counters, `multiplier` for class fields used in multiplication
+2. **Recover C++ exception handling semantics** - Document exception types, catch block purposes, and re-throw behavior instead of just showing `__cxa_throw` calls
+3. **Consolidate thunk functions with annotations** - Group virtual/non-virtual thunks under primary method with clear annotations explaining adjustment purposes rather than creating separate functions

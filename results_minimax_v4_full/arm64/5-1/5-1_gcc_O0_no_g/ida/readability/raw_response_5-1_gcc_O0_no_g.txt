@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`. Some exceptions like `Value`, `Size`, `Data` are descriptive, but the majority obscure purpose. Register references like `// w19`, `// x0` add confusion.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Class methods are well-recovered with proper names like `SimpleClass::getValue`, `SimpleClass::setValue`, `LifecycleClass::getData`. Test functions retain meaningful names like `test_cpp_member_func`. The mangled names are properly decoded.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Most literals are inferable from context (e.g., `5, "Test"` constructor params). However, `0x1234` (4660) for `getClassID` lacks explanation as a magic number. The value `1000` in constructor test is clear from multiplication context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise includes stack frame annotations (`[xsp+14h] [xbp+14h]`), type annotations (`_BYTE`, `_DWORD`, `_QWORD`), and register references. Some redundant casts present. The "FAILED to decompile" section shows 27 unresolved functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if-else, ternary operators, and loop structures. At -O0, loops are preserved correctly. No spurious goto statements. Virtual dispatch through vtable is handled appropriately.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: All 12 test functions are properly decomposed as separate functions. Class methods are extracted correctly. Each function has reasonable size and single responsibility. Template instantiations are properly separated.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No computed jumps disrupting flow. Depth is manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. At -O0, loop unrolling is minimal. Common subexpression elimination artifacts are minimal. Code is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `__int64`, `int`, `unsigned int` appropriately. Some generic types like `_BYTE`, `_DWORD`, `_QWORD` for raw memory. Function pointer types like `__int64 (__fastcall ***)(_QWORD, _QWORD)` are technically correct but verbose. Const correctness mostly preserved.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class structures are well-recovered: `SimpleClass` (value, name[32]), `LifecycleClass` (data*, size), `Base`/`Derived` with vtables, `MultiDerived` with multiple inheritance, `DiamondDerived` with virtual inheritance, `Point` (x, y), `Container<T>` template. Field names mostly match source.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some pointer arithmetic present (e.g., `*(_DWORD *)(a1 + 40)`). Virtual function calls through function pointers are inherent to polymorphism. Casts between pointer types are necessary for decompilation. No severe safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very sparse comments. Most are function headers with mangled names or stack frame annotations. No algorithm explanations, no decompilation confidence indicators, no API contracts. The "F" marker and "BYREF" are the only annotations.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms recognized: constructors/destructors, virtual function tables (vtable shown as `off_16B10`), operator overloading (`operator+`, `operator==`, `operator++`), template instantiation. Thunk functions for multiple inheritance are properly labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 27 functions show "FAILED to decompile" at the end. Some indirect calls present but not explicitly flagged as uncertain. No explicit warnings about potential undefined behavior or unresolved indirect calls within the code body.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The decompiler provides no guidance on expected input ranges or return value guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Class method relationships clear through naming (`ClassName::methodName`). Virtual dispatch shown through vtable pointers. Static method calls like `SimpleClass::getClassID` are clear. However, no explicit call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically by test function. Class methods grouped with their classes. Static methods properly identified. Template instantiations separated. Overall organization matches source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C++ types and should compile with minimal modifications. External dependencies (standard library functions) are implied but not explicitly documented. No compiler-specific hacks observed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`v0`-`v9`), making it difficult to track variable purpose across function calls
+- Comments are virtually absent - no algorithm explanations, no decompilation confidence indicators
+- No contract recovery (preconditions, postconditions, invariants) - code provides no semantic guidance
+- 27 functions failed to decompile, showing significant gaps in binary analysis
+- Magic number `0x1234` used without explanation as `getClassID()` return value
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+All test functions and class methods are properly separated with correct boundaries. The decompiler maintained the original code's modular structure.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+Generic single-letter variable names with numeric suffixes make it extremely difficult to understand data flow. Even at -O0, the decompiler should infer names from usage patterns (e.g., `temp` for swap operations, `result` for return values).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, function parameters) to suggest descriptive names like `index`, `count`, `result`, `buffer`
+2. **Add semantic comments**: Include algorithm explanations, decompilation confidence for indirect calls, and note any assumptions about input validity
+3. **Recover preconditions/postconditions**: Detect null checks, bounds checks, and return value patterns to document expected behavior and guarantees

@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `flag1` instead of semantic names like `result`, `encrypted`, `canary`. Original `param_fake_branch` had `result` and `str`, but decompiled version just uses `a0`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions preserved original names (`param_fake_branch`, `param_opaque_predicate`), but many runtime functions use mechanical names (`sub_401030`, `sub_401040`). Critical functions like `param_division_by_zero` lost parameter information.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX), `0x77359400`, and `90` (should be `0x5A`) appear without explanation. Original had `0xDEADBEEF` with context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `_init`, `__do_global_ctors_aux`, `deregister_tm_clones`, `register_tm_clones`, and 20+ `sub_401xxx` stub functions clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` statements instead of structured loops (`goto v1->field_3c;`). `param_fake_branch` lost both fake branch conditions entirely, reducing to `return a0;`.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: `param_buffer_overflow_stack` reduced from 15 lines to `return a0;` losing all overflow logic. Many helper functions are compiler runtime artifacts, not meaningful decomposition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Some functions read linearly but others have disruptive jump patterns. `param_opaque_predicate` has complex nested conditionals that obscure the original clear logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated struct definitions with slight variations (`struct_0` defined 15+ times). Runtime initialization functions have redundant patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All types degraded to `unsigned int` or `int`. Original had `const char*`, `jmp_buf`, `volatile int`, `size_t` - all lost. `param_division_by_zero()` has no parameters in decompiled version.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs use generic field names (`padding_0`, `field_0`, `field_3c`). Original bitfield struct with named fields (`a:3`, `b:5`, `c:24`) completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointers as `void*`, incorrect parameter counts, missing const correctness. `decrypt_string` returns `char[2]` instead of `const char*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only has "[D] Unsupported jumpkind" warnings. Original had extensive documentation about obfuscation techniques.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition for fake branches, opaque predicates, or instruction substitution. These obfuscation patterns are completely obscured.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged ("Unsupported jumpkind Ijk_SigTRAP") but critical issues not flagged (missing parameters, lost logic in `param_fake_branch`).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or expected values documented. Original had clear expectations ("期望：10", "期望：225").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Global variables have generic names (`g_402008`, `g_402038`). Function call relationships visible but semantic relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization code mixed with user code arbitrarily.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains undefined symbols (`_ccall`, `__stack_chk_fail_local`, `encrypted.0`). Requires extensive stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+5+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):   (4+4+5+5)/4 = 4.50  × 0.25 = 1.125
+Level 3 (Type System):  (3+3+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):     (2+2+4+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):   (4+4+3)/3   = 3.67  × 0.10 = 0.367
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 3.67/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost logic** - Both fake branch conditions (`x*x < 0` and `strlen(str) < 0`) eliminated, reduced to `return a0;`
+- **`param_division_by_zero` missing parameter** - Function signature shows `()` instead of `(int x)`, making division operation impossible to understand
+- **`param_buffer_overflow_stack` logic eliminated** - All buffer overflow detection code removed, reduced to `return a0;`
+- **Generic variable naming throughout** - `v0`, `v1`, `a0`, `flag1` obscure semantic meaning
+- **No semantic comments** - Zero documentation explaining obfuscation techniques or expected behavior
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core function names like `param_fake_branch`, `param_opaque_predicate`, `param_tail_call_optimized` were preserved from original source, providing some semantic anchors.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means readers cannot understand the purpose of obfuscation techniques or expected behavior without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function parameters accurately** - Critical functions like `param_division_by_zero` and `param_null_pointer_deref` lost their parameters entirely, making semantic understanding impossible.
+2. **Recover control flow structures from branch conditions** - Fake branch conditions (`x*x < 0`, `strlen(str) < 0`) should be recognized and preserved rather than optimized away.
+3. **Add semantic annotations for obfuscation patterns** - Detect and label patterns like opaque predicates, fake branches, and instruction substitution with explanatory comments.

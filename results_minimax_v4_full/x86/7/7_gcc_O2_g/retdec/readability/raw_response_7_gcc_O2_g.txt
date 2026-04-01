@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original source implements **OBF-L4-02: Fake Branch (Always-False)** obfuscation with two intentionally unreachable code paths:
+1. `x * x < 0` - mathematically impossible for real numbers
+2. `strlen(str) < 0` - string length cannot be negative
+
+The decompiled version has **completely eliminated these fake branches**, returning only `return result;`. While semantically correct, this destroys the intentional obfuscation pattern that would be visible in the source.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter named `result` is reasonable but doesn't match source parameter `x`. The name `result` was actually a local variable in the source, creating confusion about the parameter's role.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` exactly matches the original source function name. The decompiler preserved the semantic naming perfectly.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this simple function. The decompiled version has no magic numbers or unexplained constants.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: Clean code with no compiler artifacts, register spills, or redundant casts. The function is minimal and readable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiler eliminated all control flow, reducing the function to a single `return result;` statement. At `-O0` optimization, the fake branch conditions should have been preserved as they represent intentional obfuscation, not dead code to be eliminated.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function is appropriately sized (2 lines). No decomposition issues. The call wrapper `call_fake_branch` is also properly separated.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The function is perfectly linear - a single return statement with no jumps or branches.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. The simplified version is clean and minimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Uses `int32_t` which is appropriate for ARM64 architecture. The original used `int`, and `int32_t` is the correct 32-bit equivalent. Minor deduction for not preserving the original `int` type.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) used in this function, so nothing to recover.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No type safety issues. The simple return statement is type-safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated address range comments (`// 0x13b0`) are present. No explanation of the fake branch obfuscation pattern or why branches were eliminated. The semantic intent of the original obfuscation is completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The decompiler failed to recognize the **fake branch (always-false condition)** obfuscation pattern. This is a critical pattern from the OBF-L4-02 category that should have been preserved and documented. The decompiler treated it as dead code rather than intentional obfuscation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication that branches were eliminated or that this represents an obfuscation pattern. The decompiler silently removed what it perceived as dead code without flagging this as potentially intentional obfuscation.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No preconditions or postconditions recovered. Not applicable for this simple function.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The relationship between `call_fake_branch()` and `param_fake_branch()` is clear. The call site shows `param_fake_branch(10)` being replaced with constant `10`, which is reasonable constant propagation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped with other obfuscation/optimization test functions. Good organization matching the source file structure.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The code compiles successfully (as noted in metadata). Uses standard library functions and types. Minor deduction for missing some header dependencies in the decompiled output.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- **Fake branch obfuscation pattern destroyed**: The decompiler eliminated the always-false conditions (`x*x < 0`, `strlen(str) < 0`) that were intentionally placed as obfuscation, treating them as dead code instead of recognizing the OBF-L4-02 pattern
+- **No anomaly indication**: The elimination of entire code paths should have been flagged as potentially intentional obfuscation, not silently removed
+- **Parameter naming confusion**: Parameter `result` shadows the local variable name from source, creating confusion about the variable's semantic role
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.7/10)  
+- Types are precise with `int32_t` appropriate for ARM64, no type safety issues, and no composite types to recover
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.5/10)  
+- The decompiler failed to recognize the fake branch obfuscation idiom and provided no comments explaining the control flow elimination. At -O0, these branches should have been preserved.
+
+**Top 3 Recommendations:**
+1. **Recognize fake branch patterns**: Detect always-false conditions (like `x*x < 0` for integers) as potential obfuscation rather than dead code, and preserve them with explanatory comments
+2. **Add anomaly comments**: When eliminating significant code paths (branches, entire functions), add comments like "// NOTE: Dead code elimination - verify this is not intentional obfuscation"
+3. **Preserve parameter names from source**: Match original parameter names (`x`) rather than using local variable names (`result`) to avoid semantic confusion

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/7/7_gcc_O2_no_g/ghidra/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

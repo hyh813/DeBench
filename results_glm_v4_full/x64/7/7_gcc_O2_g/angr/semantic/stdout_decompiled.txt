@@ -1,0 +1,5 @@
+Testing Obfuscation and Optimizations:
+
+Opaque predicate result: 10
+Opaque predicate with loop result: 20
+Instruction substitution result: 225

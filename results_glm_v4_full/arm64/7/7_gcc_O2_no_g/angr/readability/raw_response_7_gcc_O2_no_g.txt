@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `v3`), providing no semantic hint about their role in the algorithm (e.g., `flag1` in `param_opaque_predicate` is slightly better but still vague).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate`, and `call_instruction_substitution` are perfectly preserved from the source, making the high-level purpose immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `4294967295` (UINT32_MAX) and `90` (ASCII 'Z' or key) appear without named constants; the hex constant `0xDEADBEEF` from the source is missing (optimized away), but the remaining literals lack context.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including stack frame setup artifacts (`v0 = &v1`) and architecture-specific intrinsics like `arm64g_calculate_condition` and `__ROL__` which obscure the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The use of `arm64g_calculate_condition` to represent boolean logic creates unnatural, hard-to-read control flow; `param_opaque_predicate` is particularly obfuscated compared to the source's clear mathematical comparisons.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source structure (e.g., `param_...` vs `call_...`), with appropriate granularity; the decompiler did not merge functions inappropriately.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but complex expressions like those in `param_opaque_predicate` are broken into awkward intermediate assignments (`v2`, `v3`, `v4`) that disrupt the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler optimized away dead code in `param_fake_branch` (which is accurate), the decompiler introduces redundancy by expanding simple expressions (like `x*2`) into complex bit-manipulation intrinsics (`__ROL__`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct (e.g., `unsigned int`, `long long`), though there is some inconsistency (e.g., `char [2]` return type for `decrypt_string` is imprecise compared to `const char*`).
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Stack variables are handled, but complex types like the `bitfield` struct in `param_implementation_defined` are not reconstructed; instead, raw arithmetic on the packed data is implied or lost.
+
+**11. Type Safety:** Score: 6/10
+Justification: Code contains frequent masking operations (e.g., `& 4294967295`) which act as implicit casts; while safe, they clutter the code and suggest a lack of confidence in the native type widths.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Almost entirely devoid of comments; the only comments are `/* do not return */` annotations, providing no insight into the algorithm's purpose or the "fake branch" obfuscation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Failed to recognize standard arithmetic idioms; for example, `x * 2` is represented as `(__ROL__(a0, 1) & 4294967294)`, and the opaque predicate logic is not simplified to its boolean result.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No indication is given that `param_fake_branch` contains dead code or that the logic in `param_opaque_predicate` is intentionally obfuscated; the code is presented as-is without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for instance, the requirement that `x` be non-zero in `param_division_by_zero` is not explicitly stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., `main` calls `test_obf_opt_edge`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output, maintaining the original source's separation of concerns (obfuscation, optimization, edge cases).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on non-standard helper functions like `arm64g_calculate_condition` and compiler intrinsics like `__ROL__`, preventing it from compiling without a specific runtime library or definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Architecture-specific intrinsics (`arm64g_calculate_condition`, `__ROL__`) obscure high-level logic.
+- Generic variable names (`v0`, `v1`) make tracking data flow difficult.
+- Failed to simplify arithmetic identities (e.g., representing `x*2` as rotate-and-mask).
+- Lack of comments explaining the recovered logic or potential compiler optimizations.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully recovered symbol names, making the high-level structure of the program immediately navigable.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- The decompiler fails to explain *what* the code is doing, presenting raw instruction semantics rather than the programmer's intent, especially regarding obfuscation and arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to simplify arithmetic intrinsics (e.g., convert `__ROL__(x,1) & mask` back to `x * 2`).
+2. Replace architecture-specific condition code helpers with standard C boolean operators (`&&`, `||`, `==`).
+3. Infer variable names from context or usage patterns to replace generic `v0`, `v1` identifiers.

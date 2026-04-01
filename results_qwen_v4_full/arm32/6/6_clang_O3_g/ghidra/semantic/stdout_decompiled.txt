@@ -1,0 +1,18 @@
+Testing standard library functions...
+Length: 12
+Result: 0
+Size: 12
+Value: 90
+Compare: 0
+Value: 42, Name: TestName
+Printf chars: 26
+Scanf result: 579
+File result: 42
+Fread result: 42
+Malloc result: 90
+Memset result: 0
+Strchr result: 15
+Testing system calls...
+Syscall result: 42
+Stat result: 42
+Fork result: 42

@@ -1,0 +1,5 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=0,Arg1=-80492376,Arg2=-80492360,Arg3=-1016456200|x0=0x2600b000000000,x1=0xfffffb33c8a8,x2=0xfffffb33c8b8,x3=0xb30ec36a1bf8,x4=0xe63854257311df80,x5=0xefb0be561d90,x6=0xefb0be561d90,x7=0xefb0be560580
+TRACE_PRINT|0|%40%1C%6A%C3%0E%B3
+TRACE_PRINT|0|%0A
+TRACE_ENT|1|call_fake_branch|1|Arg0=-1016332080,Arg1=-1101650720,Arg2=0,Arg3=1|x0=0xb30ec36c00d0,x1=0xefb0be5624e0,x2=0x0,x3=0x1,x4=0xa,x5=0x0,x6=0x0,x7=0x0
+TRACE_ENT|2|param_fake_branch|2|Arg0=-1016332080,Arg1=-1101650720,Arg2=0,Arg3=1|x0=0xb30ec36c00d0,x1=0xefb0be5624e0,x2=0x0,x3=0x1,x4=0xa,x5=0x0,x6=0x0,x7=0x0

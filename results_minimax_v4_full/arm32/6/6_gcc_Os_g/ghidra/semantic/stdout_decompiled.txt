@@ -1,0 +1,26 @@
+Testing Standard Library Functions:
+
+strcpy test: len=8
+strcmp test: result=0
+strlen test: len=12
+memcpy test: sum=90
+memcmp test: result=-1
+Value: 42, Name: Test
+printf test: chars=22
+scanf test: result=579
+fopen/fclose test: fd=42
+fread/fwrite test: result=42
+malloc/free test: sum=90
+memset test: sum=0
+strchr/strstr test: result=15
+Testing System Calls:
+
+linux syscall test: result=42
+win32 api test: result=42
+fork/exec test: result=42
+pipe comm test: result=42
+socket create test: result=42
+shmget/shmat test: result=42
+signal handling test: result=42
+Testing Thread Concurrency:
+

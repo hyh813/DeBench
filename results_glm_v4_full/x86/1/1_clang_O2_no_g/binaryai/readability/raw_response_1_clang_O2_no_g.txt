@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters are reduced to generic names like `param_1`, `param_2`, and local variables to `iVar1`, `uVar2`, completely losing the semantic meaning of names like `a`, `b`, `sum`, or `target` found in the source.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `nested_if_deep`, `duffs_device`), likely due to the presence of debug symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: While simple constants like `0` or `1` are clear, logic is often obscured by compiler-generated arithmetic, such as using `0 < param_1` as a shift count in `single_if` or magic numbers like `0x20` in `loop_for_fixed` to implement division via bit shifts.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is generally clean of register spilling artifacts, but the presence of types like `undefined4` and casts to `undefined` in function signatures (e.g., `FUN_000112f5`) adds unnecessary noise and type confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiler aggressively transformed basic control structures into obscure arithmetic; `loop_for_fixed` became a complex 64-bit multiplication formula instead of a loop, `single_if` became a conditional bit-shift, and `recursion_factorial` was flattened into an iterative loop, deviating significantly from the source structure.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Functions map 1:1 with the source, maintaining perfect granularity and cohesion without any artificial outlining or merging of logic blocks.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read linearly, but `duffs_device` relies on `goto` labels (`switchD_00011936_caseD_1`) to handle the fall-through switch logic, which disrupts the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The decompiler over-optimized by eliminating the loop structure in `loop_for_fixed` entirely, replacing it with a closed-form arithmetic expression that, while efficient, is semantically redundant and harder to map back to the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic integer types are mostly correct, but the decompiler frequently defaults to `undefined4` for parameters and return values in helper functions (e.g., `FUN_000112f5`), and uses `uint` where the source used `int`, losing signedness context.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays and pointers are handled reasonably well (e.g., `int *param_1`), and since the source primarily uses primitive types, there are no significant struct/union recovery failures to penalize.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code contains several casts to `undefined4` and `code *` which are unsafe and prevent compilation, though the core logic generally respects pointer arithmetic boundaries.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled code; the complex arithmetic in `loop_for_fixed` or the logic in `switch_fallthrough` is left unexplained.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The decompiler failed to recognize standard loop idioms (converting them to math) and recursion (converting it to iteration), though it did manage to represent `switch_fallthrough` using nested `if` structures which is a reasonable alternative idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: There are no warnings or flags indicating that the control flow in `loop_for_fixed` has been radically transformed into a formula, leaving the analyst to guess why a simple loop looks like a hash function.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement that `n > 0` in `duffs_device` is not explicitly stated in the decompiled view.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., calls to `double_value` or `triple_value` are explicit).
+
+**17. Module Organization:** Score: 9/10  
+Justification: The functions are presented in a logical order that matches the source file structure, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile as-is due to the use of non-standard types like `undefined4`, `undefined`, and `code *`, requiring significant manual patching to become valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Loop Elimination**: `loop_for_fixed` is decompiled into a complex 64-bit multiplication and bit-shift formula (`((int)((ulonglong)lVar1 >> 0x20) << 0x1f | (uint)lVar1 >> 1) + param_1 + -1`), completely obscuring the simple summation loop logic.
+- **Obfuscated Conditionals**: `single_if` is transformed into a conditional bit-shift (`param_1 << (0 < param_1)`) rather than a readable `if` statement.
+- **Recursion Flattening**: `recursion_factorial` is decompiled as an iterative `do-while` loop, failing to preserve the recursive structure defined in the source.
+- **Generic Naming**: All variables use generic names (`param_1`, `iVar1`), stripping semantic context.
+- **Type Pollution**: Use of `undefined4` and `undefined` types breaks compilation and reduces type clarity.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- **Why?** The decompiler perfectly preserved the original function names (e.g., `sequential_ops`, `duffs_device`), likely due to debug symbols, which makes identifying the purpose of each code block trivial.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 3/10)  
+- **Why?** The decompiler aggressively replaced high-level control flow constructs (loops, conditionals, recursion) with low-level arithmetic optimizations, making the code look like obfuscated assembly rather than the original C source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Preserve Loop Constructs**: Add a preference or heuristic to avoid collapsing simple loops into closed-form arithmetic expressions, as the loop structure is often more important for readability than the mathematical optimization.
+2.  **Recover Variable Names from Debug Info**: Leverage DWARF debug symbols more effectively to restore original parameter and local variable names instead of defaulting to `param_1`.
+3.  **Standardize Conditional Logic**: Prefer emitting standard `if-else` blocks or ternary operators for conditional assignments over bit-shift hacks or arithmetic optimizations to maintain semantic clarity.

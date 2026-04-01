@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Only occasional names like `idx`, `result`, `iter`, `cur` provide minimal clarity. Original source used meaningful names like `size`, `x`, `y`, `counter`, `exec_mem`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions recovered correctly (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`), but many runtime/wrapper functions use generic `sub_XXXXXX` naming. Recovered names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE=1024), `0x200` (512), `57072` (0xDF22) appear without explanation. String literals preserved correctly, but numeric constants lose their macro semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant runtime artifacts present (`_init`, `_start`, `__do_global_dtors_aux`, `deregister_tm_clones`). Many stub wrapper functions (`sub_4012c1`, `sub_4012ea`) add no value. Incorrect struct padding definitions pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/else and for loops. However, some functions use `goto` patterns that should be loops (e.g., `goto v1->field_2c`). Constant-folded functions are overly simplified, losing original structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but excessive wrapper functions created (e.g., `sub_4012c1` just calls `param_macro_constants`). Constant folding eliminated call relationships (`call_macro_constants` returns 64 directly instead of calling `param_macro_constants`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Loop structures mostly recovered as proper for/while constructs. Some functions have unusual jump patterns but overall linear flow is maintained.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminates redundancy but also eliminates meaningful logic. Duplicate printf patterns in test functions. No dead code from register spilling observed, which is positive.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` types often become `unsigned int`. Some `uint128_t` recovered for SIMD operations. Pointer types sometimes correct but often generic. Lost signed/unsigned distinctions from original source.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are largely incorrect with meaningless padding (`padding_0[44]`, `field_2c`). No recovery of original semantic struct layouts. Many structs appear to be decompiler artifacts rather than actual data structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Generic `unsigned int` everywhere creates potential type confusion. Pointer arithmetic present without clear bounds. No const-correctness recovered. Some unsafe patterns with raw memory access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered. Original source had extensive comments explaining macro behavior, test scenarios, and expected values. Decompiled code has zero documentation of algorithm intent or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansions folded to constants, losing the macro semantic pattern entirely. No recognition of design patterns. SIMD operations recognized as `AddV` but no explanation of vector semantics.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `[D] Unsupported jumpkind Ijk_SigTRAP` markers present. Otherwise no indication of decompilation uncertainty. Inline assembly converted silently without noting the transformation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear test expectations (e.g., "期望: 64") that are completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not documented. Global variables referenced (`g_402041`, etc.) without explanation of purpose. Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Runtime code mixed with application code. Original source had clear section headers (5.2, 5.3) that are completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would require significant work to compile standalone. Many external dependencies undefined (`sub_401110` for printf, `_ccall`, `AddV`). Architecture mismatch (original ARM64, decompiled X86) creates portability issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3×10 + 6×10 + 5×5 + 3×5) / 30  = 4.33
+Level 2 (Structural):  (6×8 + 5×7 + 7×5 + 6×5) / 25    = 5.92
+Level 3 (Type):        (5×8 + 3×7 + 5×5) / 20          = 4.30
+Level 4 (Semantic):    (2×5 + 3×3 + 4×3 + 2×4) / 15    = 2.60
+Level 5 (Contextual):  (5×4 + 4×3 + 3×3) / 10          = 4.10
+
+Overall = (4.33 × 0.30) + (5.92 × 0.25) + (4.30 × 0.20) + (2.60 × 0.15) + (4.10 × 0.10)
+        = 1.30 + 1.48 + 0.86 + 0.39 + 0.41
+        = 4.44/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+### Critical Defects:
+- **Variable names are generic** (`v0`, `v1`, `a0`) instead of semantic names like `size`, `counter`, `result`
+- **No comments recovered** despite original source having extensive documentation explaining macro behavior and test expectations
+- **Constant folding eliminated call relationships** (`call_macro_constants` returns 64 directly instead of calling `param_macro_constants(2048)`)
+- **Incorrect struct definitions** with meaningless padding (`padding_0[44]`, `field_2c`) pollute the code
+- **Architecture mismatch** (original ARM64, decompiled X86) indicates potential binary analysis errors
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (6/10)** - Most functions recovered with natural if/else and for loop constructs that are readable despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation means readers cannot understand the semantic purpose of macro tests, expected values, or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., compared to constants, used in arithmetic) to infer semantic names like `packet_size` instead of `v0`
+2. **Preserve function call relationships** - Avoid aggressive constant folding that eliminates call structure; emit comments like `// Always returns 64 (param_macro_constants(2048))` instead
+3. **Generate decompilation confidence annotations** - Add comments indicating uncertainty levels, especially for inline assembly recovery and type inference decisions

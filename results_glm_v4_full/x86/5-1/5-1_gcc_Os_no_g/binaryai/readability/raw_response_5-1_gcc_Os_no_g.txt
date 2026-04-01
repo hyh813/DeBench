@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `local_30`, `uVar2`, `piVar1`, and `param_1`. Even with `-g` debug flags, local variable names (e.g., `capture_by_value`, `obj`) were not recovered, obscuring the data flow significantly.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names are excellent where symbols are available (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Derived::virtual_func`). However, internal runtime helpers are generic (e.g., `FUN_00011030`), which is expected but slightly degrades overall quality.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Derived"` are preserved, but integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x15` instead of `21`) without context. Magic numbers for vtable offsets (e.g., `-0xc`) are used directly without explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including stack canary checks (`__stack_chk_fail_local`), position-independent code thunks (`__x86.get_pc_thunk.bx`), and verbose exception handling frame setup (`uStack_XX`, `puStack_XX`) which obscures the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The control flow in `test_cpp_exception` is extremely complex, using gotos and manual stack manipulation for exception frames. Additionally, several test functions (e.g., `test_cpp_lambda`, `test_cpp_operator_overload`) are reduced to simple `return constant` statements due to compile-time optimization, completely hiding the original logic.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods, constructors, and destructors are correctly separated into individual functions. The granularity is appropriate, though the relationship between the overloaded/deleting destructors (e.g., `MiddleA::~MiddleA` appearing multiple times) can be confusing without C++ expertise.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but the exception handling logic introduces non-linear jumps and labels (e.g., `LAB_00011384`) that disrupt the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The compiler's constant folding (even at `-O0` for some cases) has eliminated the logic in functions like `test_cpp_lambda` (returning `0x55`), making the code "redundant" in the sense that the operational steps are missing, leaving only the result.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally well-recovered, with `Base*`, `Derived*`, and template instantiations like `Container<int>` appearing as `Container_int_`. However, generic types like `undefined4` and `undefined *` are frequently used for integers and pointers, reducing precision.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: While class methods are present, the internal structure of classes is often accessed via raw pointer arithmetic (e.g., `*(int *)(this + 4)`) rather than field access (e.g., `this->multiplier`). Virtual inheritance offsets are exposed as calculations (`this + *(int *)(*(int *)this + -0xc)`) rather than implicit field access.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains numerous unsafe casts, such as casting `undefined*` to `int*` or `code*`. While this reflects the underlying binary, it results in type-unsafe C code that requires careful manual verification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the C++ idioms used (like vtable lookups or RTTI), or the purpose of the complex stack manipulations in the exception handler.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: C++ idioms are present but not abstracted. Virtual function calls are shown as raw indirect calls (`(***(code ***)param_1)()`), and RTTI checks are explicit string comparisons or typeinfo pointer checks rather than `dynamic_cast` or `typeid` operators.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The decompiler confidently presents the complex exception handling setup and the optimized-away lambda logic as standard code without warning the user that the logic might be incomplete or compiler-generated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For example, the checks in `Container::get` are decompiled into raw integer comparisons without semantic meaning like "index out of bounds".
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: The `test_cpp_oo_features` function clearly calls all other test functions, providing a good overview of the program structure. Virtual function calls are traceable via the vtable pointers.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped roughly by class (e.g., `Base` methods followed by `Derived` methods), but the overall file is a flat list of functions without namespace or logical section markers.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on standard library types (e.g., `std::unique_ptr`) and compiler intrinsics (`__stack_chk_fail`) without including the necessary headers or defining the missing structures, making it non-compilable without significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`local_XX`, `uVarX`), losing all semantic information about data flow.
+- Logic in functions like `test_cpp_lambda` and `test_cpp_operator_overload` is completely lost due to constant folding, showing only a `return` statement.
+- Exception handling in `test_cpp_exception` is decompiled into low-level stack frame manipulation and gotos, which is extremely difficult to map back to `try/catch` blocks.
+- Virtual inheritance pointer arithmetic is exposed as raw math (`this + offset`) rather than implicit field access.
+- No comments or annotations explain the complex C++ mechanisms (vtables, RTTI, exception frames) used in the binary.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully recovered mangled C++ function names (e.g., `Base::virtual_func`, `test_cpp_member_func`) from the symbol table, making it easy to identify the high-level purpose of most functions.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.0/10)
+- The lack of comments, idiom abstraction (e.g., showing raw vtable calls instead of virtual calls), and anomaly indication makes understanding the *intent* of the code very difficult despite knowing the function names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Local Variable Names**: Utilize DWARF debug information (available with `-g`) to restore original variable names like `capture_by_value` or `obj` instead of `local_30`.
+2.  **Abstract Exception Handling**: Detect the standard C++ exception frame setup (e.g., `__cxa_begin_catch`, `__cxa_throw`) and reconstruct `try/catch/throw` blocks instead of showing raw stack manipulation.
+3.  **Annotate Optimized Logic**: When a function is reduced to a constant return (e.g., `test_cpp_lambda`), insert a comment indicating "Logic optimized out at compile time" to prevent confusion about missing source code.

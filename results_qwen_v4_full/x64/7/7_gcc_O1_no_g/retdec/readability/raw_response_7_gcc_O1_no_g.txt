@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `temp`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined function names are preserved (`param_fake_branch`, `call_opaque_predicate`), but helper functions use mechanical names (`function_10d0`, `function_10e0`). Good preservation of intent for main functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A` (encryption key), `0x12345678` (canary) appear without explanation. String literals are stored as hex-encoded globals (`g1`, `g2`) losing readability.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) and type masking (`& 0xffffffff`) add noise. Some compiler artifacts present but not overwhelming.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_fake_branch` completely loses its if-statements (returns `a1 & 0xffffffff` directly). `param_opaque_predicate` has awkward while loops that don't match original structure. Dead code elimination removed the fake branches entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `param_opaque_predicate` has 6 parameters when original had 1 (stack pollution artifacts). Helper functions for library calls are appropriately separated but parameter lists are inflated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear while loops. Some functions have reasonable flow despite optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Frequent redundant type casts (`& 0xffffffff`, `& 0xfffffffe`) appear throughout. No obvious dead code but type masking creates visual noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` becomes `int64_t` inconsistently. `param_fake_branch(int x)` becomes `param_fake_branch(int64_t a1)`. Pointer types often generic (`int64_t *` instead of specific types).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` struct recovered with generic field names (`e0[8]`, `e1`, `e2`). No complex structs in this code to evaluate further. Basic recovery only.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts visible throughout. Pointer arithmetic present without safety checks. Setjmp/longjmp usage not type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No explanation of what functions do, no algorithm documentation. Original source had extensive Chinese comments explaining obfuscation techniques.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Encryption, opaque predicates, fake branches not identified. Decompiler treats all code uniformly without semantic understanding.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about setjmp/longjmp usage, signal handlers, or potential undefined behavior. Code presented confidently despite semantic transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expectations (e.g., "期望: 10") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g16`) referenced without explanation of purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file with no logical grouping. Original source had clear section headers (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has includes for standard libraries. Metadata indicates compilation succeeds. Some functions may need stubs but generally compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+5+7+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable `a1`, `v1`, `v2`** should be named based on semantic usage (e.g., `input_value`, `encrypted_buffer`, `decryption_key`)
+- **`param_fake_branch`** completely loses its fake branch logic - returns simplified expression instead of showing the obfuscation pattern
+- **Zero comments** - original source had extensive documentation explaining obfuscation techniques, all lost
+- **Parameter inflation** - `param_opaque_predicate` has 6 parameters when original had 1 (stack artifact pollution)
+- **Magic number globals** - strings stored as `g1`, `g2` with hex encoding instead of readable string literals
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names are preserved accurately, maintaining semantic connection to original source intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding the obfuscation techniques impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in encryption context should be named `key`, `buffer`, `encrypted`)
+2. **Preserve dead code from obfuscation** - at `-O0`, fake branches should not be eliminated; document when optimization removes code
+3. **Add decompilation confidence annotations** - flag transformations like "Dead code eliminated by optimizer" or "Condition always false - original had opaque predicate"

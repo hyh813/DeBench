@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_c`, `local_d`, `acStack_2c`, `iVar1`, `puVar1` with zero semantic meaning. Original source had descriptive names like `value`, `name`, `instance_count`, `capture_by_value`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`) but class methods use generic patterns (`FUN_0001092c`). External stubs have incorrect signatures (e.g., `operator_new` calls itself infinitely).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`) that are actually constant-folded return values with no explanation. Original had clear expected values in comments.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs create infinite recursion (`operator_new` calls `operator_new`). Multiple destructor variants per class (3-4 versions each). Stack canary checks add noise (`__stack_chk_fail`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions constant-folded to single return statements instead of actual computation. `test_cpp_exception` only shows throw, no try-catch recovery. Original had clear control flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations properly separated (`template_max_int_`, `template_max_double_`) but excessive destructor fragmentation. Some functions are trivial single-return statements.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has unnecessary conditionals (`if (local_c == 0)` followed by `__stack_chk_fail()`). Stack check pattern disrupts flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor thunks per class (e.g., `DiamondDerived::~DiamondDerived` has 4 variants). External function stubs are completely redundant and broken.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined1` instead of proper types. Original had `int`, `size_t`, `double`, class types. Pointer arithmetic replaces typed access.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - NO class structures recovered. Everything is raw pointer arithmetic: `*(int *)(this + 4)`, `*(int *)(this + 0x28)`. Original had clear class definitions with named fields (`value`, `name[32]`, `data`, `size`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere: `(undefined4 *)__cxa_allocate_exception(4)`, `(type_info **)(*piVar1 + -4)`. No bounds checking on array access. Virtual call recovery uses raw pointer dereferencing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only SHA256 header comment. Zero comments explaining logic, algorithms, or decompilation confidence. Original had extensive documentation per function.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **Complete failure** - OOP patterns not identified (no class recovery), virtual dispatch shown as raw vtable access, lambda expressions completely lost, exception handling not recovered.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Infinite recursion in external stubs not flagged. Constant-folded functions not explained as optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions. Exception handling contracts lost. Original had clear error handling semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but inheritance relationships lost. Virtual dispatch not clearly shown. Template instantiation relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. External stubs mixed with application code. No logical grouping by class or feature.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile** - external function stubs recurse infinitely. Missing type definitions. No header declarations. Requires extensive manual fixing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50  × 0.30 = 1.05
+Level 2 (Structural):  (3+5+5+4)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+3)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.31/10
+```
+
+### Overall Readability Score: **3.3/10**
+
+### Critical Defects:
+- **Class structures completely lost** - All C++ classes reduced to pointer arithmetic with no field names
+- **External function stubs recurse infinitely** - `operator_new`, `puts`, `strlen` call themselves causing runtime failure
+- **Test functions constant-folded** - Most return hardcoded values (`0x2a`, `0x47`) instead of actual computation
+- **Exception handling not recovered** - `test_cpp_exception` only shows throw, no try-catch blocks
+- **Variable names completely generic** - `local_c`, `iVar1`, `acStack_2c` provide zero semantic information
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Test function names were preserved from debug symbols (`test_cpp_member_func`, `test_cpp_constructor`), providing some orientation.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any C++ class structures; all object access is raw pointer arithmetic losing all semantic meaning.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable and RTTI information** - Use virtual function tables and type_info structures to reconstruct class field offsets and names
+2. **Eliminate infinite recursion in external function stubs** - Properly identify library functions and declare them as external imports rather than creating self-recursive stubs
+3. **Preserve control flow for test functions even at -O0** - Avoid aggressive constant folding that eliminates actual computation logic; emit original control structures when debug symbols are available

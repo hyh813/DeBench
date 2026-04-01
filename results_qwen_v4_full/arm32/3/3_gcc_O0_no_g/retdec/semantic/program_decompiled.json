@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/3/3_gcc_O0_no_g/retdec/syntactic/bin/3_gcc_O0_no_g_fixed",
+  "stdout": "\u0018~G\nMEM-L1-01 (local_vars): 20\nMEM-L1-02 (local_array): 4685608\nMEM-L1-03 (local_struct): 15\nMEM-L1-04 (address_of_local): 42\nMEM-L1-05 (address_of_array): 2097409176\nMEM-L2-01 (large_stack_frame): 35\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

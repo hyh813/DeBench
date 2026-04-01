@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (v1, v2, v3, v4, v5, result, i). The decompiler failed to infer semantic meaning from usage patterns - for example, `v1` in `param_dynamic_code` should be `page_size` based on `sysconf(30)` call, and `v4` should be `old_value` based on atomic operation patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_atomic` all match the original source exactly. The decompiler correctly recovered all 18+ function names from the source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (512, 64, 1025 in param_macro_constants), but others are unexplained magic numbers like 57072 (0xDEF0) and 57122 (0xDF22). The printf format strings are completely obfuscated as `aPpL201D`, `aPpL202D`, etc., losing the "PP-L2-01" semantic labels from the source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minor artifacts present: `JUMPOUT(0)` in sub_1020, `qmemcpy` (quick memcpy) macro, and warnings about "local variable allocation has failed" in call_asm_multi_insn. These don't significantly impede understanding but are present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper if-else and for loops. The for loop in `param_asm_clobber` correctly uses `for (i = 0; i < n; i++)`. Minor issue: some complex logic in call_asm_simd uses shuffle operations that obscure the original loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single responsibility (e.g., param_macro_constants does one thing). The decomposition closely matches the 18+ distinct functions in the source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like param_dynamic_code. Some complexity in call_asm_privileged with nested conditionals, but traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in call_asm_clobber where the array is loaded into xmmword_22D0 and processed in parallel - this is an optimization artifact but doesn't severely impact readability.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` and `size_t` rather than specific types like `int32_t` or `uint64_t`. Some improvement with `__m128i` for SIMD types and `_DWORD` for 32-bit values, but overall type precision is degraded from the original which used stdint.h types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. The code uses raw pointer arithmetic throughout (e.g., `*v2 = 42`, `*((_WORD *)v2 + 2) = -15611`). The original source had no complex structs either, so this is partially acceptable, but the memory manipulation in param_dynamic_code could benefit from struct recovery.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present: `*(__m128i *)result` in param_asm_simd, `*((_WORD *)v2 + 2)` in param_dynamic_code. However, these are necessary for the low-level operations being decompiled. No severe type safety violations that would cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in the decompiled output. The only comments are decompiler warnings like "positive sp value has been detected" and "local variable allocation has failed". The original source had extensive comments explaining each test case (PP-L2-01, ASM-L4-01, etc.) which are completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognized: SIMD operations use `_mm_add_epi32` intrinsics correctly, atomic operations use `_InterlockedExchangeAdd`. However, the original source's macro patterns (SQUARE, MAX, SAFE_ADD) are not recognized as idioms - they're just inlined to basic operations.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "positive sp value has been detected" in _start, "local variable allocation has failed" in call_asm_multi_insn and call_asm_simd. However, the decompiler silently fails on 9 functions (marked as "FAILED to decompile") without explaining why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 64", "期望: 15") which are completely lost. The decompiled code provides no contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - you can see main calls test_preprocessing_features and test_asm_features. However, global variable usage (global_var in param_memory_clobber_demo) is not documented, and callback relationships are not indicated.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching the source: preprocessing functions (param_macro_*, call_macro_*) grouped together, assembly functions (param_asm_*, call_asm_*) grouped together. The organization closely mirrors the original source file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata indicates "Compilation Result: Yes", meaning the code compiles. External dependencies (printf, mmap, munmap, sysconf) are standard libc functions. Some format string obfuscation (aPpL201D) might cause linking issues if not handled.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable naming**: All temporaries use generic names (v1-v5, result, i) obscuring semantic purpose
+- **Literal obfuscation**: Format strings converted to `aPpL201D` style identifiers, losing "PP-L2-01" semantic labels
+- **No comments**: Original source's extensive documentation completely lost
+- **No contract recovery**: Expected values ("期望: 64") not preserved or documented
+- **Anomaly silent failures**: 9 functions "FAILED to decompile" with no explanation
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names are excellently preserved - all 18+ functions from the original source are correctly named (param_macro_constants, call_asm_basic, etc.), making it easy to locate specific functionality.
+
+### Most Needs Improvement: Variable Naming (3/10)
+The decompiler uses generic variable names (v1, v2, v3, result, i) throughout, making it difficult to track the purpose of each variable. For example, in param_dynamic_code, v1 should be page_size, v3 should be exec_mem, and v4 should be result based on their usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Use data flow analysis to name variables based on API calls (e.g., sysconf(30) → page_size, mmap() → exec_mem)
+2. **Preserve string literals**: Keep format string content intact rather than converting to obfuscated identifiers like aPpL201D
+3. **Add decompilation confidence comments**: Document expected values, edge cases, and uncertain reconstructions rather than silently failing

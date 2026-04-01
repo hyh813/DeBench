@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `a3`, `v1`, `v2`, `v3`, `result` throughout. For example, `sequential_ops(int32_t a1, int32_t a2, int32_t a3)` should clearly be `a, b, c`. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved accurately: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `state_machine`. Some auxiliary functions have generic names like `function_1040`, but core functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers like `0x100000000` (used in complex division emulation), `0x5b65`, `0x2b6d` (string offsets), and `v1 + (int32_t)&g5 - 0x2cca`. No attempt to identify meaningful constants like buffer sizes or operation codes.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including: complex address computations (`v1 + (int32_t)&g5 - 0x2cca`), unnecessary casts like `(int32_t)((0x100000000 * v2 | v2 % 2) % 2)`, and unreachable code markers. The division emulation code is particularly noisy.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if-else, switch, loops) are preserved correctly. However, some confusing patterns emerge like `if (a1 < 1 || a1 >= 0 != a1 != 0)` in `goto_backward`. At -O0, this should be much cleaner. Some goto labels present (`lab_0x1edf:`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. Helper functions like `double_value`, `triple_value` are properly extracted. Test functions are large but that's expected. No over-fragmentation or monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some forward jumps exist but are manageable. No excessive nesting (>4 levels) observed. Good linearization for decompiled code.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions visible, particularly the repeated division emulation pattern `(0x100000000 * (int64_t)(v2 >> 31) | (int64_t)v2) / 10`. No severe redundancy that makes code unmaintainable, but room for improvement.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of explicit types: `int32_t`, `uint32_t`, `int64_t`, `bool`. However, some parameters use `uint32_t` where `int32_t` would be more appropriate (e.g., `loop_modify_var(uint32_t a1)`). Function pointer types are reasonably precise.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions exist (`struct __jmp_buf_tag`, `struct _TYPEDEF___sigset_t`) but field names are completely generic: `e0`, `e1`, `e2`. No meaningful struct name recovery. Arrays accessed via pointer arithmetic rather than proper indexing.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns present: complex pointer arithmetic in `loop_break` using `*(int32_t *)((int32_t)&v4 - 28 + 4 * v3)`, function pointer casting issues in `call_func_ptr_array`. The division emulation involves potentially unsafe 64-bit operations. Moderate risk of undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only address range comments like `// Address range: 0x1230 - 0x1262` and some `// UNREACHABLE` markers. No algorithm explanations, no decompilation confidence indicators, no API contracts. Severely lacking.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible but not explicitly named. The state machine in `state_machine()` and `fsm_func_table()` could be recognized. Duff's device in `duffs_device` is partially recognized but not identified as such. No pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `// UNREACHABLE` comments present for dead code. However, no flags for uncertain indirect calls, no warnings about complex expressions that may have simpler interpretations, no indication of potential undefined behavior. Silent on most anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The code presents no information about what parameters require or what results guarantee. Completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Global variables (`g1` through `g12`) are defined and used. However, no documentation of call relationships, no indication of who calls whom, no callback relationship mapping.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: initialization functions first, then test functions, then utility functions. Static functions properly scoped. Related functions (like state handlers) are near each other. Reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears to compile with standard libc dependencies. Many external functions declared (`printf`, `memcpy`, `memset`, `longjmp`, `setjmp`). Some functions have mismatched parameters (e.g., `switch_small` takes 2 params but source had 1). Moderate patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable naming is unusable**: All parameters are `a1, a2, a3` and locals are `v1, v2, v3` with no semantic inference
+- **No comments whatsoever**: Zero algorithm explanations, no decompilation confidence, no API contracts
+- **Magic numbers everywhere**: `0x100000000`, `0x5b65`, `0x2b6d` without explanation
+- **Complex division emulation obscures logic**: The `(0x100000000 * (int64_t)(v2 >> 31) | (int64_t)v2) / 10` pattern is repeated but never explained as signed division
+- **Struct field names lost**: `e0`, `e1`, `e2` provide no semantic meaning
+
+### Best Quality Aspect: Function Naming (8/10)
+- Core function names match source exactly: `sequential_ops`, `loop_for_fixed`, `recursion_factorial`, `state_machine`
+
+### Most Needs Improvement: Variable Naming & Comments (both 2/10)
+- Variable names are completely generic with no semantic inference
+- Zero useful comments for algorithm explanation or decompilation confidence
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If `a1` is used in `a1 > 0` check, name it `x` or `value`. If `v1` accumulates sum, name it `sum`.
+2. **Add explanatory comments**: Document the signed division emulation pattern, explain switch jump tables, flag uncertain decompilations
+3. **Recover struct field semantics**: Instead of `e0`, `e1`, `e2`, infer field purposes from usage (e.g., `env_buffer`, `saved_mask`, `jump_tag`)

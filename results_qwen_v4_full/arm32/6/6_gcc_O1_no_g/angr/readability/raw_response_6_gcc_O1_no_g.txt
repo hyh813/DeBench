@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `a0`, `a1`) with no semantic meaning. Only occasional names like `dst`, `fp`, `count`, `result` provide hints. Parameters `a0`, `a1` should be `dst`, `src` in `param_strcpy`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`param_strcpy`, `call_strcpy`, `thread_compute`), but many helpers are mechanical (`sub_10ca8`, `sub_112a4`, `sub_12484`). Thread functions well-named but atomic helper functions lost.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (should be `-1`/`UINT_MAX`), `42` (success code), `10`/`14` (SIGUSR1/SIGALRM), `2,1,0` (socket constants). No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`GLIBC_2.4::__stack_chk_guard`) in every function, `armg_calculate_condition` calls obscure logic, redundant assignments (`v3 = v4; v2 = v5;`), and infinite loop stubs (`do { } while (4294905792());`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of loops/conditionals. `armg_calculate_condition` calls replace simple comparisons. `param_strcpy` is readable but `param_thread_local_storage` is nearly incomprehensible with nested gotos.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Thread helpers properly separated (`thread_compute`, `thread_sum`), but atomic operations fragmented into many `sub_*` functions. `param_thread_local_storage` is a 200+ line monolith that should be decomposed.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Deep nesting in `param_thread_local_storage` with multiple label targets. Simple functions like `param_memcpy` read linearly but complex ones don't.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. Some functions call themselves unnecessarily (`call_strcpy` calls `param_strcpy` twice in return statement). No dead code removal visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int`. `char*` becomes `unsigned int`, `size_t` becomes `unsigned int`, `FILE*` becomes `void*`. No const-correctness. Function pointers lose signatures entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Generic structs only (`struct_0 { char field_0; char padding_1[3]; unsigned int field_4; }`). `FILE` struct empty. `sockaddr` partially recovered. `ThreadData` struct completely lost, accessed via pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`ptr + 1`, `&v0[1 + n]`). No bounds checking visible. Cast-heavy code (`(unsigned int)free(ptr)`). Buffer operations on generic `char*` without size validation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcpy`, `pthread_create`). Signal handling pattern not identified. Atomic operations not recognized as such (converted to `__sync_*` stubs). Producer-consumer pattern in `param_condition_variable` not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions (`thread_atomic_load_store`, `thread_tls_test`) not flagged. `armg_calculate_condition` calls unexplained. Incomplete functions with `...` return statements not marked as decompilation failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values (`4294967295`, `42`) not explained. No invariant recognition for loops.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) referenced without context. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output file. No logical grouping by section (library/syscall/thread). No header file separation. Related functions scattered throughout output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple functions incomplete (`...` returns). External dependencies not documented. `armg_calculate_condition` requires undefined implementation. Stack canary functions need linking. Will not compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (3+4+4)/3 = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+3+3)/3 = 3.33 × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  3.73/10
+```
+
+### Overall Readability Score: **3.7/10**
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0`, `v1`** should be named semantically (e.g., `dst`, `src`, `buffer`, `length`) based on usage context
+- **Magic numbers** like `4294967295`, `42`, `10`, `14` should be recovered as constants (`-1`, `SUCCESS`, `SIGUSR1`, `SIGALRM`)
+- **Control flow uses `goto` and `armg_calculate_condition`** instead of natural loops and conditionals
+- **Zero comments** present despite complex logic in thread/atomic functions
+- **Incomplete functions** (`thread_atomic_load_store`, `thread_tls_test`) return `...` without anomaly flags
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`), providing anchor points for understanding program structure.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes complex functions like `param_thread_local_storage` nearly impossible to understand without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** by analyzing usage patterns (variables used in size checks should be named `size`/`length`, pointers to strings should be `str`/`buffer`)
+2. **Recover named constants** from common magic numbers (signal numbers, socket constants, error codes) and add explanatory comments
+3. **Add decompilation confidence annotations** marking uncertain reconstructions, incomplete functions, and unresolvable indirect calls with `// DECOMPILER: UNCERTAIN` comments

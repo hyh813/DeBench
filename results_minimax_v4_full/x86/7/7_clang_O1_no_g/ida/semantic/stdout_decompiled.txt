@@ -1,0 +1,16 @@
+Testing Obfuscation and Optimization Features
+
+Obfuscation: Fake Branch: 10
+Obfuscation: Opaque Predicate: 20
+Instruction Substitution: 225
+Obfuscation: String Encryption: 0
+Optimization: Tail Call: 500500
+Optimization: Non-Tail Call: 5050
+Optimization: Vectorization: 0
+Optimization: LTO: 20
+Edge Case: Division by Zero: 1
+Edge Case: Null Pointer: 41
+Buffer Overflow: 30
+Integer Overflow: 2000000000
+Call Opaque Predicate: 10
+Implementation-Defined: 43

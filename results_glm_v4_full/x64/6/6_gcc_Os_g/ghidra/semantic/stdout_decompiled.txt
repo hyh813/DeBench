@@ -1,0 +1,3 @@
+=== Standard Library Tests ===
+Strcpy Test: 8Strcmp Test: 0Strlen Test: 12Memcpy Test: 90Memcmp Test: -1Value: 42, Name: Test
+Printf Test: 22

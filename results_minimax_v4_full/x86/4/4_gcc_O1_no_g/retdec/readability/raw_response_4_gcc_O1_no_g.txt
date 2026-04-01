@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`. For example, `cdecl_func(int32_t a1, int32_t a2)` should be `cdecl_func(int a, int b)`. The naming provides no semantic information about variable purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retain correct names from source (`cdecl_func`, `stdcall_func`, `call_cdecl`), but many have issues: variadic functions lose their `...` parameter (`varargs_func(int32_t a1)` instead of `int varargs_func(int count, ...)`), and some helper functions have numeric addresses like `function_1090`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation (e.g., `0x3430`, `0x3438`, `0x3415` in `ret_opaque_handle`). String literals are replaced with numeric offsets like `(char *)(v1 + 2885)` making it impossible to understand what is being printed. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__readgsdword`, `__printf_chk`, `__stack_chk_fail` calls clutter the code. Many unnecessary casts like `(int32_t *)`, `(char *)` throughout. Debug-related stack canary checks add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper loops and conditionals. However, the switch statement in `ret_multi_branch` has unusual fall-through behavior (case 2 falls through to case 1). Some loop constructs use manual counter manipulation rather than idiomatic for/while.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is mostly preserved from source. However, variadic functions are incorrectly decomposed - `varargs_func` should accept variadic parameters but is declared with single int parameter. Some call wrapper functions are inlined to constants (e.g., `call_cdecl` returns 15 directly).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in some functions. The `test_calling_conventions` function has complex nested structure but remains traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy from optimization: wrapper functions like `call_cdecl` just return constants instead of calling the actual function. Loop unrolling present in `varargs_func` but not clearly marked. Some duplicate stack canary checks.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate for x86. However, variadic functions lose their parameter handling - `param_varargs` should take `int count, ...` but is just `int32_t param_varargs(int32_t a1)`. Function pointers not properly typed (e.g., `param_func_ptr(int32_t a1)` should take a function pointer).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct types are recovered. `func_struct_byval` is declared as `int32_t func_struct_byval(void)` instead of accepting a struct parameter. `ret_small_struct` has an unusual signature with hidden pointer parameter `int32_t result`. All struct operations use raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Excessive unsafe casts throughout: `(int32_t *)a1`, `(char *)str`, `(int32_t *)result`. Function pointer type confusion in `param_func_ptr`. Pointer arithmetic without proper type context. The `param_complex_cast` function uses void* but loses type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x1283 - 0x1290`). No explanation of algorithm purpose, parameter meanings, or return value contracts. String literals replaced with numeric offsets making output incomprehensible.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Variadic argument handling is not recognized as such. No recognition of calling convention patterns. The code presents as generic procedural code without identifying the specific patterns being tested.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The unusual function signatures (variadic functions, struct by-value) are presented without any indication of potential issues. Indirect calls and unusual patterns not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks in functions like `param_string` and `func_struct_byptr` are present but not explained as implicit contracts. No documentation of expected parameter constraints.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `test_calling_conventions` calls various functions). However, callback relationships are not clear - `param_func_ptr` takes an integer instead of a function pointer. Global variable `g1` usage not well documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some logical grouping present (calling convention functions grouped together). However, the organization is essentially flat with no clear separation between test categories. Static functions not properly marked.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Should compile with minor modifications. Some undefined functions like `__asm_hlt` and `__asm_rep_movsd_memcpy` need stubs. No external dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) providing no semantic information
+- Variadic functions lose their `...` parameter, making `varargs_func(int32_t a1)` incomprehensible
+- No struct types recovered - all struct operations use raw pointer arithmetic
+- String literals replaced with numeric offsets, making all printf statements unreadable
+- Function pointer parameters incorrectly typed as integers, losing type safety
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Most loops and conditionals are recognizable and follow natural patterns
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)  
+- The decompiler presents incorrect function signatures without any warning about potential issues like variadic parameter loss or struct handling problems
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover variadic function signatures by detecting va_start/va_arg patterns and restoring `...` parameters
+2. Infer variable names from usage patterns (e.g., `a1` used as count → `count`, loop index → `i`)
+3. Detect struct parameter passing and recover struct type definitions rather than using raw pointer arithmetic

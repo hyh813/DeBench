@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, etc. For example, `process_char(int64_t a1)` should have parameter named `c`. No semantic naming whatsoever - completely generic `var_N` style throughout.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from symbols: `process_char`, `process_int`, `array_1d_stack`, `linked_list`, etc. These match the original source exactly and use appropriate action verbs.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Test functions have hardcoded expected values (e.g., `printf("DT-L1-01 (process_char): %c\n", 97)`) which are correct. However, floating-point constants like `0x3fc0000000000000` appear as raw hex without explanation. Some magic numbers remain unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code contains `__asm_` pseudo-functions for SIMD operations (e.g., `__asm_movdqu`, `__asm_paddd`) which are decompilation artifacts. However, there's no debug instrumentation or obvious dead code. The noise level is moderate and manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops use `while` constructs, conditionals use `if`. The `array_3d` function shows loop unrolling which is expected even at -O0 for SIMD. Overall, execution flow is easy to follow.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each small function from source (`process_char`, `process_short`, etc.) is preserved as a separate function. The decomposition matches the original granularity - no inlining or fragmentation issues. Function sizes are appropriate (typically 5-30 lines).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately (e.g., `if (v4 < 1) return 0;`). Some forward jumps exist in complex array functions but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling is present in array functions (array_1d_stack, array_3d) but this is expected compiler behavior. No obvious dead code. Some redundant calculations in complex index handling but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation observed. Original uses `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, `_Bool`, but decompiled code uses mostly `int64_t` for everything. Float/double incorrectly shown as `int128_t`. The original type diversity is almost completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Instead of `Point3D p; return p.x + p.y + p.z;`, we get `*(int32_t *)(a1 + 4) + *(int32_t *)(a1 + 8)`. All struct field access is raw pointer arithmetic with offsets. No typedef recovery for `Point3D`, `Node`, `Rect`, etc.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts throughout: `(int64_t)(*(int32_t *)v8 + (int32_t)v6)`. Pointer arithmetic with raw addresses like `4 * v35 + a1`. Function pointers treated as `int64_t`. Significant risk of undefined behavior interpretation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, parameter purposes, or return value semantics. Completely uncommented code.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithms identified or named. Linked list traversal, binary tree recursion, graph traversal - none are recognized as patterns. The code provides no hints about what idioms are being used.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertain or suspicious code. The decompiler presents all code with equal confidence, including potentially undefined behavior (like the `array_oob` function with intentional out-of-bounds access). No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `ptr != NULL` is required, or that return values have specific meanings. Zero contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `binary_tree_sum(*(int64_t *)(a1 + 8))`). Global variables like `g1`, `g2`, `g8` are declared. However, no documentation of who calls what or callback relationships. The call graph is implicit, not explicit.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically - data type functions together, array functions together, pointer functions together, composite type functions together. This matches the original source organization. Single file structure is appropriate.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code includes proper headers (`stdint.h`, `stdio.h`, `stdlib.h`). Function prototypes are declared. Should compile with `gcc -c`. Minor issues: some undefined `__asm_` functions would need stub definitions for actual compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `a1, a2, a3` and locals use `v1, v2, v3` - completely generic
+- **Type precision**: All types degraded to `int64_t` - original `char`, `short`, `float`, `double` lost
+- **No struct recovery**: All struct/union access is raw pointer arithmetic with magic offsets
+- **Zero comments**: No explanation of algorithm intent, parameters, or return values
+- **No type safety**: Many unsafe casts like `(int64_t)(*(int32_t *)v8 + (int32_t)v6)`
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names are perfectly preserved from symbols and match original source exactly. The decomposition into separate functions is also excellent.
+
+### Most Needs Improvement: Semantic Transparency (1/10)
+Zero comments, zero pattern recognition, zero anomaly indication, zero contract recovery. The decompiler provides no semantic context or helpful indicators about the code.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a1` in `process_char` should be `c`; `a1` in `array_1d_stack` should be `arr` or `array`
+2. **Recover struct layouts**: Instead of `*(int32_t *)(a1 + 8)`, reconstruct `Point3D` struct and use `p->y`
+3. **Add semantic comments**: Document what functions do, parameter meanings, and flag uncertain areas (e.g., "// UNCLEAR: indirect call target")

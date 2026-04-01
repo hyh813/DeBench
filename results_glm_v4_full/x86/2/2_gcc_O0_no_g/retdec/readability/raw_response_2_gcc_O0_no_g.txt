@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context (e.g., `v1` used for the PIC base register in every function).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `double_value`, `process_char`, and `array_1d_stack` are perfectly preserved from the source, likely because debug symbols were available.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are represented as opaque pointer arithmetic offsets (e.g., `(char *)(v1 + 0x1bde)`) rather than the actual string content, and magic numbers like `44` (array stride) appear unexplained.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts like `__x86_get_pc_thunk_ax(v1)` calls in almost every function to handle Position Independent Code, which significantly disrupts readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops and conditionals are generally recovered, logic in functions like `process_char` is obfuscated into bit-shifts and modulo operations rather than the original clear range check.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions match the source granularity well; the large `test_...` functions are kept intact rather than being inlined or fragmented, preserving the original structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads mostly top-to-bottom, but the frequent insertion of PIC register calculation (`__x86_get_pc_thunk_ax`) at the start of functions breaks the linear flow of logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler incorrectly eliminated necessary redundancy in `volatile_access` (collapsing two reads into `2 * *a1`), which violates the semantic intent of the `volatile` keyword.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; pointers are cast to `int32_t`, floating-point arguments are often promoted to `float80_t`, and `process_ld` returns an `int32_t` address instead of a `long double`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No structs or unions are recovered; `struct_simple` and `struct_nested` are reduced to raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)`), completely losing the semantic field names.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe casts, such as treating pointers as `int32_t` for arithmetic and performing operations like `v2 += 4` to traverse a linked list without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain the logic, algorithms, or the purpose of the obscure pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed; the linked list traversal in `linked_list` is represented as a raw pointer increment loop (`v2 += 4`) rather than using a `next` pointer structure.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Severe anomalies like `process_ld` returning a memory address instead of a calculated float value are presented confidently without any warning or uncertainty indication.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-NULL requirement for pointers is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are readable due to the preserved names, but the parameters passed are generic (`a1`, `a2`), making the data flow between functions hard to trace.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed, but the logical grouping (e.g., all data type tests together) is lost in the flat output, and helper functions like `__x86_get_pc_thunk_ax` are intermixed.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on compiler intrinsics (`__readgsdword`, `__asm_hlt`) and non-standard types (`float80_t`) without proper headers or definitions, preventing standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Composite Type Loss**: Struct fields are accessed via raw offsets (e.g., `v1 + 4`) instead of field names (`p->y`), destroying semantic meaning.
+- **Floating Point Failure**: `process_ld` is decompiled to return a memory address calculation (`__x86_get_pc_thunk_ax(v1) + 0x4c3b`) instead of the floating-point math `d * d + 1.0L`.
+- **Function Pointer Call Failure**: `ptr_func_simple` ignores the callback and simply returns the function pointer argument, completely missing the execution flow.
+- **Volatile Semantic Violation**: `volatile_access` is optimized to `2 * *a1`, erasing the critical semantic requirement of reading memory twice.
+- **String Literal Obfuscation**: Strings are represented as offsets from the PIC base register (e.g., `v1 + 0x1bde`) rather than their actual content.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, which is the only thing making the high-level flow traceable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The complete failure to recover structs, unions, or bitfields reduces complex data manipulation to unreadable pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement Structure Recovery**: Analyze access patterns to offsets (e.g., `+0`, `+4`, `+8`) to reconstruct struct definitions and replace pointer arithmetic with member access (e.g., `ptr->x`).
+2.  **Fix Floating-Point Analysis**: Correctly identify floating-point registers and operations, specifically for `long double` and function return values, to prevent logic from turning into address arithmetic.
+3.  **Recover String Literals**: Map data section references to actual string values instead of displaying them as offsets relative to the Global Offset Table (GOT) or program counter.

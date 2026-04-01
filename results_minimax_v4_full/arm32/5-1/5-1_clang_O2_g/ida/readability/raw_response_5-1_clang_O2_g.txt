@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic numbered names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`). In `test_cpp_member_func()`, these should be `obj`, `result`, `name` based on source. Only `exception` in `test_cpp_exception()` is semantically meaningful.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions like `test_cpp_member_func` and `call_virtual_func` are correctly demangled, but many are mechanical addresses (`sub_854`) or incomplete (`_ZN12RTTIDerivedAD0Ev_0`). Template functions partially recover generic names but lack proper C++ syntax.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Most literals are actually correct computed results (42, 71, 650, 22, 85, 703) matching expected source outputs. The expression `1001 * LifecycleClass::instance_count + 21` correctly preserves the computation pattern. Minor issue: `asc_134C` and `unk_1375` are unnamed but these are data references.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution - 22 import functions "FAILED to decompile", spurious constructs like `JUMPOUT(0)`, warning about "positive sp value", and header comments about IDA Pro/Hex-Rays that add no semantic value. The decompilation is incomplete and fragmented.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions are simple single-return blocks that directly return computed constants - this is natural for fully-optimized code. The `call_virtual_func` correctly shows vtable indirect call pattern. Control flow is straightforward given the aggressive optimization (likely -O2 or -O3).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good granularity - template instantiations are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`), class methods are individual functions. Each function has a single clear purpose. Minor: some small functions could be inlined but this is compiler's choice.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Excellent linearity - nearly all functions are single basic blocks with no jumps. Code reads top-to-bottom with no forward jumps, breaks, or continues. This is expected for optimized return-constant functions.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundancy detected. Dead code from compilation is absent. Each function does exactly one thing. Loop unrolling is not applicable since functions just return constants.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Generally good type recovery - `int`, `size_t`, `double`, `char*` are used appropriately. Virtual pointer types shown as `int (**)(void)`. Minor issues: some `void*` in RTTI code where `RTTIDerivedA*` would be more precise. LODWORD/HIDWORD used for double manipulation.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class structures are reasonably recovered - vtable pointers shown as `_vptr$Base`, `_vptr$RTTIBase`. Member access uses `this->size`, `this->data`. However, field names in `SimpleClass` (`value`, `name[32]`) are lost, replaced with stack offsets. Template class `Container<int>` and `Container<double>` properly differentiated.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Mostly type-safe code. Minor issues: `LODWORD()` and `HIDWORD()` casts for double manipulation, some void pointer arithmetic in RTTI code. No severe violations like confused function pointers. The vtable call in `call_virtual_func` is properly typed.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal useful comments. Header shows decompiler attribution but no semantic value. No explanation of algorithms, vtable mechanics, or RTTI patterns. "FAILED to decompile" messages are present but not informative about why. No recovery of original source comments.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some C++ idioms recognized - virtual function calls via vtable (`obj->_vptr$Base`), exception throwing via `_cxa_throw`, dynamic_cast via `_dynamic_cast`. However, these are shown as raw runtime calls rather than high-level C++ constructs. Template instantiation pattern not explicitly labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages for 22 imports are present but uninformative. Warning about "positive sp value" is vague. No indication of indirect call resolution confidence. The decompiler silently fails on many items without explaining potential causes or workarounds.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or assumptions. The original source had no explicit assertions, but the decompiler could infer some (e.g., null checks on pointer returns) but doesn't.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Static member access is clear (`LifecycleClass::instance_count`). Virtual dispatch relationships shown via vtable. Function call graph is implicit in the code. However, no explicit comments about who calls what or the relationship between test functions and the main driver.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by class (RTTI classes together, Container templates together). Test functions are separated. However, the file is a flat list with no namespace recovery. The original had C++ classes in a logical order; decompiled output loses this structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile as-is. 22 import functions failed to decompile, leaving undefined symbols. Requires significant patching to add stub declarations for `__imp_*` functions. No header file structure recovered. The binary was compiled for ARM32 but metadata says arm64 - there's a platform mismatch.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`-`v9`), completely losing semantic meaning from source
+- 22 import functions failed to decompile, leaving the binary partially unreadable
+- No comments explaining vtable mechanics, RTTI patterns, or exception handling
+- Class member names (`value`, `name`) lost in favor of stack offsets
+- Template syntax not properly recovered (shows as separate functions without proper template wrapper)
+
+**Best Quality Aspect:** Code Linearization (scored 9/10)  
+The decompiled code reads linearly with no confusing jumps or control flow distortions - each function is a simple, understandable unit.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Variables should be inferred from usage patterns - `v1` used as string buffer with `strcpy` should be `name`, `v2`-`v6` used as zero-initialization should be `value` or similar.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - buffer used with `strcpy`/`strlen` should be named `name`, arithmetic operations should use meaningful names
+2. Recover C++ template syntax instead of showing separate instantiations as disconnected functions
+3. Add semantic comments explaining vtable layout, RTTI mechanics, and exception handling patterns rather than showing raw runtime calls

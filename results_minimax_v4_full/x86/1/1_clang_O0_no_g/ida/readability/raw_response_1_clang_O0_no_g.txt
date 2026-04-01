@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables are `v2`, `v3`, `i`, `j` - completely generic. In `sequential_ops`, the source's `temp1`, `temp2`, `temp3` are lost entirely, replaced with inline expressions. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the source: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`. However, some internal functions like `sub_1030`, `sub_10A0` have generic names. The main test functions are correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation. In `switch_small`, values 15, 5, 50, 2 are unexplained (should be 10+5, 10-5, 10*5, 10/5). The `switch_fallthrough` has cryptic `v2 = 12` and `v2 += 2 * a1` without comments explaining the fall-through logic. Some constants like `0xA` (10) are inferable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean output with minimal compiler artifacts. No debug traces, register spills, or redundant casts observed. The decompiled code is readable without significant noise pollution from the compilation process.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are well-preserved. Loops (`for`, `while`, `do-while`) match source. Switch statements are properly structured. The `goto_backward` successfully converted goto-loop to for-loop. Minor issue: `ternary_op` decompiled as if-else instead of `?:` operator, losing the idiomatic form.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. No over-fragmentation or monoliths. Each function has clear single responsibility. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns and breaks used appropriately. No forward jumps into loop bodies. The code flows naturally without confusing goto patterns (successfully converted).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or significant redundancy. Common subexpressions are properly handled. The `duffs_device` shows some unrolling but it's a faithful representation of the original complex control flow.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` throughout instead of more specific types. Function pointer types are approximated as `int (__cdecl *a1)(int)` which is adequate but not precise. Parameter types are correct but basic. No `int32_t`, `size_t`, or other specific types recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union reconstruction. Arrays like in `loop_break` use `dest[i]` which is reasonable. The `matrix` in `loop_multi_exit` is accessed via pointer arithmetic. This is a known limitation of decompilation - struct recovery is difficult.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Function pointer casting in `call_func_ptr_array` uses appropriate conversions. Pointer arithmetic is handled correctly. Minor issue: `process_with_callback` uses `_DWORD` for callback parameter type which loses precision.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Header comment identifies decompiler (IDA Pro/Hex-Rays), binary path, and processor. However, no algorithm explanations, no uncertainty indicators, and no API contracts (@param, @return). Comments are minimal and mostly auto-generated.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognizable: state machine in `state_machine`, function pointer array in `call_func_ptr_array`, Duff's device in `duffs_device`. However, these are not explicitly named or highlighted as design patterns. The user must infer them.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Failed decompilations are clearly marked: `__libc_start_main`, `printf`, `longjmp`, `_setjmp`, `memcpy`, `__cxa_finalize`, `memset`. The note "positive sp value has been detected" in `_start` shows some awareness of anomalies. However, no warnings about suspicious code patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. The source had no explicit contracts either, but the decompiler could have inferred some (e.g., "requires: n > 0" for factorial). Error conditions are handled but not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from reading the code. `test_control_flow_l1` calls all the L1 functions. However, no explicit documentation of who calls whom or global variable usage. Callback relationships in `process_with_callback` are inferable but not stated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in original source order. Static functions like `double_value`, `triple_value` are properly scoped. Related functions are grouped together. However, it's a single flat output without any namespace or module structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library includes. External functions (printf, memcpy, etc.) are referenced but not declared - would need headers. No compiler-specific hacks. The "FUNCTIONS" section shows 80 total, 7 failed which is reasonable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`a1`, `a2`, `v2`, `v3`) - loses all semantic meaning from source
+- Magic numbers in `switch_small` (15, 5, 50, 2) are unexplained - should be 10+5, 10-5, 10*5, 10/5
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Ternary operator `?:` not recovered - decompiled as if-else, losing idiomatic form
+- No comment explaining the `switch_fallthrough` logic (complex fall-through behavior)
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- Loops, switches, and goto conversions are well-handstood. The decompiler successfully recovered structured control flow from machine code, making execution easy to follow.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Every parameter and local variable uses generic names. The decompiler could infer better names from usage patterns (e.g., `a1 + a2` suggests these are operands, `a1 * 2` suggests doubling).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparisons) to suggest semantically meaningful names like `operand_a`, `index`, `count`
+2. **Recover ternary operators**: Detect patterns like `if (cond) return a; else return b;` and consolidate to `return cond ? a : b`
+3. **Explain magic numbers**: When constants appear in context (arithmetic operations), add comments explaining their origin (e.g., `// 15 = 10 + 5`)

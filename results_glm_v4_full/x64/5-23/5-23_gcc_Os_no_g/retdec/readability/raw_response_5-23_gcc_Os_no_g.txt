@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `a2`. For example, in `param_macro_constants`, `v1` represents the input `size` and `v2` represents the comparison result, offering no semantic insight.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_macro_constants`, `call_asm_basic`), likely due to the presence of debug symbols (`-g`), providing excellent context.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are prevalent and obscure logic. In `param_macro_constants`, the constant `1024` is bizarrely replaced by `(int32_t)&g20` (the address of a global variable), and string literals are stored as hex-encoded globals (e.g., `g1`) rather than inline strings.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant compiler artifacts, such as stack canary checks (`__readfsqword(40)`) in almost every function with local variables and redundant truncation masks (`& 0xffffffff`), which impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often obfuscated by low-level implementation details. For instance, `param_macro_constants` uses a complex bitwise comparison `v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g20)) < 0` to represent a simple `size > 1024` check.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler perfectly preserved the function boundaries and granularity from the source code. There is no inlining or outlining, and functions like `param_macro_recursion` remain distinct.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with standard `while` loops for iterations (e.g., in `param_asm_clobber`). There are no confusing `goto` chains or computed jumps disrupting the flow within the user-defined functions.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While there is no dead code, the decompiler introduces redundancy through complex expression reconstruction. In `param_macro_functions`, the square operation is represented as `0x100000000 * a1 >> 32` instead of the simpler `a1 * a1`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are generally correct (`int64_t` for pointers/longs, `int32_t` for ints), but there are errors. In `param_asm_simd`, the decompiler hallucinates `int128_t` and x86 intrinsics (`__asm_movaps`) for what is likely ARM NEON code, and `int` parameters are widened to `int64_t`.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Arrays are handled via standard pointer arithmetic (e.g., `*(int32_t *)(4 * v1 + (int64_t)a1)`), which is acceptable given the lack of struct usage in the source, though field names are naturally absent.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is littered with explicit casts like `(int32_t)a1` and `(int64_t)v3` to handle type conversions, which while safe, clutter the code. The use of `__asm_` intrinsics on non-x86 types represents a type safety confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of specific code blocks. The only comments are address ranges and auto-generated headers.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level patterns are missed. The `MAX` macro in `param_macro_functions` is expanded into a low-level comparison rather than a ternary operator or `max` function, and the `SQUARE` macro is obscured by bit-shifting.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the hallucinated x86 SIMD instructions in `param_asm_simd` and the address-as-constant comparison in `param_macro_constants` as normal code without any warning flags or "UNCERTAIN" markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred. For example, the requirement for `mmap` success in `param_dynamic_code` is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved correctly to their definitions (e.g., `test_preprocessing_features` calls `call_variadic_macro`), and global variable references are explicit, making the call graph easy to follow.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order. Helper functions like `function_10b0` (wrappers for `mmap`) are grouped, though they lack descriptive names.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard `__asm_` intrinsics (e.g., `__asm_xorps`) and specific compiler extensions (`__readfsqword`) that would likely fail to compile on a standard strict C compiler without modification or specific headers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Constant Misinterpretation**: In `param_macro_constants`, the immediate value `1024` is incorrectly replaced by the address of global variable `g20`, creating confusing logic.
+- **Architecture Hallucination**: The function `param_asm_simd` contains x86 intrinsics (`__asm_movaps`, `__asm_paddd`) despite the binary being ARM64 (evidenced by `param_asm_basic` using the C fallback).
+- **Obfuscated Arithmetic**: Simple multiplication in `param_macro_functions` (`x * x`) is decompiled to `0x100000000 * a1 >> 32`, losing semantic clarity.
+- **String Encoding**: String literals are stored as hex-encoded global variables (e.g., `g1`) rather than inline strings, forcing the reader to decode hex to read messages.
+- **Generic Naming**: All local variables use generic names (`v1`, `v2`), making it difficult to track data flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler successfully recovered all original function names from debug symbols, which is the single most helpful feature for navigating the code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- **Why?** The decompiler fails to explain the "why" behind the code, missing comments, idiom recognition, and flagging anomalies like the architecture mismatch.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Constant Propagation**: Distinguish between memory addresses and immediate values to prevent replacing constants like `1024` with global variable addresses.
+2.  **Architecture-Aware SIMD Decoding**: Fix the instruction mapping for ARM64 to avoid hallucinating x86 SSE/AVX intrinsics when decompiling NEON instructions.
+3.  **Inline String Literals**: Recover string literals directly into the code (e.g., `printf("...")`) instead of referencing hex-encoded global arrays.

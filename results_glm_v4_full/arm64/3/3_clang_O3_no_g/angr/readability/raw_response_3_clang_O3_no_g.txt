@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `v2`), providing no semantic context. While `ptr` or `iter` appear occasionally, the loss of names like `x`, `n`, `arr`, or `local` significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), matching the original source exactly and clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with global address references (e.g., `puts(&g_4022b9)`), obscuring the actual text. Magic numbers like `4294967294` (0xFFFFFFFE) and `0x800` appear without explanation, though some constants like `20` or `42` are preserved.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Every function is polluted with repetitive stack frame setup code (`v0 = &v1;`) and redundant variable declarations (`char v1; // [bp+0x0]`). Additionally, SIMD pseudo-ops like `AddV` and `ShlNV` introduce noise that obscures the original logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The control flow is heavily optimized (likely -O3) and deviates significantly from the source. Simple loops (e.g., in `local_array`) are reduced to single expressions, and `for` loops are replaced by complex `do-while` blocks with SIMD intrinsics (`uint128_t`), making the logic hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, and no inlining is observed. The granularity is appropriate, maintaining the original separation of concerns (e.g., `heap_basic` vs `heap_calloc`).
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code generally reads top-to-bottom, the aggressive loop unrolling and vectorization (e.g., in `large_stack_frame`) create long blocks of repetitive assignments that disrupt the linear flow of the original logic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler effectively presents the optimized binary without redundant calculations. However, the "redundancy" here is the compiler's optimization, which the decompiler accurately reflects, even if it differs from the source structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often imprecise; `int` becomes `unsigned int` or `unsigned long long`. Most notably, simple `char` arrays are represented as `uint128_t` or SIMD vectors, obscuring the original data types.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are recovered but with generic field names (e.g., `field_0`, `field_8`, `padding_4`). While the layout is correct, the semantic meaning of fields like `x`, `y`, `data`, or `next` is lost.
+
+**11. Type Safety:** Score: 7/10
+Justification: Standard casts are present, and pointer arithmetic is generally correct. There are no glaring type safety violations in the decompilation itself, though the use of SIMD types on stack buffers is a low-level representation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic, algorithms, or data structures. Only stack offset comments (e.g., `// [bp-0x10]`) are present, which offer little value for understanding the code's purpose.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like `malloc`/`free` pairs or array initialization loops are obscured by optimization and SIMD intrinsics. The decompiler fails to highlight these patterns, presenting them as raw memory operations.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No specific anomalies are flagged. The code is presented confidently, even where the logic is heavily optimized or uses pseudo-ops (like `AddV`) that might confuse the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., `n > 0` checks are buried in logic) or postconditions. The function signatures do not convey any contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses are clear. The relationships between functions (e.g., `test_stack_memory` calling `local_vars`) are preserved and easy to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped roughly by their original order, though the lack of section separators or comments makes it harder to distinguish between the different test categories (Stack vs. Heap vs. Static).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to the use of pseudo-ops (`AddV`, `ShlNV`, `__ROL__`) and reliance on global address labels (`g_4022b9`) without definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Optimization Mismatch**: The binary appears compiled with `-O3` (SIMD, loop unrolling) despite source metadata claiming `-O0`, causing massive structural divergence.
+- **Generic Variable Naming**: Variables like `v0`, `v1`, and `a0` strip all semantic meaning, making it hard to map back to source logic.
+- **String Literal Indirection**: Format strings are replaced with global addresses (e.g., `&g_4022b9`), forcing the user to manually look up string contents.
+- **SIMD Pseudo-ops**: Use of `uint128_t` and `AddV`/`ShlNV` obscures simple array operations, making the code look like assembly rather than C.
+- **Struct Field Obfuscation**: Recovered structs use generic names (`field_0`, `field_8`), losing the semantic context of fields like `data` or `next`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Symbols were preserved perfectly, making it trivial to identify the correspondence between decompiled functions and the original source.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)
+- **Why?** The lack of comments, combined with the heavy optimization and generic naming, makes it very difficult to understand the *intent* of the code versus just the mechanics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover String Literals**: Inline string literal contents at the call site instead of just showing the global address reference.
+2. **De-Optimize SIMD**: Provide an option to simplify SIMD vector intrinsics back into scalar loops to improve readability for standard C code.
+3. **Enhanced Variable Naming**: Infer variable names from usage context (e.g., `a0` used in a size check could be named `size` or `n`) rather than defaulting to `v0`/`a0`.

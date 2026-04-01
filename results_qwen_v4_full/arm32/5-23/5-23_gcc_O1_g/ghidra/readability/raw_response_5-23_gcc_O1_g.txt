@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`iVar1`, `piVar2`, `__addr`, `__len`) with no semantic meaning; only a few like `result`, `sum`, `counter` are contextually appropriate. Debug symbols preserved function names but local variable names are lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`) matching original source exactly due to `-g` debug symbols. Action-oriented naming clearly indicates purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers remain unexplained (`0x401`, `0x200`, `0x40`, `0xdef0`, `0x117`) where original had named constants (`MAX_SIZE`, `BUFFER_COUNT`). Hex values obscure the semantic meaning (e.g., `0x401` = 1025, `0x40` = 64).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler runtime functions included (40+ `__sync_*` variants) that aren't part of original source logic. "WARNING: Unknown calling convention" and "Unresolved local var" annotations add noise but provide useful context.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if-else and loop constructs. `param_asm_clobber` successfully recovered a for-loop from assembly. Some do-while patterns could be cleaner for-loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well with appropriate `param_*` and `call_*` pairs. No excessive inlining or fragmentation; each function has clear single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Loop structures are properly linearized. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding applied appropriately (`call_macro_constants` returns `0x40` directly). Some redundancy in `__sync_*` function variants that aren't all used by main code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`) but some generic types appear (`undefined4`). Pointer types mostly correct but array vs pointer distinction sometimes lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays successfully recovered (`arr[5]`, `src[10]`, `dst[32]`). No complex structs in this code to evaluate. Stack arrays properly sized in decompiled output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns visible (raw pointer arithmetic in `param_asm_clobber`). No explicit cast annotations. Memory operations (`mmap`, `munmap`) use void* appropriately.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very few comments present; mostly auto-generated warnings ("Unresolved local var", "WARNING: Unknown calling convention"). No algorithm explanations or semantic documentation recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns recognized from assembly. Assembly-to-C conversion successful for inline assembly blocks. No design pattern identification or higher-level semantic recovery.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly detection with "Unresolved local var" notes showing DWARF debug info. "WARNING: Removing unreachable block" indicates optimization artifacts. Some indirect calls flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Error conditions not documented (e.g., `mmap` failure returns -1 but no comment explains). No contract inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variable usage visible (`global_var`). No callback relationship documentation or call graph annotations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file matching original structure. No header file separation. Original organization (preprocessing tests, assembly tests) mostly preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__printf_chk`, `mmap`, `sysconf`) requiring stubs. `__sync_*` functions decompiled but may not work standalone. Would need significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+9+4+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):   (7+8+7+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):         (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):     (3+5+6+3)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):   (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.05/10
+```
+
+**Overall Readability Score:** 6.05/10
+
+### Critical Defects:
+- **Magic numbers obscure semantics**: `0x401`, `0x200`, `0x40`, `0xdef0` should be named constants (`MAX_SIZE+1`, `MAX_SIZE/2`, `BUFFER_COUNT*4`, platform constant)
+- **Variable names lack meaning**: `iVar1`, `piVar2`, `__addr` should be `result`, `array_ptr`, `exec_mem` based on usage context
+- **No semantic comments**: Decompiled code lacks any explanation of what functions do or why certain patterns exist
+- **Preprocessing information lost**: All macro definitions (`MAX_SIZE`, `SQUARE`, `ADD_16`) completely unrecoverable (expected but should be noted)
+- **Build incompatibility**: External dependencies (`__printf_chk`, `__sync_*`) not documented, requires significant stubbing
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols (`-g` flag) enabled perfect preservation of all function names, making code navigation and understanding significantly easier.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Almost no semantic documentation recovered; decompiler should infer and add comments explaining function purpose, especially for assembly-recovered code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Constant recovery from usage patterns**: Detect repeated literal values and suggest named constants (e.g., `0x401` appears in size check → suggest `MAX_SIZE_THRESHOLD`)
+2. **Variable name inference from context**: Use data flow analysis to name variables based on usage (e.g., variable used in `mmap` call → `exec_mem`, variable in loop sum → `accumulator`)
+3. **Semantic comment generation**: Add function-level comments describing purpose based on call patterns and string literals (e.g., `"LOG:"` string indicates logging function)

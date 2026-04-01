@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`) with no semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions preserved original names (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`). However, helper functions like `sub_880`, `sub_174C`, `sub_1754` have generic address-based names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (for -1), `0x12` (for 18), `dword_1EE0` array references lack explanation. Some literals like `10`, `100`, `2` are inferable from context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive casts (`(unsigned int)`, `(unsigned __int64)`, `LODWORD()`), compiler intrinsics (`__OFSUB__`), and temporary variables (`v1`, `v2`, `v3`) clutter the code throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `sequential_ops` recovered cleanly, but `single_if` uses bit shift trick `(a1 << (a1 > 0))` instead of clear if. `switch_fallthrough` uses goto labels. `loop_for_fixed` replaced with formula instead of loop structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; helper functions (`double_value`, `triple_value`) preserved separately. No excessive inlining, but some anonymous functions exist (`sub_174C`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` and `loop_multi_exit` have disruptive goto patterns (LABEL_5, LABEL_7, LABEL_8, LABEL_11) that break linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant casts throughout. `loop_for_fixed` replaced iteration with closed-form formula (optimization artifact). `switch_small` uses array lookup `dword_1EE0[a1]` obscuring original switch structure.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Return types often wrong (`__int64` instead of `int`). `if_else` returns `bool` instead of `int` (semantic change!). `ternary_op` has wrong parameter name (`result` instead of `a`). Function pointers use generic `_QWORD` types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays referenced as `dword_18D8`, `dword_1EE0`, `unk_18F0`. Function pointer tables as `off_12D30`, `off_12D48`. No struct recovery; all composite types lost to raw memory references.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. Function pointer calls use generic `_QWORD` losing type information (`call_func_ptr`, `call_func_ptr_array`). Signed/unsigned confusion in multiple functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments. Only auto-generated function headers with addresses. No algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized (replaced with formulas). Switch fallthrough not clearly indicated. Duff's device structure obscured. State machine patterns not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only external function failures noted ("FAILED to decompile: 8 functions"). No warnings about type mismatches, uncertain recoveries, or suspicious patterns in the main code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation, no postcondition inference, no invariant recognition. Function contracts completely absent despite original source having clear test validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced as `dword_XXXX`, `off_XXXX` without context. No call graph documentation or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. Test functions mixed with implementation. Runtime functions (`_start`, `init_proc`) mixed with user code. No logical grouping or header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed to decompile requiring stubs. Compiler-specific constructs (`__fastcall`, `LODWORD`, `__OFSUB__`) present. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.57/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`, `v2`) losing all semantic meaning from original source (`temp1`, `sum`, `count`)
+- **Type system degraded** - `if_else` returns `bool` instead of `int`, function pointers use `_QWORD` losing signature information
+- **Control flow obscured** - `single_if` uses bit shift `(a1 << (a1 > 0))` instead of clear conditional, loops replaced with formulas
+- **Zero semantic documentation** - no comments explaining algorithm intent, no contract recovery despite original having test validation comments
+- **Composite types lost** - arrays referenced as `dword_18D8`, `dword_1EE0` instead of named data structures
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most test functions preserved their original semantic names (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no useful comments exist; the decompiler provides zero semantic documentation despite the original source having extensive test validation comments and algorithm explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns - detect `sum` accumulators, `count` iterators, and `temp` intermediates based on operation semantics
+2. **Recover high-level control structures** - recognize bit-shift conditionals as if-statements, formula replacements as loops, and restore original switch-case structures from jump tables
+3. **Add semantic documentation recovery** - extract test validation comments from debug symbols, indicate decompilation confidence levels, and document function contracts from parameter usage patterns

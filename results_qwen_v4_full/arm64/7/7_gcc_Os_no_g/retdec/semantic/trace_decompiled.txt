@@ -1,0 +1,9 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=0,Arg1=-867551608,Arg2=-867551592,Arg3=-1392637172|x0=0x0,x1=0xffffcc4a3688,x2=0xffffcc4a3698,x3=0xc740acfe0b0c,x4=0xd12fde5abfbf53b7,x5=0xf9c1392c1d90,x6=0xf9c1392c1d90,x7=0xf9c1392c0580
+TRACE_PRINT|0|%41%13%FE%AC%40%C7
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%25%13%FE%AC%40%C7
+TRACE_ENT|1|param_opaque_predicate|1|Arg0=6,Arg1=959585432,Arg2=0,Arg3=0|x0=0x6,x1=0xf9c139321c98,x2=0x0,x3=0x0,x4=0xf9c139318f20,x5=0xf9c1392c1430,x6=0xffffcc4a3308,x7=0x0
+TRACE_ENT|2|call_opaque_predicate|2|Arg0=6,Arg1=959585432,Arg2=0,Arg3=0|x0=0x6,x1=0xf9c139321c98,x2=0x0,x3=0x0,x4=0xf9c139318f20,x5=0xf9c1392c1430,x6=0xffffcc4a3308,x7=0x0
+TRACE_EXT|1|param_opaque_predicate|1|10
+TRACE_EXT|2|call_opaque_predicate|2|10
+TRACE_PRINT|0|%09%13%FE%AC%40%C7

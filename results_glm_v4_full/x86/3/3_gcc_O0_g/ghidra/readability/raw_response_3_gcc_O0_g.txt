@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: While simple variables like `i`, `n`, and `arr` are preserved, complex functions like `vla_stack` and `alloca_usage` suffer from cryptic names (`piVar4`, `uVar3`, `local_18`) that obscure the stack pointer manipulation logic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered almost perfectly from the source symbols (e.g., `heap_basic`, `local_struct`, `test_stack_memory`), with only minor generic names like `FUN_00011030` for runtime stubs.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Meaningful constants like `42` and `2048` are converted to hex (`0x2a`, `0x800`) without context, and array sizes are often calculated as magic numbers (e.g., `0x14` for 20 bytes), reducing immediate readability.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts, specifically stack canary checks (`in_GS_OFFSET + 0x14`) and Position Independent Code thunks (`__x86.get_pc_thunk.ax`), which appear in almost every function and distract from the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While standard loops are recovered well, the function `stack_alias` is completely decompiled incorrectly (comparing a stack address to a constant `0x14` instead of pointer logic), and VLA functions expose raw stack probing loops that obscure the high-level intent.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code; there is no inlining or outlining, and the granularity matches the original structure perfectly, making it easy to locate specific logic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but stack canary checks at the beginning and end of functions (loading and verifying `iVar1`) interrupt the logical flow of the function bodies.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code; the verbosity comes from the `-O0` compilation (explicit variable assignments) rather than decompiler redundancy, preserving the original logic structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `void*`) and structs are accurate, but standard library types like `size_t` are often demoted to `uint` or `int`, and `undefined4` appears in some contexts, reducing precision.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs `Point`, `Node`, and `TreeNode` are recovered perfectly with correct field names (`x`, `y`, `data`, `next`, `left`, `right`), matching the original `typedef` definitions exactly.
+
+**11. Type Safety:** Score: 5/10
+Justification: Pointer arithmetic is frequently performed via raw integer casts (e.g., `*(int *)((int)__ptr + i * 4)`), which is type-unsafe and harder to read than standard array indexing `ptr[i]`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic; the only comments are warnings about injected functions (e.g., `get_pc_thunk`), leaving complex operations like VLA stack probing undocumented.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard `for` loops and `malloc` patterns are recognized, but higher-level idioms like Variable Length Arrays (VLAs) or `alloca` are not abstracted, instead exposing the compiler's implementation details.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While "Unknown calling convention" warnings are present, the critical logic failure in `stack_alias` is not flagged, and the messy stack manipulation in `vla_stack` is presented as normal code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions like `if (arr == NULL)` are present in the code but are not highlighted or documented as contracts; they appear as standard control flow.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to `malloc`, `free`, and user-defined functions are clear, but global variable accesses are mixed with stack canary checks, slightly muddying the data flow visibility.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure (stack tests, then heap tests, then global tests), making it easy to navigate the decompiled output.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes undefined types (`undefined4`) and references to injected stub functions (`__x86.get_pc_thunk.ax`), requiring significant cleanup to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Logic Failure in `stack_alias`**: The decompiler failed to recover pointer comparison logic, replacing it with a nonsensical stack address check (`&stack0x00000000 == (undefined1 *)0x14`).
+- **VLA/Alloca Obfuscation**: Functions like `vla_stack` and `alloca_usage` are unreadable due to the exposure of raw stack pointer arithmetic and page-probing loops instead of the original array syntax.
+- **Stack Canary Pollution**: Every function with a buffer is cluttered with `in_GS_OFFSET` checks, significantly degrading readability.
+- **Unsafe Pointer Arithmetic**: Array accesses on heap pointers are represented as raw integer offset calculations (e.g., `(int)ptr + i * 4`) rather than `ptr[i]`.
+
+**Best Quality Aspect:** Composite Type Recovery (Score: 9/10)
+- **Why?** Structs like `Point`, `Node`, and `TreeNode` were recovered with perfect field names and types, preserving the original data structure definitions exactly.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 2.75/10)
+- **Why?** The lack of comments and failure to abstract complex compiler implementations (like VLA stack probing) makes understanding the "why" behind the code extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Abstract VLA/Alloca Implementation**: Detect stack probing loops and realignment logic generated by VLAs/alloca and replace them with pseudo-code representing the original array allocation (e.g., `int vla[n];`).
+2.  **Improve Pointer Analysis for Aliasing**: Fix the logic recovery in functions like `stack_alias` where pointers to local variables are compared; ensure the decompiler tracks stack variable addresses correctly rather than falling back to frame offsets.
+3.  **Optionally Hide Stack Canaries**: Provide a toggle or macro to hide/annotate Stack Smashing Protector (SSP) checks, as they clutter the control flow in `-O0` builds without adding semantic value to the algorithm.

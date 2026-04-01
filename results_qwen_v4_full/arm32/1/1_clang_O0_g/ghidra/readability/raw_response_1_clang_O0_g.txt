@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`local_4`, `local_8`, `local_c`) despite debug symbols being available (-g flag). "Unresolved local var" comments show original names (temp1, sum, count, i, j) were in debug info but not recovered as actual variable names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names preserved perfectly from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`, `recursion_factorial`). Action-oriented names clearly reflect functionality.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Mix of decimal and hex literals without consistency (e.g., `0x14` instead of 20, `0x3e9` instead of 1001, `0x65` instead of 101). Magic numbers like `0x80000000` for sign checks lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts at -O0. Some "WARNING: Removing unreachable block" comments and "Unresolved local var" annotations add noise but don't impede understanding.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if-else chains, for/while/do-while loops). However, `switch_fallthrough` converted to nested if statements losing fallthrough semantics, and `duffs_device` uses goto labels obscuring the pattern.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved. Helper functions (`double_value`, `triple_value`, `op_add`, etc.) remain separate. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `duffs_device` uses goto labels (`switchD_00011658_caseD_7`) disrupting flow. `loop_break` uses `while(true)` with break instead of cleaner for-loop.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or duplicate expressions. `__divsi3` contains extensive bit operations but this reflects actual implementation complexity, not redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved but `volatile` qualifier lost (`infinite_loop` shows `int *flag` not `volatile int *flag`). `undefined4` used for some locals indicating incomplete type recovery. Function pointers typed as `code *` rather than specific signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered (`local_2c[7]`, `local_48[14]`) but 2D array `matrix[3][4]` flattened to 1D with index calculation (`local_48[local_4c * 4 + local_50]`). No struct information to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts observed. Function pointer calls properly typed. Some `undefined4` usage indicates type degradation but doesn't create safety violations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: "Unresolved local var" comments show debug info was available but not utilized for naming. Warning comments present ("Subroutine does not return") but no algorithm explanations or semantic documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Basic loop/switch patterns recognized. Duff's device not identified as such. State machine pattern in `state_machine` not explicitly named. Fallthrough switch semantics lost.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system ("Could not recover jumptable", "Treating indirect jump as call", "Removing unreachable block"). `computed_goto` properly flagged with uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (e.g., `n <= 0` returns -1 in `duffs_device`) not highlighted as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear. Global variables (`jump_buffer`, `completed_0`) referenced but not documented. Function pointer relationships visible but no explicit call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source order. Test functions grouped logically. Helper functions near users. No explicit module boundaries or header organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies (`printf`, `__libc_start_main`, `__divsi3`) present but undocumented. Would require stubs for runtime helpers. No build instructions provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (7+9+7+8)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.333
+Level 4 (Semantic):    (5+6+7+3)/4 = 5.25 × 0.15 = 0.788
+Level 5 (Contextual):  (6+7+6)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.72/10
+```
+
+**Overall Readability Score:** 6.7/10
+
+### Critical Defects:
+- **Variable names not recovered from debug symbols**: Despite `-g` flag, locals named `local_4`, `local_8` instead of `temp1`, `sum`, `count`, `i`, `j` shown in "Unresolved local var" comments
+- **Switch fallthrough semantics lost**: `switch_fallthrough` converted to nested if statements, losing intentional fallthrough behavior
+- **Volatile qualifier dropped**: `infinite_loop` parameter should be `volatile int *flag` but shows `int *flag`
+- **Hex literals without decimal equivalents**: `0x14`, `0x3e9`, `0x65` should show as 20, 1001, 101 for readability
+- **Duff's device pattern not recognized**: Goto labels obscure the well-known loop unrolling optimization pattern
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All function names preserved perfectly from source, maintaining semantic clarity and making navigation intuitive
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error condition documentation despite clear validation patterns in source code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Utilize debug symbol variable names**: The "Unresolved local var" comments prove DWARF info contains original names (`temp1`, `sum`, `count`) - use these instead of `local_X` generics
+2. **Detect and preserve switch fallthrough patterns**: Analyze case block continuity to identify intentional fallthrough and add `// fall-through` comments or restructure appropriately
+3. **Recover type qualifiers from debug info**: `volatile`, `const`, and `restrict` qualifiers are in DWARF metadata and should be preserved for semantic accuracy

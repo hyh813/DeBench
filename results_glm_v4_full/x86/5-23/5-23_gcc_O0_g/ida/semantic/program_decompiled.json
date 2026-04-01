@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/5-23/5-23_gcc_O0_g/ida/syntactic/bin/5-23_gcc_O0_g_fixed",
+  "stdout": "Testing Preprocessing Features\nPPL20.1: 64\nPPL20.2: 30\nPPL20.3: 32\nPPL20.4: 57122\nPPL30.1: 116\nPPL30.2: 19\nPPL30.3: 60\nLOG: Values: 10, 20, 30\nPPL30.4: 60\nPPL30.5: 16\nPPL30.6: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:44\nPPL30.7: 382\nTesting ASM Features\nAsm L40.1: 15\nAsm L40.2: 15\nAsm L40.3: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

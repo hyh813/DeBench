@@ -1,0 +1,22 @@
+=== Testing Preprocessing Features ===
+PARAM-1-01: 64
+PARAM-1-02: 30
+PARAM-1-03: 32
+PARAM-1-04: 57122
+PARAM-1-05: 116
+PARAM-1-06: 19
+PARAM-1-07: 60
+LOG: Values: 10, 20, 30
+PARAM-1-08: 60
+PARAM-1-12: 16
+PARAM-1-10: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:17
+PARAM-1-11: 382
+PARAM-1-11: 382
+=== Testing ASM Features ===
+ASM-3-01: 15
+ASM-3-02: 15
+ASM-3-03: 42
+ASM-3-04: 36
+ASM-L4-05: ASM-3-05: 77
+ASM-3-05: 77

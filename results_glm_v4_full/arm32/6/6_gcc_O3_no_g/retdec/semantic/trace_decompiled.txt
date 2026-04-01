@@ -1,0 +1,6 @@
+TRACE_ENT|0|param_fread_fwrite|0|Arg0=5065064,Arg1=-1093658572,Arg2=-1093658564,Arg3=5063985|r0=0x4d4968,r1=0xbed01834,r2=0xbed0183c,r3=0x4d4531,r4=0xbed016f8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|0|param_fread_fwrite|0|-1
+TRACE_ENT|1|test_system_calls|0|Arg0=-1,Arg1=-1093658572,Arg2=2075955712,Arg3=2075955712|r0=0xffffffff,r1=0xbed01834,r2=0x7bbc9200,r3=0x7bbc9200,r4=0xbed016f8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|1|test_system_calls|0|0
+TRACE_ENT|2|test_thread_concurrency|0|Arg0=0,Arg1=-1093658572,Arg2=2075955712,Arg3=2075955712|r0=0x0,r1=0xbed01834,r2=0x7bbc9200,r3=0x7bbc9200,r4=0xbed016f8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|2|test_thread_concurrency|0|0

@@ -1,0 +1,106 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`param_1`, `local_10`, `uVar2`), providing no semantic hint about their purpose (e.g., `count`, `sum`, `args`), despite the `-O0` build preserving stack layouts that could aid inference.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined function names like `cdecl_func` and `test_calling_conventions` are recovered accurately, though library functions like `__adddf3` retain their mangled/internal names rather than abstract operator names.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with pointers to data segments (e.g., `&DAT_0001175e`), and numeric constants are often in hex (e.g., `0xf` instead of `15`), requiring manual lookup to understand the output values.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is heavily polluted with compiler runtime support and soft-float library implementations (e.g., `__aeabi_drsub`, `__subdf3`) interleaved with user code, significantly obscuring the actual program logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Due to `-O0`, control flow is very clean and linear; loops are correctly identified as `do-while` constructs, and `if-else` logic is preserved without confusing jumps or optimizations.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are not inlined, maintaining the original granularity and cohesion defined in the source; boundaries between `cdecl_func`, `stdcall_func`, etc., are distinct.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal forward jumps or computed branches, making execution paths easy to trace, which is typical for unoptimized code.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or tail duplication; the code structure is a direct translation of the source logic without optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Types are severely degraded; `double` and `long long` parameters are split into multiple `undefined4` (32-bit) integers, and return types are frequently lost (e.g., `func_mixed_args` returns `void` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `LargeStruct` passed by value is decompiled as four separate integer parameters (`param_1` through `param_4`), and `SmallStruct` return values are replaced by a hidden pointer parameter (`undefined4 *param_1`).
+
+**11. Type Safety:** Score: 4/10
+Justification: Extensive use of `undefined4` and `undefined8` types removes type safety guarantees, and pointer arithmetic is performed on raw integers (e.g., `(int)local_10 + iVar2`), which is prone to errors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex floating-point helper functions included in the output.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are missed; `varargs_func` is not recognized as a variadic function (signature is fixed), and struct returns are not abstracted into high-level return statements.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the mangled signatures (like `void` return for functions that should return values) confidently without flagging them as potential analysis failures or ABI oddities.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `param_1` in `varargs_func` to be a valid count is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to other user-defined functions (e.g., `cdecl_func` calling `cdecl_func`) are clear, but calls to runtime helpers are opaque and lack context.
+
+**17. Module Organization:** Score: 5/10
+Justification: User functions are intermixed with a large volume of low-level runtime and floating-point library code, making it difficult to discern the module's logical boundaries.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to the use of non-standard types like `undefined4`, missing struct definitions, and incorrect function signatures (e.g., missing `...` for varargs).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 5 + 4) / 4 = 5.0
+L2_avg = (8 + 9 + 9 + 9) / 4 = 8.75
+L3_avg = (2 + 2 + 4) / 3 = 2.67
+L4_avg = (1 + 3 + 1 + 1) / 4 = 1.5
+L5_avg = (7 + 5 + 2) / 3 = 4.67
+
+Overall = (5.0 × 0.30) + (8.75 × 0.25) + (2.67 × 0.20) + 
+          (1.5 × 0.15) + (4.67 × 0.10)
+Overall = 1.5 + 2.1875 + 0.534 + 0.225 + 0.467
+Overall ≈ 4.91
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet Points)
+- **Type System Collapse**: `double` and `long long` types are split into `undefined4` chunks, and `LargeStruct` is decompiled as four separate integer parameters instead of a struct.
+- **Lost Return Values**: Functions returning structs (e.g., `ret_small_struct`) are decompiled as `void` functions taking a hidden pointer, obscuring the data flow.
+- **Varargs Unrecognized**: `varargs_func` is decompiled with a fixed signature, reading variadic arguments via raw stack pointer arithmetic (`local_10`) rather than `va_list`.
+- **Floating Point Opacity**: Floating-point operations are exposed as calls to soft-float library functions (`__adddf3`, `__subdf3`) rather than arithmetic operators.
+- **String Literal Obfuscation**: Format strings are replaced with global data pointers (e.g., `&DAT_0001175e`), hiding the actual text being printed.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Decomposition (9/10)
+- **Why?** The `-O0` compilation ensured that the decompiler could perfectly preserve function boundaries and granularity without inlining or outlining artifacts.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Type Precision (2/10)
+- **Why?** The pervasive use of `undefined4` and the failure to reconstruct composite types (structs) or wide primitive types (double/long long) makes the code semantically ambiguous and unsafe.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Type Propagation for Aggregates**: Implement analysis to detect stack-passed structures and hidden return pointers (sret) to reconstruct struct-by-value and struct-return signatures.
+2.  **Abstract Soft-Float Intrinsics**: Recognize standard soft-float ABI library calls (like `__adddf3`) and lift them into high-level arithmetic operators (`+`, `-`) for readability.
+3.  **Recover Variadic Signatures**: Analyze stack access patterns relative to the frame pointer to identify and reconstruct `...` (varargs) function signatures instead of treating them as fixed arrays.

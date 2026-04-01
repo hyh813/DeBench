@@ -1,0 +1,168 @@
+# Decompilation Readability Assessment
+
+## Overview
+
+After analyzing the provided original source and decompiled code, I notice a critical issue: **the target function `param_fake_branch` is completely missing from the decompiled output**. The decompiled code shows other functions from the same file, but not the specific function we need to evaluate.
+
+Let me provide a detailed analysis based on what's available:
+
+---
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+The decompiled code uses generic variable names like `v1`, `v2`, `v3`, `v4`, `v5` which provide no semantic meaning. For example, in `param_opaque_predicate`, the variable `v1` represents `x+1` but the name doesn't indicate this. The original source uses meaningful names like `p1`, `p2`, `p3` for the opaque predicates.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Function names match the original source exactly: `param_opaque_predicate`, `call_opaque_predicate`, `param_division_by_zero`, etc. This is excellent recovery.
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Some literals are preserved (like `90` for the XOR key in string decryption), but important constants like `0xDEADBEEF` from the fake branch are missing. The magic number `90` in `decrypt_string((char *)&g17, decrypted, 32, 90)` should be documented as the XOR key.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+The code is relatively clean without excessive debug artifacts. Minor noise from complex struct initializations in `_setjmp` calls.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+**CRITICAL ISSUE**: The decompiled code introduces control flow that doesn't exist in the source. In `param_opaque_predicate`, the decompiled version adds:
+```c
+if (v1 == 0) {
+    return 3 * x + 20;
+}
+```
+This conditional branch is NOT in the original source, which simply returns `3*x+20` unconditionally. The decompiler introduced a spurious branch.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Functions are appropriately separated and match the original source structure.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+The code generally reads top-to-bottom with reasonable flow, though the spurious if-statement in `param_opaque_predicate` adds unnecessary complexity.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Some redundancy in the complex `_setjmp` struct initializations, but otherwise acceptable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+
+Types are mostly accurate: `int32_t` for most parameters, `uint32_t` for `n` in some functions. However, the original uses `int` while decompiled uses `int32_t` - this is acceptable but not exact.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+No complex struct recovery is needed for these simple functions. The `jmp_buf` is handled through complex struct initialization which is hard to read.
+
+### 11. Type Safety
+**Score: 5/10**
+
+The complex struct initialization for `_setjmp` is error-prone and hard to verify:
+```c
+_setjmp({
+    (struct {int32_t e0[8]; int32_t e1; struct {int32_t e0[1];} e2;}){
+        .e0 = {(int32_t)&jmp_buffer, 0, 0, 0, 0, 0, 0, 0},
+        .e1 = 0,
+        .e2 = (struct {int32_t e0[1];}){
+            .e0 = {0}
+        }
+});
+```
+This is very difficult to verify for correctness.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+No comments explaining the obfuscation techniques, the fake branch logic, or the purpose of each function. The original source has extensive comments about OBF-L4-02, OBF-L4-03, etc.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+The fake branch pattern (always-false condition) is not recognized. The opaque predicate logic is not clearly documented as such.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No indication that the added conditional in `param_opaque_predicate` is suspicious or different from source.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No pre/post conditions or contracts are documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are clear, but the relationships between obfuscation functions aren't documented.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are grouped logically, matching the original file structure.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The complex struct initializations for `_setjmp` may cause compilation issues. The code includes all necessary headers.
+
+---
+
+## CRITICAL DEFECTS
+
+1. **MISSING FUNCTION**: `param_fake_branch` is completely absent from the decompiled output - this is the primary function we were asked to evaluate!
+
+2. **SPURIOUS CONTROL FLOW**: `param_opaque_predicate` has an added conditional branch `if (v1 == 0)` that doesn't exist in the source code, fundamentally altering the function's behavior.
+
+3. **NO OBFUSCATION RECOGNITION**: The fake branch pattern (always-false condition `x*x < 0`) is not identified or documented.
+
+4. **MISSING CONSTANT**: The magic number `0xDEADBEEF` from the fake branch is completely absent.
+
+5. **POOR VARIABLE NAMING**: Generic names like `v1`, `v2`, `v3` provide no semantic value.
+
+---
+
+## FINAL SUMMARY
+
+**Overall Readability Score:** 4.2/10
+
+**Best Quality Aspect:** Function naming (9/10) - function names match original source exactly.
+
+**Most Needs Improvement:** The target function `param_fake_branch` is missing entirely, making proper evaluation impossible. Additionally, variable naming (3/10) and comment quality (2/10) are severely lacking.
+
+---
+
+## Top 3 Recommendations
+
+1. **Recover the missing function**: Ensure `param_fake_branch` is properly decompiled - it should show the fake branch with `x*x < 0` condition.
+
+2. **Improve variable naming**: Use semantic names like `input_val`, `predicate_result`, `gcd_b` instead of `v1`, `v2`, `v3`.
+
+3. **Add explanatory comments**: Document the obfuscation techniques (fake branches, opaque predicates) so analysts understand the code's purpose.

@@ -1,0 +1,99 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `arr`, `n` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `test_preprocessing_features`, `param_asm_basic`), but many wrapper functions use mechanical names (`sub_400824`, `sub_40091c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072`, `4278190081`, `0x400` appear without explanation. Some are recoverable (0x400=1024=MAX_SIZE) but most lack context from original macro definitions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: repeated stack frame setup (`v0 = &v1;`), stack canary checks in every function, and duplicate calls (`dst = memcpy(...); return memcpy(...);`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if-else, do-while), but `main()` has critical error: `test_asm_features(test_preprocessing_features())` instead of two separate calls. Some goto usage in runtime functions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with unnecessary wrapper functions (`sub_400a94` just calls `param_macro_constants`). Many functions constant-folded to trivial returns, losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks at function ends disrupt flow. Some functions use goto (`register_tm_clones` has `goto g_412ff8`).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate `memcpy` calls in `sub_400824` and `param_asm_multi_insn`. Many `sub_400xxx` wrappers add no value. Stack frame setup repeated unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to generic `unsigned long long`, `unsigned int`. Original `size_t`, specific integer types lost. Some return type mismatches (`long long` vs `int` vs `void`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Not heavily applicable—original code had minimal structs. Array handling as pointer arithmetic is acceptable. No significant composite type loss.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Questionable casts present: `(char)arm64g_calculate_condition(...)`, `(unsigned int)ptr`. `mprotect()` called with no arguments in one location (clear error). Pointer arithmetic generally safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, magic numbers, or algorithms. Only one decompilation failure note: `// Failed to decompile function __aarch64_ldadd4_acq_rel`. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Standard loops and conditionals present but not identified. Atomic operations, memory mapping patterns not labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one failed decompilation noted. Critical errors not flagged: duplicate memcpy calls, wrong `main()` signature, `mprotect()` with missing arguments.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (MAP_FAILED returns, mprotect failures) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables declared as `extern` without context. No indication of which functions are test helpers vs. core logic.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original source had clear section comments (5.2 Preprocessing, 5.3 Assembly) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile as-is: `mprotect()` missing arguments, platform-specific intrinsics (`__aarch64_ldadd4_acq_rel`), missing external function implementations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted |
+|-------|--------------|--------|----------|
+| L1: Lexical Clarity | 4.75 | 30% | 1.425 |
+| L2: Structural Intelligibility | 5.25 | 25% | 1.313 |
+| L3: Type System Fidelity | 5.67 | 20% | 1.134 |
+| L4: Semantic Transparency | 3.00 | 15% | 0.450 |
+| L5: Contextual Coherence | 4.33 | 10% | 0.433 |
+
+**Overall Readability Score: 4.75/10**
+
+### Critical Defects
+- **`main()` function signature error**: Calls `test_asm_features(test_preprocessing_features())` instead of two separate void calls—fundamentally broken semantics
+- **Duplicate function calls**: `sub_400824` and `param_asm_multi_insn` call `memcpy()` twice (once for assignment, once for return)
+- **`mprotect()` called with zero arguments** in `param_memory_protection`—will not compile
+- **All variable names generic** (`v0`, `v1`, `a0`, `a1`) losing all semantic information from original source
+- **Zero comments** despite original source having extensive documentation explaining each test case
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**: Core function names like `param_macro_constants`, `param_asm_basic`, `test_preprocessing_features` were successfully recovered from debug symbols, preserving semantic intent.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Complete absence of comments means readers cannot understand the purpose of magic numbers, test expectations, or why certain code patterns exist—critical for decompiled code analysis.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro semantics from debug info**: When `-g` flags are present, map constant-folded values (64, 512, 57072) back to original macro names (BUFFER_COUNT*4, MAX_SIZE/2, 0xDEF0)
+2. **Detect and eliminate duplicate calls**: The `memcpy` double-call pattern is a clear decompilation artifact that should be recognized and cleaned
+3. **Add confidence annotations**: Flag uncertain decompilations (like the `main()` signature error) with comments indicating potential issues requiring manual review

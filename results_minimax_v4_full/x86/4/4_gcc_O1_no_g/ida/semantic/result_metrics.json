@@ -1,0 +1,380 @@
+{
+  "execution_status": "success",
+  "quality_status": "fail",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/4.c",
+  "drivers": [
+    "test_calling_conventions",
+    "test_parameter_passing",
+    "test_return_values"
+  ],
+  "trace_health": {
+    "status": "partial",
+    "usable_for_structural_evidence": false,
+    "original": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 86,
+      "entry_count": 22,
+      "exit_count": 22,
+      "print_count": 42,
+      "call_count": 22,
+      "parsed_entry_count": 22,
+      "parsed_exit_count": 22,
+      "parsed_print_count": 42,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "failed",
+      "usable": false,
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0,
+      "call_count": 0,
+      "parsed_entry_count": 0,
+      "parsed_exit_count": 0,
+      "parsed_print_count": 0,
+      "parser_error_count": 0,
+      "run_error": "timeout was reached",
+      "issues": [
+        "trace_run_failed",
+        "no_calls_captured"
+      ],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "fail",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": true,
+    "stdout_exact_match": false,
+    "stdout_case_match_ratio": 0.0,
+    "stable_case_total": 35,
+    "stable_case_matched": 0,
+    "stable_case_ids": [
+      "CALL-L1-01",
+      "CALL-L1-02",
+      "CALL-L1-03",
+      "CALL-L1-04",
+      "CALL-L1-05",
+      "CALL-L1-06",
+      "CALL-L1-07",
+      "CALL-L1-08",
+      "CALL-L1-09",
+      "CALL-L1-10",
+      "CALL-L2-06",
+      "CALL-L2-07",
+      "CALL-L2-08",
+      "CALL-L2-09",
+      "CALL-L2-10",
+      "CALL-L2-11",
+      "PARAM-L1-01",
+      "PARAM-L1-02",
+      "PARAM-L2-01",
+      "PARAM-L2-02",
+      "PARAM-L2-03",
+      "PARAM-L2-04",
+      "PARAM-L3-01",
+      "PARAM-L3-02",
+      "PARAM-L3-03",
+      "PARAM-L3-04",
+      "RET-L1-01",
+      "RET-L1-02",
+      "RET-L1-03",
+      "RET-L1-04",
+      "RET-L2-01",
+      "RET-L2-02",
+      "RET-L3-01",
+      "RET-L3-02",
+      "RET-L3-03"
+    ],
+    "unstable_case_ids": [
+      "PARAM-L3-05"
+    ],
+    "original_exit_code": 0,
+    "decompiled_exit_code": 0,
+    "original_signal": null,
+    "decompiled_signal": null,
+    "comparisons_total": 35,
+    "comparisons": [
+      {
+        "test_id": "CALL-L1-01",
+        "occurrence": 1,
+        "original": "CALL-L1-01: 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-02",
+        "occurrence": 1,
+        "original": "CALL-L1-02: 50",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-03",
+        "occurrence": 1,
+        "original": "CALL-L1-03: 6",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-04",
+        "occurrence": 1,
+        "original": "CALL-L1-04: 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-05",
+        "occurrence": 1,
+        "original": "CALL-L1-05: 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-06",
+        "occurrence": 1,
+        "original": "CALL-L1-06: 100",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-07",
+        "occurrence": 1,
+        "original": "CALL-L1-07: 21",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-08",
+        "occurrence": 1,
+        "original": "CALL-L1-08: 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-09",
+        "occurrence": 1,
+        "original": "CALL-L1-09: 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L1-10",
+        "occurrence": 1,
+        "original": "CALL-L1-10: 33",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L2-06",
+        "occurrence": 1,
+        "original": "CALL-L2-06：varargs_func(5, 1-5) = 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L2-07",
+        "occurrence": 1,
+        "original": "CALL-L2-07：func_no_args() = 42",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L2-08",
+        "occurrence": 1,
+        "original": "CALL-L2-08：func_many_args(1-8) = 36",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L2-09",
+        "occurrence": 1,
+        "original": "CALL-L2-09：func_mixed_args(...) = 117",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L2-10",
+        "occurrence": 1,
+        "original": "CALL-L2-10：func_struct_byval(large) = 136",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CALL-L2-11",
+        "occurrence": 1,
+        "original": "CALL-L2-11：func_struct_byptr({5,10}) = 50",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L1-01",
+        "occurrence": 1,
+        "original": "PARAM-L1-01: 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L1-02",
+        "occurrence": 1,
+        "original": "PARAM-L1-02: 11",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L2-01",
+        "occurrence": 1,
+        "original": "PARAM-L2-01: 4",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L2-02",
+        "occurrence": 1,
+        "original": "PARAM-L2-02: 173",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L2-03",
+        "occurrence": 1,
+        "original": "PARAM-L2-03: 300",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L2-04",
+        "occurrence": 1,
+        "original": "PARAM-L2-04: 100",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L3-01",
+        "occurrence": 1,
+        "original": "PARAM-L3-01: 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L3-02",
+        "occurrence": 1,
+        "original": "PARAM-L3-02: 21",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L3-03",
+        "occurrence": 1,
+        "original": "PARAM-L3-03: 305419896",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PARAM-L3-04",
+        "occurrence": 1,
+        "original": "PARAM-L3-04: 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L1-01",
+        "occurrence": 1,
+        "original": "RET-L1-01: 42 (期望: 42)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L1-02",
+        "occurrence": 1,
+        "original": "RET-L1-02: 20 (期望: 20)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L1-03",
+        "occurrence": 1,
+        "original": "RET-L1-03: 7 (期望: 7)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L1-04",
+        "occurrence": 1,
+        "original": "RET-L1-04: 215 (期望: 215)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L2-01",
+        "occurrence": 1,
+        "original": "RET-L2-01: 10 (期望: 10)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L2-02",
+        "occurrence": 1,
+        "original": "RET-L2-02: 100 (期望: 100)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L3-01",
+        "occurrence": 1,
+        "original": "RET-L3-01: 40 (期望: 40)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L3-02",
+        "occurrence": 1,
+        "original": "RET-L3-02: 60 (期望: 60)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "RET-L3-03",
+        "occurrence": 1,
+        "original": "RET-L3-03: 21 (期望: 21)",
+        "decompiled": null,
+        "matched": false
+      }
+    ]
+  },
+  "function_level": {
+    "status": "unavailable",
+    "segment_count": 3,
+    "segment_callseq_match_ratio": null,
+    "feature_function_match_ratio": null,
+    "call_evidence_segment_count": 0,
+    "call_evidence_unavailable_count": 3,
+    "segment_print_match_ratio": null,
+    "segment_print_evidence_count": 0,
+    "segment_print_unavailable_count": 3,
+    "normalized_io_match_ratio": 0.0,
+    "io_matched_pairs": 0,
+    "io_compared_pairs": 0,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": []
+  },
+  "low_level": {
+    "status": "unavailable",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": null,
+    "token_count_original": 0,
+    "token_count_decompiled": 0
+  }
+}

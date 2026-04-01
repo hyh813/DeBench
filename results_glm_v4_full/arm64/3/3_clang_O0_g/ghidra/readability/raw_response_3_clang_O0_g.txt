@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Most local variables are generic names like `local_14`, `local_24`, or `__ptr`, and many are marked as "Unresolved local var". While parameters like `x` or `n` are kept, the semantic meaning of intermediate variables (e.g., loop counters, buffer pointers) is lost.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `heap_basic`, `linked_list_heap`, `test_stack_memory`), likely due to the presence of debug symbols (`-g`) in the unoptimized build.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are often converted to hex (e.g., `0x2a` instead of `42`, `0x800` instead of `2048`), and string literals are replaced with references to global data objects (e.g., `&DAT_00102714`), which obscures the immediate meaning of the text being printed.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with "Unresolved local var" comments and "WARNING: Unknown calling convention" messages. While the logic is visible, the presence of `undefined` types (e.g., `undefined4`, `undefined8`) for padding adds significant visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: The control flow is excellent, closely matching the original source structure. Loops are correctly identified as `for` or `while` loops, and `if/else` blocks are preserved, which is expected for an `-O0` build.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions are perfectly separated with no inlining or outlining artifacts. The granularity matches the source exactly, with helper functions like `create_tree_node` remaining distinct.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. Even complex logic like the linked list creation in `linked_list_heap` is presented in a readable sequence.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code elimination (as expected with `-O0`), so the code is verbose but clean. The redundancy present reflects the source code's verbosity rather than compiler artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int`, `void*`, and `size_t` are recovered accurately. However, stack variables often default to `undefined` types (e.g., `undefined4 local_14`) when the decompiler cannot precisely map the stack layout, reducing precision.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs like `Node` and `Point` are successfully recovered and used. Fields are accessed correctly (e.g., `(*head)->data`), though sometimes accessed via array indexing on the struct pointer (e.g., `__ptr[1]` for the second field), which is functionally correct but stylistically different.
+
+**11. Type Safety:** Score: 6/10
+Justification: Necessary casts for low-level memory access are present (e.g., `(long)aiStack_40` in `vla_stack`), which look unsafe but accurately reflect the pointer arithmetic required for Variable Length Arrays on the stack.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no semantic comments explaining the logic (e.g., "Allocates a linked list"). The only comments are auto-generated warnings about unresolved variables or calling conventions, which do not aid understanding.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard C idioms like `malloc`/`free` loops are recognizable to a developer, but the decompiler does not explicitly label them (e.g., no "Linked List Traversal" annotation).
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler flags technical issues like "Unresolved local var" but fails to flag semantic anomalies such as the use-after-free in `dangling_pointer` or the memory leak in `memory_leak`, presenting them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred or documented. For example, the requirement `n > 0` in `alloca_usage` is visible in the code but not explicitly stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses are clear. The relationship between `test_stack_memory` and its sub-functions is obvious through the direct calls.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped roughly by their address order, which generally keeps related test functions together, though it doesn't perfectly replicate the source file's logical sections.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined8`, which would require a custom header file to compile in a standard C environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- Variable names are predominantly generic (`local_14`, `__ptr`) or marked as "Unresolved", losing semantic context.
+- String literals are replaced with data references (e.g., `&DAT_00102714`), making print statements hard to read.
+- "Unresolved local var" warnings appear frequently, cluttering the output and indicating stack analysis failures.
+- No semantic comments or anomaly detection (e.g., use-after-free is not flagged).
+- Ghidra-specific types (`undefined4`) prevent the code from compiling without modification.
+
+**Best Quality Aspect:** Function Decomposition (scored 10/10)
+- The `-O0` optimization level preserved function boundaries perfectly, and Ghidra successfully recovered all symbols, resulting in a 1:1 mapping of functions.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The output lacks any semantic explanation, relying entirely on the user to reverse engineer the intent from the variable names and control flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Stack Variable Recovery**: Improve the analysis of stack frames to resolve "Unresolved local var" issues and infer better names based on usage context (e.g., naming a variable used in a loop condition as `loop_counter`).
+2.  **Inline String Literals**: Instead of replacing string constants with data references, display the actual string content in the decompiled code (perhaps as a comment or inlined string) to improve readability of `printf` and logging statements.
+3.  **Semantic Anomaly Detection**: Implement analysis to detect and flag common unsafe patterns like use-after-free, double free, or memory leaks, adding warnings similar to how compiler sanitizers work.

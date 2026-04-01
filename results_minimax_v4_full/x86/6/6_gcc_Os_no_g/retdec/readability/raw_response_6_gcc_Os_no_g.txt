@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function that calls `strcpy(dst, src)` and returns `strlen(dst)`. The decompiled version correctly recovers this logic but with significant readability issues.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names like `a1`, `a2` in function prototypes, and `str`, `str2` in implementation. Local variables use `v1`, `v2` pattern. The parameter `str2` in `param_strcpy` should be `src` to match source semantics. Most names are non-descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly named (`param_strcpy`, `call_strcpy`, `call_strlen`). However, many internal helper functions use generic `function_XXXX` pattern (e.g., `function_1580` is strcpy). The core function names match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1000` for shared memory size, `66` for file open flags appear without explanation. String literals embedded in code via relative offsets (e.g., `v1 + 0x2488`) are not extracted as named constants. Some values like `42` used as success indicators.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx` calls, `__readgsdword` for stack canary checks, `__asm_rep_movsb_memcpy` intrinsics, stack canary validation blocks. These obscure the actual logic significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: `param_strcpy` has natural linear flow: strcpy call followed by strlen return. However, surrounding functions like `param_pthread_join` have complex goto-based control flow with labeled sections (`lab_0x2aa6`). At -O0, this is excessive.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-50 lines typical). However, `param_pthread_join` at ~190 lines is too large. Some functions appear over-fragmented (many small `function_XXXX` wrappers for standard library calls).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. However, `param_signal_handling` has complex nested loops with multiple break conditions. Some forward jumps present in error handling paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling visible in `call_memcpy` with explicit `__asm_rep_movsd_memcpy`. Repeated patterns in `param_atomic_ops` could be abstracted. Stack canary checks repeated in many functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate for ARM64. However, confusion between pointers and integers: `param_strcpy(int32_t * str, int32_t str2)` - second parameter should be pointer. Function pointers use generic `int32_t * (*)(int32_t *)` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined but with meaningless field names: `struct _IO_FILE { int32_t e0; };` instead of proper FILE structure. `struct sockaddr` has `char e1[14]` but should have proper fields. Most struct information lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts: `(char *)str`, `(int32_t *)a1` throughout. Pointer arithmetic like `*(int32_t *)(4 * v3 + v2)` is error-prone. No `const` correctness preserved. Function pointer types are incorrect.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm or intent. Only auto-generated address ranges like `// Address range: 0x1b43 - 0x1b77`. No documentation of what functions do or how they relate to source.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions correctly identified: `strcpy`, `strlen`, `strcmp`, `memcpy`, `pthread_create`, etc. The decompiler recognizes common patterns like mutex operations, condition variables. However, not explicitly named as patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit anomaly flags. Some unreachable code marked with `// UNREACHABLE` but no explanation of why. Indirect calls not flagged. No warnings about uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The function simply presents code without any contract information from the source.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes provided showing call relationships. Global variables listed. However, no explicit comments showing which functions call which, or the purpose of global variables like `g27`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped (standard library wrappers, test functions, thread functions). Static functions properly scoped. However, all in single file with arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code does not compile standalone. Many undefined references: `__printf_chk`, `__snprintf_chk`, `__stack_chk_fail`, `__errno_location`. Requires linking against libc, libpthread. No build instructions provided.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`v1`, `a1`, `str2`) obscuring semantic purpose
+- No comments explaining algorithm intent or recovered semantics
+- Struct field names lost (`e0`, `e1` instead of meaningful field names)
+- Type confusion: `param_strcpy` second parameter should be pointer not integer
+- No anomaly indication for uncertain decompilation or indirect calls
+- Code contains significant compiler noise (stack canaries, PC-relative addressing thunks)
+
+**Best Quality Aspect:** Idiom Recognition (8/10)  
+Standard library functions like `strcpy`, `strlen`, `pthread_create` are correctly identified and named, preserving the semantic connection to libc.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled code has zero meaningful comments. At -O0 with debug symbols, the decompiler should be able to recover significantly more context about function purpose, parameter meanings, and algorithm explanation.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: `str2` in `param_strcpy` is used as source string - should be named `src`. Parameters like `a1` in `param_malloc_free` used as size should be `size`.
+2. **Recover struct field names**: Use debug info (`-g`) to recover meaningful struct field names instead of `e0`, `e1`. The `_IO_FILE` struct should have `int _fileno`, `_flags`, etc.
+3. **Add semantic comments**: Document what each function does, especially for non-trivial logic like `param_signal_handling` which implements async signal handling with polling loops.

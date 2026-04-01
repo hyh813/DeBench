@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar1`, `auVar4`), losing all semantic meaning from the original source (e.g., `sum`, `count`, `result`). While `/* Unresolved local var: int temp1@[???] */` comments acknowledge the loss, the actual names used in the logic (`iVar1`) provide no context.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`sequential_ops`, `loop_for_fixed`, `duffs_device`) are perfectly recovered, matching the original source exactly. This suggests the binary retained symbol information or the decompiler successfully mapped them.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers resulting from compiler optimizations that obscure the original logic, such as `0x12` (18) in `loop_while` and `0x400000003` in `loop_continue`. These constants are not explained or replaced with named constants, making the optimized logic hard to decipher.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The decompiled code contains significant low-level noise, particularly from auto-vectorization. Constructs like `CONCAT13`, `NEON_ext`, and `undefined1 auVar4 [16]` represent SIMD intrinsics and register manipulations that clutter the high-level logic, making it difficult to read.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The control flow is heavily distorted by aggressive compiler optimizations (likely -O3 despite the O0 metadata). Simple loops like `loop_for_fixed` are reduced to mathematical formulas (`(n-1)*(n-2)>>1`), and `switch` statements are transformed into jump table lookups (`*(int *)(&DAT_00101950...)`). While accurate to the binary, this deviates significantly from the natural source structure.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source. There is no inlining or outlining of code blocks; each logical unit from the source remains a distinct function in the decompiled output.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads very linearly because complex loops and branches have been flattened into arithmetic expressions or vectorized blocks. While the logic is dense, there are minimal jumps or gotos disrupting the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the code cleanly without redundant instructions. The compiler effectively removed redundancy (e.g., loop unrolling), and the decompiler reflects this optimized state without adding artificial noise.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Scalar types (`int`, `uint`) are generally accurate, but composite vector types are poorly handled. SIMD operations are represented as generic `undefined1` arrays (e.g., `undefined1 auVar4 [16]`) rather than specific vector types (e.g., `int32x4_t`), losing type safety and semantic context.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: The source code primarily uses scalar types and small stack arrays, which are recovered accurately. There are no complex structs or unions to recover, so the decompiler defaults to a correct baseline.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on unsafe casts to implement optimized control flow, such as `*(int *)(&DAT_00101950 + (long)op * 4)` for switch statements. While this reflects the binary's reality, it results in type-unsafe C code that violates strict aliasing rules.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and primarily auto-generated warnings (e.g., `/* WARNING: Removing unreachable block */` or `/* Unresolved local var */`). There are no comments explaining the complex vectorized logic or the mathematical transformations applied by the compiler.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are largely lost. The decompiler fails to recognize the "sum of integers" idiom in `loop_for_fixed` (showing a formula instead) or the "switch" idiom in `switch_small` (showing a jump table lookup). Recursion is transformed into vectorized loops without indication.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags suspicious or difficult-to-recover constructs, such as `/* WARNING: Could not recover jumptable at 0x001012c0. Too many branches */` and `/* WARNING: Subroutine does not return */`. These warnings are helpful for understanding the limitations of the decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `n > 0` in `duffs_device` is embedded in the control flow but not explicitly documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and direct. The relationship between callers and callees is preserved, and data references (like global arrays `DAT_00101950`) are explicitly linked.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping (e.g., `test_control_flow_l1` is separated from the functions it tests). This makes it harder to navigate the code compared to the source's logical ordering.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific macros (`CONCAT13`, `NEON_ext`) and types (`undefined1`) that will not compile with a standard C compiler without significant modification or header definitions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- **Variable Naming:** Generic names (`iVar1`, `uVar1`) obscure the logic, especially in vectorized sections where tracking data flow is already difficult.
+- **Vectorization Representation:** SIMD operations are dumped as raw byte arrays (`undefined1 auVar4 [16]`) and intrinsic macros (`NEON_ext`), making the code unreadable for anyone not familiar with the specific assembly instructions.
+- **Control Flow Obfuscation:** Optimizations like loop elimination (e.g., `loop_for_fixed` becoming a math formula) and jump table lookups hide the original algorithmic intent, and the decompiler offers no high-level abstraction of these changes.
+- **Magic Numbers:** Optimized constants (e.g., `0x12`, `0x400000003`) appear without explanation, making it impossible to understand the conditions they represent without reverse-engineering the math.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler successfully recovered all original function names, providing a stable skeleton that matches the source code perfectly.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.5/10)
+- **Why?** The decompiler fails to bridge the gap between the aggressive low-level optimizations (vectorization, math reduction) and the high-level source intent, resulting in code that is technically accurate but semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Vectorized Code:** Detect SIMD loops and attempt to represent them as scalar loops or provide a "pseudo-scalar" view, rather than dumping raw `undefined1` array manipulations.
+2. **Recover High-Level Control Flow:** For optimized switches and reduced loops, insert comments or optional annotations indicating the likely original structure (e.g., "Optimized switch statement" or "Loop reduced to arithmetic series").
+3. **Explain Magic Constants:** Analyze the context of constants used in comparisons (e.g., `0x12`) and attempt to map them back to source-level values or add comments explaining their derivation (e.g., `0x12 == 18`).

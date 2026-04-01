@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters and local variables are almost exclusively generic names like `a1`, `v3`, `v5`, and `result`. For example, in `array_1d_stack`, the loop index is `v3` and the accumulator is `result`, losing the semantic clarity of `i` and `sum` from the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `double_value`, `process_int`, `struct_simple`), likely due to the presence of debug symbols (`-g`). This provides excellent high-level navigation.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Character constants are often converted to their ASCII integer values (e.g., `65` instead of `'A'`, `32` instead of space in `process_char`). Magic numbers like `440` in `array_2d_stack` (representing array bounds) are left unexplained.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant compiler and decompiler artifacts, such as `LODWORD`, `HIDWORD`, `__fastcall`, and explicit casts like `(unsigned __int64)(a1 - a2) >> 2`, which clutter the logic compared to the clean source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally linear and readable, but some idiomatic checks are transformed. For instance, `process_char` uses `(unsigned __int8)(result - 65) <= 0x19u` instead of the source's `c >= 'A' && c <= 'Z'`, which is a compiler optimization that reduces readability slightly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source, and no inlining or outlining has occurred (consistent with `-O0`). The granularity is perfect, matching the original modular design.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps. Loops are represented as `while` or `do-while` constructs, making the execution path easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removes most stack frame manipulations and register shuffling. However, in `test_data_types_l1`, the compiler constant-propagated function calls (e.g., `process_char('A')` became `97`), which is accurate but structurally different from the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are mostly correct, though return types are often widened to `__int64` (e.g., `process_int` returns `__int64` instead of `int`) to reflect the ARM64 register usage, which is technically precise for the ABI but less precise for the source logic.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: This is the most significant failure. Struct parameters are treated as generic pointers (e.g., `_DWORD *a1` in `struct_simple`), and fields are accessed via array indexing (`a1[1]`) rather than field names (`p->y`). Bitfields in `struct_bitfields` are recovered as raw shift operations.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are explicit and generally safe. The decompiler correctly identifies pointer types (e.g., `_DWORD **` for `ptr_double`), preserving the level of indirection.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled body explaining logic, algorithms, or variable purposes. The only comments are file headers.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard patterns like pointer traversal are recognized, but specific idioms like the "uppercase check" range optimization are not annotated or simplified back to the readable form.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No anomalies or suspicious code patterns are flagged. The code is presented confidently, even where the compiler optimized away volatile semantics (in `volatile_access`), which might mislead a reader regarding the original intent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the requirement for `array_complex_index` bounds is not explicitly stated).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are clear and use the correct recovered names. The relationship between `main` and the test functions is obvious.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by memory address rather than logical grouping (e.g., `main` appears before the test functions it calls, whereas in the source it is at the end).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses non-standard types like `__int64`, `_DWORD`, and calling conventions like `__fastcall`, which are specific to the decompiler/Windows environment and will not compile on a standard ARM64 GCC setup without modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Composite types (structs) are not recovered; fields are accessed as raw array offsets (e.g., `a1[1]` instead of `p->y`).
+- Variable naming is entirely generic (`a1`, `v3`), losing all semantic meaning of parameters and locals.
+- Character literals are demoted to integers (e.g., `65` instead of `'A'`), reducing readability.
+- Non-standard types (`__int64`, `_DWORD`) hinder portability and understanding.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function names from the debug symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `Point3D`, `Rect`, and other structures, instead treating them as raw integer arrays, significantly obscures the data layout and logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Type Recovery**: Aggressively use debug information (DWARF) to recover struct definitions and map pointer arithmetic offsets to named struct fields.
+2. **Symbol Propagation**: Utilize debug symbols to recover original local variable names instead of defaulting to `a1`, `v1`, etc.
+3. **Literal Restoration**: Convert integer constants that correspond to ASCII values back to character literals (e.g., `65` -> `'A'`) to improve semantic clarity.

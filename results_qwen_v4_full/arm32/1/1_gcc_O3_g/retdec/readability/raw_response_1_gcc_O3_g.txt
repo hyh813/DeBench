@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3...v19 in `duffs_device`); original source had semantic names like `temp1`, `sum`, `count`, `result`. No variable indicates purpose or type.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names preserved (`duffs_device`, `non_local_jump`) but 15+ functions completely missing from decompilation. Auto-generated name `non_local_jump_constprop_0` is confusing.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Test functions print hardcoded expected values (e.g., `__printf_chk(1, "CF-L1-01...: %d\n", 21)`) instead of computing results. Magic numbers like `0x11b58` for string addresses unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive variable declarations (v1-v19 in `duffs_device`), redundant casts (`(int32_t)src`), verbose setjmp struct initialization with `.e0`, `.e1`, `.e2` fields.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: `duffs_device` uses broken switch-case fallthrough instead of original do-while loop. `computed_goto` returns address literal instead of implementing computed jump. Test functions don't call actual functions.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: 20+ original functions reduced to 8 detected functions. Test functions exist but don't test anything—they print pre-computed values. Critical logic functions (`sequential_ops`, `single_if`, etc.) completely missing.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `duffs_device` uses explicit goto (`goto lab_0x10dbc`) disrupting flow. Most code reads linearly but with unnecessary jump labels that could be structured loops.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: `duffs_device` has 19 variables (v1-v19) where most just copy pointer values. Same pattern repeated across switch cases with minimal variation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but introduces weird custom type `int3_t` (typedef int8_t). Pointer types preserved but signedness often unclear. Original `int` mostly mapped correctly.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `jmp_buf` shown as complex anonymous struct with `.e0[8]`, `.e1`, `.e2.e0[1]` fields—technically accurate but unreadable. No meaningful struct recovery for other types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int32_t)src`, `(int32_t)dst`), pointer arithmetic without bounds checking. `computed_goto` returns address as int which is type-unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments ("From module:", "Address range:"). No algorithm explanations, no documentation of non-obvious logic like Duff's device pattern.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Duff's device not recognized as such (should be documented optimization pattern). Setjmp/longjmp partially recognized but no explanation of non-local jump semantics.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about 15+ missing functions. No indication that test functions don't actually test anything. `computed_goto` broken without any anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). No postconditions. Error conditions not documented despite being present in original.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Test functions claim to test functions that don't exist in decompilation. Global variables (g1, g2, g3, g4, jump_buffer) present but relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions somewhat grouped by test category but massive function loss breaks organization. Test functions separated but serve no purpose without actual implementations.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has necessary includes but custom `int3_t` type may cause issues. External function declarations present (`__printf_chk`, `__longjmp_chk`). May not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+2+3)/4 = 2.75
+Level 2 (Structural):  (2+3+4+2)/4 = 2.75
+Level 3 (Type):        (5+3+4)/3   = 4.00
+Level 4 (Semantic):    (2+2+1+2)/4 = 1.75
+Level 5 (Contextual):  (3+4+5)/3   = 4.00
+
+Overall = (2.75 × 0.30) + (2.75 × 0.25) + (4.00 × 0.20) + 
+          (1.75 × 0.15) + (4.00 × 0.10)
+        = 0.825 + 0.6875 + 0.80 + 0.2625 + 0.40
+        = 2.975 ≈ 3.0/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Test functions print hardcoded values instead of calling actual functions** - completely defeats purpose of decompilation
+- **15+ original functions completely missing** from decompiled output (sequential_ops, single_if, if_else, nested_if_2, etc.)
+- **Variable naming entirely generic** (v1-v19) with zero semantic meaning
+- **`computed_goto` returns address literal** instead of implementing computed jump logic
+- **`duffs_device` control flow broken** - switch-case doesn't match original do-while with fallthrough
+
+### Best Quality Aspect:
+- **Type Precision (5/10)** - At least integer types (int32_t) and pointer types are consistently applied, though custom int3_t is odd
+
+### Most Needs Improvement:
+- **Anomaly Indication (1/10)** - Decompiler presents broken code with complete confidence; no warnings about missing functions, failed recovery, or uncertain reconstructions
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag missing functions** - When function count drops from 20+ to 8, emit explicit warnings about unrecoverable code regions
+2. **Preserve test function semantics** - Test functions should call actual implementations, not print pre-computed expected values (this suggests constant propagation went too far)
+3. **Recover Duff's device pattern** - Recognize switch-with-fallthrough inside do-while as Duff's device optimization and document it rather than producing broken switch cascade

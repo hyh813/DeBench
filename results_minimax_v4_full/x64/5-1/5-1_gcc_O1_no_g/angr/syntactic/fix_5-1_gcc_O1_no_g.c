@@ -1,0 +1,1207 @@
+// Angr Decompilation of 5-1_gcc_O1_no_g
+// Platform: AMD64
+
+#include <string.h>
+
+/* CRT stub function _init removed by preprocessor */
+struct struct_0 {
+    void* field_0;
+};
+
+extern struct_0 *g_405fe8;
+
+unsigned long long * _init()
+{
+ unsigned long long *v1; // rax
+
+ v1 = g_405fe8;
+ if (g_405fe8)
+ v1 = g_405fe8();
+ return v1;
+}
+
+
+// Function: sub_402020 at 0x402020
+extern unsigned long long g_405f30;
+extern unsigned long long g_405f38;
+
+void sub_402020()
+{
+ unsigned long v0; // [bp-0x8]
+
+ v0 = g_405f30;
+ // The original code likely had: v0 = g_405f30; return;
+ return;
+}
+
+
+// Function: sub_40202d at 0x40202d
+void sub_40202d()
+{
+ sub_402030();
+ return;
+}
+
+
+// Function: sub_402030 at 0x402030
+void sub_402030()
+{
+ unsigned long long result; // [bp-0x8]
+
+ result = 0;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40203f at 0x40203f
+void sub_40203f()
+{
+ sub_402040();
+ return;
+}
+
+
+// Function: sub_402040 at 0x402040
+void sub_402040()
+{
+ unsigned long long result; // [bp-0x8]
+
+ result = 1;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40204f at 0x40204f
+void sub_40204f()
+{
+ sub_402050();
+ return;
+}
+
+
+// Function: sub_402050 at 0x402050
+void sub_402050()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 2;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40205f at 0x40205f
+void sub_40205f()
+{
+ sub_402060();
+ return;
+}
+
+
+// Function: sub_402060 at 0x402060
+void sub_402060()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 3;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40206f at 0x40206f
+void sub_40206f()
+{
+ sub_402070();
+ return;
+}
+
+
+// Function: sub_402070 at 0x402070
+void sub_402070()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 4;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40207f at 0x40207f
+void sub_40207f()
+{
+ sub_402080();
+ return;
+}
+
+
+// Function: sub_402080 at 0x402080
+void sub_402080()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 5;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40208f at 0x40208f
+void sub_40208f()
+{
+ sub_402090();
+ return;
+}
+
+
+// Function: sub_402090 at 0x402090
+void sub_402090()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 6;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40209f at 0x40209f
+void sub_40209f()
+{
+ sub_4020a0();
+ return;
+}
+
+
+// Function: sub_4020a0 at 0x4020a0
+void sub_4020a0()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 7;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_4020af at 0x4020af
+void sub_4020af()
+{
+ sub_4020b0();
+ return;
+}
+
+
+// Function: sub_4020b0 at 0x4020b0
+void sub_4020b0()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 8;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_4020bf at 0x4020bf
+void sub_4020bf()
+{
+ sub_4020c0();
+ return;
+}
+
+
+// Function: sub_4020c0 at 0x4020c0
+void sub_4020c0()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 9;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_4020cf at 0x4020cf
+void sub_4020cf()
+{
+ sub_4020d0();
+ return;
+}
+
+
+// Function: sub_4020d0 at 0x4020d0
+void sub_4020d0()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 10;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_4020df at 0x4020df
+void sub_4020df()
+{
+ sub_4020e0();
+ return;
+}
+
+
+// Function: sub_4020e0 at 0x4020e0
+void sub_4020e0()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 11;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_4020ef at 0x4020ef
+void sub_4020ef()
+{
+ sub_4020f0();
+ return;
+}
+
+
+// Function: sub_4020f0 at 0x4020f0
+void sub_4020f0()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 12;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_4020ff at 0x4020ff
+void sub_4020ff()
+{
+ sub_402100();
+ return;
+}
+
+
+// Function: sub_402100 at 0x402100
+void sub_402100()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 13;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40210f at 0x40210f
+void sub_40210f()
+{
+ sub_402110();
+ return;
+}
+
+
+// Function: sub_402110 at 0x402110
+void sub_402110()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 14;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40211f at 0x40211f
+void sub_40211f()
+{
+ sub_402120();
+ return;
+}
+
+
+// Function: sub_402120 at 0x402120
+void sub_402120()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 15;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40212f at 0x40212f
+void sub_40212f()
+{
+ sub_402130();
+ return;
+}
+
+
+// Function: sub_402130 at 0x402130
+void sub_402130()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 16;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40213f at 0x40213f
+void sub_40213f()
+{
+ sub_402140();
+ return;
+}
+
+
+// Function: sub_402140 at 0x402140
+void sub_402140()
+{
+ unsigned long long v0; // [bp-0x8]
+
+ v0 = 17;
+ sub_402020();
+ return;
+}
+
+
+// Function: sub_40214f at 0x40214f
+void sub_40214f()
+{
+ __cxa_finalize();
+ return;
+}
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+// Function: sub_4022a5 at 0x4022a5
+void sub_4022a5()
+{
+ [D] Unsupported jumpkind Ijk_SigTRAP at address 4203173()
+}
+
+
+// Function: sub_4022a6 at 0x4022a6
+void sub_4022a6()
+{
+ deregister_tm_clones();
+ return;
+}
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+// Function: sub_4022d9 at 0x4022d9
+void sub_4022d9()
+{
+ register_tm_clones();
+ return;
+}
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+// Function: sub_402319 at 0x402319
+void sub_402319()
+{
+ __do_global_dtors_aux();
+ return;
+}
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+// Function: sub_402355 at 0x402355
+void sub_402355()
+{
+}
+
+
+// Function: sub_402359 at 0x402359
+void sub_402359()
+{
+ frame_dummy();
+ return;
+}
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+// Function: _Z20test_cpp_member_funcv at 0x402369
+void test_cpp_member_func()
+{
+ char v0[8]; // [bp-0x34]
+ char v1; // [bp-0x2c]
+
+ strncpy(v0, "Test", 4);
+ memset(&v1, 0, 24);
+ strlen(&v0);
+ return;
+}
+
+
+// Function: _Z20test_cpp_constructorv at 0x4023de
+extern unsigned int _ZN14LifecycleClass14instance_countE;
+
+void test_cpp_constructor()
+{
+ unsigned int *ptr; // rax
+
+ ptr = (unsigned int *)operator new(20);
+ ptr[1] = 10;
+ ptr[2] = 20;
+ ptr[3] = 30;
+ ptr[4] = 40;
+ _ZN14LifecycleClass14instance_countE = _ZN14LifecycleClass14instance_countE + 1;
+ operator delete(ptr);
+ _ZN14LifecycleClass14instance_countE = _ZN14LifecycleClass14instance_countE - 1;
+ return;
+}
+
+
+// Function: _Z17call_virtual_funcP4Basei at 0x40243c
+void call_virtual_func(class Base *arg_0, int arg_1)
+{
+ ((void(*)(class Base*, int))*(*(long long **)arg_0))(arg_0, arg_1);
+ return;
+}
+
+
+// Function: _Z21test_cpp_virtual_funcv at 0x40244e
+extern Base g_4059a0;
+extern Base g_4059d0;
+
+void test_cpp_virtual_func()
+{
+ Base v0; // [bp-0x30]
+ Base v1; // [bp-0x28]
+ unsigned int v2; // [bp-0x20]
+
+ *((class Base **)&v0) = &g_4059a0;
+ *((class Base **)&v1) = &g_4059d0;
+ v2 = 3;
+ call_virtual_func(&v0, 5);
+ call_virtual_func(&v1, 5);
+ return;
+}
+
+
+// Function: _Z29test_cpp_multiple_inheritancev at 0x4024c6
+void test_cpp_multiple_inheritance()
+{
+ return;
+}
+
+
+// Function: _Z28test_cpp_diamond_inheritancev at 0x4024d0
+extern unsigned long long g_405b10;
+extern unsigned long long g_405b40;
+extern char g_405b78;
+
+void test_cpp_diamond_inheritance()
+{
+ unsigned long long v0; // [bp-0x58]
+ unsigned long long v1; // [bp-0x48]
+ unsigned long v2; // [bp-0x38]
+ unsigned int v3; // [bp-0x30]
+
+ v0 = g_405b10;
+ v2 = g_405b78;
+ v1 = g_405b40;
+ v3 = 50;
+ (void)thunk_to_DiamondDerived_func(&v2);
+ v3 = 100;
+ (void)thunk_to_DiamondDerived_func(&v2);
+ return;
+}
+
+
+// Function: _Z26test_cpp_operator_overloadv at 0x40254c
+void test_cpp_operator_overload()
+{
+ return;
+}
+
+
+// Function: _Z22test_cpp_template_funcv at 0x402556
+void test_cpp_template_func()
+{
+ unsigned long long v4; // rdi
+ unsigned long long v5; // rsi
+ unsigned long long v6; // rdx
+ unsigned long long v7; // rcx
+ unsigned long long v8; // r8
+ unsigned long long v9; // r9
+ unsigned long long v0; // [bp-0x20]
+ unsigned int v1; // [bp-0x18]
+ unsigned int v2; // [bp-0x14]
+
+ template_max_int(3, 7);
+ v0 = 0x4004000000000000;
+ v1 = 10;
+ v2 = 20;
+ template_swap_int(&v1);
+ return;
+}
+
+
+// Function: _Z23test_cpp_template_classv at 0x4025e5
+void test_cpp_template_class()
+{
+ return;
+}
+
+
+// Function: _Z15test_cpp_lambdav at 0x4025ef
+void test_cpp_lambda()
+{
+ return;
+}
+
+
+// Function: _Z18test_cpp_exceptionv at 0x4025f9
+extern unsigned long long CXXABI_1_3::_ZTIi;
+extern unsigned long long _ZTIZ18test_cpp_exceptionvE16DerivedException;
+
+// Exception handling requires proper setup - simplified version
+void test_cpp_exception()
+{
+ unsigned int *ptr; // rax
+
+ ptr = __cxa_allocate_exception(4);
+ *(ptr) = 42;
+ // Note: Full exception handling requires runtime support
+ // Returning normally for now
+ return;
+}
+
+
+// Function: _Z18test_cpp_smart_ptrv at 0x4026d1
+void test_cpp_smart_ptr()
+{
+ return;
+}
+
+
+// Function: test_cpp_rtti at 0x4026db
+typedef struct struct_2 {
+ char padding_0[8];
+ struct struct_3 *field_8;
+} struct_2;
+
+typedef struct struct_3 {
+ unsigned long long field_0;
+} struct_3;
+
+extern char g_405ba0;
+extern char g_405bc8;
+
+void test_cpp_rtti()
+{
+ void **p; // r12
+ struct_2 **ptr; // r13
+ char *v3; // rbp
+
+ p = (void* *)operator new(8);
+ *(p) = &g_405ba0;
+ ptr = (struct_2 **)operator new(8);
+ *(ptr) = &g_405bc8;
+ v3 = (char *)(*(long long *)(*(long long *)((long long)p + 8)) + 8);
+ if (v3 != (char*)"12RTTIDerivedA" && v3[0] != 42)
+ (void)strcmp(v3, "12RTTIDerivedA");
+ (void)strlen(&v3[v3[0] == 42]);
+// Call virtual function through pointer
+((void(*)(void*))(*(long long *)(*(long long*)p)))(p);
+((void(*)(void*))(*(long long *)(*(long long*)ptr)))(ptr);
+ return;
+}
+
+
+// Class definitions
+typedef struct Base Base;
+typedef struct Derived Derived;
+typedef struct MultiDerived MultiDerived;
+typedef struct MiddleA MiddleA;
+typedef struct MiddleB MiddleB;
+typedef struct DiamondDerived DiamondDerived;
+typedef struct RTTIDerivedA RTTIDerivedA;
+typedef struct RTTIDerivedB RTTIDerivedB;
+
+struct Base { void* vtable; };
+struct Derived { void* vtable; };
+struct MultiDerived { void* vtable; };
+struct MiddleA { void* vtable; int value; };
+struct MiddleB { void* vtable; int value; };
+struct DiamondDerived { void* vtable; int value; };
+struct RTTIDerivedA { void* vtable; };
+struct RTTIDerivedB { void* vtable; };
+
+// Function: _Z20test_cpp_oo_featuresv at 0x402801
+extern char g_403018;
+extern char g_40303c;
+extern char g_40305a;
+extern char g_403076;
+extern char g_403092;
+extern char g_4030ae;
+extern char g_4030cb;
+extern char g_4030e7;
+extern char g_403103;
+extern char g_40311f;
+extern char g_40313b;
+extern char g_403158;
+extern char g_403175;
+
+void test_cpp_oo_features()
+{
+ puts(&g_403018);
+ test_cpp_member_func();
+ __printf_chk(1, &g_40303c, 0u);
+ test_cpp_constructor();
+ __printf_chk(1, &g_40305a, 0u);
+ test_cpp_virtual_func();
+ __printf_chk(1, &g_403076, 0u);
+ test_cpp_multiple_inheritance();
+ __printf_chk(1, &g_403092, 0u);
+ test_cpp_diamond_inheritance();
+ __printf_chk(1, &g_4030ae, 0u);
+ __printf_chk(1, &g_4030cb, 22);
+ __printf_chk(1, &g_4030e7, (unsigned long long)test_cpp_template_func() & 4294967295);
+ __printf_chk(1, &g_403103, 16);
+ __printf_chk(1, &g_40311f, 85);
+ __printf_chk(1, &g_40313b, (unsigned long long)test_cpp_exception() & 4294967295);
+ __printf_chk(1, &g_403158, (unsigned long long)test_cpp_smart_ptr() & 4294967295);
+ __printf_chk(1, &g_403175, (unsigned long long)test_cpp_rtti() & 4294967295);
+ return;
+}
+
+
+// Function: main at 0x402970
+unsigned int main()
+{
+ test_cpp_oo_features();
+ return 0;
+}
+
+
+// Function: _GLOBAL__sub_I__Z20test_cpp_member_funcv at 0x402987
+extern char _ZNSt8ios_base4InitD1Ev;
+extern void _ZStL8__ioinit;
+extern unsigned long long __dso_handle;
+
+void _GLOBAL__sub_I__Z20test_cpp_member_funcv()
+{
+ std::ios_base::Init::Init(&_ZStL8__ioinit);
+ __cxa_atexit(&_ZNSt8ios_base4InitD1Ev, &_ZStL8__ioinit, &__dso_handle);
+ return;
+}
+
+
+// Function: sub_4029b3 at 0x4029b3
+void sub_4029b3(unsigned long a0, unsigned long a1)
+{
+ Base::virtual_func();
+ return;
+}
+
+
+// Function: _ZN4Base12virtual_funcEi at 0x4029b4
+void Base::virtual_func(void* self, int arg_0)
+{
+ (void)self;
+ (void)arg_0;
+ return;
+}
+
+
+// Function: _ZNK4Base7getNameEv at 0x4029bc
+char* Base::getName(void* self)
+{
+ return (char*)self;
+}
+
+
+// Function: _ZN4BaseD1Ev at 0x4029c8
+Base::~Base()
+{
+}
+
+
+// Function: sub_4029cd at 0x4029cd
+void sub_4029cd(unsigned long a0, unsigned long a1)
+{
+ Derived::virtual_func();
+ return;
+}
+
+
+// Function: _ZN7Derived12virtual_funcEi at 0x4029ce
+void Derived::virtual_func(void* self, int arg_0)
+{
+ return;
+}
+
+
+// Function: sub_4029d9 at 0x4029d9
+void sub_4029d9()
+{
+ Derived::getName();
+ return;
+}
+
+
+// Function: _ZNK7Derived7getNameEv at 0x4029da
+char* Derived::getName(void* self)
+{
+ return (char*)self;
+}
+
+
+// Function: _ZN12MultiDerived5funcAEv at 0x4029e6
+void MultiDerived::funcA(void* self)
+{
+ return;
+}
+
+
+// Function: _ZN12MultiDerived5funcBEv at 0x4029f0
+void MultiDerived::funcB(void* self)
+{
+ return;
+}
+
+
+// Function: _ZThn16_N12MultiDerived5funcBEv at 0x4029fa
+unsigned long long nonvirtual_thunk_MultiDerived_funcB(void)
+{
+ return 40;
+}
+
+
+// Function: _ZN7MiddleA4funcEv at 0x402a04
+void MiddleA::func(void* self)
+{
+ (void)self;
+ return;
+}
+
+
+// Function: _ZTv0_n24_N7MiddleA4funcEv at 0x402a19
+int thunk_to_MiddleA_func(char** a0)
+{
+ void** v1; // rdi
+ void** a0_cast = (void**)a0;
+ char* v1_char; // Added for pointer arithmetic
+
+ v1 = (void**)((char *)a0 + (*a0_cast)[24]);
+ v1_char = (char*)v1;
+ return *((int *)(8 + v1_char + ((int*)v1_char)[24])) + 150;
+}
+
+
+// Function: sub_402a35 at 0x402a35
+void sub_402a35(unsigned long a0)
+{
+ MiddleB::func();
+ return;
+}
+
+
+// Function: _ZN7MiddleB4funcEv at 0x402a36
+void MiddleB::func(void* self)
+{
+ (void)self;
+ return;
+}
+
+
+// Function: _ZTv0_n24_N7MiddleB4funcEv at 0x402a4b
+int thunk_to_MiddleB_func(void** a0)
+{
+ void** v1; // rdi
+ void** a0_cast = (void**)a0;
+ char* v1_char; // Added for pointer arithmetic
+
+ v1 = (void**)((char *)a0 + (*a0_cast)[24]);
+ v1_char = (char*)v1;
+ return *((int *)(8 + v1_char + ((int*)v1_char)[24])) + 200;
+}
+
+
+// Function: sub_402a67 at 0x402a67
+void sub_402a67(unsigned long a0)
+{
+ DiamondDerived::func();
+ return;
+}
+
+
+// Function: _ZN14DiamondDerived4funcEv at 0x402a68
+void DiamondDerived::func(void* self)
+{
+ (void)self;
+ return;
+}
+
+
+// Function: _ZTv0_n24_N14DiamondDerived4funcEv at 0x402a7d
+int thunk_to_DiamondDerived_func(void** a0)
+{
+ void** v1; // rdi
+ void** a0_cast = (void**)a0;
+ char* v1_char; // Added for pointer arithmetic
+
+ v1 = (void**)((char *)a0 + (*a0_cast)[24]);
+ v1_char = (char*)v1;
+ return *((int *)(8 + v1_char + ((int*)v1_char)[24])) + 250;
+}
+
+
+// Function: _ZThn16_N14DiamondDerived4funcEv at 0x402a99
+int nonvirtual_thunk_to_DiamondDerived_func(void* a0)
+{
+ return *((int *)(-8 + (char *)a0 + *((long long *)((long long)a0[16] - 24)))) + 250;
+}
+
+
+// Function: sub_402aaf at 0x402aaf
+void sub_402aaf()
+{
+ RTTIDerivedA::getType();
+ return;
+}
+
+
+// Function: _ZNK12RTTIDerivedA7getTypeEv at 0x402ab0
+char* RTTIDerivedA::getType(void* self)
+{
+ (void)self;
+ return (char*)self;
+}
+
+
+// Function: _ZNK12RTTIDerivedB7getTypeEv at 0x402aba
+char* RTTIDerivedB::getType(void* self)
+{
+ (void)self;
+ return (char*)self;
+}
+
+
+// Function: _ZN12RTTIDerivedBD1Ev at 0x402ac4
+RTTIDerivedB::~RTTIDerivedB()
+{
+}
+
+
+// Function: sub_402ac9 at 0x402ac9
+void sub_402ac9()
+{
+ return;
+}
+
+
+// Function: _ZN12RTTIDerivedAD1Ev at 0x402aca
+RTTIDerivedA::~RTTIDerivedA()
+{
+}
+
+
+// Function: sub_402acf at 0x402acf
+void sub_402acf()
+{
+ return;
+}
+
+
+// Function: _ZN14DiamondDerivedD1Ev at 0x402ad0
+DiamondDerived::~DiamondDerived()
+{
+}
+
+
+// Function: _ZThn16_N14DiamondDerivedD1Ev at 0x402ad5
+void nonvirtual_thunk_to_DiamondDerived_destructor()
+{
+ return;
+}
+
+
+// Function: _ZTv0_n32_N14DiamondDerivedD1Ev at 0x402ada
+void thunk_to_DiamondDerived_destructor(void** a0)
+{
+ return;
+}
+
+
+// Function: sub_402adf at 0x402adf
+void sub_402adf()
+{
+ return;
+}
+
+
+// Function: _ZN12MultiDerivedD1Ev at 0x402ae0
+MultiDerived::~MultiDerived()
+{
+}
+
+
+// Function: _ZThn16_N12MultiDerivedD1Ev at 0x402ae5
+void nonvirtual_thunk_to_MultiDerived_destructor()
+{
+ return;
+}
+
+
+// Function: _ZN7DerivedD2Ev at 0x402aea
+Derived::~Derived()
+{
+}
+
+
+// Function: sub_402aef at 0x402aef
+void sub_402aef()
+{
+ return;
+}
+
+
+// Function: _ZN4BaseD0Ev at 0x402af0
+Base::~Base()
+{
+ operatordelete(this, 8);
+}
+
+
+// Function: sub_402b07 at 0x402b07
+void sub_402b07()
+{
+ return;
+}
+
+
+// Function: _ZN7DerivedD0Ev at 0x402b08
+void Derived::~Derived()
+{
+ operatordelete(0, 16);
+}
+
+
+// Function: sub_402b1f at 0x402b1f
+void sub_402b1f()
+{
+ return;
+}
+
+
+// Function: _ZN12MultiDerivedD0Ev at 0x402b20
+MultiDerived::~MultiDerived()
+{
+ operatordelete(this, 32);
+}
+
+
+// Function: _ZThn16_N12MultiDerivedD0Ev at 0x402b37
+void* nonvirtual_thunk_to_MultiDerived_destructor(void* a0)
+{
+ return operatordelete((char*)a0 - 16, 32);
+}
+
+
+// Function: _ZN12RTTIDerivedAD0Ev at 0x402b52
+RTTIDerivedA::~RTTIDerivedA()
+{
+ operatordelete(this, 8);
+}
+
+
+// Function: sub_402b69 at 0x402b69
+void sub_402b69()
+{
+ return;
+}
+
+
+// Function: _ZN12RTTIDerivedBD0Ev at 0x402b6a
+RTTIDerivedB::~RTTIDerivedB()
+{
+ operatordelete(this, 8);
+}
+
+
+// Function: sub_402b81 at 0x402b81
+void sub_402b81()
+{
+ return;
+}
+
+
+// Function: _ZN14DiamondDerivedD0Ev at 0x402b82
+DiamondDerived::~DiamondDerived()
+{
+ operatordelete(this, 48);
+}
+
+
+// Function: _ZTv0_n32_N14DiamondDerivedD0Ev at 0x402b99
+int thunk_to_DiamondDerived_D0(void** a0)
+{
+ return operatordelete((char *)a0 + (*(a0))[32], 48);
+}
+
+
+// Function: _ZThn16_N14DiamondDerivedD0Ev at 0x402bb7
+int nonvirtual_thunk_to_DiamondDerived_D0(void* a0)
+{
+ return operatordelete(a0 - 16, 48);
+}
+
+
+int template_max_int(int arg_0, int arg_1)
+{
+ if (arg_1 > arg_0)
+ return arg_1;
+ return arg_0;
+}
+
+
+// Function: _Z12template_maxIdET_S0_S0_ at 0x402bde
+double template_max_double(double arg_0, double arg_1)
+{
+ if (arg_1 > arg_0)
+ return arg_1;
+ return arg_0;
+}
+
+
+// Function: _Z13template_swapIiEvRT_S1_ at 0x402be7
+void template_swap_int(unsigned int *ptr)
+{
+ unsigned int tmp; // rax
+
+ tmp = *(ptr);
+ *(ptr) = 0;
+ return;
+}
+
+
+// Function: Container_int_Constructor at 0x402bf4
+int Container_int_Constructor(void* ptr)
+{
+ *((unsigned int *)((char *)ptr + 40)) = 0;
+ return 0;
+}
+
+
+// Function: Container_int_push at 0x402c00
+void Container_int_push(void* ptr, int arg_0)
+{
+ unsigned int v1; // eax
+
+ v1 = *((unsigned int *)((char *)ptr + 40));
+ if (v1 <= 9)
+ {
+ *((unsigned int *)((char *)ptr + 40)) = v1 + 1;
+ *((int *)((char *)ptr + 4 * v1)) = arg_0;
+ }
+ return;
+}
+
+
+// Function: Container_int_get at 0x402c18
+void Container_int_get(void* self, int arg_0)
+{
+ (void)self;
+ (void)arg_0;
+ return;
+}
+
+
+// Function: sub_402c33 at 0x402c33
+void sub_402c33(unsigned long a0)
+{
+ Container_int_getSize(a0);
+ return;
+}
+
+
+// Function: Container_int_getSize at 0x402c34
+void Container_int_getSize(void* self)
+{
+ (void)self;
+ return;
+}
+
+
+// Function: Container_double_Constructor at 0x402c3c
+int Container_double_Constructor(void* ptr)
+{
+ *((unsigned int *)((char *)ptr + 80)) = 0;
+ return 0;
+}
+
+
+// Function: Container_double_push at 0x402c48
+void Container_double_push(void* ptr, double arg_0)
+{
+ unsigned int v1; // eax
+
+ v1 = *((unsigned int *)((char *)ptr + 80));
+ if (v1 <= 9)
+ {
+ *((unsigned int *)((char *)ptr + 80)) = v1 + 1;
+ *((double *)((char *)ptr + 8 * v1)) = arg_0;
+ }
+ return;
+}
+
+
+// Function: Container_double_get at 0x402c62
+void Container_double_get(void* self, int arg_0)
+{
+ (void)self;
+ (void)arg_0;
+ return;
+}
+
+
+// Function: Container_double_getSize at 0x402c7e
+void Container_double_getSize(void* self)
+{
+ (void)self;
+ return;
+}
+
+
+
+/* CRT stub function _fini removed by preprocessor */
+
+

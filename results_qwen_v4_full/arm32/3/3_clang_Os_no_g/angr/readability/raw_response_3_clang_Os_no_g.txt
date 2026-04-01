@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. For example, `local_array` uses `v0`, `v1`, `v3` instead of `arr`, `i`, `result`. Only occasional names like `result` and `index` provide any clarity.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but many are cryptic (`sub_400568`, `$a.30`, `call_weak_fn`). The function `$a.30` is clearly an auto-generated placeholder that should be `double_value`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX/-1), `4294967286` (loop bounds), `0x800` without explanation. No constants recovered; even simple values like `42` appear as literals without context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from `armg_calculate_condition()` calls throughout, register annotations (`// r0`, `// [bp-0x4]`), and goto labels (`LABEL_4006b0`). These compiler/decompiler artifacts dominate the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured loops. `local_array` uses backward counting with `i -= 1` and `while (i != 4294967286)` instead of a simple `for` loop. Many functions have convoluted conditional branches.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated and mostly cohesive. However, test functions like `test_stack_memory` have excessive inline code that should be simplified. Some functions like `stack_alias` are over-simplified to just `return 20`.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Goto labels (`LABEL_4006b0`, `LABEL_40076c`) disrupt top-to-bottom reading. Many functions have early-exit patterns that could use returns instead of jumps. Forward jumps into loop bodies are common.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate condition checks appear frequently (e.g., `armg_calculate_condition` called multiple times with same parameters). `test_stack_memory` prints the same message twice at the end.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Nearly everything is `unsigned int` regardless of original type. `int`, `size_t`, `char*`, and pointer types all degraded. `local_vars` parameter should be `int` not `unsigned int`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_4` names. The `Point` struct becomes `struct_3` with no semantic field names. `Node` linked list structure partially recovered but field names lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`(char *)&v0 + 2 * idx`). Many implicit casts between pointer and integer types. `heap_nested` has type confusion with multiple struct definitions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler artifacts like `/* do not return */` present. No algorithm explanations, no parameter documentation, no uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop patterns not recognized (shown as do-while with goto). Memory allocation patterns (`malloc`/`free`) preserved but not annotated. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of decompilation uncertainty. `armg_calculate_condition` calls suggest unresolved logic but no warnings provided. Dangerous patterns like `dangling_pointer` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not annotated). No postconditions or error condition documentation. Return value meanings not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables declared as `extern` but usage patterns unclear. Callback relationships (`global_func_ptr`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Related functions not clustered. No header file structure or API declarations separated from implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies (`extern_global_var`, `extern_function`) declared but sources unknown. `armg_calculate_condition` is decompiler-specific and won't compile standalone. Many `/* do not return */` annotations are non-standard.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+2+2)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+6+4+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (2+3+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+1+1)/4 = 1.25 × 0.15 = 0.19
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.05/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **`armg_calculate_condition()` calls** obscure all conditional logic and should be converted to standard boolean expressions
+- **Variable names** like `v0`, `v1`, `v2` provide zero semantic information (should be `arr`, `index`, `result` based on usage)
+- **Struct field names** all generic (`field_0`, `field_4`) losing all semantic meaning from original `Point`, `Node` structures
+- **Magic numbers** like `4294967295` and `4294967286` appear throughout without explanation (should be `-1` and loop bounds)
+- **Control flow** uses goto labels instead of structured loops, making `local_array` and `vla_stack` nearly unreadable
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Functions are properly separated with reasonable boundaries; the decompiler successfully identified function boundaries even if internal logic is degraded
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments, uncertainty indicators, or documentation makes the code practically unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace `armg_calculate_condition()` with standard boolean expressions** - This single change would dramatically improve readability of all conditional logic
+2. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, array indices, pointers) to infer meaningful names like `i`, `arr`, `ptr`
+3. **Recover struct field semantics from access patterns** - When `p->x` and `p->y` are accessed consistently, preserve or infer field names rather than `field_0`, `field_4`

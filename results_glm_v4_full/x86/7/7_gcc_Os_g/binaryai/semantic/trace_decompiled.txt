@@ -1,0 +1,14 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1208566312,Arg1=-1076756192,Arg2=0,Arg3=-1210404959|eax=0xb7f6bdd8,ebx=0x0,ecx=0xbfd20120,edx=0xbfd20144,esi=0xb7f6a000,edi=0x0
+TRACE_ENT|1|call_opaque_predicate|1|Arg0=-1208566312,Arg1=642,Arg2=-1076756216,Arg3=-1208543473|eax=0xb7f6bdd8,ebx=0x0,ecx=0xbfd20120,edx=0xbfd20144,esi=0xb7f6a000,edi=0x0
+TRACE_ENT|2|param_opaque_predicate|2|Arg0=5,Arg1=-1076756232,Arg2=-1208550641,Arg3=-1208566312|eax=0xb7f6bdd8,ebx=0x0,ecx=0xbfd20120,edx=0xbfd20144,esi=0xb7f6a000,edi=0x0
+TRACE_EXT|2|param_opaque_predicate|2|20
+TRACE_EXT|1|call_opaque_predicate|1|20
+TRACE_ENT|3|param_string_encryption|1|Arg0=-1208566312,Arg1=642,Arg2=-1076756216,Arg3=-1208543473|eax=0x14,ebx=0x0,ecx=0x5,edx=0x5,esi=0xb7f6a000,edi=0x0
+TRACE_ENT|4|decrypt_string|2|Arg0=4784288,Arg1=-1076756292,Arg2=32,Arg3=90|eax=0x4900a0,ebx=0x0,ecx=0x0,edx=0xbfd200bc,esi=0xb7f6a000,edi=0x0
+TRACE_EXT|4|decrypt_string|2|-1076756292
+TRACE_EXT|3|param_string_encryption|1|0
+TRACE_ENT|5|call_vectorized_loop|1|Arg0=-1208566312,Arg1=-1076756192,Arg2=0,Arg3=-1210404959|eax=0x0,ebx=0x0,ecx=0x0,edx=0x0,esi=0xb7f6a000,edi=0x0
+TRACE_ENT|6|param_vectorized_loop|2|Arg0=-1076756340,Arg1=-1076756308,Arg2=-1076756276,Arg3=8|eax=0xbfd200cc,ebx=0xbfd200ac,ecx=0x48ffe0,edx=0xbfd2008c,esi=0x0,edi=0x0
+TRACE_EXT|6|param_vectorized_loop|2|0
+TRACE_EXT|5|call_vectorized_loop|1|0
+TRACE_EXT|0|test_obf_opt_edge|0|0

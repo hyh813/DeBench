@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compilation with `-g`, variables are generic (`param_1`, `iVar1`, `uVar1`) instead of source names (`a`, `b`, `sum`, `count`). This forces manual tracking of semantics.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names (`sequential_ops`, `duffs_device`, `loop_for_fixed`) are perfectly recovered from the symbol table, accurately reflecting the source intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Test functions contain constant-folded values (e.g., `0x15` instead of `sequential_ops(5, 7, 3)`) which obscures the test logic. Logic functions preserve literals but often use raw hex or magic numbers without context.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Code is generally clean of register spills, but aggressive simplification (e.g., turning loops into math formulas) acts as "semantic noise" that deviates from the source structure.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often heavily transformed; `single_if` becomes a bit-shift trick, `loop_for_fixed` becomes a math formula, and `duffs_device` degrades into goto spaghetti, losing the original `switch`/`do-while` structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While many functions are linear, `duffs_device` and `nested_if_deep` (flattened into sequential ifs) disrupt the top-to-bottom reading flow expected from the source.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler eliminated "redundant" loop structures in favor of math formulas (e.g., `loop_for_fixed`) and constant-folded test arguments, which technically reduces code but harms readability of the original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are generally correct but generic; `undefined4` is used frequently instead of specific `int` types, and signed/unsigned distinctions (e.g., `uint` vs `int`) are sometimes inconsistent with the source.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: The array lookup in `loop_break` was intelligently recovered as a `switch` statement, which is a valid high-level interpretation of the data structure usage.
+
+**11. Type Safety:** Score: 7/10
+Justification: Code is mostly safe, though it relies on implicit casts and specific bit-width assumptions (e.g., `param_1 << (uint)(0 < param_1)`) that are technically valid but obscure.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; complex transformations like the loop-to-formula conversion or Duff's device structure are left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize standard idioms like Duff's device (rendering it as gotos) or simple accumulation loops (rendering them as formulas), obscuring the algorithmic patterns.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags indirect calls with `UNRECOVERED_JUMPTABLE` in `call_func_ptr`, providing a useful warning where analysis failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard. The relationship between the test functions and the logic functions is preserved through the naming and call structure.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in the same logical order as the source, with clear separation between different control flow levels (L1, L2, L3).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses non-standard types like `undefined4`, `code *`, and `__jmp_buf_tag` without definitions, requiring significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable names (`param_1`, `iVar1`) are generic despite debug symbols being available.
+- `duffs_device` is decompiled into unreadable goto spaghetti instead of the structured switch/loop.
+- `loop_for_fixed` is transformed into a complex math formula, obscuring the original loop logic.
+- `single_if` logic is hidden behind a bit-shift operation (`param_1 << (uint)(0 < param_1)`).
+- Complete absence of comments explaining aggressive transformations.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered all function names from the symbol table, making the high-level purpose of each unit immediately clear.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The lack of comments makes it difficult to understand *why* the code was transformed (e.g., why a loop became a formula), significantly hindering analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize Debug Symbols**: Prioritize loading variable names from DWARF/debug info (available with `-g`) to replace `param_1` with meaningful names like `a` or `x`.
+2. **Preserve Loop Structures**: Add an option to disable aggressive mathematical reduction of loops so that `for` loops remain as `for` loops, matching the source structure.
+3. **Pattern Matching for Duff's Device**: Implement specific pattern recognition for Duff's device to reconstruct the `switch` inside the `do-while` loop rather than falling back to a graph of gotos.

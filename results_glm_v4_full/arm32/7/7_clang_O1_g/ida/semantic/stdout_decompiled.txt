@@ -1,0 +1,16 @@
+Test: obfuscation and optimization edge cases
+
+obf: l4.02 = 10
+obf: l4.03 = 20
+obf: l4.04 = 225
+obf: l4.05 = 113
+opt: l4.01 = 500500
+opt: l4.01 = 5050
+opt: l4.02 = 396
+opt: l5.01 = 20
+edge: l3.01 = 1
+edge: l3.02 = 41
+edge: l3.03 = 30
+edge: l3.04 = 2000000000
+edge: l4.01 = 10
+edge: l4.02 = 44

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `local_10`, `uVar2`) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names preserved well (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but wrapper functions like `call_cdecl` are constant-folded losing their call semantics.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. String references use opaque labels (`&DAT_00011594`) instead of readable text.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime helpers pollute output (`__aeabi_dadd`, `__floatsidf`, `__stack_chk_fail`). Initialization functions (`_init`, `_start`, `deregister_tm_clones`) add 200+ lines of irrelevant code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` degrades to counter loop losing varargs semantics. Floating-point helpers have hundreds of lines of bit manipulation with excessive branching.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Many call wrappers constant-folded to single returns (`call_cdecl` returns `0xf`). Floating-point helper functions (`__subdf3`, `__aeabi_dadd`) are 200+ line monoliths that should be library calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but floating-point operations have numerous forward jumps and labels (`LAB_00011200`, `LAB_00011280`, `LAB_00011358`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point functions duplicate identical bit manipulation patterns across `__aeabi_dadd`, `__subdf3`, `__floatsidf`. Constant folding removes computation but obscures original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Parameters degraded to `int`, `undefined4`, `undefined8`. `func_mixed_args` loses double/long long types becoming multiple `undefined4` params. Pointer types generic (`int *` vs `char *` or `SmallStruct *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct` and `SmallStruct` definitions lost entirely. `func_struct_byval` takes 4 `undefined4` params instead of struct. `func_struct_byptr` takes `int *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(char *)`, `(int *)`). `func_mixed_args` signature completely wrong (6 params vs original 4 with mixed types). Pointer arithmetic on generic types throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler warnings present ("WARNING: Removing unreachable block"). Zero documentation of function purpose, algorithm, or behavior. No API contracts recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (`varargs_func` becomes simple counter loop). Struct passing conventions lost. Function pointer callbacks not identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some unreachable blocks flagged with warnings. Varargs functions show warnings but don't explain the fundamental recovery failure. No indication of type degradation issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks preserved in `func_struct_byptr` and `param_double_ptr`. No preconditions/postconditions documented. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global references opaque (`&DAT_00011594`, `handle1_1`). Callback relationship (`callback_func` → `param_func_ptr`) not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order with no logical grouping. Runtime helpers mixed with application code. No file/module structure preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing declarations for `__printf_chk`, `__aeabi_*` helpers, `strlen`, `memcpy`. Requires extensive stubbing and platform-specific libraries.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.42/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` passed as multiple `undefined4` parameters instead of proper struct types
+- **Varargs handling broken** - `varargs_func` and `param_varargs` don't process variadic arguments, just count iterations
+- **All variables generic** - `param_1`, `iVar1`, `local_10` convey zero semantic meaning vs original `count`, `sum`, `large`
+- **Magic numbers unexplained** - `0xf`, `0x32`, `0x2a` throughout with no connection to original values (15, 50, 42)
+- **Floating-point expanded to bit manipulation** - 200+ line helper functions instead of recognizable double operations
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Original function names preserved accurately (`cdecl_func`, `test_calling_conventions`, `param_double_ptr`)
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any struct definitions; all composite types degraded to primitive parameters
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from stack access patterns** - Detect consecutive local variable accesses that indicate struct fields and reconstruct type definitions
+2. **Recognize varargs calling conventions** - Identify `va_start`/`va_arg`/`va_end` patterns and preserve variadic function signatures
+3. **Preserve semantic literals** - Track constant-folded values back to original expressions and add comments showing original computation (e.g., `0xf // cdecl_func(5, 10)`)

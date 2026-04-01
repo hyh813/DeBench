@@ -1,0 +1,42 @@
+Calling Conventions Test
+
+CALL-L1-01: 15
+CALL-L1-02: 50
+CALL-L1-03: 6
+CALL-L1-04: 15
+CALL-L1-05: 15
+CALL-L1-06: 100
+CALL-L1-07: 21
+CALL-L1-08: 15
+CALL-L1-09: 10
+CALL-L1-10: 33
+VARARGS: 5
+No Args: 42
+Many Args: 36
+Mixed Args: 117
+Struct by Value: 136
+Struct by Ptr: 50
+Parameter Passing Test
+
+PARAM-L1-01: 15
+PARAM-L1-02: 11
+PARAM-L2-01: 4
+PARAM-L2-02: 173
+PARAM-L2-03: 300
+PARAM-L2-04: 0
+PARAM-L3-01: 20
+PARAM-L3-02: 21
+PARAM-L3-03: 305419896
+PARAM-L3-04: 15
+PARAM-L3-05: 4
+Return Values Test
+
+Basic: 42
+Pointer: 20
+Small Struct: 7
+Large Struct: 215
+Func Ptr: 10
+Opaque: 21
+Complex: 40
+Multi: 60
+Void: 21

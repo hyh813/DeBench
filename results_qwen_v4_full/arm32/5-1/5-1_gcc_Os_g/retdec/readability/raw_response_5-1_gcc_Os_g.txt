@@ -1,0 +1,117 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `result`, `a1`, `a2`) with zero semantic meaning. For example, `test_cpp_member_func` uses `str` for what should be `name` buffer, and `test_cpp_rtti` uses `v1` through `v12` obscuring object pointers and type info.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use mangled names (`_Z20test_cpp_member_funcv`) in code with demangled versions only in comments. Original names like `test_cpp_member_func` are not recovered as actual identifiers, requiring constant reference to metadata.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x125c`, `21`, `1000` appear without explanation. String literals stored as hex-encoded globals (`g1`, `g2`) with UTF-8 bytes instead of readable strings. Some expected values (71, 22, 85) returned as constants hide computation logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Relatively clean of dead code, but contains unnecessary type casts (`(int32_t)a1`, `(float64_t)(int64_t)a1`). Frame pointer manipulation and some redundant assignments present but not severe.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `test_cpp_exception` uses confusing goto labels (`lab_0x10b60`, `lab_0x10b5c`) creating potential infinite loops. At `-O0`, loops should be recovered as `for`/`while` constructs, not backward jumps. Many functions just return constants instead of actual logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are trivial (return constants). Original class methods exploded into separate functions (`_ZN4BaseD2Ev`, `_ZN4BaseD0Ev`) without clear relationship. Template instantiations properly separated but with mangled names.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but exception handling code has circular label references. Virtual thunk functions (`_ZTv0_n12_N14DiamondDerived4funcEv`) interrupt logical flow without explanation.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Vtable structs defined once and referenced consistently. Some destructor variants (`D0Ev`, `D1Ev`, `D2Ev`) create apparent redundancy but reflect C++ ABI correctly. No obvious dead code blocks.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything degraded to `int32_t`, `int32_t*`, `void*`. Original types like `SimpleClass`, `LifecycleClass*`, `std::unique_ptr<int>` completely lost. No const-correctness recovered despite `-g` debug symbols being available.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtables recovered as structs (`vtable_11af0_type`) with generic field names (`e0`, `e1`, `e2`). Class structures (`SimpleClass`, `Container<int>`) not recovered at all - objects represented as raw `int32_t` values. No field names for member variables.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout: `(int32_t)a1`, `(int32_t)&g17`, `(int32_t *)*(int32_t *)(*v1 - 4)`. Pointer arithmetic on `int32_t` instead of proper types. No bounds checking recovered for array accesses.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Auto-generated metadata comments only (address ranges, line numbers, demangled names). No algorithm explanations, no documentation of C++ semantics (vtable dispatch, virtual inheritance). Comments like `// From class: Base` helpful but insufficient.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: RAII patterns, virtual dispatch, template instantiation, lambda captures all appear as raw code. No identification of design patterns (polymorphism, inheritance hierarchies).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues: functions returning constants instead of computing, broken exception handling control flow, missing constructor logic. Decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` in Container). No postconditions or invariants. Exception safety contracts not indicated. Original comments with expected values not preserved.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch obscured (vtable lookups appear as pointer arithmetic). Inheritance relationships noted in comments (`base classes: RTTIBase`) but not in type system. Global variable usage (`g14`, `g15`, `g16`) unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with section comments (`// ----------------- Functions -----------------`). Related functions (class methods) grouped but not clearly associated. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires C++ runtime (`__cxa_*`, `_Znwj`, `_ZdlPvj`). External dependencies listed but not documented. Will not compile standalone without significant stubbing. Architecture-specific (`arm64`) artifacts present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 3.75/10 | 30% | 1.13 |
+| L2: Structural Intelligibility | 5.00/10 | 25% | 1.25 |
+| L3: Type System Fidelity | 2.33/10 | 20% | 0.47 |
+| L4: Semantic Transparency | 2.25/10 | 15% | 0.34 |
+| L5: Contextual Coherence | 4.33/10 | 10% | 0.43 |
+
+**Overall Readability Score: 3.62/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic** (`v1`, `v2`, `result`) - should recover `obj`, `ptr`, `capture_by_value` from debug symbols at `-O0`
+- **Function names mangled** - `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func` despite demangled info in comments
+- **Class structures not recovered** - `SimpleClass`, `Container<int>` appear as `int32_t` with no field structure
+- **Exception handling broken** - `test_cpp_exception` has circular goto labels that don't match source try/catch semantics
+- **Many functions return constants** - `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda` just return expected values instead of computing
+
+### Best Quality Aspect
+
+- **Redundancy Elimination (7/10)** - Vtable definitions are consistent and not duplicated; destructor variants correctly reflect C++ ABI without unnecessary code bloat.
+
+### Most Needs Improvement
+
+- **Type System Fidelity (2.33/10 average)** - Complete loss of C++ type information despite `-O0 -g` compilation; everything reduced to `int32_t` and raw pointers, making semantic understanding nearly impossible.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Leverage debug symbols at -O0** - Extract variable names, function names, and type information from DWARF debug sections instead of generic `v1`, `v2` naming.
+
+2. **Recover C++ class structures** - Use vtable analysis combined with debug info to reconstruct class layouts with field names (`value`, `name[32]`, `data`, `size`) instead of raw `int32_t` objects.
+
+3. **Recognize C++ language idioms** - Implement pattern matching for try/catch blocks, virtual dispatch, template instantiation, and lambda captures to generate idiomatic C++ instead of raw control flow.

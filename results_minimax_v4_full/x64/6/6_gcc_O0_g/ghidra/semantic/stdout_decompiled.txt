@@ -1,0 +1,6 @@
+Testing standard library functions:
+
+strcpy: 8
+strcmp: 0
+strlen: 12
+memcpy: 90

@@ -1,0 +1,154 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All variables use generic auto-generated names (local_28, uStack_10, sVar1, iVar1, puVar1, param_1). The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count` but these are completely lost. The decompiler provides no semantic inference from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Justification: Most test functions correctly preserve their original names (test_cpp_member_func, test_cpp_constructor, test_cpp_virtual_func). However, some internal functions remain as `FUN_00011385` with no semantic meaning. Template instantiations use mangled names like `template_max_int_` which is partially acceptable.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Multiple unexplained magic numbers appear throughout: `0x125c` (should be 4704), `0x3e9` (1000), `0x2a` (42), `0x47` (71), `0x28a` (650). The decompiler makes no attempt to identify these as expected return values from the original source. String literals like `&DAT_000121d8` are referenced without recovery of their content.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant noise from 20+ external function stubs that are just passthrough calls (operator_new, __cxa_begin_catch, etc.). Many functions like `__i686_get_pc_thunk.bx` are pure compiler artifacts that shouldn't appear in decompiled output. However, core logic functions are relatively clean.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Control flow is natural and readable. Functions like `template_max_int_` show clear if-else structure. The `Container<int>::get` function has proper conditional logic. At -O0, the control flow closely matches source which is appropriate.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Functions are appropriately sized - no excessive inlining or outlining. Template instantiations are properly separated (template_max_int_, template_max_double_). However, some class methods like Container functions could be better organized. The duplication between test_cpp_rtti and test_cpp_oo_features is a decomposition issue.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code reads top-to-bottom with minimal forward jumps. Functions like test_cpp_member_func have simple linear structure. Early returns are used appropriately. No goto statements or spaghetti code observed.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Justification: Significant code duplication exists - the RTTI test logic appears twice: once in test_cpp_rtti() and again inline in test_cpp_oo_features(). This 20+ line block is duplicated verbatim. The decompiler made no attempt to factor out common logic.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Severe type degradation - almost all integers use `undefined4` type. The original `int`, `size_t`, `bool` types are lost. Function return types are often `undefined4` instead of proper int types. Pointer types are generic without proper type information.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No struct recovery - all class members accessed via raw offsets (this + 0x28, this + 0x50). The original SimpleClass with `value` and `name[32]` is completely lost. LifecycleClass with `data*` and `size` members is just raw pointer arithmetic. Container template class has no recovered structure.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Generally type-safe operations but with caveats. The `(***(code ***)param_1)(param_1,param_2)` in call_virtual_func is an unsafe function pointer cast. Some pointer arithmetic in Container functions is borderline. No buffer overflow patterns detected. The use of undefined4 types creates potential safety concerns.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Only auto-generated header comments present ("Decompiled by BinaryAI"). No useful comments explaining algorithm intent, recovered logic, or uncertainty. The original source comments about test scenarios (SCENE-DESK) are completely lost. No indication of decompilation confidence.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No design patterns or algorithms identified. Virtual function dispatch is shown as raw indirect call without recognizing vtable pattern. Template instantiation is recognized but not explained. Exception handling shows throw/catch but doesn't identify the try-catch structure.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly indication whatsoever. The indirect virtual function call in call_virtual_func has no warning about unresolved dispatch. No flags for uncertain type recovery. The decompiler presents everything as confident when many things are uncertain at -O0.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., "requires: idx < size" for Container::get) that are completely lost. No error condition documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: No function call relationships documented. Who calls test_cpp_member_func? Unknown. The static member LifecycleClass::instance_count is accessed but no documentation of global state. Virtual dispatch relationships not explained.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are listed by address which provides some ordering. Related functions (Container<int> methods) are grouped together. However, the overall file structure is arbitrary - just a flat list of functions sorted by address. No namespace recovery.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Code will not compile as-is. Missing #include statements, no namespace declarations, undefined types like `undefined4`, missing class definitions. External dependencies (operator_new, printf) not properly declared. Would require significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+3+4)/4 = 4.0
+L2_avg = (8+6+8+4)/4 = 6.5
+L3_avg = (3+2+6)/3 = 3.67
+L4_avg = (2+3+1+2)/4 = 2.0
+L5_avg = (3+5+3)/3 = 3.67
+
+Overall = (4.0 × 0.30) + (6.5 × 0.25) + (3.67 × 0.20) + 
+          (2.0 × 0.15) + (3.67 × 0.10)
+        = 1.2 + 1.625 + 0.734 + 0.3 + 0.367
+        = 4.226/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects
+
+- **Variable naming**: All variables use generic names (local_28, uStack_10, sVar1) with no semantic inference from usage patterns - original names like `value`, `size`, `instance_count` completely lost
+- **Type precision**: Severe degradation to `undefined4` for all integers; original `int`, `size_t`, `bool` types not recovered
+- **Struct recovery**: No class/struct reconstruction - all members accessed via raw offsets (this + 0x28), losing all semantic meaning of SimpleClass, LifecycleClass, Container
+- **Magic numbers**: Multiple unexplained constants (0x125c, 0x3e9, 0x2a) without identifying them as expected return values
+- **Code duplication**: RTTI test logic duplicated verbatim in both test_cpp_rtti() and inline in test_cpp_oo_features()
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (8/10)** - At -O0, the decompiled control flow closely matches the original source. Functions have clear if-else structures, proper loops, and readable logic flow.
+
+### Most Needs Improvement
+
+**Anomaly Indication (1/10)** - The decompiler provides zero indication of uncertain or problematic reconstructions. Virtual function dispatch, type uncertainty, and potential issues are all presented with false confidence.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `strlen(local_28)` suggests `local_28` is a string) to generate semantically meaningful names instead of generic `local_N` patterns
+
+2. **Recover composite types**: Use vtable analysis and constructor patterns to reconstruct class structures with meaningful field names instead of raw memory offsets
+
+3. **Add confidence indicators**: Flag uncertain reconstructions (virtual calls, ambiguous types) with comments like "UNCERTAIN: indirect call resolution" rather than presenting everything as definitive

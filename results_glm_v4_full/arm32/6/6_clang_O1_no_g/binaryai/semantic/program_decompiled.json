@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/6/6_clang_O1_no_g/binaryai/syntactic/bin/6_clang_O1_no_g_fixed",
+  "stdout": "=== Standard Library Tests ===\n\nstr_len result: 15\nstrcmp result: 0\nstrlen result: 12\nmemcpy result: 90\nmemcmp result: 0\nValue: 42, Name: Nstr_len result: %lu\n\nprintf result: 39\nscanf result: 579\nopen result: 42\nfread_fwrite result: 42\nmalloc_free result: 90\nmemset result: 0\nstrchr_strstr result: 15\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

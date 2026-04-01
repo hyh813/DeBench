@@ -1,0 +1,5 @@
+Starting test
+
+10
+20
+225

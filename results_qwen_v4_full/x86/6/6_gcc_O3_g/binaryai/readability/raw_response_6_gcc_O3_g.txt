@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `local_10`, `local_20`) with no semantic meaning. Only global variables like `signal_received`, `shared_counter`, and `atomic_counter` retain meaningful names from the original source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_strcpy`, `thread_compute`, `signal_handler`), but many functions use generic addresses (`FUN_00011030`) or optimization artifacts (`param_fork_exec.part.0`, `param_thread_local_storage.constprop.0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xf` (15) appear without explanation. String literals like `"Thread-%d"` and `"Value: %d, Name: %s\n"` are preserved but not contextualized.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__stack_chk_fail_local()` calls in nearly every function, `in_GS_OFFSET` stack protection references, `LOCK()/UNLOCK()` macros, and unresolved `FUN_00011xxx` library calls clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mix of natural do-while loops and awkward goto patterns (`LAB_00011d63`, `LAB_00012bb4`). Stack check epilogues interrupt natural flow. At -O0, this level of restructuring is excessive.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but optimization splits create fragmentation (`.part.0`, `.constprop.0` variants). Thread functions properly separated but caller/callee relationships obscured.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Frequent forward jumps and goto labels disrupt top-to-bottom reading. Stack canary checks at function ends create artificial branching. Many functions have 3+ exit points.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeated identically across ~40 functions. Some loop structures preserved but with redundant index variables. No dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined` types dominate. Original `size_t`, `pid_t`, `pthread_t` lost. Pointer types often generic (`void*` equivalent). Some `int`, `char*` preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `ThreadData` struct accessed as array indices (`param_1[0]`, `param_1[1]`, `param_1[2]`). No struct definitions recovered. All composite types reduced to raw memory access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous implicit casts visible (`(undefined4 *)`, `(int *)`). Pointer arithmetic exposed (`piVar3 = piVar3 + 1`). No const-correctness preserved. Type-confused function pointers throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Library functions called as `FUN_00011510` (strcpy), `FUN_00011440` (strcmp), `FUN_00011630` (strlen) - not recognized. Thread patterns, mutex operations, atomic operations not identified as idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Indirect calls not flagged. Stack layout anomalies not documented. Code presents potentially incorrect information with false confidence.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions. No error condition documentation. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph partially visible but many calls to `FUN_00011xxx`. Global variables named (`signal_received`, `ready`, `data`) help trace relationships. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping by section (library functions, syscalls, threads). No header file structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile standalone - `FUN_00011xxx` calls need resolution to actual library functions. External dependencies (pthread, libc) not documented. Would require extensive manual patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.225
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.87/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`, `iVar1`** should be named based on semantic usage (e.g., `dst`, `src`, `return_value`)
+- **Library functions not recognized** - `FUN_00011510` should be `strcpy`, `FUN_00011630` should be `strlen`
+- **Struct `ThreadData` completely lost** - accessed as array indices `param_1[0]`, `param_1[1]`, `param_1[2]`
+- **Zero comments** - no explanation of algorithm intent or decompilation uncertainty
+- **Magic numbers unexplained** - `0x2a`, `0x5a`, `0xc` appear throughout without constant definitions
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Original function boundaries mostly preserved with thread functions properly separated, though optimization suffixes create some fragmentation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes the code nearly unusable for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement library function signature matching** - Recognize common libc patterns (strcpy, strcmp, strlen, malloc, free) and restore original function names instead of `FUN_00011xxx`
+2. **Add structural type recovery** - Detect struct access patterns (consecutive field accesses at fixed offsets) and reconstruct composite types with meaningful field names
+3. **Generate decompilation confidence annotations** - Add comments indicating uncertain regions, unresolved indirect calls, and potential optimization artifacts to guide manual review

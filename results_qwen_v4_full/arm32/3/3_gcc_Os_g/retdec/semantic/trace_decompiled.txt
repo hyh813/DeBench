@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_stack_memory|0|Arg0=1,Arg1=-1096435644,Arg2=-1096435636,Arg3=4278053|r0=0x1,r1=0xbea5b844,r2=0xbea5b84c,r3=0x414725,r4=0xbea5b708,r5=0x0,r6=0x0,r7=0x0

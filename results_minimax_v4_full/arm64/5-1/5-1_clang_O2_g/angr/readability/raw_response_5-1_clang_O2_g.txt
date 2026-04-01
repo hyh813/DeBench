@@ -1,0 +1,154 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use generic names like `v0`, `v1`, `v4`, `v5`, `ptr`, `p` throughout. In `test_cpp_member_func()`, variables `v0`, `v1`, `flag1`, `result` provide no semantic meaning. The decompiler uses the same generic naming for all local variables across different functions, making it nearly impossible to track variable purposes without extensive manual analysis.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: While some functions retain their mangled C++ names (e.g., `_Z20test_cpp_member_funcv`, `_Z12template_maxIiET_S0_S0_`), many are named with generic addresses like `sub_400d74`, `sub_400f30`. Template functions are partially named correctly, but critical functions like `call_virtual_func` use goto-based indirect jumps instead of proper virtual function call syntax. The function `_Z17call_virtual_funcP4Basei` shows the class name but uses `goto *((long long *)*((long long *)&arg_0));` which is completely unreadable.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Some literals like `42` in `test_cpp_exception()` are preserved correctly. However, expected return values are hardcoded directly in printf statements (e.g., `strlen(&v0 | 4) + 4704`) without explaining the magic number 4704. The decompiler doesn't recover the calculation logic that produces these values from the actual test function results.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: The decompiled code contains moderate noise including redundant frame pointer manipulations (`v0 = &v1;`), unnecessary pointer casts, and goto-based control flow that obscures intent. However, there's no debug instrumentation or assembly blocks. The main noise comes from the indirect jump in virtual function calls and the complex floating-point comparison in `template_max<double>`.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 2/10**
+
+Justification: Multiple critical functions use `goto` for control flow that should be loops or conditionals. The virtual function call in `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0));` which is completely non-idiomatic. Many functions like `test_cpp_constructor()`, `test_cpp_virtual_func()` are empty (just `return;`), completely losing their logic. The control flow in `register_tm_clones()` uses complex bit manipulation with `__ROL__` that obscures simple conditional logic.
+
+### 6. Function Decomposition
+**Score: 4/10**
+
+Justification: Template functions are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Container class methods are extracted as separate functions. However, many test functions that should contain substantial logic are completely empty or trivial (`test_cpp_constructor()` just returns). The function decomposition exists for some parts but critical logic is missing entirely.
+
+### 7. Code Linearization
+**Score: 3/10**
+
+Justification: The code has poor linearization due to excessive goto statements (especially in virtual function calls and exception handling). Forward jumps are not properly abstracted into loops or conditionals. The `register_tm_clones()` function has deeply nested ternary operators that make reading difficult. Many functions just return immediately, making the code flow impossible to trace.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some redundant patterns exist, like `v0 = frame_dummy(); return frame_dummy();` in `sub_401008`. However, the more significant issue is that logic is missing entirely rather than being redundant. The decompiler doesn't show dead code because most function bodies are empty, not because it's eliminating redundancy properly.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: The decompiler uses generic types extensively: `char *v0`, `unsigned long long`, `void* ptr`. Integer types are not precision-matched (uses `unsigned int` instead of `int32_t`). The `Container` class methods use `void*` for `this` pointer instead of proper class type. Function parameters like `int arg_0` lose const-correctness. The `template_max<double>` uses raw `unsigned long` for floating-point values.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: The decompiler creates incomplete struct definitions for RTTI (`struct_0`, `struct_1`) with generic field names. The `Container` class is not recovered as a proper class - instead, methods use raw pointer arithmetic (`ptr[40]`, `ptr[80]`). No proper class definitions for `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, etc. The struct definitions for RTTI are incomplete and don't capture the inheritance relationships.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Justification: Multiple unsafe operations: raw pointer arithmetic in Container methods (`*((unsigned int *)&ptr[40])`), indirect virtual calls without type safety (`goto *((long long *)*((long long *)&arg_0));`), casting through void* without validation. The exception handling uses `__cxa_throw` directly without proper exception type safety. The RTTI code uses raw pointer casting (`*((char **)ptr) = &g_411d58`).
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Only minimal auto-generated comments like `/* do not return */` are present. No explanation of what each function does, what the expected return values should be, or how the logic works. The comment `// ANOMALY: Indirect call could not be resolved` is absent - the decompiler presents the goto-based virtual call as if it's correct code. No documentation of the C++ features being tested.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: No design patterns or algorithms are recognized or named. The virtual function call pattern is presented as a goto instead of being recognized as vtable dispatch. Exception handling is shown as raw `__cxa_throw` without recognizing try-catch blocks. Template instantiation is partially recognized but not explained. No recognition of RAII patterns in smart pointers or inheritance patterns.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: The decompiler provides no indication of anomalies. Functions that should return values are declared `void`. The virtual function call using goto is presented as normal code. Empty function bodies (like `test_cpp_constructor()`) aren't flagged as potentially incorrect. The complex bit manipulation in `register_tm_clones()` isn't flagged as potentially a decompilation issue.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The decompiled code shows no awareness of what the functions should accomplish. For example, `test_cpp_member_func()` should return 4704 but is declared `void` with no indication this is incorrect.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function names partially indicate relationships (mangled names show class membership). The `test_cpp_oo_features()` function shows it calls other test functions. However, the virtual function call relationships are completely obscured by the goto pattern. Global variable usage is indicated through `extern` declarations but without clear documentation of their purpose.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are grouped by address but this doesn't reflect logical organization. Template functions are grouped together, Container methods are grouped, RTTI class methods are grouped. However, the test functions are scattered and many are empty. The organization is somewhat logical but doesn't match the original source's clear separation by feature.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: The code would not compile as-is. Many functions have `void` return types when they should return values. The `goto *((long long *)*((long long *)&arg_0));` is invalid C. Template instantiations are present but incomplete. External dependencies (libstdc++, libc) are not properly declared. The code requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 3 + 4 + 5) / 4 = 3.5
+L2_avg = (2 + 4 + 3 + 6) / 4 = 3.75
+L3_avg = (3 + 2 + 3) / 3 = 2.67
+L4_avg = (2 + 2 + 1 + 1) / 4 = 1.5
+L5_avg = (3 + 5 + 2) / 3 = 3.33
+
+Overall = (3.5 × 0.30) + (3.75 × 0.25) + (2.67 × 0.20) + 
+          (1.5 × 0.15) + (3.33 × 0.10)
+        = 1.05 + 0.9375 + 0.534 + 0.225 + 0.333
+        = 3.08/10
+```
+
+### Overall Readability Score: 3.08/10
+
+### Critical Defects
+
+- **Function `test_cpp_member_func()` returns void instead of int**: The function should return 4704 but is declared `void` with no return statement, losing all computed results
+- **Virtual function call uses goto instead of proper syntax**: `goto *((long long *)*((long long *)&arg_0));` completely obscures vtable dispatch mechanism
+- **Eight test functions are empty**: `test_cpp_constructor()`, `test_cpp_virtual_func()`, `test_cpp_multiple_inheritance()`, `test_cpp_diamond_inheritance()`, `test_cpp_operator_overload()`, `test_cpp_template_func()`, `test_cpp_template_class()`, `test_cpp_lambda()`, `test_cpp_smart_ptr()` all just `return;` - losing all test logic
+- **Container class uses raw pointer arithmetic**: Methods like `*((unsigned int *)&ptr[40])` instead of proper member access, losing class structure
+- **No exception handling recovery**: `test_cpp_exception()` only shows the throw, not the catch blocks or rethrow logic
+
+### Best Quality Aspect
+
+**Function Decomposition (scored 4/10)**: Template functions are properly separated into individual instantiations (`template_max<int>`, `template_max<double>`, `template_swap<int>`), and Container class methods are extracted as distinct functions. This is the highest-scoring area, though it's still poor.
+
+### Most Needs Improvement
+
+**Semantic Transparency (scored 1.5/10)**: The decompiler fails to recognize and communicate the semantic intent of the code. No comments explain what functions do, no anomaly indication for clearly incorrect outputs (void returns), no idiom recognition for virtual calls or exception handling, and no contract recovery. This fundamental failure makes the decompiled code nearly unusable for analysis.
+
+### Top 3 Recommendations
+
+1. **Recover function return types from calling contexts**: The decompiler should analyze how functions are called and infer return types. `test_cpp_member_func()` is used in `printf` with %d format, clearly indicating it should return int.
+
+2. **Recognize and properly render vtable dispatch**: Replace `goto *((long long *)*((long long *)&arg_0));` with proper virtual function call syntax like `arg_0->virtual_func(arg_1)` based on vtable analysis.
+
+3. **Detect and flag empty function bodies**: Functions that should contain logic (based on source or calling context) but only contain `return;` should be flagged as potential decompilation failures with a comment like `// WARNING: Function body may be incomplete`.

@@ -1,0 +1,8 @@
+Testing macro constants: 64
+Testing macro functions: Testing conditional compile: Testing multi-branch compile: Testing macro recursion: Testing stringize: Testing token paste: LOG: Values: 10, 20, 30
+Testing variadic macro: Testing macro override: Testing include guard: file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:43
+Testing builtin macros: Testing ASM basic: 15
+15
+42
+36
+30

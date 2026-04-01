@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most internal variables use generic `v*` naming (v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18) making it extremely difficult to track their purpose. While function parameters like `p`, `arr`, `n`, `x` are preserved, computation variables are completely generic.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_ld`, `process_bool`, `const_param`, `volatile_access`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `ptr_triple`, `struct_simple`, `enum_type`, `enum_switch`, `linked_list`, `binary_tree_sum`, etc. Excellent recovery from debug symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals like `printf("DT-L1-01 (process_char): %c\n", 97)` show computed values (97='a'), but many are unresolved references: `s`, `asc_3600`, `asc_361B`, `asc_3636`, `xmmword_3030`, `xmmword_3658`, `off_4DE0`, `dword_3040`. These appear to be string constants and data addresses that the decompiler couldn't resolve.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe SIMD noise throughout. Functions like `array_1d_stack`, `array_3d`, `array_vla`, `array_oob`, `ptr_increment`, `union_array` are cluttered with SSE intrinsics: `_mm_add_epi32`, `_mm_loadu_si128`, `_mm_shuffle_epi32`, `_mm_unpacklo_epi64`, `_mm_cvtsi128_si32`. This makes the code nearly unreadable. Additionally, there's a critical mismatch: source was compiled with -O0 but decompiled code shows heavy -O2 optimization artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow structures are preserved - loops use do-while patterns, conditionals are straightforward if statements. However, the extensive SIMD operations create confusing computed jumps and loop indices. The optimization level mismatch (-O0 source vs -O2 output) causes unexpected restructuring.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function decomposition closely matches original source. All test functions (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`, `main`) are properly separated. Each helper function (`process_char`, `array_1d_stack`, `ptr_single`, etc.) is correctly isolated. Minor issue: some small functions like `double_value` may have been inlined.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns for edge cases (e.g., `if (n <= 0) return 0;`). However, the SIMD-heavy functions have complex control flow with multiple labeled sections (LABEL_8, LABEL_13, LABEL_14) that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling in SIMD sections. For example, `array_1d_stack` manually unrolls with 8-element chunks using `_mm_loadu_si128` at offsets 0, 4, 8, 12, 16, 20, 24, 28. This is optimization artifacts that should ideally be commented or abstracted. No dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Type precision is generally good. Basic types correctly identified: `char`, `short`, `int`, `long`, `float`, `double`, `long double`, `bool`. Pointer types preserved: `int *p`, `int **p`, `int ***p`, `void *p`. Const correctness maintained: `const int *p`. Minor issue: some `__int64` used where `long` would be more precise on ARM64.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct and enum recovery. All types reconstructed: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `Device`, `State`. Field names preserved: `p->x`, `p->y`, `p->z`, `node->data`, `node->next`, `r->position.x`, `r->size.width`. Union members correctly identified: `u->i`, `u->f`, `u->bytes[0]`. Bitfield handling is good: `(*(_WORD *)f >> 3) & 7`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with proper pointer dereferencing. Minor issues: some unsafe casts like `*(_DWORD *)p` in `ptr_void`, `(char *)p1 - (char *)p2` in `ptr_diff`. The SIMD code uses raw pointer arithmetic which is potentially unsafe but necessary for the optimization. No major type-confused function pointers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comments present identifying the decompiler and binary. No functional comments explaining algorithms, logic, or intent. The comment `// attributes: thunk` appears for `binary_tree` which is helpful. No decompilation confidence indicators or uncertainty warnings.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: linked list traversal (`for (result = 0; head; head = head->next)`), tree recursion (`binary_tree_sum`), switch via array lookup (`dword_3040[s]`). However, the SIMD operations obscure array processing idioms. No explicit naming of patterns (e.g., "this implements a circular buffer").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flagging. The decompiler silently fails on 5 functions: `__libc_start_main`, `puts`, `printf`, `__imp___cxa_finalize`, `__gmon_start__` with "FAILED to decompile" messages but these aren't integrated into the code flow. No warnings about the -O0 vs -O2 mismatch or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of expected input constraints (e.g., "requires: n > 0", "ensures: return >= 0"). Error handling is implicit in control flow but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code - `main` calls `test_data_types_l1()`, `test_array_types()`, etc. However, there's no documentation of which functions call which, global variable usage, or callback relationships. The `ptr_func_complex` uses `off_4DE0` which appears to be a function pointer but isn't documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are listed in memory address order (0x1000, 0x1020, 0x1060, etc.) rather than logically grouped. The original source's clear grouping by category (Data Types, Array Types, Pointer Types, Composite Types) is lost. Static functions aren't distinguished from public ones.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will NOT compile as-is. Multiple undefined identifiers: `s`, `asc_3600`, `asc_361B`, `asc_3636`, `xmmword_3030`, `xmmword_3658`, `off_4DE0`, `dword_3040`, `_gmon_start__`, `__cxa_finalize`, `_dso_handle`, `_bss_start`. These appear to be string constants and data references that weren't properly recovered. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+1. **Optimization mismatch**: Source compiled with -O0 but decompiled code shows -O2+ SIMD optimizations, causing massive readability degradation
+2. **Unresolved data references**: `asc_3600`, `xmmword_3030`, `off_4DE0`, `dword_3040` are undefined, preventing compilation
+3. **Severe SIMD noise**: `_mm_add_epi32`, `_mm_loadu_si128`, `_mm_shuffle_epi32` clutter functions like `array_1d_stack`, `array_3d`, making them nearly unreadable
+4. **Generic variable naming**: All internal variables use `v*` naming (v2-v18), obscuring their semantic purpose
+5. **No comments or contracts**: Zero algorithm explanation, no pre/postconditions, no anomaly warnings
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)  
+- Excellent struct, union, enum, and bitfield reconstruction with accurate field names preserved
+
+**Most Needs Improvement:** Noise Reduction (scored 2/10)  
+- SIMD intrinsics completely obscure the logic of array processing functions; the -O0 source should not have these optimizations
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and flag optimization level mismatch** - The decompiled code clearly used -O2+ but source was -O0; add a warning about this discrepancy
+2. **Recover unresolved data references** - Convert `asc_3600`, `xmmword_3030`, etc. to actual string constants and data arrays
+3. **Abstract SIMD intrinsics** - When loop unrolling with SIMD is detected at -O0, either comment heavily or provide a higher-level representation

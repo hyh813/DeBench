@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler marks most local variables as "Unresolved local var" with generic names like `local_b8`, `local_d0`, `local_d8`. These provide no semantic meaning - e.g., `int sum@[???]` should be named `sum` based on its accumulation role in varargs functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `cdecl_func`, `varargs_func`, `func_many_args`, `param_by_value_ptr` all match the original source exactly. The decompiler correctly recovered the intended function identifiers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xf` (15), `0x2a` (42), `0x32` (50) appear without explanation. While some values like `0x29` (41) for stack boundary are technically correct, they're not documented. The printf format strings contain the original text, but computed values lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise pollutes the output - repeated "WARNING: Unknown calling convention -- yet parameter storage is locked" messages, "Unresolved local var" annotations, and DWARF debug info remnants like `DW_OP_reg5(RDI)`. These 50+ warning blocks severely impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures are natural - if-else, for loops, and return statements match source patterns. The varargs handling uses complex loop logic but this reflects actual implementation. At -O0, minimal restructuring is expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source - small focused functions like `func_no_args` (returns 42), `call_cdecl` are properly separated. The decompiler didn't incorrectly inline or fragment functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The varargs functions have forward jumps within the loop but these are manageable. No severe spaghetti code observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundant computations. Loop unrolling in varargs is minimal. The code is clean in this dimension.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (`int`, `int*`, `char*`, `double`), but `longlong` is non-standard (should be `long long` or `int64_t`). Function pointer shown as `_func_int_int *` is imprecise. Some parameter types like `int *arr` in `param_array_decay` correctly show pointer nature.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all match source. Field names like `s.data[0]`, `p->x`, `p->y` are preserved. Minor issue: `ret_large_struct` shows awkward `__return_storage_ptr__` parameter.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. Minor issues: some void* casts in `param_complex_cast`, but the code correctly handles pointer arithmetic. No severe safety violations like buffer overflows.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely auto-generated warnings - "WARNING: Unknown calling convention", "Unresolved local var", "WARNING: Removing unreachable block". No useful algorithm explanations, API contracts, or semantic documentation recovered from source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are named or highlighted. The varargs handling could be recognized as stdarg usage but isn't annotated. Callback pattern in `param_func_ptr` isn't identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "WARNING: Unknown calling convention" messages attempt to flag anomalies, but they're generic and don't explain the actual implications. The "Unresolved local var" annotations indicate missing information but don't suggest how to resolve.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. The null-check in `func_struct_byptr` (`if (!p) return -1;`) could indicate a precondition but isn't documented as such.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., `main` calls `test_calling_conventions`). However, there's no explicit documentation of call graphs, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order roughly matching source sections (calling conventions, parameter passing, return values), but the file is a single monolithic output without clear grouping or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Issues include: non-standard `longlong` type, unresolved local variable annotations in parameter lists, missing standard library declarations (puts, printf), and undefined types like `_func_int_int`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable naming**: 50+ "Unresolved local var" entries with meaningless names like `local_b8`, `local_d0` - completely obscures variable purpose
+- **Noise pollution**: Repeated "WARNING: Unknown calling convention" blocks (appears 30+ times) - buries actual code
+- **Comment quality**: Only auto-generated warnings, no semantic comments explaining algorithms or intent from original source
+- **Type issues**: Non-standard `longlong` type, unresolved function pointer typedefs
+- **Build compatibility**: Code contains annotations that would prevent compilation (`@[???]`, unresolved vars)
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names are nearly perfectly preserved from the original source - `cdecl_func`, `varargs_func`, `param_by_value_ptr`, `ret_large_struct` all match exactly. This is the decompiler's strongest area.
+
+### Most Needs Improvement: Variable Naming (scored 2/10)
+The decompiler failed to recover any meaningful local variable names, leaving 50+ variables as "Unresolved local var" with cryptic names. This makes understanding function logic extremely difficult.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Variables used as loop counters should be named `i`, `j`; accumulators should be `sum`, `total`; pointers to structures should reflect the struct name
+2. **Reduce warning noise**: Move "Unknown calling convention" warnings to a separate log or summary section rather than embedding them in every function
+3. **Recover semantic comments**: Parse debug info (DWARF) for variable locations and use that to reconstruct meaningful names and comments from original source code annotations

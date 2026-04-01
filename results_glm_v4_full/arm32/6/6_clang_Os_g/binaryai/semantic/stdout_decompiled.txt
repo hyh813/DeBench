@@ -1,0 +1,18 @@
+Testing Standard Library Functions
+String length: 8
+String compare result: 0
+String length result: 12
+Memcpy result: 90
+Memcmp result: -1
+Value: 42, Name: TestName
+Printf return: 26
+Scanf result: 579
+File open result: 42
+File read/write result: 42
+Malloc/free result: 90
+Memset result: 0
+Strchr/strstr result: 15
+Testing System Calls
+Syscall result: 42
+Stat result: 42
+Fork/exec result: 42

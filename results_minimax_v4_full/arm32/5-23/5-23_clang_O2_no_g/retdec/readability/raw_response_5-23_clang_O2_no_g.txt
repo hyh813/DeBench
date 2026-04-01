@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `size`, `x`, `y`. Local variables use cryptic names like `v1`, `v2`, `v3` throughout. For example, in `param_macro_constants`, parameter `a1` should be `size` based on the comparison `a1 > (int32_t)&g18`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retain their original names (`param_macro_constants`, `call_asm_basic`, `param_dynamic_code`), which is excellent. However, standard library functions get mechanical names like `function_518` (printf), `function_530` (memcpy), losing semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants are properly identified (e.g., `_SC_PAGESIZE`, `MAP_ANONYMOUS`), but magic numbers like `0xdf22` in `call_multi_branch_compile` and `7` (PROT_READ|PROT_WRITE|PROT_EXEC) in mmap calls lack explanation. The value `64` appears directly without indicating it's `BUFFER_COUNT * 4`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains standard library stubs necessary for compilation, but some anomalous code patterns exist, such as `(char *)((int32_t)&g21 + (int32_t)&g20)` in `call_builtin_macros` which appears to be a decompilation error. Overall moderate noise level.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if-else and while constructs. The loop in `param_asm_clobber` uses a while pattern correctly. At `-O0`, the flow closely matches source, though some minor restructuring exists.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler preserved the function granularity from the original source. Each small test function remains separate (e.g., `param_macro_constants`, `call_macro_constants`), maintaining the original decomposition.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. No excessive nesting observed. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy exists - `param_asm_simd` and `param_simd_intrinsics` have identical implementations (both expand to scalar loops). However, no significant dead code or duplicate logic within individual functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently, which is appropriate for ARM64. Pointers are properly typed. The decompiler correctly identified `size_t` return types for sysconf/mmap. Minor issue: some pointer arithmetic could be clearer.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: The source code doesn't define complex structs, so the decompiler correctly uses primitive types. No struct recovery was needed, and the code doesn't incorrectly fabricate composite types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues exist: In `param_asm_multi_insn`, `int32_t v1;` is used uninitialized before being passed to memcpy. The expression `(int32_t *)v1` is dangerous. In `call_builtin_macros`, the pointer arithmetic `(char *)((int32_t)&g21 + (int32_t)&g20)` appears malformed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining macro behavior, assembly semantics, and test expectations - all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of patterns like macro expansion, inline assembly idioms, or atomic operations. The decompiler doesn't indicate that `__atomic_fetch_add_4` represents a locked atomic add operation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings for suspicious code. The malformed expression in `call_builtin_macros` and uninitialized variable in `param_asm_multi_insn` are presented as valid code without flags.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No recovery of preconditions, postconditions, or invariants. For example, the original source's `#ifdef DEBUG_MODE` conditional compilation is reduced to a simple formula without indicating the conditional nature.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure (e.g., `test_preprocessing_features` calls other functions), but no explicit documentation of call graphs or relationships exists.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. However, everything is in a single file with no clear separation between test functions and infrastructure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`) and appears compilable with minimal modifications.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`/`v1`/`v2` instead of semantic names like `size`, `page_size`, `result`
+- No comments explaining macro behavior, assembly semantics, or test expectations
+- Malformed expression in `call_builtin_macros`: `(char *)((int32_t)&g21 + (int32_t)&g20)` appears to be a decompilation error
+- Uninitialized variable `v1` used in `param_asm_multi_insn` before assignment
+- No indication of conditional compilation - `#ifdef DEBUG_MODE` becomes simple arithmetic `3 * a1 + 2`
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.3/10)  
+The decompiler correctly uses `int32_t` for ARM64, preserves pointer types, and doesn't fabricate incorrect struct types.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)  
+Complete absence of comments, pattern recognition, anomaly warnings, and contract recovery makes the code opaque to analysts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` compared against `MAX_SIZE` (1024) should be named `size`; variables used in sysconf/mmap should be named `page_size`
+2. **Add semantic comments for preprocessor/assembly**: Explain that `3 * a1 + 2` comes from `#ifdef DEBUG_MODE` branch, annotate atomic operations with "// lock xadd equivalent"
+3. **Flag anomalies and uninitialized variables**: The uninitialized `v1` in `param_asm_multi_insn` and the malformed pointer arithmetic in `call_builtin_macros` should be flagged as potential decompilation errors

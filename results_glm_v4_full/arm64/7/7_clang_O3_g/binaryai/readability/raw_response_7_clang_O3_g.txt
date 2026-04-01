@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar1`, `param_1`, `local_40`), providing no semantic hint about their role in the algorithm (e.g., `acc`, `n`, `buffer`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_fake_branch` and `param_vectorized_loop` are perfectly preserved from the source, likely due to the presence of debug symbols (`-g`), making the API surface very clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with "magic numbers" resulting from compiler constant propagation, such as `0x7a314` (500500) and `0x14` (20), which obscure the original logic (e.g., summation results) without explanation.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While the syntax is clean, there are significant decompiler artifacts like `undefined8`, `CONCAT44` macros (for register combining), and `undefined` types that act as noise, distracting from the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The control flow is heavily distorted by compiler optimizations; `param_vectorized_loop` is transformed into complex pointer arithmetic and SIMD intrinsics (`CONCAT44`), and `param_tail_call_optimized` is converted into a mathematical formula rather than a loop or recursion.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: High-level function boundaries are preserved, but `test_obf_opt_edge` has become a monolithic blob containing inlined logic from other functions, violating the single-responsibility principle seen in the source.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally flows top-to-bottom, but `param_vectorized_loop` contains a `goto LAB_00100c50` and complex pointer pre-increment logic that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler output is concise and contains no dead code or redundancy, though this is largely because the compiler aggressively optimized it away (e.g., `param_fake_branch` is empty).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Critical type information is lost; pointer parameters in `param_vectorized_loop` are demoted to `ulong` integers, and `param_fake_branch` loses its `int` parameter and return type, becoming `void`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite types are completely absent; the bitfield struct in `param_implementation_defined` is lost, and the function simply returns a constant `0x30` with no trace of the struct operations.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe type punning via the `CONCAT44` macro and casts between `undefined8` and integers, which is confusing and error-prone for a human reader.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex transformations, such as the Gauss summation formula in `param_tail_call_optimized` or the SIMD operations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns are not recognized; the SIMD vectorization in `param_vectorized_loop` is presented as raw pointer manipulation rather than a loop, and the tail recursion is not identified.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the optimized code (e.g., empty functions, constant returns) with absolute confidence, offering no warnings that the logic may have been optimized away or that the structure differs significantly from typical source.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions; for example, the contract for `param_vectorized_loop` (pointer validity) is lost in the integer arithmetic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls like `signal` and `longjmp` are clearly visible, and the relationship between `call_*` functions and their `param_*` implementations is traceable, despite the inlining.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in memory address order, which groups related code somewhat, but the logical separation of "Obfuscation", "Optimization", and "Edge Case" sections provided in the source is lost.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `undefined4`) and macros (`CONCAT44`) that will not compile with a standard C compiler without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 3 + 5) / 4 = 5.0
+L2_avg: (3 + 6 + 5 + 8) / 4 = 5.5
+L3_avg: (3 + 1 + 3) / 3 = 2.33
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (7 + 6 + 2) / 3 = 5.0
+
+Overall = (5.0 × 0.30) + (5.5 × 0.25) + (2.33 × 0.20) + 
+          (1.25 × 0.15) + (5.0 × 0.10)
+Overall = 1.5 + 1.375 + 0.466 + 0.1875 + 0.5
+Overall = 4.03 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **SIMD Obfuscation**: `param_vectorized_loop` is decompiled into raw pointer arithmetic and `CONCAT44` macros, completely hiding the simple vector addition loop logic.
+- **Type Erasure**: Pointer types (e.g., `int *`) are frequently converted to `ulong` integers, making it impossible to distinguish data references from array indices without manual analysis.
+- **Optimization Masking**: `param_tail_call_optimized` is transformed into a complex mathematical formula (Gauss summation) rather than the original recursive structure, obscuring the algorithm's intent.
+- **Struct Loss**: Composite types like the bitfield struct in `param_implementation_defined` are entirely eliminated, replaced by magic constant returns.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function names from the debug symbols, allowing the reader to immediately identify the purpose of each routine despite the unreadable bodies.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (1.25/10)**
+- **Why?** The decompiler fails to provide any comments, recognize high-level idioms (like SIMD or recursion), or warn about aggressive compiler optimizations, leaving the user to decipher complex, transformed code blindly.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **SIMD Pattern Recognition**: Detect SIMD vectorization patterns (e.g., wide register loads/stores) and reconstruct them as high-level loops or annotate them explicitly as vectorized operations.
+2. **Type Inference for Pointers**: Improve type recovery to distinguish between pointer arithmetic and integer math, especially in optimized code where pointers are treated as integers.
+3. **Optimization Annotation**: When a function is reduced to a constant or a mathematical formula (e.g., loop unrolling/summation), insert a comment noting that the structure was likely optimized from a loop or recursion.

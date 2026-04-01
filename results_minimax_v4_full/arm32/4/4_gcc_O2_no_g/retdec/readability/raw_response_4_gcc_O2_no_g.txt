@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `v1`, `v2`, `v3`, `v4`, `a1`, `a2`, `a3`, `a4` throughout. These provide zero semantic information compared to source names like `count`, `args`, `sum`, `val`, `ptr`. The decompiler made no attempt to infer meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions match source: `main`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, many are generic: `varargs_func` should be `func_no_args` or similar; `call_ret_large_struct` is a reconstruction but loses the original naming. The original had 30+ distinct function names; most are inlined or lost.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiler replaced function calls with hardcoded literal results (e.g., `__printf_chk(1, "CALL-L1-01: %d\n", 15)` instead of `cdecl_func(5, 10)`). Magic numbers like `128` (for LargeStruct size), `116` (seed+16), and `8` (struct field offset) appear without explanation. The original source had meaningful constants; these are lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. The `__printf_chk` and `__stack_chk_fail` calls are legitimate external dependencies, not noise. No redundant casts or debug instrumentation observed. The code is relatively clean from a noise perspective.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Uses `while` loops appropriately in most places. However, some awkward expressions like `while ((v3 || v4 - 16) != 0)` obscure the original loop logic (iterating 16 times). At -O0, control flow should be more natural. The loop in `test_calling_conventions` for initializing LargeStruct is particularly convoluted.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many small functions from the source were inlined into test functions (e.g., `call_cdecl()`, `call_stdcall()` are gone - their logic embedded directly). However, `varargs_func` and `param_varargs` are duplicated (same logic). Function granularity is inconsistent - some original functions lost, others duplicated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `while` loops with backward jumps are appropriate. Some forward jumps exist in error paths but are minimal. Overall, the code has reasonable linearization for a decompiled output.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal (the LargeStruct initialization could be cleaner but isn't severely redundant). Some duplication between `varargs_func` and `param_varargs` but this appears to be a decompilation artifact rather than optimization redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` appropriately for ARM64. However, all pointers are treated as `int32_t` without distinction (e.g., `int32_t v2 = &v1` is a pointer stored as int). No const correctness. Function pointers lost - `callback_func` and `func_ptr_t` not recovered. Mixed precision: some `int32_t`, some generic `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: LargeStruct and SmallStruct are completely lost. The code uses raw pointer arithmetic: `*(int32_t *)v2 = v3` instead of `s.data[i] = i`. The 128-byte LargeStruct is manipulated via `memcpy(&v5, &v1, 128)` with no type information. This is the worst aspect of the decompilation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: pointer-to-int casts (`int32_t v2 = &v1`), pointer arithmetic without type safety (`v2 += 4`, `v2 += 8`), casting to `int32_t*` for struct field access. No bounds checking. The code could easily cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled code. The original had extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定"). Zero effort to document the decompiled logic or explain non-obvious constructs.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The variadic argument handling (`va_list`, `va_start`, `va_arg`, `va_end`) is not recognized as such - it's manually reconstructed as pointer arithmetic. No recognition of calling convention patterns or parameter passing idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about suspicious code. The `__stack_chk_fail` calls at the end of functions (which are actually unreachable) are not flagged. No indication of potential undefined behavior in the pointer arithmetic. The decompiler presents everything as confident when some aspects are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., "ptr != NULL" for `func_struct_byptr`). None of this is recovered. The decompiled code provides no guidance on expected input/output behavior.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships are unclear. The original had clear call chains: `main` → `test_calling_conventions` → `call_cdecl` → `cdecl_func`. Now many intermediate functions are inlined or missing. No documentation of which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions together). However, the original had clear sections with comments separating calling conventions, parameter passing, return values. This organizational structure is lost. All in one file without section headers.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code declares external functions (`__printf_chk`, `__stack_chk_fail`) and would compile with appropriate linking. However, requires linking against libc and possibly libstdc++. No header file recovered. The code is mostly self-contained but not fully standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v1`, `v2`, `a1`, `a2`) providing zero semantic information
+- Composite types (LargeStruct, SmallStruct) completely lost - replaced with raw pointer arithmetic and magic numbers like `128`, `8`
+- All function calls replaced with hardcoded literal results (e.g., `15` instead of `cdecl_func(5,10)`), destroying semantic traceability
+- No comments explaining any logic - zero documentation
+- Type safety severely compromised: pointer-to-int casts, no const correctness, unsafe pointer arithmetic
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+The decompiled code has minimal compiler artifacts like redundant casts or debug instrumentation. It's relatively clean from that perspective.
+
+**Most Needs Improvement:** Comment Quality & Type Recovery (both scored 1-2/10)  
+The decompiler provides no documentation whatsoever, and composite type recovery is completely absent. These are fundamental to making decompiled code usable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types** from stack layout analysis - the 128-byte copy and 8-byte field accesses clearly indicate LargeStruct with two int64 fields
+2. **Infer variable names from usage** - `v1` used as `count` parameter should be named `count`; variables initialized from function arguments should carry semantic names
+3. **Preserve function call semantics** - don't replace `cdecl_func(5, 10)` with literal `15`; this destroys the ability to trace program flow

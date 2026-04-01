@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`param_1`, `iVar1`, `uVar2`, `auVar5`) with zero semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). This is the strongest aspect—function purpose is identifiable from names alone.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound (`0xfffffff8`, `0x12`, `0x103280`) without explanation. Test functions hardcode expected values (e.g., `printf("CF-L1-01: %d\n",0x15)`) instead of computing them, obscuring test intent.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution—`goto_backward` has 30+ `auVar` vector variables, `recursion_factorial` has 100+ lines of vector operations that don't exist in the simple 5-line source. Compiler optimization artifacts incorrectly present despite -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) recover well, but complex functions show severe degradation. `loop_continue` uses nested conditionals instead of a simple for-loop with continue. Test functions don't call actual functions—they print hardcoded values.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but semantics broken. `test_control_flow_l1` should call functions but prints constants. `call_func_ptr` returns `void` instead of `int`. Helper functions like `FUN_00101020` are meaningless stubs.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Simple functions read top-to-bottom cleanly. Complex functions like `goto_backward` and `recursion_factorial` have massive non-linear code with excessive variable declarations disrupting flow.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Catastrophic redundancy—`recursion_factorial` (5 lines source) becomes 200+ lines with duplicated vector operations. Loop unrolling artifacts present despite -O0 source having no unrolling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Significant type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`. Parameters frequently wrong (`uint` vs `int`). Vector types (`undefined [16]`) used incorrectly throughout.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs in this code to evaluate. Array handling degraded—`loop_break` uses switch-case instead of array iteration. Jump tables referenced as `DAT_00103280` without structure recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointers degraded to generic `code *` with `UNRECOVERED_JUMPTABLE` markers. Multiple implicit casts between signed/unsigned. Vector operations with undefined types create safety concerns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty ratings—all completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Duff's device partially recognized but poorly reconstructed. State machines, recursion patterns, and loop idioms not identified or documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked (`UNRECOVERED_JUMPTABLE`) but no explanation of why code looks strange or what manual analysis is needed. No confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original had explicit test validation comments (e.g., "输入5,7,3应返回21")—all lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but test functions don't call actual functions. Global variables (`jump_buffer`, `DAT_*` references) lack context. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with basic grouping. Original had clear L1/L2/L3 test organization—decompiled preserves some grouping but loses semantic structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies present (`puts`, `printf`, `_setjmp`, `longjmp`) but declared. Requires standard C library.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+3+2)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+2)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type):        (3+5+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.74/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Test functions are broken** - `test_control_flow_l1/2/3` print hardcoded expected values instead of calling actual functions, making verification impossible
+- **Massive variable bloat** - `goto_backward` has 30+ `auVar` variables, `recursion_factorial` has 100+ lines vs 5-line source
+- **Type errors throughout** - `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`
+- **Zero documentation** - All original comments explaining purpose, test cases, and difficulty lost
+- **Optimization artifacts at -O0** - Loop unrolling and vectorization present despite debug compilation that should preserve simple structure
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved (`sequential_ops`, `loop_for_fixed`, `switch_fallthrough`), making function purpose immediately identifiable
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation; original had extensive comments explaining each function's purpose, test cases, and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function semantics** - Detect printf patterns with function name strings and reconstruct actual function calls instead of hardcoded values
+2. **Suppress optimization artifacts for -O0 binaries** - Detect debug compilation flags and avoid generating vectorized/unrolled code that doesn't exist in source
+3. **Infer variable names from usage patterns** - Analyze variable roles (loop counters, accumulators, temporaries) and assign semantic names like `sum`, `count`, `index` instead of `iVar1`, `uVar2`

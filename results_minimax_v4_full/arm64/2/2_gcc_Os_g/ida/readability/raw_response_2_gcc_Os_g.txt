@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables inside functions use generic register-derived names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5` (e.g., in `test_array_types`: `int v0; // w0`, `int v1; // w0`). These obscure semantic purpose. Only function parameters like `x`, `c`, `p` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, etc. The decompiler preserved the meaningful function naming from the source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are obfuscated as `asc_2B24`, `asc_2C8F`, etc. (references to string table). Magic numbers like `0x200000001LL` used for array initialization are unexplained. However, computed test values like `97` (for 'a') are shown directly. Mixed clarity.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present: register name comments (`// w0`, `// x2`, `// x3`) litter the code. Failed decompilations noted for 7 functions (`__libc_start_main`, `__cxa_finalize`, etc.). Library functions `__addtf3` and `__multf3` show as raw decompilation failures. "attributes: thunk" artifacts present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - while loops used for iterations, if-else for conditionals. However, `array_2d_stack` uses pointer arithmetic (`v1 += 11`) making the loop less immediately clear. At -O0, loops should be more recognizable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source's function granularity is well preserved - many small, focused functions like `double_value` (2 lines), `process_char` (4 lines). Each function has single responsibility. No monolithic functions created.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately in functions like `array_complex_index`. No forward jumps into loop bodies. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. At -O0, there shouldn't be common subexpression elimination or loop unrolling. Code is clean without dead code artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int`, `char`, `float`, `double`, `bool` correctly used. However, `__int16` used instead of `short`, `unsigned __int8` instead of explicit char. Function pointer types like `int (*f)(int)` are precise. Minor type erosion but mostly correct.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All types reconstructed: `Point3D` with x,y,z; nested `Rect`, `Size`, `Widget`, `Style`, `Color`; linked list `Node`, `DNode`; tree `TreeNode`; union `UnionData`; bitfield `Flags`; graph `Edge`, `Graph`. Field names preserved from source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `ptr_diff` uses char pointer subtraction then shift `>>2` to get element count. `array_complex_index` has complex overflow detection logic. `volatile_access` shows `2 * *p` which loses the two-read semantics of volatile. Some type safety degradation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very sparse comments. Only "// attributes: thunk" and "// BYREF" annotations present. No algorithm explanations, no decompilation confidence indicators, no API contracts. The format strings in test functions are the only documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns are visible (loops, pointer traversals, linked list walking) but not explicitly named or documented. A human can recognize them, but the decompiler doesn't identify "this is a linked list traversal" or "this implements X pattern."
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed functions are listed at the end ("FAILED to decompile: __libc_start_main"). However, there's no internal anomaly flagging within functions - no warnings about indirect calls, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. The `const_param` function doesn't indicate "requires: *p is valid". No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit - you can see `test_data_types_l1()` calls `process_char`, etc. But there's no explicit documentation of "called by X, calls Y". Callback relationships (like `ptr_func_simple` taking function pointer) are clear from signature but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in binary order, not source order. However, they're logically grouped - test functions together, process functions together. Static functions like `double_value` are properly scoped. Doesn't match original source organization but reasonable.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone - missing standard library declarations (`puts`, `__printf_chk`, etc.). Failed decompilations leave gaps. Architecture-specific code present. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable names are generic register-derived names (`v0`, `v1`, `v2`) obscuring semantic purpose
+- String literals obfuscated as `asc_2B24`, `asc_2C8F` references
+- No comments explaining algorithms, contracts, or decompilation confidence
+- 7 functions failed to decompile, leaving gaps in the output
+- Type safety issues: `volatile_access` loses the two-read semantics with `2 * *p`
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Excellent struct/union reconstruction with accurate field names matching the original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic register names like `v0`-`v9` make it difficult to track variable purpose. Should infer names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v3` used as loop counter should be named `i` or `index`)
+2. Recover string literals from the string table and display actual strings instead of `asc_XXXX` references
+3. Add decompilation confidence comments for indirect calls and suspicious patterns
+4. Preserve volatile semantics - show two separate reads instead of multiplying
+5. Add basic comments explaining function purpose and contracts (@param, @return)

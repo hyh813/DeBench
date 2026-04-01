@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, and `s`, providing no semantic context (e.g., `v0` in `test_cpp_constructor` represents the allocated data array).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent demangling of C++ symbols; functions like `test_cpp_member_func` and `Container<int>::push` retain their original names and namespace/class context perfectly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Heavily optimized code results in "magic numbers" like `4700`, `0x14u`, and `50` appearing without context, obscuring the original logic (e.g., `4700` is a folded calculation).
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The output is clean with minimal register spilling or stack frame artifacts, though some Hex-Rays specific types like `__int64` and `_DWORD` are present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is natural where logic exists (e.g., the loop in `test_cpp_constructor`), but many functions are reduced to single return statements due to compiler optimization, making flow assessment trivial but empty.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While template instantiations are correctly separated into distinct functions (e.g., `template_max<int>`), the high-level test logic is often flattened or inlined, losing the modular structure of the original test cases.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly with minimal jumps or complex branching, largely because the optimizer has simplified the control paths to direct returns or simple loops.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's removal of redundancy; there is no dead code, though this comes at the cost of hiding the original algorithmic steps.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Strong recovery of C++ specific types like `Base *`, `std::ios_base::Init`, and function pointers, though some standard integers are defaulted to generic `_DWORD` or `__int64`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: While class methods are identified, usage of class instances within optimized functions often devolves into raw memory operations (e.g., `SimpleClass` becomes `char s[36]` with `memset`), losing the object abstraction.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic and casts are generally correct and safe (e.g., `operator new` results), with no obviously dangerous or confused type operations visible in the decompiled logic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the purpose of magic numbers, or the effects of optimization, leaving the user to guess why `test_cpp_virtual_func` simply returns `42`.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies complex C++ idioms like `__cxa_throw` (exceptions), `__dynamic_cast` (RTTI), and `operator new[]`, correctly labeling them rather than treating them as generic function calls.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Standard Hex-Rays output provides no specific flags for the aggressive optimization (constant folding) that has rendered the code semantically distant from the source, though it does list failed decompilations at the end.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null checks or size constraints implied by the original source are invisible in the optimized assembly.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to C++ runtime functions (e.g., `__cxa_atexit`) and other test functions are clear, and the relationship between class methods and their potential vtables is implied by the naming.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner; while class methods are grouped by name, the logical grouping of the original source (e.g., sections for "Inheritance", "Templates") is lost.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on Hex-Rays specific types (`__int64`, `_OWORD`) which would require typedefs to compile, and standard library headers are implicitly assumed rather than included.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 8) / 4 = 5.75
+L2_avg = (7 + 6 + 9 + 8) / 4 = 7.50
+L3_avg = (7 + 5 + 7) / 3 = 6.33
+L4_avg = (1 + 8 + 5 + 2) / 4 = 4.00
+L5_avg = (7 + 6 + 6) / 3 = 6.33
+
+Overall = (5.75 × 0.30) + (7.50 × 0.25) + (6.33 × 0.20) + 
+          (4.00 × 0.15) + (6.33 × 0.10)
+Overall = 1.725 + 1.875 + 1.266 + 0.600 + 0.633
+Overall = 6.099
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects
+- **Variable Naming**: Variables like `v0`, `v1`, and `s` are generic, obscuring the data flow (e.g., `v0` in `test_cpp_constructor` is the data array).
+- **Semantic Loss due to Optimization**: The binary appears compiled with `-Os` (despite source metadata saying `-O0`), causing functions like `test_cpp_virtual_func` to be reduced to `return 42;`, completely hiding the source logic.
+- **Composite Type Erosion**: Class instances are often represented as raw byte arrays (e.g., `char s[36]` for `SimpleClass`), destroying the object-oriented abstraction in the test functions.
+- **Lack of Comments**: No explanatory comments are provided to clarify magic numbers or the heavily optimized control flow.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?**: The decompiler perfectly demangles complex C++ symbols, preserving namespaces, class names, and template parameters (e.g., `Container<int>::push`), which is crucial for navigating C++ binaries.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**
+- **Why?**: The complete absence of comments makes it impossible to understand the intent behind the optimized code or the meaning of the remaining magic numbers without cross-referencing the source manually.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Optimization Annotation**: Add comments or warnings when a function body has been reduced to a constant return or heavily inlined, alerting the user that the source logic is not fully represented.
+2.  **Variable Name Inference**: Improve heuristic naming for variables involved in standard patterns (e.g., naming the result of `operator new[]` as `allocated_data` or similar based on usage).
+3.  **Type Propagation in Optimized Code**: Attempt to re-apply composite types to stack variables even when the compiler treats them as raw byte arrays (e.g., recognizing `s[36]` as a `SimpleClass` object based on size and access patterns).

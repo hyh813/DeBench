@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function that calls `strcpy` and returns the string length. The decompiled version preserves the core logic but has several readability issues.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a1` (dst), `a2` (src), and local variables like `v2`, `v5`, `v6` obscure their semantic purpose. The original uses meaningful names `dst` and `src`, but the decompiler replaced them with positional identifiers.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names `param_strcpy`, `call_strcpy`, `param_strcmp` are preserved exactly from the source. The naming accurately reflects the library function wrappers being tested.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals like `0x14u` (20 bytes for memcpy), `0x28u` (40 bytes for memset) appear as magic numbers without explanation. String literals like "HelloLib" are correctly preserved.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some unnecessary casts like `(unsigned int)` are present but don't significantly impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0 optimization, control flow closely matches source. Simple sequential execution with function calls. No spurious goto statements or confusing conditionals.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function has a clear single responsibility matching the source. Functions like `param_strcpy` and `call_strcpy` are properly separated. The granularity is appropriate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns in error handling are appropriate. No excessive nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or significant redundancy. Some repeated expressions like `strlen(s)` could be cached but don't severely impact readability.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Critical type mismatch - `param_strcpy` returns `size_t` but source declares `int`. Parameters correctly show `char*` and `const char*`. Many return types use `__int64` where `int` would be more precise.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: For this specific function, no complex composite types exist. However, in functions like `param_pthread_join`, the ThreadData struct is partially recovered as array `s[12]` with fields at indices rather than named struct members.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer types. Some concerning patterns like `(void *(*)(void *))thread_compute` cast but these are necessary for pthread API. Minor issues with signed/unsigned mixing.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. The source has extensive comments explaining each function's purpose, but these are completely lost in decompilation.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions (strcpy, strlen, strcmp, memcpy, printf) are correctly identified. The wrapper pattern around libc functions is recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The output shows "FAILED to decompile" for 59 functions including critical ones like `raise`, `free`, `strcpy`. These failures aren't clearly flagged in the function bodies themselves.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The implicit contract that `dst` must be large enough for `src` is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `call_strcpy` calls `param_strcpy`. Global variables like `signal_received`, `shared_counter` are properly identified as external.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - standard library wrappers, system calls, thread functions. Matches the source file's section organization (LIB-L1-01, SYS-L3-01, etc.).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C library functions and should compile. However, missing declarations for external functions would require header includes. The `__fastcall` calling convention may need adjustment.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`a1`, `a2`, `v2`, `v5`) instead of semantic names (`dst`, `src`, `result`)
+- Return type mismatch: `param_strcpy` returns `size_t` but source declares `int`
+- Complete absence of comments explaining function purpose and algorithm logic
+- 59 functions failed to decompile but this isn't clearly indicated within individual function contexts
+- Type precision issues: many functions use `__int64` return type where `int` would be correct
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- Each function has appropriate granularity matching the source's single-responsibility design. The wrapper pattern around libc functions is correctly preserved.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Generic parameter names (`a1`, `a2`) and local variables (`v2`, `v5`, `v6`) completely obscure the semantic purpose of each variable, forcing analysts to trace usage patterns to understand functionality.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer parameter names from usage**: When a parameter is passed directly to `strcpy` as destination, name it `dst` or `dest`; when passed to `strlen`, name it `str` or `s`
+2. **Recover return types from source**: Match return types exactly - if source returns `int`, decompiled should show `int` not `size_t` or `__int64`
+3. **Add semantic comments**: Include brief descriptions of what each function does based on recognized library calls (e.g., "Wrapper for strcpy, returns string length")

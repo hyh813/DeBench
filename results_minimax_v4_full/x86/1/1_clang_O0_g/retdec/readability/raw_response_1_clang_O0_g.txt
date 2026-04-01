@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, `result`, `v1`, `v2` - completely generic and meaningless. For example, in `loop_while`: `int32_t v1 = 0; int32_t v2 = x; int32_t v3 = ...` - no indication these represent count, value, or quotient. Compare to source which uses meaningful names like `count`, `temp`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most target functions correctly named: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`. However, standard library wrappers are generic: `function_1040` (should be `__libc_start_main`), `function_1050` (should be `printf`), `function_1060` (should be `longjmp`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3039` (12345) in test code, `0x2694` (9876) appear without explanation. Some constants like `100`, `200`, `300` in switch statements are clear. However, `0x100000000` used for 64-bit operations is obscure.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. No redundant casts from optimization. Some unnecessary type conversions in division operations but manageable. Clean overall for decompiled code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some constructs are natural (loops preserved), but others are awkward: `single_if` uses bit-shift `x << 1` instead of `x * 2`; `loop_for_fixed` uses closed-form formula `v1 + v1*(n-2)/2` instead of explicit loop. At -O0, loop structure should be preserved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized (mostly 20-50 lines). Test functions separated from implementation. Standard library stubs correctly isolated. Good granularity overall.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `loop_multi_exit` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling in `loop_for_fixed` is present but could be commented. Some repeated expressions in complex conditionals but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently which matches arm64 32-bit int. Some `uint32_t` where appropriate (array indices). Minor generic types in function pointers but acceptable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Basic arrays recognized (e.g., `int32_t arr[1]`). Struct `__jmp_buf_tag` reconstructed but with generic field names (`e0`, `e1`, `e2`). No recovery of meaningful field names like in original `jmp_buf`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Most casts are justified. Some unsafe pointer arithmetic in `loop_break` and `loop_multi_exit` using computed offsets. No severe type confusion. Minor issues with function pointer type matching.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Technical metadata present: `// Address range: 0x1230 - 0x1262`, `// Line range: 13 - 18`. However, no algorithmic explanations, no semantic context about what functions do, no recovery of original comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like switch statements recognized. State machine patterns in `state_machine` function visible but not explicitly named or documented. No recognition of Duff's device, goto patterns, or callback patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only `// UNREACHABLE` appears twice. No flags for indirect calls that couldn't be resolved, no warnings about unusual stack layouts, no indication of potential undefined behavior in complex expressions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of error handling contracts from original source (e.g., "returns -1 on error").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top showing relationships. However, no comments indicating which functions call which, no documentation of callback relationships, no global variable usage explanation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: standard library stubs first, then L1 test functions, L2, L3, then main. Static functions properly scoped. Reasonably matches source organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers (`<stdio.h>`, `<setjmp.h>`, etc.). Function prototypes declared. Should compile with minor patching. No compiler-specific hacks observed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`v1`, `v2`, `v3`, `result`) - completely loses semantic meaning from source (e.g., `temp1`, `temp2`, `count`, `sum`)
+- `loop_for_fixed` uses closed-form mathematical formula instead of preserving the explicit for-loop from -O0 code
+- No comments explaining algorithmic intent or recovered from source
+- Type safety issues in array access: `loop_break` uses computed offsets without bounds checking clarity
+- `switch_fallthrough` logic is inverted/confusing compared to source's intentional fall-through
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are appropriately sized and separated. Test functions correctly isolated from implementation. Standard library wrappers properly grouped.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Every local variable is named `v1`, `v2`, `v3`, `result`, or similar generic patterns. At -O0 with debug symbols, the decompiler should be able to recover meaningful variable names from debug info.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from debug symbols**: At -O0 with -g, variable names should be recovered. Map `v1` → `count`, `v2` → `value`, `v3` → `quotient` based on usage patterns.
+2. **Preserve loop constructs at -O0**: The closed-form formula in `loop_for_fixed` loses the algorithmic intent. At debug optimization level, loops should be explicitly preserved.
+3. **Add semantic comments**: Include original source comments where available, or at minimum explain what each function computes (e.g., "// Computes sum of 0 to n-1").

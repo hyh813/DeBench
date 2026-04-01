@@ -1,0 +1,21 @@
+Testing preprocessing features:
+Param1 = 64
+Param2 = 30
+Param3 = 32
+Param4 = 57122
+Param5 = 116
+Param6 = 19
+Param7 = 60
+LOG: Values: 10, 20, 30
+Param8 = 60
+Param9 = 16
+Param10 = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=02:59:50
+Param11 = 382
+Testing asm features:
+ASM1 = 15
+ASM2 = -1204296550
+ASM3 = -1
+ASM4 = 36
+ASM5 = 30
+ASM6 = 77

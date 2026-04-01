@@ -1,0 +1,29 @@
+=== Standard Library Functions Test ===
+LibL1: 8
+LibL2: 0
+LibL3: 12
+LibL4: 90
+LibL5: 1
+Value: 42, Name: Test
+LibL6: 22
+LibL7: 579
+LibL8: 42
+LibL9: 42
+LibL10: 90
+LibL11: 0
+LibL12: 15
+=== System Calls Test ===
+SysL3: 42
+SysL4: 42
+SysL5: 42
+SysL6: 42
+SysL7: 42
+SysL8: 42
+SysL9: 42
+=== Thread Concurrency Test ===
+ThrL3: 49
+ThrL4: 410
+ThrL5: 42
+ThrL6: 42
+ThrL7: 42
+ThrL8: -3

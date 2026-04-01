@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `i`, `ptr`. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count`, `target`, `flag`. Only a few variables like `cur`, `result` provide minimal semantic value.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are properly named, but most target functions use mechanical names like `sub_401030`, `sub_401040`. Some functions like `sequential_ops`, `single_if`, `recursion_factorial` correctly match source names, but this is inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `1001`, `100`, `10`, `4294967295` (representing -1 as unsigned) appear without explanation. The decompiler uses unsigned int representation which obscures the original signed semantics. Some constants like `8` in loop bounds are inferable but not documented.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; no redundant casts or debug instrumentation visible. Some noise from `__x86.get_pc_thunk.*` functions and stack protection (`__stack_chk_fail_local`) which are expected at -O0. Overall relatively clean output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Mixed results - some functions like `sequential_ops` and `single_if` have natural flow, but others use problematic patterns like `goto ptr[2]` in `sub_401030`, `goto v1->field_28` in `sub_4010a0`. The `loop_while` is incorrectly rendered as a for loop. Some goto-based loops are harder to follow than original while/for constructs.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (20-80 lines typically). The original 20+ functions are preserved as separate entities. Some granularity issues exist where small helper functions could be inlined, but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many functions read top-to-bottom without forward jumps, but computed goto patterns (`goto *((int *)&(&v0)[4 * a0])`) in `large_jump_table`, `fsm_func_table`, `computed_goto` severely disrupt linear reading. The `switch_fallthrough` uses labeled goto instead of switch-case fallthrough.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal. Common subexpression handling is reasonable. Some redundant stack frame manipulation exists but is manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - all parameters and return types are `unsigned int` regardless of original `int`. The original used `int` for all functions but decompiler consistently uses `unsigned int`. Function pointer types are poorly recovered (e.g., `goto a0` in `call_func_ptr`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery exists but with generic names like `struct_0`, `struct_1` with fields like `padding_0`, `field_0`, `field_c`. The original had no complex structs but did have arrays (e.g., `int arr[] = {10, 20, 30, 40, 50}`) which are partially recovered in `loop_break` with `cur[4]` but incorrectly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: pointer arithmetic in array access (`*((int *)(a0 + v2 * 4))`), computed jumps without bounds checking, unsigned/signed confusion throughout. The `loop_while` has complex bit manipulation for division that's potentially unsafe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns like loops and conditionals are somewhat recognizable, but design patterns (state machine, jump table, function pointer dispatch) are not identified or named. The original explicitly tested patterns like Duff's device, state machines, and computed gotos.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of anomalies or uncertainties. The `loop_break` function has complex, confusing code with `_ccall` that suggests unresolved indirect calls, but no warnings are present. The `non_local_jump` function has unclear semantics but no flags.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had explicit test cases with expected outputs (e.g., "期望: 21", "期望: 120") but none of this contract information is recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: Function call relationships are unclear. The test functions call target functions but there's no documentation of which functions call which. Global variables like `g_4030e8` appear without explanation of their purpose or usage.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order rather than logical grouping. The original organized functions by category (CF-L1, CF-L2, CF-L3) with clear sections. The decompiled output mixes initialization, test, and target functions arbitrarily.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Multiple undefined references: `frame_dummy`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`, `__do_global_ctors_aux`, `__stack_chk_fail_local`. External globals `g_4030e8`, `g_4030a0`, `g_4030c0`, `g_4030d4`, `g_403355`, `g_403548` are declared but not defined.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Variable naming is nearly all generic (`v0`, `v1`, `a0`, `a1`) losing all semantic meaning from original (`temp1`, `sum`, `count`, `target`)
+- Type precision severely degraded - all `int` types converted to `unsigned int`, losing sign semantics
+- No comments recovered from original source which had extensive documentation
+- Control flow uses problematic patterns like `goto ptr[2]`, computed jumps instead of switch-case
+- Function pointer handling is unsafe (`goto a0`, `goto *((int*)&...))`) without proper type recovery
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+- The decompiled code has minimal compiler artifacts; no redundant casts or debug instrumentation pollutes the output.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic single-letter variable names make it nearly impossible to track data flow or understand variable purposes without significant reverse engineering effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest meaningful names like `sum`, `index`, `count`, `target`
+2. **Preserve original type semantics**: Don't default all integers to unsigned; analyze sign usage in comparisons and arithmetic to preserve `int` vs `unsigned int`
+3. **Recover comments from debug symbols**: The original was compiled with `-g` (debug symbols); extract function documentation, parameter names, and test case expectations from DWARF information

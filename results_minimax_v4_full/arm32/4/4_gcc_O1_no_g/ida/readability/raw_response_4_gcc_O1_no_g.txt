@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `a`, `b`, `count`. Local variables use IDA-style naming (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`) which obscures their purpose. Only `result` and `va_list` are descriptively named.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `callback_func`, `ret_basic_type`, etc. Minor issues with some internal functions like `sub_103E8` but overall good recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Computed return values like `return 15;` for `cdecl_func(5,10)` are correct but lack context. String format specifiers are unresolved (`s`, `aCallL206`, `asc_11750`). Magic number `4` in `param_array_decay()` is unexplained - should indicate pointer size.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present: incorrect `__fastcall` attributes on ARM architecture, some redundant variable declarations. However, overall code is relatively clean without excessive debug instrumentation or register spilling artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow matching source. Simple arithmetic functions like `cdecl_func` are straightforward. The `varargs_func` uses a do-while loop which is appropriate. Minor issues with some complex test functions having nested loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - most are single-purpose with clear responsibilities. The test wrapper functions (`call_cdecl`, `call_stdcall`) are correctly separated from implementation functions. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `param_double_ptr` and `varargs_func`. Some forward jumps in complex test functions but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Loop constructs are properly formed. Some loop unrolling in `test_calling_conventions` for LargeStruct initialization but it's the actual compiled behavior.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `int`, `_DWORD`, `char*` throughout. Some specific types like `double`, `__int64`, `va_list` are correctly identified. However, `param_string` uses `unsigned __int8 *` instead of `const char*`, and function pointers lack proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. `LargeStruct` in `func_struct_byval` is flattened to 32 individual parameters (`a1` through `a33`) with manual pointer arithmetic. `SmallStruct` in `func_struct_byptr` uses raw `_DWORD*` pointer. No field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: raw pointer arithmetic in `func_struct_byval` using `*(_DWORD *)v33`, casting to `unsigned __int8*` in `param_string`. Function pointer types are imprecise. However, no obvious buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only "positive sp value has been detected, the output may be wrong!" and "attributes: thunk". No explanation of algorithms, parameter contracts, or decompilation confidence. Auto-generated noise is minimal but useful content is absent.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some idioms recognized: varargs functions properly use `va_list`, `va_start`, `va_arg`, `va_copy`. Function pointers are identified as callbacks. However, no explicit naming of patterns like "varargs", "callback", "struct-by-value".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged: "positive sp value has been detected, the output may be wrong!" for `_start`. "FAILED to decompile" messages for import functions. However, indirect calls and unusual patterns not explicitly flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `func_struct_byptr` with NULL checks don't have "requires: p != NULL" annotations. Error returns like `-1` lack explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls. Static function `callback_func` is correctly identified as used by `param_func_ptr`. However, no explicit documentation of call graph or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: calling convention functions together, parameter passing functions together, return value functions together. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require significant patching to compile - unresolved string references (`s`, `aCallL206`), missing import declarations (`__imp_puts`, `__imp_strlen`), and incorrect calling conventions. Some stub functions needed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic IDA-style names (`a1`, `a2`, `v0`, `v1`) obscuring semantic purpose
+- `func_struct_byval` flattens the 128-byte `LargeStruct` to 32 individual parameters with manual pointer arithmetic, losing all struct semantics
+- No struct field names recovered - `SmallStruct` becomes raw `_DWORD*` pointer
+- String format specifiers unresolved (`s`, `aCallL206`, `asc_11750`)
+- No comments explaining algorithms, parameter contracts, or decompilation confidence
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function names accurately match original source (`cdecl_func`, `stdcall_func`, `varargs_func`, etc.)
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic parameter names (`a1`, `a2`) and local variables (`v0`, `v1`, `v2`) make it difficult to track variable purpose and understand data flow
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used in arithmetic with `a2` suggests `a` and `b`; `v0` used as loop counter suggests `i` or `count`
+2. Recover composite types from parameter patterns - 32 consecutive int parameters with sequential access pattern strongly suggests a struct; reconstruct as `struct LargeStruct { int data[16]; }`
+3. Add semantic comments for non-trivial patterns - document varargs handling, explain struct-by-value calling convention, flag indirect calls that couldn't be resolved

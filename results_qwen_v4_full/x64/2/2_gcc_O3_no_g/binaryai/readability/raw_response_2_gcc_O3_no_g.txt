@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic decompiler names (`param_1`, `iVar1`, `piVar2`, `local_58`) with zero semantic meaning. Original names like `sum`, `len`, `current`, `edge` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from debug symbols (`process_char`, `array_1d_stack`, `struct_simple`). Some internal functions show generic names (`FUN_00101020`), but application logic names are accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x20`, `0x19`, `0xbf` in `process_char` obscure the ASCII conversion logic. Printf calls show hex values (`0x61`, `0x62`) instead of character literals, requiring manual conversion.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`), `__stack_chk_fail()` calls, and initialization functions (`_init`, `deregister_tm_clones`) mixed with application code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original for/while loops transformed into do-while with manual pointer arithmetic. `binary_tree_sum` catastrophically decompiled into deeply nested loops instead of recursion, making execution flow nearly impossible to follow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but `binary_tree_sum` expanded from ~10 lines to 200+ lines. Several functions have wrong signatures (`process_ld` returns void, `ptr_func_simple` returns void instead of int).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive do-while patterns with manual termination conditions disrupt top-to-bottom reading. `binary_tree_sum` has 10+ levels of nested loops with forward/backward jumps that obscure the recursive tree traversal pattern.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Aggressive loop unrolling creates massive redundancy. `array_3d` has 125+ individual array accesses written explicitly instead of nested loops. `pointer_array` unrolls all 10 iterations with nested if-statements.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `process_char` takes `int` not `char`, `process_ll` returns `long` not `long long`, `process_ld` returns `void` not `long double`, `process_bool` returns `uint` not `_Bool`. Pointer types often degraded to `int*` or `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all struct/union definitions lost. `Point3D`, `Rect`, `Widget`, `Node` accessed via raw pointer arithmetic (`param_1[0]`, `param_1[1]`, `param_1[2]`). No field names recovered, losing all semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(undefined4 *)`, `(undefined8 *)`), void pointer usage without type information, function pointers shown as `code *` without signatures. `ptr_triple` uses triple-dereference on `undefined8 *` which is type-unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive documentation for each test case. Only header comment is SHA256 hash. No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: All patterns completely obscured. Recursive tree traversal became nested loops, linked list traversal barely recognizable, bitfield operations shown as manual bit shifts without explanation. No pattern identification by decompiler.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE` but no explanation. Wrong return types not flagged. No indication that `process_ld` body is missing or that struct types couldn't be recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Array bounds checks present in code but not explained. No documentation of null pointer expectations or valid input ranges.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global variables shown as `DAT_00103008` without meaning. No call graph information or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Initialization functions (`_init`, `_start`, `__do_global_dtors_aux`) mixed with application code. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would require extensive modification to compile. Missing all struct definitions, type mismatches throughout, external function declarations incomplete. Cannot compile standalone without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (4+5+4+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type System): (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.02/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+- **Complete struct/union type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`) reduced to raw pointer arithmetic with no field names
+- **Catastrophic recursion decompilation**: `binary_tree_sum` transformed from 10-line recursive function to 200+ line nested loop nightmare
+- **Zero comment recovery**: Original had extensive documentation; decompiled code has none
+- **Severe type degradation**: `long double`, `_Bool`, `long long` types all incorrectly recovered
+- **Aggressive loop unrolling**: `array_3d`, `pointer_array` expanded to hundreds of lines of redundant code
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Debug symbols preserved most original function names accurately, making it possible to identify function purposes despite other degradation.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic nearly impossible without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite type definitions** - Analyze struct access patterns to reconstruct field layouts and generate struct definitions with meaningful field names based on access patterns.
+2. **Detect and preserve recursive patterns** - Identify recursive call patterns in control flow graphs and reconstruct them as recursive functions rather than unrolling into nested loops.
+3. **Infer variable names from usage context** - Use data flow analysis to assign semantic names (e.g., variables used in loop bounds → `count`, `size`; accumulators → `sum`, `total`).

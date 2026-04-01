@@ -1,0 +1,27 @@
+Library functions test:
+strlen("HelloLib") = 8
+strcmp("HelloLib", "HelloLib") = 0
+strcmp("HelloLib", "HelloWorld") = 12
+memcmp result = 90
+memcmp total = 1
+Value: 42, Name: Test
+printf return = 22
+sscanf result = 579
+fopen/fileno result = 42
+fread/fwrite result = 42
+malloc/free result = 90
+memset result = 0
+strchr+strstr result = 15
+System calls test:
+open/close syscall = 42
+stat result = 42
+fork/exec/waitpid = 42
+pipe communication = 42
+socket create = 42
+shmget/shmat = -1
+signal handling = 42
+Thread concurrency test:
+pthread_create/compute = 49
+pthread_join/sum = -2
+mutex lock = 42
+condition variable = 42

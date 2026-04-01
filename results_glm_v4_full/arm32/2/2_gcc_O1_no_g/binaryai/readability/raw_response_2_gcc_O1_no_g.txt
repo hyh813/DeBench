@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_XX`, `iVar1`, and `piVar2`, providing no semantic context about their purpose (e.g., `sum`, `index`, `ptr`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`double_value`, `process_int`, `array_1d_stack`, `struct_simple`) match the original source exactly, providing perfect semantic context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character constants are replaced with hex values (e.g., `0x41` for 'A', `0x20` for 32), and magic numbers like `0x10000` appear without explanation, obscuring the original intent.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with `undefined` types (`undefined4`, `undefined8`) and stack canary checks (`__stack_chk_fail`), which act as noise distracting from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable with `do-while` and `if` structures, though some boolean logic is low-level (e.g., `1 - (param_1 & 1)` in `process_bool`).
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without unnecessary inlining or fragmentation.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps; loop structures are clearly identifiable.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some redundant arithmetic artifacts from type handling are present, such as `(param_1 + param_2) * 0x10000 >> 0x10` in `process_short` to simulate 16-bit overflow.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Critical type failures occur: floating point functions return `void` instead of `float`/`double`, and `long long` parameters are incorrectly split into two 32-bit integers (`uint param_1, int param_2`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are not recovered; they are flattened to raw pointer arithmetic (e.g., `struct_simple` takes `int *` and accesses `param_1[0]`, `param_1[1]`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The use of `undefined` types and incorrect function signatures (e.g., returning `void` for float operations) introduces significant type safety risks and confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like bitfield extraction) unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic patterns like linked list traversal are visible, but higher-level idioms or specific algorithms are not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler silently fails to recover return values for floating-point functions, presenting them as `void` without any warning or anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to standard library (`puts`, `__printf_chk`) and internal functions are clear and easy to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order roughly corresponding to the source file structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to the use of non-standard types like `undefined4` and macros like `CONCAT44`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.5
+L2_avg: 7.5
+L3_avg: 3.0
+L4_avg: 2.25
+L5_avg: 6.0
+
+Overall = (5.5 × 0.30) + (7.5 × 0.25) + (3.0 × 0.20) + (2.25 × 0.15) + (6.0 × 0.10)
+Overall = 1.65 + 1.875 + 0.6 + 0.3375 + 0.6
+Overall = 5.06
+```
+
+### Overall Readability Score: **5.1/10**
+
+### Critical Defects
+- **Floating Point Return Loss**: Functions `process_float`, `process_double`, and `process_ld` are decompiled with return type `void`, completely discarding the calculation results present in the original source.
+- **Composite Type Erasure**: Structs (e.g., `Point3D`, `Rect`) are not recovered; fields are accessed via raw pointer arithmetic (e.g., `param_1[3]`), losing semantic meaning.
+- **Signature Corruption**: The `process_ll` function signature is incorrect, splitting a single 64-bit `long long` argument into two 32-bit parameters (`uint`, `int`).
+- **Variable Naming**: Despite compilation with `-g` (debug symbols), variable names are generic (`param_1`, `local_XX`), offering no insight into their usage.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly recovered all function names from the source, making the high-level purpose of each code block immediately obvious.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The failure to reconstruct structs and unions reduces complex data structure manipulations to obscure pointer math, severely hindering understanding of the data model.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix ARM64 Floating Point Return Recovery**: Ensure that functions returning `float` or `double` (in S/D registers) are correctly typed and the return value is preserved in the pseudo-code.
+2.  **Enhance Struct Type Inference**: Implement logic to group sequential array accesses (e.g., `p[0]`, `p[1]`, `p[2]`) into struct candidates or recover struct definitions from debug symbols more aggressively.
+3.  **Utilize Debug Symbols for Variables**: When `-g` is present, prioritize DWARF debug information to recover local variable names instead of defaulting to `local_XX` or stack offsets.

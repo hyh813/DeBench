@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic mechanical names like `param_1`, `param_2`, `iVar1`, `iVar2`, `local_1c`, `local_38`. No semantic names like `size`, `count`, `buffer` are recovered. The original source used meaningful names like `size`, `x`, `y` but these are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user-defined functions like `param_macro_constants`, `param_asm_basic`, `call_asm_clobber` correctly match source names. However, some internal functions like `FUN_00011030`, `FUN_00011867` remain unnamed, and the naming doesn't indicate parameter types/count.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x200` (512), `0x40` (64), `0x400` (1024) appear without explanation. The original macros `MAX_SIZE=1024`, `BUFFER_COUNT=16` are lost - only computed values appear. Constants like `0x1e` for `_SC_PAGESIZE` are unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler warnings about unreachable blocks and inlined functions appear. However, the main code is relatively clean without excessive debug artifacts or redundant casts. Minor auto-generated warnings present but manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops properly recovered as `for` loops, conditionals are clear. At `-O0` optimization, the control flow closely matches source. Example: `for (iVar2 = 0; iVar2 < param_2; iVar2 = iVar2 + 1)` is readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. Each function has a single responsibility matching the source. No 500-line monoliths; all functions are reasonably sized (10-50 lines). Parameter lists are appropriate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `param_memory_protection` but are manageable. No severe disruption to linear reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (appropriate for `-O0`). Common subexpression elimination is not excessive. Clean code without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most integers. Return types use `undefined4` instead of `int`. Some types like `size_t` are recovered for `sysconf` calls. No `int32_t`, `uint64_t` precision. Mixed precision - some correct, many generic.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union types are recovered. All composite types are flattened to pointer arithmetic. For example, array access uses `*(int *)(param_1 + iVar2 * 4)` instead of proper array indexing. The original source had no complex structs, but the decompilation doesn't leverage proper array types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic present (e.g., `*(int *)(param_1 + iVar2 * 4)`). No obvious buffer overflow patterns in simple functions. Some casts between pointer types. Moderate type safety concerns but not dangerous for most functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments like "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection" appear. No useful comments explaining algorithm logic, macro expansions, or assembly behavior. Original source had extensive comments explaining preprocessing - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified. The inline assembly patterns (SSE, atomic operations, memory protection) are not recognized as idioms. The conditional compilation branches are not labeled as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings about unreachable blocks and inlined functions are present. However, indirect calls that couldn't be resolved are not flagged. Some suspicious patterns like the dynamic code generation are not highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error conditions from `mmap`, `mprotect` returning -1 are not explained. No contract information recovered from the source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships documented. No indication of which functions call which. Global variable usage not transparent. The original source had clear call relationships between `call_*` and `param_*` functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file (typical for decompilation). Some logical grouping exists - preprocessing functions first, then asm functions. Static functions properly scoped. But no header file structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses non-standard types like `undefined4`, `undefined1` which won't compile with standard compilers. External functions like `mmap`, `printf`, `sysconf` are used correctly. Requires patching to compile (replacing `undefined4` with `int`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is extremely poor - all semantic names lost (`param_1` instead of `size`, `iVar1` instead of `sum`)
+- No composite type recovery - all arrays accessed via pointer arithmetic
+- Literal values like `0x200`, `0x40` lack semantic meaning (should be `MAX_SIZE/2`, `BUFFER_COUNT*4`)
+- No comments explaining preprocessing behavior, inline assembly, or algorithm logic
+- Non-standard types (`undefined4`) prevent compilation
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At `-O0` optimization, loops and conditionals are properly recovered and readable
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every meaningful variable name from the source is lost, replaced with mechanical names like `param_1`, `iVar1`, `local_1c`
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., `param_1` used in `if (0x400 < param_1)` should be named `size` based on the comparison to 1024 (MAX_SIZE)
+2. Replace non-standard types (`undefined4`) with standard types (`int`) for compilation compatibility
+3. Add semantic comments explaining preprocessing expansions (e.g., "// Original: MAX_SIZE > 1024") and inline assembly behavior

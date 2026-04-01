@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameters are generically named `a1`, `a2`, etc., which is standard but uninformative. Local variables like `v7` (used as an index into the varargs register save area) and `v17` (the save area buffer) lack semantic context, making the `varargs_func` logic difficult to follow without deep ABI knowledge.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `varargs_func`, and `test_calling_conventions` are perfectly recovered from the binary symbols, matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers such as `0x28` (size of register save area), `238` (SIMD shuffle mask), and `0xFFFFFFFE` (alignment mask). String literals are replaced with opaque pointers like `s` and `asc_23AB`, obscuring the actual output text.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While there is no dead code, the decompiler emits excessive type casts like `(unsigned int)` and `(void *)` throughout. The use of SIMD intrinsics (`_mm_add_epi64`) in `func_struct_byval` represents the binary accurately but introduces significant "noise" that obscures the simple summation logic of the source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Due to high optimization (O2/O3), simple loops are transformed into complex structures. `varargs_func` uses a manual `do-while` loop with pointer arithmetic to handle the register save area, and `param_ptr_array` is unrolled by 4, making the logic significantly harder to follow than the original `for` loops.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are kept small and distinct. Although the compiler inlined calls (e.g., `call_cdecl` just returns `15`), the decompiler presents these as separate functions, maintaining the original modular structure effectively.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but `varargs_func` and `param_varargs` contain complex conditional jumps inside loops to handle the transition between register-passed and stack-passed arguments, disrupting linear readability.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler accurately reflects the compiler's removal of redundancy (e.g., constant propagation in `call_cdecl`). However, the SIMD vectorization in `func_struct_byval` appears as repetitive intrinsic calls rather than a high-level reduction operation, which is technically efficient but visually redundant.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise; `gcc_va_list` is correctly identified for varargs, and SIMD types (`__m128i`) are accurately used. The distinction between `int` and `__int64` is correct for the x64 ABI, though `unsigned int` casts are over-applied.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Large structures passed by value (e.g., `LargeStruct` in `func_struct_byval`) are completely exploded into individual register/stack arguments (`a1` through `a14`), losing the semantic grouping of the struct. Small struct returns are bit-packed (e.g., `(a2 << 32) | a1`), which is ABI-accurate but structurally obscure.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is mostly safe, though it relies on `gcc_va_list` internals. The manual pointer arithmetic in `varargs_func` (e.g., `(__int64 *)&v17[v7]`) is necessary to represent the optimized binary but looks unsafe compared to the high-level `va_arg` macro.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are almost no comments explaining the logic. The only comment is a warning about stack pointer detection in `_start`. Complex logic like the varargs ABI handling or SIMD vectorization is left unexplained.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler recognizes the `gcc_va_list` type and SIMD intrinsics. However, it fails to abstract the "sum array" idiom in `func_struct_byval`, leaving it as a raw sequence of vector instructions.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags a potential stack issue in `_start` and lists failed decompilations at the end. However, it does not flag the aggressive optimization artifacts (like loop unrolling or vectorization) that might confuse a reader expecting simple C code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., `count` must be positive in `varargs_func`) or postconditions. The logic is presented purely as state manipulation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and the relationship between `test_...` functions and their targets is preserved. However, string arguments are passed as global pointers, requiring the user to look up the data separately to understand the output.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure. Helper functions and test functions are distinct.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on compiler-specific headers for SIMD (`<emmintrin.h>`) and GCC types (`gcc_va_list`). It would not compile standalone without significant porting effort and defining the missing global string variables.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable `v7` in `varargs_func` acts as an index into the register save area but is named generically, obscuring the ABI logic.
+- `func_struct_byval` uses raw SIMD intrinsics (`_mm_add_epi64`) instead of a loop, completely hiding the "sum of array elements" semantic.
+- String literals in `printf` calls are replaced with opaque pointers (e.g., `s`, `asc_23AB`), forcing the reader to inspect data references to understand the output.
+- The `LargeStruct` parameter in `func_struct_byval` is exploded into 14 separate arguments (`a1`-`a14`), destroying the composite type structure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly preserved the original function names from the symbol table, making the high-level purpose of each unit immediately clear.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The complex logic resulting from optimization (varargs handling, vectorization) is presented without any explanatory comments, making it very difficult to reverse-engineer the original intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Varargs Implementation:** Detect the standard prologue/epilogue of varargs functions and replace manual register save area manipulation with standard `va_start`/`va_arg` pseudo-code.
+2. **Annotate SIMD Intrinsics:** When vectorization is detected, insert a high-level comment summarizing the operation (e.g., `/* Vectorized loop: summing array elements */`).
+3. **Inline String Literals:** For short string literals used in `printf` or `puts`, display the actual string content in the decompiled view rather than just a pointer reference.

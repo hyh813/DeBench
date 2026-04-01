@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `uVar2`, `local_c`, and `local_10`, providing no semantic context about their role (e.g., `sum`, `i`, `ptr` are lost).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0xf` (15), `0x2a` (42), and `0x32` (50) are used directly as return values instead of showing the function calls or calculations that produced them, obscuring the logic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with compiler intrinsics like `__aeabi_dadd` and `__floatsidf` in `func_mixed_args`, and verbose stack pointer manipulations in `varargs_func`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple functions are natural, `func_struct_byval` is decompiled into a confusing mess of pointer arithmetic (`s.data[1]._4_4_`) that bears no resemblance to the original loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly, with appropriate granularity and no artificial splitting or merging of functions.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal jumps, though the `do-while` loop in `varargs_func` is slightly dense.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Constant propagation (e.g., `return 0xf` in `call_cdecl`) eliminates the function calls intended to test calling conventions, effectively hiding the program's core logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `char*` are correct, but `undefined4` appears in some signatures, and `__return_storage_ptr__` is injected for struct returns, adding verbosity.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: While struct names like `LargeStruct` are recovered, the field access in `func_struct_byval` is completely broken, using obscure unions (`_4_4_`, `_0_4_`) instead of array indexing.
+
+**11. Type Safety:** Score: 8/10
+Justification: The decompiled code does not introduce unsafe casts; pointer arithmetic for `va_list` is verbose but technically correct for the ABI.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to decompiler warnings (e.g., "Removing unreachable block") and offer no explanation of the algorithm or logic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `va_arg` are represented as raw pointer increments (`args.__ap = args.__ap + 4`), failing to convey the variable argument intent.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra correctly flags "Unknown calling convention" for various functions, which is helpful context given the source's focus on calling conventions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the null check in `func_struct_byptr` is code, not a documented contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct targets, and the relationship between callers and callees is clear.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure (calling conventions, parameters, return values).
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code relies on standard types but includes compiler-specific intrinsics (`__aeabi_*`) that would require stubs or a specific environment to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`iVar1`, `uVar2`), obscuring data flow.
+- `func_struct_byval` is decompiled into nonsensical pointer arithmetic (`s.data[1]._4_4_`), completely losing the loop logic.
+- Constant propagation replaces function calls with magic numbers (e.g., `return 0xf`), hiding the calling convention tests.
+- `va_list` usage is shown as raw pointer manipulation rather than the standard `va_arg` idiom.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- Function names were recovered perfectly from the symbol table, making the high-level structure easy to navigate.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The failure to correctly access struct arrays in `func_struct_byval` renders that specific function unreadable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve variable naming inference by tracking usage patterns (e.g., variables used in accumulation should be named `sum` or `acc`).
+2. Enhance struct/array access recovery to prevent the generation of confusing union-like overlays (`_4_4_`) when iterating over struct members.
+3. Provide an option to disable aggressive constant propagation for function calls so that calling convention tests remain visible in the decompiled output.

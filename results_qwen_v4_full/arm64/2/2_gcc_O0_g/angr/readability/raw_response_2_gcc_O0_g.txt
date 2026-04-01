@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, a0, a1, cur, iter) with no semantic meaning. For example, `v0`, `v1` in `volatile_access` should be `first_read`, `second_read` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions preserved original names (double_value, process_char, array_1d_stack), but many helper functions use mechanical names (sub_4006e4, sub_4007b0). Runtime functions like `__addtf3` are appropriately named.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Code is littered with unexplained magic numbers (4294967295, 18446744073709551612, 2251799813685247). The value `4294967295` appears dozens of times as a mask without explanation (should be UINT32_MAX).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`) visible in every test function. Redundant bit operations like `& 4294967295` appear after every function call. Frame pointer manipulation (`v0 = &v1`) adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops converted to complex bit operations with `__ROL__`. The `double_value` function uses `(a0 * 2 | a0 >> 31) & 4294967294` instead of simple `x * 2`. Goto statements appear in runtime functions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized but many have incorrect signatures. `ptr_diff` takes only 1 parameter instead of 2. `process_float` and `process_double` have no parameters despite source requiring them.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom but complex functions like `__addtf3` (400+ lines) have excessive forward jumps and labels (LABEL_402298, LABEL_4022ec) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in `__addtf3` and `__multf3` with repeated bit manipulation patterns. Same masking operations (`& 4294967295`) repeated after every printf call in test functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation throughout. `process_float` returns `long long` instead of `float`. `process_short` returns `unsigned int` instead of `short`. Pointer types often wrong (`unsigned long` instead of `int*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_8` naming. Original struct names (Point3D, Rect, Widget) completely lost. Bitfield struct `Flags` reduced to raw integer operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts visible. `ptr_func_simple` has signature `unsigned long long *a0` instead of function pointer. `ptr_diff` missing second parameter causes undefined behavior. Void pointer conversions lack explicit casts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only runtime annotations like `/* do not return */` and `// [bp-0x10]` stack offsets. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal in `linked_list` not identified as such. Tree recursion in `binary_tree_sum` not annotated. Switch statements for enum handling not recognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainty. Broken functions like `process_float` (no parameters, wrong return type) presented confidently. No warnings about unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. Array bounds checks in `array_complex_index` not highlighted as safety contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. `ptr_func_simple(double_value, 5)` shows the relationship but function pointer type is wrong. Global variables referenced as `g_414f88` without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but mixed with runtime initialization code (_init, _start, _fini). Test functions grouped but not logically separated from implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone. Missing type definitions, external dependencies (`__libc_start_main`, `__addtf3`), and incorrect function signatures. Requires extensive manual patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+2+4)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+5+5+3)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.37/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Function signature corruption**: `process_float()`, `process_double()`, `process_ld()` have no parameters and wrong return types
+- **Missing parameters**: `ptr_diff` takes 1 parameter instead of 2, breaking pointer subtraction logic
+- **Generic struct naming**: All structs named `struct_0`, `struct_1` with `field_0`, `field_8` losing all semantic meaning
+- **Magic number pollution**: Constants like 4294967295, 18446744073709551612 appear hundreds of times without explanation
+- **Bit operation obfuscation**: Simple arithmetic (`x * 2`) converted to complex bit operations (`(x * 2 | x >> 31) & 4294967294`)
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Core test function names were preserved from debug symbols (double_value, process_char, array_1d_stack), providing some anchor points for understanding.
+
+### Most Needs Improvement: **Type System Fidelity (3/10 average)**
+- Type information is severely degraded with wrong return types, missing parameters, and generic struct definitions making the code practically unusable for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function signatures from debug symbols**: When `-g` flag is present, use DWARF information to recover exact parameter types and counts instead of inferring from usage.
+
+2. **Recover original type names from debug info**: Use debug symbols to restore struct/union names (Point3D, Rect, Widget) and field names instead of generic `struct_0`/`field_0`.
+
+3. **Simplify arithmetic expressions**: Detect and reverse common compiler optimizations like `(x * 2 | x >> 31) & MASK` back to simple `x * 2` when the pattern is recognized, especially at -O0 where such transformations shouldn't occur.

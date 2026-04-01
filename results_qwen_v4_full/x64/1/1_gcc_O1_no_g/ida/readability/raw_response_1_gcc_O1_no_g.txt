@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named `a1`, `a2`, `v1`, `v2` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). Some internal functions use generic names (`sub_1020`, `sub_1030`) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (for -1) and `4294967294LL` (for -2) obscure intent. Switch case values (100, 200, 300) are clear but no named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(unsigned int)`, `(__int64)`) throughout. Stack canary code (`v5 = __readfsqword(0x28u)`) adds noise. Intermediate variables (`v1`, `v2`) often just hold return values.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and loops recovered well. However, `switch_fallthrough` uses awkward `LABEL_7` goto pattern instead of fall-through comments. `switch_small` incorrectly converted to nested if instead of switch.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but `call_func_ptr_array` has 6 parameters when original had 2. Function pointer array calls have corrupted signatures with excessive parameters.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some forward labels (`LABEL_7`, `LABEL_13` in `duffs_device`) disrupt flow. Loop structures generally well-linearized.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (`(unsigned int)(a1 + a2)`). Some duplicate expressions in conditionals. No obvious dead code but unnecessary intermediate variables present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic `__int64` return types when original used `int`. Many unnecessary casts. Signed/unsigned confusion (`op_div` has `unsigned int a2`). Function pointer types severely corrupted.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Local arrays recovered (`v4[6]` in `loop_break`). Function pointer arrays partially recovered but with incorrect signatures. No struct/union issues as original had minimal composite types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. Function pointer calls have incorrect signatures (`call_func_ptr_array` passes 10 arguments to 2-parameter function). Signed/unsigned comparison issues present.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. All semantic documentation lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow idioms (if/else, switch, loops) recognized. State machine pattern in `state_machine` not explicitly identified. Recursion patterns preserved but not labeled as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" notices at end for library functions. No inline anomaly warnings for corrupted function pointer calls. Computed goto has `__asm` block without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `n > 0` for `duffs_device`). No postcondition inference. Error conditions not documented. All original test case comments lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable `jump_buffer` usage not explained. Callback relationships in `process_with_callback` unclear without original context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Flat organization without original section headers (CF-L1, CF-L2, CF-L3). No logical grouping comments. All functions in single output without namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but 8 functions marked "FAILED to decompile". Function pointer corruption would prevent clean compilation. Requires significant cleanup.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):   (6+5+7+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System):  (4+6+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):     (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):   (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 5.04/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Function pointer signatures corrupted** - `call_func_ptr_array` has 6 parameters instead of 2, with bizarre cast chains
+- **All documentation lost** - original had extensive comments explaining purpose, test cases, and difficulty levels
+- **Type precision degraded** - `int` becomes `__int64` with excessive casts throughout
+- **Magic numbers unexplained** - `0xFFFFFFFFLL` and `4294967294LL` instead of `-1` and `-2`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source, making it possible to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation, test case explanations, and semantic context that made the source code understandable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `sum` accumulates values, `count` increments) to suggest semantic names instead of `v1`, `v2`.
+2. **Preserve and recover documentation** - Extract debug symbols (`-g` flag was used) to recover original comments, function descriptions, and test case information.
+3. **Fix function pointer type recovery** - Improve analysis of function pointer arrays to preserve correct signatures instead of generating corrupted parameter lists with excessive arguments.

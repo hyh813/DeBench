@@ -1,0 +1,10 @@
+Running obfuscated optimizations test
+
+Fake branch: 10
+Opaque predicate: 20
+Instruction substitution: 225
+String encryption result: 0
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop: 0
+Integer division: 20

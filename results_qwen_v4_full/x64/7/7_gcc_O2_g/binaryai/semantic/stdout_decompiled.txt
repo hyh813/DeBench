@@ -1,0 +1,7 @@
+Hello World
+Value: 10
+Result: 20
+Instruction sub: 225
+String enc: 84
+Tail call: 500500
+Non tail: 5050

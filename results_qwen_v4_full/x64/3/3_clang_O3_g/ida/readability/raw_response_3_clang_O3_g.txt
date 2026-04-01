@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+**Critical Observation**: There's a significant metadata mismatch. The source claims `-O0` compilation, but the decompiled code clearly shows `-O3` optimization (SIMD operations, loop unrolling, constant folding). The decompiler header confirms "3_clang_O3_g". I will evaluate based on the actual optimization level visible in the binary (`-O3`).
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `si128`, `retaddr`) with no semantic meaning. For example, in `heap_basic`, `v2` holds the malloc result but isn't named `arr` or `buffer`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`local_vars`, `heap_basic`, `global_var_access`), but some runtime functions use generic names (`sub_1020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x10`, `0x14`, `0x28` appear without explanation for struct sizes. Some constants are clear (42, 100) but SIMD constants (`xmmword_3010`) are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy SIMD noise throughout (`__m128i`, `_mm_load_si128`, `_OWORD` arrays). Frame pointer artifacts (`[rsp-8h] [rbp-8h] BYREF`) clutter every function signature.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original simple for-loops transformed into complex SIMD vectorized loops with multiple branches. The `vla_stack` function has 10+ nested conditionals where source had 3 lines.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but test functions (`test_stack_memory`) have constant-folded printf calls losing original logic flow.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: SIMD loop unrolling creates non-linear execution with multiple `LABEL_` jumps. The `large_stack_frame` function jumps between 8+ vector operations obscuring the simple fill loop.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive redundancy. `heap_basic` has 16+ nearly identical SIMD store operations that were one simple loop in source.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to `__int64`, `_DWORD`, `_QWORD` instead of `int`, `size_t`. Pointer types often become `__int64` (e.g., `global_func_ptr = (__int64)f`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields, but `Point` struct lost—`heap_struct` just returns `3 * x` without struct access visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(__int64)f` for function pointers, `(_DWORD *)` casts throughout. The `dangling_pointer` function returns `*v1` after free without warning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated decompiler comments present ("positive sp value has been detected"). No algorithm explanations or semantic documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: SIMD vectorization patterns not identified as optimization artifacts. Memory allocation patterns (malloc/free pairs) not annotated as heap management.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Critical anomalies not flagged: `dangling_pointer` accesses freed memory without warning, `double_free` silent on second free, `heap_overflow` boundary violation not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` requirements). Null checks present in code but not documented as contracts. Error return values (-1, -2, -3) unexplained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships unclear. `set_global_callback(double_value)` shows callback relationship, but no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Static functions (`static_helper` → `call_static_func`) not marked as file-scope.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 17 external functions failed to decompile (`malloc`, `printf`, `fork`, etc.). Cannot compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+5+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.52/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `si128`) obscuring all semantic meaning
+- **SIMD optimization artifacts** dominate simple loops, making `large_stack_frame` 50+ lines instead of 8
+- **17 external functions failed to decompile** including core libc (`malloc`, `printf`, `free`)
+- **No anomaly warnings** for dangerous patterns (dangling pointer, double-free, buffer overflow)
+- **Constant folding in test functions** loses original test logic (printf values hardcoded)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names largely preserved, making navigation possible despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation; decompiler provides no insight into algorithm purpose or optimization artifacts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimization artifacts** - Mark SIMD vectorization, loop unrolling, and constant folding as compiler transformations with links to original patterns
+2. **Infer semantic variable names from usage** - Variables used in size checks should be named `size`/`count`, malloc results should be `buffer`/`array`
+3. **Flag undefined behavior patterns** - Automatically detect and warn about use-after-free, double-free, buffer overflows with specific line references

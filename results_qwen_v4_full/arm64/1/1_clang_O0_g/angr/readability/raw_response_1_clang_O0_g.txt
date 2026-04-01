@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `v2`, `a0`, `a1`) instead of semantic names like `temp1`, `sum`, `count`, `i`, `j` from original source. Example: `sequential_ops` uses `v2 = a0 + a1` instead of `temp1 = a + b`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`sequential_ops`, `single_if`, `nested_if_2`), but helper functions use mechanical names (`sub_400894`, `sub_400970`). Good recovery of intentional function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967294` (UINT_MAX-1), `4294967295` (UINT_MAX), `305419896` (0x12345678) appear without explanation. Original had no such opaque constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive bit operations for signed/unsigned handling: `(v2 * 2 | v2 >> 31) & 4294967294` instead of simple `temp1 * 2`. Frame pointer manipulation (`v1 = &v2`) adds noise throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and loops recovered well (`loop_for_fixed`, `nested_if_2`), but switch statements converted to `goto &(&g_400d70)[$d.1[a0]]` jump tables instead of structured switch-case.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly; no inappropriate inlining or fragmentation. Each original function remains separate with reasonable size.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but switch functions use goto-based dispatch that disrupts linear flow. Loop structures generally well-linearized.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant signed/unsigned conversion patterns repeated in every function. Example: `__ROL__(a0, 1) & 4294967294` appears multiple times for simple `x * 2`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` degraded to `unsigned int`/`unsigned long long` inconsistently. Function pointers lose signature precision (`unsigned long long *a0` instead of `int (*f)(int)`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays lost completely—`int arr[] = {10, 20, 30, 40, 50}` becomes `v2 = 3169126501123975826038943907850` with pointer arithmetic `*((int *)((char *)&v2 + 4 * i))`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer casts throughout: `*((long long *)((char *)&v0 + 8 * a0))` in `call_func_ptr_array`. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output despite original having extensive documentation (test cases, expected values, difficulty ratings). Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Control flow patterns (loops, conditionals) recognized structurally but not labeled. No identification of patterns like "factorial calculation" or "digit counting."
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about problematic patterns (goto-based switches, magic numbers, type conversions). Code presented confidently despite significant transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). Error conditions not flagged. Original test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. No call graph documentation. Global variables referenced as `g_413ff8` without semantic meaning.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order mixed with runtime stubs (`_init`, `_start`, `deregister_tm_clones`). No logical grouping of related test functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies declared but would need stubs for `printf`, `memcpy`, `__libc_start_main`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.70/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original having extensive documentation with test cases and expected values
+- **Magic numbers unexplained** (`4294967294`, `305419896`) obscuring simple arithmetic operations
+- **Switch statements converted to goto jump tables** instead of structured switch-case
+- **Array data lost** - `int arr[] = {10,20,30,40,50}` becomes opaque magic number with pointer arithmetic
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test function names preserved accurately (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`) matching original source intent.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation despite original having comprehensive comments explaining purpose, test cases, and expected outputs.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Recover and preserve source comments** from debug symbols when `-g` flag is present in compilation
+3. **Replace magic numbers with named constants** by detecting repeated values and suggesting semantic names (e.g., `UINT_MAX`, `ASCII_MULTIPLIER`)

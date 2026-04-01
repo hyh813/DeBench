@@ -1,0 +1,167 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7` throughout the codebase. For example, in `param_opaque_predicate`, `v1` represents `x + 1` (the opaque predicate computation), and `v2`/`v3` represent GCD computation variables. These should be named `pred_result`, `gcd_a`, `gcd_b` respectively to match source intent.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Function names match the original source almost perfectly - `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `call_fake_branch`, etc. The decompiler correctly preserved the semantic naming from the source, which is excellent for understanding the code's purpose.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Some literals are unexplained magic numbers. In `param_instruction_substitution`, the expression `21 * x` appears instead of the original `(x << 3) - (x << 1) + (x << 4) - x` which computes `6x + 15x = 21x`. The decompiler simplified the arithmetic but lost the original instruction substitution pattern. The constant `90` in `decrypt_string` (for key 0x5A) is not explained.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant noise in signal handling and setjmp code. The `_setjmp` construct in `param_division_by_zero` uses an extremely verbose inline struct initialization that obscures the logic:
+```c
+int32_t v1 = _setjmp({
+    (struct {int32_t e0[8]; int32_t e1; struct {int32_t e0[1];} e2;}){
+        .e0 = {(int32_t)&jmp_buffer, 0, 0, 0, 0, 0, 0, 0},
+        ...
+    }
+});
+```
+This is unreadable and should be simplified to a function call.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Most control flow is natural with proper if/while structures. However, in `param_vectorized_loop`, the loop structure is awkward with manual index manipulation (`v2++` inside the loop body instead of proper for-loop). The decompiler also failed to recover the two separate loops in the original (array computation loop + sum computation loop), merging them into a complex single function with goto-like patterns.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions are well-decomposed with appropriate granularity. Each test case (fake_branch, opaque_predicate, instruction_substitution) is properly separated into param_ and call_ functions. The static inline function `lto_target_func` was correctly recovered as a separate function. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The main issue is in `param_vectorized_loop` where there are backward jumps within while loops that make the flow harder to follow. Early returns are used appropriately in functions like `param_tail_call_optimized`.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No significant redundancy in the decompiled code. The compiler optimizations at -O0 are minimal, so the decompiler doesn't produce redundant code. One issue: in `param_opaque_predicate`, the complex expression `(x + 2) * x + 1 == v1 * v1 == v2 == 1` is confusing due to operator precedence - this should be parenthesized to show the original logic.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 8/10**
+
+Justification: Good type precision with `int32_t` and `uint32_t` correctly used. The decompiler properly distinguishes signed vs unsigned in functions like `param_instruction_substitution(uint32_t x)` and `param_vectorized_loop(uint32_t n)`. Minor issue: `param_division_by_zero` takes `int32_t x` but the original had `int` - this is acceptable precision.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+Justification: No complex struct recovery is needed for this particular file since the source uses mostly primitives. The bitfield in `param_implementation_defined` was completely eliminated (the function just returns 44), losing that test case. The `jmp_buffer` and `segv_buffer` are declared as `int32_t` instead of `jmp_buf` type, which loses semantic meaning.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Several unsafe patterns exist. In `param_buffer_overflow_heap`, the code uses `int32_t v1 = (int32_t)NULL` and then does pointer arithmetic `*(char *)(v1 + (int32_t)mem)` which is confusing and error-prone. The cast from `NULL` to `int32_t` is unusual. In `param_vectorized_loop`, extensive pointer arithmetic with `*(int32_t *)(v3 + (int32_t)a)` lacks type safety.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Justification: Comments are sparse and mostly auto-generated metadata (address ranges, line numbers). There's no explanation of the obfuscation techniques being tested. The comment `// From module: /work/src/7.c` is useful for traceability, but there's no documentation of what `param_fake_branch` is testing (永假条件 - always-false conditions). The decompiler should add comments explaining the opaque predicate patterns.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No pattern recognition is explicit in the decompiled code. The fake branch pattern (always-false condition) in `param_fake_branch` was completely eliminated by the compiler, and the decompiler didn't recover it. The opaque predicate pattern in `param_opaque_predicate` (GCD computation for consecutive integers) is present but not identified as such. The instruction substitution pattern (bit shifts instead of multiplication) was simplified to arithmetic.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly indication in the code. The decompiler silently accepts the simplified `param_fake_branch` without noting that fake branches were eliminated. The complex `_setjmp` struct initialization is presented as-is without flagging it as a decompilation artifact that could be simplified.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No contract information recovered. Preconditions like "x should not be 0 for division" in `param_division_by_zero` are not documented. Postconditions like "returns decrypted string length + first char" in `param_string_encryption` are not indicated. The function simply returns a value without any documentation of what it ensures.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+
+Justification: Function call relationships are clear through the `call_*` wrapper functions that invoke `param_*` functions. The test function `test_obf_opt_edge` shows the call graph clearly. However, there's no documentation of which functions call `signal`, `setjmp`, `malloc`, etc., making it harder to understand the control flow dependencies.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are logically grouped with clear separation between test harness functions (`call_*`), implementation functions (`param_*`), and utility functions (`decrypt_string`). The global variables for test strings are grouped together. The organization matches the original source file structure well.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+
+Justification: The code compiles successfully as indicated by "Compilation Result: Yes". All necessary headers are included (`<setjmp.h>`, `<signal.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Function prototypes are properly declared. Minor issue: `jmp_buffer` and `segv_buffer` should be `jmp_buf` type for proper compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 4) / 4 = 5.25
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.00
+L3_avg = (8 + 7 + 6) / 3 = 7.00
+L4_avg = (4 + 3 + 2 + 3) / 4 = 3.00
+L5_avg = (7 + 8 + 8) / 3 = 7.67
+
+Overall = (5.25 × 0.30) + (7.00 × 0.25) + (7.00 × 0.20) + 
+          (3.00 × 0.15) + (7.67 × 0.10)
+        = 1.575 + 1.75 + 1.4 + 0.45 + 0.767
+        = 5.942 ≈ 5.9/10
+```
+
+### Overall Readability Score: 5.9/10
+
+### Critical Defects
+
+- **Variable naming is generic throughout**: Variables like `v1`, `v2`, `v3` obscure their semantic purpose (e.g., `v1` in `param_opaque_predicate` should be named `x_plus_1` or `opaque_pred_result`)
+  
+- **Fake branch logic completely eliminated**: `param_fake_branch` returns just `x` instead of showing the always-false conditions (`x*x < 0`, `strlen(str) < 0`) that were in the original source - the decompiler should note this elimination
+
+- **Excessive noise in setjmp code**: The `_setjmp` struct initialization in `param_division_by_zero` and `param_null_pointer_deref` is unreadable with 20+ lines of boilerplate
+
+- **No pattern recognition for obfuscation techniques**: The opaque predicate pattern (GCD computation for consecutive integers) and instruction substitution pattern (bit shifts) are not identified or commented
+
+- **Missing comments explaining test purposes**: No documentation of what each test case (OBF-L4-02, OBF-L4-03, etc.) is demonstrating
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+
+Function names are excellent - they match the original source almost perfectly (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, etc.), making it easy to understand what each function does.
+
+### Most Needs Improvement: Anomaly Indication (2/10)
+
+The decompiler fails to flag significant anomalies: the elimination of fake branches in `param_fake_branch`, the overly complex `_setjmp` struct initialization, and the loss of bitfield testing in `param_implementation_defined`. These should be flagged with warnings or comments.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When a variable is used as an accumulator in a loop, name it `acc` or `sum`; when it's a predicate result, name it `is_valid` or `predicate_result`. Current `v1`, `v2` naming is unacceptable for readability.
+
+2. **Flag eliminated dead code**: When the decompiler detects that code paths were eliminated (like the always-false conditions in fake branches), add a comment like `// NOTE: Always-false condition eliminated by compiler` to preserve semantic understanding.
+
+3. **Simplify complex struct initializations**: The `_setjmp` with inline struct initialization should be simplified to a function call like `v1 = _setjmp(jmp_buffer)` - the current form is unreadable and obscures the actual logic.

@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `addr`) or obscure IR artifacts like `vvar_87{r264|8b}`. No semantic names like `packet_size` or `node` are recovered, even for complex structures like linked lists.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: While some original names survive (`heap_basic`, `local_vars`), many are reduced to generic addresses (`sub_400c54`) or compiler artifacts (`alloca_usage.constprop.0`). The semantic intent is lost where optimization created specialized versions.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `4294967294`, `17179869188`, `0x3000000020000000100000000`). String literals are present, but numeric logic is obscured by raw hex values.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompilation is heavily polluted with internal IR artifacts and helper calls, such as `arm64g_calculate_condition`, `unsupported_Iop_ZeroHI64ofV128`, and `vvar_87{r264|8b}`, making the code look like a raw dump of an intermediate representation rather than C.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily distorted by aggressive optimization (likely -O3 despite source metadata claiming -O0). Loops are vectorized into complex `uint128_t` operations (`ShlNV`, `AddV`), and logic is replaced by constant propagation (e.g., `test_stack_memory` just prints hardcoded results).
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Functions are inlined or reduced to constants (e.g., `alloca_usage.constprop.0` returns `15`). The decomposition reflects the compiler's optimization passes rather than the logical structure of the source code, making it hard to map back to original functions.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The flow is disrupted by complex conditional checks using `arm64g_calculate_condition` and `goto` statements (e.g., in `call_global_callback`). The vectorized loops use `do-while` structures that are hard to map to standard `for` loops.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler accurately reflects the compiler's redundancy elimination (e.g., dead code removal), but this results in logic disappearing entirely (replaced by constants) rather than being presented in a readable, abstracted form.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often imprecise or overly low-level. `uint128_t` is used for SIMD registers which is technically accurate for the hardware but semantically confusing for the source logic. `unsigned long long` is used generically.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `padding_0`). The semantic structure of `Point` or `Node` is completely lost, replaced by raw offsets.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts and pointer arithmetic on `char*` buffers. The presence of IR artifacts like `vvar_87{r264|8b}` indicates type confusion at the lifting stage.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the complex vectorization, the IR artifacts, or the logic. The decompiler provides no assistance in understanding the transformed code.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level patterns like linked lists or tree traversals are obscured by the low-level memory operations and vectorization. The code fails to recognize standard C idioms, presenting them as raw math.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: While `unsupported_Iop_ZeroHI64ofV128` indicates a failure, it is simply dumped as a function call rather than a warning or comment explaining the limitation. `arm64g_calculate_condition` calls are opaque anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic is so optimized that original contracts (e.g., checking bounds) are often eliminated or obscured.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the relationship between the decompiled code and the original source is severed by optimization. `extern` references are present but not contextualized.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions. There is no logical grouping or indication of which functions belong to which test suite (Stack vs. Heap vs. Static), other than the order.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not valid C. It contains syntax errors like `vvar_87{r264|8b}`, calls to non-existent functions like `arm64g_calculate_condition`, and macros like `CONCAT` that are not defined. It will not compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 2.75
+L2_avg: 4.50
+L3_avg: 3.33
+L4_avg: 1.50
+L5_avg: 3.00
+
+Overall = (2.75 × 0.30) + (4.50 × 0.25) + (3.33 × 0.20) + 
+          (1.50 × 0.15) + (3.00 × 0.10)
+Overall = 0.825 + 1.125 + 0.666 + 0.225 + 0.3
+Overall = 3.14
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.1/10
+
+### Critical Defects (Bullet List)
+- **IR Leakage**: The code contains internal representation artifacts like `vvar_87{r264|8b}` and `arm64g_calculate_condition`, rendering it invalid C.
+- **Unsupported Operations**: The decompiler dumps `unsupported_Iop_ZeroHI64ofV128()` directly into the output instead of handling or gracefully failing the operation.
+- **Optimization Mismatch**: The source metadata claims `-O0`, but the decompiled code is heavily optimized (likely `-O3`), resulting in constant propagation (e.g., hardcoded printf values) that obscures the original logic.
+- **Generic Types**: Structs are named `struct_0` with fields `field_0`, completely losing semantic meaning (e.g., `Point`, `Node`).
+- **Vectorized Loops**: Simple loops are transformed into complex `uint128_t` arithmetic (`ShlNV`, `AddV`) which is extremely difficult to read.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Redundancy Elimination (7/10)
+- **Why?** The decompiler accurately reflects the compiler's removal of redundant code, even though this results in logic being replaced by constants.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Build System Compatibility (1/10)
+- **Why?** The output is syntactically invalid C due to IR artifacts and non-standard function calls, making it impossible to compile or use in a workflow.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement IR-to-C Lowering**: Create a robust pass to convert internal IR operations (like `arm64g_calculate_condition` and register names like `vvar_87`) into valid, standard C constructs or macros.
+2.  **Handle Unsupported Ops**: Instead of emitting `unsupported_Iop_...` as a function call, insert a comment block warning about the limitation and attempt to approximate the logic or omit the specific line with a clear `/* UNRECOVERABLE */` marker.
+3.  **De-Vectorization/Annotation**: When encountering SIMD/vectorized loops, attempt to annotate the code or provide a "pseudo-code" view that represents the scalar logic, as the raw `uint128_t` math is unreadable for most analysts.

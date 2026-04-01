@@ -1,0 +1,151 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality (10%)
+**Score: 3/10**
+
+Justification: Variables use generic compiler-generated names like `iVar1`, `iVar2`, `uVar1`, `pvVar1`, `param_1`, `param_2`. While some stack buffers have size-hinting names like `local_800` (2048 bytes), the vast majority of variables lack semantic meaning. For example, in `heap_basic`, the loop counter and result are `iVar1`/`iVar2` rather than descriptive names like `index` or `result`.
+
+### 2. Function Naming Quality (10%)
+**Score: 6/10**
+
+Justification: About half the functions have correct names matching the source (`local_vars`, `heap_basic`, `linked_list_heap`, `double_value`), while others use mechanical address-based names (`FUN_00011030`, `FUN_00011ed5`). Some static helper functions like `call_static_func` are properly named, but many internal functions remain unidentifiable.
+
+### 3. Literal Clarity (5%)
+**Score: 4/10**
+
+Justification: Magic numbers appear throughout without explanation: `0x14` (20), `0x2a` (42), `0x800` (2048), `0x1e` (30). The decompiler correctly identifies some constants like `0xfffffff4` for stack references, but most numeric literals lack semantic explanation. String literals like `&DAT_000135c1` are completely opaque.
+
+### 4. Noise Reduction (5%)
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts present. Some x86-specific markers like `__regparm1` and `CONCAT44` appear but don't significantly impede readability. No debug instrumentation or register spilling artifacts clutter the code significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness (8%)
+**Score: 6/10**
+
+Justification: Most functions use natural loop constructs (`do-while`) matching the -O0 optimization level. However, `linked_list_heap` uses goto-based jumps (`LAB_000118a7`, `joined_r0x00011872`) that obscure the logical flow. The VLA and alloca functions show complex stack frame calculations that are hard to follow.
+
+### 6. Function Decomposition (7%)
+**Score: 7/10**
+
+Justification: Main test functions (`test_stack_memory`, `test_heap_memory`) properly decompose into called functions. Some functions like `tree_heap_traversal` combine multiple operations (allocation, linking, traversal, cleanup) that could be better separated. The parameter lists are generally appropriate.
+
+### 7. Code Linearization (5%)
+**Score: 5/10**
+
+Justification: Most functions read top-to-bottom, but `linked_list_heap` has complex jump patterns with goto statements that disrupt linear flow. The `vla_stack` and `alloca_usage` functions have convoluted stack frame calculations that interrupt readability.
+
+### 8. Redundancy Elimination (5%)
+**Score: 7/10**
+
+Justification: No significant dead code observed. Some loop unrolling is present but minimal. The code is generally clean with no obvious redundant expressions that would impede understanding.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision (8%)
+**Score: 5/10**
+
+Justification: Mixed type precision. Some functions correctly use `int`, `size_t`, `uint`. However, many functions use `undefined4`, `undefined`, or `undefined4 *` instead of proper types. The `heap_nested` function uses `undefined4 *` for pointer types. Function pointers like `global_func_ptr` are typed as `code *` rather than proper function signatures.
+
+### 10. Composite Type Recovery (7%)
+**Score: 2/10**
+
+Justification: No struct recovery. The `Point` struct is completely lost - `heap_struct` returns `param_1 * 3` instead of accessing struct fields. The `Node` and `TreeNode` structures are represented as raw pointer arithmetic (`*(int *)((int)__ptr + 8)`). All composite type information has been lost.
+
+### 11. Type Safety (5%)
+**Score: 5/10**
+
+Justification: Several type safety issues exist. The `dangling_pointer` function dereferences freed memory (`uVar1 = *__ptr` after `free(__ptr)`). Pointer arithmetic is sometimes incorrect (e.g., `iVar1 * 2` instead of `iVar1 * 4` for int arrays in some places). Many unsafe casts from `void *` to typed pointers without explicit casts.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence (5%)
+**Score: 2/10**
+
+Justification: No meaningful comments present. The decompiled code contains only auto-generated function headers like `// Function: local_vars @ 0x112c0`. No explanation of algorithm logic, no recovery confidence indicators, no pre/postconditions documented.
+
+### 13. Idiom Recognition (3%)
+**Score: 3/10**
+
+Justification: No design patterns or algorithms are identified or named. The linked list creation, tree traversal, and memory pool patterns are present in code but not recognized or annotated. The code shows what happens, not why.
+
+### 14. Anomaly Indication (3%)
+**Score: 2/10**
+
+Justification: No anomaly indication. The `dangling_pointer` function contains undefined behavior (use-after-free) but is not flagged. The `double_free` function is present but not marked as dangerous. No warnings about indirect calls or unusual stack layouts.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 2/10**
+
+Justification: No contract information recovered. Preconditions like null checks are present in code but not documented. Postconditions (e.g., "ensures: return is heap-allocated") are not indicated. Error handling is present but not explained.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 3/10**
+
+Justification: Function call relationships are somewhat clear from the code structure, but no explicit documentation of who calls whom. Global variable usage is visible but not annotated. The relationship between `call_global_callback` and `global_func_ptr` is inferable but not documented.
+
+### 17. Module Organization (3%)
+**Score: 5/10**
+
+Justification: Functions are grouped by address but not logically organized. Test functions are separated from implementation functions, but there's no clear grouping matching the source file's section comments (MEM-L1, MEM-L2, HEAP-L2, etc.).
+
+### 18. Build System Compatibility (3%)
+**Score: 6/10**
+
+Justification: The code has `// Decompiled by BinaryAI` header but requires external declarations for `printf`, `malloc`, `free`, etc. The code would compile with appropriate library links, but dependencies are not documented. Some functions like `memop_memory_barrier` use `LOCK()`/`UNLOCK()` macros that may need definition.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+6+4+7)/4 = 5.0
+L2_avg = (6+7+5+7)/4 = 6.25
+L3_avg = (5+2+5)/3 = 4.0
+L4_avg = (2+3+2+2)/4 = 2.25
+L5_avg = (3+5+6)/3 = 4.67
+
+Overall = (5.0 × 0.30) + (6.25 × 0.25) + (4.0 × 0.20) + (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.5 + 1.5625 + 0.8 + 0.3375 + 0.467
+        = 4.67/10
+```
+
+**Overall Readability Score:** 4.67/10
+
+### Critical Defects
+
+- **Struct/union recovery completely absent**: The `Point`, `Node`, and `TreeNode` structures are lost; all access is raw pointer arithmetic losing semantic field names
+- **Variable naming is generic**: `param_1`, `iVar1`, `uVar1` make it extremely difficult to track variable purpose without constant cross-referencing
+- **No comments or documentation**: Zero explanation of algorithm logic, contracts, or recovery confidence
+- **Type precision severely degraded**: Heavy use of `undefined4`, `undefined`, and `void*` instead of proper types
+- **Anomalies not flagged**: Dangerous patterns like dangling pointers, double-free, and heap overflow are not warned about
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (6/10)** - At -O0 optimization, most loops and conditionals are correctly recovered as natural constructs. The decompiler properly identifies loop structures in most cases.
+
+### Most Needs Improvement
+
+**Semantic Transparency (2.25/10)** - The combination of no comments, no pattern recognition, no anomaly indication, and no contract recovery makes the code semantically opaque. A analyst cannot understand the "why" behind the code.
+
+### Top 3 Recommendations
+
+1. **Recover struct/union types**: Use pointer analysis to identify field offsets and reconstruct composite types with meaningful field names (e.g., `Node->data` instead of `*piVar2`)
+2. **Add semantic comments**: Include algorithm explanations, recovery confidence indicators, and pre/postcondition documentation
+3. **Improve variable naming**: Infer names from usage patterns (e.g., `counter` for variables used in increment operations, `size` for variables controlling allocation)

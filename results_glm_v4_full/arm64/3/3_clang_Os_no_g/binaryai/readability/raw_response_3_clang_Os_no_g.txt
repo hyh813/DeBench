@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `local_28`, `lVar4`, `auVar1`), providing no semantic hint about their purpose in the logic.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level test functions like `local_vars` and `heap_basic` retain their original names, but utility functions like `FUN_001008e0` remain anonymous addresses.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are used extensively (e.g., `0x2a` for 42, `0x28` for 40) without named constants, forcing manual translation to understand the logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with compiler/architecture artifacts like `NEON_cmhi` intrinsics and `CONCAT17` macros, which obscure the high-level intent.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Simple `for` loops are replaced by complex `do-while` loops utilizing vector comparisons (`NEON_cmhi`), making the control flow unrecognizable compared to the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Functions like `test_stack_memory` appear to have inlined logic or are significantly bloated, while `local_struct` is over-simplified to a single arithmetic expression, losing structural context.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code generally executes top-to-bottom, the logic is buried inside dense vectorized loops that require significant mental effort to trace.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler fails to abstract vectorized operations, resulting in verbose, repetitive code that manually handles vector lanes instead of a simple loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are frequently degraded to generic `undefined4`, `undefined8`, or `void*`, losing the distinction between `int`, `size_t`, and specific pointer types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types like `Point` are completely unrecovered; `local_struct` performs raw arithmetic on parameters instead of accessing struct members like `p.x` or `p.y`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as casting `undefined*` to `int*` and performing manual pointer arithmetic on `undefined` arrays.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex vectorization logic or the purpose of the functions.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like array iteration are completely obscured by the use of SIMD intrinsics and vector register manipulation.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the vectorized code confidently without flagging that the control flow is highly unusual for a `-O0` build or that the logic might be hard to follow.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the check `n <= 0` in `vla_stack` is buried in vector logic without explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to standard library (`malloc`, `printf`) and user-defined functions are visible, but the relationships are muddied by the low-level implementation details.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order rather than logical grouping, making it difficult to locate related functionality (e.g., all heap tests are scattered).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses Ghidra-specific macros (`NEON_cmhi`, `CONCAT17`) and undefined types, making it impossible to compile without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+**Critical Defects:**
+- **Vectorization Obscurity:** Simple loops are decompiled into complex SIMD intrinsics (`NEON_cmhi`), making basic logic unreadable.
+- **Type Erasure:** Struct types like `Point` are lost, replaced by raw arithmetic on generic parameters.
+- **Macro Pollution:** Heavy use of `CONCAT` macros and vector types creates syntactic noise that impedes understanding.
+- **Generic Naming:** Variables like `param_1` and `local_28` provide no semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- **Why?** The decompiler successfully preserved the names of the high-level test functions (e.g., `heap_basic`, `local_vars`), likely because debug symbols were present.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- **Why?** The complete lack of comments and the failure to simplify vectorized code into human-readable idioms makes the semantic meaning nearly impenetrable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **De-vectorization:** Implement a pattern matching pass to simplify SIMD loops back to scalar `for` loops when the vectorization is trivial or when optimization levels suggest simple logic.
+2.  **Struct Recovery:** Improve type propagation to recover stack-based structs (like `Point`) instead of reducing them to register arithmetic.
+3.  **Macro Simplification:** Replace low-level bit-manipulation macros (like `CONCAT17`) with standard C compound assignments or simpler expressions to improve readability.

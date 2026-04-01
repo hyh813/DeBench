@@ -1,0 +1,5 @@
+Pd���
+\d���wd��ʒd��ʭd����d����d���d���LOG: Values: 10, 20, 30
+-d���Hd���cd���file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:40
+d���wd���
+�d����d����d����d���

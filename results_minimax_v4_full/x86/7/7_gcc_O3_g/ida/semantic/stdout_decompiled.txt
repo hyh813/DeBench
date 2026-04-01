@@ -1,0 +1,16 @@
+Test: opaque_predicate
+
+Result: 10
+opaque_predicate: 20
+instruction_sub: 225
+string_enc: 91
+tail_call: 500500
+non_tail: 5050
+vectorized: 72
+LTO: 20
+div_zero: 1
+null_ptr: 41
+buffer_overflow: 30
+int_overflow: 2000000000
+undefine_behav: 10
+impl_defined: 43

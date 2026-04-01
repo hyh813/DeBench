@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions retained names (`sequential_ops`, `triple_value`, `op_add`) but many degraded to `function_960`, `function_970`. Test functions preserved but core logic functions lost identity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0x66666667` for division optimization, `0x12345678`). String literals stored as globals (`g7`, `g8`, `g9`) without meaningful names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive cast noise (`& 0xffffffff` on nearly every arithmetic operation), stack check artifacts (`__stack_chk_fail()`), and compiler optimization remnants (multiplication-based division) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original `for`/`while`/`do-while` loops converted to manual `while` with explicit increment. Extensive `goto` usage (`lab_0x13d4`, `lab_0x14e0`) replaces structured control flow, especially in `duffs_device` and `loop_multi_exit`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, helper functions (`op_add`, `op_sub`) correctly separated. However, test functions became monolithic blocks with embedded logic that should be separate.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt reading flow. `duffs_device` function has 10+ goto labels creating spaghetti structure. Loop bodies often start mid-function rather than at natural boundaries.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated cast patterns (`& 0xffffffff`) on every operation. Division optimization code (`0x66666667 * ... / 0x400000000`) repeated across multiple functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` parameters often become `int64_t` with truncation. Some functions like `triple_value(int32_t x)` preserved correctly, but `sequential_ops` loses all three parameter types entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `jmp_buf` structure recovered but with generic fields (`e0[8]`, `e1`, `e2`). No meaningful field names. Array parameters often degraded to pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts between `int32_t` and `int64_t`. Pointer arithmetic visible in `loop_break` and `loop_multi_exit`. No const-correctness preserved from original.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. Only address/line metadata present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop idioms not recognized (for vs while indistinguishable). Switch fallthrough in `switch_fallthrough` not properly indicated. State machine patterns in `state_machine` not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about unresolved indirect calls (`call_func_ptr`, `call_func_ptr_array`). Computed goto in `computed_goto` handled without uncertainty flags. No decompilation confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented despite original source having clear test expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variables (`g1` through `g12`) referenced without context. No call graph or relationship information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some logical grouping by test function but no header separation. Static functions not properly scoped (e.g., `indirect_recursion_b` should be static).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but some incorrect (`int128_t` typedef is wrong). External function declarations present but would require significant patching. Assembly intrinsics (`__asm_ld1`, `__asm_st1`) won't compile with standard gcc.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 5 + 4 + 3) / 4 = 3.75
+Level 2 Average: (4 + 6 + 4 + 5) / 4 = 4.75
+Level 3 Average: (5 + 4 + 5) / 3 = 4.67
+Level 4 Average: (2 + 3 + 3 + 2) / 4 = 2.50
+Level 5 Average: (4 + 5 + 4) / 3 = 4.33
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + (2.50 × 0.15) + (4.33 × 0.10)
+        = 1.125 + 1.1875 + 0.934 + 0.375 + 0.433
+        = 4.05/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Parameter loss**: `sequential_ops`, `single_if`, `if_else` all lost their parameter names and types entirely
+- **Control flow degradation**: Original `for`/`while` loops converted to manual `while` with goto labels
+- **Cast pollution**: Every arithmetic operation has `& 0xffffffff` noise obscuring logic
+- **Zero documentation**: Original 200+ lines of comments completely lost
+- **Type mismatches**: `int128_t` typedef is incorrect (maps to `int64_t`), assembly intrinsics won't compile
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Function boundaries mostly preserved; helper functions like `op_add`, `op_sub`, `triple_value` correctly separated with proper signatures
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation; no decompilation confidence indicators or algorithm explanations provided
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter names from debug symbols** - At `-O0 -g`, DWARF information should preserve original variable names like `temp1`, `sum`, `count`
+2. **Recognize loop patterns from back-edges** - Convert `while` + manual increment + condition back to `for` loops when induction variable pattern detected
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (indirect calls, computed gotos) with comments indicating manual review needed

@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` dominate the code, obscuring semantic meaning. For example, in `test_cpp_template_func`, variables `a` and `b` should be named `x` and `y` based on the source. Only `result`, `exception`, `ptr2`, `arr` have meaningful names.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Test functions perfectly match source names (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.). Template instantiations are properly distinguished (`template_max<int>`, `template_max<double>`). Member functions use proper class::method notation. Minor deduction for some internal functions like `sub_1030` that have no semantic meaning.
+
+### 3. Literal Clarity
+**Score: 7/10**
+Justification: Most literals are clear - `42` for exception throw, `3` for multiplier, `5` for function parameter. However, `0x1Fu` (31) in strncpy call lacks explanation, and some array sizes like `0x14u` (20) for unique_ptr array are magic numbers without context.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Stack canary checks (`__readgsdword(0x14u)`) add noise but are expected at -O0. Virtual thunk functions (`_ZTv0_n12_N7MiddleA4funcEv`) are necessary C++ artifacts for multiple inheritance, not pure noise. Some empty stub functions like `_x86_get_pc_thunk_bx` add clutter.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural with clear if/else structures. Some functions are completely inlined to return constants (e.g., `test_cpp_multiple_inheritance` returns 71). Virtual dispatch through vtables is clearly represented. Minor awkwardness from stack canary code mixed into normal flow.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Excellent decomposition - test functions separated from member functions, template instantiations are distinct functions, container methods properly split. Each function has single responsibility. No 500-line monoliths; even complex functions like `DiamondDerived::~DiamondDerived` are appropriately sized.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No goto statements. Complex functions like `test_cpp_diamond_inheritance` have clear sequential logic. Slight disruption from stack canary checks but manageable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Loop unrolling is minimal (container push/get are straightforward). Some repetition in template class methods (`Container<int>` and `Container<double>` have similar code) but this reflects actual generated code from templates.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 8/10**
+Justification: Types are generally precise - `int`, `unsigned int`, `double`, `long double`, `size_t`, `__int64` all properly used. Smart pointers correctly identified as `std::unique_ptr<int>` and `std::unique_ptr<int []>`. Function pointers properly typed as `int (**)(...)`. Minor issue: some `int` used where `size_t` would be better for container sizes.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Class structures well-recovered with proper vtable pointers (`_vptr_Base`, `_vptr_MiddleA`). Data members like `multiplier`, `dataA`, `dataB`, `shared_data` correctly identified. Container template shows `data[10]` and `size`. Some fields in complex destructors use generic expressions but structure is clear.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: Generally type-safe code. Virtual function calls properly typed. Smart pointer operations safe. Some pointer arithmetic in virtual inheritance (`*((_DWORD *)this->_vptr_MiddleA - 3)`) is necessary for C++ semantics. No dangerous casts observed.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Almost no meaningful comments. Only technical notes like "bad sp value at call has been detected" and "FAILED to decompile" for external functions. No explanation of algorithms, vtable mechanics, or C++ idioms. The comment about "positive sp value" is auto-generated noise, not helpful analysis.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: C++ idioms are present in the code but not explicitly named or documented. Virtual function dispatch through vtables is visible but not labeled as "vtable dispatch." Smart pointer RAII is present but not identified as a pattern. Thunk functions for multiple inheritance not explained.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+Justification: Some anomalies are flagged - "bad sp value at call has been detected" appears twice, and "positive sp value has been detected" for `_start`. Functions that failed to decompile are listed at the end. However, no warnings about potential undefined behavior or indirect call resolution failures.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants documented. No indication of what parameters require (e.g., "requires: obj != nullptr" for call_virtual_func). No documentation of error conditions or return value guarantees.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear from the code structure. Virtual dispatch relationships visible through vtable pointers. However, no explicit documentation of "called by" or "calls" relationships. External dependencies listed but not clearly organized.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are logically grouped - test functions first, then member functions organized by class. Static functions properly scoped. However, all in single flat file with no namespace structure recovery. Related functions (constructors/destructors) grouped together.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code uses standard C++ runtime functions (`operator new`, `operator delete`, `std::unique_ptr`, `__cxa_*` exception functions). Should compile with any standard C++ compiler. External function declarations are implicit (from standard library). Minor issue: some internal compiler symbols like `_GLOBAL_OFFSET_TABLE_` may cause issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+- Level 1 average: (3+8+7+6)/4 = **6.0**
+- Level 2 average: (7+8+8+7)/4 = **7.5**
+- Level 3 average: (8+7+8)/3 = **7.67**
+- Level 4 average: (4+6+7+3)/4 = **5.0**
+- Level 5 average: (7+7+8)/3 = **7.33**
+
+**Overall = (6.0 × 0.30) + (7.5 × 0.25) + (7.67 × 0.20) + (5.0 × 0.15) + (7.33 × 0.10) = 6.69/10**
+
+### Overall Readability Score: **6.7/10**
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` dominate, making code flow difficult to trace
+- **No comments**: Complete absence of explanatory comments for complex C++ idioms (vtables, virtual inheritance, RTTI)
+- **Magic numbers**: Literals like `0x1Fu`, `0x14u` lack explanations; should be named constants
+- **No contract documentation**: No preconditions, postconditions, or invariants for any function
+- **Anomaly under-reporting**: Only basic sp-value warnings; no indication of indirect call resolution failures or potential undefined behavior
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names closely match the original source, with template instantiations properly distinguished (e.g., `template_max<int>` vs `template_max<double>`), and class member functions use proper C++ scope notation (e.g., `Base::virtual_func`, `DiamondDerived::func`).
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+The decompiler uses generic numbered variables (`v0` through `v6`) for the majority of local variables, completely obscuring semantic meaning. Even simple parameters like `a` and `b` in template functions should be named based on their usage context.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v0 = template_max<int>(3, 7)` → `result` or `max_result`; `a = 10; b = 20; template_swap(&a, &b)` → `x` and `y` or `first` and `second`)
+2. **Add explanatory comments for C++ idioms**: Document vtable mechanics, virtual thunk functions, RTTI/dynamic_cast patterns, and smart pointer lifecycle
+3. **Detect and document magic numbers**: Identify constants like array sizes, limits, and offsets and suggest meaningful names or add explanatory comments

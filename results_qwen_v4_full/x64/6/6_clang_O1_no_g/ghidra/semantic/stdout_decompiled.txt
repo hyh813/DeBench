@@ -1,0 +1,8 @@
+Standard Library Functions Test
+strlen result: 14
+strcmp result: 0
+strlen call result: 12
+memcpy result: 90
+memcmp result: -1
+Value: 42, Name: TestName
+printf result: 26

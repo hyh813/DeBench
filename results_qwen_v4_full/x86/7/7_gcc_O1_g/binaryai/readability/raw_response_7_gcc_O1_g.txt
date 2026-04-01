@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `local_30`, `pbVar2`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `param_opaque_predicate`), but helper functions are cryptic (`FUN_00011030`, `FUN_00011180`). Architecture mismatch noted (x86 thunks in arm64 binary).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers preserved (`0x5a`, `0x14`, `0x2b`) but without context. The `0xDEADBEEF` from original fake branch is completely lost due to dead code elimination.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__i686.get_pc_thunk.bx`, `FUN_00011030` through `FUN_000111a0` (14+ helper functions), stack canary checks (`__stack_chk_fail_local`), and register manipulation code cluttering output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_opaque_predicate` uses awkward do-while loop instead of original while; `param_fake_branch` collapsed to single return losing all conditional branches. Optimization artifacts disrupt natural flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but `param_fake_branch` is over-simplified (1 line vs 12 lines original). Helper functions like `deregister_tm_clones` are fragmented runtime artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_vectorized_loop` has nested do-while structures that are harder to follow than original for-loops.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Critical issue: decompiler eliminated intentional "dead code" (fake branches, buffer overflow logic in `param_buffer_overflow_stack`). This destroys the obfuscation semantics entirely.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Widespread use of `undefined4`, generic `int` instead of `int32_t`, `byte*` instead of `char*`. Original `size_t`, `volatile`, `const` qualifiers completely lost. Signal handler returns `undefined4` instead of `void`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely absent—function reduced to `return 0x2b;`. No struct/union definitions recovered anywhere in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(longlong)param_1`, `(undefined4 *)`), pointer arithmetic without bounds checking. Signal handler type mismatch (`undefined4` return vs `void` in source).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. GCD algorithm in `param_opaque_predicate` not identified, XOR decryption pattern in `decrypt_string` not annotated, tail recursion not flagged.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about eliminated code. `param_fake_branch` returning just `param_1` should be flagged as "dead code eliminated" but appears confident and correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). Error handling via `setjmp/longjmp` not explained. Stack canary checks appear without context.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. `decrypt_string` called by `param_string_encryption` but `encrypted_0` global not defined. Signal handler registration opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but runtime initialization code (`_init`, `_start`, `__do_global_dtors_aux`) mixed with application logic. No separation of test harness vs. target functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—missing declarations for `jmp_buffer`, `div_zero_caught`, `encrypted_0`, `DAT_00012008`. External functions (`FUN_00011180` = `strncpy`) not resolved.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+6+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+3)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+1+1)/4 = 1.25 × 0.15 = 0.19
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                              4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **`param_fake_branch` completely collapsed** - Original 12-line function with fake branches reduced to `return param_1;`, destroying obfuscation semantics
+- **`param_buffer_overflow_stack` logic eliminated** - Canary check and overflow loop completely removed, security test meaningless
+- **Zero comments or documentation** - No explanation of decompiler confidence, eliminated code, or recovered patterns
+- **Generic variable naming throughout** - `param_1`, `iVar1`, `local_30` provide no semantic information
+- **Type system severely degraded** - `undefined4`, missing `const`/`volatile`, signal handlers with wrong return types
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test function names were preserved from debug symbols, allowing identification of purpose despite semantic loss.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, confidence indicators, or explanations for eliminated/transformed code makes analysis extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag eliminated dead code explicitly** - When optimizer removes branches (even "fake" ones), annotate with `// OPTIMIZER: Dead code eliminated - original had conditional at line X`
+2. **Recover variable names from debug symbols** - With `-g` flag present, variable names like `result`, `str`, `canary` should be recovered from DWARF info
+3. **Add semantic confidence annotations** - Mark functions where decompilation is uncertain (e.g., `// DECOMPILER: Signal handler semantics may be incomplete`)

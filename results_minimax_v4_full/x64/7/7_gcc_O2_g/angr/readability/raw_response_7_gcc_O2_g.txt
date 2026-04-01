@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original source demonstrates "永假条件" (always-false conditions) as an obfuscation technique. The decompiled version simply returns the input, completely eliminating the obfuscation logic.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v16`, `v17`. The parameter `a0` should be named `x` or `input_value`. Local variables like `result`, `flag1`, `ptr` are somewhat descriptive but inconsistent.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While `param_fake_branch` matches the original name, many other functions use cryptic names like `sub_401020`, `sub_40102d`, `sub_401030`. The naming is inconsistent - some functions match source names while others are auto-generated addresses.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xDEADBEEF` are completely eliminated (the fake branch was removed). Constants like `4294967295` appear frequently without explanation (this is 0xFFFFFFFF). The value `90` in decryption (`*p ^ 90`) should be documented as the XOR key.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The code contains some noise like `CONCAT` operations in division/modulo expressions: `((int)((v2 >> 31 CONCAT v2) % (v4 & 4294967295)) CONCAT ...)`. This is a decompilation artifact from handling 64-bit division on 32-bit values. Some unused variables and casts present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, while loops), but the decompiler has eliminated the fake branches entirely. The `param_fake_branch` function lost its obfuscation logic. Some goto patterns in initialization code. At -O0, more structure should be preserved.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably decomposed. The original source has multiple test functions (call_* wrapper functions) and they are preserved. However, some small wrapper functions could be inlined. Function sizes are generally appropriate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in loop constructs but are manageable. The `test_obf_opt_edge` function is linear and readable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in the decompiled output. For example, `param_fake_branch` has no redundancy (it's been simplified to just return), but other functions like `param_opaque_predicate` have some redundant computations that could be simplified further.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Original `int` parameters become `unsigned int` or `unsigned long`. The `param_fake_branch` takes `unsigned int a0` instead of `int x`. Pointer types are often generic `unsigned long`. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery visible in the target function. The `jmp_buffer` is declared as `extern unsigned long long` instead of `jmp_buf` type. Some array decay issues (char arrays become char*).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: `(unsigned int)a0 > 0` when original was signed. The division operation uses complex bit manipulation that could overflow. No bounds checking on buffer operations. Casts from unsigned to signed present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled code. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) but these are completely lost. No explanation of what the fake branches were testing.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The obfuscation patterns (fake branches, opaque predicates) are not recognized as such. The decompiler simply eliminated them. No indication that `x * x < 0` was an always-false condition being used for obfuscation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The elimination of the fake branches is presented as correct without any indication that code was removed. The complex `CONCAT` operations for division are not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original function had implicit contracts (x can be any int) that are not preserved. No indication that the function is testing obfuscation techniques.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships are unclear. The `call_fake_branch()` wrapper calls `param_fake_branch(10)` but this relationship isn't documented. Global variables like `g_403fe8` are mysterious.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but not logically organized. The original source had clear sections (7.1 混淆与保护, 7.2 编译器特有优化, 7.3 异常与边界情况) which are lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has many `extern` declarations that would need stubs. The `CONCAT` macro usage would cause compilation errors. Some functions have incorrect signatures (e.g., `param_fake_branch` return type).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- `param_fake_branch` completely lost its obfuscation logic (fake branches eliminated)
+- Variable naming uses generic `a0`, `v1`, `v2` instead of meaningful names like `x`, `result`
+- No comments explaining the obfuscation techniques (OBF-L4-02)
+- Type precision lost: `int x` became `unsigned int a0`
+- Magic number `0xDEADBEEF` completely eliminated without trace
+- Complex `CONCAT` operations for division make code unreadable
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Functions are reasonably sized and separated; wrapper functions preserved
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic names like `a0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v16`, `v17` make the code nearly impossible to follow
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve dead code branches**: When decompiling at -O0, don't eliminate code paths even if they appear unreachable - they may be intentional obfuscation
+2. **Infer variable names from usage**: Analyze how parameters are used (e.g., `a0` used in arithmetic → name it `x` or `input_value`)
+3. **Add semantic annotations**: Flag when code has been simplified or eliminated, e.g., "NOTE: Always-false condition at line X was removed"

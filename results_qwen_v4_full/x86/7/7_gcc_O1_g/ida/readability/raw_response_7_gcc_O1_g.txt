@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3`, `v4` instead of meaningful names like `predicate_result`, `gcd_temp`, or `loop_counter`. Only `decrypted`, `encrypted`, `valid`, `buffer` retain some clarity from string context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core application functions preserved original names perfectly (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `decrypt_string`, `param_tail_call_optimized`). However, helper functions use generic names (`sub_1030` through `sub_10E0`, `sub_10F0`) and runtime functions use technical names (`_x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `90` (XOR key 0x5A), `8` and `11` (signal numbers SIGFPE/SIGSEGV), `0x14u` (stack canary offset), `0x20u` (buffer size). The original `0xDEADBEEF` constant was optimized away. Array sizes like `0x10u` (16 bytes) are somewhat clear from context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__readgsdword(0x14u)` stack canary checks repeated throughout, `LODWORD`/`HIDWORD` macros for 64-bit returns, `[esp+1Ch] [ebp-30h] BYREF` annotations cluttering variable declarations, and 12 external functions marked as "FAILED to decompile" at the end.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and readable. `param_fake_branch` correctly simplified (dead branches removed at -O0). `param_opaque_predicate` preserves the GCD loop structure well. However, `param_buffer_overflow_heap` has a suspicious empty loop (`v2 = 33; do --v2; while (v2);`) that doesn't match the original overflow logic, and `param_vectorized_loop` uses pointer iteration instead of array indexing.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate. Original function boundaries preserved (`param_*` and `call_*` pairs remain separate). Helper functions like `decrypt_string`, `div_zero_handler`, `segv_handler` correctly extracted. No excessive inlining or fragmentation observed. Test function `test_obf_opt_edge` appropriately consolidated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear execution flow. `param_tail_call_optimized` and `param_non_tail_call` have clean recursive structures. `param_opaque_predicate` has some branching complexity but remains traceable. Pointer iteration in `param_vectorized_loop` (`v5 != v6` loop termination) is slightly less intuitive than array indexing.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code correctly eliminated (false branches in `param_fake_branch` removed, `call_fake_branch` returns constant 10). However, `param_buffer_overflow_heap` lost the actual overflow loop (replaced with empty countdown), and stack canary checks (`__readgsdword(0x14u)`) repeat unnecessarily in multiple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types mostly accurate (`int`, `const char*`, `size_t`, `unsigned int`). Issues: `param_string_encryption` and `call_null_pointer_deref` return `__int64` unnecessarily when `int` suffices. Signal handler casts `(__sighandler_t)` are present but necessary. Pointer types correctly distinguished from arrays in `param_vectorized_loop`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct from `param_implementation_defined` was NOT recovered—function just returns constant `43`. Array parameters correctly identified (`int *a, int *b, int *c`). No complex structure reconstruction attempted. Original `struct { unsigned int a:3; b:5; c:24; }` completely lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Necessary casts present but not excessive. `param_null_pointer_deref(0)` passes literal `0` instead of `NULL` (minor issue). No dangerous pointer arithmetic observed. Signal handler function pointer casts are appropriate. No buffer-overflow-prone patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code. No recovery of original source comments explaining obfuscation techniques, no algorithm explanations, no decompiler confidence indicators. User must infer all semantics from code alone. Critical loss of documentation about opaque predicates, instruction substitution, and edge case testing purposes.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns present but NOT identified: signal handling with setjmp/longjmp not labeled as exception handling pattern, tail recursion not marked as TCO candidate, XOR decryption loop not identified as cipher pattern, GCD computation not recognized as Euclidean algorithm. Patterns exist but remain implicit.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (12 external functions) but no inline warnings. `param_buffer_overflow_heap` transformation is suspicious (overflow loop became empty countdown) with no flag. No indication of optimization-induced semantic changes. Stack canary code not marked as compiler instrumentation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x must be non-zero for division"). No postconditions inferred. Error conditions not documented (e.g., signal handler returns -1). Original comments about expected values ("期望: 10", "期望: 20") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Global variables referenced (`encrypted_0`, `jmp_buffer`, `segv_buffer`, `div_zero_caught`) but not declared in output. No call graph documentation. Callback relationships (signal handlers) visible through `signal()` calls but not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order (init functions first, application functions middle, main/test functions last). No file organization metadata. Static function scoping not indicated. Original section comments ("7.1 混淆与保护", "7.2 编译器特有优化") completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will NOT compile standalone. 12 external functions failed to decompile (`__libc_start_main`, `_setjmp`, `free`, `signal`, `malloc`, `puts`, `strlen`, `strncpy`, `__printf_chk`, `__longjmp_chk`, `__stack_chk_fail`, `__cxa_finalize`). No header includes or dependency declarations. Requires significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (7+4+7)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              = 5.58/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects
+- **Zero comments recovered** - All original documentation about obfuscation techniques, expected values, and test purposes completely lost
+- **Generic variable names** - `v0`, `v1`, `v2`, etc. obscure semantic meaning (e.g., `param_opaque_predicate` variables should be `predicate1`, `gcd_result`, `predicate3`)
+- **Composite type loss** - Bitfield struct in `param_implementation_defined` not recovered; function returns constant `43` instead of computing from struct fields
+- **Suspicious transformation** - `param_buffer_overflow_heap` overflow loop replaced with empty countdown (`v2 = 33; do --v2; while (v2);`), losing the actual overflow behavior
+- **12 external functions failed** - Code cannot compile without significant stubbing for standard library functions
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core application function names preserved perfectly from source (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, etc.), making function identification straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe deficiency; original source had extensive documentation about obfuscation techniques, expected values, and test scenarios that would significantly aid understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - Integrate debug symbol comments and detect documentation patterns to restore original explanatory text about obfuscation techniques and expected behaviors.
+2. **Implement semantic variable naming** - Use data flow analysis to infer variable purposes (e.g., variables used in GCD computation should be named `gcd_a`, `gcd_b`, `gcd_temp` rather than `v3`, `v4`, `v1`).
+3. **Flag optimization-induced semantic changes** - Add confidence annotations when decompiler detects aggressive optimization transformations (e.g., "WARNING: Loop body eliminated, may be dead code optimization") to alert analysts to potential semantic loss.

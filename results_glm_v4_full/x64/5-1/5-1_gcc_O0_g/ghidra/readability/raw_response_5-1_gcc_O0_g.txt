@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Debug symbols (`-g`) allowed recovery of parameter names (`v`, `n`, `x`) and member names (`value`, `multiplier`). However, intermediate variables rely on generic names like `iVar1`, `lVar1`, and `bVar2`, which requires tracking data flow to understand their purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table, including complex mangled names for templates (`template_max<int>`) and class methods (`SimpleClass::getValue`). The names accurately reflect the original source intent.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved perfectly, but integer constants are often represented in hex (e.g., `0x1f` instead of `31` for `sizeof(name)-1`, `0x14` for `20`). While accurate, this adds a translation step for the reader compared to the decimal usage in the source.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code contains significant ABI noise typical of C++ decompilation to C, such as the `__in_chrg` parameter in destructors and `__vtt_parm` in constructors. While these are technically correct, they clutter the function signatures and obscure the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: Due to `-O0`, the control flow is exceptionally clean and linear. Loops are recovered as `for` loops, and conditionals as `if` statements, matching the source structure exactly without optimization artifacts.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are decomposed logically, matching the source granularity. Template instantiations are correctly separated into distinct functions (e.g., `Container<int>::push` vs `Container<double>::push`), maintaining the original modularity.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The lack of optimization (`-O0`) prevents the creation of complex control flow graphs or spaghetti code, making it very easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code typical of optimized builds. The code is concise, containing only the logic necessary to implement the functionality, with no redundant expressions cluttering the view.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including `size_t`, `bool`, and specific class pointers (`SimpleClass *`, `Base *`). The distinction between signed and unsigned integers is preserved, aiding in understanding the logic.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Class structures (`SimpleClass`, `Point`, `Container`) are recovered with correct field names and inheritance hierarchies (`super_Base`, `super_BaseA`). However, complex virtual inheritance in `DiamondDerived` results in offset-based access (`obj._40_4_`) instead of field names (`shared_data`), slightly degrading the score.
+
+**11. Type Safety:** Score: 9/10
+Justification: The decompiled code maintains type safety with appropriate casts for inheritance (e.g., `Base *` to `Derived *`). There are no dangerous or confusing pointer arithmetic operations that would suggest undefined behavior or type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: Ghidra provides helpful comments derived from DWARF info (e.g., `/* DWARF original prototype: ... */`) and warnings about specific issues (e.g., `/* WARNING: Struct "DiamondDerived": ignoring overlapping field... */`). These add significant context, though algorithmic logic comments are absent.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: High-level C++ idioms are often reduced to C implementation details. Virtual function calls are shown as vtable dereferences (`(**obj->_vptr_Base)(...)`), and `std::unique_ptr` is expanded into its internal tuple/pointer implementation, completely obscuring the RAII semantics present in the source.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags potential issues, such as "Unknown calling convention" warnings and "ignoring overlapping field" alerts in complex inheritance structures. This helps the reader identify where the decompilation might be imperfect.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: There is no explicit recovery of preconditions or postconditions (e.g., "requires: idx < size"). While the types imply some contracts, the semantic guarantees of the original source (like the bounds check in `Container::get`) are not explicitly documented as assertions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and clear. Virtual dispatch is explicitly shown via vtable pointers, making the dynamic call sites transparent, even if the syntax is low-level. The relationship between classes and their methods is preserved.
+
+**17. Module Organization:** Score: 6/10
+Justification: The output is a flat list of functions ordered by address. While related functions (like class methods) are often grouped, there is no logical namespace or module grouping that mirrors the source file's structure or the C++ concept of translation units.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The output is Ghidra's pseudo-C, which is not compilable. It mixes C++ syntax (scope resolution `::`) with C implementations and relies on Ghidra-specific types (`undefined8`). It requires significant modification to be used in any build system.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 8.2/10
+
+**Critical Defects:**
+- STL types (e.g., `std::unique_ptr`) are expanded into verbose internal implementation details (`std::__uniq_ptr_impl`, `std::_Tuple_impl`), making the code significantly harder to read than the original high-level source.
+- Virtual function calls are exposed as low-level vtable dereferences (`(**obj->_vptr_Base)(...)`) rather than the direct method calls found in the source.
+- Field access in complex virtual inheritance (`DiamondDerived`) uses raw offsets (`obj._40_4_`) instead of the semantic field names (`shared_data`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all mangled C++ symbols, including template instantiations and overloaded operators, making the API surface immediately recognizable.
+
+**Most Needs Improvement:** Idiom Recognition (scored 6/10)
+- The failure to lift C++ idioms (like smart pointers and virtual dispatch) to high-level representations results in a "semantic gap" where the code is technically correct but semantically opaque compared to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to recognize and re-synthesize high-level STL types (e.g., collapse `std::unique_ptr` internals back into a `unique_ptr` class representation).
+2. Lift virtual function calls from vtable dereferences back to direct method call syntax (e.g., `obj->virtual_func()`) to improve semantic transparency.
+3. Improve type recovery for complex virtual inheritance scenarios to use field names instead of byte offsets (e.g., `obj.shared_data` instead of `obj._40_4_`).

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_clang_O3_no_g/ghidra/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing Preprocessing Features:\n\nMacro param_macro_constants: 64\nMacro call_macro_constants: 30\nMacro param_macro_functions: 32\nMacro call_macro_functions: 57122\nMacro param_conditional_compile: 116\nMacro call_conditional_compile: 19\nMacro param_variadic_macro: 60\nLOG: Values: 10, 20, 30\nMacro param_token_paste: 60\nMacro param_macro_override: 16\nMacro param_include_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:56\nMacro call_builtin_macros: 382\nTesting ASM features:\n\nASM basic call: 15\nASM clobber sum: 5\nASM multi insn: 0xffffffff\nASM SIMD: 0x24\nASM atomic: 0x1e\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

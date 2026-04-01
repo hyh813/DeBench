@@ -1,0 +1,16 @@
+=== Standard Library Tests ===
+
+str_len result: 15
+strcmp result: 0
+strlen result: 12
+memcpy result: 90
+memcmp result: 0
+Value: 42, Name: Nstr_len result: %lu
+
+printf result: 39
+scanf result: 579
+open result: 42
+fread_fwrite result: 42
+malloc_free result: 90
+memset result: 0
+strchr_strstr result: 15

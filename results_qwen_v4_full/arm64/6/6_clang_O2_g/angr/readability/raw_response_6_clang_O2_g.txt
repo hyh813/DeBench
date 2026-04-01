@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`, `ptr`) instead of semantic names like `buffer`, `write_data`, or `shared_counter` from source. Some meaningful names exist (`dst`, `len`, `fp`) but are inconsistent.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but many helper functions use mechanical names (`sub_4012f4`, `sub_401724`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers like `4294967295` (unsigned -1), `7521977183824144706` (encoded string), and `18446744073709551608` (bitmask) obscure logic. Original string literals lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Architecture artifacts present: `__ROL__` rotations, `arm64g_calculate_condition` calls, `[D] MBusEvent-Imbe_Fence()` markers, and frame pointer setup (`v0 = &v1`) in every function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of loops (e.g., `param_malloc_free`), complex nested conditionals with `arm64g_calculate_condition`. At `-O0`, this restructuring is unexpected and harmful.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but some functions like `param_thread_local_storage` are excessively large (200+ lines) with poor internal cohesion.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow, especially in `param_signal_handling` and threading code. Multiple `goto LABEL_xxx` patterns break top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions call same function twice (`call_strcpy` returns `strlen(&v0)` twice). Loop unrolling artifacts visible in `param_malloc_free` without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `unsigned long long` used instead of `size_t`, `pid_t`, `ssize_t`. Pointer types often `void*` or `char*` instead of specific types like `FILE*` or `pthread_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `struct FILE` has no fields. `struct_0` uses generic `field_0`, `field_5`. ThreadData struct completely lost, replaced with raw stack variables.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(char *)ptr + v7` for thread array indexing, `(volatile int*)&atomic_counter` casts. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or intent. Only decompiler metadata comments present ("Failed to decompile function").
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `strlen`, `memcpy`) recognized, but threading patterns (mutex, condition variables) not identified as synchronization idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations marked (`__aarch64_cas4_acq_rel`), but other issues like unresolved indirect calls not flagged. `[D]` markers indicate data issues without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error handling contracts. Return values like `4294967295` unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables use opaque names (`g_414ff8`, `g_4031a4`). No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat namespace. No logical grouping by category (library functions vs. syscalls vs. threading).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External declarations present but some functions failed decompilation. Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) prevent portable compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.08/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Magic number proliferation**: `4294967295` used for -1 throughout, `7521977183824144706` for string comparison—completely obscures intent
+- **Zero documentation**: No comments explaining any non-trivial logic, algorithms, or error conditions
+- **Generic variable names**: `v0`, `v1`, `v2` instead of `buffer`, `write_data`, `read_count` based on usage context
+- **Struct field loss**: `struct FILE` empty, `struct_0` with `field_0`/`field_5` loses all semantic meaning
+- **Control flow degradation**: `goto` statements replace clean loops even at `-O0` optimization level
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions preserved original names (`param_strcpy`, `call_mutex_lock`, `param_signal_handling`), providing anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes understanding algorithm intent nearly impossible without cross-referencing source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement magic number detection** - Recognize common patterns like `4294967295` as `-1` and large constants as encoded strings, suggest named constants
+2. **Add usage-based variable renaming** - Analyze variable usage patterns to infer names (e.g., variables passed to `strlen` should be `string` or `text`)
+3. **Recover loop constructs from jump patterns** - At `-O0`, backward jumps should become `for`/`while` loops, not `goto` statements

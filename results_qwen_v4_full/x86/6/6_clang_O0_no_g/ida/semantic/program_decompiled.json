@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/6/6_clang_O0_no_g/ida/syntactic/bin/6_clang_O0_no_g_fixed",
+  "stdout": "=== Standard Library Tests ===\ncall_strcpy: 8\ncall_strcmp: 0\ncall_strlen: 12\ncall_memcpy: -1123990136\ncall_memcmp: -1\nValue: 42, Name: Test\ncall_printf: 22\ncall_scanf: 579\ncall_fopen_fclose: 42\ncall_fread_fwrite: 42\ncall_malloc_free: 90\ncall_memset: 0\ncall_strchr_strstr: 15\n=== System Call Tests ===\ncall_linux_syscall: 42\ncall_win32_api: 42\ncall_fork_exec: 42\ncall_pipe_communication: 42\ncall_socket_create: 42\ncall_shmget_shmat: 42\ncall_signal_handling: -4\n=== Thread/Concurrency Tests ===\ncall_pthread_create: 49\ncall_pthread_join: 465\ncall_mutex_lock: 42\ncall_condition_variable: 42\ncall_atomic_ops: 42\ncall_thread_local_storage: -3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

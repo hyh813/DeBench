@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic single-letter names (`v0`, `v1`, `v2`, `ptr`, `result`, `p`, `cur`). The original source uses meaningful names like `value`, `name`, `data`, `size`, `capture_by_value`, but these are completely lost. Only `result` appears occasionally, making it nearly impossible to track variable purpose across the 1582-line output.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some C++ mangled names are preserved correctly (e.g., `_Z20test_cpp_member_funcv`, `_Z12template_maxIiET_S0_S0_`), but many functions use generic addresses like `sub_402020`, `sub_40202d`. The original function names like `getValue`, `compute`, `call_virtual_func` are not recovered in most cases.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `31` in strncpy, `4` for exception size, `8`, `16`, `32` for object sizes). Some string literals like "Test" are preserved in `strncpy(&v0, "Test", 31)`, but the semantic meaning of constants like `0x1234` (class ID) is lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No excessive register spilling noise or debug instrumentation visible. Some goto statements present but not overwhelming. The main noise is the large number of stub functions (sub_402020 through sub_4021xx) that appear to be initialization code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Several functions use problematic goto statements (e.g., `goto *((long long *)*((long long *)&arg_0));` in `call_virtual_func`). Many functions are empty stubs that just return. The control flow for virtual dispatch is particularly convoluted with indirect jumps. Loop constructs are reasonably recognizable but conditional logic is obscured.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are reasonably sized (not monolithic), but many are too small - just empty returns. Template functions are properly separated. However, some functions like `test_cpp_member_func` are reduced to almost nothing, losing the original logic. The parameter lists expose implementation details (e.g., `void* this` explicit in member functions).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. The main disruption is the indirect virtual function call in `call_virtual_func` which uses a computed goto. Most functions have clear entry and exit points. Some nested conditionals in exception handling break linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some duplicate patterns exist, particularly in destructor thunks for virtual inheritance (`MiddleA::~MiddleA` and `MiddleB::~MiddleA` have similar structures). No dead code elimination visible - all the initialization stub functions remain. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - most integers are `unsigned long` or `unsigned long long` instead of `int`, `size_t`. The original `int value` becomes `unsigned long v0`. Some class names are preserved (`class Base`, `class Derived`) but member function signatures use `void* this` instead of proper this pointers. Const correctness is lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery - generic names like `struct_0`, `struct_2`, `struct_3` with meaningless fields (`field_0`, `field_8`, `field_10`). The original `SimpleClass` with `int value` and `char name[32]` is completely lost. Only `Container<int>` has partial field recovery (index at offset 40). No union recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations - explicit void pointer arithmetic (e.g., `(char *)ptr + 4 * index`), incorrect pointer casting in template functions. The `template_swap` function has a critical bug: `v1 = *(ptr); *(ptr) = *(p); *(p) = v1;` where `p` is uninitialized. Many raw pointer manipulations without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only header comments like "// Angr Decompilation of 5-1_gcc_Os_g" and occasional "do not return" annotations. No explanation of algorithms, no recovery confidence indicators, no documentation of what functions do. The original source had extensive Chinese comments explaining each test case - none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms partially recognized - virtual function thunks are labeled, template instantiation names preserved. However, the lambda expression in `test_cpp_lambda` is completely empty (just returns). Smart pointer patterns not recognized - shows raw `operator new` instead of `unique_ptr`. Exception handling shows raw `__cxa_throw` but logic is confusing.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted - "do not return" comments on `_Unwind_Resume` calls. The indirect virtual call in `call_virtual_func` uses goto with dereferenced vtable but not flagged as uncertain. Many functions that should return values show "return;" without value. No indication of why most functions are empty stubs.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had clear expectations (e.g., "期望: 4704" for expected return values) but none of this contract information is present. No bounds checking documentation for array operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships clear from mangled names - `_Z20test_cpp_member_funcv` calls are visible. Virtual function relationships partially shown (Base::virtual_func, Derived::virtual_func). However, the call graph is not explicitly documented. Global variable usage (`extern unsigned long long g_405f28`) not connected to source.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by class (Base, Derived, MultiDerived methods together). Template functions separated. However, the massive number of initialization stubs (sub_402020-sub_4021xx) clutter the output. No logical file structure matching original (should be separate sections for each test function).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has numerous `extern` declarations but many are incomplete. Would require significant patching to compile - missing function prototypes, undefined globals. The template functions have wrong signatures (e.g., `template_max<double>` takes 6 parameters instead of 2). Cannot compile as-is.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable names are universally generic (`v0`, `v1`, `ptr`) - original names like `value`, `size`, `capture_by_value` completely lost
+- Most test functions are empty stubs returning nothing - `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_lambda` all just return
+- Struct/union types not recovered - `struct_0`, `struct_2`, `struct_3` with meaningless field names
+- Type precision severely degraded - `int` becomes `unsigned long long`, `this` pointer shown as `void*`
+- No comments explaining algorithms or recovery confidence
+- Template function `template_swap` has critical bug with uninitialized variable `p`
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+The decompiled output is relatively clean without excessive compiler artifacts like register spilling or debug instrumentation. The main noise is from initialization stubs which is unavoidable.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every meaningful variable name from the original source is lost. The decompiler could infer names from usage patterns (e.g., `v0` used as array index should be `index` or `i`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index`/`i`, those used for sizes should be `size`, those storing return values should be `result`/`return_value`
+2. **Recover struct field names from context**: If a field is accessed as `data[idx]`, name it `data`; if used for size, name it `size`; avoid generic `field_0`, `field_8`
+3. **Detect and flag empty/stub functions**: Many functions return without doing anything - add comments explaining this may be dead code elimination or the binary may be stripped

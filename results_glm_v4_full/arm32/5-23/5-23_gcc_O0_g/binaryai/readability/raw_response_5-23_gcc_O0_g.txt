@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `local_10`, `uVar1`, `iVar1`) and do not reflect the original semantic names like `size`, `result`, or `counter`. This makes tracking data flow difficult compared to the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `param_macro_constants`, `call_asm_basic`), matching the original source exactly and preserving the test structure.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Macro constants are fully expanded into magic numbers (e.g., `0x401` instead of `MAX_SIZE`, `0x200` instead of `512`, `0x40` instead of `64`), completely obscuring the original named constants and their semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains stack canary checks (e.g., `if (local_c != 0) { __stack_chk_fail(...) }`) and generic `undefined4` types which add minor noise to the logic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural and linear, matching the `-O0` compilation. Loops and conditionals are preserved well, though some `if` conditions are inverted (e.g., `param_1 < 0x401` vs `size > MAX_SIZE`) which is a minor compiler artifact.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are perfectly preserved with 1:1 mapping to the source. No inlining or outlining occurred, maintaining the original granularity and cohesion.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or complex branching, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or loop unrolling artifacts. The code is verbose due to the lack of optimization, but it is clean and free of confusing redundancies.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic (`undefined4`, `undefined2`) rather than specific C types (`int`, `uint16_t`). While `size_t` is correctly identified in some places, the inconsistent use of `undefined4` degrades readability.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: No complex structs or unions were used in the source, so there was nothing to recover. Pointer types for arrays and basic types are handled correctly.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are generally correct and safe. The use of `undefined4` is loose but doesn't introduce dangerous type confusion in this specific codebase.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the purpose of specific calculations (e.g., `param_1 * 3 + 1`), or the context of the "macro" behavior that was lost during compilation.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `printf`, `memcpy`, and `mmap` are recognized. However, higher-level idioms like the "macro override" pattern or "stringification" are lost, appearing only as hardcoded math or string literals.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No anomalies are flagged, which is appropriate since the code is straightforward, but there is also no indication of the "architectural fallback" (e.g., that SIMD was replaced by a loop).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the requirements for `mmap` parameters are not explained).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and easy to trace. The relationship between the `call_*` functions and their `param_*` implementations is obvious.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, roughly matching the source file structure. Related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code would require minor patching to compile (defining `undefined4`), but dependencies on standard libraries are clear and correct.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Macro constants replaced with magic numbers (e.g., `0x401` instead of `MAX_SIZE`), obscuring configuration logic.
+- Local variable names are generic (`param_1`, `local_10`) despite debug symbols being present, losing semantic context.
+- Lack of comments explaining the logic, particularly for complex macro-expanded arithmetic.
+- Use of generic types (`undefined4`) instead of specific types (`int`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols were preserved perfectly, allowing exact recovery of all function names.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- The expansion of macros into magic numbers is the single biggest factor reducing readability relative to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Heuristic Constant Recovery**: Identify repeated magic numbers (like `0x401`, `0x200`) and suggest defining them as named constants to mimic macro usage.
+2. **Enhanced Type Propagation**: Replace `undefined4` with `int` or `uint32_t` based on usage context (e.g., arithmetic operations) to improve type precision.
+3. **Variable Name Inference**: Even if debug symbols are missing for locals, infer names from usage (e.g., `param_1` used in a size check -> `size`) or utilize DWARF info more aggressively if available.

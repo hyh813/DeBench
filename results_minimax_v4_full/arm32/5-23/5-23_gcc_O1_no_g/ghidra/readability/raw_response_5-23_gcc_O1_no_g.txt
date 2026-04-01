@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2` throughout. For example, `param_macro_constants(int param_1)` should be `size` based on source. Local variables in functions like `param_asm_clobber` use pointer arithmetic with no named variables, making it difficult to track purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are accurately preserved from source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc. The naming matches the original almost perfectly, with only minor auto-generated prefixes where applicable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025 = MAX_SIZE+1), `0x200` (512 = MAX_SIZE/2), `0x40` (64 = BUFFER_COUNT*4) appear without explanation. String literals like "LOG: Values: %d, %d, %d\n" are preserved but macro semantics are lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Ghidra's auto-generated comments are sparse. No excessive register spilling or debug instrumentation visible. The code is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with standard if-else constructs and loops. For example, `param_asm_clobber` uses a proper do-while loop. At -O0, the structure closely matches source patterns without goto abuse.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching source. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is separate and cohesive. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., in `param_dynamic_code`). No excessive forward jumps disrupting flow. Minor nesting in conditional compilation results.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (SIMD functions use explicit loops). Common subexpression elimination is not aggressively visible as separate artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `int` used for most parameters but `undefined4` appears in some function signatures (e.g., `param_variadic_macro(int param_1,undefined4 param_2,undefined4 param_3)`). Pointer types are generic (`void*`, `int*`). Size_t is used correctly for `size_t param_3` in `param_asm_multi_insn`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The source doesn't heavily use complex structs, so limited evaluation possible. Simple arrays like `int arr[]` are handled via pointer arithmetic. No struct recovery failures that significantly impact readability.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No dangerous casts observed. Pointer arithmetic is used correctly for array access. Function signatures are reasonable. Minor issues with `undefined4` type but no buffer-overflow-prone patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra provides minimal auto-generated comments like "WARNING: Removing unreachable block" and file header. No comments explaining macro semantics, inline assembly behavior, or algorithm intent. The rich preprocessor comments from source are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. The decompiler shows the expanded macro results (e.g., `param_1 * param_1 + param_2` for SQUARE+MAX) but doesn't indicate these came from macro expansion. Atomic operations show as `__sync_fetch_and_add_4` calls but origin isn't explained.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra appropriately flags warnings: "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". However, indirect calls and some assembly patterns could be better flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of error conditions or expected input ranges. The function contracts from source (e.g., "requires: ptr != NULL") are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `call_macro_constants()` calls `param_macro_constants()`. Global variable `global_var` is referenced in `param_memory_clobber_demo`. However, no explicit documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in binary order, roughly corresponding to source organization (preprocessing functions first, then asm functions). Static functions like `my_func` are properly scoped. Some internal functions (`__sync_*`) are appended at the end.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`printf`, `mmap`, `memcpy`, `sysconf`). However, `undefined4` type needs definition, and some function signatures may require adjustment. The code would require moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `param_2` instead of semantic names like `size`, `arr`, `n`
+- Magic numbers like `0x401`, `0x200`, `0x40` lack explanatory constants
+- Macro semantics completely lost - no indication that `param_1 * param_1 + param_2` comes from `SQUARE(x) + MAX(x, y)`
+- No comments explaining inline assembly behavior or preprocessor transformations
+- Type `undefined4` used inconsistently, suggesting type recovery issues
+
+**Best Quality Aspect:** Control Flow Naturalness (9/10)  
+- At -O0, the decompiled code preserves natural if-else and loop structures matching the source almost perfectly
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic parameter names like `param_1`, `param_2` make it difficult to understand function purpose without cross-referencing source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` compared against 1024 should be named `size` or `max_size`
+2. Detect macro expansion patterns and add comments indicating original macro names (e.g., "// Expanded from SQUARE(x) + MAX(x, y)")
+3. Replace magic numbers with suggested constant names when they match common patterns (0x401 → "MAX_SIZE + 1")

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_clang_O2_no_g/angr/syntactic/bin/5-23_clang_O2_no_g_fixed",
+  "stdout": "=== Testing preprocessing features ===\n\nPASS: macro_constants - 64\nPASS: macro_functions - 30\nPASS: conditional_compile - 32\nPASS: multi_branch_compile - 57122\nPASS: macro_recursion - 116\nPASS: stringize - 19\nPASS: token_paste - 60\nLOG: Values: 10, 20, 30\nPASS: variadic_macro - 60\nPASS: macro_override - 16\nPASS: include_guard - 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:52\nPASS: test_preprocessing_features - 382\n=== Testing ASM features ===\n\nPASS: asm_basic - 15\nPASS: asm_clobber - -1631719120\nPASS: asm_multi_insn - -1\nPASS: asm_simd - -4\nPASS: asm_atomic - 25\nPASS: call_asm_privileged - 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

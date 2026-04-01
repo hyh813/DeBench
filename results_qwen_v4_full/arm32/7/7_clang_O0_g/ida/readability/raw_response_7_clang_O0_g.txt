@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v2`, `v3`, `v4` in `param_opaque_predicate` obscure their roles as predicate temporaries (`p1`, `p2`, `a`, `b` from source). Some names like `buffer`, `ptr`, `valid` are meaningful, but generic `v#` pattern dominates.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation—`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`, `param_tail_call_optimized` all match source names exactly. Debug symbols (-g flag) enabled perfect recovery.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: `0xDEADBEEF` becomes `-559038737` (less clear), signal numbers `8`, `11` instead of `SIGFPE`, `SIGSEGV`, and `65`, `66` instead of `'A'`, `'B'` obscure intent. XOR key `90` instead of `0x5A`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack annotations like `[sp+8h] [bp-8h]` present but not excessive. Warning `// positive sp value has been detected, the output may be wrong!` adds noise. O0 compilation helps minimize artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: setjmp/longjmp pattern elegantly converted to if-else in `param_division_by_zero`. Loops use standard for/while constructs. `param_fake_branch` dead branch preserved correctly (`x * x <= -1`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. `lto_target_func` preserved as separate function (not inlined at O0). Reasonable function sizes throughout.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Functions read top-to-bottom naturally. No excessive goto usage. `divsi3_skip_div0_test` has complex nesting but that's library code, not user code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `param_instruction_substitution` simplified to single expression (good). However, `param_implementation_defined` collapsed to `return 44;` losing all semantic structure from bitfield operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: `int`, `unsigned int`, `size_t`, `char *` preserved correctly. `__fastcall`, `__cdecl` calling conventions annotated. `const char *` preserved in `decrypt_string` signature.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays like `buffer[32]`, `a[10]` shown correctly. However, bitfield struct in `param_implementation_defined` completely lost (constant-folded to `return 44;`). No struct field names recovered.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Minimal unsafe casts. `(unsigned __int8)buffer[0]` and `(__sighandler_t)` casts are faithful to source. No dangerous pointer arithmetic introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Basic function headers present (`/* Function: param_fake_branch @ 0x6D0 */`). No explanations of obfuscation patterns (fake branches, opaque predicates). No algorithm documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: setjmp/longjmp, tail recursion, and loop patterns recognized structurally. However, no explicit naming of patterns (e.g., "opaque predicate", "fake branch", "string decryption").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `FAILED to decompile` clearly marks 13 external functions. Stack warning present. However, no indication that `param_fake_branch` contains intentionally unreachable code or that constant folding occurred.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No precondition documentation (e.g., "x != 0 for division"). No postcondition or invariant recovery. Error conditions (signal handler behavior) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear (`call_fake_branch()` → `param_fake_branch(10)`). Global variables (`jmp_buffer`, `div_zero_caught`) referenced directly. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in flat output. Source sections (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) not preserved. No header file separation or static function scoping hints.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies clearly marked as failed. Would require stubs for printf, malloc, signal, etc. Type definitions for jmp_buf, size_t would need to be provided separately.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (8+6+8)/3   = 7.33 × 0.20 = 1.467
+Level 4 (Semantic):    (5+6+5+4)/4 = 5.00 × 0.15 = 0.750
+Level 5 (Contextual):  (7+6+6)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.81/10
+```
+
+### Overall Readability Score: **6.8/10**
+
+### Critical Defects:
+- Variables `v2`, `v3`, `v4` in `param_opaque_predicate` should be named `p1`, `a`, `b` based on source semantics
+- Magic numbers `8`, `11` (signal codes) and `65`, `66` (character literals) lack semantic meaning
+- `param_implementation_defined` collapsed to `return 44;` losing all bitfield structure and implementation-defined behavior documentation
+- No indication that `param_fake_branch` contains intentionally unreachable code (obfuscation pattern)
+- 13 external functions failed to decompile without stub suggestions
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Debug symbols (-g flag) enabled perfect preservation of all original function names, making navigation and understanding significantly easier.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (4/10)**
+- No preconditions, postconditions, or error condition documentation recovered, leaving critical behavioral contracts implicit and requiring manual analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Detect that `v2` in `param_opaque_predicate` holds GCD computation results and suggest names like `gcd_result` or `p2`
+2. **Flag obfuscation patterns explicitly** - Add comments like `// OBFUSCATION: Always-false branch (x*x < 0)` when detecting known patterns
+3. **Preserve struct/bitfield information even with constant folding** - Don't collapse `param_implementation_defined` to a constant; show the original structure with a note that compiler optimized it

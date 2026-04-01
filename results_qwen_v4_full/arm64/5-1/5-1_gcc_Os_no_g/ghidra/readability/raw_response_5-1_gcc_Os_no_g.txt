@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are generically named (`local_8`, `local_10`, `iVar1`, `puVar1`, `acStack_2c`) with no semantic meaning. Original variables like `value`, `name`, `capture_by_value` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use generic names (`FUN_00101650`, `FUN_001019fc`). Class methods partially recovered (`Base::virtual_func`, `Derived::getName`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x3e9`, `0x47`, `0x16`, `0x55`, `0x2bf`. Original constants like `0x1234` for `getClassID()` are lost or obscured.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) appear in nearly every function. Compiler initialization code (`__cxa_atexit`, `__do_global_dtors_aux`) clutters output. Multiple unreachable block warnings.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions optimized to single return statements losing all logic (`test_cpp_multiple_inheritance` returns `0x47`). Stack check jumps disrupt natural flow. Virtual calls treated as indirect with warnings.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many test functions collapsed to constants losing all internal logic. Multiple destructor thunks created for same class (`~MiddleA` has 6+ variants). Template functions well-separated but test logic lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Stack check failures create backward jumps to `__stack_chk_fail`. Some functions have early returns that are clear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive destructor redundancy (8+ `~DiamondDerived` variants, 6+ `~MiddleA` variants). Compiler initialization code duplicated. Thunk functions repeat similar logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined**`, `undefined1`. Some recovery (`int`, `double`, `size_t`, `char*`). Original types like `std::unique_ptr<int>` partially recovered but degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures completely lost. Field access via pointer arithmetic (`*(int *)(this + 8)`, `*(int *)(this + 0x28)`). No struct definitions recovered. Vtable pointers shown as `undefined**`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(undefined **)`, `(Base *)&local_20`. Pointer arithmetic on `this` without type safety. Function pointer calls cast to `(code *)`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra adds warnings ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable") but no semantic comments. Original comments about expected values (e.g., "期望: 10 + 34 + 4660 = 4704") completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized: virtual dispatch shown as raw vtable calls, RAII patterns lost, lambda closures not identified, template instantiation not clearly marked as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues ("WARNING: Removing unreachable block", "WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return"). However, these are generic warnings without specific guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception handling logic collapsed (`test_cpp_exception` just allocates and throws). No null checks or bounds validation documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch chain not documented. Inheritance relationships lost (no indication `Derived` extends `Base`). Global variables referenced as `PTR_*` symbols.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 89 functions in single output without logical grouping. No namespace structure. Related class methods scattered. Initialization functions mixed with test functions.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile as-is. Missing type definitions (`undefined4`, `undefined8`), missing headers, undefined external symbols (`operator_new`, `__cxa_allocate_exception`). Requires extensive manual reconstruction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+4+6+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (5+2+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+4+2)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.70/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_8`, `iVar1`, `puVar1`) losing all semantic meaning from original (`value`, `name`, `capture_by_value`)
+- **Class structures not recovered** - all field access via pointer arithmetic (`*(int *)(this + 8)`) instead of named members
+- **Test functions optimized to constants** - `test_cpp_multiple_inheritance` returns `0x47` instead of showing the actual computation logic
+- **Massive destructor redundancy** - 8+ variants of `~DiamondDerived` with thunk functions cluttering output
+- **Stack canary noise in every function** - `___stack_chk_guard` checks obscure actual logic flow
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- Ghidra consistently flags problematic code patterns with warnings, helping analysts identify uncertain decompilation areas.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover C++ class structures; all object field access reduced to raw pointer arithmetic losing all type semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable analysis** - Map field offsets to named members using debug symbols when available (-g flag was present)
+2. **Eliminate stack canary boilerplate** - Recognize and collapse `___stack_chk_guard` patterns into clean function bodies for -O0 builds
+3. **Preserve test function logic instead of constant folding** - Even at -O0, some functions collapsed to return constants; maintain original computation flow for analysis purposes

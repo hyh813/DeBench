@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar1`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but helper functions use generic names (`FUN_00100880`, `FUN_001009fc`). Good preservation of semantic function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0x3e9`, `0x65`, `0x12`, `0xfffffff8`). Test functions use hex literals (`0x15`, `0x14`) instead of decimal values from source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: NEON vectorization artifacts present (`auVar3`, `auVar9`, `NEON_ext` calls) in functions like `loop_continue` and `goto_backward`. Compiler startup code (`_init`, `_start`, `deregister_tm_clones`) included unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions well-recovered (`sequential_ops`, `ternary_op`), but optimized loops show massive unrolling obscuring original intent. `goto_forward` logic doesn't match original (returns `param_1 * iVar1 * 2` instead of proper conditional squaring).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but test functions (`test_control_flow_l1/2/3`) don't actually call the functions—they print hardcoded expected values, breaking the test structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` uses goto labels for switch fallthrough (`switchD_001010a0_caseD_7`). Optimized loops have complex control flow disrupting readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe loop unrolling in `loop_continue` (80+ lines for simple odd-sum loop), `goto_backward`, and `recursion_factorial`. NEON vectorization creates massive code duplication with 20+ temporary variables.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Critical type mismatches: `if_else` returns `bool` instead of `int`, `nested_if_2` has `uint param_2` instead of `int`. Generic `int` types used instead of specific widths (`int32_t`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays handled reasonably (`loop_break`, `loop_multi_exit`), function pointer types partially recovered. No complex structs in this sample to evaluate fully.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer calls marked `UNRECOVERED_JUMPTABLE` with warnings. Some `void*` usage where specific types expected (`call_func_ptr`, `conditional_func_ptr`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments—only decompiler metadata header. No algorithm explanations, no confidence indicators, no documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition (state machines, loops, Duff's device not identified by name). `duffs_device` structure recovered but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return", "UNRECOVERED_JUMPTABLE"), but inconsistent. No indication of optimization level mismatch or logic errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No error condition documentation for functions with multiple return paths.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not explained (`jump_buffer`, `completed_0`, `__dso_handle`). No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 74 functions in single output with no logical grouping. Startup/teardown functions mixed with application code. No namespace or package structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes", but external dependencies not clearly documented. Some undefined references (`__libc_start_main`, `__gmon_start__`) require stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.79/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `uVar1`) losing all semantic meaning from original source
+- **Type mismatches** (`if_else` returns `bool` instead of `int`, `nested_if_2` has wrong parameter type)
+- **Test functions don't execute**—they print hardcoded expected values instead of calling actual functions
+- **Severe optimization artifacts** (NEON vectorization, loop unrolling) obscure original simple loop structures
+- **No comments** explaining algorithm intent, confidence levels, or non-obvious transformations
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Original function names (`sequential_ops`, `single_if`, `nested_if_deep`) preserved accurately, maintaining semantic identity across decompilation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero useful documentation; decompiler provides no algorithm explanations, confidence indicators, or guidance for understanding transformed code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**—analyze how `param_1` is used (e.g., compared to 0, multiplied) to suggest semantic names like `input_value`, `counter`, `size`
+2. **Detect and annotate optimization transformations**—when loop unrolling or vectorization is detected, add comments explaining the original loop structure
+3. **Recover test function semantics**—recognize printf patterns with function names and reconstruct actual function calls instead of hardcoded expected values

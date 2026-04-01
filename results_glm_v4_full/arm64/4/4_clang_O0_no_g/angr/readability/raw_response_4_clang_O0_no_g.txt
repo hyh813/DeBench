@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`). In `varargs_func`, variables like `v24`, `v21`, and `ptr` obscure the `va_list` logic completely, making it difficult to understand the intent without referencing the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `main`, `test_calling_conventions`) match the source exactly. This is likely due to the presence of debug symbols (`-g`), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 9/10
+Justification: String literals (e.g., `"Hello"`, `"=== 测试基础调用约定 ==="`) are preserved perfectly. Magic numbers like `4294967294` appear in bit manipulation contexts, which is technically accurate to the binary, though less readable than the source logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The pattern `v0 = &v1` appears in almost every function (e.g., `call_cdecl`, `call_stdcall`). This represents stack frame setup/canary initialization that adds no semantic value and significantly clutters the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with `for` and `if` statements matching the source. However, `varargs_func` uses complex pointer arithmetic and manual stack walking instead of the standard `va_start`/`va_arg` loop, reducing readability.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code. No inlining or outlining occurred, preserving the original granularity and cohesion perfectly (e.g., `cdecl_func` remains separate from `call_cdecl`).
+
+**7. Code Linearization:** Score: 9/10
+Justification: Code reads top-to-bottom with minimal jumps. The only disruption is the pervasive `v0 = &v1` initialization at the start of functions, which is a minor linearization annoyance.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The redundant stack frame initialization (`v0 = &v1`) is pervasive. In `param_by_value_int`, the multiplication is expanded into bit operations `(v0 * 2 | v0 >> 31) & 4294967294`, which is redundant complexity for the simple `x * 2` operation in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are mostly correct, but `func_struct_byval` loses the struct parameter, replacing it with `unsigned long ptr`. `varargs_func` fails to recover `va_list`, using raw stack variables (`uint128_t v28`, etc.) instead.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: `LargeStruct` passed by value in `func_struct_byval` is demoted to a pointer `unsigned long ptr`. The decompiler failed to reconstruct the struct definition in the function signature, treating it as a raw memory address.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is generally safe, but the bit-manipulation representation of multiplication (e.g., `__ROL__` in `param_by_value_ptr`) is confusing and obscures the simple arithmetic intent, potentially leading to misinterpretation of the logic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, nor are there any markers indicating uncertainty or explaining the complex `varargs` or bit-manipulation logic found in the decompiled output.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler failed to recognize the `va_list` idiom in `varargs_func`, presenting it as raw stack pointer manipulation. It also failed to simplify the multiplication idiom to `* 2`, leaving it as a complex bitwise expression.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings are provided for the suspicious `__ROL__` usage representing multiplication or the loss of struct types. The code is presented confidently despite these oddities, which misleads the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, there is no indication that `ptr` in `func_struct_byptr` must not be NULL, even though the code checks for it.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct names (e.g., `cdecl_func` calls are clear). The relationship between `main` and the test functions is preserved and easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source flow. Helper functions and test functions are grouped together, maintaining the original file structure.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code is syntactically valid C and would likely compile with minimal fixes (e.g., removing the `v0 = &v1` dead stores), though the `__ROL__` macro might require a definition or manual correction.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 9 + 3) / 4 = 6.5
+L2_avg = (8 + 10 + 9 + 5) / 4 = 8.0
+L3_avg = (5 + 4 + 6) / 3 = 5.0
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.0
+L5_avg = (8 + 8 + 7) / 3 = 7.67
+
+Overall = (6.5 × 0.30) + (8.0 × 0.25) + (5.0 × 0.20) + 
+          (2.0 × 0.15) + (7.67 × 0.10)
+Overall = 1.95 + 2.00 + 1.00 + 0.30 + 0.77
+Overall = 6.02
+```
+
+### Overall Readability Score: **6.0/10**
+
+### Critical Defects
+- **Variable Naming**: Variables like `v0`, `v1`, and `v24` are generic and obscure semantic meaning, especially in `varargs_func`.
+- **Type Recovery**: `func_struct_byval` loses the `LargeStruct` type signature, replacing it with a raw `unsigned long ptr`.
+- **Idiom Recognition**: The `va_list` pattern in `varargs_func` is not recovered, resulting in unreadable stack pointer arithmetic.
+- **Arithmetic Simplification**: Simple multiplication (`* 2`) is obfuscated into complex bit-rotation operations (`__ROL__`), significantly harming readability.
+- **Noise Pollution**: Pervasive `v0 = &v1` statements (stack frame setup) clutter every function without adding value.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly recovered all function names from the debug symbols, making the high-level flow trivial to follow.
+
+### Most Needs Improvement
+- **Semantic Transparency (2/10)**: The lack of comments, failure to recognize standard idioms (like `va_list`), and absence of anomaly flags make understanding the *intent* of the code difficult despite the clean structure.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement `va_list` Pattern Recovery**: Detect the standard stack walking patterns for variadic functions and reconstruct them using `va_start`, `va_arg`, and `va_end` idioms.
+2.  **Filter Stack Frame Setup Noise**: Identify and hide dead stores related to frame pointer initialization (e.g., `v0 = &v1`) that have no semantic impact on the program logic.
+3.  **Simplify Arithmetic Bit-Twiddling**: Add a simplification pass to convert complex bitwise operations back to standard arithmetic operators (e.g., `* 2`) when the semantics are equivalent and obvious.

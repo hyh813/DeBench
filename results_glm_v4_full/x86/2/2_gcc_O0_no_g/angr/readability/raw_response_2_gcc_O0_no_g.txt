@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `ptr`), failing to recover semantic names like `sum`, `len`, or `x` present in the source, which obscures data flow.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `double_value`, `process_char`, and `main` are perfectly preserved from the source symbols, providing clear entry points and semantic context.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved intact, but character constants like `'A'` and `'Z'` are degraded to magic numbers (`64`, `90`), and floating-point constants are lost to errors.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts, specifically `__x86.get_pc_thunk.ax()` calls in almost every function, and raw VEX lifting errors (`[D] unsupported_...`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Loop structures are generally recovered correctly as `for` loops, and conditionals are readable, though some low-level artifacts like `goto` in `sub_401030` disrupt the flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with standard loop constructs, avoiding excessive spaghetti code or confusing forward jumps.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The redundant `__x86.get_pc_thunk` calls appear in nearly every function, adding significant clutter that does not contribute to the logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical type information is lost; 64-bit types like `long long` and `double` are split into two `unsigned int` parameters, and floating-point operations fail to lift entirely.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structured types like `Point3D` are erased; `struct_simple` takes a raw `unsigned int *` instead of a struct pointer, and fields are accessed via array indexing (`a0[2]`) rather than member names.
+
+**11. Type Safety:** Score: 4/10
+Justification: The splitting of 64-bit integers into two 32-bit registers and the inability to represent floating-point types creates significant type confusion and potential safety issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining logic, algorithms, or data structures, leaving the user to interpret raw code.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like case conversion (`process_char`) are present but not explicitly recognized or named; they appear as raw arithmetic on ASCII values.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: While floating-point failures are flagged with `[D] unsupported_...`, these are raw debug messages rather than user-friendly warnings explaining the limitation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are explicit, but the reliance on generic helper functions like `sub_4010a0` (likely `printf`) without naming them reduces clarity.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in binary address order rather than logical groupings, though the preserved names help mitigate this slightly.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to non-standard `__x86.get_pc_thunk` calls, raw VEX debug statements, and incorrect function signatures for 64-bit types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Floating-point operations (`process_float`, `process_double`) are completely broken, displaying raw VEX errors instead of logic.
+- 64-bit integer types (`long long`, `double`) are incorrectly split into two 32-bit arguments, destroying function signatures.
+- Composite types (structs) are not recovered; struct fields are accessed via raw pointer arithmetic and array offsets.
+- Excessive noise from PIC artifacts (`__x86.get_pc_thunk`) clutters every function.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully preserved all original function symbols, making the high-level structure of the program easy to navigate despite the low-level unreadability.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3.0/10)
+- The failure to recover 64-bit types and floating-point logic renders a significant portion of the test functions (math and data processing) unreadable and semantically incorrect.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement proper lifting for 64-bit integer and floating-point arguments/return values to prevent type splitting.
+2. Add logic to detect and abstract away Position Independent Code (PIC) prologues like `__x86.get_pc_thunk` to reduce noise.
+3. Improve composite type recovery to identify structs based on access patterns (e.g., `a0[0]`, `a0[1]`, `a0[2]`) rather than defaulting to raw pointers.

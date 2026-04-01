@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_30` throughout; no semantic meaning recovered (e.g., `param_1` should be `x` in `param_fake_branch`). Function-local variables like `pbVar2` and `bVar1` obscure their roles as pointer and byte respectively.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but some have suffixes like `.constprop.0` indicating compiler transformations. Helper functions like `div_zero_handler` retain meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x1f`, `0x2b` appear without explanation; signal numbers (8, 0xb) used instead of `SIGFPE`/`SIGSEGV` constants. Some constants like `0xDEADBEEF` from source are eliminated through optimization.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple `__x86.get_pc_thunk.*` injection warnings clutter output; stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) add noise. However, dead code blocks are properly marked as "Removing unreachable block."
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as do-while constructs appropriately (e.g., `param_opaque_predicate` GCD loop). However, `param_fake_branch` dead branches eliminated entirely, losing original structure. Some functions use infinite loop warnings (`while(true)`) for unreachable code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity; `param_division_by_zero` split into `.constprop.0` and `.constprop.1` variants due to optimization. `test_obf_opt_edge` inlined many calls, losing modular structure from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks create duplicate exit paths. Functions like `param_string_encryption` have duplicated code in `call_string_encryption` reducing linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy: `call_string_encryption` duplicates entire `param_string_encryption` body instead of calling it. `test_obf_opt_edge` inlines GCD computation that should be a function call. Constant folding eliminates original computation patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation observed: `param_instruction_substitution` takes `uint` instead of `int`; `param_division_by_zero` returns `undefined4` instead of `int`. Pointer types often generic (`undefined4 *` instead of `int *`). Some signed/unsigned confusion in overflow detection.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `__jmp_buf_tag` struct recovered but fields not named. Stack arrays like `local_30 [31]` lack semantic meaning (should be `decrypted` buffer). No bit-field recovery visible despite source having bitfield struct in `param_implementation_defined`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(undefined4)(10 / (longlong)param_1)`, `(__sighandler_t)0x0`. Pointer arithmetic visible in `param_vectorized_loop` (`param_2 + iVar2 * 4`). Stack canary checks indicate safety mechanisms but cast-heavy.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra warnings present ("WARNING: Function...replaced with injection"). No algorithm explanations, no recovery of source comments about obfuscation techniques. Critical semantics like "永假条件" (always-false condition) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified as such. XOR decryption pattern in `decrypt_string` not labeled. Stack canary pattern recognized but not explained as security feature.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging: "WARNING: Subroutine does not return" for `__longjmp_chk`, "Removing unreachable block" for optimized code. Indirect calls marked with injection warnings. However, optimization-induced semantic changes not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Signal handler contracts not documented. Stack canary checks present but not explained as integrity verification. No null pointer validation comments despite `param_null_pointer_deref` handling NULL.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code but not documented. Global variables (`jmp_buffer`, `encrypted_0`) referenced without declaration context. Signal handler registration visible but callback relationship not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 49 functions in single output; no logical grouping by section (obfuscation vs. optimization vs. edge cases). Runtime initialization functions (`_init`, `_start`, `_fini`) mixed with application logic. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with proper includes. External dependencies visible (`malloc`, `free`, `signal`, `strlen`). Stack canary functions (`__stack_chk_fail_local`) would need linking. Architecture mismatch (x86 decompilation of ARM64 source) may cause issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+6+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+4+7+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.600
+
+Overall Score: 5.62/10
+```
+
+### Overall Readability Score: **5.6/10**
+
+### Critical Defects:
+- **Variable `param_1`** should be named `x` based on source function signature `param_fake_branch(int x)`
+- **Dead code elimination** removed fake branch conditions entirely, losing obfuscation semantics
+- **No comments** explaining obfuscation techniques that were central to original source purpose
+- **Type degradation** with `undefined4` return types instead of specific `int` types
+- **Function inlining** in `test_obf_opt_edge` duplicates code instead of preserving call structure
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names largely preserved despite optimization, enabling quick identification of purpose
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No documentation of preconditions, postconditions, or error handling contracts despite complex signal handler logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from debug symbols when `-g` flag present (source had `-g` but decompilation shows generic names)
+2. **Preserve obfuscation patterns** even when optimized away, with annotations explaining eliminated dead code
+3. **Generate contract documentation** for signal handlers and exception paths, especially for `setjmp`/`longjmp` patterns

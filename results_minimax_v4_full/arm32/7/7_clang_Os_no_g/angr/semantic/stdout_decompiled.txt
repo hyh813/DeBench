@@ -1,0 +1,5 @@
+===== Start Obfuscation Tests =====
+
+Test: param_fake_branch = 10
+Test: call_fake_branch = 35
+Test: param_instruction_substitution = 225

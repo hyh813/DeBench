@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `iVar1`, `uVar1`, `local` instead of semantic names. Parameters get unnecessary `_local` suffixes (e.g., `n_local`, `x_local`). Some names like `arr`, `head`, `current` are preserved well.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (double_value, local_vars, heap_basic, vla_stack) due to -O0 with debug symbols. Action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear as hex (0x2a=42, 0x14=20, 0x800=2048, 0x400=1024) without explanation. Some are inferable but obscure intent compared to original decimal constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" messages clutter output. Unnecessary stack canary variables (`local_c`, `__stack_chk_fail`) appear in functions that don't need them. Redundant type casts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `stack_alias` is completely broken (returns constant values instead of implementing aliasing logic). VLA/alloca functions use complex pointer arithmetic instead of clean array syntax.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with reasonable granularity matching source. No monolithic functions, but some are fragmented by decompiler warnings and artifacts.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some forward jumps in complex functions (linked_list_heap) but generally acceptable for -O0 compilation.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (`(int*)`, `(void*)`). Stack canary checks add unnecessary code. Some duplicate null checks that could be consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types correct but VLA shows `int_0_*` type degradation. Some void* usage where specific types expected. TLS access uses raw `__aeabi_read_tp()` instead of clean TLS variable.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs (Point, Node, TreeNode) recovered well with field names (data, next, left, right, x, y). Field access uses proper arrow notation (p->x, head->next).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int*)((int)__ptr + i * 4)`). Pointer arithmetic obscures array semantics. No const-correctness preservation visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler warnings as comments ("WARNING: Removing unreachable block"). No semantic documentation, algorithm explanations, or API contracts recovered from debug info.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition (linked list creation, tree traversal, memory allocation patterns not identified). Raw implementation without higher-level abstraction hints.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present but inconsistent. `stack_alias` severe semantic break not flagged. TLS low-level access not explained as architecture-specific artifact.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: n > 0" for vla_stack). Null checks present but not documented as contracts. Error return values unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clearly visible. Global variables (global_counter, global_array) properly identified. Callback relationships (global_func_ptr) preserved.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No explicit grouping comments. Static functions properly scoped but no namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but external dependencies (extern_global_var, extern_function) not clearly documented. Some architecture-specific calls (__aeabi_read_tp) need explanation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+8+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (7+6+6)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                              6.03/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects:
+- **`stack_alias` function completely broken** - Returns constant values (0x14, -1) instead of implementing pointer aliasing logic; semantic meaning entirely lost
+- **VLA/alloca pointer arithmetic** - Complex expressions like `*(int *)((int)&iStack_30 + (i * 4 - uVar1))` instead of clean `vla[i]` array syntax
+- **Variable naming degradation** - Generic `iVar1`, `uVar1`, `local` names obscure semantic purpose despite debug symbols being available
+- **TLS access not abstracted** - Raw `__aeabi_read_tp()` calls instead of clean thread-local variable access
+- **No semantic comments recovered** - Debug info (-g flag) not leveraged to recover original comments or documentation
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Debug symbols (-g) successfully preserved all original function names, making navigation and identification straightforward.
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Despite -g debug flag, zero semantic comments recovered; only decompiler warnings present, losing all original documentation value.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable names** - DWARF debug info contains original variable names that should be recovered instead of generating `iVar1`, `local`
+2. **Recognize array access patterns** - Detect stack-based VLA/alloca patterns and emit clean `arr[i]` syntax instead of raw pointer arithmetic
+3. **Recover and preserve source comments** - Debug sections often contain line number mappings that could associate original comments with decompiled code

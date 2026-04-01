@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`, `a1`) instead of semantic names like `dst`, `src`, `filename`. Some functions preserve better names (`iterations`, `buffer`, `pipefd`) but the majority obscure variable purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`), but many helper functions use generic addresses (`sub_1030`, `sub_1040`). Main functionality is identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0x14u` for stack canary, `5` and `6` for syscall numbers instead of `SYS_open`/`SYS_close`, `0x3E8u` for usleep). String literals preserved but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__readgsdword(0x14u)` stack canary checks in nearly every function, `__printf_chk` instead of `printf`, thunk functions (`_x86_get_pc_thunk_bx`), and 57 failed external function decompilations listed.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as `while` constructs, conditionals are clear. However, stack canary setup (`v3 = __readgsdword(0x14u)`) adds noise to function prologues, and some nested conditionals are awkward.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well - `param_strcpy`, `call_strcpy` remain separate. Thread functions properly extracted. No monolithic functions observed, though some could be cleaner.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Stack canary verification at function exit (`HIDWORD(result) = v5 - __readgsdword(0x14u)`) disrupts linear reading in some functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable chains common (`v0`, `v1`, `v2` assignments). Stack canary code duplicated across functions. Some functions have unnecessary intermediate variables that could be eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `void*`) but precision lost (`size_t` becomes `int`, `__int64` used inconsistently). Pointer types generally correct but signedness sometimes ambiguous.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field access (`data[v5].result`). However, many structs accessed via pointer arithmetic (`*(_DWORD *)arg`, `*((_DWORD *)arg + 2)`) instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`*(_DWORD *)result`, `(char *)-1`). Pointer arithmetic without bounds checking. Raw memory access patterns (`qmemcpy`, direct dword dereferences) create type confusion risks.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Only header comment mentions decompiler version.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns partially identified. However, no explicit pattern naming (e.g., "producer-consumer", "mutex-protected counter").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (57 functions) but no inline warnings. Suspicious patterns like `__readgsdword` not explained. Some indirect calls lack resolution confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions inferred. Error return values not explained. Return value semantics unclear without source comparison.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Global variables (`shared_counter`, `atomic_counter`) apparent. However, no call graph documentation or explicit relationship mapping between test functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order matching source sections. No clear module boundaries or namespace organization. Original section comments lost in decompilation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 57 external functions failed to decompile requiring stubs. Platform-specific artifacts (`__readgsdword`, `__printf_chk`) reduce portability. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+7+4+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (6+7+6+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type System):  (6+6+4)/3   = 5.33  × 0.20 = 1.07
+Level 4 (Semantic):     (2+5+4+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):   (6+5+3)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.07/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2` chains** obscure semantic meaning (should be `fd`, `result`, `status` based on usage)
+- **Magic syscall numbers** (`5`, `6`) instead of `SYS_open`, `SYS_close` constants
+- **57 external functions failed** to decompile, requiring manual stub creation
+- **No comments** explaining algorithm logic or decompilation confidence
+- **Unsafe pointer casts** (`*(_DWORD *)arg`) throughout thread functions losing type safety
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test functions preserved original semantic names (`param_strcpy`, `thread_compute`, `param_mutex_lock`) making high-level structure immediately identifiable.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation exists; a reader must infer all semantics from code alone without any guidance on purpose, edge cases, or decompilation uncertainty.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, file descriptors should be named `fd`, etc.
+2. **Recover symbolic constants** - Replace magic numbers like `5`, `6` with `SYS_open`, `SYS_close` by cross-referencing syscall tables.
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target unresolved` to guide manual review.

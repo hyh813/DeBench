@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, `p`, and `arg_0`. No semantic names like `obj`, `value`, or `packet_size` were recovered, making it difficult to track data flow.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: C++ mangled names were successfully demangled for user-defined functions (e.g., `test_cpp_member_func`, `Container<int>::push`), which is helpful. However, many functions remain generic wrappers (e.g., `sub_401020`, `sub_401239`), obscuring the call graph.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are replaced with global pointers (e.g., `&g_40207d`), and magic numbers abound (e.g., `4700`, `40`, `80`). While `4700` accurately reflects the optimized calculation, it lacks the context of the original expression (`r1 + r2 + r3`).
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output contains significant noise, including numerous `sub_` wrapper functions that add no value and redundant casts. The control flow is cluttered with low-level artifacts that obscure the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is highly unnatural, relying heavily on `goto` statements for loops and switches. Virtual function calls are represented as raw indirect jumps (`goto *((long long *)*((long long *)&arg_0))`), which is technically accurate but unreadable as polymorphism.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The decompiler creates excessive fragmentation with tiny `sub_` wrapper functions (thunks). Conversely, complex logic like `test_cpp_oo_features` is flattened into a single block of `printf` calls with pre-calculated constants, losing the structure of the individual test cases.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code does not read linearly. Forward jumps and computed gotos interrupt the flow, and the exception handling logic in `test_cpp_exception` is represented as a disjointed set of conditional checks rather than a structured `try-catch` block.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The compiler's optimization (O3) eliminated the redundant logic of the test functions themselves, replacing them with constants. The decompiler reflects this sparsity, which is efficient but removes the redundant code that would have explained the program's behavior.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. The `this` pointer in member functions is consistently typed as `void*` (e.g., `Container<int>::push(void* ptr, ...)`), and standard types are often replaced with generic `unsigned long long` or `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Classes are not recovered. Instead of `class Container`, the code uses generic structs like `struct_0` with fields named `field_0`, `field_8`, etc. Member access is done via raw pointer arithmetic (e.g., `ptr[40]`) rather than field names.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code is rife with type-unsafe operations. Pointer arithmetic is performed on `void*`, and function pointers are cast and dereferenced without type checking. This reflects the binary reality but offers no safety guarantees to the reader.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comments are artifacts like `/* do not return */` or the header. There is no explanation of the C++ constructs (vtables, RTTI) being used.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual functions are raw jumps, exceptions are `__cxa_throw` calls, and RTTI is `__dynamic_cast`. The decompiler fails to abstract these into standard C++ concepts.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the code confidently without flagging anomalies. For instance, it doesn't indicate that the logic in `test_cpp_oo_features` has been optimized away to constants, which might confuse a user looking for the original implementation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No contracts, preconditions, or invariants are documented. The relationship between the `this` pointer and the expected class layout is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While demangled names help identify relationships (e.g., `Container<int>::push`), the heavy use of `sub_` wrappers and the loss of class structure make it difficult to understand the overall object-oriented hierarchy.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat list of functions. There is no reconstruction of namespaces or logical grouping of classes (e.g., all `Container` methods are scattered).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile as-is. It relies on undefined structs (`struct_0`), uses non-standard syntax for indirect jumps (`goto *ptr`), and lacks necessary headers and definitions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.75
+L2_avg: 4.25
+L3_avg: 2.33
+L4_avg: 1.50
+L5_avg: 3.00
+
+Overall = (3.75 × 0.30) + (4.25 × 0.25) + (2.33 × 0.20) + 
+          (1.50 × 0.15) + (3.00 × 0.10)
+Overall = 1.125 + 1.0625 + 0.466 + 0.225 + 0.3
+Overall = 3.1785
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects
+- **Type Erasure:** The `this` pointer is universally typed as `void*`, destroying the object-oriented context.
+- **Loss of Class Structure:** Classes are replaced by generic structs (`struct_0`) and magic number offsets (e.g., `ptr[40]`), making data layout opaque.
+- **Optimization Confusion:** The decompiler presents optimized constants (e.g., `4700`) without indicating that the original logic was computed at compile-time, misleading the analyst about the dynamic behavior.
+- **Raw Vtable Calls:** Virtual functions are decompiled as raw indirect jumps (`goto *ptr`) rather than method calls, obscuring polymorphism.
+- **Missing String Literals:** Strings are referenced by global address pointers (`&g_40207d`) rather than displaying the actual string content.
+
+### Best Quality Aspect
+- **Function Naming (Score: 6/10)**
+- **Why?** The decompiler successfully demangled C++ symbols, preserving the original function names for user-defined methods and templates, which provides the only anchor back to the source code.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**
+- **Why?** The complete failure to reconstruct class definitions, replacing member variables with pointer arithmetic offsets, renders the data model unintelligible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover C++ Class Hierarchies:** Implement analysis to reconstruct `class` and `struct` definitions from vtable usage and member access patterns, replacing `void*` and offsets with proper `this` pointers and field names.
+2.  **Lift String Literals:** Automatically resolve global string pointers to their actual string values in the decompiled output to improve literal clarity.
+3.  **Abstract Virtual Calls:** Detect vtable-based indirect jumps and represent them as virtual function calls (e.g., `obj->virtual_func()`) rather than raw `goto *ptr` statements.

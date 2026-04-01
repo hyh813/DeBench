@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `param_1`, `local_38`, `piVar2`) with no semantic meaning. Loop counters show as "Unresolved local var: int i@[???]" losing critical context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only startup functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Constants appear as hex values (`0xf`, `0x32`, `0x2a`) instead of decimal. String literals reference external data (`&DAT_00102004`) rather than inline text, requiring cross-reference lookup.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_fail()`), frame offset references (`in_FS_OFFSET`), register variables (`in_RCX`, `in_RDX`), and "Unresolved local var" warnings throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as while/do-while, but some switch statements converted to if-else chains (`ret_multi_branch`). Heavy constant folding eliminates actual function calls, obscuring original flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved correctly. However, aggressive optimization collapses many wrapper functions to constant returns (`call_cdecl` returns `0xf` directly), losing call relationship clarity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Loop structures are recognizable, though varargs handling uses complex while-true patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding removes redundant computations effectively. No obvious dead code, but optimization creates new redundancy (multiple functions returning identical constants).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered correctly (`int`, `char*`, `longlong`). Varargs handling degrades to raw pointer arithmetic. Function pointer types partially recovered (`_func_int_int` instead of proper typedef).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types well-preserved (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`). Field names and array dimensions maintained accurately within struct definitions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`void*` to `int*` in `param_complex_cast`). Pointer arithmetic visible in varargs handling. Stack canary checks provide some safety but no bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No semantic documentation explaining algorithm purpose or function intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern recognized but implementation is low-level pointer manipulation. Struct passing patterns visible but not identified as calling convention patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for calling convention issues and unresolved variables. Stack check warnings clearly marked. Decompilation uncertainty communicated effectively.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: NULL checks preserved (`func_struct_byptr`, `param_double_ptr`). No explicit precondition/postcondition documentation. Error conditions not formally specified.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly visible in code. Global variable references present (`handle1_1`, `handle2_0`) but no call graph documentation or relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. No logical grouping visible, static functions not clearly marked, no namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__printf_chk`, `puts`, `strlen`) requiring stubs. Undefined symbols (`handle1_1`, `handle2_0`, `DAT_00102004`) need resolution. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+8+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (4+5+7+5)/4 = 5.25 × 0.15 = 0.788
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.88/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable names are generic** (`iVar1`, `param_1`, `local_38`) requiring manual inference of purpose
+- **Constant folding obscures call relationships** - wrapper functions return constants instead of showing actual function calls
+- **String literals externalized** to `&DAT_XXXXXXX` requiring cross-reference lookup
+- **Varargs implementation is low-level** pointer arithmetic instead of recognizable `va_list` pattern
+- **Hex literals throughout** (`0xf`, `0x32`, `0x2a`) instead of decimal values matching source
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement
+- **Variable Naming Quality (4/10)** - Generic names like `iVar1`, `param_1` obscure semantic meaning and require significant effort to understand variable purposes
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement usage-based variable renaming** - Analyze variable usage patterns to infer semantic names (e.g., loop counters, accumulators, pointers)
+2. **Preserve call relationships despite optimization** - Show original call structure even when compiler folded constants, with optimization annotations
+3. **Inline string literals in output** - Resolve `&DAT_XXXXXXX` references to actual string content for immediate readability

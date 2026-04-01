@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are overwhelmingly generic (e.g., `local_30`, `uVar2`, `piVar1`) or leak architecture details (`unaff_EBX`). In `test_cpp_member_func`, the `SimpleClass` object is represented by a series of stack variables (`local_30` to `local_11`) rather than a named object instance.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: While some C++ methods are recovered with correct names (e.g., `Base::virtual_func`, `Container<int>::push`), many functions remain as address-based placeholders (e.g., `FUN_00011030`, `FUN_00011150`), severely hindering navigation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are often represented as hex integers (e.g., `0x74736554` for "Test") or raw character arrays. Magic numbers like `0x2a` (42) and `0x3e9` (1000) are used without context or named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The code is polluted with compiler artifacts such as `__stack_chk_fail_local` calls, `undefined` types, and register spillage (`unaff_EBX`). Exception handling frames in `test_cpp_exception` introduce significant low-level noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: High-level C++ control structures like `try/catch` are lost, replaced by complex pointer arithmetic and indirect calls in `test_cpp_exception`. The flow is non-linear and difficult to follow due to the implementation details of stack unwinding being exposed.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Class methods are correctly separated into individual functions (e.g., `Derived::getName`), but the logic within test functions is often reduced to constant returns (e.g., `test_cpp_virtual_func` returns `0x2a`), hiding the actual call sequence and object interactions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code suffers from frequent jumps and obscure setup blocks for exception handling. The linear flow is interrupted by stack canary checks and GOT/PLT access patterns (e.g., `__x86.get_pc_thunk`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: While some functions are simplified to constants, others contain redundant casts and type conversions (e.g., `(undefined4 *)0x4`) that add no semantic value but clutter the code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int` and `double` are recovered, but complex types often degrade to `undefined4` or `undefined *`. Function signatures sometimes use incorrect types (e.g., `EVP_PKEY_CTX *` in `_init`), indicating type confusion.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Although class names like `Container<int>` appear in function signatures, the member access inside functions uses raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`) rather than field names (`size`), losing the structural context of the class.
+
+**11. Type Safety:** Score: 3/10  
+Justification: The code contains numerous unsafe casts, such as casting integers to pointers (`(undefined4 *)0x4`) and performing arithmetic on `void*` or `undefined*` types, which obscures memory safety boundaries.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the exception handling mechanism or RTTI checks, is left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms are present but not abstracted. Virtual function calls are visible as indirect calls (`(**(code ***)param_1)()`), but they are not explicitly labeled as virtual dispatches, requiring the user to recognize the vtable pattern manually.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler presents low-level artifacts like `unaff_EBX` and `undefined` types without any warning or indication that these represent analysis failures or uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds checking in `Container::get` is present as raw `if` statements but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Calls to library functions or internal helpers (e.g., `FUN_000111a0`) provide no context about what the target function does, making it hard to trace data flow across the module.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are ordered by address rather than logical grouping. Related class methods (e.g., constructors and destructors) are scattered throughout the listing.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code uses non-standard types (`undefined`, `undefined4`) and syntax (e.g., `unaff_EBX`) that will not compile without significant manual refactoring and type definition.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- Class member access is represented as raw pointer arithmetic (e.g., `*(int *)(this + 4)`) instead of field names.
+- C++ exception handling (`try/catch`) is completely decompiled into low-level setjmp/longjump-style logic, obscuring the original control flow.
+- Variables are generic (`local_30`, `uVar2`) and string literals are often hex-encoded (`0x74736554`), destroying semantic meaning.
+- No comments or annotations are provided to explain complex C++ runtime mechanisms (RTTI, vtables).
+
+**Best Quality Aspect:** Function Naming Quality (scored 5/10)  
+- The decompiler successfully recovered mangled C++ names for several methods (e.g., `Base::virtual_func`, `Container<int>::push`), providing some anchor points in the otherwise unreadable code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)  
+- The complete lack of comments and failure to abstract C++ idioms (like virtual calls or exceptions) makes the code extremely difficult to map back to the original source intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++-specific type recovery to map stack variables to class instances and use member access syntax (e.g., `this->multiplier` instead of `*(int *)(this + 4)`).
+2. Add logic to recognize and reconstruct high-level `try/catch` blocks from exception handling tables and personality routines.
+3. Improve string literal recovery to display characters instead of hex integers and add comments explaining magic numbers derived from compiler-generated tables.

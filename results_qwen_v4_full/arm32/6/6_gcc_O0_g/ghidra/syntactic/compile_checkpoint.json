@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 15,
+  "source_file": "decompiled/ghidra_out/arm32/6/6_gcc_O0_g.c",
+  "fixed_file": "results_qwen_v4_full/arm32/6/6_gcc_O0_g/ghidra/syntactic/fix_6_gcc_O0_g.c"
+}

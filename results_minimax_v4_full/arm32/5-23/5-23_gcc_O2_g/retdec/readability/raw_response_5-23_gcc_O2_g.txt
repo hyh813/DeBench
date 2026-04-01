@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic identifiers like `v1`, `v2`, `v3`, `a`, `b`, `result`. The original source used meaningful names like `page_size`, `exec_mem`, `counter`, `arr` - all lost in decompilation. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered: `main`, `test_preprocessing_features`, `test_asm_features`, `param_memory_protection`. However, many original functions are missing entirely (e.g., `param_macro_constants`, `param_conditional_compile`, `param_asm_basic`) and replaced with generic or merged versions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `3`, `34`, `1` for mprotect/MAP constants are unexplained. The decompiler did decode some Chinese UTF-8 strings in global variables but didn't replace magic numbers with meaningful constant names like `PROT_READ`, `MAP_PRIVATE`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without obvious compiler artifacts like register spilling or frame pointer manipulation. The `__stack_chk_fail` calls are legitimate compiler-generated safety checks.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is readable with proper if-else and while constructs. The `call_asm_simd` function shows a while loop that could be recognized as unrolled SIMD operations. At -O0, flow should be more natural.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Only 6 functions detected vs. 20+ in original source. Many functions are completely missing or merged (e.g., all the param_* and call_* functions for macro testing). This is a severe decomposition failure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The `call_asm_simd` function has a while loop that reads naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Cannot fully assess due to missing functions. The `call_asm_simd` shows some loop unrolling but it's not clearly marked as such.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` appropriately, but many pointer types are generic `int32_t*` instead of more specific types. The mmap/mprotect calls use raw numbers instead of `PROT_*` and `MAP_*` constants.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct or union recovery visible. The original used arrays like `int a[4]`, `int b[4]` for SIMD but decompilation shows them as separate stack allocations with pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present, such as casting `mmap` return to `int32_t*` and comparing against `-1` as integer. The `__sync_fetch_and_add_4` function has unclear type handling.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only mechanical comments present ("From module:", "Address range:", "Line range:"). No functional comments explaining what the code does, no recovery of original intent, no uncertainty flags for unresolved calls.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The inline assembly patterns, macro expansions, and conditional compilation logic are completely lost. The atomic operation pattern in `__sync_fetch_and_add_4` is not recognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The `unknown_ffff0fc0` function is called but not identified as potentially hand-written assembly or a stub. Missing functions not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The mmap/mprotect error handling doesn't indicate expected error conditions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible (main calls test functions) but incomplete. No documentation of which functions call which, no global variable usage clarity.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped but poorly organized. The original had clear sections (preprocessing, asm features) - this organization is lost. All functions in single file with no logical grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes some headers but incomplete. Missing `#include <stdio.h>` for printf, missing `<string.h>` for memcpy. The code would not compile as-is.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 7) / 4 = 4.5
+L2_avg = (6 + 2 + 7 + 5) / 4 = 5.0
+L3_avg = (6 + 1 + 5) / 3 = 4.0
+L4_avg = (4 + 2 + 2 + 1) / 4 = 2.25
+L5_avg = (4 + 4 + 4) / 3 = 4.0
+
+Overall = (4.5 × 0.30) + (5.0 × 0.25) + (4.0 × 0.20) + 
+          (2.25 × 0.15) + (4.0 × 0.10)
+        = 1.35 + 1.25 + 0.80 + 0.34 + 0.40 = 4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Function decomposition failure**: Only 6 of 20+ functions recovered; most param_* and call_* functions completely missing
+- **Variable naming**: All variables use generic names (v1, v2, a, b) losing semantic meaning like page_size, counter, arr
+- **No struct/union recovery**: Composite types completely lost; SIMD arrays become raw pointer arithmetic
+- **Missing inline assembly handling**: All asm functions (param_asm_basic, param_asm_clobber, etc.) not recovered
+- **No macro semantic recovery**: Preprocessor macros like MAX_SIZE, BUFFER_COUNT not reconstructed; shown as literal values only
+
+### Best Quality Aspect (Single Dimension)
+- **Noise Reduction (7/10)**: The output is relatively clean without obvious compiler artifacts like register spilling or excessive debug instrumentation
+
+### Most Needs Improvement (Single Dimension)
+- **Function Decomposition (2/10)**: Only 6 functions detected from original 20+; severe loss of code structure makes the decompilation practically useless for understanding the original implementation
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function boundaries more accurately**: Many small functions (param_macro_*, call_macro_*) were completely lost; consider inlining threshold analysis to prevent over-aggressive merging
+2. **Infer variable names from usage patterns**: Use data flow analysis to name variables semantically (e.g., `v1` used in mmap sysconf → `page_size`)
+3. **Handle inline assembly better**: The asm functions should either be recovered with assembly comments or flagged as unsupported features rather than silently dropped

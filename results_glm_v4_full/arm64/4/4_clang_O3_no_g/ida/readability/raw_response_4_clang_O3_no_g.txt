@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v8`, and `v9`, which obscure semantic meaning (e.g., in `varargs_func`, `v17` holds a bitmask for stack offsets but is named generically).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source symbols, providing excellent context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0xFFFFFF80FFFFFFC8LL` in `varargs_func` and `0x80000000` appear without explanation, while simple constants like `15` and `50` are inlined in `call_cdecl`/`call_stdcall`, hiding the original logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While most code is clean, artifacts like `LODWORD(v17) = v8 + 8;` in `varargs_func` and `JUMPOUT(0);` in `sub_640` represent compiler or decompiler implementation details that clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The `varargs_func` decompilation is a complex `while(1)` loop with bit manipulation (`v8 & 0x80000000`) instead of a simple `for` loop with `va_arg`, and `param_ptr_array` contains unrolled logic that obscures the simple iteration intent.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are generally small and correspond well to the source structure, maintaining good granularity and cohesion (e.g., `cdecl_func` is separate from `call_cdecl`).
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `varargs_func` and `param_ptr_array` contain nested loops and forward jumps (`goto LABEL_5`) that disrupt the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler (or compiler) aggressively inlined constants, resulting in functions like `call_cdecl` returning `15` directly, which removes the logic `cdecl_func(5, 10)` and hinders understanding of the program's control flow.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `char*` are correct, but `ret_small_struct` returns `unsigned __int64` (hiding the struct) and `ret_large_struct` returns `int32x4_t` (a SIMD type) instead of the defined struct types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are poorly recovered; `func_struct_byval` takes a `_DWORD *` instead of `LargeStruct`, and `SmallStruct` in `ret_small_struct` is completely lost, replaced by a primitive integer type.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on casts like `LODWORD` and treats structs as raw pointers (e.g., `a1[30]` in `func_struct_byval`), which is technically accurate for the ABI but loses type safety and semantic bounds.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining logic; the only comment is `// attributes: thunk` for `frame_dummy`, providing no insight into the complex `varargs` or struct manipulation logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The standard `va_list`/`va_arg` idiom in `varargs_func` is not recognized; instead, it is decompiled to raw stack pointer arithmetic and bitmasking, completely obscuring the variable argument pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler does not flag anomalies; for instance, `param_array_decay` is missing its arguments entirely in the decompilation compared to the source, yet there is no warning or indication of this failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null checks) or postconditions; the logic in `param_double_ptr` modifies pointers without documenting the side effects or input requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names are preserved, the call graph is easy to follow; one can clearly see `test_calling_conventions` calling specific test functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly matches the source file structure, grouping related tests (calling conventions, parameters, return values) together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types like `__int64` and `int32x4_t` without including the necessary headers (e.g., `<arm_neon.h>` or `<stddef.h>`), and macros like `JUMPOUT` prevent standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable names are generic (`a1`, `v8`), obscuring the purpose of arguments and locals.
+- The `varargs_func` idiom is completely missed, replaced by confusing pointer arithmetic and magic numbers.
+- Composite types (structs) are not recovered; `LargeStruct` and `SmallStruct` are replaced by pointers or integers.
+- Function `param_array_decay` is missing its arguments entirely compared to the source.
+- Logic is hidden by aggressive constant folding (e.g., `call_cdecl` returns `15` instead of calling `cdecl_func(5, 10)`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function symbols from the debug information, making the high-level purpose of each block immediately obvious.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The decompiler fails to recognize standard idioms (like `varargs`) and provides no comments or warnings, leaving complex logic like stack frame manipulation for variadic functions completely unexplained.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement specific pattern matching for `va_list`/`va_arg` to reconstruct standard C variable argument loops instead of exposing raw stack pointer arithmetic.
+2. Improve composite type recovery for ARM64 ABI, specifically distinguishing between structs passed by value (hidden pointer) and primitive pointer types.
+3. Reduce aggressive constant folding or provide an option to disable it, so that `call_cdecl` shows the actual function call `cdecl_func(5, 10)` rather than just the result `15`.

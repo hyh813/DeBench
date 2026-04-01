@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`. These are completely meaningless - for example, in `test_cpp_rtti()`, `v1` is actually a pointer to a newly allocated RTTIDerivedA object, but the name provides no semantic indication. Parameter names like `a1`, `a2` are equally uninformative.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions are properly demangled (e.g., `test_cpp_exception()`, `test_cpp_rtti()`, `template_max<int>()`), but parameter names remain generic (`a1`, `a2`). The mangled names in the output (like `_Z18test_cpp_exceptionv`) suggest incomplete demangling. The function `function_109f4` has no semantic meaning at all.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers appear throughout: `4` (exception size), `31` (strncpy limit), `0x116d4` (type info pointer), `100` and `200` (result additions). String literals are shown as hex-encoded UTF-8 (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"` for "测试") making them unreadable without manual decoding.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling code, redundant casts from optimization, or debug instrumentation visible. The code is straightforward in this regard.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The exception handling code (`test_cpp_exception`) uses low-level `__cxa_*` functions which obscure the try-catch structure. The `test_cpp_oo_features` function has jumbled logic - it calls `template_max` and `template_swap` but doesn't properly use their return values, and the control flow doesn't match the original sequential function calls.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: **Critical failure**: Most test functions are completely missing from the decompiled output. Only `test_cpp_exception`, `test_cpp_rtti`, and `test_cpp_oo_features` are present. The following functions are absent: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`. This is a severe decomposition failure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Exception handling has some branching but is manageable. The `test_cpp_oo_features` function is somewhat linear despite the logic errors.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions in the decompiled output. Loop unrolling is not present (which is expected at -O0). The code is relatively clean in this dimension.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` appropriately for ARM64. However, the `template_swap` function has a critical bug: `*a1 = (int32_t)a2; *a2 = (int32_t)a1;` - this assigns the pointer addresses themselves rather than dereferencing to swap values. The original was `template_swap(T& a, T& b)` with `T temp = a; a = b; b = temp;`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only vtable structures (`vtable_116b4_type`, `vtable_116c8_type`) are recovered. All original classes are completely missing: `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `VirtualBase`, `MiddleA`, `MiddleB`, `DiamondDerived`, `Point`, `Container`, `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB`. No struct field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: The `template_swap` bug mentioned above is a severe type safety issue - it assigns pointers to integers and dereferences them, causing undefined behavior. The exception handling code uses raw pointer arithmetic without bounds checking. Function pointer types are somewhat generic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some metadata comments present (e.g., "From module:", "Address range:", "Line range:", "Demangled:") but these are technical metadata, not semantic explanations. No comments explain what the code does, the algorithm, or the C++ idioms being used. The hex-encoded Chinese strings in comments are not decoded.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms recognized. The original uses RAII (smart pointers), virtual dispatch (vtables), exceptions, templates, lambda expressions, operator overloading - none of these are identified in the decompiled output. The vtable structures are present but not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code. The `template_swap` bug should be flagged. The incomplete decompilation (missing functions) is not indicated as a problem. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original had clear contracts (e.g., "requires: ptr != NULL" for getData) but none are documented. Error conditions from exceptions are not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships shown in comments (e.g., "Calls: parse_header") but incomplete. The missing test functions mean the call graph from `test_cpp_oo_features` is severely broken - it should call 12 different test functions but only shows calls to some template functions and exception/rtti tests.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file as expected for decompilation. However, the organization is arbitrary - related test functions are not grouped. The vtable structures are placed with globals rather than with their classes.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code declares external functions (`__cxa_*`, `_Znwj`, `_ZdlPvj`, etc.) but is incomplete and won't compile as-is. Many dependencies are not resolved. The `template_swap` bug would cause compilation warnings or errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects (Bullet List)
+- **Missing 12 out of 12 test functions**: The decompilation only shows `test_cpp_exception`, `test_cpp_rtti`, and `test_cpp_oo_features`. The original had 12 test functions covering member functions, constructors, virtual functions, multiple inheritance, diamond inheritance, operator overloading, templates, lambdas, exceptions, smart pointers, and RTTI - all missing.
+- **template_swap bug**: The decompiled code `*a1 = (int32_t)a2; *a2 = (int32_t)a1;` is semantically wrong - it assigns pointer addresses as values instead of swapping the pointed-to integers.
+- **No class recovery**: All C++ classes (SimpleClass, LifecycleClass, Base, Derived, Point, Container, etc.) are completely absent from the decompilation.
+- **Variable naming**: All variables use generic names (`v1`-`v12`, `a1`, `a2`) providing no semantic meaning.
+- **test_cpp_oo_features broken**: The function doesn't call the individual test functions as the original does - it directly inlines template operations and prints, losing the modular structure.
+
+### Best Quality Aspect (Single Dimension)
+- **Noise Reduction** (scored 8/10)  
+- The decompiled code has minimal compiler artifacts and is relatively clean from that perspective.
+
+### Most Needs Improvement (Single Dimension)
+- **Function Decomposition** (scored 3/10)  
+- 12 out of 12 test functions are completely missing from the decompilation. This is a catastrophic failure - the decompiler failed to recover the majority of the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover all functions**: The decompiler must be configured or improved to extract all functions from the binary, not just a subset. The missing test functions suggest either incomplete analysis or stripping of debug symbols.
+2. **Fix template_swap decompilation**: The decompiler incorrectly translated the reference swap logic. It should recognize `T&` parameters and generate proper value swapping: `int32_t temp = *a1; *a1 = *a2; *a2 = temp;`
+3. **Recover C++ class structures**: Implement proper C++ class recovery including data members, constructors, destructors, and vtable associations. The original had 14+ classes that should be reconstructed with proper field names.

@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `sum`, `current`, `head`, `ptr` that are mostly lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), but helper functions degraded to `sub_4006e4`, `sub_4007a4` format with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`4294967295`, `18446744073709551614`, `0x100000000`) without explanation. Test functions print hardcoded constants instead of computing values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `arm64g_calculate_condition()`, `__ROL__()`, `[D] unsupported_Iop_ZeroHI96ofV128()`, stack canary checks, and frame pointer manipulation clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple for-loops transformed into complex do-while with goto statements. `binary_tree_sum` has extreme control flow degradation with nested labels (`LABEL_4018d8`, `LABEL_4018bc`) making execution paths nearly impossible to follow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Most functions remain separate, but `binary_tree_sum` exploded to 500+ lines with 50+ local variables. Useless wrapper functions like `sub_4008d4` that just call other functions add no value.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps and goto statements disrupt reading flow. `binary_tree_sum` has deeply nested structures with multiple jump targets. Simpler functions maintain better linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling in array functions without explanation. `binary_tree_sum` contains massive redundancy with repeated variable saves/restores. Test functions print identical values multiple times.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Original specific types (`char`, `short`, `float`, `double`) degraded to generic `unsigned long long` and `unsigned int`. Floating point functions (`process_float`, `process_double`) are completely broken. Pointer types lost specificity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct fields use generic names (`field_0`, `field_8`, `padding_4`). Binary tree generated 40+ different struct definitions (`struct_0` through `struct_44`) instead of one `TreeNode`. Union types and bitfields not properly recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int*)a0` in `ptr_void`). Function pointer calls use `goto a0` instead of proper syntax. `volatile_access` lost volatile semantics entirely, reading memory only once instead of twice.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each test case. No decompilation confidence indicators or algorithm explanations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (linked list traversal, binary tree recursion, enum switch) not identified. `enum_switch` uses jump table (`CSWTCH.62`) without explanation. No design patterns recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies marked (`[D] unsupported_Iop_ZeroHI96ofV128()`) but without explanation. `binary_tree_sum` extreme complexity not flagged as suspicious. No warnings about optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist but aren't explained as contracts. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables use generic names (`g_414f88`, `g_403000`). Callback relationships unclear (function pointers use `goto`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies (`__libc_start_main`, `__printf_chk`, `__addtf3`) not documented. References undefined globals. Code won't compile standalone without extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (3+5+4+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.48/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on semantic usage (e.g., `input_value`, `array_ptr`, `count`)
+- **`binary_tree_sum` function** exploded from 10 lines to 500+ lines with 40+ struct definitions instead of recognizing recursive tree pattern
+- **Type degradation** - all specific types (`char`, `short`, `float`, `double`) collapsed to `unsigned long long`
+- **Control flow** - simple for-loops transformed into goto-based do-while loops with labels
+- **`volatile_access`** lost volatile semantics, reading memory once instead of twice as original intended
+- **Zero comments** - no documentation recovered despite original having extensive test case explanations
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names were preserved from original source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), making basic identification possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments, documentation, or decompilation confidence indicators makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement pattern recognition for recursive data structures** - The `binary_tree_sum` function should be recognized as tree traversal and recovered as a simple recursive function, not expanded into 500+ lines with 40+ struct definitions
+2. **Recover type information from debug symbols** - With `-g` flag present, the decompiler should preserve original type names (`char`, `short`, `float`, `double`) instead of collapsing everything to `unsigned long long`
+3. **Add semantic annotation for compiler artifacts** - Mark `arm64g_calculate_condition()`, `__ROL__()`, and loop unrolling patterns with comments explaining these are optimization artifacts, not original source logic

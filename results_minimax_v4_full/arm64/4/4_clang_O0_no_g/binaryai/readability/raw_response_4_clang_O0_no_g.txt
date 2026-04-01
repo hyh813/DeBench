@@ -1,0 +1,99 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic patterns (`param_1`, `param_2`, `local_14`, `local_20`, `iVar1`, `uVar2`, `puVar1`). The original source used meaningful names like `a`, `b`, `count`, `args`, `sum` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`). However, some wrapper functions like `call_thiscall` return constants directly instead of calling the actual method, and `call_order_dep` doesn't pass parameters.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Literals like `0x2a` (42), `0x14` (20), `0x1e` (30) appear as hex without explanation. The source had clear constants like `42` return value. Some literals like `0x40091eb851eb851f` for double 3.14 are technically correct but lack semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise artifacts include: `CONCAT44` macro, `register0x00000008` reference, `undefined4`/`undefined8`/`undefined` type annotations, and `code *` type for function pointers. These obscure the actual logic significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for` constructs, conditionals are clear. However, `call_order_dep()` doesn't pass the `++i, ++i` arguments to `param_order_dep`, and some wrapper functions return constants instead of calling functions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - small, focused functions preserved. Each test function (`call_cdecl`, `call_stdcall`, etc.) remains separate. Minor issue: some should-be-simple wrappers have unnecessary complexity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The varargs functions have some complex pointer manipulation but remain followable. No severe forward jump issues.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions. The varargs handling code is duplicated between `varargs_func` and `param_varargs` but this reflects actual separate functions in source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type errors: `func_mixed_args` has parameters in wrong order (source: `int x, char *s, double d, long long ll` vs decompiled: `double, int, char*, long`). Function pointers use `code *` instead of proper signatures. Many `int` vs `long` mismatches on ARM64.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct types properly recovered. `LargeStruct` passed as raw `auStack_148` array. `SmallStruct` uses `undefined8`/`undefined4`. `SmallPoint` uses `CONCAT44` instead of struct. `BigStruct` not recovered - uses raw `int*`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic in `func_struct_byval` with `*(long *)(param_1 + (long)local_c * 8)`, function pointer type confusion with `code *`, casting `undefined8 *` to `int *` in `call_ret_opaque`, returning pointers to local variables.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only the header comment "Decompiled by BinaryAI" exists. No explanation of algorithm logic, no recovery of original comments from debug info, no indication of uncertainty or confidence levels.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like varargs handling and function pointer callbacks are somewhat recognizable, but no explicit naming or documentation of patterns (e.g., "varargs pattern", "callback pattern").
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of anomalies. The incorrect `call_order_dep()` that doesn't pass parameters, the wrong parameter order in `func_mixed_args`, and the `call_thiscall` returning constant 15 instead of calling method are all presented without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `param_1 != NULL` is required in `func_struct_byptr`, or that return values have specific meanings.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: No function call relationships documented. No indication of which functions call which, no callback relationships shown, no global variable usage documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in a single file with arbitrary ordering (starting with `_init`, then test functions). No logical grouping or namespace structure. Static functions not properly marked.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Issues include: `code *` type invalid in C, `undefined4`/`undefined8` types don't exist, `CONCAT44` macro undefined, external functions (`printf`, `memcpy`, `strlen`) not declared, `register0x00000008` invalid syntax.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable naming completely generic (`param_1`, `local_14`, `iVar1`) - no semantic meaning preserved
+- `func_mixed_args` has parameters in wrong order (double should be 3rd, not 1st)
+- No struct type recovery - all composite types lost, replaced with raw arrays/memory
+- `call_order_dep()` doesn't pass the `++i, ++i` arguments to the function
+- `call_thiscall` returns constant 15 instead of calling the C++ method
+- No comments or documentation whatsoever
+- Code uses invalid C types (`code *`, `undefined4`, `undefined8`) preventing compilation
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All variables use generic patterns with no semantic meaning. Combined with Type Precision issues, this makes the code nearly impossible to understand without constant reference to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `param_1` used in `*param_1 << 1` should suggest `value` or `multiplier`
+2. Recover struct/union types from stack layout analysis and debug symbols - currently all composite types are lost
+3. Add parameter order validation and flag anomalies when function calls don't match expected signatures (e.g., `call_order_dep` missing arguments)
+4. Replace `undefined4`/`undefined8`/`code *` with standard C types or proper typedefs
+5. Extract and preserve comments from debug information (DWARF) to explain algorithm intent

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_Os_no_g/angr/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "=== Testing Standard Library ===[PASS] strncpy test\n\n[PASS] strncpy test\n[PASS] strcmp test\n[PASS] scanf test\n[PASS] memcpy test\n[PASS] printf test\nValue: 0, Name: Test\n[PASS] fopen/fclose test\n[PASS] strlen test\n[PASS] fread/fwrite test\n/tmp/binbench_test_tmp[PASS] strchr test\n=== Testing System Calls ===\n\n[PASS] Linux syscall test\n[PASS] stat test\n[PASS] fork/exec test\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

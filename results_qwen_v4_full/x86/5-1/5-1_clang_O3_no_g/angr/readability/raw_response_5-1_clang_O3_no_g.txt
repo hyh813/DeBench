@@ -1,0 +1,111 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, ptr, result, flag1) with zero semantic meaning. In `test_cpp_member_func`, variables like `v0=10` and `flag1=0` should be `value` and `is_initialized` based on source context.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some test functions recovered original names (`test_cpp_member_func`, `test_cpp_constructor`), but many are mechanical (`sub_401030`, `sub_401130`). Template functions show mangled names partially recovered (`_Z12template_maxIiET_S0_S0_` → `template_max<int>`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation (42 in exception, 4 in allocations). String literals referenced through opaque globals (`g_402081`, `g_40209f`) instead of showing actual strings like `"Test"`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts remain: thunk functions (`__x86.get_pc_thunk.*`), initialization wrappers (`_GLOBAL__sub_I_5_1.cpp`), and redundant wrapper functions (`sub_4012f1` just calls `test_cpp_member_func`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical functions use goto inappropriately (`sub_401030`: `goto ptr[2]`). Exception handling uses low-level `__cxa_*` calls instead of structured try-catch. Many test functions are empty stubs with no logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Redundant wrapper functions exist (`sub_4012f1` → `test_cpp_member_func`). Many functions are empty (`test_cpp_constructor`, `test_cpp_virtual_func`). Template instantiations separated but lack proper structure.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Goto statements disrupt flow in multiple functions. Exception handling code is fragmented across `sub_401481`, `sub_4014a8`. Some functions read linearly but many have jump-based control.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple wrapper functions duplicate calls. Initialization code repeats across functions. However, no obvious dead code from register spilling observed.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `void*` and `unsigned int` instead of proper C++ types. Class pointers degrade to `void*` (`Base*` becomes `void*`). Template type information largely lost except in mangled names.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs have generic field names (`field_0`, `padding_0`) with massive padding arrays (`padding_0[11763]`). Class structures completely lost—`SimpleClass`, `LifecycleClass`, `Point` not recovered at all.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Unsafe casts throughout (`(int)v1[24]` in `sub_401130`). Pointer arithmetic on `void*`. Function pointers treated as `int`. Multiple type-confused operations that would cause undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompilation error markers `[D]` present. No algorithm explanations, no logic documentation, no API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized: RAII patterns, virtual dispatch, template instantiation all appear as low-level operations. Exception handling shows `__cxa_*` calls without identifying try-catch structure.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `[D]` markers indicate unsupported operations (Container<double> methods). However, critical issues like platform mismatch (arm64→X86) and empty function bodies lack warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. Null checks and bounds checks not identified as safety contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls exist but relationships unclear. Virtual dispatch degrades to raw pointer operations (`(*((int *)*((int *)arg_0)))(arg_0, arg_1)`). Global variables use opaque names (`g_403ecc`, `g_403ee0`).
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in arbitrary order. No logical grouping by class or feature. No header files or namespace structure. Related functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile: `[D]` error markers, undefined external references, missing C++ runtime support. Requires extensive manual修复 to become compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (Lexical):     (2+5+4+3)/4 = 3.50
+L2 (Structural):  (3+4+4+5)/4 = 4.00
+L3 (Type):        (3+2+2)/3   = 2.33
+L4 (Semantic):    (1+2+4+1)/4 = 2.00
+L5 (Contextual):  (3+3+2)/3   = 2.67
+
+Overall = (3.50 × 0.30) + (4.00 × 0.25) + (2.33 × 0.20) + (2.00 × 0.15) + (2.67 × 0.10)
+        = 1.05 + 1.00 + 0.47 + 0.30 + 0.27
+        = 3.09/10
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `flag1`** should be named `value`, `name_buffer`, `is_initialized` based on usage in `test_cpp_member_func`
+- **Control flow uses goto** instead of loop/conditional constructs in critical functions (`sub_401030`, `sub_401130`)
+- **All class structures lost** - `SimpleClass`, `LifecycleClass`, `Base`, `Derived` not recovered as proper types
+- **Many test functions empty** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_smart_ptr` return immediately with no logic
+- **Platform mismatch unflagged** - Original arm64 compiled to X86 decompilation without warning
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names were recovered from debug symbols (`test_cpp_member_func`, `template_max<int>`), providing minimal semantic anchors
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero explanatory comments; decompiler provides no guidance on recovered logic, confidence levels, or uncertain reconstructions
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze virtual function tables to reconstruct class hierarchies with proper field names
+2. **Infer variable names from usage patterns and debug symbols** - Use DWARF debug info (`-g` flag was present) to recover original variable names
+3. **Recognize C++ exception handling patterns** - Convert `__cxa_*` calls back to structured try-catch blocks with proper exception type recovery

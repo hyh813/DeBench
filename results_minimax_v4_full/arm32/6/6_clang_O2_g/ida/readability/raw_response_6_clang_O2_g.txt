@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_strcpy`
+
+Looking at the specific function requested:
+- **Original**: `int param_strcpy(char *dst, const char *src) { strcpy(dst, src); return strlen(dst); }`
+- **Decompiled**: `int __fastcall param_strcpy(char *dst, const char *src) { v2 = strcpy(dst, src); return param_strlen_0(v2); }`
+
+This specific function is actually quite well decompiled - parameters are correctly named, library calls are identified. However, I'll evaluate the entire decompiled output against the source.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Mixed quality - `dst` and `src` in `param_strcpy` are good, but most functions use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`. For example, in `call_strcmp()`: `int v0; int v1; int v2; int v3;` - all meaningless. The pattern `param_*` and `call_*` prefixes are auto-generated, not semantic.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions like `param_strcpy`, `param_strlen`, `param_memcpy` correctly match source names. However, utility functions like `sub_C48`, `init_proc` are generic. The `param_`/`call_` prefix pattern is mechanical rather than semantic.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals are clear ("HelloLib", "/etc/passwd", "Value: %d, Name: %s\n"). However, magic numbers like `0x12` (18), `0x3E8` (1000), `0x1F` (31) lack explanation. Some constants like `66` for open flags are unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts - fastcall conventions and register tracking (r0, r4, r5) are standard decompilation noise. No debug instrumentation or spurious casts. The `__fastcall` and `[sp+xh] [bp-yh]` annotations are expected ARM decompilation artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow. `param_strcpy` is a simple two-statement function. However, `param_pthread_join` has complex nested conditionals with multiple returns. At O0, more straightforward flow expected. Loop constructs (`do-while`) are correctly recovered.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines typical). `param_strcpy` is a single coherent function. The decomposition matches source - each test case is its own function. No 500-line monoliths. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Early returns used appropriately in error handling (e.g., `if (!v1) return -1;`). Some forward jumps exist but minimal. Depth generally under 4 levels.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `param_malloc_free` and `param_mutex_lock` is recognized as loops, not duplicated code. Common subexpressions handled reasonably.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good type precision - `size_t` for string lengths, `char *dst`, `const char *src`, `pthread_t`, `FILE *`. Minor issues: some `int` where `size_t` more appropriate, some `_DWORD` instead of `int32_t`. At O0, types should be nearly perfect.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Basic types like `struct stat` recovered correctly. However, `ThreadData` struct is not reconstructed - appears as raw arrays: `_DWORD v4[2]; _DWORD v6[2]; _DWORD v8[2];` with manual offset calculations. The semantic structure is lost.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Appropriate casting between `void*` and typed pointers. No obviously dangerous operations. Minor: some pointer arithmetic in `ThreadData` handling could be safer.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only the binary header comment: "Decompiled by IDA Pro 9.1 with Hex-Rays". No explanation of algorithm intent, no @param/@return documentation. The source had extensive comments explaining test scenarios - none recovered.
+
+**13. Idiom Recognition:** Score: 9/10  
+Justification: Excellent library function recognition - `strcpy`, `strlen`, `strcmp`, `memcpy`, `memcmp`, `pthread_create`, `pthread_join`, `pthread_mutex_lock`, etc. all correctly identified. Standard patterns recognized.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Failed imports clearly listed at end: "FAILED to decompile: __imp_strcpy @ 0x1426C". 65 failed functions noted. However, no inline warnings in the code about uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Source had error handling logic (e.g., "if fp == NULL return -1") but no contracts or assumptions documented in decompiled output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No explicit call graph or relationship documentation. While function names suggest grouping (`param_*` calls `call_*`), there's no "Called by:" or "Calls:" comments. Global variables like `signal_received`, `shared_counter` used without context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - standard library tests, system calls, thread tests. Static functions properly scoped. However, all in single output file - no header structure recovered.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code compiles - metadata says "Compilation Result: Yes". External dependencies (libc, pthread) are implicit. No compiler-specific hacks. Could compile with minimal stubs.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming is highly inconsistent - `dst`/`src` in param_strcpy vs `v0`/`v1`/`v2`/`v3` in call_strcmp
+- Composite type `ThreadData` not reconstructed - appears as raw arrays with manual offset arithmetic
+- No comments explaining algorithm intent or test scenarios
+- No cross-reference documentation showing call relationships
+- Magic numbers like `0x3E8` (1000) unexplained
+
+**Best Quality Aspect:** Idiom Recognition (9/10)  
+- Standard library functions (strcpy, strlen, pthread_*) correctly identified with proper names
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+- Generic single-letter variables (v0-v7) dominate most functions, making semantic tracking difficult
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., `v1` used as loop counter in `param_mutex_lock` should be `iterations`
+2. Recover composite types like `ThreadData` from array patterns and field access offsets
+3. Add call relationship comments (e.g., "// Calls: thread_compute" in param_pthread_create)

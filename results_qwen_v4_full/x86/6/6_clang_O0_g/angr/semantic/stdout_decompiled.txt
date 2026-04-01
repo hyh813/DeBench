@@ -1,0 +1,4 @@
+Testing standard library functions...
+strcpy
+strcmp
+strlen

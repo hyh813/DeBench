@@ -1,0 +1,125 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) instead of semantic names like `temp1`, `sum`, `count` from source. No variable indicates purpose (e.g., `loop_break` uses `v1` instead of `arr`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`sequential_ops`, `single_if`, `nested_if_2`), but runtime helpers use mechanical names (`sub_1020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL`, `0x12`, `100`, `101` appear without explanation. Original constants and test values are not recovered as named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(unsigned int)`, `(unsigned __int64)`), register annotations (`// rax`, `// ecx`), and platform-specific types (`__int64`, `_DWORD`, `_QWORD`) clutter the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `single_if` uses bit-shift trick `(a1 << (a1 > 0))` instead of clear if-statement. `loop_for_fixed` replaced with mathematical formula. `switch_fallthrough` becomes nested if-else losing fall-through semantics.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: **CRITICAL**: Test functions (`test_control_flow_l1/2/3`) don't actually call the functions—they print hardcoded expected values! This is a complete semantic failure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but some have awkward restructuring (e.g., `nested_if_2` reorders conditions, `loop_while` has confusing do-while pattern).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts throughout, unnecessary intermediate variables (`v1`, `v2`, `v3`), and duplicate return path handling obscure the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Functions return `__int64` when source returns `int`. Excessive explicit casts (`(unsigned int)`, `(unsigned __int64)`). Signed/unsigned confusion (e.g., `ternary_op` parameters marked `unsigned int`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays degrade to pointer arithmetic (`_DWORD *v1 = &unk_3040` in `loop_break`). No struct recovery visible. Global data referenced as `unk_XXXX`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts between signed/unsigned types. Function pointer types use generic `_QWORD` instead of proper signatures. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **All original documentation lost.** No comments explain algorithm intent, non-obvious logic, or decompilation confidence. Only compiler-generated register hints present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop-to-formula optimization (`loop_for_fixed`) not identified or explained. Switch fall-through pattern not recognized. No pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about broken test functions, failed external function decompilation (7 functions), or metadata inconsistency (claims IDA Pro but metadata says Ghidra).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions or error condition documentation recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships unclear. No call graph documentation. Test functions don't show actual function invocation relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Static helpers grouped together. No namespace/package structure lost (C code).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile (`printf`, `puts`, `_setjmp`, `longjmp`, etc.). Would require stubs to compile. Metadata inconsistency (Ghidra vs IDA Pro header).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+4+6+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.42/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+---
+
+### Critical Defects
+
+- **Test functions are completely broken**: `test_control_flow_l1/2/3` print hardcoded expected values instead of actually calling the functions being tested—this is a catastrophic semantic failure
+- **Variable names completely generic**: All parameters are `a1`, `a2`, `a3` and temporaries are `v1`, `v2`, `result`—zero semantic information preserved
+- **All documentation lost**: Original 200+ lines of comments explaining control flow patterns, test cases, and difficulty levels completely absent
+- **Control flow obfuscated by optimization**: `single_if` uses bit-shift trick, `loop_for_fixed` uses closed-form formula, `switch_fallthrough` loses fall-through semantics
+- **Metadata inconsistency**: Header claims "Decompiled by IDA Pro 9.1" but task metadata states "Ghidra 12.0_PUBLIC"
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)**
+- Core test function names were preserved from source (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), allowing identification of original intent despite other degradations.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)**
+- Complete loss of all original documentation including algorithm explanations, test case descriptions, and difficulty annotations makes understanding the code's purpose extremely difficult.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve test function semantics**: Ensure test functions actually call the functions being tested rather than printing hardcoded expected values—this is fundamental to verification capability.
+
+2. **Infer variable names from usage patterns**: Analyze variable usage to suggest semantic names (e.g., variables used in loop bounds → `count`/`limit`, variables accumulating values → `sum`/`total`).
+
+3. **Recover and preserve source comments**: When debug symbols (`-g`) are available, extract and embed original source comments into decompiled output to maintain documentation context.

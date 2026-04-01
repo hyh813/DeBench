@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v1`, `v2` are generic and obscure purpose (e.g., `v1` in `param_asm_clobber` should be `index`), though some names like `result`, `counter`, `arr` are meaningful.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Function names are preserved (`param_asm_clobber`, `call_asm_simd`) but 9+ macro-related functions are completely missing from decompilation output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`mmap` flags `7`, `34`; `mprotect` flags `1`, `3`); original used `PROT_READ`, `MAP_ANONYMOUS` constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Unnecessary casts throughout (`(int32_t)arr`, `(int32_t *)dst`, `(int32_t)v2`); string literals stored as hex-encoded globals (`g1`, `g2`) instead of inline strings.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical bug in `call_asm_privileged`: `v1 == 15 == param_memory_protection() == 42` is invalid C chaining; original had proper `if (r1 == 15 && r2 == 42 && r3 == 20)`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Present functions have appropriate granularity, but 9 entire functions (all macro tests) are missing; `test_preprocessing_features` omits most test calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but `param_memory_protection` has awkward nested conditionals with unclear early returns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code; array initialization in `call_asm_multi_insn` is verbose but not redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`/`uint32_t` appropriately, but `param_asm_multi_insn` incorrectly types `src` as `int32_t *` instead of `void *`; `dst` typed as `char *` but cast to `int32_t *`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in this code to recover; arrays handled correctly with proper sizing (`arr[5]`, `dst[32]`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout; `param_asm_multi_insn` casts `char *` to `int32_t *` for `memcpy`; pointer arithmetic lacks proper typing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code; original had extensive section headers, macro explanations, and assembly documentation—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C loops but not identified as such; atomic operations recognized (`__sync_fetch_and_add_4`) but not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `unknown_ffff0fc0` function not flagged as unresolved; broken logic in `call_asm_privileged` presented confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`); error return values (`-1`, `-2`, `-3`) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible; global variables (`g1`-`g20`) shown but hex-encoded strings obscure their purpose as printf format strings.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed but not grouped by original sections (5.2 preprocessing vs 5.3 assembly); no header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has prototypes and includes, but `call_asm_simd` has broken return logic that would produce incorrect results; `unknown_ffff0fc0` is undefined.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+6+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.13/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **9 functions completely missing**: All macro-related functions (`param_macro_constants`, `param_macro_functions`, `param_conditional_compile`, etc.) not recovered
+- **Broken logic in `call_asm_privileged`**: Chained comparison `v1 == 15 == param_memory_protection() == 42` is invalid C and produces wrong results
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Magic numbers unexplained**: `mmap`/`mprotect` flags (7, 34, 1, 3) should be `PROT_READ | PROT_WRITE | PROT_EXEC`, `MAP_ANONYMOUS`, etc.
+- **String literals hex-encoded**: Global variables `g1`-`g20` contain UTF-8 hex instead of readable strings
+
+### Best Quality Aspect:
+- **Type Precision (6/10)** - Uses appropriate `int32_t`/`uint32_t` types and preserves most pointer signatures correctly
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding original intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover preprocessing macros**: Detect constant folding patterns and annotate with original macro names (e.g., `MAX_SIZE`, `BUFFER_COUNT`)
+2. **Validate decompiled logic**: Add sanity checks for comparison chains and flag suspicious patterns like `a == b == c == d`
+3. **Preserve string literals inline**: Instead of hex-encoded globals, emit readable string constants with encoding hints for non-ASCII content

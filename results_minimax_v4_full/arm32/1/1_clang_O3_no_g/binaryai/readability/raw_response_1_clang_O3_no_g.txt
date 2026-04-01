@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely auto-generated (param_1, param_2, iVar1, uVar1, bVar1). The original source uses meaningful names like `a`, `b`, `c`, `x`, `temp1`, `temp2`, but these are completely lost. No effort to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` perfectly match the original source. External library functions (printf, longjmp, setjmp) are correctly identified. Minor deduction for some helper functions with generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x14` (20) appear without explanation. Test functions have hardcoded expected values (0x15 for 21) rather than computed results. The constant `-1` (0xffffffff) is clear, but most numeric literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some unusual constructs like `SCARRY4` macro in `non_local_jump` and `__asm` references. No obvious register spills or debug instrumentation. The code is relatively clean overall.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `loop_for_fixed` is completely decompiled as a complex arithmetic formula instead of a loop: `((uint)((byte)((ulonglong)lVar1 >> 0x32) & 1) << 0x1f | (uint)lVar1 >> 1) + param_1 + -1`. This is mathematically correct but destroys the loop idiom. `loop_while` and `loop_dowhile` are reasonably recognizable. Some switch constructs are clear.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - each function handles a single responsibility. Test functions are appropriately separated. No 500-line monoliths. Minor issue: test functions contain hardcoded values instead of actual function calls, reducing their utility as tests.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The `duffs_device` has complex control flow with labeled switch cases, which is expected for that pattern. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The `__divsi3` function appears twice (at 0x115ac and 0x115b4) with nearly identical code - this is clearly a decompilation artifact. Test functions repeat the same loop execution pattern. Loop unrolling in `loop_for_fixed` is not commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `int` or `uint` rather than specific width types (int32_t, uint64_t). Function pointers use generic `code *` type. Some unsigned/signed mixing occurs (e.g., `param_1` sometimes int, sometimes uint). The original uses `int` throughout, so this is partially acceptable.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Arrays like `matrix[3][4]` in `loop_multi_exit` are accessed through raw pointer arithmetic: `*(int *)(&DAT_00011e9c + uVar1 * 4)`. The original source has clear array definitions that are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic throughout (e.g., `param_1 + 1`, `param_2 + 2`). The `op_div` function has incorrect signature - returns void instead of int. Function pointer type `code *` is overly generic. No `restrict` or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the file header comment "Decompiled by BinaryAI" present. No inline comments explaining algorithm logic, no @param/@return documentation, no decompilation confidence indicators. The original source has extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like switch statements and Duff's device are recognizable (though Duff's device has confusing labels). No explicit pattern naming (e.g., "State machine pattern", "Duff's device"). The original source's test validation comments are not present.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: `UNRECOVERED_JUMPTABLE` markers appear for indirect function pointer calls in `call_func_ptr` and `conditional_func_ptr`. However, no warnings about unusual stack layouts, potential undefined behavior, or hand-written assembly patterns. Some anomalies are flagged but not comprehensively.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Original source has clear return value expectations (e.g., "期望: 21") that are not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear. No documentation of which functions call which (e.g., "Called by: main"). Callback relationships not explicitly marked. The original groups functions logically (test_control_flow_l1, l2, l3) which is preserved.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - control flow test functions together, helper functions at the end. Static functions properly scoped. The three test functions (l1, l2, l3) match the original source organization. Minor: runtime support functions (__divsi3) mixed in.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal patching. External dependencies are standard C library (printf, longjmp, setjmp). Some functions have unusual signatures (op_div returns void). No compiler-specific hacks beyond standard ARM64 calling convention.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (param_1, iVar1) - original semantic names (a, b, c, temp1) completely lost
+- `loop_for_fixed` decompiled as complex arithmetic instead of loop, destroying the algorithmic idiom
+- No struct/array recovery - original `int matrix[3][4]` becomes raw pointer arithmetic
+- No comments explaining any logic - original source's extensive documentation not recovered
+- Test functions contain hardcoded values instead of actual function calls, making them useless for validation
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names like `sequential_ops`, `loop_while`, `switch_fallthrough` accurately match the original source, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All variables use generic auto-generated names (param_1, iVar1, uVar1) with no semantic inference. Even simple cases like parameter `a` becoming `param_1` lose meaningful context.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `param_1` used in arithmetic with `param_2` suggests operands; `iVar1` accumulating in a loop suggests `sum` or `count`
+2. Recognize loop idioms from backward jump patterns and preserve loop structure rather than converting to arithmetic formulas
+3. Recover composite types (arrays, structs) from stack frame analysis and memory access patterns rather than using raw pointer arithmetic

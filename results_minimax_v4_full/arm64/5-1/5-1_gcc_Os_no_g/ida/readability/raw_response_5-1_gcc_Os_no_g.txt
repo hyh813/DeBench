@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7` throughout. For example, in `test_cpp_virtual_func`: `int v0`, `__int64 (__fastcall **v2)`, `int v4` - none indicate semantic purpose. Only `dest` in `test_cpp_member_func` is somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Mixed results - test functions like `test_cpp_member_func`, `test_cpp_constructor` are properly demangled, and member functions like `Base::virtual_func`, `Derived::virtual_func` are clear. However, many utility functions remain mangled (`_Z18test_cpp_exceptionv`) or cryptic (`sub_1650`, `call_weak_fn`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful computed results (4700, 21, 42, 85, 703) matching expected outputs, but magic numbers like `0x1Fu` (31), `0x14u` (20), `0x200000001LL` in data structure initialization are unexplained. String `"Test"` preserved correctly.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - no obvious register spilling debris or debug instrumentation. Some decompilation artifacts like `__fastcall`, `__int64` annotations present but not excessive. Clean overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. Functions use straightforward if-else, return statements, and loop constructs. For example, `template_max<int>` shows clear conditional `if ((int)result < a2)`. At -O0, no loop unrolling or goto artifacts expected, and none present.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity - each test function is separate (12 test functions), member functions properly extracted as separate entities (e.g., `Base::virtual_func`, `Derived::virtual_func`). Template instantiations correctly separated. No 500-line monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. No excessive forward jumps. Early returns used appropriately (e.g., `template_max` returns immediately after comparison). No deep nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious common subexpression elimination artifacts. Each function computes its result directly. Template functions show clean, non-redundant logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `int`, `unsigned int`, `__int64`. Function pointer types are accurate but complex: `__int64 (__fastcall ***)(_QWORD)`. Missing precision like `size_t`, `uint32_t`. Const correctness not preserved (no `const` on many functions that should have it).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - no struct recovery. All composite types accessed via raw pointer arithmetic: `*(_DWORD *)(result + 40)` instead of `container.size`, `*(_QWORD *)v1` instead of `vtable_ptr`. No field names recovered - all are numeric offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic explicit: `*(_DWORD *)(result + 4LL * v2)`. Function pointer casts like `(void (*)(void *))&std::ios_base::Init::~Init` are complex. No bounds checking visible in array operations. Mixed signed/unsigned in comparisons.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Severe deficiency** - no comments explaining logic. Only auto-generated annotations like `// attributes: thunk` for virtual thunk functions. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns recognized: virtual function calls via vtable (`**a1)(a1)`), unique_ptr destruction patterns. However, no explicit naming of patterns (e.g., "vtable dispatch" not labeled). Template instantiation recognized but not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed functions listed at end (`_Znam @ 0x14090`, `puts @ 0x140A0`, etc.) but these are external symbols, not anomalies in decompiled code. No flags for indirect calls that couldn't be resolved, no warnings about uncertain constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The complex virtual inheritance logic in `DiamondDerived` has no comments explaining the vtable layout or this pointer adjustment.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships clear through direct calls. Virtual dispatch shown via vtable pointers. However, no explicit documentation of callers/callees, no global variable usage transparency. Static function relationships not indicated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, member functions grouped by class, template instantiations separated. Related functions like `Base::virtual_func`, `Base::~Base`, `Base::getName` are near each other. Some arbitrary ordering but acceptable.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with standard C++ library. Uses proper function signatures. External dependencies (stdlib) implicit. Would require linking with libstdc++ but no compiler-specific hacks visible.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+6+5+7)/4 = 5.25
+L2_avg = (8+8+8+8)/4 = 8.00
+L3_avg = (5+2+5)/3 = 4.00
+L4_avg = (2+5+3+2)/4 = 3.00
+L5_avg = (5+7+7)/3 = 6.33
+
+Overall = (5.25 × 0.30) + (8.00 × 0.25) + (4.00 × 0.20) + 
+          (3.00 × 0.15) + (6.33 × 0.10)
+        = 1.575 + 2.0 + 0.8 + 0.45 + 0.633
+        = 5.458/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **No struct/union recovery**: All composite types accessed via raw pointer arithmetic (`*(_DWORD *)(result + 40)`) losing all field semantics
+- **Generic variable names**: Variables like `v0`, `v1`, `v2` throughout obscure purpose; should infer from usage patterns (e.g., `v4` used as size counter)
+- **No comments**: Zero explanatory comments for complex C++ patterns (virtual inheritance, vtable dispatch, RTTI)
+- **Type precision loss**: Generic `int`/`__int64` instead of `size_t`, `uint32_t`; no const-correctness
+- **Mangled function names**: Some functions still use mangled C++ names (`_Z18test_cpp_exceptionv`) instead of demangled versions
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Structural Intelligibility (L2)** scored highest at 8.0/10  
+**Why?** Control flow is natural and matches source patterns, function decomposition is appropriate with good granularity, code linearizes well with minimal jumps, and no redundancy observed. At -O0, the decompiler preserved the original code structure well.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Type System Fidelity (L3)** scored lowest at 4.0/10  
+**Why?** Composite type recovery is completely absent (2/10) - all structs are lost to raw pointer arithmetic. Combined with generic type precision (5/10) and type safety concerns (5/10), this severely impacts ability to understand data structures.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types**: Analyze pointer arithmetic patterns to reconstruct struct layouts with field names. For example, `*(_DWORD *)(result + 40)` should become `container->size`.
+
+2. **Infer variable names from usage**: Use data flow analysis to name variables. If `v4` is used as array index and compared to 10, name it `index` or `size_t idx`.
+
+3. **Add semantic comments for C++ patterns**: Document vtable dispatch, virtual inheritance this-pointer adjustments, RTTI operations, and thunk functions with explanatory comments.

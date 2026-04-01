@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `i`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some helper functions use generic names (`sub_400764`, `$x`) but core test functions match source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF), `18446744073709551608`, and `4294967240` appear without explanation. Original source had no magic numbers—these are decompiler artifacts from bit masking.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Every function contains stack canary checks (`__stack_chk_guard`), frame pointer setup (`v0 = &v25`), and redundant variable assignments. At `-O0` this noise should be minimal but dominates the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered but `varargs_func` has convoluted pointer arithmetic instead of clean `va_arg` iteration. Some functions use `goto` where simple returns would suffice.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well; no monolithic functions. However, some functions have excessive parameters from register spilling (e.g., `test_calling_conventions` has 8 parameters).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but stack canary checks at function end disrupt flow. Some functions have unnecessary forward references.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary pattern repeated in ~30 functions. `varargs_func` and `param_varargs` are nearly identical but both contain redundant variable initialization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All integers are `unsigned int` or `unsigned long long` regardless of original type. `varargs_func` signature is completely wrong (8 explicit params instead of variadic). `func_mixed_args` lost `double` and `long long` parameter types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` and `SmallStruct` not recovered—`func_struct_byval` takes `unsigned long ptr` instead of struct. `param_double_ptr` uses generic `struct_0` with `field_0` instead of `int**`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(char *)&ptr[2] + 3 & 18446744073709551608`). Function pointer calls have wrong signatures (`v1(5, v1)` passes function pointer as second argument).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, calling convention, and expected behavior—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Variadic function pattern (`va_list`, `va_start`, `va_arg`, `va_end`) not recognized—converted to complex pointer arithmetic. Struct passing patterns not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about broken variadic handling, incorrect function signatures, or type mismatches. Decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks present (`if (a0)`) but no documentation of preconditions. No indication of expected return values or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables use opaque names (`g_402078`, `g_413f80`, `$d`). String literals replaced with global references instead of inline strings.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping. No header file structure or API documentation. Runtime init/fini functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple undefined externals (`g_413f80`, `handle2.0`, `$d`). Incorrect function signatures would cause compilation errors. Requires significant manual fixes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (1+3+3+3)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.44/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on usage (e.g., `count`, `sum`, `packet_size`)
+- **`varargs_func` signature completely broken** - takes 8 explicit parameters instead of variadic `...`
+- **Struct types lost** - `LargeStruct`, `SmallStruct` converted to raw pointer arithmetic
+- **Zero comments** - all original documentation explaining test purposes lost
+- **Magic numbers everywhere** - `4294967295`, `18446744073709551608` without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` preserved accurately from source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation; original source had extensive comments explaining each test case's purpose and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variadic function signatures** - Detect `va_list` patterns and restore `...` parameter syntax instead of expanding to explicit parameters
+2. **Infer variable names from usage context** - Analyze how variables are used (loop counters, accumulators, pointers) to generate semantic names
+3. **Preserve or reconstruct struct types** - Track memory access patterns to recover struct layouts with field names instead of raw pointer arithmetic

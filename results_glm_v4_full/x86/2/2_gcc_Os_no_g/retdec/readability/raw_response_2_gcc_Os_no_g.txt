@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `a1`, `v1`, and `result`, providing no semantic context (e.g., `x`, `c`, `arr` in source).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_int`, `array_1d_stack`, and `struct_simple` are perfectly preserved from the source, offering clear semantic intent.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers (e.g., `44`, `20`, `0x1983`) and contains a catastrophic error where the string literal `"/ld-linux.so.2"` appears as a loop limit in `array_2d_stack`.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts remain, including `__x86_get_pc_thunk_ax` calls inside simple functions, `__readgsdword` stack checks, and `__asm_hlt` instructions.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While loops are generally recovered, logic is often transformed (e.g., `process_bool` uses bitwise XOR instead of logical AND), and `enum_switch` is represented as a jump table lookup rather than a switch statement.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function granularity matches the source perfectly; no inlining or outlining artifacts are present, keeping responsibilities distinct.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code reads mostly top-to-bottom, but complex pointer arithmetic in functions like `array_3d` and `test_array_types` creates dense, hard-to-follow blocks.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler incorrectly optimized `volatile_access` to `2 * *p`, eliminating the second read required by the `volatile` keyword, which is a semantic error.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; `long long` is split into two `int32_t` parameters, `float` returns `float80_t`, and `long` is treated as `int32_t` (32-bit vs 64-bit mismatch).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Complete failure to recover structs; `struct_simple` and `struct_nested` use raw pointer arithmetic with hardcoded offsets (e.g., `a1 + 4`, `a1 + 12`) instead of field access.
+
+**11. Type Safety:** Score: 3/10
+Justification: Heavy reliance on unsafe casts like `(int32_t)a1` and `(char *)a1` is necessary due to type erasure, making the code look fragile and type-unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually non-existent, consisting only of address ranges, with no explanation of logic or recovery confidence.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms like string length loops are recognized, but higher-level patterns like bitfields (recovered as division/modulo math) and switch statements are missed.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided for severe anomalies, such as the string literal appearing as a loop bound or the incorrect optimization of volatile access.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, pointer validity checks are not explicitly noted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function prototypes are listed at the top, but there are no comments in the function bodies indicating callers or callees.
+
+**17. Module Organization:** Score: 7/10
+Justification: The file maintains the original source's logical grouping (Data Types, Arrays, Pointers, etc.), preserving the high-level structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile standalone due to the use of non-standard intrinsics like `__asm_rep_movsd_memcpy` and `__x86_get_pc_thunk_ax`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 2 + 3) / 4 = 4.25
+L2_avg: (5 + 9 + 6 + 4) / 4 = 6.00
+L3_avg: (3 + 1 + 3) / 3 = 2.33
+L4_avg: (2 + 4 + 1 + 1) / 4 = 2.00
+L5_avg: (5 + 7 + 2) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (6.00 × 0.25) + (2.33 × 0.20) + 
+          (2.00 × 0.15) + (4.67 × 0.10)
+Overall = 1.275 + 1.5 + 0.466 + 0.3 + 0.467 = 4.008
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: Structs are completely unrecovered; `struct_simple` uses raw offsets (`a1 + 4`) instead of field names (`p->y`).
+- **Literal Hallucination**: The string literal `"/ld-linux.so.2"` appears as a loop limit in `array_2d_stack`, indicating a severe data/code separation failure.
+- **Type Mismatch**: `long long` parameters are split into two `int32_t` arguments, and `float` return type is incorrectly widened to `float80_t`.
+- **Semantic Error**: `volatile_access` is optimized to `2 * *p`, removing the required second memory read mandated by the `volatile` qualifier.
+- **Control Flow Obfuscation**: The `enum_switch` statement is decompiled into a jump table lookup (`*(char *)(a1 + 0x1983 + v1)`) rather than a readable switch-case block.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully preserved all original function names from the symbol table, making the high-level purpose of each unit immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (1/10)
+- **Why?** The decompiler failed entirely to reconstruct `struct` or `union` definitions, reducing complex data structure manipulations to confusing pointer arithmetic and magic numbers.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Struct Recovery**: Analyze stack layout and access patterns to reconstruct `struct` definitions with field names and types, replacing raw pointer offsets.
+2.  **Fix Data/Code Separation**: Improve the disassembly phase to prevent string literals or data constants from being misinterpreted as loop limits or control flow targets.
+3.  **Preserve Volatile Semantics**: Disable optimization passes that combine or eliminate memory accesses marked as `volatile` to ensure semantic correctness.

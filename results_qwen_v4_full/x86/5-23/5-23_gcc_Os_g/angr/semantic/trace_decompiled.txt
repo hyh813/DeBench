@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_asm_features|0|Arg0=-1075083445,Arg1=4698076,Arg2=-1075083252,Arg3=4688875|eax=0xbfeb874b,ebx=0x0,ecx=0xbfeb8770,edx=0xbfeb8794,esi=0xb7fb2000,edi=0x0

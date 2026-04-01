@@ -1,0 +1,155 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names like `local_28`, `uStack_24`, `uStack_20`, `puVar1`, `piVar2`, `iVar3`, `iVar4`, `iVar5`. These names provide no semantic meaning about the variable's purpose. For example, in `test_cpp_member_func`, the variable `local_28` holds the string "Test" (visible from `0x74736554` = "tseT" in little-endian), but this is completely obscured by the generic name.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Most test functions are correctly named (test_cpp_member_func, test_cpp_constructor, test_cpp_virtual_func), matching the source. However, template instantiations use awkward naming like `template_max_int_` and `template_swap_int_` instead of proper C++ template syntax. Some internal functions like `<EXTERNAL>::operator.new` are duplicated and confusing.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is riddled with unexplained magic numbers: `0x125c` (should be 4704), `0x3e9` (1000), `0x15` (21), `0x2a` (42), `0x47` (71), `0x28a` (650). These represent computed return values but are not documented. The string "Test" appears as raw hex `0x74736554` without any explanation.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+At -O0, there's minimal compiler noise. The code doesn't have excessive register spills or debug artifacts. Some redundant declarations exist (like duplicate `<EXTERNAL>` function stubs), but these don't significantly impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Many functions have been reduced to simple return statements with pre-computed values. For example, `test_cpp_virtual_func` simply returns `0x2a` instead of showing the actual computation. This loses all control flow structure. The `call_virtual_func` function shows a vtable call pattern but is incomplete. At -O0, we should see the full logic, not constant folding.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+Functions are appropriately separated, but many have been reduced to trivial implementations. Template functions like `Container<int>::push` and `Container<int>::get` are correctly extracted. However, the reduction of complex functions to constant returns loses the decomposition benefit.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+The code generally reads top-to-bottom without excessive jumps. Functions that are properly decompiled (like template functions) have good linear flow. The few jumps that exist are straightforward.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+No significant redundancy in the decompiled output. Some functions like `test_cpp_oo_features` repeat similar patterns for different test cases, but this mirrors the source structure.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+The decompiler uses `undefined4` (4-byte), `undefined8` (8-byte), `undefined2`, and `undefined` for almost all types, losing all semantic type information. There's no `int`, `size_t`, `bool`, or pointer distinction. The `Container<double>::push` function shows completely wrong parameter passing with `int in_r0` for `this` pointer.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+No struct recovery is evident. Classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are not reconstructed as structures. The code uses raw memory offsets like `this + 0x28` without any struct definition. For example, `Container<int>` uses `*(undefined4 *)(this + 0x28)` for size without defining the struct layout.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple type safety issues: incorrect `this` pointer handling in `Container<double>::push` (using `int in_r0` instead of pointer), unsafe pointer arithmetic throughout, and function pointer type confusion. The vtable call in `call_virtual_func` uses `***(code ***)param_1` which is dangerously unclear.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+No meaningful comments exist in the decompiled output. There's no explanation of what functions do, no documentation of return values, no indication of uncertainty. The only comments are the decompiler header and function signatures.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Some C++ patterns are partially recognized: virtual function calls show vtable indirection, template instantiation names are generated. However, operator overloading is completely lost (the Point class operators are not recognized), lambda expressions are not identified, and exception handling patterns are minimal.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomalies are flagged. The decompiler presents the incomplete `call_virtual_func` function without indicating the indirect call couldn't be fully resolved. The broken `Container<double>::push` function isn't marked as problematic.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The code provides no guidance about expected input ranges, return value meanings, or error conditions.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+No function call relationships are documented. It's unclear which functions call which, what the callback relationships are, or how the test functions relate to the classes they test.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are grouped somewhat logically (test functions together, template instantiations together, class methods together), but it's all in a single flat listing. No namespace or class structure is reconstructed.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code would not compile as-is. It uses undefined types (`undefined4`, `undefined8`), has duplicate external declarations, and the broken `Container<double>::push` would fail. No dependencies are documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 3 + 7) / 4 = 4.5
+L2_avg = (4 + 5 + 8 + 6) / 4 = 5.75
+L3_avg = (3 + 2 + 4) / 3 = 3.0
+L4_avg = (2 + 3 + 2 + 1) / 4 = 2.0
+L5_avg = (3 + 6 + 4) / 3 = 4.33
+
+Overall = (4.5 × 0.30) + (5.75 × 0.25) + (3.0 × 0.20) + 
+          (2.0 × 0.15) + (4.33 × 0.10)
+Overall = 1.35 + 1.4375 + 0.6 + 0.3 + 0.433 = 4.12/10
+```
+
+### Overall Readability Score: 4.1/10
+
+### Critical Defects
+
+- **Variable names are completely generic**: `local_28`, `puVar1`, `iVar3` provide no semantic meaning about their purpose
+- **Type information completely lost**: All types are `undefined4`/`undefined8`, losing int, size_t, pointers, etc.
+- **Complex functions reduced to constant returns**: `test_cpp_virtual_func` returns `0x2a` instead of showing the actual computation
+- **No struct/class recovery**: Classes like `SimpleClass` and `LifecycleClass` are not reconstructed as structures
+- **No comments or documentation**: Zero explanation of what functions do or their contracts
+
+### Best Quality Aspect: Noise Reduction (7/10)
+- At -O0, there's minimal compiler-generated noise, and the code is relatively clean of artifacts like register spills or debug instrumentation
+
+### Most Needs Improvement: Type System Fidelity (3.0/10)
+- The decompiler fails to recover any meaningful type information, using only `undefined4`/`undefined8` for everything, and doesn't reconstruct any class structures or composite types
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover class/struct layouts**: Analyze object sizes and vtable pointers to reconstruct class definitions with meaningful field names and offsets
+
+2. **Infer variable names from usage patterns**: When a variable is used as a size counter, name it `size` or `count`; when used as a string buffer, name it appropriately
+
+3. **Preserve full function logic at -O0**: Don't reduce functions to constant returns; show the actual computation even if it appears to be constant-folded
+
+4. **Add type annotations**: Replace `undefined4` with `int`, `uint32_t`, or `size_t` based on usage analysis
+
+5. **Include semantic comments**: Document what each function does, what parameters mean, and flag uncertain decompilations

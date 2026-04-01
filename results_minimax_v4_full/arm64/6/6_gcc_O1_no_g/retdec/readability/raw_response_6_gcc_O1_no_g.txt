@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows severe degradation:
+```c
+int64_t param_strcpy(void) {
+    int64_t str2;
+    char * str = (char *)str2;
+    strcpy(str, (char *)str2);
+    return strlen(str);
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `str2`, `str`, `v1`, `v2`, `mem`, `result`. The original has clear `dst` and `src` parameters, but decompiled code loses this distinction entirely. Cannot determine which is source or destination without deep analysis.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Function named `param_strcpy` partially matches source, but lacks parameter count/type indication. Many functions use generic `function_XXXX` pattern (e.g., `function_13c0`, `function_14d0`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` are preserved correctly. However, magic numbers like `66` in `open("/tmp/binbench_shm", 66)` and `0x654d646572616853` in shared memory operations lack explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: address comments (`// 0x1bc0`), stack-chk failures (`__stack_chk_fail()`), unnecessary casts, and `__asm_` helper functions. The code mixes decompilation artifacts with actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are recognizable. However, some goto-like patterns exist (e.g., `goto lab_0x2c84`), and the pthread_join logic has confusing labeled jumps that obscure the straightforward iteration pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-100 lines). However, `param_pthread_join` at ~100 lines could be clearer. Some static helper functions like `thread_sum` are properly extracted but lack proper parameter passing (uses global `g9`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps in error handling paths. The `param_fork_exec` function has nested conditionals that create 4+ levels of nesting, disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some loop unrolling present but not commented. The `call_memset` function duplicates initialization logic that could be abstracted. Redundant null checks and error path duplication throughout.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. Function `param_strcpy` should be `int param_strcpy(char *dst, const char *src)` but is `int64_t param_strcpy(void)`. All pointers treated as `int64_t`, losing `const` correctness. `size_t` parameters become `int64_t`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are defined but with meaningless field names: `struct ipc_perm { int32_t e0; int32_t e1; ... }`. Should be `{ key, uid, gid, cuid, cgid, mode, seq }`. The `sockaddr` struct has `char e1[14]` instead of `sa_data`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: `(char *)str2` cast in strcpy, `(int64_t *)` casts throughout, pointer arithmetic like `*(int32_t *)(v2 + 8)` without bounds checking. Function pointers cast through `(int64_t * (*)(int64_t *))` losing type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (`// Address range: 0x1bc0 - 0x1be8`). No explanation of algorithm, purpose, or parameters. Auto-generated noise provides no semantic value for understanding.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions like `strcpy`, `strlen`, `memcpy`, `pthread_create` are correctly identified. However, the atomic operations use raw `__aarch64_ldadd4_acq_rel()` instead of being recognized as `atomic_fetch_add`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainties. The `param_strcpy` parameter loss is presented confidently as correct. No warnings about indirect calls or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: dst != NULL, src != NULL"), no postconditions, no invariant documentation. The original source had none either, but decompiler could infer some.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships unclear. No documentation of who calls `param_strcpy` or what it calls. Global variables like `g8`, `g9` used without explaining their roles.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions somewhat grouped by category (string functions, thread functions, syscall functions) but no clear separation. Single flat file with 136 functions makes navigation difficult.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Wrong function signatures (param_strcpy takes no args), missing parameter declarations, incorrect return types. Requires significant patching to even attempt compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Parameter loss**: `param_strcpy` has no parameters in decompiled code but should have two (`char *dst, const char *src`)
+- **Type precision**: All functions use `int64_t` return type instead of proper types (`int`, `size_t`)
+- **Variable naming**: Generic names like `v1`, `v2`, `str2`, `mem` lose all semantic meaning
+- **Struct field names**: All fields named `e0`, `e1`, etc. losing struct semantics
+- **No contracts**: Zero preconditions/postconditions documented
+
+### Best Quality Aspect: Idiom Recognition (6/10)
+Standard library functions are correctly identified and named. The decompiler properly recognizes `strcpy`, `pthread_create`, `socket`, etc.
+
+### Most Needs Improvement: Type System Fidelity (3.0/10)
+Types are severely degraded - everything is `int64_t` or `void*`. Function signatures are wrong, const-correctness is lost, and struct field names are generic.
+
+### Top 3 Recommendations:
+1. **Recover function parameters** from stack frame analysis - `param_strcpy` clearly takes two string pointers
+2. **Infer variable names from usage**: `str2` used as both source and destination in strcpy should be `src` and `dst`
+3. **Add struct field names** by matching against known library structures (ipc_perm, sockaddr, etc.)

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `local_30` instead of semantic names. In `param_strcpy`, parameters should be `dst` and `src` based on the strcpy call pattern, but are labeled `undefined4 param_1, undefined4 param_2`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names preserved (`param_strcpy`, `thread_sum`, `signal_handler`, `main`), but many helper functions remain as `FUN_00011580`, `FUN_00011600` instead of being identified as `strcpy`, `strlen`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x1f` (31), `0x12` (18), `0x7f` (127). String literals preserved but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`) appear in nearly every function. Generic thunk functions (`__x86_get_pc_thunk_bx`) and initialization routines clutter the output without being separated.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals recovered (e.g., `param_memcpy` has clean for-loop), but complex functions like `param_fork_exec` have confusing nested conditionals with awkward variable tracking.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified with reasonable granularity. Thread functions (`thread_sum`, `thread_compute`) properly separated. Some parameter lists expose implementation details unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_fork_exec` and `param_pipe_communication` have complex branching that disrupts linear reading with multiple return paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary check pattern repeated in ~30 functions. Some expressions duplicated (e.g., `local_10 = *(int *)(in_GS_OFFSET + 0x14)` appears identically in many functions).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `undefined4` type used extensively instead of specific types. Pointer types degraded (`undefined4 param_1` instead of `char *dst`). No const-correctness preserved. Size types lost (`size_t` becomes `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct completely lost—accessed via array indexing `local_50[iVar5 * 3 + 5]` instead of `data[i].result`. No struct definitions recovered; all composite types flattened to arrays.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)FUN_000115b0(4)`, `(undefined4 ***)auStack_3c`. Pointer arithmetic without type safety. `LOCK()`/`UNLOCK()` macros used without proper atomic type annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of function purpose, algorithm logic, or non-obvious patterns. Original source had extensive documentation; decompiled has none.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library patterns not recognized (`FUN_00011580` should be `strcpy`). Threading idioms (mutex, condition variable, atomic ops) not identified or labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved indirect calls, uncertain type recovery, or potential issues. Code presented confidently despite significant reconstruction uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions or error condition explanations. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without declaration context or usage explanation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order rather than logical grouping. Test functions not grouped with their corresponding param functions. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing type definitions, undeclared external functions (`FUN_00011580`, etc.), architecture-specific constructs (`LOCK()`, `in_GS_OFFSET`). Requires extensive stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+5+5)/4 = 4.75
+Level 2 Average: (6+7+6+6)/4 = 6.25
+Level 3 Average: (4+3+4)/3 = 3.67
+Level 4 Average: (1+3+2+2)/4 = 2.00
+Level 5 Average: (5+5+3)/3 = 4.33
+
+Overall = (4.75 × 0.30) + (6.25 × 0.25) + (3.67 × 0.20) + (2.00 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.5625 + 0.734 + 0.30 + 0.433
+        = 4.45/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled output has none
+- **Generic variable names** - `param_1`, `param_2`, `iVar1` obscure semantic meaning (should be `dst`, `src`, `length`)
+- **No struct recovery** - `ThreadData` struct flattened to array indexing `local_50[iVar5 * 3 + 5]`
+- **Library functions unrecognized** - `FUN_00011580` should be identified as `strcpy`, `FUN_00011600` as `strlen`
+- **Type precision lost** - `undefined4` used instead of specific types; no const-correctness preserved
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Function boundaries correctly identified with appropriate granularity; thread functions properly separated from test harness functions
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding function purpose extremely difficult without cross-referencing original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement standard library function recognition** - Build signature database to identify `strcpy`, `strlen`, `pthread_create`, etc., and restore original names
+2. **Add semantic comment generation** - Infer function purpose from call patterns and add explanatory comments (e.g., "// Copies src string to dst buffer")
+3. **Recover composite types from usage patterns** - Analyze struct access patterns to reconstruct `ThreadData` and similar structures with meaningful field names

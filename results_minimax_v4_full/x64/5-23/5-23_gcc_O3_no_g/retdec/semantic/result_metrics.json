@@ -1,0 +1,268 @@
+{
+  "execution_status": "success",
+  "quality_status": "fail",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/5-23.c",
+  "drivers": [
+    "test_preprocessing_features",
+    "test_asm_features"
+  ],
+  "trace_health": {
+    "status": "available",
+    "usable_for_structural_evidence": true,
+    "original": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 29,
+      "entry_count": 4,
+      "exit_count": 4,
+      "print_count": 21,
+      "call_count": 4,
+      "parsed_entry_count": 4,
+      "parsed_exit_count": 4,
+      "parsed_print_count": 21,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 23,
+      "entry_count": 2,
+      "exit_count": 1,
+      "print_count": 20,
+      "call_count": 2,
+      "parsed_entry_count": 2,
+      "parsed_exit_count": 1,
+      "parsed_print_count": 20,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "fail",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": false,
+    "stdout_exact_match": false,
+    "raw_stdout_exact_match": false,
+    "stdout_nonempty_original": true,
+    "stdout_nonempty_decompiled": false,
+    "stdout_case_match_ratio": 0.0,
+    "stable_case_total": 17,
+    "stable_case_matched": 0,
+    "original_stable_case_total": 17,
+    "decompiled_stable_case_total": 0,
+    "stable_case_ids": [
+      "ASM-L4-01",
+      "ASM-L4-02",
+      "ASM-L4-03",
+      "ASM-L4-04",
+      "ASM-L4-05",
+      "ASM-L4-06",
+      "PP-L2-01",
+      "PP-L2-02",
+      "PP-L2-03",
+      "PP-L2-04",
+      "PP-L3-01",
+      "PP-L3-02",
+      "PP-L3-03",
+      "PP-L3-04",
+      "PP-L3-05",
+      "PP-L3-06",
+      "PP-L3-07"
+    ],
+    "unstable_case_ids": [],
+    "original_exit_code": 0,
+    "decompiled_exit_code": null,
+    "original_signal": null,
+    "decompiled_signal": null,
+    "original_run_issue": "ok",
+    "decompiled_run_issue": "ok",
+    "comparisons_total": 17,
+    "comparisons": [
+      {
+        "test_id": "PP-L2-01",
+        "occurrence": 1,
+        "original": "PP-L2-01: 64 (期望: 64)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L2-02",
+        "occurrence": 1,
+        "original": "PP-L2-02: 30 (期望: 30)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L2-03",
+        "occurrence": 1,
+        "original": "PP-L2-03: 32 (期望: 32)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L2-04",
+        "occurrence": 1,
+        "original": "PP-L2-04: 57122 (期望: 0xDF22)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-01",
+        "occurrence": 1,
+        "original": "PP-L3-01: 116 (期望: 116)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-02",
+        "occurrence": 1,
+        "original": "PP-L3-02: 19 (期望: 11+5+行号长度)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-03",
+        "occurrence": 1,
+        "original": "PP-L3-03: 60 (期望: 60)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-04",
+        "occurrence": 1,
+        "original": "PP-L3-04: 60 (期望: 60)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-05",
+        "occurrence": 1,
+        "original": "PP-L3-05: 16 (期望: 16)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-06",
+        "occurrence": 1,
+        "original": "PP-L3-06: 500 (期望: 500)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-07",
+        "occurrence": 1,
+        "original": "PP-L3-07: 382 (期望: 100+行号+0+1+2)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-01",
+        "occurrence": 1,
+        "original": "ASM-L4-01: 15 (期望: 15)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-02",
+        "occurrence": 1,
+        "original": "ASM-L4-02: 1792918628 (期望: 15)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-03",
+        "occurrence": 1,
+        "original": "ASM-L4-03: 42 (期望: 42)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-04",
+        "occurrence": 1,
+        "original": "ASM-L4-04: 36 (期望: 36)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-05",
+        "occurrence": 1,
+        "original": "ASM-L4-05: 30 (期望: 30)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-06",
+        "occurrence": 1,
+        "original": "ASM-L4-06: 77 (期望: 77)",
+        "decompiled": null,
+        "matched": false
+      }
+    ]
+  },
+  "function_level": {
+    "status": "fail",
+    "segment_count": 2,
+    "segment_callseq_match_ratio": 0.0,
+    "feature_function_match_ratio": 0.0,
+    "call_evidence_segment_count": 1,
+    "call_evidence_unavailable_count": 1,
+    "segment_print_match_ratio": 0.0,
+    "segment_print_evidence_count": 2,
+    "segment_print_unavailable_count": 0,
+    "normalized_io_match_ratio": 0.0,
+    "io_matched_pairs": 0,
+    "io_compared_pairs": 0,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": [
+      {
+        "segment": "test_preprocessing_features",
+        "status": "fail",
+        "call_evidence_available": false,
+        "original_call_count": 0,
+        "decompiled_call_count": 0,
+        "original_print_count": 14,
+        "decompiled_print_count": 9,
+        "sequence_match_ratio": null,
+        "feature_match_ratio": null,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      },
+      {
+        "segment": "test_asm_features",
+        "status": "fail",
+        "call_evidence_available": true,
+        "original_call_count": 2,
+        "decompiled_call_count": 0,
+        "original_print_count": 7,
+        "decompiled_print_count": 6,
+        "sequence_match_ratio": 0.0,
+        "feature_match_ratio": 0.0,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      }
+    ]
+  },
+  "low_level": {
+    "status": "unavailable",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": null,
+    "token_count_original": 2,
+    "token_count_decompiled": 0
+  }
+}

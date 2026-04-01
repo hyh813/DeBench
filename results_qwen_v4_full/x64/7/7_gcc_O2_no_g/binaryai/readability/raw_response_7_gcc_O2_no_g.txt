@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `pbVar2`, `local_38` instead of semantic names like `result`, `encrypted`, `decrypted` from source. Makes tracking variable purpose difficult across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). However, some helper functions use generic names like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0xe1`, `0x7a314` appear without explanation. Original source had comments explaining these (e.g., `"Hello" ^ 0x5A`, expected return values).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) and `__stack_chk_fail()` calls add noise. External function wrappers (e.g., `strlen` calling `strlen`) are redundant.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops converted to do-while patterns instead of original for-loops. `param_tail_call_optimized` correctly converted recursion to iteration, but `param_opaque_predicate` has awkward conditional structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity. `test_obf_opt_edge` is monolithic (~100 lines) but cohesive. Handler functions (`div_zero_handler`, `segv_handler`) properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack check at function ends disrupts flow. Loop structures use forward jumps that require mental tracking.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding occurred appropriately (call functions return pre-computed constants). No obvious dead code, but external function wrappers add redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of specific types (`int`, `size_t`, `byte*`) and generic types (`undefined4`, `undefined8`, `long`). `param_instruction_substitution` takes `uint` but source used `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union definitions recovered. Original `param_implementation_defined` had bitfield struct that's completely lost. Arrays represented as raw memory (`local_38 [31]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`undefined4*`, `byte*`, `long` pointer arithmetic). `param_division_by_zero` returns `ulong` but source returned `int`. Signal handler signatures mismatch.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about signal handling code, setjmp/longjmp usage, or potential undefined behavior. Stack overflow checks present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions inferred. Error return values (-1, -2) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`encrypted_0`, `jmp_buffer`, `segv_buffer`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. External functions marked `<EXTERNAL>` but not organized by category. No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but type mismatches would prevent clean compilation. Would need stubs and type corrections. Some `undefined` types need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Context):     (5+6+5)/3   = 5.33 × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  5.13/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `local_38`** should be named semantically (e.g., `input_value`, `gcd_result`, `decrypted_buffer`)
+- **Zero comments** despite complex obfuscation logic requiring explanation
+- **Bitfield struct completely lost** in `param_implementation_defined` - all composite type information erased
+- **Magic numbers unexplained** (0x5a, 0xe1, 0x7a314) that were documented in source
+- **Type mismatches** between source and decompiled (int vs uint, int vs ulong return types)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments makes understanding obfuscation intent, expected values, and algorithm purposes extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Extract debug info (-g flag) to restore original documentation explaining obfuscation techniques and expected behaviors.
+2. **Infer semantic variable names from usage patterns** - Analyze how variables are used (e.g., `local_38` used for string decryption → `decrypted_buffer`) and rename accordingly.
+3. **Recover composite types from debug symbols** - Use DWARF debug info to reconstruct struct/union definitions including bitfield layouts that are currently lost.

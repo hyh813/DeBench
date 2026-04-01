@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Parameters (`a`, `b`, `count`) match the source perfectly, but local variables in complex functions like `test_calling_conventions` are generic (`lVar1`, `uVar2`, `local_140`). The `va_list` internals (`__gr_offs`, `__stack`) are exposed, which is accurate but low-level.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`) are recovered exactly from the source due to the presence of debug symbols (`-g`), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with pointers to data sections (e.g., `printf(&DAT_00101fb0, ...)` instead of `printf("=== 测试基础调用约定 ===", ...)`), which significantly obscures the output logic. Numeric literals are preserved well.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Dead local variables are frequently declared but unused (e.g., `int b_local; int a_local;` in `cdecl_func`), and stack canary checks (`___stack_chk_guard`) are inlined, adding clutter to the logic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with proper `for` loops and `if` statements. However, `switch` statements are often decompiled into chained `if-else` blocks (e.g., `ret_multi_branch`), which is slightly less idiomatic than the original.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source perfectly; no inlining or outlining occurred due to the `-O0` optimization level. The granularity is exactly as intended by the developer.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or goto statements, making it very easy to follow the execution path compared to optimized binaries.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: While no loop unrolling is present (good), there are redundant assignments and dead stores (e.g., `p = NULL` optimized out in `param_by_value_ptr` leaving just `return 1`) that slightly alter the original structure, though this is often a compiler artifact.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including `int`, `char *`, `double`, and `longlong`. Function signatures match the source, though `printf` arguments are often cast to `ulong` or `uint` more aggressively than in the source.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Structs (`LargeStruct`, `SmallStruct`, `SmallPoint`) are recovered perfectly with correct field names (`data`, `x`, `y`) and types, likely aided by DWARF debug information.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer arithmetic and casts are handled safely. The decompiler correctly identifies `void*` parameters and struct pointers without resorting to unsafe `int` conversions for memory addresses.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to auto-generated warnings (e.g., "WARNING: Removing unreachable block") and do not explain the *purpose* of the code (e.g., the specific calling convention tests being performed).
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Standard idioms like loops are recognized, but the `va_list` (varargs) usage is expanded into low-level struct manipulation (`args.__gr_offs`, `args.__stack`) rather than being abstracted as `va_arg`.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags "Unknown calling convention" warnings for functions where specific attributes were used, and identifies unreachable blocks, providing useful context for analysis.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Basic null checks are visible (e.g., `if (p == (SmallStruct *)0x0)`), but there is no explicit documentation of preconditions or postconditions (e.g., "requires: count > 0").
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, but string references are opaque pointers to global data (`DAT_...`), making it hard to see what text is being printed without cross-referencing the data section manually.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in address order, which groups related test functions together reasonably well, matching the source file's structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `code *`) and relies on undefined global data pointers (`DAT_...`), so it would not compile without significant modification and header definitions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.4/10
+
+**Critical Defects:**
+- String literals are replaced with pointers to data sections (e.g., `&DAT_00101fb0`), making `printf` statements unreadable.
+- `va_list` usage is expanded into low-level struct member access (`__gr_offs`, `__stack`), obscuring the standard varargs idiom.
+- Dead local variables (e.g., `a_local`, `b_local`) are declared in almost every function, adding unnecessary noise.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 10/10)
+- Structs and their field names are recovered perfectly, matching the original source definitions exactly.
+
+**Most Needs Improvement:** Literal Clarity (scored 5/10)
+- The replacement of string literals with data pointers is the single biggest barrier to understanding the program's output and logic flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Inline string literals at their usage sites instead of replacing them with data section pointers.
+2. Abstract `va_list` manipulation into standard `va_start`/`va_arg` pseudo-operations or comments to improve readability.
+3. Filter out or mark dead local variables (variables that are written to but never read) to reduce visual noise.

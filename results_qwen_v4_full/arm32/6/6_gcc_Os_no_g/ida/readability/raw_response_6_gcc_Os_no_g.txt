@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a1`, `a2`) obscuring semantic meaning. Thread-local storage appears as `unk_241A0` instead of `tls_counter`, and `byte_241A4` instead of `tls_thread_name`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserve original names well (`param_strcpy`, `thread_compute`, `signal_handler`). However, some helpers use generic names (`sub_10CA8`) and atomic helpers are verbose (`_sync_fetch_and_add_4`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical magic numbers lack symbolic names: syscall numbers `5`, `6` instead of `SYS_open`, `SYS_close`; signal numbers `10`, `14` instead of `SIGUSR1`, `SIGALRM`; socket constants `2`, `1`, `0` instead of `AF_INET`, `SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack variable annotations (`[sp+4h] [bp-20h] BYREF`) add visual clutter. Some redundant type casts present but no severe compiler artifact pollution.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop constructs recovered well (while/for patterns recognizable). Signal handling polling loops are clear. Some nested conditionals could be flattened but remain understandable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved. Thread workers correctly separated. However, some signatures are corrupted (e.g., `param_pthread_create` has 4 parameters instead of 1, `param_scanf` has 4 parameters instead of 1).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Functions read top-to-bottom naturally. Early returns used appropriately. No problematic goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Atomic operation helpers show expected repetition. Some duplicate error-handling patterns but not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types mostly correct but degraded: `param_strcpy` returns `size_t` instead of `int`. Thread-local variables shown as generic (`unk_241A0`). Some parameters use `int` instead of specific types like `pthread_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct stat` recovered in `param_win32_api`. However, `ThreadData` struct flattened to array access (`arg[0]`, `arg[1]`, `arg[2]`). `sockaddr` partially recovered with field access (`s.sa_family`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe void* casts throughout thread functions. Pointer arithmetic on thread return values (`*(_DWORD *)thread_return[0]`). No buffer overflow warnings despite `strcpy` usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only metadata comments present (stack layout, function attributes). No algorithm explanations or decompilation confidence indicators in code body.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library patterns recognized (`strcpy`, `strlen`, `malloc/free`). Thread patterns identifiable (`pthread_create`/`join`). Signal handling pattern visible. But patterns not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 60 functions marked "FAILED to decompile" at end. One warning present ("positive sp value has been detected"). No inline anomaly indicators within function bodies for uncertain recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values present but undocumented. No postcondition or invariant specifications anywhere.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear within decompiled code. Global variables referenced (`signal_received`, `atomic_counter`) but not documented. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Original source's clear section organization (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 60 external functions failed to decompile (all libc/syscall functions). Would require extensive stubs to compile. External dependencies not documented or declared.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+7)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+6+8+7)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+6+5+3)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.44/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: Syscall numbers (5, 6), signal numbers (10, 14), socket constants (2, 1, 0) lack symbolic names making system API usage opaque
+- **Thread-local storage lost**: `tls_counter` and `tls_thread_name` decompiled as `unk_241A0` and `byte_241A4` losing all semantic meaning
+- **Function signature corruption**: `param_pthread_create`, `param_scanf`, `param_condition_variable` have incorrect parameter counts breaking call semantics
+- **60 external functions failed**: All libc/syscall wrappers show "FAILED to decompile" requiring manual stub creation
+- **Zero documentation**: No comments explaining algorithm intent, error conditions, or decompilation confidence levels
+
+### Best Quality Aspect:
+- **Code Linearization (8/10)** - Functions read naturally top-to-bottom with appropriate early returns and no disruptive goto statements, making execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Near-total absence of explanatory comments means readers must infer all semantic meaning from code structure alone, significantly increasing cognitive load.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants from platform headers** - Map syscall numbers, signal constants, and socket options to their symbolic names using target platform knowledge
+2. **Preserve TLS variable metadata** - Thread-local storage variables should retain their semantic names and `__thread` annotation rather than becoming generic memory references
+3. **Add inline confidence annotations** - Mark uncertain recoveries (indirect calls, type guesses) with comments like `// DECOMPILER UNCERTAIN: inferred type` to guide manual review

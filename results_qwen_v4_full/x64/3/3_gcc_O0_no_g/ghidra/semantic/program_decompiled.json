@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/3/3_gcc_O0_no_g/ghidra/syntactic/bin/3_gcc_O0_no_g_fixed",
+  "stdout": "\nMEM-L1-01 (local_vars): 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

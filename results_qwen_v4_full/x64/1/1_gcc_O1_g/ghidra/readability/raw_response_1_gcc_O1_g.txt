@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All local variables use generic names (`iVar1`, `iVar2`, `uVar1`, `lVar1`) instead of semantic names like `temp1`, `sum`, `count`, `result`. Original variable names from source (`temp1`, `temp2`, `temp3`, `i`, `j`) are completely lost despite -O0 -g compilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—function names match source exactly (`sequential_ops`, `single_if`, `recursion_factorial`, `duffs_device`). Debug symbols (-g flag) preserved names perfectly. Only runtime functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x14` (20), `0x1e` (30), `0x3e9` (1001), `0x65` (101). Hexadecimal representation obscures intent. No named constants recovered despite source using clear decimal values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in multiple functions. Frame references (`in_FS_OFFSET`) and "Unresolved local var" comments add clutter. Runtime boilerplate (`_init`, `_start`, `deregister_tm_clones`) inflates output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered well (`sequential_ops`, `if_else`), but loops use `do-while` instead of `for` with "Unresolved local var" comments. `duffs_device` becomes extremely convoluted with goto labels. `switch_fallthrough` correctly uses goto for fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source—no inappropriate inlining or fragmentation. Each function maintains single responsibility. Helper functions (`double_value`, `op_add`) remain separate as expected.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `switch_fallthrough` and `duffs_device` use forward goto labels (`LAB_0010146c`, `switchD_00101aa1_caseD_7`) disrupting flow. Loop constructs use backward jumps disguised as do-while.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code, but stack canary checks add redundant epilogue code to many functions. Some functions have duplicate comparison patterns that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: All integers are generic `int` rather than `int32_t`. Function pointer types use descriptive typedefs (`_func_int_int`, `_func_int_int_int`) which is helpful. No const-correctness preserved. Pointer vs array distinction mostly maintained.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`arr[5]`, `matrix[3][4]`, `funcs[3]`). No structs/unions in this code to evaluate. Local array initialization is explicit and clear.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Stack canary checks indicate safety instrumentation. Some pointer arithmetic in `loop_break` and `loop_multi_exit` uses `long` for indexing. No unsafe casts observed, but type-erased function pointers lose specificity.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated warnings ("WARNING: Subroutine does not return", "WARNING: Could not recover jumptable"). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not identified—no recognition of "factorial recursion", "digit counting loop", "state machine", or "Duff's device" optimization. Patterns present but unlabeled.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("Could not recover jumptable", "Unresolved local var", "Treating indirect jump as call"). However, many potential issues silently pass without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "n must be > 0" for `duffs_device`). No postconditions or error condition documentation. Implicit contracts completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Callback patterns (`process_with_callback`) show function pointer usage but no explanation of callback contract. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order, not grouped by test level (L1/L2/L3). Runtime functions mixed with test functions. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external symbols (`__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `puts`). Won't compile standalone without significant stubbing. Architecture mismatch noted (source ARM64, decompiled x86).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+8+6+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.81/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects
+- **Variable names completely lost**: `iVar1`, `iVar2` instead of `temp1`, `sum`, `count`, `result` despite -O0 -g debug compilation
+- **Zero semantic comments**: No algorithm explanations, only auto-generated warnings
+- **Magic numbers in hex**: `0x14`, `0x3e9`, `0x65` obscure original decimal intent
+- **Loop variable recovery failed**: "Unresolved local var: int i@[???]" appears in multiple loop functions
+- **Duff's device severely degraded**: Original elegant unrolled loop becomes unreadable goto spaghetti
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: Debug symbols preserved all function names perfectly, making navigation and identification trivial.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Complete absence of semantic documentation makes understanding algorithm intent require reverse-engineering from code alone.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover local variable names from debug symbols**: At -O0 -g, DWARF debug info contains original variable names—Ghidra should extract `temp1`, `sum`, `count` instead of `iVar1`, `iVar2`.
+
+2. **Add semantic comment generation**: Detect common patterns (factorial, digit counting, state machine) and auto-generate explanatory comments like "// Computes factorial recursively" or "// Duff's device: unrolled memory copy".
+
+3. **Convert hex literals to decimal when appropriate**: For values clearly representing counts/limits (0x3e9=1001, 0x65=101), display decimal form or suggest named constants to improve readability.

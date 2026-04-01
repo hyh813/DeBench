@@ -1,0 +1,21 @@
+test
+LOG: param_macro_constants = 64
+LOG: call_macro_constants = 30
+LOG: call_conditional_compile = 32
+LOG: call_multi_branch_compile = 57122
+LOG: call_macro_recursion = 116
+LOG: call_stringize = 19
+LOG: call_token_paste = 60
+LOG: Values: 10, 20, 30
+LOG: call_variadic_macro = 60
+LOG: call_macro_override = 16
+LOG: call_include_guard = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:50
+LOG: call_builtin_macros = 382
+Testing ASM features
+LOG: call_asm_basic = 15
+LOG: call_asm_clobber = 1820870432
+LOG: call_asm_multi_insn = 42
+LOG: call_asm_simd = 0
+LOG: call_asm_atomic = 30
+LOG: call_asm_privileged = 77

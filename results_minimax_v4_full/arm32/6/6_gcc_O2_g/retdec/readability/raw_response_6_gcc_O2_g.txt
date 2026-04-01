@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8` dominate throughout the code, making it nearly impossible to track purpose. While some descriptive names exist (`result`, `thread`, `buffer`), the overwhelming use of generic single-letter variables with numbers severely impedes understanding.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names closely match the original source - `param_strcpy`, `param_fork_exec`, `param_pipe_communication`, `param_mutex_lock`, etc. all accurately reflect their functionality. Minor artifacts like `function_ffff0fa0` exist but are rare.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Chinese strings are displayed as hex (`"\xe6\xb5\x8b\xe8\xaf\x95..."`) making them unreadable. Magic numbers like `66` (open flags), `950` (shmget flags), `1000`/`2000` (loop iterations) lack symbolic names. Some constants like `AF_INET`, `SOCK_STREAM` are properly resolved.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__stack_chk_fail()` calls with unreachable `return &g36;`, `__printf_chk()`/`__snprintf_chk()` instead of standard functions, function pointers stored as raw addresses like `(int32_t * (*)(int32_t *))-0x1c5fe000`. These obscure the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions use natural if-else structures matching source (e.g., `if(pid == 0)` for fork child). However, functions like `param_pthread_join`, `param_atomic_ops`, and `param_thread_local_storage` rely heavily on goto statements (`goto lab_0x1238c`) that create confusing control flow spaghetti.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler maintains reasonable function granularity matching the source - each test function remains separate. Some functions like `param_thread_local_storage` are ~80 lines which is slightly large but still manageable. No severe fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple goto-heavy functions disrupt linear reading. `param_atomic_ops` has labels `lab_0x1263c`, `lab_0x12694`, `lab_0x1267c` creating non-linear jumps. `param_thread_local_storage` uses `goto lab_0x12858`, `lab_0x12890`, `lab_0x12824` making execution flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal true redundancy - no obvious dead code elimination failures. The `__stack_chk_fail()` calls at function ends are unreachable artifacts but don't significantly obscure logic. Loop patterns in pthread operations are appropriately structured.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most integers use `int32_t` (appropriate for ARM64), and `pthread_t` is used in some places. However, function pointers are cast to imprecise types like `(int32_t * (*)(int32_t *))&g1`, and `size_t` is never used (all sizes are `int32_t`). String types are correct as `char*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. `struct _IO_FILE` has only `int32_t e0;`, `struct sockaddr` has `int32_t e0; char e1[14];`, and `struct stat` has generic `int32_t e0` through `e19`. The critical `ThreadData` structure used in pthread operations is completely lost - its fields are accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: `(int32_t *)` casts throughout, unsafe pointer arithmetic like `v1 += 4; *(int32_t *)v1 = i;`, function pointer casts `(int32_t * (*)(int32_t *))&g1`, and buffer access like `*(char *)((int32_t)&v1 + 4 + items_read) = 0;`. These create potential undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some useful metadata comments exist ("From module: /work/src/6.c", "Address range: 0x1230c - 0x123ec"). However, no comments explain algorithm logic, no uncertainty indicators for indirect calls, and no documentation of preconditions/postconditions. Comments are minimal but not misleading.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some recognizable patterns exist (pthread_create/join, mutex lock/unlock, condition variables) but are not explicitly named or documented as patterns. No recognition of producer-consumer, state machines, or other design patterns. The semantic intent of complex synchronization is buried in goto-heavy code.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The function pointer assignments like `&g1`, `&g2` are presented without warning about their opaque nature. No "UNCERTAIN" markers or confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "requires: ptr != NULL"), postconditions, or invariants. Error handling is present but not documented as contracts. The semantic contracts of functions are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear (e.g., `param_fork_exec("/bin/true", 0)`). Global variables are declared at top. However, pthread callback relationships are opaque - the callback function is just `&g1` with no indication of what function it represents or its signature.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Code is in a single file with reasonable grouping - global variables at top, functions somewhat organized by category. However, no header file recovery, no static function scoping indication, and the ordering doesn't perfectly match source organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes all necessary headers (stdint.h, pthread.h, etc.). Has function prototypes. Uses `int32_t` which requires stdint.h (included). Should compile with minor warnings. The code is mostly self-contained.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`-`v8` patterns throughout, making code purpose nearly impossible to track
+- Composite types like `ThreadData` completely lost - accessed via raw pointer arithmetic
+- Hex-encoded Chinese strings (`"\xe6\xb5\x8b..."`) are unreadable
+- Excessive goto usage in `param_atomic_ops` and `param_thread_local_storage` creates spaghetti control flow
+- Function pointer callbacks (`&g1`, `&g2`) are opaque without indicating which function they represent
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names closely match the original source (`param_fork_exec`, `param_mutex_lock`, etc.), making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The pervasive use of generic variable names (`v1`, `v2`, `temp`, `mem`) severely impedes understanding. Even when variables have descriptive uses (like `thread_func_arg`), the majority are cryptic single-letter-with-number patterns.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `v1` used as `thread_func_arg += 12` should be named based on its role in pthread array indexing
+2. **Recover composite types**: The `ThreadData` struct used in `param_pthread_join` should be reconstructed with fields `start`, `end`, `result`
+3. **Decode string literals**: Convert hex-encoded strings to readable UTF-8 or provide decoded versions in comments

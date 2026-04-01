@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_fake_branch`
+
+After analyzing both the original source code and the decompiled output, I note a critical discrepancy: the binary was compiled with `-Os` (size optimization) as indicated by the filename `7_gcc_Os_g`, not `-O0` as stated in the source metadata. This explains significant code elimination.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled `param_fake_branch` has no local variables (compiler eliminated them), but other functions like `param_opaque_predicate` use cryptic names `iVar1`, `iVar2`, `iVar3`, `iVar4` instead of source names like `p1`, `p2`, `p3`, `a`, `b`, `temp`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names accurately match source: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` all correctly recovered. Minor扣分 for some helper functions with generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0xe1` (225), `0x2f` (47) appear without explanation. The literal `0xDEADBEEF` from source is lost entirely due to compiler optimization.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Contains warnings like "Unknown calling convention" and stack canary checks (`__stack_chk_fail`), but these are manageable. No excessive debug artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: `param_fake_branch` is trivially `return x;` - natural but trivialized. Other functions like `param_opaque_predicate` show proper while loops and conditionals. At `-Os`, some restructuring is expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately granular. Each function has single responsibility. No 500-line monoliths observed. Good separation between `param_*` and `call_*` pairs.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. `param_fake_branch` is perfectly linear. Other functions have minimal forward jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code (fake branches in `param_fake_branch`) was eliminated by the `-Os` compiler - this is expected behavior. No redundant expressions in recovered code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are accurate: `int` for integers, `char*` for strings, `size_t` for lengths. Minor generic types in some places but generally precise.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in `param_fake_branch`. Other functions don't use composites, so no recovery needed. Score reflects "not applicable but handled correctly."
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed in `param_fake_branch`. Pointer arithmetic is correct. Stack canaries add safety. Minor issues in some edge case handlers.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly auto-generated warnings ("WARNING: Unknown calling convention"). No explanation of the fake branch obfuscation technique or algorithm intent. The decompiler correctly shows `return x` but provides no context about why the original had fake branches.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The opaque predicate logic in `param_opaque_predicate` is not labeled as such. The GCD computation loop is not recognized as a pattern.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return", "Unresolved local var"). However, the elimination of fake branches is not flagged as an anomaly - the decompiler silently accepts compiler optimizations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The function contract (input validation, return value semantics) is not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible (`call_fake_branch` calls `param_fake_branch`) but not explicitly documented. No comments explaining call graph or global usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (obfuscation, optimization, edge cases). Static functions properly scoped. Overall organization matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile as standalone C. External dependencies (libc functions like `signal`, `malloc`, `strlen`) are properly used. Minor stubs may be needed for some runtime functions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable names are generic (`iVar1`, `iVar2`, `iVar3`, `iVar4`) instead of semantic (`p1`, `p2`, `result`, `str`)
+- The fake branch obfuscation technique is completely lost - decompiled code shows only `return x`
+- No comments explaining the algorithmic intent or obfuscation purpose
+- Magic numbers like `0xDEADBEEF` from source are eliminated without explanation
+- No indication that compiler optimization removed significant code
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names accurately reflect their purpose and match the original source naming convention.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic numbered variables (`iVar1-4`) obscure the semantic purpose of variables that were clearly named in source (`p1`, `p2`, `p3`, `a`, `b`, `temp`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `iVar3 = x + 1` should suggest `x_plus_1` or `successor`. Track how variables are used to generate semantic names.
+2. **Flag code elimination as anomaly**: When compiler removes significant code (like fake branches), add a comment: "// NOTE: Compiler eliminated dead code branches - original may have contained obfuscation"
+3. **Recover magic number meanings**: Use constant propagation and context to identify literals like `0xDEADBEEF` as likely named constants, or flag them as "unresolved constant"

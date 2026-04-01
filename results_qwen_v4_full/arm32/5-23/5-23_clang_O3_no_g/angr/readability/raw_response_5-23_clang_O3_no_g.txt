@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr` throughout, losing all semantic meaning from original names like `size`, `counter`, `increment`, `exec_mem`. No variable indicates its purpose (e.g., `a0` should be `size` in `param_macro_constants`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names are well-preserved (`param_macro_constants`, `call_macro_functions`, `param_asm_simd`), accurately reflecting original source. However, helper functions like `sub_4004ec`, `sub_4005c8` are cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x400`, `0x200`, `57072`, `282`, `30` (for `_SC_PAGESIZE`). Original constants like `MAX_SIZE`, `BUFFER_COUNT` are completely lost to raw values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization boilerplate (`_init`, `deregister_tm_clones`, `register_tm_clones`, `frame_dummy`) clutters output. Assembly artifacts like `armg_calculate_condition` appear without context.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions are clean, but complex ones like `param_memory_protection` use excessive `goto` labels (`LABEL_400cb1`, `LABEL_400cb2`) instead of structured if-else. Loop in `param_asm_clobber` is partially recovered but awkward.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly preserved with appropriate granularity. However, `test_preprocessing_features` has duplicated `printf` calls at the end, and many functions are constant-folded to single returns.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `param_memory_protection` and `call_asm_privileged` have disruptive forward jumps and nested label structures that break linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_preprocessing_features` ends with duplicate `printf(&g_4011b2, 382)` calls. `frame_dummy` calls `register_tm_clones()` twice. `main()` duplicates `test_asm_features()` logic instead of calling it.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers degraded to generic `unsigned int` or `int`, losing `size_t`, `int32_t` specificity. Pointer types lack const-correctness. `param_asm_clobber` shows `unsigned int *a0` but loop variable `i` should be `size_t`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in this code sample, so not heavily tested. Pointer arithmetic is mostly preserved correctly in array access patterns like `ptr[1]`, `index[1]`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `__atomic_fetch_add_4()` called without proper parameters in some places. `param_memory_protection` has duplicate `ptr` variable declarations. Pointer comparisons with `0xffffffff` instead of `MAP_FAILED`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macros, assembly, and expected behavior. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansions not identified (e.g., `ADD_16` became `+16`). Assembly patterns not recognized as SIMD or atomic operations. No pattern naming for common constructs.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `armg_calculate_condition` appears without explanation of what it does. No warnings about constant-folded functions losing original logic. Suspicious code presented confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for mmap results). No postconditions or error condition documentation. Return value meanings unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships preserved, but global variables use cryptic names (`g_40108f`, `g_412008`). No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order without logical grouping. Runtime init functions mixed with application code. No separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__atomic_fetch_add_4`, `armg_calculate_condition`, `call_weak_fn`) not documented. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall = 1.50 + 1.44 + 1.07 + 0.30 + 0.47 = 4.78/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0` should be named semantically** (e.g., `size`, `counter`, `result`) based on usage context
+- **Zero comments** despite original source having extensive documentation explaining macro behavior and assembly semantics
+- **Magic numbers everywhere** (`0x400`, `57072`, `282`) with no recovery of original constant names like `MAX_SIZE`
+- **`armg_calculate_condition` appears without explanation** - critical anomaly not flagged for manual review
+- **`main()` duplicates `test_asm_features()` logic** instead of calling the function, creating maintenance burden
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Main function names like `param_macro_constants`, `param_asm_simd` are accurately preserved from source, maintaining semantic clarity at the function level.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means readers cannot understand the purpose of macro expansions, assembly semantics, or expected behavior without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant names from debug symbols** - When `-g` flag is present, map magic numbers like `0x400` back to `MAX_SIZE` and `57072` to `0xDF22`
+2. **Add decompilation confidence annotations** - Flag functions that were constant-folded (e.g., `call_macro_constants` returns constant 64) with comments indicating original logic was optimized away
+3. **Infer variable names from usage patterns** - Analyze how `a0` is used in `param_macro_constants` (compared against threshold, used in return) to suggest name `size` or `input_size`

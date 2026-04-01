@@ -1,0 +1,139 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are almost exclusively named with generic identifiers like `v1`, `v2`, `v3`, `result`, `a1`, `a2`, `a3`. For example, in `_Z20test_cpp_member_funcv`, the variable `v1` is used for the object but should be named `obj` based on the original source. The decompiler provides no semantic inference from usage patterns - `v2 = _ZNK11SimpleClass8getValueEv()` should suggest `getValue_result` or similar.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: C++ mangled names are partially demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), which is good. However, many utility functions retain generic names like `function_1860`, `function_1870`, `function_1880` which map to `malloc`, `puts`, `strlen` respectively. These should be named according to their actual functionality.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers like `0x1234` (the class ID), `31` (buffer size minus 1), and array sizes appear without explanation. The global `g1 = 0x16c1000000000 // 0x1234` shows the decompiler recognized the value but didn't create a named constant. String literals are encoded in hex (`"\xe6\xb5\x8b\xe8\xaf\x95"`) rather than UTF-8, making them unreadable.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant compiler artifacts pollute the code. Excessive casting is present throughout (e.g., `(int64_t)(int32_t)&g42`). Stack frame setup creates unnecessary variables like `int64_t v1; // bp-40, 0x1b14`. The code includes many redundant operations from register spilling and type conversions that obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Basic control flow structures (if/else, loops) are preserved. However, some patterns are awkward - the `test_cpp_exception` function has `__cxa_throw` directly in the flow without proper try-catch structure recovery. At -O0, the control flow should more closely mirror source, but the decompiler fails to recover exception handling blocks.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Functions are reasonably decomposed - each test function is separate. However, some functions like `test_cpp_smart_ptr` are 200+ lines and could benefit from extraction. The parameter lists expose too many implementation details (e.g., passing `int64_t * result` when a simple return would suffice).
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Justification: Code generally reads top-to-bottom, but some forward jumps disrupt flow. The `LifecycleClass` constructor has complex goto-based loop structure (`lab_0x2ed4`, `lab_0x2f18`) that could be better linearized as a for loop. Deep nesting appears in some functions (e.g., Container::get has nested conditionals).
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Some redundant expressions visible, particularly in type conversions. The pattern `*(int32_t *)result = (int32_t)result` appears multiple times unnecessarily. However, no major dead code elimination failures that would severely impact readability.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Uses `int64_t` consistently for pointers on ARM64, which is correct. However, loses precision with generic types like `int32_t *` for pointers that should be more specific. The decompiler uses `int64_t` for everything, losing the distinction between `int`, `size_t`, and `uint32_t` from the original source.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Vtables are reconstructed but with meaningless names (`vtable_167f8_type`, `vtable_16820_type`). The struct fields are generic (`e0`, `e1`, `e2`). The original class hierarchy is listed in comments but not properly reflected in type definitions. For example, `SimpleClass` members `value` and `name[32]` are not recovered as named fields.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Extensive unsafe casts throughout (e.g., `(int32_t *)&g42` passed where `int*` expected). Pointer arithmetic is unchecked - `(int32_t *)(v1 + 4 * v2)` in `LifecycleClass::getData` has no bounds verification. Function pointer types are sometimes incorrect (many `int64_t (*)()` instead of proper signatures).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Minimal useful comments - mostly address ranges (`// Address range: 0x1b14 - 0x1bbc`). Demangling information is provided but adds noise rather than clarity. No explanation of algorithm intent or non-obvious logic. The comment `// From class: Base` appears frequently but adds little value.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some C++ patterns are recognized - constructors (`_ZN11SimpleClassC1EiPKc`), destructors, virtual functions all have demangled names. However, the decompiler doesn't recognize patterns like RAII (in smart pointer code), exception handling blocks, or lambda expressions as distinct idioms.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Justification: No indication of uncertain or unresolvable calls. The `call_virtual_func` function returns an uninitialized `result` variable - this should be flagged. Many indirect vtable calls could not be fully resolved but no warnings are present.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost. Error conditions from exceptions are not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function call relationships are visible through the code but not explicitly documented. Global variables like `g25` (instance_count) are used without explaining their purpose. Virtual dispatch relationships are partially visible through vtable structures but not clearly connected to call sites.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are somewhat grouped - constructors/destructors together, test functions together. However, the organization is largely alphabetical by mangled name, not logical grouping. The massive file (2700+ lines) makes navigation difficult.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: The code includes many stub functions and external declarations but doesn't compile standalone. Dependencies on libc functions (malloc, puts, etc.) are implicit rather than documented. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+4+3)/4 = 3.0
+L2_avg = (5+6+5+5)/4 = 5.25
+L3_avg = (5+4+4)/3 = 4.33
+L4_avg = (3+4+3+2)/4 = 3.0
+L5_avg = (4+5+4)/3 = 4.33
+
+Overall = (3.0 × 0.30) + (5.25 × 0.25) + (4.33 × 0.20) + 
+          (3.0 × 0.15) + (4.33 × 0.10)
+Overall = 0.90 + 1.3125 + 0.866 + 0.45 + 0.433 = 3.96/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `result`, `a1`) with no semantic inference from usage patterns
+- **Type safety**: Extensive unsafe casts like `(int32_t *)&g42` create potential undefined behavior
+- **Composite type recovery**: Vtables named `vtable_167f8_type` with fields `e0`, `e1`, `e2` lose all semantic meaning
+- **Noise**: Excessive casting, redundant operations, and stack frame setup code obscure actual logic
+- **Exception handling**: Try-catch blocks not recovered; exception flow is linearized incorrectly
+
+### Best Quality Aspect
+**Function Decomposition (6/10)** - Functions are reasonably separated into logical units (test functions, constructors, destructors), though some are too large.
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - The complete lack of semantic variable names makes tracking data flow nearly impossible. Every variable requires mental mapping to understand its purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: If `v1` is used as object instance in constructor calls, name it `obj` or `this_ptr`. If `v2` stores a size value used in bounds checks, name it `size` or `count`.
+2. **Recover structured exception handling**: Detect `__cxa_throw`/`__cxa_begin_catch` pairs and reconstruct try-catch blocks rather than linearizing the control flow.
+3. **Name vtable structures semantically**: Instead of `vtable_167f8_type`, use the class name from demangled symbols (e.g., `vtable_for_SimpleClass`). Name function pointers by their demangled method names.

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_gcc_O3_no_g/binaryai/syntactic/bin/5-23_gcc_O3_no_g_fixed",
+  "stdout": "LOG: Values: -1749371904, -1749371904, -1097955768\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

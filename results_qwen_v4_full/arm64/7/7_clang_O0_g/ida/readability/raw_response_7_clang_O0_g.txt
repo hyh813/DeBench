@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `v2`, `temp`) instead of semantic names like `result`, `encrypted`, `decrypted` from source. Some better names exist (`buffer`, `ptr`, `i`, `j`) but inconsistent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). Some runtime functions use generic names (`sub_760`, `init_proc`) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0xDEADBEEF` became `-559038737` (signed interpretation), `0x5A` became `90`, character literals `65`/`66` instead of `'A'`/`'B'`. Original had explanatory comments for these values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack location annotations (`[xsp+8h] [xbp-8h]`) add visual noise. Type casts (`unsigned __int8`, `__int64`) are visible but not excessive. No significant dead code from register spilling.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as `for`/`while` constructs. Conditionals are clear. At `-O0` optimization, control flow closely matches source structure with minimal transformation artifacts.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. No inappropriate inlining or fragmentation. Each function maintains single responsibility as in original code.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive forward jumps or goto statements. Early returns used appropriately in error handling paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `param_instruction_substitution` simplified bit operations to arithmetic (`6*x`, `15*x`) which is cleaner but loses original intent. Some optimization artifacts present but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic types used (`int`, `__int64`) instead of precise types (`int32_t`, `size_t`). Pointer types sometimes degraded (`unsigned int *p` vs `int *p`). Some correct type recovery (`size_t len`, `char *buffer`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` completely optimized away to constant return `48`. Array recovery is good but struct/union information lost where compiler optimized.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__sighandler_t)`, `(unsigned int)`, `(__int128)`). Signal handler type conversions are particularly concerning. No buffer overflow warnings despite overflow functions present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. Common patterns (tail recursion, buffer overflow) not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: strlen`). However, logic changes in `param_integer_overflow` (different condition structure) not flagged as potential decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). Error handling paths lack explanation. Original had expected return values documented; none recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships visible through direct calls. Global variables referenced (`jmp_buffer`, `segv_buffer`, `param_string_encryption_encrypted`). Call graph inferable but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by memory address, not logical grouping. Related test functions scattered. Original had clear section headers (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions marked "FAILED to decompile" requiring stubs. Would need significant patching to compile standalone. Dependencies not documented beyond function names.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+7)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75 × 0.25 = 1.94
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (7+5+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.02/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects
+- **Zero comments recovered** - Original had extensive documentation explaining obfuscation techniques, test scenarios, and expected values; all lost
+- **Generic variable naming** - Variables `v0`, `v1`, `v2` instead of semantic names like `result`, `encrypted`, `decrypted`
+- **Magic number degradation** - `0xDEADBEEF` became `-559038737`, `0x5A` became `90`, losing hexadecimal clarity
+- **Composite type loss** - Bitfield struct in `param_implementation_defined` optimized to constant `48`, structure information destroyed
+- **Logic changes unflagged** - `param_integer_overflow` has different condition structure than source without uncertainty annotation
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`), maintaining semantic meaning across decompilation.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source had extensive comments explaining obfuscation techniques, test scenarios, and expected values that would significantly aid reverse engineering understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - Extract debug information (`-g` flag) to recover original comments, especially for obfuscation test cases where intent is critical
+2. **Infer semantic variable names from usage patterns** - Analyze variable usage to suggest names (e.g., variables used in string operations → `buffer`, `encrypted`; loop counters → `i`, `index`)
+3. **Flag logic divergences from expected patterns** - When decompiled logic differs from common patterns (GCD, XOR decryption), add uncertainty annotations to alert analysts to potential decompilation errors

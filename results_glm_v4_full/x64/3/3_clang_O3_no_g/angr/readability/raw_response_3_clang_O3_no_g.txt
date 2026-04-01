@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0` through `v11`, `v4`, `v5`), providing no semantic context about their role in calculations or data structures.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names from the source (e.g., `heap_basic`, `local_vars`, `test_stack_memory`) are preserved accurately, making the API surface clear despite internal obfuscation.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers resulting from vectorization, such as `0xf0e0d0c0b0a09080706050403020100` and `4294967295`, which obscure the original simple arithmetic logic (e.g., `i & 0xFF`).
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The output contains significant decompiler artifacts, including pseudo-instructions like `AddV`, debug markers like `[D] Unsupported jumpkind`, and cryptic stack variable names like `vvar_120{r56|8b}`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Natural loop structures are completely replaced by massive blocks of unrolled assignments and `do-while` loops handling vector chunks, making the original logic (e.g., iterating an array) nearly unrecognizable.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decomposition aligns well with the source modules; however, aggressive inlining (e.g., `large_stack_frame` logic appearing inside `test_stack_memory`) blurs the boundaries of some functions.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code reads top-to-bottom, the excessive loop unrolling creates very long blocks of repetitive code that disrupt the mental model of the algorithm's flow.
+
+**8. Redundancy Elimination:** Score: 1/10
+Justification: The decompiler failed to abstract the compiler's loop unrolling optimization, resulting in pages of redundant `uint128_t` assignments (e.g., in `vla_stack`) instead of a simple loop.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While `unsigned int` and pointers are generally correct, the decompiler defaults to `uint128_t` and SIMD types (`xmm` registers) for optimized array operations, losing the original `int` array semantics.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Structures like `Node` are recovered with correct layout and padding, but field names are generic (e.g., `field_0`, `field_8`), losing semantic meaning like `data` or `next`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe pointer arithmetic to access vectorized memory, such as `*((uint128_t *)((char *)&v4 + i))`, which is difficult to verify for safety compared to standard array indexing.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments regarding the algorithm's purpose; only internal decompiler debug warnings like `[D] MBusEvent-Imbe_Fence` are present.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like "iterate and fill array" are lost, replaced by complex vectorized patterns that do not resemble standard C coding practices.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler flags unsupported jump kinds and memory barriers, but it fails to indicate that the massive vector blocks are actually optimized loops, which is the biggest semantic anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: Basic error checks (e.g., `if (!ptr) return 4294967295`) are visible, but they are not explicitly documented as preconditions or contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and direct, making the relationships between functions easy to trace.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped logically by test suite (stack, heap, static), but the flat listing and presence of wrapper `sub_` functions slightly degrade the organization.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not valid C due to pseudo-ops like `AddV`, non-standard variable names, and debug markers, making it impossible to compile without significant manual editing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.5
+L2_avg: 4.0
+L3_avg: 5.0
+L4_avg: 3.0
+L5_avg: 4.67
+
+Overall = (3.5 × 0.30) + (4.0 × 0.25) + (5.0 × 0.20) + 
+          (3.0 × 0.15) + (4.67 × 0.10)
+Overall = 1.05 + 1.0 + 1.0 + 0.45 + 0.467
+Overall = 3.97/10
+```
+
+### Overall Readability Score: 4.0/10
+
+### Critical Defects
+- **Loop Unrolling Not Abstracted**: Functions like `vla_stack` and `heap_basic` display pages of `uint128_t` assignments instead of the original `for` loops, destroying readability.
+- **Pseudo-Instructions**: The use of `AddV` and other non-C operators makes the code syntactically invalid and semantically obscure.
+- **Generic Variable Naming**: Extensive use of `v0`-`v11` makes tracking data flow nearly impossible.
+- **Magic Vector Constants**: Large hex literals (e.g., `0xf0e0d0c0b0a09080706050403020100`) replace simple initialization logic.
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**
+- **Why?** The decompiler successfully preserved the original function names (e.g., `heap_basic`, `local_vars`), allowing the user to identify the high-level purpose of the code blocks despite the internal obfuscation.
+
+### Most Needs Improvement
+- **Redundancy Elimination (1/10)**
+- **Why?** The failure to recognize and re-roll optimized loops results in massive code bloat (e.g., 20 lines of vector assignments for a simple loop), which is the single biggest barrier to understanding the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Loop Pattern Recognition**: Implement pattern matching to detect and re-roll unrolled loop bodies (especially SIMD/vectorized blocks) back into compact `for` or `while` loops.
+2.  **Pseudo-Instruction Translation**: Replace internal analysis pseudo-ops like `AddV` with standard C operators (`+`, `*`, `&`) to ensure syntactic validity.
+3.  **Variable Name Recovery**: Heuristically infer variable names from context (e.g., `i` for loop counters, `ptr` for pointers) or utilize debug symbols more effectively to replace generic `v#` names.

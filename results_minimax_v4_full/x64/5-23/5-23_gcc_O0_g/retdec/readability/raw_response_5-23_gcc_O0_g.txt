@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc. The only exception is `result` which is used consistently. For example, in `param_asm_clobber`, the loop counter should be named `i` or `index`, not `v1`. The global variables `g1`-`g22` are completely non-descriptive.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `param_macro_constants`, `call_asm_basic`, `param_asm_clobber`, `header_func`, `my_func`. The decompiler correctly preserved these names. Minor deduction for some CRT helper functions being generic (`function_10b0`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Critical failures include: (1) String literals are raw UTF-8 hex (`"\xe6\xb5\x8b..."`) instead of decoded Chinese text; (2) `size > (int32_t)&g20` compares size to a boolean address - should be `size > 1024`; (3) Magic numbers like `0xdef0`, `0x3f7c0777`, `-0x3cfb` appear without explanation; (4) `__COUNTER__` values hardcoded as `155` instead of explaining the macro expansion.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Stack protection checks (`__stack_chk_fail`) are present but expected at `-O0`. No redundant casts or debug instrumentation. Some noise from `__asm_` pseudo-functions in SIMD code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if-else, while loops). However, `call_asm_multi_insn` has an extremely confusing expression: `v4 == 111 == v3 == 72` which should be `dst[0] == 'H' && dst[4] == 'o'`. The `param_macro_functions` uses a complex ternary that obscures the MAX macro logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler preserved the function granularity from the original source. Each test function remains separate. However, `param_simd_intrinsics` is 80+ lines with excessive local variable proliferation (`v1`, `v2`, `vec_a`, `vec_a2`, etc.), suggesting poor decomposition of the SIMD operations.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `param_asm_multi_insn`. Some minor disruption from the stack check patterns but nothing severe.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The SIMD functions show significant redundancy with repeated `__asm_movaps_1(__asm_movdqa(...))` patterns that could be abstracted. The `param_simd_intrinsics` has excessive intermediate variable assignments that obscure the actual logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Good use of `int32_t`, `int64_t`, `uint32_t` matching the original. However, `param_asm_multi_insn` has `char *dst` but `int32_t *src` - the source should also be `char*`. The `n` parameter is correctly `int64_t` for size_t. Some pointer types are imprecise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types were recovered. The code uses raw pointer arithmetic throughout (e.g., `*(int32_t *)(4 * v1 + (int64_t)arr)`). The original source had no complex structs either, but the decompiler could have at least named the array access patterns.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple severe issues: (1) `result = &g22` assigns address to int in multiple places (lines 0x146b, 0x17f8, etc.) - type error; (2) `param_asm_multi_insn` has wrong parameter type for `src`; (3) The comparison `v4 == 111 == v3 == 72` chains comparisons incorrectly; (4) `int128_t` typedef created but used incorrectly with pseudo-asm functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments show source file path and line numbers (e.g., "From module: /work/5-23.c, Line range: 37 - 43"), which is helpful. However, no explanatory comments about what the code does or why certain operations occur. The line range comments are auto-generated metadata, not semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are identified or named. The inline assembly patterns, macro expansions, and atomic operations are not recognized as idioms. The decompiler could have noted "This implements a MAX macro" or "Atomic fetch-and-add operation".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No flags for suspicious code. The incorrect type assignments (`result = &g22`) should be flagged as potential errors. The weird comparison patterns and pseudo-asm functions should have uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The code could have noted requirements like "requires: n > 0" for `param_asm_clobber` or "ensures: counter is incremented atomically" for `param_asm_atomic`.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. However, the relationships between functions (who calls whom, global variable usage) are not documented. The test harness pattern (test functions calling param functions) is not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. However, it's a single monolithic file. The CRT startup functions are interleaved with the test functions, which is confusing.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`). It should compile with minimal stubs. The `int128_t` typedef is non-standard but functional.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v1`, `v2`, `v3`) making code flow extremely difficult to track
+- String literals are raw UTF-8 hex instead of decoded text, obscuring all output messages
+- Macro constant `MAX_SIZE` (1024) is decompiled as comparing against boolean address `&g20`
+- Type safety violations: `result = &g22` assigns pointer to int type in multiple locations
+- `param_asm_multi_insn` has incorrect parameter type (`int32_t *src` should be `char *src`)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler preserved almost all function names exactly from the source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Literal Clarity (2/10)  
+The decompiler failed to recover macro constants, leaving magic numbers and encoded strings that completely obscure the program's behavior. The comparison `size > (int32_t)&g20` is fundamentally wrong.
+
+**Top 3 Recommendations:**
+1. **Decode string literals**: Convert UTF-8 hex strings back to readable text (e.g., `"\xe6\xb5\x8b"` → `"测试"`)
+2. **Recover macro values**: Detect constant comparisons and replace with meaningful values (e.g., `&g20` → `1024` for MAX_SIZE)
+3. **Fix type safety**: The `result = &g22` pattern indicates a decompilation error that should be caught and flagged as an anomaly rather than generating invalid C code

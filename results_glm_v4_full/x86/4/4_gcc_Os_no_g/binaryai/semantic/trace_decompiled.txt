@@ -1,0 +1,5 @@
+TRACE_ENT|0|call_func_ptr_param|0|Arg0=-1209262632,Arg1=-1079170048,Arg2=0,Arg3=-1211101279|eax=0xb7ec1dd8,ebx=0x0,ecx=0xbfad2c00,edx=0xbfad2c24,esi=0xb7ec0000,edi=0x0
+TRACE_ENT|1|param_func_ptr|1|Arg0=4277538,Arg1=5,Arg2=-1079170012,Arg3=-1079170048|eax=0x414522,ebx=0x0,ecx=0xbfad2c00,edx=0xbfad2c24,esi=0xb7ec0000,edi=0x0
+TRACE_ENT|2|callback_func|2|Arg0=5,Arg1=0,Arg2=-1079170012,Arg3=-1079170048|eax=0x414522,ebx=0x0,ecx=0xbfad2c00,edx=0xbfad2c24,esi=0xb7ec0000,edi=0x0
+TRACE_EXT|2|callback_func|2|10
+TRACE_EXT|1|param_func_ptr|1|20

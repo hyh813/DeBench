@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `idx`) with no semantic meaning. For example, `param_macro_constants(unsigned int a0)` should use `size` to match source intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_macro_constants`), but polluted with meaningless wrappers like `sub_401189`, `sub_4011a4` that add no value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `1025`, `0x200`, `57072`, `4294967295` without explanation. Original `MAX_SIZE`, `BUFFER_COUNT` macros completely lost to constant folding.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive wrapper functions (`sub_401xxx` series) that just call actual functions. Unnecessary variable assignments like `v0 = v2` in multiple functions add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control structures recovered (if/for/return), but some functions use awkward patterns like `goto g_404010` in `sub_401020`. Loop constructs generally readable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with wrapper functions for every call site. `param_macro_constants` and `sub_401189` are duplicates. Original cohesive structure lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `call_asm_privileged` has excessive variable declarations (`v0` through `v20`) disrupting flow. Some forward jumps present.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Constant folding eliminated actual computation logic (e.g., `call_macro_constants` returns `64` directly). Cannot see original `BUFFER_COUNT * 4` calculation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types everywhere (`unsigned long long`, `unsigned int`) instead of specific types. `param_macro_constants` returns `unsigned long long` when source uses `int`. Pointer types often just `void*`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic struct `struct_0` recovered but meaningless. Array handling shows pointer arithmetic (`ptr + idx * 4`) instead of proper array indexing in some cases.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts like `(unsigned int)idx` and `(char *)&v0`. Function pointer calls like `v3 = ptr(a0)` lack proper type signatures. Some buffer operations risky.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only one anomaly note `[D] Unsupported jumpkind Ijk_SigTRAP`. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. SIMD operations shown as `AddV()` without identifying as vector addition. Atomic operations not labeled as such beyond function name.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). No indication of constant folding, macro loss, or optimization artifacts. Code presents computed constants as if original.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `param_memory_protection` have no indication of error return values meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables named `g_403fe8`, `g_40207f` with no semantic meaning. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Wrapper functions interspersed with actual functions. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code compiles but requires external symbols (`g_403fe8`, `__libc_start_main`). `AddV()` function undefined. Some architecture-specific code not properly guarded.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+4+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.133
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+
+Overall = 1.575 + 1.313 + 1.133 + 0.413 + 0.500 = 4.93/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Constant folding eliminated computation logic**: Functions like `call_macro_constants` return `64` directly instead of showing `BUFFER_COUNT * 4` calculation
+- **Excessive wrapper functions**: `sub_401189`, `sub_4011a4`, etc. duplicate actual functions with no value
+- **Generic variable naming**: All variables are `v0`, `v1`, `a0`, `a1` with no semantic meaning
+- **Magic numbers without explanation**: `57072`, `4294967295`, `0x200` appear without context
+- **No comments or documentation**: Zero explanation of algorithm intent or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved from source (`param_macro_constants`, `param_asm_basic`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding optimization artifacts and constant folding impossible for analysts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate constant folding**: When a function returns a pre-computed constant, add comment showing original computation (e.g., `// Original: BUFFER_COUNT * 4 = 64`)
+2. **Eliminate wrapper function duplication**: Recognize when `sub_401xxx` functions just call another function and merge or remove them
+3. **Infer variable names from usage patterns**: Analyze how variables are used (size comparisons, array indexing) to suggest semantic names like `size`, `index`, `buffer`

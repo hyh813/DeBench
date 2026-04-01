@@ -1,0 +1,132 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 5/10**
+Justification: Mixed results - simple functions like `local_vars`, `heap_basic`, `tree_heap_traversal` have reasonable names (`i`, `arr`, `sum`, `root`), but complex functions like `vla_stack` use cryptic names (`v2`, `p_vla`, `__vla_expr0`, `v6`). The VLA and alloca functions show the worst naming, with variables named purely by decompiler patterns rather than semantic purpose.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most test functions correctly recovered their original names (`local_vars`, `heap_basic`, `global_var_access`, `memop_memset`). However, many internal/runtime functions use generic IDA names (`sub_1030`, `sub_1130`, `register_tm_clones`). The core business logic functions are well-named, but infrastructure code is not.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Some literals are clear (e.g., `if (n <= 0 || n > 1000)`), but many magic numbers remain unexplained: `0x14u` (20), `0x28u` (40), `0xAu` (10), `0xCu` (12). String format references like `asc_4008` are cryptic. The decompiler didn't replace these with meaningful constants.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts present. No debug instrumentation, register spills, or frame pointer manipulations visible. The code is relatively clean, though some unnecessary casts like `(_DWORD *)` appear. The main "noise" is the failed decompilations at the end, but those don't affect the main functions.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural with proper loops (`for (i = 0; i < n; ++i)`) and conditionals. At `-O0`, the decompiler correctly recovered idiomatic C control structures. No spurious goto statements. The flow matches the original source closely.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity - each test function is separate and cohesive. Parameter lists are reasonable. No monolithic functions observed. The decomposition matches the original source organization well.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `if (!arr) return -1;`). No excessive forward jumps or deep nesting (>4 levels). The linear flow is preserved well.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy. Dead code is minimal. At `-O0`, there's no loop unrolling to handle. The decompiled code is clean of duplicate expressions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Most types are correct - `int`, `int*`, `char*`, `size_t` used appropriately. However, some precision is lost: `malloc(4 * n)` instead of `malloc(n * sizeof(int))`, and some function pointer types are imprecise. The core types are correct but not optimal.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: Struct types `Point`, `Node`, `TreeNode` are correctly recovered with field names (`data`, `next`, `left`, `right`). The struct layouts match the source. However, the `Point` typedef definition itself wasn't output - just the usage. Overall good recovery.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several type safety issues exist: `set_file_static(int val)` incorrectly casts `(int *)val` assigning to `int*`; `global_heap_store` has similar issue with `(int)p`; `call_global_callback` uses suspicious casting `global_func_ptr = (int)f`. These are potentially dangerous type confusions that could cause undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Almost no useful comments. Only auto-generated function headers like `/* Function: local_vars @ 0x12C0 */`. No explanation of algorithms, preconditions, or non-obvious logic. The decompiler provides no semantic guidance to the reader.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Common patterns like linked lists and trees are present in the code (`Node *head`, `while (temp != NULL)`) but not explicitly named or documented as data structure patterns. The decompiler doesn't recognize or annotate these idioms.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: Failed decompilations are listed at the end but not inline with the code. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior. The `stack_alias` function has suspicious logic (`if (!&local)`) but no anomaly flag.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No explicit preconditions, postconditions, or invariants documented. The null checks (`if (!arr) return -1;`) are present but not explained as contracts. Error handling is present but not annotated.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are somewhat visible through code structure (e.g., `test_stack_memory` calls `local_vars`, `local_array`), but no explicit cross-reference documentation. Global variable usage is apparent but not annotated. Relationships require manual tracing.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - stack functions together, heap functions together, static/global functions together. This matches the original source organization. Static functions are properly scoped. Minor issues with some infrastructure code mixed in.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: Several compilation issues: `set_file_static` has incorrect type casting; `global_func_ptr` type mismatch; undefined symbols like `asc_4008`, `GLOBAL_OFFSET_TABLE_`. Would require patches to compile. The decompiler output includes some x86-specific code despite arm64 target.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5+7+6+8)/4 = 6.5
+L2_avg = (8+8+8+8)/4 = 8.0
+L3_avg = (7+8+5)/3 = 6.67
+L4_avg = (3+4+2+3)/4 = 3.0
+L5_avg = (5+7+4)/3 = 5.33
+
+Overall = (6.5 × 0.30) + (8.0 × 0.25) + (6.67 × 0.20) + 
+          (3.0 × 0.15) + (5.33 × 0.10)
+        = 1.95 + 2.0 + 1.334 + 0.45 + 0.533
+        = 6.27/10
+```
+
+**Overall Readability Score:** 6.27/10
+
+### Critical Defects
+- **Type safety violation in `set_file_static`**: Parameter `val` is `int` but code does `(int *)val` - incorrect cast that would cause compilation error or undefined behavior
+- **Cryptic variable names in VLA/alloca functions**: `v2`, `p_vla`, `__vla_expr0`, `v6` obscure the dynamic stack allocation logic
+- **No comments or documentation**: Zero semantic guidance for understanding complex memory operations
+- **Anomaly indication completely missing**: Failed decompilations not flagged inline, suspicious code patterns not warned about
+- **Magic numbers unexplained**: `0x14u`, `0x28u`, `0xAu` remain as magic numbers instead of being named constants
+
+### Best Quality Aspect
+**Control Flow Naturalness (8/10)**
+The decompiler correctly recovered idiomatic C control structures - proper loops, conditionals, and early returns. At `-O0`, the control flow closely matches the original source.
+
+### Most Needs Improvement
+**Semantic Transparency (3/10)**
+The decompiler provides almost no semantic guidance - no comments, no idiom recognition, no anomaly indication, no contract recovery. The code is a "black box" that requires significant reverse engineering effort to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add semantic comments**: Include preconditions, postconditions, and algorithm explanations (e.g., "VLA allocated on stack", "Linked list traversal")
+2. **Fix type safety issues**: The `set_file_static` and similar functions have incorrect type casts that would prevent compilation
+3. **Improve variable naming for complex patterns**: VLA and alloca handling produces cryptic names - infer names from allocation patterns (e.g., `vla_array`, `alloca_buffer`)

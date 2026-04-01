@@ -1,0 +1,16 @@
+Running obfuscation tests...
+
+Result: 10
+GCD: 20
+Instruction substitution: 0xe1
+String encryption length: 0
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop sum: 0
+LTO result: 20
+Division result: 2
+Null pointer deref: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 0x30

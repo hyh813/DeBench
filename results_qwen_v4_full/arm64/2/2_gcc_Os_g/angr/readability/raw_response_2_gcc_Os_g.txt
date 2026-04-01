@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`process_char`, `array_1d_stack`, `struct_simple`) but helper functions use generic names (`sub_4006e4`, `sub_4007a4`). Some functions like `process_float` are broken despite correct names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers like `4294967294`, `18446744073709551614`, `0x100000000` without explanation. Original constants like `32` (for case conversion) and `10` are obscured by bit manipulation patterns.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including stack frame setup (`v0 = &v1`), stack canary checks (`__stack_chk_guard`), and massive floating-point emulation code (`__addtf3` at 400+ lines) that should be library calls.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as `while(true)` but function pointers use `goto a0` instead of proper calls. `enum_switch` uses jump table array access instead of switch statement. Excessive `arm64g_calculate_condition` calls obscure simple comparisons.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved but `__addtf3` and `__multf3` are hundreds of lines of emulation code that should be external library calls. Test functions are monolithic with all test cases inlined.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by forward jumps, computed gotos (`goto a0`), and deep nesting in floating-point functions. Loop structures partially recovered but with awkward break patterns.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Identical bit manipulation patterns repeated across `double_value`, `process_int`, `ptr_const`, `opaque_handle_op`. Test functions print hardcoded expected values instead of computing them dynamically.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type loss: `process_float` returns `long long` instead of `float`, `process_double` returns string literal. All integers become `unsigned long long`, pointer types degraded to `unsigned long`. Signed/unsigned distinctions frequently wrong.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with generic fields (`field_0`, `field_8`, `padding_4`). Bitfields converted to manual bit manipulation. Unions not distinguished from structs. Nested structure semantics lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointer calls use `goto` instead of proper invocation. Pointer arithmetic uses integer math (`ptr + v2 * 4`). Void pointer handling lacks proper casts. Multiple unsafe patterns that could cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment exists ("Angr Decompilation of 2_gcc_Os_g"). No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source comments completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition: linked list traversal, binary tree recursion, array summation all appear as raw loops without identification. State machine pattern in `enum_switch` not recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Broken functions (`process_float`, `process_double`) not flagged as suspicious. Some `/* do not return */` annotations for library functions. No warnings about unresolved indirect calls or type mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions or invariants. NULL checks in linked list code not annotated. Error conditions unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but undocumented. Global variables appear as `g_402b24`, `g_402c8f` without meaning. Callback relationships not documented. No call graph provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order, not grouped by category. Related functions (`process_char`, `process_short`, etc.) scattered. No header file structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile standalone. External dependencies (`__printf_chk`, `__addtf3`, `arm64g_calculate_condition`) undeclared. Architecture-specific code requires special handling. Global variables undefined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+6+3+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):     (5+6+5+4)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type System):    (3+4+3)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):       (2+2+4+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):     (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────────────
+Overall Score:                                    3.90/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **`process_float` and `process_double` completely broken** - return wrong types (long long/string) instead of float/double, take no parameters
+- **`volatile_access` semantically incorrect** - returns `*p * 2` instead of reading volatile twice (`a = *p; b = *p; return a + b`)
+- **All struct fields generic** - `field_0`, `field_8`, `padding_4` lose all semantic meaning from original `x`, `y`, `z`, `data`, `next`
+- **Test functions print hardcoded values** - `test_data_types_l1` prints expected results directly instead of calling actual functions
+- **Floating-point emulation code unreadable** - `__addtf3` is 400+ lines of bit manipulation that should be a library call
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `process_char`, `array_1d_stack`, `struct_simple` were preserved from debug symbols, providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist to explain non-trivial logic, algorithm intent, or decompilation uncertainty, making the code nearly impossible to understand without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, accumulators should be `sum`, pointers traversing structures should be `current`/`head`.
+
+2. **Detect and flag broken function signatures** - Functions with mismatched parameter counts or return types (like `process_float` taking 0 params) should be marked as UNCERTAIN with confidence indicators.
+
+3. **Recognize common library functions and replace with calls** - Floating-point operations (`__addtf3`, `__multf3`) should be identified and replaced with standard library calls rather than emitting hundreds of lines of emulation code.

@@ -1,0 +1,15 @@
+Testing obfuscated optimizations
+
+Opaque predicate result: 10
+Tail call result: 20
+Instruction sub result: e1
+Non-tail call result: Vectorized sum: 500500
+Non-tail sum: 5050
+Vectorized computed: 88
+Division test complete
+Null pointer test complete
+Null pointer result: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 2f

@@ -1,0 +1,17 @@
+Macro Constants: -786509624
+Macro Functions: 64
+Conditional Compile: 30
+Multi-branch Compile: 32
+Macro Recursion: 57122
+Stringize: 116
+Token Paste: 19
+Variadic Macro: 60
+LOG: Values: 10, 20, 30
+Macro Override: 60
+Include Guard: 16
+Builtin Macros: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:27
+test_preprocessing_features: 382
+ASM Basic: 0
+ASM Clobber: 15
+ASM Multi-Insn: -1746330139

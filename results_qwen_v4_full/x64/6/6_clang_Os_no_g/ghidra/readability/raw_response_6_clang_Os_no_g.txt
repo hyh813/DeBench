@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Overwhelming use of generic names like `iVar1`, `uVar2`, `local_28`, `local_38` obscures semantic meaning. Some library function parameters retain names (`__stream`, `__fd`, `__ptr`) but most local variables are indecipherable without tracing usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`param_strcpy`, `param_fork_exec`, `thread_compute`), which is excellent. However, helper functions like `FUN_00102020` and initialization routines use generic labels.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), signal numbers as `10` and `0xe`, socket constants as `2` and `1`. No named constants recovered despite `-O0 -g` debug compilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `LOCK()`/`UNLOCK()` macros for atomics, verbose stack variables (`cStack_34`, `cStack_33`), type casts like `(ulong)(uint)-*piVar2`. Ghidra warnings about unreachable blocks add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as do-while constructs, but `param_fread_fwrite` has extremely convoluted character-by-character comparison with bit manipulation instead of simple `strcmp()`. At `-O0`, this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, thread helpers properly separated. However, `param_fread_fwrite` is ~100 lines with inline string comparison that should be extracted. Some `call_*` functions return constants instead of calling originals.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Deep nesting in `param_fread_fwrite` and `param_signal_handling` disrupts flow. Thread functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `param_fread_fwrite` repeats character comparison logic 16+ times with nearly identical patterns. `call_strcmp`, `call_strlen`, `call_memcmp` return pre-computed constants instead of executing original logic, losing semantic transparency.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant degradation: `param_strcpy` returns `void` instead of `int`, `size_t` becomes `ulong`, `pid_t` becomes `__pid_t` or `int`. Pointer types often `void*` or `char*` instead of specific types like `pthread_t*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct recovered with `st_size` field. `sockaddr` partially recovered with `sa_data` array. ThreadData struct completely lost—uses array indexing (`param_1[0]`, `param_1[1]`, `param_1[2]`) instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int)local_18 + local_18._4_4_` (union field access), `(ulong)(uint)-*piVar2`. Pointer arithmetic without proper typing throughout thread functions. Function pointers often `void*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only Ghidra warnings ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). Signal handling pattern not identified. Producer-consumer pattern in `param_condition_variable` not named. Atomic operations shown as `LOCK()`/`UNLOCK()` without explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some Ghidra warnings about unreachable blocks and non-returning subroutines. No indication of decompilation uncertainty for indirect calls or complex patterns. Silent failures on type ambiguities.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions inferred. Error return values (`0xffffffff`, `0xfffffffe`) not explained. No invariant documentation for thread synchronization.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `signal_number`, `atomic_counter`, `shared_counter`) used without explanation of their purpose or synchronization semantics.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 64 functions in single output with no logical grouping by section (library/syscall/thread). Static functions not properly scoped. No header file or API declaration separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread, libc) not documented. Platform-specific code (Windows API stub) handled but not clearly marked. Some architecture-specific artifacts remain.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.67/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable naming crisis**: `iVar1`, `uVar2`, `local_28` used throughout—should infer names from usage (e.g., `fd` for file descriptor, `ret` for return value)
+- **Zero semantic comments**: No explanation of complex logic like the 16-character comparison in `param_fread_fwrite` or signal handling flow
+- **Type precision loss**: `param_strcpy` returns `void` instead of `int`; `size_t` degraded to `ulong`; struct fields accessed via array indexing
+- **Magic number proliferation**: `0x2a`, `0xffffffff`, `0x12`, signal numbers `10`/`0xe` without named constant recovery despite `-g` debug symbols
+- **Redundant string comparison**: `param_fread_fwrite` expands simple `strcmp()` into 16+ individual character comparisons with bit manipulation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names like `param_strcpy`, `param_fork_exec`, `thread_compute` were preserved, maintaining semantic connection to source intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation beyond compiler warnings; complex patterns like signal handling and thread synchronization have zero explanatory comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming**: With `-g` flag present, recover original variable names from DWARF debug info instead of generating `local_XX` and `iVarX`
+2. **Recover named constants from debug metadata**: Magic numbers like `0x2a` (42), signal numbers, and socket constants should be replaced with symbolic names from header files
+3. **Add semantic comments for recognized patterns**: When detecting standard library calls, thread synchronization, or signal handling, insert explanatory comments describing the high-level pattern being implemented

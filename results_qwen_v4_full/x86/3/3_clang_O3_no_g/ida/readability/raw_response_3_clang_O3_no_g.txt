@@ -1,0 +1,145 @@
+# Decompilation Readability Assessment
+
+## EVALUATION SUMMARY
+
+**Note:** The decompiled code shows significant optimization artifacts despite the source claiming `-O0` compilation. This suggests a metadata mismatch, but I will evaluate the decompiler's output quality relative to the provided source.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**  
+**Justification:** All variables use generic names (`a1`, `v0`, `v1`, `v2`, etc.) with zero semantic meaning. For example, in `heap_basic`, `v2` holds the malloc result but isn't named `arr` or `buffer`. Original variable names like `arr`, `local`, `p` are completely lost.
+
+### 2. Function Naming Quality
+**Score: 7/10**  
+**Justification:** Most original function names are preserved (`local_vars`, `heap_basic`, `test_stack_memory`), which is excellent. However, runtime functions use generic names (`sub_1030`, `sub_116C`) and some have calling convention annotations (`__usercall`) that add noise.
+
+### 3. Literal Clarity
+**Score: 5/10**  
+**Justification:** Magic numbers like `0xFFFFFFF0`, `0xFFFFFFFE`, `0x7FFFFFFC` appear without explanation for alignment calculations. However, some constants are appropriately folded (e.g., `local_vars` returns `2 * a1 + 10` directly).
+
+### 4. Noise Reduction
+**Score: 4/10**  
+**Justification:** Significant compiler artifacts present: `@<eax>`, `@<ebx>` calling convention annotations, `GLOBAL_OFFSET_TABLE_` references, `Elf32_Dyn **` return types, and `BYREF` annotations clutter the code without adding value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**  
+**Justification:** Loops are unrolled into 8-byte chunks (e.g., `large_stack_frame` processes 8 bytes per iteration with explicit `v2[i+0]` through `v2[i+7]`). Some functions like `stack_alias` are completely constant-folded to `return 20`, losing all original logic structure.
+
+### 6. Function Decomposition
+**Score: 7/10**  
+**Justification:** Original function boundaries are mostly preserved with appropriate granularity. However, `stack_alias` loses its parameters entirely (should take `int *p1, int *p2`), and `tree_heap_traversal` is reduced to a single `return 60`.
+
+### 7. Code Linearization
+**Score: 6/10**  
+**Justification:** Code generally reads top-to-bottom, but excessive nesting in functions like `linked_list_heap` (10+ levels of nested if-else for error handling) makes tracing difficult. Some functions use do-while patterns that obscure original for-loop intent.
+
+### 8. Redundancy Elimination
+**Score: 5/10**  
+**Justification:** Loop unrolling creates significant redundancy (8 explicit assignments per iteration in `large_stack_frame`). The decompiler doesn't recognize or comment on this optimization pattern, making the code appear unnecessarily verbose.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+### 9. Type Precision
+**Score: 3/10**  
+**Justification:** Severe type degradation: everything becomes `_DWORD`, `int`, or `char *`. Original types like `size_t`, `Point`, `Node *` are lost. Function `set_file_static` incorrectly returns `Elf32_Dyn **` instead of `void`. No const-correctness preserved.
+
+### 10. Composite Type Recovery
+**Score: 2/10**  
+**Justification:** Complete failure to recover structs. `Point {x, y}` becomes raw pointer arithmetic (`*v1 = 10; v1[1] = v3`). `Node` linked list structure is represented as `_DWORD *` with manual offset access (`v9 = (_DWORD *)v9[1]`). No struct definitions recovered.
+
+### 11. Type Safety
+**Score: 3/10**  
+**Justification:** Numerous unsafe casts throughout: `*(_DWORD *)v1`, `(_DWORD *)&v2[2 * v6]`. Function pointer calls use generic casts `((int (__cdecl *)(int))global_func_ptr)`. The `dangling_pointer` function's undefined behavior is not flagged.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**  
+**Justification:** Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only compiler-generated metadata like `BYREF` and register annotations present.
+
+### 13. Idiom Recognition
+**Score: 2/10**  
+**Justification:** Common patterns completely unrecognized: linked list traversal in `linked_list_heap` appears as raw pointer chasing, tree structure in `tree_heap_traversal` is constant-folded away, memory allocation patterns show no recognition of malloc/free pairs.
+
+### 14. Anomaly Indication
+**Score: 3/10**  
+**Justification:** Critical anomalies not flagged: `dangling_pointer` accesses freed memory without warning, `stack_alias` parameter loss not indicated, `double_free` logic simplified incorrectly. Only "FAILED to decompile" messages for library functions.
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**  
+**Justification:** Basic null checks preserved (`if (!v2) return -1`), but no precondition/postcondition documentation. Error conditions like `if (a1 <= 0) return -1` remain but lack semantic explanation of what they validate.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**  
+**Justification:** Function calls are traceable through direct references, but global variable relationships are unclear (`global_counter`, `file_scope_static` appear without context). Callback relationships (`set_global_callback`) lack documentation of the function pointer contract.
+
+### 17. Module Organization
+**Score: 6/10**  
+**Justification:** Original test organization mostly preserved with related functions grouped (stack tests, heap tests, static tests). However, runtime initialization functions (`init_proc`, `frame_dummy`, `deregister_tm_clones`) are interspersed without clear separation.
+
+### 18. Build System Compatibility
+**Score: 3/10**  
+**Justification:** 16 library functions failed to decompile (`malloc`, `free`, `printf`, `memcpy`, etc.). External dependencies not declared. Code cannot compile standalone without significant stubbing. Architecture-specific types (`Elf32_Dyn`) reduce portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 2, 7, 5, 4 | 4.5 | 30% | 1.35 |
+| L2: Structural Intelligibility | 5, 7, 6, 5 | 5.75 | 25% | 1.44 |
+| L3: Type System Fidelity | 3, 2, 3 | 2.67 | 20% | 0.53 |
+| L4: Semantic Transparency | 1, 2, 3, 4 | 2.5 | 15% | 0.38 |
+| L5: Contextual Coherence | 5, 6, 3 | 4.67 | 10% | 0.47 |
+
+**Overall Readability Score: 4.17/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `a1`, `v0`, `v1` throughout with no semantic recovery (e.g., `arr` → `v2`, `local` → `v8`)
+- **Struct types not recovered**: `Point` and `Node` structures represented as raw `_DWORD *` pointer arithmetic
+- **Function signature corruption**: `stack_alias` loses parameters, `set_file_static` has wrong return type `Elf32_Dyn **`
+- **16 library functions failed**: `malloc`, `free`, `printf`, `memcpy` etc. cannot be decompiled, blocking standalone compilation
+- **No anomaly warnings**: Dangerous patterns like dangling pointer access and double-free not flagged for reviewer attention
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), allowing immediate identification of test purpose despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - Zero meaningful documentation; decompiler provides no insight into algorithm intent, optimization artifacts, or confidence levels, forcing manual reverse engineering of all logic.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used in malloc size calculations should be named `size` or `count`; pointer chase patterns suggest `next` or `head`).
+
+2. **Recover composite type definitions**: Detect struct access patterns (consistent offset access like `[0]`, `[1]` for x,y fields) and generate struct definitions with field names based on usage context.
+
+3. **Add anomaly detection and warnings**: Flag potentially dangerous patterns (use-after-free, double-free, buffer overflows) with explicit comments like `// WARNING: Access after free - undefined behavior` to alert analysts.

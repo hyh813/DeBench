@@ -1,0 +1,8 @@
+Test: Opaque Predicate
+
+  param_opaque_predicate(5) = 10
+  instruction_substitution = 20
+  vectorized_loop = 225
+  string_encryption = 0
+  tail_call_optimized = 0
+  non_tail_call = 0

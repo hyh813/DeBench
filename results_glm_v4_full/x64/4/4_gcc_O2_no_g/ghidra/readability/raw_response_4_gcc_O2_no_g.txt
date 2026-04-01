@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`param_1`, `local_30`, `uVar1`) and do not reflect the original semantic names like `count`, `sum`, or `args`. This obscures the purpose of the logic, especially in complex functions like `varargs_func`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `cdecl_func`, `test_calling_conventions`, `main`), matching the source exactly and providing clear semantic context.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: Constants are represented in hexadecimal (e.g., `0xf` for 15, `0x32` for 50) which is standard for decompilation but slightly less readable than the decimal literals used in the source. Magic numbers like `0x28` (40) appear without explanation.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but compiler artifacts like stack canary checks (`__stack_chk_fail`, `in_FS_OFFSET`) are present in almost every function with stack allocations, adding minor visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural, but `varargs_func` uses a complex nested `do-while` loop with a `while(true)` block to handle variable arguments, which is harder to read than the source's `for` loop with `va_arg`.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-separated and match the source structure. Even though the compiler inlined logic into `test_calling_conventions`, the decompiler presents the result as a linear sequence of calls, which is appropriate for the optimized binary.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing branches, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's constant propagation (e.g., `call_cdecl` returning `0xf`), removing the redundant arithmetic operations present in the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Primitive types like `int` and `long` are mostly accurate, but pointers are often generic `undefined8` or `long`. The return type of `func_struct_byval` is `long` (64-bit) whereas the source explicitly casts to `int` (32-bit), losing type precision.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost. `func_struct_byval` accesses the struct via raw stack pointer arithmetic (`(long *)&stack0x00000008`) instead of using struct member access (e.g., `s.data[i]`), severely impacting readability.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on unsafe casts and pointer arithmetic, such as `*(int *)((long)local_38 + uVar2)` in `varargs_func` and casting stack pointers to `long*` to iterate over struct data, which mimics the low-level assembly rather than high-level types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to compiler warnings (e.g., "WARNING: Subroutine does not return") and do not explain the logic, algorithm, or data structures used in the functions.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: High-level idioms like `va_list` are not recognized; instead, the decompiler exposes the raw stack manipulation mechanism. Small struct returns are shown as bit-packing operations (`param_1 | param_2 << 0x20`) rather than struct construction.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra flags unreachable blocks and non-returning subroutines, but it does not explicitly flag the complex pointer arithmetic in `func_struct_byval` as a potential struct access pattern that failed to recover.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions (e.g., non-null checks) or postconditions. For example, `param_complex_cast` does not indicate the expected pointer types or the valid range for the `type` parameter.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `test_calling_conventions` and the various `call_*` functions is evident, even if some calls were inlined.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, generally matching the source file's structure, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types like `undefined8`, `undefined4`, and `code *`, which are not valid standard C types and prevent the code from compiling without a compatibility header.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Composite types (structs) are not recovered; `func_struct_byval` uses raw stack pointer arithmetic (`stack0x00000008`) instead of struct field access.
+- Variable names are entirely generic (`param_1`, `local_XX`), obscuring the logic of functions like `varargs_func`.
+- Ghidra-specific types (`undefined8`, `code *`) make the code non-compilable and less standard-compliant.
+- Varargs handling is exposed as raw stack copying and iteration rather than the standard `va_list` idiom.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names from symbols, making the high-level flow easy to map back to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover `LargeStruct` and `SmallStruct` definitions turns simple data aggregation into unreadable pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve stack-based struct recovery by detecting sequential access patterns (e.g., loops iterating `stack_ptr + offset`) and reconstructing the struct definition.
+2. Map generic types (`undefined8`) to standard C types (`uint64_t`, `void*`) by default to improve portability and readability.
+3. Recognize standard varargs prologues/epilogues to reconstruct `va_list`, `va_start`, and `va_arg` usage instead of showing raw stack manipulation.

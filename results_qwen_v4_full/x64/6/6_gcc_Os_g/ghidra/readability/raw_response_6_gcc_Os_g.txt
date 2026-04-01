@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names like `iVar1`, `lVar1`, `sVar1`, `piVar2` obscuring their semantic purpose. However, some parameters retain meaningful names (`dst`, `src`, `filename`, `thread_ret`), creating inconsistent naming quality.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`). A few generic names exist (`FUN_00102020`), but the majority clearly indicate purpose with action verbs.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x12` (18), `0x1f` (31) appear without explanation. String literals are preserved well ("HelloLib", "/etc/passwd"), but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) and frame pointer references (`in_FS_OFFSET`) add noise. `LOCK()/UNLOCK()` macros for atomics are compiler artifacts that clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for/while constructs in most cases. Some awkward patterns exist (`do { } while(true)` in `_start`), but conditional logic is generally clear and follows source structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well with appropriate granularity. Thread functions properly separated (`thread_sum`, `thread_increment`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains goto labels (`LAB_001037a0`, `LAB_00103a4e`) that disrupt flow. Early returns present but some forward jumps remain.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling visible in `call_memcpy` array initialization. Some redundant patterns from -O0 compilation but generally clean without excessive dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of precise (`size_t`, `pthread_t`) and generic (`int`, `void*`) types. `atomic_int` partially preserved but often degraded to `int`. Signed/unsigned distinctions sometimes lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` and `stat` structs partially recovered. Some pointer arithmetic replaces struct access in `thread_tls_test`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int)sVar1`, `(void *)0x0`, `(pthread_mutex_t *)&counter_mutex`. Pointer arithmetic in TLS access (`in_FS_OFFSET + -0x24`) creates potential undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No semantic comments explaining algorithm purpose or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). Thread patterns identified (`pthread_create`, `pthread_join`). No explicit pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for unresolved elements ("Unresolved local var: int i@[???]"). Stack canary violations flagged. "Subroutine does not return" warnings for `_exit()` calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error returns visible (-1, -2, -3) but not documented. No contract inference for function behavior or return value semantics.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through naming. Global variables referenced directly (`signal_received`, `atomic_counter`). No explicit call graph or relationship documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped by source structure (library functions, system calls, threading). Test functions together, implementations together. No explicit module boundaries or namespaces.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies visible (pthread, libc). Would need stubs for some internal symbols. Architecture mismatch (x86 decompilation of ARM64 binary) may cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+6+7)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (6+7+5)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (4+6+7+3)/4 = 5.00  × 0.15 = 0.75
+Level 5 (Contextual):  (6+7+6)/3   = 6.33  × 0.10 = 0.63
+─────────────────────────────────────────────────────
+Overall Score:                                  6.13/10
+```
+
+**Overall Readability Score:** 6.13/10
+
+### Critical Defects:
+- Variables `iVar1`, `iVar2`, `lVar1` should be named based on usage (e.g., `return_value`, `file_descriptor`, `stack_canary`)
+- Magic numbers `0x2a`, `0x12`, `0x1f` should be replaced with named constants (42, 18, 31)
+- No semantic comments explaining function purpose or algorithm logic
+- Unsafe pointer casts throughout without justification or safety checks
+- Architecture mismatch: ARM64 binary decompiled as x86 causing potential inaccuracies
+- TLS access uses raw offset arithmetic (`in_FS_OFFSET + -0x24`) instead of proper TLS variable recovery
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source with semantic meaning intact, making code navigation straightforward.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation, making it difficult to understand function contracts and error handling expectations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and parameter semantics (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+2. **Add semantic comment generation** for standard library patterns and common algorithms (detect `strcpy` + `strlen` pattern and comment "copies string and returns length")
+3. **Recover contract information** from error handling patterns (document that return -1 indicates failure, positive values indicate success codes)

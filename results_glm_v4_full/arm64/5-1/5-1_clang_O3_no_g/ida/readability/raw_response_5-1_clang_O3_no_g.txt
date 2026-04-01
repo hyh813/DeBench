@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2` in `test_cpp_rtti` and `result`, `a2` in `Container::push`), obscuring the semantic meaning of pointers to `RTTIDerivedA` or the `value` parameter.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ mangled names are demangled perfectly (e.g., `_ZN9ContainerIiE4pushEi` becomes `Container<int>::push`), and test functions retain their original names like `test_cpp_virtual_func`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with "magic numbers" that are the result of constant folding (e.g., `return 42`, `return 71`, `return 4700`), which completely obscures the original logic and calculations defined in the source.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling or stack frame artifacts, though some compiler-specific types like `_OWORD` and casts like `(_QWORD *)` remain, which is typical for decompiled optimized code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The control flow is linear and easy to follow where logic exists (e.g., `if` blocks in `test_cpp_rtti`), though the complexity is significantly reduced by compiler optimization.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations are correctly separated into distinct functions (e.g., `Container<int>::push` vs `Container<double>::push`), and constructors/destructors are properly identified.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps or spaghetti logic, as the aggressive optimization has flattened most complex control structures into simple sequences.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's removal of redundancy; there is no dead code or unnecessary variables, though this comes at the cost of hiding the original algorithmic steps.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, correctly distinguishing between `int` and `double` template parameters and identifying C++ specific types like `std::ios_base::Init`, though pointers are generic `__int64`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct layouts are not recovered; member access is done via raw pointer offsets (e.g., `*(int *)(result + 40)` for `size` and `*(unsigned int *)(a1 + 4LL * a2)` for array access), losing the semantic context of `Container` fields.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the types are correct, the code relies on unsafe pointer arithmetic and casts (e.g., `*(_OWORD *)v1`) to access memory, which is inherent to the decompilation of optimized code but reduces safety perception.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no comments explaining the logic; the only comments are attributes like `// attributes: thunk` or failure messages, leaving the "magic number" returns unexplained.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: C++ runtime idioms are well recognized, specifically `__dynamic_cast`, `__cxa_throw`, `operator new`, and `operator delete`, which helps identify the high-level intent despite optimization.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler explicitly lists functions that failed to decompile (e.g., `puts`, `strlen`) and marks thunks, providing good visibility into its own limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants; for example, the bounds check in `Container::get` is decompiled but not annotated as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear due to excellent demangling, making it easy to see relationships between class methods and their callers, though virtual calls are resolved to indirect calls.
+
+**17. Module Organization:** Score: 6/10
+Justification: The output is a flat list of functions; while grouped by class/template to some extent, it lacks the logical file or namespace structure of the original source.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on standard library types and compiler intrinsics (`__int64`, `__cxa_atexit`) that would require specific headers and stubs to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable names are generic (`v0`, `v1`), making it hard to distinguish between different object instances (e.g., `RTTIDerivedA` vs `RTTIDerivedB`).
+- Composite type recovery failed; struct members are accessed via hardcoded offsets (`result + 40`) instead of field names (`this->size`).
+- Aggressive optimization (constant folding) has reduced complex logic to magic numbers (e.g., `return 42`), rendering the decompiled code semantically distant from the source without comments explaining the optimization.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler's demangling of C++ symbols is excellent, perfectly recovering template specializations and class method names.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The reliance on pointer arithmetic offsets instead of reconstructing `struct` layouts significantly hinders understanding of data manipulation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve struct field recovery to replace pointer offsets (e.g., `result + 40`) with semantic member names (e.g., `this->size`), especially for template classes.
+2. Infer variable names from context or type info (e.g., renaming `v0` to `derivedA_ptr` when assigned the result of `operator new` for `RTTIDerivedA`).
+3. Add annotations or comments when a function body is reduced to a constant return value due to optimization, linking it back to the likely source logic.

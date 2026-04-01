@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `write_data`, `shared_counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but helper functions use mechanical names (`sub_400c48`, `$a.34`). Signal handler named `$a.34` instead of `signal_handler`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere: `4294967295` (0xFFFFFFFF = -1), `42` (0x2a), signal numbers as `10`/`14` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2`, `1`, `0` instead of `AF_INET`, `SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from `armg_calculate_condition()` calls, `vvar_4`, `vvar_24{r8|4b}` artifacts, redundant assignments (`v0 = v1`), and goto labels (`LABEL_401088`) throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive `goto` usage instead of structured if/else; `armg_calculate_condition()` replaces natural boolean expressions. Some do-while loops recovered but most conditionals are obscured.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries mostly preserved, but `param_signal_handling` has 16 parameters (should have 0), `param_fopen_fclose` has 8 parameters (should have 1). Implementation details exposed in signatures.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Heavy forward jumps and goto labels disrupt top-to-bottom reading. Deep nesting in signal handling and thread functions makes execution paths difficult to trace.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Functions call themselves twice (`call_printf` calls `printf` twice, `call_fread_fwrite` calls `param_fread_fwrite` twice). Redundant variable assignments throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int` or `void*`. Lost `size_t`, `ssize_t`, `pid_t`, `FILE*` distinctions. Original `char *dst, const char *src` became `char *a0, char *a1`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` struct partially recovered with field names. `FILE` struct defined but empty. `ThreadData` struct lost (became raw arrays). `pthread_mutex_t` became `unsigned int`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit unsafe casts throughout. Pointer arithmetic without type checking. Function pointer types lost (`thread_compute` signature degraded). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Signal handling and condition variable patterns not identified or named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for uncertain decompilation. `armg_calculate_condition` calls not explained. No warnings about unresolved indirect calls or stack layout issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. Error conditions not documented. Return value semantics lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) referenced but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping comments separating library tests, system calls, and thread tests. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: `armg_calculate_condition()` undefined - requires significant patching. External declarations present but incomplete. Will not compile without extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+2)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+4+3+4)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (3+4+4)/3 = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+5+2+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+4+3)/3 = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.40/10
+```
+
+**Overall Readability Score: 3.4/10**
+
+### Critical Defects:
+- **`armg_calculate_condition()` calls** throughout code are undefined and obscure all conditional logic
+- **Variable names** like `v0`, `v1`, `v2` provide zero semantic information about purpose
+- **Function signatures corrupted** - `param_signal_handling` has 16 parameters instead of 0
+- **Magic numbers** everywhere (4294967295, 10, 14, 2, 1) instead of named constants
+- **Zero comments** - no explanation of algorithm intent or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names preserved from source (`param_strcpy`, `call_mutex_lock`, `param_pthread_create`)
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace `armg_calculate_condition()` with native if/else constructs** - this single change would dramatically improve control flow readability
+2. **Infer variable names from usage context** - variables used in size checks should be named `size`/`len`, pointers to strings should be named `str`/`buffer`
+3. **Add decompilation confidence annotations** - flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target`

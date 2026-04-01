@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are exclusively generic names like `v1`, `v2`, `v3`, and `g1`. In `cdecl_func`, the parameters `a` and `b` are lost, replaced by a single generic `v1`, which obscures the logic entirely.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: High-level function names like `cdecl_func` and `test_calling_conventions` are preserved, which is helpful. However, utility functions are renamed to generic names like `function_730` or `function_740`, and all function signatures are incorrectly listed as `void`, losing critical interface information.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals are preserved and readable (e.g., `"=== 测试基础调用约定 ==="`), and magic numbers like `15` or `50` are clear. However, the logic in `cdecl_func` uses `2` (multiplication) instead of the original addition, which is misleading.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The code is cluttered with compiler artifacts, most notably the redundant `& 0xffffffff` masking operations appended to almost every arithmetic expression. Additionally, `goto` labels are used excessively for control flow, adding visual noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions like `cdecl_func` are linear, but complex functions like `varargs_func` are decompiled into spaghetti code using `goto` and infinite loops (`while (true)`) with manual state management, making the logic extremely difficult to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler successfully separates the binary into distinct functions corresponding to the source. The granularity is appropriate, with no monolithic functions, though the internal logic of those functions is flawed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: While top-to-bottom reading is possible in simple functions, the heavy reliance on `goto` jumps (e.g., in `param_varargs`) disrupts the linear flow, forcing the reader to jump around the code to understand execution paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: There is significant redundancy in the form of repeated bitwise AND operations (`& 0xffffffff`) which serve no semantic purpose in the high-level logic and merely clutter the code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Integer types are generally widened to `int64_t`, losing the distinction between `int` and `long long`. Most critically, function signatures are incorrect; `cdecl_func` is defined as `cdecl_func(void)` instead of `cdecl_func(int, int)`, completely erasing parameter type information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery has failed completely. In `test_calling_conventions`, the `LargeStruct` initialization is represented as raw pointer arithmetic and byte offsets (`*(int64_t *)((int64_t)&v2 - 8 + 8 * v1) = v1`), rather than struct field access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code includes explicit casts (e.g., `(int64_t)`, `(char *)`), which preserves type safety boundaries. However, the loss of parameter types and the merging of distinct registers into a single variable (`v1` representing both `a` and `b`) creates type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: The only comments are memory addresses (e.g., `// 0x940`). There are no comments explaining the logic, the purpose of variables, or the complex `goto` structures, leaving the user to decipher the code blindly.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard C idioms are not recognized. The `varargs` pattern (using `va_list`) is not reconstructed; instead, it is represented as a manual loop iterating over stack pointers. The `switch` statement in `ret_multi_branch` is converted into an `if` check with arithmetic, losing the semantic clarity of a jump table.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The decompiler presents incorrect logic (e.g., `2 * v1` in `cdecl_func`) with high confidence, providing no warnings or indicators that the variable mapping might be wrong or that the function signature is incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The loss of function parameters means the "contract" of what inputs a function expects is completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible and use the correct names (e.g., `call_cdecl` calls `cdecl_func`). However, because the callee signatures are wrong (`void`), the data flow between functions is broken and unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The code is organized into a single file with functions appearing in a logical order (roughly matching the source). Helper functions are grouped, though the separation between user code and runtime support (like `_init`) is minimal.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code includes standard headers and might compile with significant effort, but the incorrect function signatures (missing parameters) mean that calls to these functions would result in compilation errors if the original headers were used, or runtime errors if linked blindly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 6 + 7 + 4) / 4 = 4.75
+L2_avg: (4 + 8 + 5 + 5) / 4 = 5.50
+L3_avg: (4 + 2 + 6) / 3 = 4.00
+L4_avg: (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg: (6 + 7 + 5) / 3 = 6.00
+
+Overall = (4.75 × 0.30) + (5.50 × 0.25) + (4.00 × 0.20) + 
+          (2.25 × 0.15) + (6.00 × 0.10)
+Overall = 1.425 + 1.375 + 0.8 + 0.3375 + 0.6
+Overall = 4.5375
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.5/10
+
+### Critical Defects (Bullet List)
+- **Parameter Recovery Failure**: Functions like `cdecl_func` are decompiled with `void` signatures (e.g., `cdecl_func(void)`), completely losing the input arguments `a` and `b`.
+- **Variable Mapping Error**: In `cdecl_func`, distinct parameters `a` and `b` are incorrectly mapped to the same variable `v1`, resulting in the logic `2 * v1` instead of `a + b`.
+- **Struct Recovery Failure**: Composite types like `LargeStruct` are not recovered; access is represented as raw pointer arithmetic (e.g., `*(int64_t *)((int64_t)&v2 - 8 + 8 * v1)`).
+- **Control Flow Obfuscation**: Variable argument functions (`varargs_func`) are decompiled into complex `goto`-based state machines rather than idiomatic `va_list` loops.
+- **Excessive Noise**: Redundant bitwise masks (`& 0xffffffff`) are applied to almost every arithmetic operation, significantly degrading readability.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Decomposition (8/10)
+- **Why?** The decompiler successfully identified function boundaries and separated the code into logical units that correspond to the source structure, even if the internal logic of those units is flawed.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The complete failure to recover `struct` definitions reduces complex data manipulations to unreadable pointer math, making it nearly impossible to understand data layout or intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix ARM64 Calling Convention Analysis**: The decompiler must correctly identify arguments passed in registers `x0`-`x7` and populate function signatures accordingly, rather than defaulting to `void`.
+2.  **Improve Register Liveness/Uniqueness**: Prevent distinct input registers (e.g., `x0` and `x1`) from being merged into a single variable (`v1`), which causes semantic corruption of the logic.
+3.  **Implement Stack Frame Pattern Matching**: Detect standard stack frame layouts to recover `struct` types and array accesses, replacing raw pointer offset calculations with field access syntax.

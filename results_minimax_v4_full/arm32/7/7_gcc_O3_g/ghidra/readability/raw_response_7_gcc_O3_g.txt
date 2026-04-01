@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_fake_branch` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code shows "Unresolved local var" annotations for virtually all variables. In `param_fake_branch`, variables `result` and `str` are marked as unresolved, leaving only generic register references. This is catastrophic for readability - a reviewer cannot determine what any variable represents.**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate`, `call_fake_branch` are correctly preserved from the original source. The naming accurately reflects the function's purpose and matches the source exactly.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0xDEADBEEF`, `0x1A`, `0x2B` from the source are completely absent in the decompiled output because the dead code containing them was eliminated. The decompiler fails to preserve these literals, losing the obfuscation intent entirely.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The output contains extensive "WARNING" annotations about unreachable blocks, unresolved variables, and unknown calling conventions. These create significant noise. However, there's also missing code (the eliminated dead branches), which is a different kind of problem.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The decompiled `param_fake_branch` is reduced to a single `return x;` statement, completely eliminating the original control flow with its two fake branch conditions. The original intent of testing "永假条件" (always-false conditions) is completely lost. This is not a natural control flow - it's an artifact of optimization.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The decompiled output shows multiple duplicate function definitions (e.g., `param_division_by_zero` appears at least 3 times with different code). This indicates poor function boundary detection. However, function granularity is otherwise reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The remaining code generally reads top-to-bottom without excessive jumps. Functions like `param_tail_call_optimized` show proper loop structures. The linearization is acceptable where code was preserved.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: The decompiler has over-aggressively eliminated "dead code" - but in this case, the dead code was intentional obfuscation (fake branches). The decompiler cannot distinguish between compiler-optimized dead code and intentionally dead code for obfuscation purposes.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int` and `char*` are preserved, but with significant degradation. The decompiler uses generic types like `undefined4` in some places. The `unsigned int` for `ux` in instruction substitution is lost, becoming just `uint`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex struct recovery is needed for `param_fake_branch` itself. However, in functions like `param_implementation_defined`, the bitfield structure is mentioned as "Unresolved local var: anon_struct_4_3_4e909822 bitfield@[???]" - the structure is not properly recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present, such as `(int *)0x0` for NULL, and multiple void pointer casts. The code is generally safe but not optimal. The decompiler does preserve basic type relationships.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: The decompiler adds comments like "/* Unresolved local var: int result@[DW_OP_reg0(r0)] */" which are technical artifacts, not semantic explanations. There's no comment explaining that the fake branches were intentionally dead code for obfuscation testing. The original comments about "永假条件" are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The decompiler does not recognize or label the obfuscation patterns. The "fake branch" (永假条件) pattern is completely eliminated without any indication that it existed. No pattern naming or explanation is provided.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Ghidra does provide warnings about "Unresolved local var" and "WARNING: Removing unreachable block", but these are technical warnings, not semantic ones. There's no indication that the removed code was intentional obfuscation vs. compiler optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function's contract (that it should return the input x, demonstrating that fake branches don't execute) is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `call_fake_branch` calls `param_fake_branch`), but there's no documentation of these relationships. The caller/callee graph is implicit, not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in the output, but the organization is essentially alphabetical by address, not logical grouping. The test harness functions are mixed with the functions they test.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code contains many unresolved references (e.g., `__gmon_start__`, `__libc_start_main`, various stdio functions). It would require significant stubbing to compile standalone. The decompiled code cannot be compiled without adding external declarations.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- `param_fake_branch` reduced to `return x;` - completely eliminates the intentional fake branch obfuscation pattern
+- All local variables marked as "Unresolved" - no semantic names for any variable
+- Magic number `0xDEADBEEF` and other obfuscation constants completely absent
+- No indication that dead code was intentional vs. compiler-optimized
+- Duplicate function definitions (e.g., `param_division_by_zero` appears 3+ times)
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Function names exactly match the original source, preserving the semantic intent of the API
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every local variable is marked as "Unresolved" with DWARF debug info annotations instead of meaningful names
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as a loop accumulator or string pointer, infer names like `accumulator` or `string_ptr` rather than leaving as "Unresolved"
+2. **Preserve dead code branches with annotations**: When eliminating code paths, check if they might be intentional (obfuscation) and add comments like "/* DEAD CODE: fake branch pattern - likely intentional */"
+3. **Recover string literals in context**: The string "test" used in strlen check should be preserved even if the branch is eliminated, as it provides semantic context for the fake condition

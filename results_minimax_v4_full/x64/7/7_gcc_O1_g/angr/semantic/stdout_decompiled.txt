@@ -1,0 +1,8 @@
+Test: param_opaque_predicate = %u
+
+Test: call_opaque_predicate = 10
+Test: param_opaque_predicate(5) = 35
+Test: param_instruction_substitution = 225
+Test: param_string_encryption = 760757937
+Test: param_tail_call_optimized = 500500
+Test: param_non_tail_call = 5050

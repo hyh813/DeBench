@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/5-23/5-23_gcc_O1_g/binaryai/syntactic/bin/5-23_gcc_O1_g_fixed",
+  "stdout": "Test: macro constants = 3939586632\nTest: macro functions = 64\nTest: conditional compile = 30\nTest: multi-branch compile = 32\nTest: token paste = 57122\nTest: macro recursion = 116\nTest: stringize = 19\nTest: token paste = 60\nLOG: Values: 10, 20, 30\nTest: variadic macro = 60\nTest: macro override = 16\nTest: include guard = 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:27\nTest: builtin macros = 382\nTest: ASM basic = 0\nTest: ASM clobber = 15\nTest: ASM multi insn = 2955934467\nTest: ASM SIMD = 42\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

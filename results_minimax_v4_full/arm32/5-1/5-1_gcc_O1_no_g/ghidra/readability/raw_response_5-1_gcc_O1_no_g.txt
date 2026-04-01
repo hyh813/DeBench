@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Overview Analysis
+
+The original source code is a comprehensive C++ test suite (540 lines) testing object-oriented features including member functions, constructors, virtual functions, multiple inheritance, diamond inheritance, operator overloading, templates, lambdas, exceptions, smart pointers, and RTTI. The decompiled code (1068 lines) shows significant degradation in readability across multiple dimensions, with generic variable names, undefined types, and missing structural recovery being the primary issues.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `local_c`, `local_18`, `param_1`, `iVar1`, `pvVar1`, `acStack_2c`. The stack buffer `acStack_2c` should be named `name` based on the source `char name[32]`. No semantic meaning is recoverable from these names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func` match source names exactly. However, internal functions like `FUN_000109bc` and thunk functions use cryptic addresses. Member functions like `Base::virtual_func` are correctly scoped.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers: `0x1f` (31, buffer size), `0x14` (20, object size), `0x15` (21, expected result), `0x125c` (4704, expected return), `0x2a` (42, thrown exception). No named constants recovered; all are raw hex/decimal values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return" appear repeatedly. Stack protection checks (`__stack_chk_fail`) injected throughout. These 50+ warning comments severely clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is readable - if/else structures are clear. However, some functions like `test_cpp_exception` show incomplete recovery (throws but doesn't handle). The `call_virtual_func` uses indirect call syntax that's harder to follow than source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function is appropriately sized (20-50 lines). Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Member functions correctly extracted from classes. Good granularity overall.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns used appropriately. Some forward declarations needed but minimal disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some register spill artifacts visible but minimal. Template functions properly instantiated without duplication. Overall clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `undefined1`, `undefined4`, `undefined8` used extensively instead of proper types. `int` used generically everywhere. Should have `int`, `size_t`, `bool`, `char*` etc. Only `double` and some pointers are somewhat accurate.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. Classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are completely lost. Raw pointer arithmetic used: `*(undefined4 *)((int)pvVar1 + 4)` instead of `obj.value = 10`. Should show `struct SimpleClass { int value; char name[32]; }`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: raw `void*` casts, pointer arithmetic without bounds (`this + 4`, `this + 8`), function pointers called through `*(code *)` without type safety. No `const` correctness recovered. Dangerous code patterns present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Function headers like `/* Base::virtual_func(int) */` are helpful. However, most comments are decompiler warnings ("WARNING: Unknown calling convention") rather than useful documentation. No explanation of algorithm logic or class relationships.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns recognized: virtual function calls shown via vtable (`**(undefined4 **)param_1`), `__cxa_throw` for exceptions, `operator_new`/`operator_delete`. But not explicitly named as "RAII", "virtual dispatch", "exception handling".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for "Unknown calling convention" and "Subroutine does not return", but these are generic. No specific flags for: indirect calls that couldn't be resolved, potential undefined behavior, or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Should have comments like "requires: idx < size" for `Container::get()`, "ensures: return value is valid" etc. Completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names show class membership (`Base::virtual_func`, `Derived::virtual_func`). Virtual relationships implied by vtable access patterns. But no comments about call graphs or caller/callee relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically by class (all Base methods together, all Derived methods together). But all in single file with no namespace recovery. Static functions not distinguished from extern.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata states "Compilation Result: Yes" but requires external declarations (`operator_new`, `operator_delete`, `__cxa_throw`). Dependencies on libstdc++ not documented. Not standalone compilable without stubs.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+- L1 (30%): (2+7+3+3)/4 = 3.75 × 0.30 = 1.125
+- L2 (25%): (6+8+7+7)/4 = 7.0 × 0.25 = 1.75
+- L3 (20%): (3+2+4)/3 = 3.0 × 0.20 = 0.6
+- L4 (15%): (4+5+5+2)/4 = 4.0 × 0.15 = 0.6
+- L5 (10%): (5+6+5)/3 = 5.33 × 0.10 = 0.533
+- **Total: 4.608 → 4.6/10**
+
+**Critical Defects:**
+- Variable names are completely generic (`local_c`, `param_1`, `iVar1`) - should infer from usage like `name` buffer from `strncpy`
+- No struct/class recovery - all composite types lost to raw pointer arithmetic
+- Type precision severely degraded - `undefined4`, `undefined8` everywhere instead of `int`, `size_t`, `bool`
+- Magic numbers everywhere without explanation (0x1f, 0x14, 0x125c should be named constants)
+- Excessive warning noise (50+ "WARNING" comments) obscuring actual code
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Functions properly extracted with good granularity; template instantiations correctly separated; class methods correctly scoped
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every local variable uses generic names making it impossible to track purpose without extensive cross-referencing
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `acStack_2c` used with `strncpy("Test")` should be named `name`; `local_c` initialized to 0 and used as result should be `result`
+2. **Recover composite types**: Instead of `*(undefined4 *)((int)pvVar1 + 4) = 10`, emit `obj->value = 10` with struct definition
+3. **Replace magic numbers with constants**: Detect `0x1f` as `sizeof(name)-1`, `0x14` as `sizeof(LifecycleClass)`, add explanatory comments

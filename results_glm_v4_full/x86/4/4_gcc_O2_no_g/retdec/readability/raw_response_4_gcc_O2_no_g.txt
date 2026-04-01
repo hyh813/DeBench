@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `a1`, `a2`, `v1`, `v2`), providing no semantic hint about their purpose (e.g., `count`, `sum`, `ptr`). While `str` is used for a string parameter, the majority of local variables are meaningless auto-generated names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), which accurately reflect the source's intent and make the high-level flow easy to follow.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are completely lost, replaced by pointer arithmetic offsets like `(char *)(v1 + 2700)`, making it impossible to understand the output of `printf` calls without manual lookup. Magic numbers (e.g., `-2617`, `2700`) are used without explanation.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with compiler artifacts, specifically `__x86_get_pc_thunk_bx(v1)` appearing in almost every function to handle Position Independent Code (PIC). Stack canary checks (`__readgsdword(20)`) are also inlined, cluttering the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow constructs like `while` loops and `if` statements are generally recovered correctly (e.g., in `varargs_func`). However, some logic is expressed awkwardly due to the lack of semantic variable names.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are decomposed well, matching the source granularity. The separation between logic (e.g., `cdecl_func`) and test harnesses (e.g., `call_cdecl`) is preserved.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns. There are no confusing "spaghetti" jumps or computed gotos that disrupt the linear reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Simple constant propagation is present (e.g., `call_cdecl` returns `15`), which cleans up the code. However, redundant stack pointer arithmetic for accessing locals remains verbose.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily genericized to `int32_t` even for pointers. Floating point operations use `float80_t` (long double) for intermediate calculations involving `double`, which is imprecise. The `long long` parameter in `func_mixed_args` appears split or lost.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct recovery failed completely. `func_struct_byval` takes `void` arguments instead of `LargeStruct`, and struct member access is replaced by raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4)`). `SmallStruct` is similarly lost.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, treating `int32_t` as pointers (`(char *)(v1 + 2700)`) and casting function pointers to integers. This obscures the actual data types and creates a type-unsafe representation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output is bare code with only address range annotations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed. The `va_list` pattern in `varargs_func` is not recognized; instead, it is decompiled to manual stack walking (`*(int32_t *)(4 * v1 + (int32_t)&v2)`).
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler presents the code confidently without flagging the unusual stack manipulations or the fact that string literals are resolved via offsets. It does not indicate potential uncertainty in the `va_list` recovery.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `param_func_ptr` receives a valid callback is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. The relationship between the test functions and the implementation functions is preserved, making the call graph understandable.
+
+**17. Module Organization:** Score: 6/10
+Justification: The code is organized in a single file, which matches the source. However, the lack of struct definitions at the top level (they are missing entirely) hurts the module's self-documentation.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard intrinsics like `__readgsdword`, `__asm_hlt`, and `__asm_rep_movsd_memcpy` without including the necessary headers or defining them, preventing standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- String literals are replaced by opaque pointer arithmetic offsets (e.g., `v1 + 2700`), destroying context.
+- `va_list` (varargs) pattern is not recognized, replaced by manual stack pointer iteration.
+- Composite types (structs) are completely unrecovered; struct arguments are missing and member access is raw pointer math.
+- Excessive compiler noise (`__x86_get_pc_thunk_bx`) clutters almost every function.
+- Type precision is poor, with pointers cast to `int32_t` and incorrect floating-point types (`float80_t`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, which is the only saving grace for navigating the code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions, combined with the loss of struct-by-value parameters, reduces complex data manipulation to incomprehensible pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement string literal recovery for Position Independent Code (PIC) to resolve offsets like `v1 + 2700` back to actual string constants.
+2. Enhance pattern matching for `va_list`/varargs to abstract stack walking into standard `va_arg` semantics.
+3. Improve stack frame analysis to recover struct layouts and pass-by-value arguments instead of defaulting to raw memory access.

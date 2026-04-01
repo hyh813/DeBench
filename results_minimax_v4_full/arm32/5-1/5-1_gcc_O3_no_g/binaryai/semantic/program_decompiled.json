@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-1/5-1_gcc_O3_no_g/binaryai/syntactic/bin/5-1_gcc_O3_no_g_fixed",
+  "stdout": "Testing C++ Features\ntest_cpp_member_func: 4704\ntest_cpp_constructor: 21\ntest_cpp_virtual_func: 42\ntest_cpp_multiple_inheritance: 71\ntest_cpp_diamond_inheritance: 650\ntest_cpp_operator_overload: 22\ntemplate_max: 7\ntest_cpp_template_class: 16\ntest_cpp_lambda: 85\ntest_cpp_exception: 0\ntest_cpp_smart_ptr: 703\ntest_cpp_rtti: 44\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

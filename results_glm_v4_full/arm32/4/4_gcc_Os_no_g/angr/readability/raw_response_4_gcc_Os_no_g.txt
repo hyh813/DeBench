@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `ptr`), providing no semantic context. For instance, in `varargs_func`, the accumulated sum is named `v7` and the loop index `v6`, whereas the original used descriptive names like `sum` and `i`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved accurately from the source (e.g., `cdecl_func`, `test_calling_conventions`), making the high-level intent immediately clear despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are replaced with raw addresses (e.g., `puts(0x1148c)`), obscuring the output text. While numeric constants like `15` or `50` are clear, they are the result of compiler optimization (constant folding) rather than the original literals (`5+10`), losing some context.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant lifting artifacts, such as `armg_calculate_condition` calls and `Goto None` statements, which obscure the underlying logic. Stack canary checks (`__stack_chk_guard`) are also exposed inline, adding clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is often unnatural; `varargs_func` uses a `while(true)` with a manual break instead of a `for` loop. Furthermore, `armg_calculate_condition` calls are used to implement logic that should be standard `if` statements, making the flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decomposition matches the source structure well, with distinct functions for each test case. However, compiler inlining (e.g., `call_cdecl` returning `15` directly) flattens the call graph, hiding the original interaction between functions.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While simple functions read linearly, complex ones like `ret_func_ptr` or `param_complex_cast` contain confusing jumps (`Goto None`) and nested conditionals that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler presents the optimized binary logic cleanly without obvious dead code, though it fails to abstract away the redundancy introduced by the compiler's handling of varargs (e.g., manually copying stack args to local array `v3`).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are significantly degraded; `LargeStruct` passed by value is split into 16 separate `unsigned int` arguments (`a0` through `a15`) in `func_struct_byval`, completely losing the composite type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery fails severely. In `func_struct_byptr`, the decompiler fails to identify the struct fields, resulting in nonsensical logic like `v1 = a0 * a0` instead of accessing `p->x` and `p->y`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code exhibits unsafe type interpretations, such as treating a struct pointer as an integer for multiplication in `func_struct_byptr`. Floating-point operations are correctly identified via `__aeabi_dadd`, but pointer arithmetic is often unsafe or incorrect.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no meaningful comments explaining the logic; only auto-generated headers (e.g., "Function: cdecl_func at 0x10584") are present.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms are missed. The `varargs_func` implementation is treated as a generic loop over a stack array rather than being identified as a standard variadic function pattern using `va_list`.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Anomalies like `Goto None` and `armg_calculate_condition` are present but not flagged or explained, leaving the user to guess whether they are artifacts or intentional logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `func_struct_byptr` is present but not explicitly documented as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but string references are opaque addresses. The relationship between the test functions and the helpers is clear, but the data flow is obscured by type loss.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by address rather than logical grouping (e.g., all calling convention tests together), making it harder to navigate compared to the source's clear sectioning.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is not buildable as-is due to the presence of non-standard `armg_calculate_condition` intrinsics and unresolved string literals.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Struct Argument Destruction**: `func_struct_byval` splits a `LargeStruct` into 16 separate integer arguments, destroying the function signature.
+- **Incorrect Field Access**: `func_struct_byptr` performs `a0 * a0` instead of correctly dereferencing struct fields `x` and `y`.
+- **Lifting Artifacts**: Pervasive use of `armg_calculate_condition` and `Goto None` obscures control flow logic.
+- **Lost String Literals**: String constants are replaced with memory addresses (e.g., `0x1148c`), removing context from print statements.
+- **Varargs Obfuscation**: The `va_list` pattern in `varargs_func` is reduced to a raw loop over a stack array.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names, allowing the reader to map the decompiled output directly to the source logic's intent.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover struct definitions and field accesses renders complex data handling code nearly unintelligible and semantically incorrect.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **ABI-Aware Struct Reaggregation**: Implement logic to recombine consecutive register/stack arguments into structs based on AAPCS calling convention rules.
+2.  **IR Cleanup**: Fold `armg_calculate_condition` calls and intermediate representation artifacts back into high-level `if`, `switch`, and ternary statements.
+3.  **String Literal Recovery**: Resolve data references to recover string literal contents in the decompiled output instead of displaying raw addresses.

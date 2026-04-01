@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar1`, `cVar1`, `local_800`), providing no semantic hint about their purpose like `n`, `arr`, or `i` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `heap_basic`, `local_vars`, and `test_stack_memory` are perfectly preserved from the source symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants like `42` or `20` are replaced with magic hex numbers (e.g., `0x2a`, `0x14`) inside `printf` statements and return values, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with comments like `/* Unresolved local var: ... */` and `/* WARNING: Unknown calling convention */`, which distract from the actual logic without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Natural loops are destroyed by aggressive optimization (loop unrolling), replaced by complex `do-while` blocks with pointer arithmetic (e.g., `heap_basic`), making the flow extremely hard to follow.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: Test functions like `test_stack_memory` are bloated because called functions were inlined and constant-folded (e.g., `printf` with pre-calculated results), destroying the modular structure.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code generally reads top-to-bottom, the logic is frequently interrupted by deeply nested `if` statements resulting from inlining (e.g., `linked_list_heap`), requiring significant mental effort to track.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: Loop unrolling has introduced massive redundancy, with identical assignment lines repeated 4 or 8 times (e.g., in `heap_calloc`), rather than being abstracted into a loop construct.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While standard types like `int` and `void *` are used correctly, there is inconsistent usage of Ghidra-specific types like `undefined4` (e.g., in `linked_list_heap`) instead of `int` or `Node*`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs like `Node` and `TreeNode` are recovered with correct field names (`data`, `next`, `left`, `right`), which is excellent for understanding data structures.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts, such as `(int)aiStack_24 + iVar3 * 2`, to access array elements, which is error-prone and hard to read.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to compiler warnings and "Unresolved local var" markers; there are no comments explaining the *intent* of the complex pointer math or unrolled loops.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard library calls (`malloc`, `free`) are recognized, but higher-level idioms like "loop filling an array" are completely lost, replaced by unrolled pointer manipulations.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags issues like "Unknown calling convention" and "Removing unreachable block," alerting the user to potential decompilation errors or oddities.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., `n > 0` checks are buried in logic) or postconditions; the code offers no semantic guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard libraries and other defined functions are clear and readable, maintaining the relationship between modules despite the optimization.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are presented in address order rather than logical grouping, making it harder to find related functions (e.g., all heap tests are scattered).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types like `undefined4` and macros like `LOCK()`/`UNLOCK()`, preventing it from compiling without a Ghidra-specific environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Loop unrolling in functions like `heap_basic` and `heap_calloc` results in pages of repetitive assignments instead of a simple `for` loop.
+- Variable naming is entirely generic (`iVar1`, `local_800`), losing all semantic meaning of the original variables.
+- Inlining of test functions (e.g., `test_stack_memory`) replaces function calls with constant results (`0x14`), hiding the program's control flow.
+- Magic numbers are presented in hex (`0x2a`) without context, whereas the source used clear integers (`42`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function symbols, making it easy to identify the purpose of most routines at a glance.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 2/10)
+- The failure to reconstruct loops from the unrolled optimized code makes the logic extremely difficult to follow, turning simple algorithms into complex pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement "loop rolling" heuristics to detect and consolidate repeated unrolled assignment blocks back into `for` or `while` loops.
+2. Enhance variable naming inference to use stack size hints (e.g., `local_800` -> `large_buf`) or context from struct definitions.
+3. Improve constant propagation analysis to display decimal values for small integers in `printf` and return statements to match source readability.

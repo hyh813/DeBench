@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic single-letter names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`). The decompiler made no attempt to infer semantic meaning from usage patterns. For example, in `test_cpp_member_func`, the variable holding the constructed object should be named `obj` or `simple_obj`, not `s` with cryptic array indexing.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: While some C++ names are properly demangled (e.g., `test_cpp_member_func`, `call_virtual_func`, `Base::virtual_func`), many functions use generic patterns like `sub_1030`, `sub_1160`, `sub_11DC`. The mangled names like `_Z20test_cpp_member_funcv` are partially decoded but lack the clarity of the original `test_cpp_member_func()` name.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful (e.g., `50` in loop bounds matching `size * 10`, the value `3` for `multiplier`), but many magic numbers lack explanation. The value `4700` in `test_cpp_member_func` should be documented as `4660 (getClassID) + 34 (compute result) + 10 (getValue) - 10` or similar. The `0x14u` (20 bytes) for array allocation is unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: 21 failed decompilations listed at the end, empty stub functions like `sub_11DC` (just `;`), redundant `__asm` blocks in some functions, and numerous `__usercall` annotations that obscure rather than help. The thunk functions (`_ZThn8_N12MultiDerived5funcBEv`) add noise without clear explanation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper loops and conditionals. The `do-while` loop in `test_cpp_constructor` correctly represents the initialization loop. At -O1, some optimizations are expected. Minor issues include complex pointer arithmetic in virtual function thunks that obscures simple logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably decomposed. The original 12 test functions are all recovered as separate functions. Member functions like `Container<int>::push`, `Container<int>::get` are properly separated. The main issue is the large `test_cpp_oo_features` function (985 LOC in decompiled vs 540 in source) which contains inlined logic from multiple test functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, the `test_cpp_oo_features` function has complex nesting with multiple printf calls and inlined test logic that disrupts linear reading. Some computed jumps in virtual function handling interrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling is present (the initialization loop in constructor is explicit). The `test_cpp_oo_features` function duplicates logic from individual test functions rather than calling them. This is likely due to inlining at -O1, but creates redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are reasonable (`int`, `_DWORD`, `size_t`). However, the decompiler uses `_DWORD` inconsistently (should be `int32_t` or `int`). Function pointers have complex types like `_DWORD (__cdecl **)(Base *__hidden, int)` which are technically accurate but verbose. The `this` pointer is properly typed in member functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct types were recovered. Objects are represented as raw arrays (e.g., `_DWORD v2[2]` for `Derived` object, `_DWORD v3[5]` for `MultiDerived`). The vtable pointers are visible but not named. Field access uses pointer arithmetic like `*(_DWORD *)(a1 + 40)` instead of `this->size`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist: extensive void pointer arithmetic (`*(_DWORD *)((char *)this + *(_DWORD *)(*(_DWORD *)this - 12)) + 4`), incorrect type assumptions in virtual function thunks, and raw memory manipulation. The virtual function call `(**(int (__cdecl ***)(Base *, int))a1)(a1, a2)` bypasses type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments exist. The only annotations are mechanical like `BYREF`, `BYREF`, and compiler-generated labels like "positive sp value has been detected". No explanation of algorithm logic, vtable mechanics, or this pointer adjustment. The failed decompilations section provides no context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are visible (virtual function calls through vtable, constructor/destructor patterns) but not explicitly named or documented. The thunk functions for multiple inheritance (`_ZThn8_N12MultiDerived5funcBEv`) are not explained as "this pointer adjustment thunks". Template instantiation is visible but not labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The 21 failed decompilations are listed at the end, but without explanation of why they failed or what they contain. Some uncertainty is indicated ("the output may be wrong!"), but no guidance on how to resolve. The indirect virtual calls could be flagged more prominently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler makes no attempt to recover contracts like "requires: idx < size" for `Container::get` or "ensures: return value is valid". Error handling paths are not distinguished from normal paths.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `Base::virtual_func`, `Derived::virtual_func`). Virtual dispatch is visible through vtable pointers. However, the relationship between `test_cpp_oo_features` and individual test functions is obscured by inlining. Global variable `LifecycleClass::instance_count` is properly tracked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - runtime support functions first, then test functions, then member functions. Related classes are near each other. However, the organization is arbitrary compared to the original source's clear section headers (CPP-L3-01, CPP-L3-02, etc.).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code is noted as compiling successfully ("Compilation Result: Yes"). External dependencies (stdlibc++, libc) are implicit. Some stubs may be needed for the 21 failed functions. The code uses standard C calling conventions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v0`-`v15`, `s`, `v2`, `v3`) with no semantic inference
+- No struct/class types recovered - all objects are raw arrays with pointer arithmetic
+- No comments explaining vtable mechanics, this pointer adjustment, or virtual inheritance
+- The `test_cpp_oo_features` function is bloated with inlined code instead of calling test functions
+- 21 functions failed to decompile, leaving significant gaps in the binary analysis
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+The decompiler correctly recovered loop constructs (do-while for initialization), conditional logic, and function call patterns. At -O1 optimization, the control flow remains readable and matches the original algorithm structure.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler made no attempt to infer meaningful names from usage patterns. Variables should be named based on their semantic role (e.g., `obj` for constructed object, `idx` for index, `size` for size field) rather than generic `v0`, `v1`, `s`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing, string assignment, arithmetic) to suggest semantic names like `obj`, `index`, `size`, `multiplier`
+2. **Recover struct/class types from vtable and field access patterns**: Group related fields into structures with meaningful field names based on offset analysis
+3. **Add explanatory comments for complex patterns**: Document vtable calls, this pointer adjustments, virtual inheritance mechanics, and thunk functions with brief explanations

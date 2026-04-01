@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with zero semantic meaning. Original source had meaningful names like `x`, `arr`, `n`, `sum`, `current` that indicated purpose clearly.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). However, helper functions use mechanical names (`function_1080`, `function_1090`) and some signatures don't match functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (44, 40, 12 for struct offsets; 65 for 'A'). Critical issue: `process_float` and `process_double` return address calculations instead of actual floating-point computations, losing the `1.5f`, `0.5f`, `2.0`, `0.1` constants entirely.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: x86 thunk functions (`__x86_get_pc_thunk_*`) despite arm64 source, stack canary checks (`__readgsdword(20)`), and runtime initialization code (`__do_global_ctors_aux`, `register_tm_clones`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as while-loops instead of for-loops (e.g., `array_1d_stack`). Complex conditionals in `pointer_array` and `array_complex_index` are convoluted. Some functions (`process_float`, `process_double`) are completely broken, returning address calculations instead of computed values.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions have reasonable granularity, but test functions are excessively long and convoluted (`test_data_types_l1` at 145 lines, `test_array_types` at 180+ lines). Helper functions appropriately separated but lack cohesion with main logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but nested loops in `array_3d` create confusing structure with multiple while-loop levels. Forward jumps in test functions disrupt flow with stack variable initialization patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every test function. Repeated `__printf_chk` patterns in test functions. Some redundancy from decompilation artifacts rather than original code structure.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `long long` becomes two `int32_t` parameters (`process_ll`), `float`/`double` functions return `int32_t` instead of floating-point types, `long double` is only type preserved correctly. All pointers become `int32_t *` losing const/volatile qualifiers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - no struct/union definitions recovered. All composite access is raw pointer arithmetic (`*(int32_t *)(a1 + 4)`, `*(int32_t *)(a1 + 8)`). `struct_simple`, `struct_nested`, `struct_deep` all use hardcoded offsets with no type information. Bitfields completely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts throughout (`(int32_t *)a1`, `(char *)a1`). Critical bug: `struct_func_ptr` returns `(int32_t)a1` instead of calling the function pointer. `ptr_func_simple` and `ptr_func_complex` return uninitialized `result`. Pointer arithmetic has no bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic. Only auto-generated metadata (address ranges, compiler detection). No decompilation confidence indicators despite obvious failures in `process_float`, `process_double`, `struct_func_ptr`. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (array summation, linked list traversal, tree recursion) not identified or named. Switch statements recovered in `enum_switch` and `union_type` but lack semantic context about enum states. No algorithm pattern recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical failures silently presented as valid code: `process_float`/`process_double` return address calculations, `struct_func_ptr` doesn't call function pointer, architecture mismatch (x86 thunks for arm64 source). No warnings about unrecoverable constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, bounds checking). No postconditions or error handling explained. Original source's test expectations completely lost.
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but lack context. Global variables (`g1`, `g2`, `g3`, `g4`) have no semantic meaning. Callback relationships not documented (e.g., `complex_callback` usage unclear).
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order losing original logical grouping (data types, arrays, pointers, composites). No namespace or file organization. Test functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Missing type definitions for custom structs/unions. Architecture mismatch prevents compilation (x86 code for arm64). External dependencies declared but custom types lost. Metadata says "Compilation Result: Yes" but code would not compile as-is.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (3+2+2)/3   = 2.33  × 0.20 = 0.467
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25  × 0.15 = 0.338
+Level 5 (Context):     (4+4+3)/3   = 3.67  × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.89/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Type system collapse**: `process_float`/`process_double` return address calculations instead of floating-point values; `long long` incorrectly split into two `int32_t` parameters
+- **Complete struct/union loss**: All composite types reduced to pointer arithmetic with hardcoded offsets (e.g., `*(int32_t *)(a1 + 4)`)
+- **Function pointer broken**: `struct_func_ptr` returns `(int32_t)a1` instead of calling `dev->process(dev->data)`
+- **Architecture mismatch**: x86 thunk functions (`__x86_get_pc_thunk_*`) present despite arm64 source compilation
+- **Zero semantic recovery**: All variables generic (`v1`, `v2`, `a1`); no comments; no anomaly warnings for obvious failures
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`), providing some semantic anchor points despite other failures.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; all composite access is raw pointer arithmetic losing all type semantics and field names.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze consistent offset patterns across functions to reconstruct struct layouts with field names inferred from usage context
+2. **Preserve floating-point semantics** - Don't convert float/double operations to integer address calculations; maintain FP register usage patterns
+3. **Add anomaly detection warnings** - Flag functions where return types don't match operation semantics (e.g., FP function returning integer address) and architecture mismatches

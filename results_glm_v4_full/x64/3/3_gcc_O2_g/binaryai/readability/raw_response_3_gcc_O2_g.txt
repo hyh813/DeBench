@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `iVar1`, `lVar1`, `puVar2`, and `param_1`, completely losing semantic meaning (e.g., loop counters, buffer pointers).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names (e.g., `double_value`, `heap_basic`, `vla_stack`) are perfectly recovered from debug symbols, matching the source exactly.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals are recovered perfectly, but integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`), which slightly reduces immediate readability.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) are verbose and clutter the logic of functions with buffers, though this is a security feature of the binary rather than pure noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are consistently represented as `do-while` structures rather than `for` loops, which is slightly less idiomatic but perfectly readable and logically equivalent.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function boundaries are preserved 1:1 with the source; there is no inlining or outlining of logic, maintaining the original modularity perfectly.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads top-to-bottom with clear conditional blocks; the `do-while` loops are linear and easy to follow without confusing jumps.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Variable Length Arrays (VLA) and `alloca` usage result in massive expansions of stack-probing code (e.g., in `vla_stack`), obscuring the simple allocation intent of the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Standard types like `int` are often replaced with `undefined4` or `undefined8`, and signedness information is frequently lost, reducing type safety clarity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are completely lost; for example, `Point` and `Node` structures are replaced by raw pointer arithmetic and byte offsets (e.g., `*(undefined4 **)(__ptr + 2)`), destroying the data model.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Heavy reliance on `undefined*` types and explicit casts to `long*` or `int*` for memory access makes the code look unsafe compared to the strongly typed source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: There are virtually no comments explaining the logic; only standard header comments indicating function addresses are present.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard patterns like `malloc`/`free` loops are recognizable, but complex idioms like VLA allocation are presented as raw page-probing loops rather than abstracted concepts.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler presents the code confidently without flagging potential issues like the use of `undefined` types or the complex stack manipulation as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: Preconditions (e.g., `if (param_1 < 1)`) are visible in the code but are not explicitly documented as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and correctly resolved, maintaining good context.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are ordered logically (mostly by address, which correlates with source order), and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined8` which will not compile in a standard C environment without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic and offsets.
+- Variable names are generic (`iVar1`, `puVar2`), requiring constant cross-referencing to understand purpose.
+- `alloca` and VLA logic is expanded into verbose, low-level stack probing code that obscures high-level intent.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Debug symbols allowed perfect recovery of all original function names, making navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to reconstruct `Point`, `Node`, or `TreeNode` structures turns readable data manipulation into obscure memory offsetting.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct recovery based on stack layout and access patterns to reconstruct `Point` and `Node` definitions.
+2. Improve variable naming heuristics to infer names like `i`, `n`, or `ptr` from usage contexts instead of defaulting to `iVar1`.
+3. Abstract compiler-generated stack probing sequences (for `alloca`/VLA) into intrinsic calls or simplified pseudo-operations to improve readability.

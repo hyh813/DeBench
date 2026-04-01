@@ -1,0 +1,8 @@
+Test Output: %u
+
+Hello World: 10
+Function Result: 20
+Opaque Predicate: 225
+String Encryption: 3485608120
+Tail Call Optimization: 500500
+Non-Tail Call: 5050

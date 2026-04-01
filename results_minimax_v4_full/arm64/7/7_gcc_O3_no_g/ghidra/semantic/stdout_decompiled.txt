@@ -1,0 +1,10 @@
+=== Anti-Gravity Compiler Test Suite ===
+
+Test 1: Opaque Predicate (expected 10): 10
+Opaque result: 20
+Instruction substitution (expected 225): 225
+String encryption length: 0
+Tail call optimization (expected 500500): 500500
+Non-tail call (expected 5050): 5050
+Vectorized loop (expected 72): 72
+LTO (expected 20): 20

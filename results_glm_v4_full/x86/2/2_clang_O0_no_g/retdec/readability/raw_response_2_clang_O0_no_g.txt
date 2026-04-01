@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `a1`, `v1`, `v2`, and `result`, providing zero semantic context (e.g., `process_char` uses `v1` for a bit-shifted accumulator instead of a clear variable).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `process_char`, `struct_bitfields`, `array_3d`), accurately reflecting the original intent and making navigation easy.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers derived from low-level bit manipulation, such as `0x1000000`, `0x20000000`, `44`, and `20`, with no named constants to explain their purpose (e.g., array dimensions or ASCII offsets).
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts remain, including `__x86_get_pc_thunk_bx` calls (despite the source being ARM64), `__asm_hlt()`, and explicit stack frame offsets like `bp-12` cluttering the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered as `while` or `do-while`, simple conditional logic like `if (c >= 'A')` is transformed into obscure ternary operators involving bit shifts (`((char)a1 > 90 ? v1 : v1 + 0x20000000) >> 24`), which is hard to read.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion; there is no inlining or artificial outlining that disrupts the original structure.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with standard loop structures, though pointer arithmetic expressions (e.g., `v1 + 20 * j + 4 * v2`) can interrupt the flow of understanding.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but some redundancy exists from the unoptimized compilation, such as explicit pointer increments (`v2 += 4`) inside loops instead of using array indexing syntax.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical type information is lost; `float` and `double` parameters are represented as multiple `int32_t` arguments (e.g., `process_float(int32_t a1, int32_t a2)`), and `long double` returns are incorrectly typed as `int32_t`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs and unions are completely unrecovered; `struct_simple` uses raw pointer offsets (`*(int32_t *)(v1 + 4)`) instead of field access (`p->y`), and `struct_bitfields` uses division/modulo math instead of bitfield syntax.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as treating `int32_t` memory as `float80_t` or casting `int32_t*` to `char*` for byte access, which obscures the original type-safe operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; only address ranges (e.g., `// Address range: 0x1200 - 0x123f`) are provided, which offer no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level patterns are missed; the `switch` statement in `enum_switch` is replaced by a jump table lookup using pointer arithmetic, and bitfields are expanded into raw math operations.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging anomalies, such as the architecture mismatch (x86 thunks in an ARM64 binary) or the uninitialized return in `process_ld`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the requirement for non-NULL pointers in `ptr_single` is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct names, making the call graph easy to follow despite the poor variable naming within functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order, and helper functions are placed near their usage, maintaining good module organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would fail to compile due to type mismatches (e.g., passing `int32_t` to functions expecting `float`) and missing struct definitions, requiring significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Floating point types (`float`, `double`) are completely mangled into integer arguments/returns, breaking the function signature.
+- Composite types (structs, unions) are not recovered; all access is via raw pointer arithmetic with magic offsets (e.g., `v1 + 4`).
+- Bitfields are expanded into complex division/modulo arithmetic (`v1 / 64 + v1 % 2`), completely obscuring the original bit-level logic.
+- Variable names are entirely generic (`a1`, `v1`), requiring the user to manually reverse-engineer variable purposes.
+- Architecture artifacts (`__x86_get_pc_thunk_bx`) are present despite the source being ARM64, adding confusion.
+
+**Best Quality Aspect:** Function Naming (Score: 10/10)
+- The decompiler successfully preserved all original function names from the symbol table, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Type System Fidelity (Score: 2.0/10)
+- The failure to recover basic types (especially floating point) and composite types (structs) makes the code a low-level transcription of assembly rather than readable C.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement floating-point argument/return type recovery based on ABI rules (e.g., identifying when `int32_t` pairs represent `double` values).
+2. Develop heuristics to reconstruct struct definitions from stack offset patterns and replace pointer arithmetic with member access (e.g., `ptr->field`).
+3. Detect and simplify bit-field manipulation patterns (masking, shifting) back into high-level bit-field syntax or at least named constants.

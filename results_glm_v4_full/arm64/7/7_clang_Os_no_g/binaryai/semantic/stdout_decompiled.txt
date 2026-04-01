@@ -1,0 +1,15 @@
+TestMessage
+Value: 10
+Result: 20
+Instruction: 225
+String: 69
+TailCall: 500500
+NonTail: 5050
+Vector: 0
+LinkTime: 20
+DivZero: 2
+NullPtr: 41
+Buffer: 30
+IntOverflow: 2000000000
+Undef: 10
+ImplDef: 48

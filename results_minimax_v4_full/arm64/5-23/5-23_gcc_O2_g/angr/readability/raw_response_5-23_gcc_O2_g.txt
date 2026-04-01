@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `i`, `ptr`). The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. Only a few descriptive names like `dst` in memcpy contexts and `ptr` in mmap contexts provide any semantic value.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named (`param_macro_constants`, `call_macro_constants`, `my_func`, `test_preprocessing_features`, `test_asm_features`, `param_asm_basic`), but the majority use generic names like `sub_400824`, `sub_40091c`, `sub_400a3c`. Many wrapper/thunk functions obscure the actual logic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants recovered (e.g., `64`, `0x200`, `57122`), but critical macro values lost: `MAX_SIZE` (1024) appears as `0x400`, `BUFFER_COUNT` (16) not named. Magic numbers like `0x1234`, `0x5678`, `0x9ABC`, `0xDEF0` in `param_multi_branch_compile` remain unexplained. The decompiler correctly preserved string literals like `"LOG: Values: %d, %d, %d\n"`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output for -O0 compilation. Minor redundancy exists (e.g., `param_asm_multi_insn` calls `memcpy` twice redundantly). Stack frame setup code is visible but expected. No significant debug instrumentation artifacts since -O0 was used.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - simple if-else structures preserved correctly (e.g., `if (a0 > 0x400) return 64; return 0x200;`). Loops use do-while constructs appropriately. Some complex conditions in `register_tm_clones` are convoluted but represent original logic. At -O0, minimal restructuring is expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches original source. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly separated. The decompiler correctly kept small, cohesive functions rather than inlining or combining them. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. Some complex expressions (e.g., in `register_tm_clones`) create non-linearity but represent original conditional logic. No severe flow disruption.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy present - `param_asm_multi_insn` calls `memcpy` twice (`dst = memcpy(...); return memcpy(...);`). Loop unrolling is minimal at -O0. Dead code is minimal. Overall manageable but not perfectly clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `unsigned int` used for most parameters (correct for 32-bit values), `unsigned long long` for pointers (correct for 64-bit). However, `int` used for return types in some functions where `unsigned` would be more precise. Function return types sometimes inconsistent (e.g., `param_macro_constants` returns `unsigned long long` but should be `int`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Original source used minimal composite types - mostly primitives and arrays. The decompiler correctly handled simple arrays like `int arr[]` passed to functions. No struct recovery needed since source didn't define custom structs. What exists is handled appropriately.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety concerns - pointer arithmetic visible (`ptr + v0 * 4`, `a2 + i`) but necessary for array operations. Mixed signed/unsigned in comparisons (e.g., `(unsigned int)v0 < i`). No major unsafe casts that would cause undefined behavior. Some function pointer type confusion in indirect calls.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining macro behavior, test scenarios, and expected values. Zero effort to recover this semantic information. Auto-generated comments like "/* do not return */" on `abort()` calls are present but minimal.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some common patterns recognized - standard library functions like `printf`, `memcpy`, `mmap`, `mprotect`, `sysconf` are correctly identified. However, no explicit naming of patterns (e.g., "This implements a memory pool" or "Atomic fetch-add operation"). The inline assembly in original source is replaced with intrinsic calls (`__aarch64_ldadd4_acq_rel`) which is good but not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Only one explicit failure noted: "Failed to decompile function __aarch64_ldadd4_acq_rel at 0x401480". No warnings about indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior. The decompiler silently produces potentially incorrect code in some places without flagging uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Original source had no explicit assertions, but implicit contracts (e.g., "ptr != NULL for mmap", "n > 0 for array operations") are not documented. Error return values (e.g., `-1` for MAP_FAILED) not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions declared with `extern` keyword (e.g., `extern char __aarch64_have_lse_atomics;`, `extern unsigned int global_var;`). However, call relationships not documented - no indication of which functions call which, or the call graph. Some wrapper functions (e.g., `sub_400a88` calling `frame_dummy()`) obscure relationships.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions organized by address rather than logically. The original source had clear sections: preprocessing tests (PP-L2-01 through PP-L3-07) and assembly tests (ASM-L4-01 through ASM-L4-06). The decompiled output mixes these arbitrarily based on memory address. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has many unresolved external dependencies (`__printf_chk`, `__stack_chk_guard`, `__aarch64_ldadd4_acq_rel`, etc.). Would require significant patching to compile standalone. No documentation of dependencies or required libraries. The "Failed to decompile" message for one function indicates incomplete output.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 5 + 5 + 7) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.0
+L3_avg = (6 + 8 + 6) / 3 = 6.67
+L4_avg = (1 + 5 + 2 + 2) / 4 = 2.5
+L5_avg = (5 + 3 + 4) / 3 = 4.0
+
+Overall = (5.0 × 0.30) + (7.0 × 0.25) + (6.67 × 0.20) + (2.5 × 0.15) + (4.0 × 0.10)
+        = 1.5 + 1.75 + 1.334 + 0.375 + 0.4
+        = 5.36/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`) completely obscuring semantic purpose - `a0` should be `size`, `ptr` should be `arr` or `counter`
+- **No comments**: Zero semantic information recovered from original source's extensive documentation
+- **Magic numbers unexplained**: `0x400` should be `MAX_SIZE`, `0x1234`/`0x5678`/`0x9ABC`/`0xDEF0` should be named constants
+- **Anomaly silent failures**: No indication of uncertain decompilation decisions or indirect calls
+- **Poor module organization**: Functions arbitrarily ordered by address rather than logically grouped
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions are properly separated matching original granularity
+- Each test function (`param_macro_constants`, `param_asm_basic`, etc.) correctly isolated
+- Parameter lists are reasonable and not overly fragmented
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- Zero comments recovered from original source
+- No documentation of macro semantics, expected values, or algorithm explanations
+- No decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `if (a0 > 0x400)` suggests `a0` is a "size" parameter, `a0 * 10` suggests "multiplier")
+2. **Recover macro constants**: Detect magic numbers that match common patterns (powers of 2, hex constants) and suggest original macro names based on context
+3. **Add semantic comments**: When preprocessing occurred (macros expanded), document what was lost - e.g., "Macro MAX_SIZE (1024) was expanded inline" or "Conditional branch: DEBUG_MODE was not defined"

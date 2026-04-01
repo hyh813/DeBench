@@ -1,0 +1,8 @@
+Testing obfuscation and optimization edge cases...
+
+Fake branch result: 10
+Opaque predicate result: 35
+Instruction substitution result: 225
+String encryption result: 129
+Tail call optimized result: 500500
+Non-tail call result: 5050

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `uVar1`, `iVar2`, `pvVar1`, `puVar1`, `local_800`, `aiStack_24`. The original source had meaningful names like `x`, `arr`, `n`, `out`, `p1`, `p2`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (`local_vars`, `local_array`, `heap_basic`, `double_value`, `memop_memset`), but many use generic patterns like `FUN_00011030`, `FUN_00011f85`, `FUN_00012035`. The original had descriptive names like `stack_alias`, `vla_stack`, `alloca_usage`, `linked_list_heap`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x2a` for 42, `0x14` for 20, `0x800` for 2048). The original source used meaningful constants and calculations. Some string literals are recovered but not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from startup code (`_init`, `_start`, `__do_global_dtors_aux`), external function stubs, and register-related artifacts (`unaff_EBX`, `unaff_retaddr`). However, the core test functions are relatively clean from compiler instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures are recognizable (if/else, while loops). However, some functions use computed jumps and awkward patterns. The `vla_stack` and `alloca_usage` functions have convoluted control flow that doesn't match the original clean for-loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Each original function maps to a decompiled function. Parameter counts are correct. Minor issues with some functions being too large (e.g., `test_heap_memory` has 80+ lines).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Early returns are used appropriately. Some forward jumps exist in complex functions like `linked_list_heap` but are manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling is present in `large_stack_frame`, `heap_basic`, `heap_array`, `memory_leak` without comments explaining the pattern. The original used clean for-loops; the decompiled version shows unrolled versions that obscure the algorithm.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined`, `byte*`, `void*` instead of specific types. Original used `int`, `char`, `size_t`, `uint32_t`. Function pointers use generic `code*` instead of proper signatures. The `param_1` in `double_value` should be `int`, not `undefined4`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The original had `Point`, `Node`, `TreeNode` structs. The decompiled code uses raw pointer arithmetic: `*(int *)((int)__ptr + uVar4 * 4)` instead of `node->data`. The `Node` linked list is completely flattened into integer operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(undefined4 *)malloc(8)`, `(int *)__ptr[1]` treating integers as pointers. Pointer arithmetic like `((int)__ptr + iVar3 * 2 + -8)` is error-prone. No bounds checking visible. The dangling_pointer function returns `*__ptr` after free - correctly shows the bug but no safety warnings.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐"). No algorithm explanations, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list traversal in `linked_list_heap`, tree structure in `tree_heap_traversal`). However, no explicit naming of patterns like "linked list", "binary tree", "VLA", "alloca". The original used clear C idioms that are partially obscured.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses freed memory - this dangerous pattern is presented without warning. No indication of undefined behavior in `heap_overflow` (which has the off-by-one bug). No confidence indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had safety checks (e.g., `if (n <= 0 || n > 1000) return -1`) that are partially visible but not explained as contracts. No documentation of heap ownership or memory management expectations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. The callback pattern in `call_global_callback` → `global_func_ptr` → `double_value` is present but not explained. No indication which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address but not logically organized. The original had clear sections: Stack Memory, Heap Memory, Static & Global, Memory Operations. The decompiled output mixes all functions together with startup code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile. Uses undefined types (`undefined4`, `code *`), undeclared identifiers (`extern_global_var`, `extern_function`, `static_local_counter`, `global_counter`, `file_scope_static`, `global_func_ptr`, `global_heap_ptr`, `const_string`). Missing includes and external declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 4) / 4 = 3.5
+L2_avg = (5 + 7 + 6 + 4) / 4 = 5.5
+L3_avg = (4 + 2 + 3) / 3 = 3.0
+L4_avg = (1 + 5 + 1 + 1) / 4 = 2.0
+L5_avg = (4 + 3 + 2) / 3 = 3.0
+
+Overall = (3.5 × 0.30) + (5.5 × 0.25) + (3.0 × 0.20) + (2.0 × 0.15) + (3.0 × 0.10)
+        = 1.05 + 1.375 + 0.6 + 0.3 + 0.3
+        = 3.625 / 10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects (Bullet List)
+- Variable naming is completely generic (`param_1`, `uVar1`, `local_800`) with no semantic inference from usage patterns
+- No struct/union recovery - all composite types lost to raw pointer arithmetic (`*(int *)((int)__ptr + offset)`)
+- No comments or documentation - original source had extensive explanatory comments
+- Type precision severely degraded - `undefined4`, `void*`, `code*` instead of `int`, `size_t`, function pointers
+- No anomaly indication for dangerous patterns like dangling pointer access after free
+- Build system compatibility failure - uses undeclared identifiers and undefined types
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (7/10)** - Functions are properly separated with correct parameter counts; each original function maps to a decompiled function
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)** - Zero comments in output; original had extensive documentation explaining each test case, algorithm purpose, and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `param_1` is used in arithmetic like `param_1 * 2 + 10`, infer `x` or `multiplier`. When `local_800[1024]` is indexed, infer `buffer` or `array`.
+2. **Recover struct/union types**: Detect repeated field access patterns (e.g., `ptr[1]`, `ptr[2]`) and reconstruct `struct Node { int data; struct Node *next; }` instead of showing `*(undefined4 *)((int)__ptr + 4)`.
+3. **Add semantic comments**: Include decompilation confidence indicators, explain loop unrolling patterns, flag undefined behavior (dangling_pointer accesses freed memory), and document recovered algorithm intent.

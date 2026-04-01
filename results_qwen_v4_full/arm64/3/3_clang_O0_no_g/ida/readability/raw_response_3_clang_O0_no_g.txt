@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `a1`, `v0`, `v1`, `ptr`, `i` instead of semantic names like `arr`, `local`, `head`, `current` from source. Loop counter `i` is acceptable, but `v3[10]` should be `arr[10]` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`). Some helpers like `sub_920` remain generic, but core test functions are well-named with action verbs.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x14u` (20 bytes), `0x28u` (40 bytes), `0x10u` (16 bytes) for malloc sizes require context to understand. String literals in printf preserved but hex constants unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Type casts `(unsigned int)`, `(__int64)`, `(_DWORD *)` clutter code. Stack variable annotations `[xsp+0h] [xbp-30h]` add visual noise. No dead code but compiler artifacts present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures mostly preserved as for/while. Some functions simplified by optimizer (`local_struct` became `3 * a1`). Conditionals are clear if/else patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with clear boundaries. Helper functions preserved (`static_helper`, `create_tree_node`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Early returns used appropriately. Some forward variable declarations but minimal flow disruption.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Optimization simplified some expressions (good). Redundant type casts present but no obvious dead code. Loop unrolling not observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types `__int64`, `_DWORD`, `_BYTE` replace original `int`, `int32_t`. Pointer types often `void *` or `_DWORD *` losing original type information. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct `Point` not recovered—accessed as `ptr[0]`, `ptr[1]`. `Node` and `TreeNode` structs lost—accessed via pointer arithmetic (`((_QWORD *)*a1 + 1)`). Critical semantic loss.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(_DWORD *)`, `(__int64)`, `(_QWORD *)`. Pointer arithmetic on void pointers throughout. No restrict/alignment annotations. Dangling pointer code preserved without warning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers. No algorithm explanations, no decompilation confidence indicators. Original source had extensive test case comments—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list creation/traversal not identified as pattern. Tree structure not recognized. Memory allocation patterns not labeled. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 18 failed decompilations listed at end (library functions). No warnings about suspicious code within functions (dangling pointer, double-free). No undefined behavior flags.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postconditions inferred. No invariants recognized for data structures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not clearly marked. Callback relationship (`set_global_callback` → `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No clear module boundaries or namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 library functions failed to decompile requiring stubs. Struct type definitions missing. Would need extensive modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.44/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic (`ptr[0]`, `ptr[1]`) instead of field names (`p->x`, `p->y`)
+- **Variable names generic**: `a1`, `v0`, `v1` instead of semantic names like `arr`, `local`, `head`
+- **No comments preserved**: Original source had extensive test documentation—all lost in decompilation
+- **Type precision degraded**: `__int64`, `_DWORD` replace original `int`, `int32_t` types
+- **18 library functions failed**: Requires stubs for `malloc`, `free`, `printf`, etc. to compile
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`) making function purpose immediately clear
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Almost no documentation; original source comments explaining test cases, expected values, and scenarios completely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from access patterns** - Detect consistent field offsets (e.g., `ptr[0]`, `ptr[1]` always accessed together) and suggest struct definitions with field names
+2. **Infer variable names from usage context** - Variables used in loops with array indexing should be named `arr`, `buffer`; pointer parameters should indicate purpose (`out`, `head`)
+3. **Preserve or regenerate semantic comments** - Detect test patterns (printf with expected values) and add comments indicating test purpose and expected outcomes

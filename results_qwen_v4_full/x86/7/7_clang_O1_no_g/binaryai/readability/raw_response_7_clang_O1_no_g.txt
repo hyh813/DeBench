@@ -1,0 +1,123 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_28` instead of semantic names like `result`, `encrypted`, `decrypted`. The original `result = x` becomes `return param_1` losing all context.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but helper functions use generic names (`FUN_00011030`, `FUN_000110c0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0xe1`, `0x23`, `0x14` appear without explanation; original had comments explaining `0xDEADBEEF` and encryption key `0x5A`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*`, `deregister_tm_clones`, `register_tm_clones` functions clutter the output without semantic value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Dead branches in `param_fake_branch` completely eliminated (should show as unreachable); loops converted to `do-while` instead of `for`; `param_opaque_predicate` condition logic differs from source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions appropriately sized, but `param_fake_branch` reduced to single return statement losing the obfuscation structure; `call_*` functions constant-folded instead of calling underlying functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal jumps; `do-while` loops disrupt natural `for` loop reading pattern but remain traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding: `call_fake_branch()` returns `10` directly instead of `param_fake_branch(10)`; `call_opaque_predicate()` returns `0x14` losing call relationship.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int`, `uint`, `undefined4` used instead of `int32_t`, `size_t`; `param_instruction_substitution` takes `uint` but original used `int`; signed/unsigned distinctions lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited opportunity in this code; `__jmp_buf_tag*` recovered for `jmp_buf`; arrays handled as pointer arithmetic (`local_24[8]`); no complex structs to recover.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(undefined4)(10 / (longlong)param_1)`, `(char *)local_28`; pointer arithmetic without bounds checking in vectorized loop.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code; original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (dead branches, opaque predicates) not identified or flagged; GCD algorithm in `param_opaque_predicate` not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about optimized-away code; `param_fake_branch` dead branches silently removed without indicating this was compiler optimization vs. decompiler failure.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should warn about x=0); error handling paths not clearly marked.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation; global variables (`jmp_buffer`, `div_zero_caught`) referenced without context about their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file; original had section comments (`// 7.1 混淆与保护`, `// 7.2 编译器特有优化`) completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Marked as compilable; external dependencies declared (`printf`, `strlen`, `signal`); platform-specific code (`__x86_get_pc_thunk_*`) may limit portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 5.0 | 30% | 1.50 |
+| L2: Structural Intelligibility | 5.5 | 25% | 1.38 |
+| L3: Type System Fidelity | 5.3 | 20% | 1.06 |
+| L4: Semantic Transparency | 2.5 | 15% | 0.38 |
+| L5: Contextual Coherence | 5.3 | 10% | 0.53 |
+
+**Overall Readability Score: 4.85/10**
+
+---
+
+### Critical Defects
+
+- **`param_fake_branch` logic completely lost**: Returns `param_1` directly instead of showing the dead branch conditions (`x*x < 0`, `strlen(str) < 0`)
+- **No comments explaining obfuscation techniques**: Original had detailed documentation about dead branches, opaque predicates, and expected values
+- **Call functions constant-folded**: `call_fake_branch()` returns `10` instead of calling `param_fake_branch(10)`, losing the call relationship
+- **Generic variable names throughout**: `param_1`, `iVar1`, `uVar2`, `local_28` provide no semantic information
+- **No anomaly warnings**: Decompiled code presents optimized code as if it were original, without flagging removed dead code
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)**
+- Core function names preserved accurately from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), maintaining semantic connection to original purpose.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)**
+- Virtually no comments exist in decompiled output despite original having extensive documentation explaining obfuscation techniques, test scenarios, and expected values.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Detect and flag optimization artifacts**: When dead code branches are eliminated by compiler, add comments like `// OPTIMIZED: Dead branch removed by compiler (condition always false)`
+
+2. **Infer variable names from usage context**: Analyze variable usage patterns to suggest semantic names (e.g., variables used in encryption context should be named `key`, `encrypted`, `decrypted`)
+
+3. **Preserve call relationships in wrapper functions**: Instead of constant-folding `call_fake_branch()` to return `10`, maintain the call structure `return param_fake_branch(10)` to preserve program structure

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named generically as `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` correctly match source names. However, CRT/startup functions use cryptic names like `sub_4007b4`, `$x`, `call_weak_fn`. The core functionality is well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x400` (1024), `0x200` (512), `64` (16*4), `57072` (0xDEF0) appear without explanation. The builtin_macros function correctly shows string literals, but most computed values lack semantic labels.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some stack frame setup visible (`v0 = &v1`), but no excessive debug instrumentation or redundant casts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with clear if-else structures and loops. The `param_asm_clobber` shows a proper do-while loop. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear separation between test functions (`call_*`) and implementation functions (`param_*`). No excessive inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `param_macro_constants`.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The SIMD functions show loop unrolling but it's appropriate for the architecture.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` and `unsigned long long` appropriately. However, original `int` becomes `unsigned int`, and `size_t` is not recovered. Some precision loss compared to source.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. The `param_asm_clobber` receives `unsigned int *cur` instead of the original `int *arr`. Arrays are passed as pointers without array semantics.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. Minor issues: some pointer arithmetic without bounds checking, but no obviously dangerous casts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining macro semantics, assembly behavior, or algorithm intent. The original source had extensive comments about preprocessing stages that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. The macro expansion patterns, conditional compilation branches, and atomic operations are not identified or labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The failed decompilation of `__aarch64_ldadd4_acq_rel` is noted but not explained. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The mmap/mprotect error handling paths have no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in address order rather than logical grouping. The preprocessing tests and assembly tests could be better separated.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has extern declarations for external symbols. Some functions like `param_memory_protection` have issues (mprotect called without arguments in conditional).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names like `size`, `x`, `result`
+- No comments explaining macro semantics, preprocessing results, or assembly constraints
+- Magic numbers like `0x400`, `0x200`, `57072` appear without explanation of their origin
+- No struct/union recovery - all composite types lost to pointer arithmetic
+- Failed to recover preprocessor conditional branches as distinct code paths
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, the decompiled control structures closely match the original source with natural loops and conditionals
+
+**Most Needs Improvement:** Lexical Clarity (5/10)  
+- Variable naming is the primary readability barrier; generic single-letter names with numbers make code comprehension extremely difficult
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `a0` compared to `0x400` should suggest `size` or `MAX_SIZE`)
+2. Detect macro expansions and add comments explaining the original macro (e.g., "// MAX_SIZE = 1024")
+3. Flag magic numbers with potential semantic meaning and suggest constant names based on surrounding context

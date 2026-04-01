@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use `v1`, `v2`, `v3` etc. No semantic inference from usage patterns (e.g., `a1 + a2` should suggest `addend1`, `addend2`). This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `duffs_device`. Only init functions have generic names like `sub_1020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFF` (for -1), `0x28u` (stack canary), and `100 * (a1 + 1)` are present. Some expressions like `100 * a1` are clear but many constants lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) and some unsigned int casts present but minimal. No debug instrumentation or frame pointer manipulation clutter. Manageable level of compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recognized as `while`/`do-while` constructs. Switch statements use jump tables appropriately. Duff's device shows goto labels but this is expected for that idiom. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each function handles single responsibility. No 500-line monoliths. Parameter counts match original (e.g., `duffs_device(int *a1, int *a2, int a3)` correctly has 3 parameters).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns present appropriately. Some forward jumps in `loop_break` and `duffs_device` but these are legitimate control flow patterns.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `duffs_device` is recognized as structured code with labels, not scattered basic blocks. Common subexpressions properly computed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` for most integers instead of `int32_t`. Function pointers properly typed as `__int64 (__fastcall *)(_QWORD)`. Some signed/unsigned confusion (e.g., `unsigned int a1` in `if_elseif_long`). Mixed precision.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Array access patterns like `*(_DWORD *)&v5[4 * v0 - 4]` show some recognition. However, no struct recovery - all composite types remain as raw pointer arithmetic. The matrix in `loop_multi_exit` is completely lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some unnecessary casts like `(unsigned int)` conversions. Function pointer calls use proper casting. No major buffer overflow risks visible. Minor issues only.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - mostly just the decompiler header. No algorithm explanations. No recovery confidence indicators. The comment "positive sp value has been detected, the output may be wrong!" is useful but rare.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Jump tables recognized in `switch_small` and `switch_large` via `CSWTCH_55[a1]`. Duff's device shows label-based structure. No explicit pattern naming (no "State Machine", "Strategy Pattern" labels).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed functions clearly marked with "FAILED to decompile". Some warnings present ("positive sp value has been detected"). However, indirect calls in `call_func_ptr_array` not flagged as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The decompiler provides no semantic contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear. No documentation of who calls whom. Callback relationships in `process_with_callback` not explicitly marked.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by test level (L1, L2, L3). Static helper functions properly scoped. Overall organization matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 functions failed to decompile including critical ones like `__libc_start_main`. Would require significant stubs to compile. External dependencies not documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`a1`, `a2`, `v1`, `v2`) with zero semantic inference from usage patterns
+- Composite types completely lost - matrix arrays become raw pointer arithmetic with magic offsets
+- No struct recovery despite clear data structures in source
+- Comment coverage nearly absent - no algorithm explanations or recovery confidence
+- 8 functions failed to decompile including libc startup
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly perfect match with original source function names, making it easy to locate specific functions
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- All variables use generic names with no semantic inference; this single dimension severely impacts overall readability
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze expressions like `a1 + a2` to suggest `sum`, or `a1 * 2` to suggest `doubled_value`
+2. **Recover composite types**: Detect array initialization patterns (e.g., `v5[1] = 2; v6 = 0x400000003LL`) and reconstruct as `int matrix[] = {2, 3, 5, 7, ...}`
+3. **Add semantic comments**: Include algorithm explanations, especially for complex patterns like Duff's device, state machines, and jump tables

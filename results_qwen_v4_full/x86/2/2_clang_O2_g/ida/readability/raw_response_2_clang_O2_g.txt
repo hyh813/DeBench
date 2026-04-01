@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result` instead of semantic names (e.g., `sum`, `index`, `current`). Function parameters retain some meaning (`arr`, `n`, `p`) but locals are opaque.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - function names match source exactly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions show aggressive constant folding (e.g., `printf("DT-L1-01...: %c\n", 97)` instead of `process_char('A')`). Magic numbers like `0x7FFFFFF8` appear without explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler artifacts present (register variables `// eax`, `// esi`, frame comments) but not overwhelming. No excessive dead code or redundant casts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop unrolling transforms simple for-loops into complex unrolled patterns (e.g., `array_1d_stack` processes 8 elements per iteration). At O2 this is expected but obscures original intent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain reasonable granularity matching source. No monolithic functions or over-fragmentation. Each function has clear single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some optimization-induced branching but manageable flow tracing.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling creates apparent redundancy (8 similar array accesses per iteration). This is optimization artifact, not true redundancy, but impacts clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types well-recovered (int, char, short, long, long long, float, double, pointers). Some use `__int64` instead of `long long`. Const correctness mostly preserved.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs (`Point3D`, `Rect`, `Widget`, `Node`) recovered with field names. Unions recovered. Bitfields shown as raw bit operations (`(*(_WORD *)f >> 3) & 7`) losing semantic meaning.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Unsafe casts present (`(void *)size`, `*(_DWORD *)p`) but match original source patterns. No new type safety violations introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Original source had extensive comments explaining each test case (e.g., `// DT-L1-01: 字符类型`). Complete loss of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition (linked list traversal, tree recursion presented as-is). Switch-on-enum recovered as array lookup (`dword_3640[s]`) without explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("positive sp value has been detected", "FAILED to decompile") but not comprehensive. No uncertainty markers on ambiguous reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had implicit contracts (e.g., `x >= 0` bounds checks) not recovered as annotations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function relationships clear through naming. Call graph inferable from test functions. External dependencies (printf, puts) noted as failed decompilations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure (data types → arrays → pointers → composites). No arbitrary reordering observed.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: 4 external functions failed to decompile (`printf`, `puts`, `__libc_start_main`, `__cxa_finalize`). Would need stubs or library linking to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5×0.10 + 9×0.10 + 4×0.05 + 7×0.05) / 0.30 = 6.5/10
+Level 2 (25%): (5×0.08 + 8×0.07 + 7×0.05 + 6×0.05) / 0.25 = 6.44/10
+Level 3 (20%): (8×0.08 + 8×0.07 + 7×0.05) / 0.20 = 7.75/10
+Level 4 (15%): (2×0.05 + 4×0.03 + 5×0.03 + 3×0.04) / 0.15 = 3.27/10
+Level 5 (10%): (7×0.04 + 7×0.03 + 6×0.03) / 0.10 = 6.7/10
+
+Overall = 6.5×0.30 + 6.44×0.25 + 7.75×0.20 + 3.27×0.15 + 6.7×0.10
+        = 1.95 + 1.61 + 1.55 + 0.49 + 0.67
+        = 6.27/10
+```
+
+**Overall Readability Score:** 6.3/10
+
+### Critical Defects
+- **Test functions constant-folded**: Actual function calls replaced with pre-computed constants (e.g., `printf("...: %c\n", 97)` instead of `process_char('A')`), losing execution semantics
+- **No comments recovered**: Original source had extensive documentation explaining each test case; decompiled code has zero semantic comments
+- **Loop unrolling obscures intent**: Simple for-loops transformed into complex unrolled patterns making original algorithm hard to recognize
+- **Bitfield operations raw**: `struct_bitfields` shows bit manipulation (`(*(_WORD *)f >> 3) & 7`) instead of field access (`f->flag3`)
+- **Variable names generic**: All local variables use `v0`, `v1`, `result` pattern instead of semantic names like `sum`, `index`, `current`
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Function names preserved exactly from source with semantically accurate, action-oriented naming (`process_char`, `array_1d_stack`, `ptr_single`)
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation; no algorithm explanations, no test case descriptions, no decompiler confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover test function semantics**: Detect constant-folded test code and restore original function call patterns instead of pre-computed values
+2. **Add uncertainty annotations**: Mark reconstructed code with confidence levels (e.g., `// CONFIDENCE: HIGH` for direct recovery, `// UNCERTAIN: bitfield layout inferred`)
+3. **Preserve source comments**: When debug symbols (`-g`) are available, extract and embed original source comments into decompiled output

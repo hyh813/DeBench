@@ -1,0 +1,21 @@
+Testing preprocessing features
+Macro constants result: 64
+Macro functions result: 30
+Conditional compile result: 32
+Multi branch compile result: 57122
+Macro recursion result: 116
+Stringize result: 19
+Token paste result: 60
+LOG: Values: 10, 20, 30
+Variadic macro result: 60
+Macro override result: 16
+Include guard result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:54
+Builtin macros result: 382
+Testing ASM features
+ASM basic result: 15
+ASM clobber result: 141256640, 0, 5, 21, 0, 0x50403020100, 0
+ASM multi insn result: 42, 0x7ffc086b69b9, 0, 61, 0, 0x5341206f6c6c6548, 77, 0x0
+ASM SIMD result: 1
+ASM atomic result: 30
+ASM privileged result: 77

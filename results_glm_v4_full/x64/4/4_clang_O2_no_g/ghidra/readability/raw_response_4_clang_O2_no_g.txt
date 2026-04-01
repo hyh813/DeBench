@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are generic (`param_1`, `param_2`), and stack variables for struct arguments are named `in_stack_00000008` through `in_stack_00000080`, which completely obscures the `LargeStruct` parameter in `func_struct_byval`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Constants are folded into hex values (e.g., `0xf` for 15, `0x32` for 50) which are accurate but less readable than the original decimal literals; magic numbers like `0x29` (stack size check) in `varargs_func` lack explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant noise, including `undefined8`/`undefined4` types, references to `stack0x00000008`, and artifacts like `extraout_RDX` in `test_return_values` which clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple functions are natural, `varargs_func` and `param_ptr_array` contain complex pointer arithmetic and loop unrolling (e.g., processing 4 items per loop iteration) that makes the control flow harder to follow than the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map well to the source structure; however, constant propagation (e.g., `call_cdecl` returning `0xf` instead of calling `cdecl_func`) is an optimization artifact that removes the intended call structure.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, though `varargs_func` contains a `do-while` loop with nested conditionals checking stack offsets (`local_d8 < 0x29`) that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler's loop unrolling in `param_ptr_array` (summing 4 pointers at a time) is presented as-is, which is efficient but verbose; this is expected at `-O2` but reduces readability compared to the source loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are inconsistent; `int` returns are sometimes `undefined8` (e.g., `call_cdecl`), pointers are sometimes `long` (e.g., `ret_pointer`), and function pointers are `code *`, leading to confusion about actual data sizes and signedness.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed completely; `func_struct_byval` lists 16 separate `in_stack_000000xx` variables instead of a `LargeStruct` parameter, and `ret_small_struct` returns a packed `ulong` instead of a `SmallPoint` struct.
+
+**11. Type Safety:** Score: 6/10
+Justification: Necessary but unsafe casts are present, such as `**(char **)(param_1 + ...)` in `param_ptr_array` to access array elements, which mimics the compiler's optimization but looks dangerous in C code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and mostly limited to compiler warnings like `/* WARNING: Removing unreachable block */`; there is no explanation of the complex `va_list` emulation or struct passing mechanisms.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The `varargs_func` implementation is not recognized as a standard variadic function pattern but rather as raw stack pointer manipulation; the "small struct in register" idiom is lost to bit-packing.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the complex stack variable access in `func_struct_byval` and `varargs_func` confidently without flagging them as potential recovery failures or ABI-specific artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are inferred; for example, `param_double_ptr` does not document the requirement that `param_1` must not be NULL, despite the check existing in the code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names are preserved, the call graph is very clear; calls like `test_calling_conventions` calling specific test functions are easy to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped roughly by their appearance in the source file, and related test functions (e.g., `call_*` and `param_*`) are clustered together, maintaining logical flow.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to `undefined` types, `stack0x00000008` references, and `extraout_RDX` parameters in function signatures, requiring significant cleanup to be valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Function `func_struct_byval` uses 16 separate `in_stack_000000xx` variables instead of recovering the `LargeStruct` parameter.
+- Function `varargs_func` is represented as raw stack pointer arithmetic (`local_d0 = (int *)&stack0x00000008`) rather than a `va_list` loop.
+- Return types for small structs (`ret_small_struct`) are represented as packed integers (`ulong`) rather than the original struct type.
+- Inconsistent use of `undefined8` vs `int` for return values obscures the actual data types.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names (e.g., `cdecl_func`, `test_calling_conventions`), which provides immediate high-level context and makes navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover `LargeStruct` and `SmallStruct`, replacing them with raw stack variables or packed integers, significantly degrades semantic understanding and type safety.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to detect stack-passed structure arguments based on contiguous access patterns (e.g., `in_stack_00000008` to `in_stack_00000080` accessed sequentially) and reconstruct the struct definition.
+2. Improve type inference for return values to distinguish between packed integers and returned small structs based on ABI rules (e.g., System V AMD64 ABI for returning structs in registers).
+3. Detect and abstract standard `va_list` implementation patterns (stack walking with `gp_offset` and `fp_offset`) to present them as `va_start`/`va_arg` loops rather than raw pointer arithmetic.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names (`v0`, `v1`, `v2`, `v6[8]`, `v10`) that obscure purpose; only parameter names like `x`, `s`, `d`, `ll` in `func_mixed_args` are somewhat meaningful.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`); only runtime helpers like `sub_640` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFF80FFFFFFC8LL` and `0x80000000` lack explanation; string literals referenced as opaque names (`asc_14BE`, `aCallL206`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including `__fastcall`/`__cdecl` annotations, register hints (`// x0`, `// w8`), and excessive type casts (`(_DWORD *)`, `(__int64)`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recover as do-while patterns, but `varargs_func` has complex branching that obscures the simple va_arg iteration pattern from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated, but constant folding destroys call structure (e.g., `call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; `varargs_func` has disruptive variable initialization sequence before the main loop.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding creates redundancy (computations shown as constants); no dead code observed but original computation intent is lost.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses Ghidra-specific types (`__int64`, `_DWORD`, `_QWORD`, `_OWORD`) instead of standard C types; some original types preserved (`int`, `char *`, `double`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct names preserved (`LargeStruct`, `SmallStruct`) but definitions not shown; `func_struct_byval` incorrectly takes pointer instead of by-value parameter.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(_DWORD *)`, `(__int64 (__fastcall *)(_QWORD))`); pointer arithmetic `(char *)v8 + v4` without safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated register hints present (`// x0`, `// w8`); no algorithm explanations, no decompilation confidence indicators, no parameter documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop and struct access patterns recognized; variadic function pattern detected but complex; no higher-level idiom or design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" noted for 7 library functions; no warnings about constant folding effects, calling convention mismatches, or unsafe va_arg handling.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; null checks present but not documented as contracts; no error condition explanations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation; string references use opaque names; callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in flat single output; no file organization matching source structure; runtime functions mixed with user code without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 functions failed to decompile requiring stubs; Ghidra-specific types need replacement; calling convention annotations may not compile on all platforms.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):   (6+7+7+7)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type System):  (6+6+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):     (3+5+4+3)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):   (5+4+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.46/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects
+- **Variable `v0`-`v10` naming** obscures semantic purpose; should infer names from usage patterns (e.g., `sum`, `index`, `arg_ptr`)
+- **Constant folding destroys computation trace**; `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` call
+- **`varargs_func` decompilation** produces unreadable stack manipulation instead of clean `va_start/va_arg/va_end` pattern
+- **Struct by-value parameters converted to pointers** (`func_struct_byval(LargeStruct *s)` vs original `LargeStruct s`)
+- **7 library functions failed to decompile** with no stubs or documentation provided
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify test purposes and correlate with source documentation.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Virtually no semantic documentation; only auto-generated register hints that add noise without explaining algorithm intent or decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer meaningful names (e.g., variables in accumulation loops should be named `sum`, loop counters as `i`)
+2. **Preserve call structure over constant folding** - Show actual function calls even when arguments are constant, optionally with computed result annotations
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (variadic handling, calling conventions) and document failed external function dependencies

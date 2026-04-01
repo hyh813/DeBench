@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `piVar1`, `uVar1` with no semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Some helper functions use generic names (`FUN_00011030`, `FUN_00011080`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (0x61, 0x62, 0x6e, 0x19). Test functions show hardcoded expected values instead of actual function calls. Character literals converted to hex obscuring meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`) at function ends. Compiler helper functions included (`__x86_get_pc_thunk_*`, `deregister_tm_clones`). Test functions have unnecessary stack protection boilerplate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while instead of for loops. `enum_switch` uses if-else chain instead of switch statement. `process_char` uses different comparison logic (`(byte)((char)param_1 + 0xbfU) < 0x1a` vs original `c >= 'A' && c <= 'Z'`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; no monolithic functions. Helper functions like `complex_callback` preserved. Some runtime initialization functions could be filtered out.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. do-while loops create minor non-linearity. Stack check code at function ends disrupts flow slightly but doesn't impede understanding.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions show constant folding (expected values pre-computed like `0xf`, `0x69`). No obvious dead code. Loop transformations introduce some redundancy but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type degradations: `process_long` returns `int` not `long`, `process_ll` uses split `uint/int` not `long long`, `process_float/double` return `longdouble`, `ptr_triple` takes `undefined4 *` not `int ***`. Pointer arithmetic replaces typed access.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - no struct/union/enum definitions recovered. `struct_simple` operates on `int *param_1` with array indexing (`param_1[1]`, `param_1[2]`) instead of `p->x + p->y + p->z`. Bitfields reduced to manual bit manipulation.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int)*(char *)param_1` in `ptr_void`). Function pointers degraded to generic `code *`. `ptr_const_ptr` returns `void` instead of `int`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source. No decompiler-generated explanations. Only a SHA256 hash header present. All original documentation (DT-L1-01, ARR-L1-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list traversal in `linked_list` and `doubly_linked_list` not recognized as such. Binary tree recursion not annotated. Common C idioms not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about type mismatches or potential issues. Stack canary checks present but unexplained. Type degradations silently accepted without flagging.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). NULL checks present in `linked_list` but not documented as contracts. No postcondition inference.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Callback relationships not explained (`complex_callback` called via function pointer). No call graph information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with arbitrary ordering. Original organization by category (data types, arrays, pointers, composite) completely lost. No logical grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains undefined references (`FUN_000110b0`, `FUN_000110c0` for printf). Stack canary functions need linking. Would require significant stubbing and type fixes to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+3)/3   = 2.33  × 0.15 = 0.35
+Level 5 (Contextual):  (3+2+5+4+4)/5 = 3.60 × 0.10 = 0.36
+─────────────────────────────────────────────────────
+Overall Score:                                  4.57/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Complete loss of composite type definitions** - All structs, unions, and enums reduced to pointer arithmetic (`int *param_1` with `param_1[1]`, `param_1[2]`)
+- **Critical type degradations** - `long long` split into `uint/int`, `float/double` become `longdouble`, function pointers become `code *`
+- **Zero comment recovery** - All original documentation, test case labels, and semantic explanations lost
+- **Test functions show constant folding** - Expected values hardcoded instead of actual function calls, losing test semantics
+- **Generic variable naming** - All parameters named `param_1`, `param_2`; all locals named `iVar1`, `uVar1`, etc.
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify function purpose despite other degradations
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding intent extremely difficult, especially for test functions with hardcoded values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze struct access patterns to reconstruct field names and layouts instead of reducing to array indexing
+2. **Preserve original comments and documentation** - Extract debug symbols and source annotations when available (`-g` flag was used)
+3. **Improve type precision for platform-specific types** - Correctly recover `long`, `long long`, `float`, `double` distinctions instead of generic or incorrect types

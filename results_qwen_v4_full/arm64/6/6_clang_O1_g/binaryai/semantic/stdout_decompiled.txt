@@ -1,0 +1,14 @@
+Testing standard library functions...
+strlen returned: 8
+call_strlen: 0
+call_strlen result: 12
+call_memcpy result: 90
+call_memcmp result: 4294967295
+Value: 42, Name: TestName
+call_printf result: 26
+call_scanf result: 3231121568
+call_fopen_fclose result: 42
+call_fread_fwrite result: 4294967293
+call_malloc_free result: 90
+call_memset result: 0
+call_strchr_strstr result: 15

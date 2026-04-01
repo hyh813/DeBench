@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `temp_1`) with zero semantic meaning. Original source had meaningful names like `sum`, `count`, `result`, `temp1` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained names (`sequential_ops`, `single_if`, `nested_if_2`), but many are corrupted (`non_local_jump.constprop.0`, `sub_10454`, `sub_10530`). Helper functions like `double_value`, `op_add` preserved correctly.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (should be `-1`) appears throughout. Compiler artifact `1717986919` in division optimization. No constants recovered; original test values (10, 20, 30) replaced with hardcoded expected outputs.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from `armg_calculate_condition()` calls, stack canary checks (`__stack_chk_guard`), register spill variables, and unnecessary goto labels (`LABEL_10570`, `LABEL_10600`). ARM runtime calls (`__aeabi_idiv`) scattered throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive goto usage instead of structured control flow. `if_elseif_long` is completely garbled with nested gotos. `loop_while` and `loop_dowhile` have corrupted loop logic. Simple functions like `sequential_ops` remain readable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but parameter counts are wrong (`switch_small` has 4 params instead of 1, `nested_if_deep` has 4 instead of 5). Test functions heavily inlined with hardcoded expected values.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `if_elseif_long` and `loop_multi_exit` have spaghetti code with multiple forward jumps disrupting flow. Simple functions read linearly, but complex control flow is severely degraded.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant `armg_calculate_condition` calls throughout. Test functions print hardcoded expected values instead of computing actual results. Some dead code from register spilling visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most variables incorrectly typed as `unsigned int` regardless of original `int` type. `char` used incorrectly for some variables. No const-correctness preserved. Pointer types sometimes correct, often wrong.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited composite types in source. `jmp_buf` treated as `unsigned int` instead of proper type. Function pointer arrays partially recovered but with incorrect signatures.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Critical violation: `goto a0` in `call_func_ptr` instead of proper function call. Multiple unsafe pointer arithmetic operations. Stack canary checks present but don't address type safety issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Completely absent. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompiler confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop patterns sometimes recognized but not documented. State machine patterns not identified. Switch-case patterns partially recovered. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `armg_calculate_condition` calls indicate uncertainty but are unexplained. No warnings about parameter count mismatches or corrupted functions. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original test expectations lost and replaced with hardcoded values in test functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced without explanation. No call graph documentation. Callback relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output with no logical grouping. Helper functions mixed with main functions. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains external dependencies (`__stack_chk_guard`, `__printf_chk`, `__aeabi_idiv`). ARM-specific runtime calls require stubbing. Some functions reference undefined symbols. Would not compile without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+6+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):     (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type System):    (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):       (1+4+2+2)/4 = 2.25 × 0.15 = 0.3375
+Level 5 (Contextual):     (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 3.68/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`sum`, `count`, `temp1`)
+- **Control flow severely corrupted** - `if_elseif_long` and `loop_multi_exit` use spaghetti goto patterns instead of structured conditionals
+- **Function signatures wrong** - `switch_small` has 4 parameters instead of 1, `nested_if_deep` has 4 instead of 5
+- **Critical type safety violation** - `call_func_ptr` uses `goto a0` instead of proper function pointer call
+- **Zero comments** - Original had extensive documentation; decompiled code has none
+- **Magic numbers unexplained** - `4294967295` (should be `-1`), `1717986919` (compiler division artifact)
+- **Decompiler artifacts pollute code** - `armg_calculate_condition()` calls throughout without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names were preserved from original source, allowing basic identification of purpose despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or explanations makes the decompiled code nearly unusable for understanding original intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `sum` for accumulators, `count` for loop counters, `result` for return values
+2. **Recover structured control flow from goto patterns** - Detect loop back-jumps and convert to for/while constructs; identify if-else chains from conditional jump patterns
+3. **Add decompiler confidence annotations** - Mark uncertain decompilations with comments like `// UNCERTAIN: indirect call resolution failed` and flag parameter count mismatches

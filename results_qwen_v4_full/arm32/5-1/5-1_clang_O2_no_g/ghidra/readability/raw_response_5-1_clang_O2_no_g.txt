@@ -1,0 +1,116 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_28`, `uStack_24`, `iVar1`, `puVar3` with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions like `call_virtual_func` lost parameter type information in naming. Template functions show instantiation (`template_max<int>`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`. Original expected values (4704, 21, 42) are completely obscured as hex constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "Unknown calling convention" warnings present. Some compiler runtime functions (`__do_global_dtors_aux`, `register_tm_clones`) included but not harmful.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions collapsed to single `return` statements due to constant folding. Original control flow (try-catch, loops, conditionals) completely lost. `test_cpp_exception` shows `__cxa_throw` but no catch blocks recovered.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template functions (`Container::push`, `template_swap`) recovered with proper structure. However, test functions are over-simplified (single return) losing all internal logic decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom without excessive jumps. However, this is because most logic was optimized away rather than proper linearization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Compiler optimization removed most redundancy, though this also removed semantic information.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `void*` throughout. Original types (`int`, `size_t`, `double`, class types) degraded. `test_cpp_virtual_func` returns `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes not recovered as structs. `SimpleClass`, `LifecycleClass`, `Base`, `Derived` all lost. Only pointer arithmetic visible (`*(int *)(this + 0x28)`). `Container<int>` partially recovered with offset-based access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible: `(undefined4 **)param_1`, `(int)&PTR__RTTIBase_00021ed8`. No const-correctness preserved. Function pointer calls use `**(code **)` pattern.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Could not recover jumptable"). No semantic comments explaining algorithm purpose or logic. Original Chinese comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns recognized. Virtual function calls shown as `(*(code *)**(undefined4 **)param_1)()` without vtable explanation. Exception handling shows `__cxa_throw` but no try-catch structure.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues: "WARNING: Unknown calling convention", "WARNING: Treating indirect jump as call". However, these are generic warnings without specific guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original expected return values (4704, 21, 42, etc.) completely absent from decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch shown but vtable structure not explained. Static members (`LifecycleClass::instance_count`) referenced but not defined.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, template instantiations together). However, no namespace or class structure preserved from original C++ organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external symbols (`operator_new`, `__cxa_throw`, `std::ios_base::Init`) without declarations. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (3+5+7+8)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (4+2+6+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.42/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_28`, `iVar1`) - original semantic names like `capture_by_value`, `instance_count` lost
+- **Magic numbers without explanation** - expected values (4704, 21, 42) shown as hex (0x125c, 0x15, 0x2a)
+- **Class structures not recovered** - all C++ classes degraded to pointer arithmetic with offsets
+- **Control flow collapsed** - most test functions return constants instead of showing actual computation logic
+- **Type system degraded** - `undefined4`, `undefined8` used instead of proper C++ types
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved from source, allowing identification of test purposes despite logic loss
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover C++ class structures; all member access shown as raw pointer offsets
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable structures** - analyze vtable pointers to reconstruct class hierarchies and member offsets
+2. **Preserve constant expressions with source comments** - when constant folding occurs, add comments showing original computation (e.g., `// 10 + 34 + 4660 = 4704`)
+3. **Infer variable names from usage patterns** - variables used in string operations should be named descriptively (e.g., `local_28` → `name_buffer` based on `strncpy` pattern)
+
+---
+
+## ADDITIONAL OBSERVATIONS
+
+**Optimization Level Mismatch:** Metadata claims `-O0` but decompiled code shows aggressive optimization (constant folding, function inlining). This suggests either metadata error or the binary was compiled with `-O2` as the path indicates (`5-1_clang_O2_no_g`).
+
+**C++ Feature Recovery:** 
+- ✅ Template instantiation recovered (`template_max<int>`, `Container<int>`)
+- ❌ Exception handling structure lost (only `__cxa_throw` visible)
+- ❌ Virtual dispatch mechanism obscured (shown as raw pointer dereference)
+- ❌ Lambda expressions completely optimized away
+- ❌ Smart pointer RAII semantics lost
+
+**Architecture Note:** Despite metadata claiming ARM64, decompiled code shows ARM 32-bit patterns (`in_r0`, `SUB84`), indicating potential architecture mismatch in analysis.

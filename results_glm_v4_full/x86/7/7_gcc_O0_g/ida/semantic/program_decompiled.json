@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/7/7_gcc_O0_g/ida/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "=== Testing Obfuscation, Optimization, and Edge Cases ===\n\nObf L402D: 10\nObf L403D: 20\nObf L404D: 225\nObf L405D: -4635760478352572383\nOpt L401: 500500\nOpt L401: 5050\nOpt L402: 72\nOpt L501 LTO Demo: 20\nEdge L301 Demo: 1\nEdge L302 Demo: -4635760478352572375\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

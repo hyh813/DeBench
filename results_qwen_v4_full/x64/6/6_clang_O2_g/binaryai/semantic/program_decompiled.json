@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/6/6_clang_O2_g/binaryai/syntactic/bin/6_clang_O2_g_fixed",
+  "stdout": "Testing standard library functions...\nstrlen result: 14\ncall_strcmp result: 0\ncall_strlen result: 12\ncall_memcpy result: 90\ncall_memcmp result: -1\nValue: 42, Name: TestName\ncall_printf result: 26\ncall_scanf result: 579\ncall_fopen_fclose result: 42\ncall_fread_fwrite result: 42\ncall_malloc_free result: 90\ncall_memset result: 0\ncall_strchr_strstr result: 15\nTesting system calls...\ncall_linux_syscall result: 42\ncall_win32_api result: 42\ncall_fork_exec result: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

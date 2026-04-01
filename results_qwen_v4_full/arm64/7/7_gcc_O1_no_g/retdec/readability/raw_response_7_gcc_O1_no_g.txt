@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `encrypted`, `decrypted`, `canary`, `buffer` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`param_fake_branch`, `call_opaque_predicate`) but many helpers are generic (`function_880`, `function_890`). Critical: `param_fake_branch(void)` lost its `int x` parameter in signature.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0xffffffff`, `0xfffffffe`) without explanation. Signal numbers hardcoded as `2708`, `2740` instead of `SIGFPE`, `SIGSEGV`. String literals stored as hex-encoded globals (g1-g23).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive redundant casts (`& 0xffffffff` on nearly every return), stack canary checks (`g5 == g5`), and compiler artifacts throughout. Original -O0 code should be cleaner.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `param_fake_branch` completely lost its conditional logic (both fake branches eliminated). `param_opaque_predicate` has convoluted logic that doesn't match the original clear predicate structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable, helper functions for library calls separated appropriately. However, `decrypt_string` is more complex than the simple original implementation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but while loops have awkward variable tracking. `param_opaque_predicate` has confusing conditional chains that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Bitwise masking (`& 0xffffffff`) repeated on nearly every return statement. Stack canary checks duplicated across functions. Type casting redundancy throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, `char*`. Original had `size_t`, proper pointer distinctions, signed/unsigned clarity. Function `param_fake_branch(int x)` became `param_fake_branch(void)`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic fields (`e0`, `e1`, `e2`). Bitfield struct from `param_implementation_defined` completely lost. Array vs pointer distinction often missing.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int32_t)v1`, `(char *)str`), pointer arithmetic without bounds, function pointers with generic signatures. Stack canary present but doesn't help type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero useful comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only auto-generated file header present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: setjmp/longjmp pattern present but not identified. Signal handler pattern not documented. No recognition of obfuscation patterns (fake branches, opaque predicates).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `param_fake_branch` returns uninitialized variable without any warning. Parameter loss not indicated. No flags for potentially incorrect recovery despite obvious issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions. Signal handling contracts not explained. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (g1-g24) used without explanation. Signal handler callback relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. No header file separation for API declarations.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but prototypes incomplete. External dependencies not clearly documented. Would require moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (3+6+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Context):     (4+4+5)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.87/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **`param_fake_branch` returns uninitialized `result`** - Original logic with fake branches completely lost
+- **Function parameter loss** - `param_fake_branch(int x)` became `param_fake_branch(void)`, breaking semantics
+- **All variables are generic** (`v1`, `v2`, `v3`) - No semantic meaning recoverable from usage patterns
+- **Magic signal numbers** - `2708`, `2740` instead of `SIGFPE`, `SIGSEGV` constants
+- **No anomaly warnings** - Critical decompilation failures not flagged for manual review
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names were successfully recovered (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`), providing minimal semantic anchors.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.0/10 average)** - Zero comments, no pattern recognition, no anomaly indication despite obvious decompilation failures throughout the code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery from calling conventions** - Analyze register usage at function entry to recover lost parameters (e.g., `param_fake_branch` should have `int x`)
+2. **Anomaly flagging for uncertain recovery** - Add warnings when returning uninitialized variables or when control flow doesn't match expected patterns
+3. **Semantic variable naming from usage patterns** - Infer names like `encrypted_buffer`, `canary_value`, `loop_counter` from how variables are used in context

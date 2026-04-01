@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses generic variable names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5` throughout. While parameter names like `x`, `y`, `z`, `size`, `arr`, `n` are preserved, local variables lack semantic meaning. For example, in `param_asm_clobber`, the loop uses `v3` and `v5` instead of descriptive names like `i` and `element`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, etc. The decompiler preserved the semantic naming from the source, making function purpose immediately clear.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most macro-expanded constants are correctly resolved (e.g., `1024`, `64`, `512` for MAX_SIZE/BUFFER_COUNT). However, some magic numbers remain unexplained, like `57072` (which is 0xDEF0) in `param_multi_branch_compile`, and `7` in mmap calls (PROT_READ|WRITE|EXEC). The decompiler could annotate these as meaningful constants.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. The "thunk" attribute appears for inlined functions, and there's a "FAILED to decompile" section listing unresolved functions (memcpy, __libc_start_main, etc.), but these don't significantly impede readability of the successfully decompiled functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. The if-else in `param_macro_constants` is properly structured, loops use while/for constructs (e.g., `while (n > (int)v3)` in `param_asm_clobber`), and there are no spurious goto statements. At -O0, the control flow closely matches the original source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The original source's function decomposition is well preserved. Small wrapper functions like `call_macro_constants()` calling `param_macro_constants(2048)` are maintained as separate functions. The granularity matches the source, with each function having a clear single responsibility.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads top-to-bottom without forward jumps or deep nesting. Early returns are used appropriately (e.g., in `param_dynamic_code` when mmap fails). The linear flow makes the logic easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No significant redundancy observed. Dead code from optimization is minimal at -O0. The loop in `param_asm_clobber` is straightforward and not artificially unrolled.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: The decompiler uses generic `int` for most values and `size_t` for sizes. However, it loses precision - original `int` parameters become generic `int` rather than `int32_t`. The `unsigned int` is used appropriately in some places (e.g., `_aarch64_ldadd4_acq_rel`). The type precision is adequate but not optimal.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union reconstruction is evident. Arrays are represented as simple C arrays (e.g., `int arr[5]`), which is acceptable. However, the decompiler doesn't attempt to reconstruct the original struct layouts that might have existed in the source (though the source didn't define explicit structs, it used arrays like `int arr[] = {1, 2, 3, 4, 5}`).
+
+**11. Type Safety:** Score: 8/10  
+Justification: The code appears type-safe with appropriate pointer usage. No obvious unsafe casts or type confusion. The atomic operations use proper atomic types (`atomic_uint *`). Minor deduction for some void* usage in mmap/mprotect calls where more specific types could be used.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present - only technical annotations like `// attributes: thunk` and `// BYREF`. No explanation of algorithm logic, macro expansion rationale, or inline assembly behavior. The decompiler provides no guidance on why certain transformations occurred or what the original preprocessor macros did.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. The decompiler doesn't identify the conditional compilation patterns (#ifdef, #if-elif), macro function expansions, or the inline assembly idioms. While the code is readable, the underlying preprocessor and assembly patterns are not highlighted.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The "FAILED to decompile" section lists 12 unresolved functions (memcpy, __libc_start_main, __printf_chk, etc.), which is helpful. However, there's no indication of potential issues within successfully decompiled functions, such as the architecture mismatch (x86_64 assembly in source, ARM64 in binary) or the fact that inline assembly was replaced with C implementations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_dynamic_code` has implicit requirements (valid mmap, page-aligned sizes) that aren't documented. The decompiler provides no contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure but not explicitly documented. There's no indication of which functions call which, the callback relationships, or global variable usage. A reader must trace through the code manually to understand call graphs.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically, roughly matching the original source file structure (preprocessing functions first, then asm functions, then test functions). The ordering makes sense, though there's no explicit module or file boundary indication.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code should compile as standard C. It uses standard library functions (printf, memcpy, mmap, sysconf) that are universally available. However, the code relies on external declarations that aren't provided, and there's no indication of required headers or linking flags.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`) that obscure variable purpose
+- No comments explaining preprocessor macro expansions or inline assembly behavior
+- Missing anomaly indication for architecture mismatch (x86_64 source → ARM64 binary)
+- No contract or precondition documentation for functions with implicit requirements
+- Magic numbers like `57072` (0xDEF0) and `7` (mmap flags) unexplained
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+The decompiler produced highly readable control flow that closely matches the original source structure at -O0, with proper if-else statements, while loops, and no spurious goto statements.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The pervasive use of generic variable names (`v0`-`v5`) severely impedes understanding. The decompiler should infer names from usage patterns (e.g., loop indices, accumulators, size variables).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Use data flow analysis to name variables based on how they're used (e.g., `v3` used as loop index → `i` or `index`; `v5` accumulated in result → `element` or `value`)
+2. **Add semantic comments for preprocessor expansions**: When macros are expanded, add comments explaining the original macro (e.g., `// MAX_SIZE = 1024`)
+3. **Document anomaly detection**: Flag architecture mismatches, replaced inline assembly, and unresolved indirect calls with specific warnings to help analysts understand what was lost in decompilation

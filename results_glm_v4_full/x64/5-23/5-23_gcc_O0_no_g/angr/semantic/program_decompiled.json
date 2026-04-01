@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_O0_no_g/angr/syntactic/bin/5-23_gcc_O0_no_g_fixed",
+  "stdout": "[PREPROC] Testing preprocessing features...\n\n[PREPROC] Macro constants: 64\n[PREPROC] Macro functions: 30\n[PREPROC] Conditional compile: 32\n[PREPROC] Multi-branch compile: 57122\n[PREPROC] Macro recursion: 116\n[PREPROC] Stringize: 19\n[PREPROC] Token paste: 60\nLOG: Values: 10, 20, 30\n[PREPROC] Variadic macro: 60\n[PREPROC] Macro override: 16\n[PREPROC] Include guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:25\n[PREPROC] Builtin macros: 382\n[ASM] Testing basic assembly operations...\n\n[ASM] Basic: 15\n[ASM] Clobber: 15\n",
+  "stderr": "*** stack smashing detected ***: terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

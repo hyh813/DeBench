@@ -1,0 +1,15 @@
+Testing standard library functions
+
+String length: 15
+String compare result: 0
+Memory compare result: 12
+Memory copy result: 90
+Memcmp results: 0
+Value: 42, Name: TestName
+Printf returned: 26
+Scanf result: 579
+File open result: 42
+File read/write result: 42
+Malloc result: 90
+Memset result: 0
+Strchr/strstr result: 15

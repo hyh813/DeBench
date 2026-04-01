@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `local_24` instead of semantic names like `dst`, `src`, `buffer`. Only a few meaningful names recovered (`__stream`, `__ptr`, `atomic_counter`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions preserved original names (`param_strcpy`, `thread_compute`, `param_mutex_lock`), but internal functions use generic names (`FUN_00011030`, `FUN_000121ff`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0xffffffff` (-1), `0x1f` (31) used without explanation. String literals preserved but error codes shown as hex values instead of named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__i686.get_pc_thunk.bx`, `get_pc_thunk_dx`), unreachable block warnings, and `LOCK()`/`UNLOCK()` macros for atomics add noise but are manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs, but awkward patterns like `iVar1 >> 0x1f | 0x2a` for conditional returns. Fork/exec logic preserved but verbose.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions match source structure well. Thread functions properly separated. Some functions large (`param_thread_local_storage`) but cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some nested conditionals in signal handling could be cleaner but generally traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Duplicate error code patterns (0xffffffff, 0xfffffffe, 0xfffffffd) appear throughout but serve clear purposes.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`, `size_t`. `void*` for many pointers. `const char*` distinction lost. Some types recovered (`size_t` in `param_memcpy`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered (`local_64.st_size`). `sockaddr` accessed via `sa_data[]` array. `ThreadData` struct lost (fields via array indexing). No struct definitions shown.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int*)`, `(void**)`, `(pthread_mutex_t *)`). Atomic operations use `LOCK()`/`UNLOCK()` macros instead of proper `_Atomic` types. Pointer arithmetic on void pointers visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only compiler warnings ("WARNING: Function... replaced"). No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). pthread patterns partially visible. No design pattern identification. Atomic patterns degraded to `LOCK()`/`UNLOCK()`.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and non-returning subroutines. Architecture mismatch (ARM64 source, x86 decompiled) not flagged. Decompilation uncertainty not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Error return values not explained (0x2a = success). Return value semantics completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`signal_received`, `atomic_counter`) referenced without context. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No file organization visible. Static functions not properly scoped. No header file recovery.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread library) not documented. Compiler-specific constructs (`LOCK()`/`UNLOCK()`) may cause portability issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.33/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `local_24`) obscuring semantic meaning
+- **No comments or documentation** explaining algorithm intent or error codes
+- **Type precision degraded** - `const char*` distinctions lost, generic `int` instead of `size_t`
+- **Magic numbers unexplained** - `0x2a`, `0xffffffff`, `0x1f` used without named constants
+- **Architecture mismatch unflagged** - ARM64 source decompiled as x86 without warning
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most user-defined functions preserved original semantic names (`param_strcpy`, `thread_compute`, `param_mutex_lock`)
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments; only compiler warnings present, making code intent completely opaque
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `param_1` passed to `strcpy` destination should be `dst`)
+2. **Recover and document error code semantics** - Map recurring values (0x2a=42=success, 0xffffffff=-1=error) to named constants with explanations
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, architecture mismatches, and unresolved indirect calls with clear warnings

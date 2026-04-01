@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `iVar1`, `uVar1`) and lack semantic meaning. For example, in `sequential_ops`, `param_1` is used instead of `a`, and in `loop_for_fixed`, `uVar1` obscures the loop counter.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `sequential_ops`, `recursion_factorial`, and `test_control_flow_l1` are perfectly preserved from the source symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are presented as hex (e.g., `0x15` for 21, `0x3e9` for 1001) without named constants, and string literals are referenced via pointers (e.g., `&DAT_001024b8`) rather than inline text, reducing readability.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including stack canary checks (`___stack_chk_guard`), undefined padding variables (`undefined auVar1 [16]`), and pseudo-register usage (`tmp_ldXn`) in functions like `fsm_func_table`, which obscures the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: While simple functions like `sequential_ops` are clean, complex ones are distorted. `recursion_factorial` is decompiled as a vectorized loop with NEON intrinsics, and `fsm_func_table` is reduced to raw memory copies, completely losing the original control flow structures.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and boundaries match the source. There is no monolithic code or incorrect outlining; each test case remains a distinct function.
+
+**7. Code Linearization:** Score: 3/10
+Justification: Functions like `fsm_func_table` and `computed_goto` are non-linear, filled with pointer arithmetic and indirect loads (`tmp_ldXn`, `puVar3`) that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: Instead of eliminating redundancy, the decompiler introduces massive bloat. Simple loops like `loop_for_fixed` and `loop_continue` are expanded into complex vectorized operations with NEON intrinsics, making them significantly harder to read than the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often generic (`undefined4`, `undefined8`, `code *`) rather than specific (`int`, `int*`). For instance, `op_div` uses `undefined4` for parameters instead of `int`, losing type safety and clarity.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Arrays are generally recovered as pointers (e.g., `undefined4 *param_1`), but specific structures like the function pointer array in `fsm_func_table` are not reconstructed as a composite type, instead appearing as raw stack manipulation.
+
+**11. Type Safety:** Score: 4/10
+Justification: Frequent unsafe casts are present, such as `(ulong)uVar2` and `(code *)` casts for function pointers. The use of `undefined` types further degrades safety, making it hard to verify correct usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The output lacks annotations for the complex transformations (e.g., vectorization) or the reconstruction of data structures, leaving the user to decipher the code blindly.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed. Recursion in `recursion_factorial` is displayed as a loop. Duff's device in `duffs_device` is shown as a spaghetti of `goto` labels without recognizing the pattern. State machines are not identified.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the vectorized loop in `recursion_factorial` and the raw stack reconstruction in `fsm_func_table` as standard code without any warnings or "UNCERTAIN" markers, despite these being highly unusual representations of the source.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `n > 0` in `duffs_device` is not explicitly stated in the decompiled view.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and references to global data (e.g., `PTR_double_value_00114010`) are explicit, allowing the user to trace dependencies, even if the variable names are generic.
+
+**17. Module Organization:** Score: 8/10
+Justification: The code is organized logically, with functions appearing in a similar order to the source and helper functions grouped together, maintaining a coherent module structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to pseudo-variables like `tmp_ldXn`, `undefined` types, and intrinsic calls like `NEON_ext` without proper headers or context definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Recursive Logic Lost:** `recursion_factorial` is decompiled as a vectorized loop with NEON intrinsics (`NEON_ext`, `NEON_cmeq`), completely obscuring the simple recursive source logic.
+- **Data Structure Collapse:** The function pointer array in `fsm_func_table` is not recovered; instead, it is represented as raw memory copying using `tmp_ldXn`, making the state machine logic unreadable.
+- **Loop Obfuscation:** Simple loops like `loop_for_fixed` and `loop_continue` are expanded into complex vectorized code, introducing massive redundancy and noise compared to the source.
+- **Generic Naming:** Variables are universally generic (`param_1`, `iVar1`), stripping away semantic context provided in the source.
+- **Missing Context:** No comments or warnings explain the presence of vectorization or the reconstruction of stack variables, leaving the user confused by the discrepancy with the `-O0` source.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function symbols (e.g., `sequential_ops`, `main`), providing clear entry points and high-level organization.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The decompiler fails to provide any comments, recognize idioms (like recursion or state machines), or flag anomalies, resulting in output that is semantically opaque despite having correct function names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Idiom Recovery:** Implement specific pattern matching to detect and preserve recursive structures and function pointer arrays instead of falling back to low-level memory or loop representations.
+2. **Annotation of Optimizations:** When vectorization or aggressive loop unrolling is detected (especially if it contradicts expected debug builds), add explicit comments explaining the transformation (e.g., "Loop auto-vectorized by compiler").
+3. **Variable Renaming Heuristics:** Utilize data flow analysis to infer variable names from usage (e.g., naming a variable used in a loop condition `loop_counter` or `i`) rather than defaulting to `iVar1`.

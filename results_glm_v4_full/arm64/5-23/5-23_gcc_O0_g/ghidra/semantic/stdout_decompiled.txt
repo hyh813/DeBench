@@ -1,0 +1,23 @@
+Testing preprocessing features:
+
+macro_constants = 64
+macro_functions = 30
+conditional_compile = 32
+multi_branch_compile = 57122
+macro_recursion = 116
+stringize = 19
+token_paste = 60
+LOG: Values: 10, 20, 30
+variadic_macro = 60
+macro_override = 16
+include_guard = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:25
+builtin_macros = 382
+Testing asm features:
+
+asm_basic = 15
+asm_clobber = 15
+asm_multi_insn = 42
+asm_simd = 36
+asm_atomic = 30
+asm_privileged = 77

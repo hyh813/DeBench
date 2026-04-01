@@ -1,0 +1,2 @@
+Testing Obfuscation, Optimization, and Edge Cases
+obf.l40.2d: 10obf.l40.3d: 20obf.l40.4d: 225obf.l40.5d: 96opt.l40.1: 500500opt.l40.1: 5050opt.l40.2: 72opt.l50.1.lto.d: 20edge.l30.1d: 2edge.l30.2d: 41edge.l30.3d: 30edge.l30.4d: 2000000000edge.l40.1d: 10edge.l40.2d: 48

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_clang_O2_no_g/ghidra/syntactic/bin/5-23_clang_O2_no_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\n\nmacro_constants result: 64\nmacro_functions result: 30\nconditional_compile result: 32\nmulti_branch_compile result: 57122\nmacro_recursion result: 116\nstringize result: 19\ntoken_paste result: 60\nLOG: Values: 10, 20, 30\nmacro_override result: 60\ninclude_guard result: 16\nbuiltin_macros result: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19\nbuiltin_macros call result: 382\n=== Testing ASM Features ===\n\nasm_basic result: 15\nasm_clobber result: 15\nasm_multi_insn result: 42\nasm_simd result: 36\nasm_atomic result: 30\nasm_privileged result: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

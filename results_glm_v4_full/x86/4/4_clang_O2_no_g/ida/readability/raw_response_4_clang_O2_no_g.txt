@@ -1,0 +1,102 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`a1`, `a2`, `v2`, `v3`), with the most egregious case being `func_struct_byval` using 31 parameters named `a1` through `a31` instead of a struct reference.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`cdecl_func`, `test_calling_conventions`) are preserved perfectly from the source symbols, though runtime helpers (`sub_1030`) remain obscure.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Test functions contain hardcoded magic numbers (e.g., `15`, `50`, `6`) due to constant propagation, and `varargs_func` contains unexplained magic numbers (`16`, `0x7FFFFFFC`) related to loop unrolling.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While mostly clean, the code is cluttered with IDA-specific annotations like `__usercall`, `__userpurge`, and `__asm` blocks that distract from the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Compiler optimizations have transformed simple loops into complex unrolled pointer arithmetic (e.g., `varargs_func`), and switch statements into arithmetic expressions (`ret_multi_branch`), requiring significant mental effort to map back to source logic.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While functions are generally small, `func_struct_byval` is structurally destroyed, represented as a monolithic function with 31 scalar parameters rather than a single struct argument.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads mostly top-to-bottom, but the unrolled loops in `varargs_func` and `param_ptr_array` create dense blocks of pointer arithmetic that disrupt linear comprehension.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler accurately reflects the compiler's removal of redundant calls (e.g., `call_cdecl` returning `15` directly), resulting in concise code, though this obscures the original program flow.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Composite types are significantly degraded; `LargeStruct` is completely lost, replaced by individual integers, and `SmallStruct` is treated as a generic `_DWORD *` pointer.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Complete failure to recover the `LargeStruct` definition in `func_struct_byval`; the 128-byte struct is exploded into 31 separate integer arguments (`a1`-`a31`), losing all semantic structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent unsafe casts are present, such as `(_DWORD *)v6` on `char *` data in `varargs_func` and `**(char **)` casts in `param_ptr_array`, reflecting the low-level ABI implementation rather than source types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Almost entirely devoid of comments, with only a single automated warning about stack pointer detection (`// positive sp value has been detected...`).
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `va_list` iteration are not recognized; instead, they are decompiled to raw pointer arithmetic and stack walking, obscuring the "varargs" intent.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags potential stack issues and uses `__usercall` to indicate non-standard calling conventions, providing useful hints about ABI oddities.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred; for example, the null check in `func_struct_byptr` is present but not explicitly documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (`printf`, `puts`) and internal functions are clear, preserving the call graph structure effectively.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in an order that closely mirrors the source file structure, grouping related tests (`test_calling_conventions`, `test_parameter_passing`) logically.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on IDA-specific syntax (`__usercall`, `__asm`) and lacks necessary headers/struct definitions, making it non-compilable without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 8 + 4 + 6) / 4 = 5.25
+L2_avg: (5 + 5 + 6 + 7) / 4 = 5.75
+L3_avg: (4 + 2 + 5) / 3 = 3.67
+L4_avg: (2 + 3 + 6 + 2) / 4 = 3.25
+L5_avg: (7 + 8 + 3) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (5.75 × 0.25) + (3.67 × 0.20) + 
+          (3.25 × 0.15) + (6.00 × 0.10)
+Overall = 1.575 + 1.4375 + 0.734 + 0.4875 + 0.60
+Overall = 4.834
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects
+- **Struct Explosion**: `func_struct_byval` completely loses the `LargeStruct` type, expanding it into 31 meaningless integer parameters (`a1`-`a31`).
+- **Lost Logic in Tests**: Functions like `call_cdecl` are reduced to constant returns (`return 15`) due to optimization, hiding the calling convention logic being tested.
+- **Varargs Obscured**: The `varargs_func` implementation is decompiled into raw pointer arithmetic and loop unrolling, making the `va_list` logic unrecognizable.
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**
+- **Why?** The decompiler successfully preserved the original symbol names for almost all high-level logic functions, making it easy to locate specific test cases.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**
+- **Why?** The failure to reconstruct `LargeStruct` (and the weak handling of `SmallStruct`) turns a simple, readable function signature into a nightmare of scalar parameters, severely degrading usability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Aggregate Type Argument Recovery**: Implement heuristic analysis to detect sequences of register/stack arguments that map to large structure pass-by-value, collapsing them back into a struct parameter.
+2.  **Varargs Pattern Recognition**: Identify the specific stack-walking and pointer arithmetic patterns used for `va_list` on x86 and re-abstract them into `va_start`/`va_arg` pseudo-ops.
+3.  **Optimization Reversal Hints**: When constant propagation eliminates function calls (e.g., `return 15`), optionally annotate the code with the likely original call (e.g., `/* inlined call: cdecl_func(5, 10) */`) to preserve semantic intent.

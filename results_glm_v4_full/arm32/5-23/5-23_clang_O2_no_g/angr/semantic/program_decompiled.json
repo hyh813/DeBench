@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_clang_O2_no_g/angr/syntactic/bin/5-23_clang_O2_no_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\nTEST-L1-01: 64\nTEST-L1-02: 30\nTEST-L1-03: 32\nTEST-L1-04: 57122\nTEST-L1-05: 116\nTEST-L1-06: 19\nTEST-L1-07: 60\nLOG: Values: 10, 20, 30\nTEST-L1-08: 60\nTEST-L1-09: 16\nTEST-L1-10: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19\nTEST-L1-11: 382\nTEST-L1-11: 382\n=== Testing ASM Features ===\nASM-L1-01: 15\nASM-L1-02: 15\nASM-L1-03: 42\nASM-L1-04: 36\nASM-L4-05: ASM-L1-05: 77\nASM-L1-05: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

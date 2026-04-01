@@ -1,0 +1,21 @@
+Testing preprocessing features...
+Macro constants (param): 64
+Macro functions (param): 30
+Conditional compile (param): 32
+Multi-branch compile (param): 57122
+Macro recursion (param): 116
+Stringize (param): 19
+Token paste (param): 60
+LOG: Values: 10, 20, 30
+Macro override (param): 60
+Include guard (param): 16
+Builtin macros (param): 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:19
+Builtin macros (call): 382
+Testing ASM features...
+ASM basic (call): 15
+ASM clobber (call): 5
+ASM multi-instruction (call): -1
+ASM SIMD (call): 36
+ASM atomic (call): 30
+ASM privileged (call): 77

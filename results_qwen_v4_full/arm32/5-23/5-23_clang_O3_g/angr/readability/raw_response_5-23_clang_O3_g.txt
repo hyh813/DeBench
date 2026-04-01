@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source used meaningful names like `size`, `counter`, `increment`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserve original names (`param_macro_constants`, `call_asm_basic`), but runtime helpers use cryptic names (`sub_4004ec`, `call_weak_fn`, `frame_dummy`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400`, `0x200`, `57072` replace original constants (`MAX_SIZE`, `BUFFER_COUNT`). Some values are pre-computed (64, 30) losing calculation semantics.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Runtime artifacts pollute output (`_init`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`). Variable assignments like `v0 = v1` followed by `goto` add unnecessary noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto` labels (`LABEL_4005ec`, `LABEL_400cb1`) instead of structured if-else. `param_memory_protection` has confusing conditional branching with `armg_calculate_condition`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Most functions have appropriate granularity, but `call_asm_privileged` is bloated (60+ lines, 25+ local variables). Runtime functions are fragmented unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `param_memory_protection` and `call_weak_fn` use forward jumps that disrupt flow. Deep nesting in `call_asm_privileged`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_preprocessing_features` calls `printf(&g_4011b2, 382)` twice identically. `frame_dummy` calls `register_tm_clones()` twice. `main` duplicates `test_asm_features` logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All parameters default to `unsigned int` or `int`, losing original `size_t`, specific integer types. Pointer types sometimes correct (`unsigned int *a0`) but often generic (`void*`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original code had minimal struct usage, so loss is acceptable. Array access preserved correctly (`ptr[1]`, `index[1]`). No struct recovery needed for this codebase.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `param_memory_protection` declares `ptr` twice with different purposes. `param_asm_multi_insn` uses uninitialized variables `v0`, `v1`, `v2`. Variable reuse creates confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macro behavior, assembly semantics, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansions folded to constants (e.g., `ADD_16(x)` → `x + 16`) without indicating original pattern. Assembly patterns simplified without noting transformation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `param_asm_clobber` has suspicious loop with unclear termination. `armg_calculate_condition` appears without explanation. No warnings flag potentially incorrect decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (pointer validity, range checks). Original source comments with expected values (e.g., "期望: 64") completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: String literals replaced with opaque globals (`&g_40108f`, `&g_401283`). No call graph documentation. Function relationships visible but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Runtime initialization mixed with application code. Original section comments (`// 5.2 预处理与条件编译`) lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires stubs for extern globals (`g_412008`, `g_40108f`). Uses compiler builtins (`__atomic_fetch_add_4()`). Would need moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Calculation:**
+```
+Level 1 (Lexical):     4.75 × 0.30 = 1.425
+Level 2 (Structural):  5.50 × 0.25 = 1.375
+Level 3 (Type):        5.33 × 0.20 = 1.066
+Level 4 (Semantic):    2.50 × 0.15 = 0.375
+Level 5 (Contextual):  4.67 × 0.10 = 0.467
+─────────────────────────────────────────
+Total:                 4.708 ≈ 4.7/10
+```
+
+**Critical Defects:**
+- Variable names `v0`, `v1`, `a0` provide zero semantic information (should be `size`, `counter`, `result`)
+- String literals replaced with opaque globals (`&g_40108f`) instead of inline strings
+- Zero comments despite complex assembly and macro semantics in original
+- `param_memory_protection` declares `ptr` twice causing variable shadowing confusion
+- Magic numbers (`57072`, `0x400`, `0x200`) replace named constants without explanation
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Core test function names preserved accurately from source (`param_macro_constants`, `call_asm_basic`, `param_conditional_compile`)
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of documentation despite original having extensive comments explaining macro behavior, assembly semantics, and expected values
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns** - Analyze how variables are used (size comparisons, loop counters, pointers) to infer semantic names like `packet_size`, `index`, `buffer_ptr`
+2. **Inline string literals instead of external globals** - Replace `&g_40108f` references with actual string content when recoverable from binary data section
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILE_UNCERTAIN: loop termination condition`) and document lost macro/assembly semantics

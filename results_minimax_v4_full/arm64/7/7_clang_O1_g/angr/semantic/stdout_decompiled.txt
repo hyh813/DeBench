@@ -1,0 +1,5 @@
+Test 1: Opaque Predicate
+
+Opaque predicate constant: 10
+Opaque predicate: 35
+Instruction substitution: 225

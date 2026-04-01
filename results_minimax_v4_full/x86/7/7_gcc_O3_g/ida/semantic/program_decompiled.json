@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_gcc_O3_g/ida/syntactic/bin/7_gcc_O3_g_fixed",
+  "stdout": "Test: opaque_predicate\n\nResult: 10\nopaque_predicate: 20\ninstruction_sub: 225\nstring_enc: 91\ntail_call: 500500\nnon_tail: 5050\nvectorized: 72\nLTO: 20\ndiv_zero: 1\nnull_ptr: 41\nbuffer_overflow: 30\nint_overflow: 2000000000\nundefine_behav: 10\nimpl_defined: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

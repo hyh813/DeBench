@@ -1,0 +1,5 @@
+Testing obfuscation optimizations:
+
+Obfuscated division test:
+Opaque predicate result: 35
+Instruction substitution result: 225

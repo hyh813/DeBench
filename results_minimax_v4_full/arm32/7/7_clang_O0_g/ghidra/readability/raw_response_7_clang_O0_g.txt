@@ -1,0 +1,141 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables are named with generic patterns like `local_10`, `local_1c`, `local_18`, `local_c`, `extraout_r1`, `auStack_c`, `uStack_4c`. The original variables `result`, `str`, `buffer`, `canary` are completely lost. The decompiler uses stack offset-based naming that provides no semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `decrypt_string` accurately match the original source function names. The naming is action-oriented and semantically correct. Minor deduction for compiler-inserted functions like `__divsi3`.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic number `0xDEADBEEF` became `-0x21524111` (incorrect signed interpretation). However, `0x41` ('A'), `0x42` ('B'), and `0x12345678` (canary) are preserved. The constant `0x5A` was correctly decrypted to `'Z'`. Loop bounds like `0x11` (17) and `0x21` (33) remain as unexplained magic numbers.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: The output is cluttered with numerous warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations. These auto-generated warnings appear dozens of times, making it difficult to distinguish actual code from decompiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Control flow structures (loops, conditionals) are mostly natural and readable. The fake branch condition `0x7fffffff < (uint)(x * x)` is awkward compared to the original `x * x < 0`, but the logic is traceable. At -O0, more natural expressions could be expected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions are appropriately sized with clear single responsibilities. The decompiler correctly separated `lto_target_func` as a static inline function. Function granularity is reasonable - no 500-line monoliths. Parameter lists are clean.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The `param_opaque_predicate` function has a while loop that could be clearer, but overall flow is manageable. No excessive goto usage.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No obvious dead code. The `param_instruction_substitution` correctly consolidated the multiple operations into a single return statement. Some minor redundancy in the division library functions but those are compiler-generated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Uses generic `int` and `undefined4` types instead of specific types like `int32_t` or `uint32_t`. The distinction between signed and unsigned is sometimes lost (e.g., `(uint)x` in some places but not consistently). No `size_t` recovery for string lengths.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: Struct recovery is poor. In `param_buffer_overflow_stack`, the buffer and canary are represented as raw stack locations (`auStack_c [8]`, `local_14`, `local_4`) instead of a coherent struct. The bitfield in `param_implementation_defined` shows "Unresolved" annotation. No struct field names recovered.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe operations present. The buffer overflow functions use raw pointer arithmetic without bounds checking. The `param_integer_overflow` has complex conditional logic that could lead to confusion. However, no obviously dangerous type-confused function pointers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Comments are mostly auto-generated ("Unresolved local var", "WARNING: Removing unreachable block"). No explanation of the obfuscation techniques (fake branch, opaque predicate). The comment "WARNING: Subroutine does not return" is useful but rare. No documentation of algorithm intent.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: The decompiler doesn't identify the obfuscation patterns. The fake branch (`x * x < 0`), opaque predicates (complex but constant-result expressions), and instruction substitution (shift operations) are not recognized or named. No pattern identification beyond basic control structures.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: Warnings about unreachable blocks and unresolved local variables are present. However, the critical anomaly - the incorrect constant `-0x21524111` instead of `0xDEADBEEF` - is not flagged. The "WARNING: Could not recover jumptable" is good but appears in compiler code, not user code.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The function `param_division_by_zero` has implicit requirements (x != 0) that are not indicated. No error condition documentation beyond the code structure.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function call relationships are visible in the code but not explicitly documented. No comments indicating "Called by:" or "Calls:" relationships. The `call_*` wrapper functions show the relationship but no cross-reference documentation exists.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: All functions in a single file without logical grouping. The original source had clear sections (OBF-L4, OPT-L4, EDGE-L3) that are lost. Static functions like `lto_target_func` are properly scoped but not grouped with their callers.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code would not compile standalone. Missing includes, unknown types like `EVP_PKEY_CTX`, `EVP_PKEY`, undefined references to `__gmon_start__`, `__dso_handle`. The decompiled `__divsi3` is 200+ lines of compiler code that shouldn't be in the output. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+4)/4 = 5.0
+L2_avg = (7+8+7+7)/4 = 7.25
+L3_avg = (5+3+6)/3 = 4.67
+L4_avg = (5+4+6+3)/4 = 4.5
+L5_avg = (4+5+3)/3 = 4.0
+
+Overall = (5.0 × 0.30) + (7.25 × 0.25) + (4.67 × 0.20) + 
+          (4.5 × 0.15) + (4.0 × 0.10)
+Overall = 1.5 + 1.8125 + 0.934 + 0.675 + 0.4 = 5.32/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `local_X` patterns instead of semantic names like `result`, `buffer`, `canary`
+- The constant `0xDEADBEEF` is incorrectly decompiled as `-0x21524111` (signed interpretation error)
+- No struct/union recovery - composite types are represented as raw stack locations
+- Excessive auto-generated warnings ("WARNING: Removing unreachable block", "Unresolved local var") clutter the output
+- No struct field names recovered; bitfield completely unresolved
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2)** scored highest at 8/10
+- **Why?** Functions are appropriately sized with clear single responsibilities, matching the original source's modular structure. Parameter lists are clean and reasonable.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (L1)** scored lowest at 3/10
+- **Why?** The decompiler uses generic stack-based names (`local_10`, `auStack_c`, `uStack_4c`) that provide no semantic meaning, making it extremely difficult to track variable purposes without constant reference to the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to name variables based on how they're used (e.g., `result` for variables returned, `buffer` for pointer arithmetic targets, `count` for loop indices)
+2. **Fix constant interpretation**: The signed interpretation of `0xDEADBEEF` as `-0x21524111` is incorrect. Implement proper unsigned constant handling for common obfuscation constants
+3. **Recover composite types**: Implement better struct recovery by analyzing stack frame layouts and pointer offsets. The buffer/canary pattern in `param_buffer_overflow_stack` should be recognized as a struct

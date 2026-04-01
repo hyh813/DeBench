@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic `_local` suffixes (e.g., `x_local`, `a_local`, `temp1`) that obscure semantic purpose. While the original source used `temp1`, `temp2`, `temp3` which were marginally acceptable, the decompiler's systematic addition of `_local` suffix degrades readability further without providing meaningful context.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source (e.g., `sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`, `duffs_device`, `state_machine`). The decompiler preserved the exact semantic intent through action-oriented naming throughout.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), and `0xe` (14) appear without explanation. However, test values from the source (like `0x3039` for 12345) are appropriately preserved. The decompiler could have documented these as constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`), `__stack_chk_fail()` calls, and "WARNING" comments about unreachable blocks. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops (`for`, `while`, `do-while`) are properly recovered, and `switch_large` correctly uses switch statement. However, `switch_fallthrough` uses goto labels (`LAB_001014b1`) instead of fall-through semantics, and `loop_break` uses goto, which is less idiomatic than the original `break`.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches the original source exactly. Each test function remains separate and cohesive. No inlining or outlining artifacts observed - the decompiler correctly preserved the function boundaries from the source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal disruption. The `goto_forward` was even improved by converting to if-else. Minor issues include goto labels in `switch_fallthrough` and `loop_break` which create forward jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. The decompiled code is clean without dead code or unnecessary duplications. The `sequential_ops` function was appropriately simplified to a single expression.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are appropriate - `int` for parameters, proper function pointer typedefs (`_func_int_int`, `_func_int_int_int`). However, `volatile` qualifier is lost for flag parameters in `infinite_loop` and `loop_external_state`, and the function pointer typedefs, while descriptive, are auto-generated rather than meaningful.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays are properly recovered with correct dimensions (e.g., `int arr[5]`, `int matrix[3][4]`). The matrix in `loop_multi_exit` is correctly declared as a 2D array. No complex structs in this particular code, but array recovery is excellent.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts or incorrect pointer arithmetic observed. Array accesses are bounds-checked by the loop conditions. Function pointer calls use proper signatures. The code appears type-safe overall.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated noise (e.g., "WARNING: Removing unreachable block", "WARNING: Unknown calling convention"). No meaningful comments explaining algorithm logic, preconditions, or non-obvious transformations. The header identifying Ghidra decompilation is present but not helpful for understanding the code.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Many idioms are properly recognized and labeled - `duffs_device` is correctly identified, state machines are recovered as switch statements, function pointer arrays are properly handled, and recursion is recognized. The decompiler could have noted the fall-through behavior in `switch_fallthrough` explicitly.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler provides useful warnings about unreachable blocks, unknown calling conventions, and stack check failures. The `computed_goto` function has a warning about unable to recover jumptable. However, some anomalies could be better explained (e.g., what the stack canary checks mean).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions, postconditions, or invariants are documented. The decompiler doesn't recover any contracts from the original source (e.g., "requires: n > 0" for factorial, or "ensures: return value is non-negative").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function relationships are implicit through naming and structure but not explicitly documented. The test functions call the target functions, but there's no comment indicating which functions call which or the callback relationships in `process_with_callback`.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The organization matches the original source - all functions are in a logical order with test functions grouped together. Static functions like `double_value`, `triple_value` are properly scoped. The single-file output matches the single compilation unit.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile with minimal dependencies (standard C library). External functions like `printf`, `puts`, `__stack_chk_fail` are standard. No compiler-specific hacks that would prevent compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `_local` suffixes throughout, obscuring semantic purpose
+- Minimal useful comments - only auto-generated warnings without algorithm explanations
+- No contract or assertion recovery - preconditions/postconditions are lost
+- Compiler noise (stack canaries, FS_OFFSET references) significantly pollutes the code
+- Magic numbers like `0x3e9`, `0x65` appear without documentation
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+The decompiler preserved virtually all function names exactly as they appeared in the original source, enabling immediate recognition of each function's purpose.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+The systematic use of generic `_local` suffixes (e.g., `x_local`, `a_local`, `b_local`) combined with generic temp names (`temp1`, `temp2`) fails to convey the semantic purpose of variables. At -O0, the decompiler should infer meaningful names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, variables like `temp1`, `temp2` in `sequential_ops` should be named based on their computation role (e.g., `sum_ab`, `doubled`, `final_result`)
+2. **Eliminate compiler noise**: Stack canary checks (`in_FS_OFFSET`) and `__stack_chk_fail` should be either removed or clearly marked as compiler-generated artifacts
+3. **Recover semantic comments**: Add comments explaining recovered idioms (e.g., "Fall-through switch case" for Duff's device), preconditions (e.g., "n >= 0" for factorial), and algorithm purposes

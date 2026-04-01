@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 50,
+  "source_file": "decompiled/ghidra_out/x86/3/3_gcc_O3_g.c",
+  "fixed_file": "results_minimax_v4_full/x86/3/3_gcc_O3_g/ghidra/syntactic/fix_3_gcc_O3_g.c"
+}

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names (`v0`, `v1`, `a0`, `a1`) throughout. Original `temp1`, `temp2`, `sum`, `count` are lost. Example: `sequential_ops` uses `a0`, `a1`, `a2` instead of meaningful `a`, `b`, `c`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`sequential_ops`, `single_if`, `nested_if_2`). However, many helper functions use address-based naming (`sub_400954`, `sub_400a20`) obscuring their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (UINT_MAX/-1), `1717986919` (division magic), `0x40000000`. Original test values and constants not preserved as named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `[D] unsupported_Iop_SliceV128()`, vector operations (`MulV`, `AddV`, `CONCAT`) for scalar code, stack canary checks, and frame pointer setup throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Severe degradation from loop unrolling. `goto_backward` has 12+ nested if-else chains for a simple factorial loop. Some functions use `goto` instead of structured constructs (`call_func_ptr` uses `goto a0`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions exist (`sub_400e08` just calls `sequential_ops`). Some functions bloated from optimization (e.g., `loop_for_fixed` is 50+ lines).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearity with labels (`LABEL_4016f0`, `LABEL_4016fc`) and forward jumps. `loop_multi_exit` uses multiple goto labels instead of structured returns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Extreme redundancy from loop unrolling. `goto_backward` repeats identical multiplication pattern 12+ times. `loop_complex_cond` has deeply nested identical subtraction patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation present. Many `unsigned long long` where `int` suffices. Vector types (`uint128_t`) appear for scalar operations. Mixed signed/unsigned throughout.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Function pointer arrays recovered but as globals (`CSWTCH.55`, `g_414028`) instead of locals. No struct recovery issues (none in source), but array semantics lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Mixed signed/unsigned usage throughout. `call_func_ptr` uses `goto a0` for indirect call (unsafe pattern). Implicit casts between types without clarity.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had comprehensive documentation (difficulty levels, test cases, scene labels) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic control flow patterns recovered but not identified. Loop unrolling not recognized as optimization artifact. No pattern naming (state machine, factorial, etc.).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Unsupported operations marked (`[D] unsupported_Iop_*`) but not explained. No guidance on interpretation or fixes. No confidence indicators for uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original test cases showing expected behavior completely lost from function documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships undocumented. Global variables (`g_413f78`, `jump_buffer`) used without explanation. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output. No logical grouping by functionality. Helper functions (`sub_400xxx`) interspersed with main logic randomly.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims compilation but `[D] unsupported_Iop_*` operations would prevent actual compilation. External dependencies not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+4+3)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 4.35/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Loop unrolling destroys structure** - `goto_backward` and `loop_for_fixed` expanded into 12+ nested if-else chains
+- **Unsupported operations unexplained** - `[D] unsupported_Iop_SliceV128()` appears without guidance
+- **All documentation lost** - Original comments with test cases, difficulty levels, and scene labels completely absent
+- **Magic numbers pervasive** - `4294967295`, `1717986919`, `0x40000000` used without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source (`sequential_ops`, `nested_if_2`, `switch_fallthrough`), maintaining basic semantic identity
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original documentation including test cases, expected values, and algorithm explanations that made source code self-documenting
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols when available (e.g., `a0` in summation context → `sum`, loop counter → `i`)
+2. **Detect and annotate optimization artifacts** - Identify loop unrolling, vectorization, and strength reduction, adding comments explaining the original structure
+3. **Recover and preserve documentation** - Extract debug symbol comments, test case expectations, and function contracts from DWARF information when `-g` flag was used

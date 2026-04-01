@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v1`, `v2`, `v3`, `result`). The original source uses descriptive names like `temp1`, `temp2`, `temp3` in `sequential_ops`, but these are completely lost. For example, in `sequential_ops`, the decompiler produces `return 2 * (a2 + a1) - a3 & 0xffffffff;` when the source clearly shows `temp1 = a + b; temp2 = temp1 * 2; temp3 = temp2 - c;`.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names closely match the original source - `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial` all correctly recovered. Minor helper functions (CRT startup) have generic names but these are standard library artifacts, not decompilation failures.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Extensive use of magic numbers without explanation. The pattern `0x100000000 * a1 >> 32` (which is `a1 >> 32` for high 32 bits) appears repeatedly without comment. Constants like `0xffffffff` for 32-bit masking are unexplained. The original source has no magic numbers - all operations are explicit.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Severe noise from 32-bit emulation on 64-bit architecture. Every operation includes redundant casts: `(int32_t)a1`, `(uint64_t)((int32_t)a1)`. The pattern `0x100000000 * a1 >> 32` appears dozens of times. Excessive masking with `& 0xffffffff` clutters every return statement. This is compiler/architecture artifact noise that should be abstracted.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Basic control flow is recognizable - loops use `while` constructs, conditionals use `if`. However, some patterns are awkward, like `loop_while` taking `int64_t *a1` instead of `int` (the pointer is actually the integer value). At -O0 optimization, the control flow should be nearly identical to source but some transformations occurred.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized and cohesive. Each function in the original source maps to a single function in decompiled code. The decomposition is natural with clear single responsibilities. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, some functions like `loop_multi_exit` have complex nested structures that disrupt linear reading. The `goto_forward` function is particularly convoluted: `return ((int32_t)a1 < 1 ? 1 : v1 >> 32) * (v1 >> 31) & 0xfffffffe;` - this single-line return obscures the original two-path logic.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Some redundant expressions from optimization, particularly the repeated `0x100000000 * a1 >> 32` pattern. No dead code elimination issues. The redundancy is manageable but adds noise to every function dealing with 32-bit values.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Uses `int64_t` appropriately for arm64 calling convention. However, the constant use of `int32_t` casts for 32-bit operations shows type degradation. The original uses `int` throughout, but decompiler must handle 32/64-bit distinctions. Signed/unsigned is mostly correct but some edge cases may have issues.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Some struct recovery at the top (`struct __jmp_buf_tag`) but most composite types are lost. The `matrix` in `loop_multi_exit` is accessed via raw pointer arithmetic: `*(int32_t *)(v3 + 4 * (int64_t)v4)`. Original had clear `int matrix[3][4]` declaration. Arrays are recovered but lose dimensions and semantic meaning.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Significant type safety issues from constant casting. Every function has multiple `(int32_t)` and `(uint64_t)` casts. The pattern `0x100000000 * a1 >> 32` performs 64-bit multiplication then shift - potentially dangerous. Function pointer handling in `call_func_ptr_array` uses raw pointer arithmetic: `*(int64_t *)(8 * (int64_t)a1 - 48 + (int64_t)&v1)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only address range comments present (`// Address range: 0x1180 - 0x11ad`). No functional comments explaining algorithm intent, parameter purposes, or return value semantics. The original source has extensive comments explaining each control flow pattern. This critical context is completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns recognized but not named. Switch statements are identified as jump tables (`switch_small`, `switch_large`). However, patterns like Duff's device, state machines, or callback patterns are not explicitly labeled. The original source comments identify these patterns explicitly.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly flags present. Several suspicious patterns lack warnings: the `call_func_ptr` function simply returns the first parameter without calling it (`return result;`), which seems wrong. The `loop_while` takes a pointer but uses it as a value. These should be flagged as uncertain or anomalous.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No contract information recovered. Preconditions like "n must be positive" for `loop_for_fixed`, postconditions, and invariants are not documented. The original source has clear expectations (e.g., "输入10返回45") that could guide contract recovery.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function prototypes at top of file show relationships. However, no documentation of call graphs, global variable usage, or callback relationships. The original source clearly shows which functions call which (`test_control_flow_l1` calls all CF-L1 functions). This context is missing.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - test functions together, helper functions together. Static functions properly scoped. Matches original source organization reasonably well. Minor issues with CRT startup functions mixed in.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Includes standard headers (`<stdio.h>`, `<setjmp.h>`, etc.). Appears compilable with minimal patching. However, some functions like `call_func_ptr` have incorrect implementations that would cause runtime issues. The decompiled code would compile but not produce correct results in some cases.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 3) / 4 = 4.5
+L2_avg = (6 + 8 + 6 + 5) / 4 = 6.25
+L3_avg = (7 + 5 + 4) / 3 = 5.33
+L4_avg = (3 + 5 + 2 + 2) / 4 = 3.0
+L5_avg = (5 + 7 + 7) / 3 = 6.33
+
+Overall = (4.5 × 0.30) + (6.25 × 0.25) + (5.33 × 0.20) + 
+          (3.0 × 0.15) + (6.33 × 0.10)
+        = 1.35 + 1.5625 + 1.066 + 0.45 + 0.633
+        = 5.05/10
+```
+
+**Overall Readability Score:** 5.05/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`a1`, `a2`, `a3`) and locals use cryptic names (`v1`, `v2`, `result`), completely losing semantic meaning from original source (`temp1`, `temp2`, `temp3`)
+- **Noise pollution**: Every function contains excessive 32-bit emulation noise (`0x100000000 * a1 >> 32`, `& 0xffffffff`, `(int32_t)` casts) that obscures logic
+- **Missing comments**: No functional comments explaining algorithm intent, parameter purposes, or return value semantics - original source had extensive documentation
+- **Anomaly silent failure**: `call_func_ptr` returns first parameter without calling it - should be flagged as uncertain
+- **Type safety**: Extensive unsafe casts between 32/64-bit types with no justification or warnings
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**
+- **Why?** Function names closely match original source - `sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial` are all correctly recovered. This is the strongest area of the decompilation.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**
+- **Why?** Every parameter and local variable uses generic/cryptic names. The original source's descriptive names (`temp1`, `temp2`, `temp3`, `sum`, `count`, `i`, `j`) are completely lost, making it extremely difficult to understand variable purposes without cross-referencing the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, array indices, loop counters) to suggest descriptive names. `a1 + a2` in arithmetic context suggests `operand1` or `left_value`. Loop counters typically range 0 to n.
+
+2. **Abstract 32-bit emulation noise**: Recognize the pattern `0x100000000 * a >> 32` as "get high 32 bits" and `& 0xffffffff` as "mask to 32 bits". Either comment these or provide a helper macro to reduce visual clutter.
+
+3. **Add functional comments from test patterns**: The test calls in `test_control_flow_l1`/`l2`/`l3` contain expected values (e.g., `sequential_ops(5, 7, 3)` expects 21). Use these to infer function contracts and add comments explaining expected behavior.

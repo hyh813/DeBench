@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`, `a0`) obscuring semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current` that were completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions recovered (`local_vars`, `heap_basic`, `vla_stack`) but many wrapper functions have mechanical names (`sub_401030`, `sub_401130`). Original function names partially preserved but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (representing -1) appears repeatedly without explanation. Values like `0x800`, `0xfffffff0` lack semantic context that original source provided through named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86.get_pc_thunk.*` functions, redundant wrapper functions (`sub_4012b1` just calls `local_vars`), scattered `_GLOBAL_OFFSET_TABLE_` references throughout code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs correctly. However, some functions use goto patterns (`sub_401030`: `goto ptr[2]`) that obscure simple logic, unexpected at -O0 optimization level.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions mostly preserved but many unnecessary wrapper functions created (`sub_4012e9` just calls `local_array`). Function granularity inconsistent with many single-call wrappers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom with reasonable flow. Some forward jumps disrupt reading (e.g., `sub_401030` jumps to `ptr[2]`), but majority maintains linear structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper function pairs create significant redundancy (every test function has a `sub_XXXXX` caller). No dead code removal evident; compiler initialization code bloated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `unsigned int` used universally where `int`, `size_t`, `void*` were appropriate. Original `Point` struct, `Node*` pointers all reduced to generic integer types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_1` naming. Original named structs (`Point`, `Node`, `TreeNode`) completely lost semantic field information.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts visible: `(char *)ptr`, `(int *)`, pointer arithmetic on void pointers. Type-confused operations like `*((int *)&ptr[4 * idx])` obscure memory access patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation explaining each test case's purpose. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified by name. Linked list creation, tree traversal, memory allocation patterns not recognized or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). No warnings about potential undefined behavior in `dangling_pointer`, `double_free`, or `heap_overflow` functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). Error return values like `4294967295` not documented as error codes. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`global_counter`, `file_scope_static`) not explained. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order matching source structure. However, no clear module boundaries; static functions not properly scoped; all code in single output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Platform mismatch (original ARM64, decompiled X86). Contains external declarations requiring stubs. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+5+4+3)/4 = 4.0
+Level 2 Average: (6+5+6+5)/4 = 5.5
+Level 3 Average: (4+3+4)/3 = 3.67
+Level 4 Average: (2+3+3+3)/4 = 2.75
+Level 5 Average: (5+5+4)/3 = 4.67
+
+Overall = (4.0 × 0.30) + (5.5 × 0.25) + (3.67 × 0.20) + (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.20 + 1.375 + 0.734 + 0.4125 + 0.467
+        = 4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Platform mismatch**: Original compiled for ARM64 but decompiled as X86, indicating fundamental binary analysis failure
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `result`, `index`, `temp_value`)
+- **Struct fields all generic** (`field_0`, `field_1`) losing semantic meaning from original `Point.x`, `Node.data`, etc.
+- **Magic number `4294967295`** appears 20+ times without explanation (represents -1 error code)
+- **No comments recovered** despite original source having extensive documentation for each test case
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (scored 6/10)** - Most loop constructs and conditional logic were correctly recovered despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Complete absence of documentation makes understanding test purposes extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and debug symbols (when `-g` flag present, leverage DWARF information)
+2. **Preserve struct field names** from debug information rather than generic `field_0`, `field_1` naming
+3. **Add decompilation confidence annotations** indicating which code regions are certain vs. uncertain, especially for indirect calls and type information

@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 50,
+  "source_file": "decompiled/BinaryAI_out/x86/3/3_clang_O2_g.c",
+  "fixed_file": "results_glm_v4_full/x86/3/3_clang_O2_g/binaryai/syntactic/fix_3_clang_O2_g.c"
+}

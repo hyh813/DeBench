@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `iVar1`, `uVar2`, `bVar5` instead of semantic names from source (`temp1`, `sum`, `count`, `result`). Comments like "Unresolved local var: int temp1@[???]" show the decompiler knows original names but doesn't use them.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names preserved perfectly from debug symbols (`sequential_ops`, `nested_if_deep`, `duffs_device`). Names accurately reflect functionality and match original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` (18) appear without explanation. Original expressions like `x * 10 + 10` replace clear switch cases, obscuring intent.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts for O2 optimization. Some "WARNING: Removing unreachable block" comments are helpful. No excessive register spilling or frame manipulation visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Severe structural degradation: `single_if` becomes `x << (uint)(0 < x)` instead of if-statement; `loop_for_fixed` transforms to complex bit manipulation; `nested_if_2` loses nesting becoming sequential ifs. Original control flow patterns not recovered.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Individual functions remain cohesive and appropriately sized. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. `duffs_device` uses goto labels for switch cases which is appropriate for that pattern. Some functions have awkward restructuring.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `__divsi3` has 35 boolean variables (bVar1-bVar35) from loop unrolling that obscures logic. Optimization artifacts present but not commented as such.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic int types preserved correctly. Function pointers degraded to `_func_int_int *` instead of proper typedef. Some unnecessary casts like `(uint)x` and `(ulonglong)` present.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as "Unresolved local var: int[5] arr@[???]". No struct recovery needed for this codebase but array handling is weak.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(uint)x`, `(ulonglong)lVar1`). Function pointer calls have warnings "Could not recover jumptable". No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"). No algorithm explanations or logic documentation. "Unresolved local var" comments are useful but insufficient.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop patterns not recognized as for/while consistently. `duffs_device` partially recovered but fall-through structure lost. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unresolved jumps ("Could not recover jumptable at 0x00010f24. Too many branches"). Unreachable blocks flagged appropriately.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n > 0` but this isn't indicated anywhere.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names. Global variables like `jump_buffer` referenced but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source. Test functions grouped together. Static helper functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`__libc_start_main`, `__divsi3`, `__aeabi_idivmod`) require stubs. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+7)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (4+7+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (4+4+6+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.45/10
+```
+
+**Overall Readability Score:** 5.45/10
+
+### Critical Defects:
+- **Variable names completely lost**: `iVar1`, `uVar2` instead of `temp1`, `sum`, `count` despite debug symbols being available
+- **Control flow structure destroyed**: `single_if` becomes bit-shift expression; `loop_for_fixed` becomes mathematical formula instead of loop
+- **No semantic documentation**: Zero comments explaining algorithm purpose or non-obvious transformations
+- **Magic numbers unexplained**: `0x3e9`, `0x65`, `0x12` appear without context or named constants
+- **Function contracts missing**: No indication of preconditions (e.g., `duffs_device` requires `n > 0`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols preserved perfectly, all function names match original source exactly, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or parameter constraints documented, making it impossible to understand function requirements without examining implementation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable names**: When `-g` flag is present, extract and apply original variable names from DWARF debug info instead of generating `iVar1`, `uVar2`.
+
+2. **Recognize and preserve control flow patterns**: Implement pattern matching for common constructs (if-else, for/while loops, switch statements) even when compiler optimizes them, with comments noting transformations.
+
+3. **Add semantic documentation generation**: Automatically generate comments for function purpose, parameter constraints, and non-obvious optimizations (e.g., "// Optimized: loop unrolled to mathematical formula").

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use `v1`, `v2`, `result` instead of semantic names like `temp1`, `sum`, `count` from the original source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names are preserved correctly (`sequential_ops`, `single_if`, `nested_if_2`), but helper functions have generic names (`function_4dc`, `function_4e8`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x66666667` for division optimization and `0x100000000` appear without explanation; string literals stored as hex-encoded globals (`g14`, `g15`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant optimization artifacts including unnecessary casts (`(int32_t)(bool)(a1 > 0)`), complex division by multiplication, and global variables for constants.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else and switch recovered, but some switch cases have incorrect fall-through (`if_elseif_chain`), and loop conditions are overly complex with magic number division.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated, but parameter signatures are sometimes wrong (`switch_small` takes 3 params instead of 1, `loop_while` takes `char*` instead of `int`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Mostly reads top-to-bottom, but some functions have goto labels (`lab_0x1424`, `lab_0x14e0`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundancy (magic number division instead of `/10`), and some type casts are repeated unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good, but has type errors (`loop_while` parameter is `char*` instead of `int`, `switch_small` uses `uint32_t` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` struct recovered with field names (`e0`, `e1`, `e2`) but not semantic names; no complex structs in this code to fully evaluate.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present, pointer arithmetic in array access, and function pointer calls lose type information (`call_func_ptr`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: NO comments in decompiled code; original had extensive comments explaining each function's purpose and test cases.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition or algorithm identification; switch-case patterns recovered but not identified as state machines or dispatch tables.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present for `longjmp` paths, but no explicit warnings for suspicious code or type mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or parameter validation documented; original had test case documentation.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, but global variable usage is opaque (`g1`, `g2`, etc.) with no documentation of purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without header separation; functions grouped but not logically organized by feature.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers and declares external functions, but type errors may prevent compilation without patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.43
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.79/10
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v1`, `v2`** should be named semantically (`input`, `sum`, `counter`) based on usage patterns
+- **Control flow uses complex magic number division** (`0x66666667 * x / 0x100000000`) instead of simple `/10`
+- **Function signatures incorrect** (`loop_while` takes `char*` instead of `int`, `switch_small` has 3 params instead of 1)
+- **No comments whatsoever** despite original having extensive documentation for each function
+- **Global variables `g1`, `g2`, etc.** used for constants without semantic names
+
+### Best Quality Aspect:
+- **Function Naming Quality (scored 8/10)** - Main function names preserved correctly from source, making it easy to identify which decompiled function corresponds to which original function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Complete absence of comments makes understanding intent extremely difficult, especially for optimization artifacts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `v1` accumulates values → name it `sum`)
+2. **Detect and simplify compiler optimization patterns** - Recognize magic number division and recover original `/` or `%` operations
+3. **Generate confidence-annotated comments** - Add comments indicating decompiler uncertainty and explaining non-obvious transformations

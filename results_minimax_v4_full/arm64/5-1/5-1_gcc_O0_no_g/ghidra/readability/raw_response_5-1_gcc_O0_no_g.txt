@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+The decompiled code uses almost exclusively generic variable names: `iVar1`, `iVar2`, `iVar3`, `local_8`, `local_10`, `param_1`, `param_2`, `puVar1`, `ppiVar1`, `ptVar2`. Stack-allocated objects have cryptic names like `aSStack_30` (SimpleClass), `aLStack_18` (LifecycleClass). While class method names are preserved (`SimpleClass::getValue`), the local variables within functions provide no semantic meaning about their purpose (e.g., `local_14` should be `a` in `template_swap`).
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Class methods are well-named: `SimpleClass::getValue`, `Base::virtual_func`, `Derived::virtual_func`. Template instantiations are correctly named: `template_max<int>`, `template_swap<int>`. Test functions preserve original names: `test_cpp_member_func`, `test_cpp_constructor`. However, some internal functions have cryptic names like `FUN_00101840`, and lambda call operators have verbose generated names like `test_cpp_lambda()::{lambda(int)#1}::operator()`. The verb choice is appropriate for action-oriented functions.
+
+### 3. Literal Clarity
+**Score: 8/10**
+
+String literals are preserved correctly: `"Test"`, `"Base"`, `"Derived"`. Numeric constants like `0x1234` (class ID), `5` (array size), `10`, `20` are clear. The magic number `0x1f` (31 = sizeof(name)-1) in `strncpy` is used correctly. Some constants like `0x14` (20) are used but generally understandable from context. The decompiler properly preserves literal values used in the original source.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+The code contains significant compiler artifacts: stack canary checks (`__stack_chk_fail`, `___stack_chk_guard`), exception handling infrastructure (`__cxa_allocate_exception`, `__cxa_throw`), virtual thunk functions, and "WARNING" comments about unreachable blocks. These artifacts are expected at -O0 but add noise. The `try-catch` annotations are auto-generated and not always accurate. However, the core logic is distinguishable from these artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Control flow is generally natural with proper if-else structures and loops. The `test_cpp_virtual_func` shows proper virtual dispatch through vtable indirect calls. Exception handling is partially reconstructed with try-catch annotations. Some awkwardness exists in the RTTI code where `__dynamic_cast` and typeid operations are complex. At -O0, the control flow should be nearly identical to source, and the decompiler achieves this for most functions.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+The decompiler properly decomposes C++ code into individual functions: class methods, template instantiations, lambda call operators, and test functions are all separate. Each function has a clear single responsibility. The decomposition is granular but appropriate - for example, `Container<int>::push`, `Container<int>::get`, `Container<int>::getSize` are all separate. No 500-line monoliths; functions are reasonably sized (typically 20-50 lines).
+
+### 7. Code Linearization
+**Score: 7/10**
+
+The code generally reads top-to-bottom. Early returns are present in some functions (e.g., `template_max`). Some forward jumps exist in complex functions like `test_cpp_rtti` with its multiple label-based control flow. The nesting depth is reasonable (typically 2-3 levels). The overall flow is disrupted minimally - the code is mostly linear and follows the execution path naturally.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant dead code observed. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination is not aggressive at -O0. The code is clean without duplicate logic blocks. Some template code has repeated patterns but this reflects the actual instantiated code, not redundancy from decompilation.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+The decompiler uses `int` for most integers, `undefined4`/`undefined8` for some values, `char*` for strings, and `void*` for generic pointers. Function pointer types are properly typed (e.g., `code *` for function pointers). However, there's significant type erasure: `int` instead of `size_t` for sizes, `undefined*` types for some values, and generic `type *` for template types. The signed/unsigned distinction is sometimes lost. Const correctness is partially preserved in function signatures but not always.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+Class structures are recovered with vtable pointers: `*(undefined ***)this = &PTR_virtual_func_00116b10`. Template class instantiations are properly reconstructed: `Container<int>`, `Container<double>`. However, field access often uses pointer arithmetic: `*(int *)(this + 4)` instead of `this->name`. Some field names are lost - the decompiler uses offsets rather than meaningful field names in many places. The overall structure is clear but not perfectly reconstructed.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Most operations are type-safe. There are some unsafe casts: `(int *)` conversions in smart pointer code, `(type *)` in template code. Pointer arithmetic is present but correct: `local_8 + param_1 * 4` for array access. No obvious buffer overflows. The code is generally safe to reason about, though the extensive use of `undefined*` types makes strict type safety analysis difficult.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+The decompiler includes function signatures with parameter names (useful), "WARNING" comments about unknown calling conventions, and try-catch block annotations. However, comments are sparse and mostly auto-generated. There's no explanation of algorithms or non-obvious logic. The "WARNING: Unknown calling convention" appears frequently but provides no guidance on what the calling convention should be. No documentation of preconditions, postconditions, or invariants.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+
+The decompiler recognizes C++ idioms: virtual function dispatch through vtables (`*(code *)*local_28`), template instantiation (`template_max<int>`), exception handling with try-catch, operator overloading (`Point::operator+`), and smart pointer patterns. However, these are not explicitly named or documented as patterns. The vtable mechanism is shown but not explained. Lambda capture semantics are partially obscured in the generated code.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+The decompiler flags: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". However, these warnings are generic and don't explain the actual anomaly. The indirect virtual function calls could be flagged as "vtable dispatch" with confidence level. Some unusual patterns (like the complex RTTI code) have no anomaly indication. The warnings are present but not comprehensive or particularly helpful.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+No preconditions, postconditions, or invariants are recovered. The decompiler doesn't document expected input constraints (e.g., "requires: ptr != NULL") or output guarantees. Error conditions are not explicitly documented. While the code is readable, there's no additional semantic information about what the functions assume or guarantee.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Function call relationships are clear from the code structure. Virtual dispatch is visible through vtable access. Static method calls are properly resolved (`SimpleClass::getClassID()`). However, there's no explicit documentation of who calls what function or global variable usage. The relationships are inferable but not explicitly documented. Callback relationships in lambda code are obscured.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are logically grouped: class methods together, template instantiations together, test functions together. The organization follows C++ class structure. However, all functions are in a single large output rather than separated files. Static functions are properly scoped. The overall organization matches the source class structure reasonably well.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+The code references standard library functions (`operator_new`, `operator_delete`, `strlen`, `strcmp`) but these are not declared. Many internal functions would need stubs. The code would require moderate patching to compile: adding `#include` statements, declaring external functions, and potentially fixing some type mismatches. Dependencies on libstdc++ are implicit but not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 7 + 8 + 5) / 4 = 5.75
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (6 + 7 + 7) / 3 = 6.67
+L4_avg = (5 + 7 + 6 + 3) / 4 = 5.25
+L5_avg = (6 + 7 + 5) / 3 = 6.00
+
+Overall = (5.75 × 0.30) + (7.50 × 0.25) + (6.67 × 0.20) + (5.25 × 0.15) + (6.00 × 0.10)
+        = 1.725 + 1.875 + 1.334 + 0.788 + 0.600
+        = 6.32/10
+```
+
+### Overall Readability Score: 6.3/10
+
+### Critical Defects
+- **Variable naming**: All local variables use generic names (`iVar1`, `local_8`, `param_1`) providing no semantic meaning about their purpose
+- **No contract recovery**: Zero documentation of preconditions, postconditions, or invariants despite -O0 optimization level
+- **Type precision loss**: Extensive use of `undefined4`/`undefined8`/`type *` instead of concrete types
+- **Sparse comments**: Only auto-generated warnings; no algorithm explanations or semantic documentation
+- **Anomaly handling**: Generic warnings without specific guidance on how to resolve issues
+
+### Best Quality Aspect: Function Decomposition (8/10)
+The decompiler properly separates C++ constructs into individual functions: class methods, template instantiations, lambda operators, and test functions are all appropriately granular. This matches the source structure well.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+At -O0, variables should have debug symbols available. The decompiler should infer meaningful names from usage patterns (e.g., `local_14` used as `a` in swap function should be named `a` or `first`). Generic names like `iVar1`, `puVar1` provide zero semantic value.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: At -O0 with debug symbols, trace how variables are used (e.g., `local_14` passed to `template_swap` as first parameter → name it `a` or `first`)
+2. **Recover preconditions/postconditions**: Add comments like `// requires: idx < size` for bounds-checked access, `// ensures: return >= 0` for non-negative returns
+3. **Improve anomaly specificity**: Replace "WARNING: Unknown calling convention" with "Calling convention may be thiscall - verify against vtable offset" or flag vtable dispatch explicitly

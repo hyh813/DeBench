@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. For example, in `param_malloc_free`, variables like `v12`, `v13`, `v14` obscure their roles as loop counters and array indices that should be named `index`, `sum`, `iterations`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`param_strcpy`, `call_strcmp`, `param_mutex_lock`) which is good, but many wrapper functions have mechanical names (`sub_402020`, `sub_4023e5`, `sub_402495`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (UINT_MAX/-1) appears dozens of times without explanation, `42` used as success code without context, signal numbers as raw integers (`10`, `14` instead of `SIGUSR1`, `SIGALRM`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including register spill variables (`v0 = v2`), unnecessary type casts, and redundant assignments. The `param_malloc_free` function contains massive SIMD-like vector operations that appear to be optimization artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto labels (`LABEL_4028e8`, `LABEL_40291f`, `LABEL_402a26`) instead of structured loops in several functions. The `param_malloc_free` function has deeply nested conditionals that should be simplified loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation (test functions separate from implementation). However, some wrapper functions (`sub_4024a9`, `sub_4024c2`) are unnecessary indirection that just call the main function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps into loop bodies disrupt flow. The `param_signal_handling` function has excessive nesting (6+ levels) that could be flattened with early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling in `param_malloc_free` and `param_memset` - the SIMD vector operations create hundreds of lines of nearly identical code that obscures the simple `for` loop from source.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic `unsigned long long` instead of precise types (`size_t`, `int32_t`). Lost const-correctness (`char *a0` instead of `const char *src`). Pointer vs array distinction often lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`FILE`, `sockaddr`) but fields are generic (`field_0`, `field_5`). The `ThreadData` struct from source is not recovered - instead uses raw array access (`ptr[2]`, `ptr[1]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(uint128_t *)`, `(char *)ptr + 4 * idx`). Pointer arithmetic without proper typing throughout. The `param_strchr_strstr` function reuses variable name `ptr` twice, causing type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only one anomaly note exists (`[D] Unsupported jumpkind Ijk_SigTRAP`). No algorithm explanations, no parameter documentation, no return value semantics.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `pthread_create`). However, threading patterns (mutex, condition variable, TLS) not explicitly identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Most issues silently presented as correct code. No uncertainty indicators for indirect calls or unresolved references. The `param_scanf` function has obvious stack variable reuse issues not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values (`4294967295`, `42`) not explained. No invariant recognition for loops.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`signal_received`, `atomic_counter`) declared but usage relationships not explicit. No callback relationship documentation for thread functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Related test functions grouped together. However, no header file structure and no namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`extern` statements). Some stubs may be needed for platform-specific functions. Portability issues with hardcoded syscall numbers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+7)/3   = 6.33 × 0.10 = 0.63
+
+Overall Score: 4.82/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` throughout should be named based on semantic usage (e.g., `index`, `sum`, `buffer_ptr`)
+- Magic number `4294967295` appears 50+ times without explanation (should be `UINT_MAX` or `-1`)
+- `param_malloc_free` contains 200+ lines of SIMD vector operations that obscure a simple 10-line for loop
+- Signal numbers hardcoded as `10`, `14` instead of `SIGUSR1`, `SIGALRM` constants
+- Variable name collision in `param_strchr_strstr` where `ptr` is declared twice with different meanings
+- No comments explaining decompilation uncertainty or algorithm intent
+
+### Best Quality Aspect: **Build System Compatibility (7/10)**
+- The decompiled code compiles successfully with minimal stubs needed, indicating good structural recovery despite semantic losses.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation exists to help readers understand non-obvious logic, optimization artifacts, or decompilation confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `index`, `count`; variables passed to `malloc` → `buffer`, `ptr`)
+2. **Detect and annotate optimization artifacts**: Recognize SIMD loop unrolling patterns and add comments like `// OPTIMIZATION: Loop unrolled 4x` with option to collapse to original loop
+3. **Add decompilation confidence indicators**: Flag uncertain reconstructions with comments like `// UNCERTAIN: Stack variable reuse detected` and highlight magic numbers for constant recovery

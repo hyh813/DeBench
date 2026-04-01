@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/5-23/5-23_clang_O2_g/binaryai/syntactic/bin/5-23_clang_O2_g_fixed",
+  "stdout": "Testing preprocessing features...\n\nValue: 64\nResult: 30\nResult2: 32\nMulti: 57122\nRecursion: 116\nStringize: 19\nToken: 60\nLOG: Values: 10, 20, 30\nVariadic: 60\nOverride: 16\nInclude: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:11\nBuiltin: 382\nTesting ASM features...\n\nASM Basic: 15\nASM Clobber: 15\nASM SIMD: 4294967295\nSIMD: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

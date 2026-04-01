@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `result`. The parameter `a1` should be `size` based on `param_macro_constants` usage. No semantic meaning conveyed.
+
+**2. Function Naming Quality:** Score: 5/10Justification: Some functions correctly named (e.g., `param_asm_basic`, `call_macro_constants`) matching source, but many use mechanical address-based names like `function_10b0`, `function_10c0` which are compiler-generated entry points.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xdef0` (in `param_multi_branch_compile`), `282`, `382` (in `param_builtin_macros`) appear without explanation. Some constants like `64` are correct but most numeric literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: `__x86_get_pc_thunk_bx` calls, `__readgsdword(20)` stack canaries, `__stack_chk_fail_local` functions. The `call_asm_clobber` function contains spurious stack manipulation code not in original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops, conditionals preserved), but `param_macro_constants` uses an obfuscated ternary chain instead of clear if-else. At -O0, this complexity is unnecessary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Each test function (`call_*`) correctly calls its corresponding `param_*` function. Minor issue: some compiler-generated wrapper functions exist.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `param_dynamic_code`. Some minor backward jumps in loops but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant code in `call_asm_clobber` with stack canary checks that don't exist in source. Loop unrolling not present (expected at -O0). Mixed results.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently, but original used `int` (platform-dependent). Pointers are reasonably typed as `int32_t*` but should be `int*`. Function signatures mostly match but parameter types could be more precise.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Source had no complex structs, only simple types. The decompiler correctly avoided creating fake structs. Simple arrays handled adequately.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations: `(int32_t *)a1` casts in `param_asm_atomic`, pointer arithmetic like `4 * v1 + a1` in `param_asm_clobber`. No alignment annotations. Moderate risk of issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments showing address ranges and line ranges (e.g., "// Address range: 0x12d0 - 0x12ea"). No explanation of macro semantics, inline assembly behavior, or algorithm purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of preprocessing patterns (macros expanded to constants), inline assembly blocks, or atomic operations. The decompiler treats all code as regular C without highlighting special constructs.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The obfuscated ternary in `param_macro_constants` should be flagged. The `__asm_*` pseudo-functions for SIMD should indicate they're decompiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `param_asm_atomic` should indicate they require aligned memory, but no such documentation exists.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear (e.g., `main` calls `test_preprocessing_features`), but no documentation of which functions call which, or global variable usage. Static functions not marked as such.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably (test functions together, asm functions together). However, compiler-generated functions (`__x86_get_pc_thunk_*`, `_init`, `_fini`) mixed with user code reduces clarity.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes proper headers (`<stdbool.h>`, `<stdint.h>`, `<stdlib.h>`, `<sys/mman.h>`, `<unistd.h>`). External functions declared. Should compile with minimal stubs.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a1`, `a2`, `v1`, `v2`, `result`) - should infer semantic names from usage like `size`, `counter`, `sum`
+- `param_macro_constants` uses obfuscated ternary chain instead of clear if-else: `v1 < 0 == ((v1 ^ a1) & (a1 ^ (int32_t)"loneTable")) < 0 == (v1 != 0) ? 64 : (int32_t)&g2`
+- Heavy compiler artifacts (`__x86_get_pc_thunk_*`, stack canaries) obscure actual logic
+- No comments explaining macro expansion results, inline assembly behavior, or preprocessing semantics
+- Magic numbers like `0xdef0`, `282`, `382` lack explanatory constants
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are appropriately sized and separated. The mapping between `call_*` and `param_*` functions is clear and matches source organization.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All variables use generic single-letter names with numbers. At -O0 optimization, there's no excuse for not inferring semantic names from usage patterns (e.g., `a1` in `param_macro_constants` is clearly `size` based on comparison with `MAX_SIZE`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage: `a1` compared to `MAX_SIZE` (1024) should be named `size`; loop variable `v1` accumulating sum should be `sum` or `i`
+2. Simplify obfuscated expressions: The ternary chain in `param_macro_constants` should be decompiled to `if (a1 > 1024) return 64; else return 512;`
+3. Add semantic comments: Explain that `64` is `BUFFER_COUNT * 4`, `0xdef0` is the default platform constant, and `282` = line + counter1 + counter2 + counter3

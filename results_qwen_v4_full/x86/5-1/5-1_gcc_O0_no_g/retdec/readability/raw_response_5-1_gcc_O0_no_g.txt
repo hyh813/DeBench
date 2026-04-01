@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, result, temp) with zero semantic meaning. For example, in `test_cpp_member_func`, the `SimpleClass obj` becomes `&v4`, and in `test_cpp_lambda`, `capture_by_value` becomes `v3` - completely losing original intent.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions retain mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) with demangled comments. Test functions are identifiable, but STL internals like `_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv` are verbose and unreadable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1234` appear without explanation. String literals are referenced through opaque global variables (e.g., `(char *)(v1 + (int32_t)&g34 - 0x3f44)`) instead of direct strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` calls in nearly every function, stack canary checks (`__readgsdword(20)`) repeated throughout, and 234 detected functions including excessive STL internals.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses explicit goto labels (lab_0x1fcf, lab_0x1ffd) in `test_cpp_rtti` instead of natural if-else structures. At -O0 optimization, this restructuring is unexpected and reduces readability significantly.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: 234 functions detected with excessive fragmentation - STL template instantiations exploded into separate functions. Test functions are appropriately separated, but helper functions like `_ZSt7forwardIRPiE...` should be library calls.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but goto labels disrupt flow. Forward jumps into conditional blocks (e.g., `goto lab_0x1fcf`) break natural reading patterns expected at -O0.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary checks repeat identically in every function. `__x86_get_pc_thunk_*` calls appear redundantly. No dead code elimination visible despite -O0 compilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Uses int32_t/int32_t* but loses all C++ class types - everything becomes pointer arithmetic. Template distinctions blur (Container<int> vs Container<double> both use int32_t*). Const-correctness partially preserved with `const` methods.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only one struct defined (_Unwind_Exception). All C++ classes lost - accessed via raw pointer arithmetic like `*(int32_t *)((int32_t)result + 4)`. No field names recovered for any class members.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts between int32_t* and int32_t. Virtual function calls reduced to `*(int32_t *)*a1` without type safety. Pointer arithmetic on class objects lacks bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only demangled function names as comments (e.g., "// Demangled: test_cpp_member_func()"). No semantic comments explaining algorithm purpose, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized - RAII (smart pointers), virtual dispatch, operator overloading all appear as raw function calls. No design pattern identification. Lambda captures become opaque struct accesses.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No suspicious code flagged. Vtable operations, indirect calls, and this-pointer adjustments for multiple inheritance not marked as requiring manual review. Code presents confidently despite semantic loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks not explained). Exception handling present but no indication of what exceptions might be thrown. No postcondition or invariant recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through code but virtual dispatch relationships unclear. Global variable usage opaque (g1-g41 with no semantic names). Inheritance hierarchy not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic file with no logical grouping. Related class methods scattered throughout. No header file structure or namespace organization. STL internals mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Includes standard headers but won't compile standalone - many STL internal functions undefined. Requires extensive stubbing. Dependencies on C++ runtime not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+4+5+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (3+2+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.33
+
+Overall Score: 3.31/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Variable `v4` in test_cpp_member_func should be named `obj`** - the SimpleClass instance is completely obscured
+- **All class structures lost** - accessed via raw pointer arithmetic instead of struct definitions with field names
+- **Goto labels (lab_0x1fcf, lab_0x1ffd) used instead of natural if-else** - unexpected at -O0 optimization level
+- **234 functions including STL internals** - template instantiations exploded rather than recognized as library code
+- **Global variables g1-g41 with no semantic meaning** - string literals and constants referenced through opaque offsets
+
+### Best Quality Aspect: Function Naming Quality (scored 5/10)
+- Demangled comments preserve some semantic information about test function purposes despite mangled symbol names.
+
+### Most Needs Improvement: Composite Type Recovery (scored 2/10)
+- Complete failure to recover C++ class structures - all object access reduced to unsafe pointer arithmetic with no field names.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts as structs** with field names inferred from access patterns (e.g., offset+4 consistently accessed as `name` array in SimpleClass)
+2. **Recognize and collapse STL template instantiations** as library calls rather than expanding into hundreds of internal functions
+3. **Eliminate compiler artifacts at -O0** - remove __x86_get_pc_thunk_* calls and consolidate stack canary checks into function prologue/epilogue macros

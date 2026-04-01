@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 4,
+  "source_file": "decompiled/retdec_out/arm32/7/7_clang_O0_g.c",
+  "fixed_file": "results_qwen_v4_full/arm32/7/7_clang_O0_g/retdec/syntactic/fix_7_clang_O0_g.c"
+}

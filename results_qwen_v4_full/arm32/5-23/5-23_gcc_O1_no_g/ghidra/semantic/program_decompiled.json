@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_gcc_O1_no_g/ghidra/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "Testing preprocessing features\nConstants: 64\nFunctions: 30\nConditional: 32\nMulti-branch: 57122\nRecursion: 116\nStringize: 19\nToken paste: 60\nLOG: Values: 10, 20, 30\nVariadic: 0\nOverride: 16\nResult: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:03\nBuilt-in: 0\nTesting ASM features\nBasic: 15\nClobber: 0\nMulti-instruction: -1\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

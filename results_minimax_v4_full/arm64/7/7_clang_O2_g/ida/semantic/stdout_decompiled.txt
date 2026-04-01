@@ -1,0 +1,16 @@
+Testing Obfuscation and Optimization:
+
+  Obf_L4_02: Fake branch: 10
+  Obf_L4_03: Opaque predicate: 20
+  Obf_L4_04: Instruction substitution: 225
+  Obf_L4_05: String encryption: 48
+  Opt_L4_01: Tail call optimization: 500500
+  Opt_L4_01: Non-tail call: 5050
+  Opt_L4_02: Vectorized loop: 72
+  Opt_L5_01: Link-time optimization: 20
+  Edge_L3_01: Division by zero: 2
+  Edge_L3_02: Null pointer dereference: 41
+  Edge_L3_03: Buffer overflow: 30
+  Edge_L3_04: Integer overflow: 2000000000
+  Edge_L4_01: Undefined behavior: 10
+  Edge_L4_02: Implementation-defined: 48

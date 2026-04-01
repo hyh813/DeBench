@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_28` that obscure semantic meaning. Original names like `result`, `encrypted`, `decrypted`, `buffer` are completely lost, making it difficult to track variable purpose across the codebase.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined function names are preserved from source (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`). This is a significant strength, though runtime functions use generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0x5a`, `0x14` (20), `0x23` (35), `0xe1` (225), `0x7a314` (500500). Original decimal constants and their semantic meaning are lost to hex representation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function wrappers (`strncpy`, `puts`, `strlen` calling themselves) add noise. Runtime initialization code (`_init`, `_start`, `deregister_tm_clones`) clutters the output without clear separation from application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_vectorized_loop` has extremely complex nested loops from SIMD unrolling. `param_opaque_predicate` uses convoluted condition `((uVar4 ^ 1 | uVar6 * uVar6 ^ ...) == 0)` instead of clear boolean logic. Original simple branches in `param_fake_branch` were eliminated entirely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly with appropriate granularity. However, `call_*` functions are constant-folded to simple returns (e.g., `call_fake_branch` returns `10` directly), losing the original call structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `param_vectorized_loop` contains multiple forward jumps and labels (`LAB_00101599:`) that disrupt top-to-bottom reading. Most other functions read linearly but with awkward conditional structures.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `param_vectorized_loop` has massive code duplication from loop unrolling (similar 8-element blocks repeated 3+ times). The decompiler doesn't recognize or abstract these patterns, creating ~200 lines of repetitive code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `undefined4` instead of `int`, `ulong` for pointer parameters in `param_vectorized_loop`, `undefined4 *` for typed pointers. Original `int`, `char*`, `size_t` distinctions are often lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely lost—function just returns constant `0x2f`. `jmp_buf` cast to `__jmp_buf_tag *` is reasonable but no struct field names are recovered anywhere.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(undefined *)0x0`, `(ulong)(param_1 - 2)`, `(long)param_1`, pointer arithmetic on `ulong` parameters. No const-correctness preserved; all pointer operations are potentially unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of algorithm intent, no documentation of non-obvious logic, no decompiler confidence indicators. Original source had extensive comments that are completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. Tail recursion transformation not explained. Patterns exist but are unnamed.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Dead code elimination in `param_fake_branch` happens silently—no warning that fake branches were removed. Signal handler setup and `setjmp`/`longjmp` usage not flagged as unusual control flow.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions or return value guarantees. Error handling paths through signal handlers not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships unclear. Global variables (`div_zero_caught`, `segv_caught`, `jmp_buffer`) appear without context about their shared usage across handlers.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime code (`_init`, `_fini`, `__do_global_dtors_aux`) mixed with application logic without separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present but code depends on runtime symbols (`__libc_start_main`, `__cxa_finalize`). Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (25%): (4+7+5+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (20%): (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (15%): (1+3+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (10%): (5+5+6)/3   = 5.33 × 0.10 = 0.53
+────────────────────────────────────────────────────
+Overall Score:                              4.42/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on semantic usage (e.g., `input_value`, `gcd_result`, `loop_counter`)
+- **`param_fake_branch`** lost all fake branch logic—decompiler should indicate dead code was eliminated by optimizer
+- **`param_vectorized_loop`** has 200+ lines of unrolled code without abstraction or comments explaining SIMD transformation
+- **Zero comments** throughout entire decompiled output despite complex optimization transformations
+- **Bitfield struct completely lost** in `param_implementation_defined`—reduced to constant return value
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most user-defined function names preserved from original source, maintaining semantic identity across decompilation
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes understanding optimization transformations nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add decompiler confidence annotations** - Flag regions where optimizer eliminated code (e.g., "// OPTIMIZER: Dead branch removed at -O0") to explain discrepancies from expected source
+2. **Implement pattern recognition for common algorithms** - Detect and label GCD, XOR decryption, tail recursion patterns with explanatory comments
+3. **Recover semantic variable names from usage context** - Analyze how variables are used (e.g., loop counters, accumulators, pointers) to generate meaningful names instead of `iVar1`, `param_1`

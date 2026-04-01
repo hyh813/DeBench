@@ -1,0 +1,1819 @@
+{
+  "file_name": "results_minimax_v4_full/x86/5-1/5-1_gcc_O0_no_g/binaryai/syntactic/fix_5-1_gcc_O0_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 36,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 500,
+        "stats": {
+          "Other": 271,
+          "Syntax Error": 204,
+          "Argument Count Mismatch": 8,
+          "Void Value Error": 8,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22461,
+        "completion_tokens": 1018,
+        "total_tokens": 23479
+      },
+      "time_cost": 27.975857496261597,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 500,
+        "stats": {
+          "Other": 259,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 8,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22780,
+        "completion_tokens": 823,
+        "total_tokens": 23603
+      },
+      "time_cost": 22.718193292617798,
+      "phase": "compile",
+      "new_errors_introduced": 5
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 500,
+        "stats": {
+          "Other": 259,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 8,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22815,
+        "completion_tokens": 650,
+        "total_tokens": 23465
+      },
+      "time_cost": 52.85273289680481,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 500,
+        "stats": {
+          "Other": 259,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 8,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22892,
+        "completion_tokens": 637,
+        "total_tokens": 23529
+      },
+      "time_cost": 19.28220224380493,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 500,
+        "stats": {
+          "Other": 259,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 8,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 22955,
+        "completion_tokens": 1149,
+        "total_tokens": 24104
+      },
+      "time_cost": 39.24650192260742,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 497,
+        "stats": {
+          "Other": 246,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 18,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23029,
+        "completion_tokens": 616,
+        "total_tokens": 23645
+      },
+      "time_cost": 19.03086566925049,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 497,
+        "stats": {
+          "Other": 246,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 18,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23092,
+        "completion_tokens": 589,
+        "total_tokens": 23681
+      },
+      "time_cost": 48.39362120628357,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 497,
+        "stats": {
+          "Other": 246,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 203,
+          "Void Value Error": 18,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23121,
+        "completion_tokens": 793,
+        "total_tokens": 23914
+      },
+      "time_cost": 20.08129358291626,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 466,
+        "stats": {
+          "Other": 181,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 20,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23304,
+        "completion_tokens": 700,
+        "total_tokens": 24004
+      },
+      "time_cost": 16.495325565338135,
+      "phase": "compile",
+      "new_errors_introduced": 34
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 466,
+        "stats": {
+          "Other": 181,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 20,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23367,
+        "completion_tokens": 690,
+        "total_tokens": 24057
+      },
+      "time_cost": 33.06482791900635,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 466,
+        "stats": {
+          "Other": 181,
+          "Argument Count Mismatch": 21,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 20,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23430,
+        "completion_tokens": 3368,
+        "total_tokens": 26798
+      },
+      "time_cost": 100.50520658493042,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 450,
+        "stats": {
+          "Other": 194,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23691,
+        "completion_tokens": 764,
+        "total_tokens": 24455
+      },
+      "time_cost": 29.597196578979492,
+      "phase": "compile",
+      "new_errors_introduced": 3
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 451,
+        "stats": {
+          "Other": 195,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23722,
+        "completion_tokens": 630,
+        "total_tokens": 24352
+      },
+      "time_cost": 41.870930433273315,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 450,
+        "stats": {
+          "Other": 194,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23739,
+        "completion_tokens": 907,
+        "total_tokens": 24646
+      },
+      "time_cost": 19.26060199737549,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 450,
+        "stats": {
+          "Other": 194,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23827,
+        "completion_tokens": 542,
+        "total_tokens": 24369
+      },
+      "time_cost": 11.41580867767334,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 450,
+        "stats": {
+          "Other": 194,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23856,
+        "completion_tokens": 820,
+        "total_tokens": 24676
+      },
+      "time_cost": 16.534526109695435,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 450,
+        "stats": {
+          "Other": 194,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23938,
+        "completion_tokens": 606,
+        "total_tokens": 24544
+      },
+      "time_cost": 14.83606481552124,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 450,
+        "stats": {
+          "Other": 194,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23967,
+        "completion_tokens": 1096,
+        "total_tokens": 25063
+      },
+      "time_cost": 19.371554613113403,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 449,
+        "stats": {
+          "Other": 193,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23989,
+        "completion_tokens": 723,
+        "total_tokens": 24712
+      },
+      "time_cost": 32.03553891181946,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 448,
+        "stats": {
+          "Other": 192,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 24025,
+        "completion_tokens": 2571,
+        "total_tokens": 26596
+      },
+      "time_cost": 56.538421630859375,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 429,
+        "stats": {
+          "Other": 173,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23303,
+        "completion_tokens": 628,
+        "total_tokens": 23931
+      },
+      "time_cost": 22.341969966888428,
+      "phase": "compile",
+      "new_errors_introduced": 4
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 429,
+        "stats": {
+          "Other": 173,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23332,
+        "completion_tokens": 657,
+        "total_tokens": 23989
+      },
+      "time_cost": 13.544207572937012,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 429,
+        "stats": {
+          "Other": 173,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23373,
+        "completion_tokens": 596,
+        "total_tokens": 23969
+      },
+      "time_cost": 21.716646194458008,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 429,
+        "stats": {
+          "Other": 173,
+          "Syntax Error": 187,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23339,
+        "completion_tokens": 1193,
+        "total_tokens": 24532
+      },
+      "time_cost": 19.04927110671997,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 426,
+        "stats": {
+          "Other": 178,
+          "Syntax Error": 179,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23343,
+        "completion_tokens": 898,
+        "total_tokens": 24241
+      },
+      "time_cost": 17.101090908050537,
+      "phase": "compile",
+      "new_errors_introduced": 6
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 422,
+        "stats": {
+          "Other": 176,
+          "Syntax Error": 177,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced 1st occurrence (2 total found; use replace_all=true to replace all at once)"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23216,
+        "completion_tokens": 652,
+        "total_tokens": 23868
+      },
+      "time_cost": 13.3834388256073,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 418,
+        "stats": {
+          "Other": 174,
+          "Syntax Error": 175,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23278,
+        "completion_tokens": 627,
+        "total_tokens": 23905
+      },
+      "time_cost": 34.104435205459595,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 418,
+        "stats": {
+          "Other": 174,
+          "Syntax Error": 175,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23286,
+        "completion_tokens": 804,
+        "total_tokens": 24090
+      },
+      "time_cost": 28.842225790023804,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 199,
+          "Syntax Error": 179,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23273,
+        "completion_tokens": 663,
+        "total_tokens": 23936
+      },
+      "time_cost": 22.237603187561035,
+      "phase": "compile",
+      "new_errors_introduced": 16
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 199,
+          "Syntax Error": 179,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": false,
+            "msg": "Patch failed: The search_block was not found in the file. Please ensure you copy the OLD code EXACTLY as it appears in the file context, including surrounding lines if necessary for uniqueness."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23287,
+        "completion_tokens": 2436,
+        "total_tokens": 25723
+      },
+      "time_cost": 57.27628040313721,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 199,
+          "Syntax Error": 179,
+          "Incomplete Type": 56,
+          "Void Value Error": 12,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23298,
+        "completion_tokens": 1487,
+        "total_tokens": 24785
+      },
+      "time_cost": 21.560965061187744,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 451,
+        "stats": {
+          "Other": 186,
+          "Syntax Error": 184,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23854,
+        "completion_tokens": 764,
+        "total_tokens": 24618
+      },
+      "time_cost": 14.931122303009033,
+      "phase": "compile",
+      "new_errors_introduced": 32
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 449,
+        "stats": {
+          "Other": 185,
+          "Syntax Error": 183,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23956,
+        "completion_tokens": 726,
+        "total_tokens": 24682
+      },
+      "time_cost": 28.46449089050293,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 448,
+        "stats": {
+          "Other": 184,
+          "Syntax Error": 183,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23944,
+        "completion_tokens": 599,
+        "total_tokens": 24543
+      },
+      "time_cost": 27.975087642669678,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 184,
+          "Syntax Error": 182,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23929,
+        "completion_tokens": 552,
+        "total_tokens": 24481
+      },
+      "time_cost": 10.53791093826294,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 184,
+          "Syntax Error": 182,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23939,
+        "completion_tokens": 624,
+        "total_tokens": 24563
+      },
+      "time_cost": 29.47995352745056,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 184,
+          "Syntax Error": 182,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23902,
+        "completion_tokens": 1136,
+        "total_tokens": 25038
+      },
+      "time_cost": 23.541236877441406,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 184,
+          "Syntax Error": 182,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 3 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23894,
+        "completion_tokens": 641,
+        "total_tokens": 24535
+      },
+      "time_cost": 50.344181537628174,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 444,
+        "stats": {
+          "Other": 183,
+          "Syntax Error": 180,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23886,
+        "completion_tokens": 749,
+        "total_tokens": 24635
+      },
+      "time_cost": 15.817986965179443,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 444,
+        "stats": {
+          "Other": 183,
+          "Syntax Error": 180,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23891,
+        "completion_tokens": 821,
+        "total_tokens": 24712
+      },
+      "time_cost": 28.761235237121582,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 443,
+        "stats": {
+          "Other": 182,
+          "Syntax Error": 180,
+          "Incomplete Type": 67,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 4 occurrences"
+          },
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 4 occurrences"
+          },
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          },
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23902,
+        "completion_tokens": 956,
+        "total_tokens": 24858
+      },
+      "time_cost": 34.57245922088623,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 449,
+        "stats": {
+          "Other": 187,
+          "Syntax Error": 179,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23885,
+        "completion_tokens": 768,
+        "total_tokens": 24653
+      },
+      "time_cost": 37.94736981391907,
+      "phase": "compile",
+      "new_errors_introduced": 5
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 186,
+          "Syntax Error": 178,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23922,
+        "completion_tokens": 1003,
+        "total_tokens": 24925
+      },
+      "time_cost": 31.64730477333069,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 447,
+        "stats": {
+          "Other": 186,
+          "Syntax Error": 178,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23996,
+        "completion_tokens": 683,
+        "total_tokens": 24679
+      },
+      "time_cost": 12.39211893081665,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 445,
+        "stats": {
+          "Other": 185,
+          "Syntax Error": 177,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23948,
+        "completion_tokens": 678,
+        "total_tokens": 24626
+      },
+      "time_cost": 26.85601830482483,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 445,
+        "stats": {
+          "Other": 185,
+          "Syntax Error": 177,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23950,
+        "completion_tokens": 1087,
+        "total_tokens": 25037
+      },
+      "time_cost": 18.53215718269348,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 442,
+        "stats": {
+          "Other": 183,
+          "Syntax Error": 176,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 4 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23704,
+        "completion_tokens": 718,
+        "total_tokens": 24422
+      },
+      "time_cost": 28.426199436187744,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 442,
+        "stats": {
+          "Other": 183,
+          "Syntax Error": 176,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 2 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23697,
+        "completion_tokens": 772,
+        "total_tokens": 24469
+      },
+      "time_cost": 16.168821096420288,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 440,
+        "stats": {
+          "Other": 182,
+          "Syntax Error": 175,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23674,
+        "completion_tokens": 624,
+        "total_tokens": 24298
+      },
+      "time_cost": 12.842363119125366,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 440,
+        "stats": {
+          "Other": 182,
+          "Syntax Error": 175,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": false,
+            "msg": "String not found in file"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 23726,
+        "completion_tokens": 698,
+        "total_tokens": 24424
+      },
+      "time_cost": 12.300668001174927,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 1222859,
+    "total_time_seconds": 1373.8,
+    "initial_state": {
+      "error_count": 500,
+      "error_types": {
+        "Other": 271,
+        "Syntax Error": 204,
+        "Argument Count Mismatch": 8,
+        "Void Value Error": 8,
+        "Incomplete Type": 3,
+        "Invalid Main Signature": 1,
+        "Redefinition": 5
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.0816,
+        "error_trajectory": [
+          500,
+          500,
+          500,
+          500,
+          500,
+          497,
+          497,
+          497,
+          466,
+          466,
+          466,
+          450,
+          451,
+          450,
+          450,
+          450,
+          450,
+          450,
+          449,
+          448,
+          429,
+          429,
+          429,
+          429,
+          426,
+          422,
+          418,
+          418,
+          447,
+          447,
+          447,
+          451,
+          449,
+          448,
+          447,
+          447,
+          447,
+          447,
+          444,
+          444,
+          443,
+          449,
+          447,
+          447,
+          445,
+          445,
+          442,
+          442,
+          440,
+          440
+        ],
+        "max_error_count": 500,
+        "min_error_count": 418
+      },
+      "effort": {
+        "initial_error_count": 500,
+        "lowest_error_count": 418,
+        "lowest_at_iteration": 27,
+        "error_reduction": 82,
+        "error_reduction_ratio": 0.164
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 271,
+          "Syntax Error": 204,
+          "Argument Count Mismatch": 8,
+          "Void Value Error": 8,
+          "Incomplete Type": 3,
+          "Invalid Main Signature": 1,
+          "Redefinition": 5
+        },
+        "final_types": {
+          "Other": 182,
+          "Syntax Error": 175,
+          "Incomplete Type": 69,
+          "Void Value Error": 12,
+          "Argument Count Mismatch": 1,
+          "Invalid Main Signature": 1
+        },
+        "types_eliminated": [
+          "Redefinition"
+        ],
+        "types_introduced": []
+      },
+      "score": {
+        "effort_score": 8.2,
+        "stability_score": 45.92,
+        "total_score": 54.12,
+        "grade": "C-"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 7,
+    "type_breakdown": {
+      "Void Value Error": {
+        "initial_count": 8,
+        "max_count": 20,
+        "final_count": "unknown"
+      },
+      "Incomplete Type": {
+        "initial_count": 3,
+        "max_count": 69,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 5,
+        "max_count": 5,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 271,
+        "max_count": 271,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 204,
+        "max_count": 204,
+        "final_count": "unknown"
+      },
+      "Argument Count Mismatch": {
+        "initial_count": 8,
+        "max_count": 21,
+        "final_count": "unknown"
+      },
+      "Invalid Main Signature": {
+        "initial_count": 1,
+        "max_count": 1,
+        "final_count": "unknown"
+      }
+    }
+  }
+}

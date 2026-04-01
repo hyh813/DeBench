@@ -1,0 +1,170 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+### Analysis Overview
+
+The original source shows `param_strcpy` as a simple wrapper function that calls `strcpy` and returns the string length. The decompiled version from IDA Pro/Hex-Rays is remarkably faithful to the source, though there are some minor discrepancies worth noting.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+#### 1. Variable Naming Quality
+**Score: 9/10**
+
+The decompiled function uses `dest` and `src` which directly correspond to the original `dst` and `src`. The naming is semantically clear and matches the source intent. The slight variation (`dest` vs `dst`) is a minor stylistic difference that doesn't impede understanding.
+
+#### 2. Function Naming Quality
+**Score: 10/10**
+
+The function is named `param_strcpy` in both the original source and decompiled output - a perfect match. This demonstrates excellent symbol recovery.
+
+#### 3. Literal Clarity
+**Score: 10/10**
+
+No magic numbers or string literals are present in this function. The calls to `strcpy` and `strlen` are library functions, not literals requiring explanation.
+
+#### 4. Noise Reduction
+**Score: 9/10**
+
+The decompiled code is clean with no visible compiler artifacts such as stack canary checks, register spill code, or debug instrumentation. The `__cdecl` calling convention specifier is appropriate for x86 but represents minimal noise.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+#### 5. Control Flow Naturalness
+**Score: 10/10**
+
+The control flow is perfectly natural - a simple sequential execution of `strcpy(dest, src)` followed by `return strlen(dest)`. This exactly matches the source code structure.
+
+#### 6. Function Decomposition
+**Score: 10/10**
+
+The function is appropriately sized as a simple wrapper. At -O0 optimization, no inlining occurred, which is expected and correct.
+
+#### 7. Code Linearization
+**Score: 10/10**
+
+The code reads perfectly top-to-bottom with no jumps, branches, or forward references. The linear flow matches the source exactly.
+
+#### 8. Redundancy Elimination
+**Score: 10/10**
+
+No redundant code exists. The function contains exactly what's necessary to implement the semantics.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+#### 9. Type Precision
+**Score: 7/10**
+
+The return type is `size_t` in decompiled vs `int` in source - this is actually more precise since `strlen` returns `size_t`. However, the parameter `src` is `char *` in decompiled but `const char *` in source. The missing `const` qualifier represents a minor type degradation.
+
+#### 10. Composite Type Recovery
+**Score: 10/10**
+
+Not applicable - this function uses only primitive types (char pointers), no structs or unions.
+
+#### 11. Type Safety
+**Score: 9/10**
+
+The code is type-safe with no unsafe casts. The only minor issue is the missing `const` which could allow the caller to modify what should be read-only memory.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+#### 12. Comment Quality & Presence
+**Score: 3/10**
+
+No comments are present in the decompiled function. The original source had a comment explaining the function's purpose. The absence of any explanatory comments reduces readability for analysts who don't have access to the source.
+
+#### 13. Idiom Recognition
+**Score: 9/10**
+
+The strcpy-then-strlen pattern is correctly recognized as sequential library calls. The function correctly identifies this as a "copy string and return length" idiom.
+
+#### 14. Anomaly Indication
+**Score: 10/10**
+
+No anomalies exist in this function - the decompilation is straightforward and accurate.
+
+#### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+No preconditions, postconditions, or contracts are documented. The original source had no explicit assertions either, but the decompiler could infer that `dest` should be large enough to hold `src`.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+#### 16. Cross-Reference Clarity
+**Score: 9/10**
+
+The function calls to `strcpy` and `strlen` are clearly visible. The relationship to the caller `call_strcpy` is preserved in the naming.
+
+#### 17. Module Organization
+**Score: 9/10**
+
+The function is properly placed among other standard library wrapper functions (param_strcmp, param_strlen, etc.), matching the source organization.
+
+#### 18. Build System Compatibility
+**Score: 9/10**
+
+The function should compile cleanly with standard C libraries. The `__cdecl` specifier is x86-specific but appropriate for the target architecture.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (9 + 10 + 10 + 9) / 4 = 9.5
+L2_avg = (10 + 10 + 10 + 10) / 4 = 10.0
+L3_avg = (7 + 10 + 9) / 3 = 8.67
+L4_avg = (3 + 9 + 10 + 3) / 4 = 6.25
+L5_avg = (9 + 9 + 9) / 3 = 9.0
+
+Overall = (9.5 × 0.30) + (10.0 × 0.25) + (8.67 × 0.20) + 
+          (6.25 × 0.15) + (9.0 × 0.10)
+        = 2.85 + 2.50 + 1.73 + 0.94 + 0.90
+        = 8.92/10
+```
+
+### Overall Readability Score: 8.9/10
+
+---
+
+### Critical Defects
+
+1. **Missing `const` qualifier on `src` parameter**: The decompiled function declares `char *src` while the original has `const char *src`. This is a type precision issue that could lead to incorrect assumptions about mutability.
+
+2. **No comments explaining function purpose**: Unlike the well-commented source, the decompiled version provides no context about what the function does or returns.
+
+3. **Return type mismatch**: Source returns `int`, decompiled returns `size_t`. While `size_t` is technically more correct for `strlen`'s return type, it differs from the original signature.
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (10/10)** - The function name `param_strcpy` is perfectly preserved, demonstrating excellent symbol recovery from the binary.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (3/10)** - The decompiled function lacks any explanatory comments. Adding a simple comment like `// Copies src to dest and returns length` would significantly improve readability for analysts working without source access.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover `const` qualifiers**: Analyze pointer usage patterns to identify parameters that should be `const`. In this case, `src` is only passed to `strcpy` (read), never modified.
+
+2. **Add semantic comments**: When library functions like `strcpy` and `strlen` are identified, add brief comments explaining their role in the function's logic.
+
+3. **Preserve original return types**: While `size_t` is technically more precise, maintaining the original function signature (`int`) ensures semantic equivalence with the source for analysts comparing decompiled code to original.

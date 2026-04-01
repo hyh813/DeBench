@@ -1,0 +1,16 @@
+Obfuscation Test
+Result: 10
+Value: 20
+Result: 0xe1
+Length: 89
+Tail call: 500500
+Non-tail: 5050
+Vector: 72
+LTO: 20
+Division result: 2
+Null deref result: 41
+Overflow: 0
+Overflow: 30
+Integer overflow: 2000000000Undef behavior: 0Impl defined: 0
+Undef behavior: 10Impl defined: 0
+Impl defined: 48

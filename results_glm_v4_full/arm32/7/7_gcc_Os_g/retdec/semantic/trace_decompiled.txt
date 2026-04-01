@@ -1,0 +1,16 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=-1096787868,Arg2=-1096787860,Arg3=5060273|r0=0x1,r1=0xbea05864,r2=0xbea0586c,r3=0x4d36b1,r4=0xbea05728,r5=0x0,r6=0x0,r7=0x0
+TRACE_PRINT|0|%BA%42%4D
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%9E%42%4D
+TRACE_ENT|1|call_opaque_predicate|1|Arg0=3,Arg1=0,Arg2=-971520256,Arg3=-971520256|r0=0x3,r1=0x0,r2=0xc617c700,r3=0xc617c700,r4=0x4e500c,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|1|call_opaque_predicate|1|35
+TRACE_PRINT|0|%82%42%4D
+TRACE_PRINT|0|%65%42%4D
+TRACE_ENT|2|param_string_encryption|1|Arg0=3,Arg1=0,Arg2=-971520256,Arg3=-971520256|r0=0x3,r1=0x0,r2=0xc617c700,r3=0xc617c700,r4=0x4e500c,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|3|decrypt_string|2|Arg0=5132300,Arg1=-1096788268,Arg2=32,Arg3=90|r0=0x4e500c,r1=0xbea056d4,r2=0x20,r3=0x5a,r4=0xbea056d4,r5=0xb6f2d968,r6=0x0,r7=0x0
+TRACE_EXT|3|decrypt_string|2|-1096788268
+TRACE_EXT|2|param_string_encryption|1|193
+TRACE_PRINT|0|%49%42%4D
+TRACE_PRINT|0|%1F%42%4D
+TRACE_PRINT|0|%FA%41%4D
+TRACE_ENT|4|call_vectorized_loop|1|Arg0=3,Arg1=0,Arg2=-971520256,Arg3=-971520256|r0=0x3,r1=0x0,r2=0xc617c700,r3=0xc617c700,r4=0x4e500c,r5=0x0,r6=0x0,r7=0x0

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `iVar1`, `local_10`, `local_20`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`). However, some helper functions have generic names (`FUN_00102020`) and return type information is lost in naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Extensive magic numbers throughout: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), signal numbers as `10` and `0xe`, socket constants as `2` and `1`. String literals preserved but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in most functions, frame pointer manipulation (`in_FS_OFFSET`), and `LOCK()/UNLOCK()` macros for atomics create visual noise that obscures core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs reasonably well, but awkward patterns like `iVar2 = iVar1 >> 0x1f` for sign extension in `param_strcmp` obscure the original ternary operator logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source structure well; thread functions properly separated from test functions. Some wrapper functions are trivially small but this matches original design.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack check at function end disrupts flow. Error handling paths use early returns appropriately in most cases.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code; stack canary repetition is compiler artifact not decompiler fault. Loop structures not excessively unrolled.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type losses: `param_strcpy` returns `void` instead of `int`, `param_strlen` returns `void` instead of `int`, thread functions return `undefined8` instead of `void*`. Many parameters use `undefined8` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct recovered in `param_win32_api`, `sockaddr` partially recovered in `param_socket_create`. ThreadData struct lost (accessed as `int` array). TLS variables accessed via raw FS offset.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout, pointer arithmetic on generic types, thread function signatures incorrect (`void` vs `void*`), atomic operations use `LOCK()/UNLOCK()` macros instead of proper `_Atomic` types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only Ghidra auto-generated function headers present. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic like signal handling loops.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`), signal handling pattern preserved, but no explicit pattern naming or documentation of recognized idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Ghidra warns about unreachable blocks and stack checks, but no indication of uncertain type recovery or potentially incorrect function signatures that would mislead analysts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation, error return values (`-1`, `-2`, `-3`, `0xfffffffd`) not explained, no contract information about expected inputs/outputs.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, global variable usage apparent (`signal_received`, `atomic_counter`), but no explicit call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 70 functions in single output file, no file organization matching source sections (6.1, 6.2, 6.3), test functions mixed with implementation without clear separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (`pthread_*`, `syscall`, `shmget`) without declarations, type mismatches would cause compilation errors, requires extensive stubbing and type corrections.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3×0.10 + 7×0.10 + 4×0.05 + 5×0.05) = 1.45
+Level 2 (25%): (6×0.08 + 7×0.07 + 6×0.05 + 7×0.05) = 1.62
+Level 3 (20%): (4×0.08 + 5×0.07 + 4×0.05) = 0.87
+Level 4 (15%): (2×0.05 + 5×0.03 + 4×0.03 + 2×0.04) = 0.45
+Level 5 (10%): (5×0.04 + 4×0.03 + 3×0.03) = 0.41
+
+Overall = 1.45 + 1.62 + 0.87 + 0.45 + 0.41 = 4.80/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Return type loss**: `param_strcpy` and `param_strlen` return `void` instead of `int`, losing critical semantic information
+- **Generic variable names**: All local variables use `param_N`, `iVarN`, `local_N` pattern with zero semantic meaning
+- **Magic numbers everywhere**: `0x2a`, `0xffffffff`, `0xfffffffe`, signal numbers `10`/`0xe` unexplained
+- **Thread function signature errors**: `thread_compute` returns `void` instead of `void*`, breaking pthread semantics
+- **No comments or documentation**: Zero explanation of non-obvious logic like signal handling loops or atomic operations
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source (`param_strcpy`, `thread_compute`, `signal_handler`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means analysts must reverse-engineer all non-trivial logic without any guidance from the decompiler.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover return types from usage patterns** - Analyze how return values are used (e.g., `param_strcpy` result used in printf) to infer correct return types
+2. **Infer variable names from context** - Use string literals, function parameters, and usage patterns to suggest semantic names (e.g., `param_1` in `param_strcpy` → `dst`)
+3. **Add decompilation confidence annotations** - Flag uncertain type recoveries and suggest manual review for critical functions like thread entry points

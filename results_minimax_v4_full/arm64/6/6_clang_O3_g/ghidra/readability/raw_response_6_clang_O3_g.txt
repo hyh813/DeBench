@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `local_30`, `local_28`, `iVar1`, `sVar1`, `puVar5`. While stack variables in decompiled code are often positional, the lack of semantic names like `buffer`, `length`, `result` significantly impedes understanding. For example, in `param_strcpy`, the variable `__s` could be `copied_string` and `sVar1` could be `string_length`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Primary test functions like `param_strcpy`, `call_strcpy`, `param_strcmp`, `call_strcmp` match the original source names exactly. Helper functions like `thread_compute`, `thread_sum`, `signal_handler` are semantically accurate. Minor deduction for some internal functions with generic names like `FUN_001012e0`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" are correctly preserved. However, magic numbers appear without explanation: `0x2a` (42), `0x38` (SYS_openat), `0x39` (SYS_close), `10` (SIGUSR1), `0xe` (SIGALRM). The decompiler uses `0x2a` for the expected return value 42 without explaining it's a test success indicator.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. However, there are some issues: `__isoc99_sscanf` instead of `sscanf`, unresolved local variable annotations like `/* Unresolved local var: int ret@[???] */`, and some awkward constructs like `-(uint)(iVar2 != 0)` for boolean conversion. These don't severely impede readability but add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and matches source. Loops, conditionals, and function calls are correctly structured. At `-O0`, there's no excuse for poor control flow. Some minor awkwardness in signal handling loops with complex boolean conditions. The pthread create/join patterns are correctly recovered.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and decomposed. Each test function (`call_*`) calls its corresponding `param_*` function, matching the source structure. Thread functions (`thread_compute`, `thread_sum`) are properly extracted. No excessive inlining or outlining artifacts typical of high optimization.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (e.g., `if (__stream == NULL) return -1;`) are appropriately used. No excessive goto statements or computed jumps. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in the output. For example, `call_strcpy` duplicates logic that could be simplified. The `param_malloc_free` function shows loop unrolling artifacts that could be better abstracted. However, no severe duplication that makes code unmaintainable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `char *dst, char *src` in param_strcpy, `size_t` for string lengths, `int` return types. However, `const` correctness is lost - `src` should be `const char *` but is declared as `char *`. Some function parameters use generic types where more specific ones could be inferred.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic types are recovered well. However, composite types like `ThreadData` struct are not properly reconstructed - in `param_pthread_join`, the ThreadData is passed as raw stack values (`local_60 = 0xa00000001`) rather than a structured type. The `sockaddr` structure is partially reconstructed but with generic field names.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues: some pointer arithmetic without proper casts, like in `param_memset` where `byte *pbVar4` and `uint *puVar5` are used with offset calculations. No severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The decompiler adds auto-generated warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */` which are noise rather than helpful. No explanation of algorithm intent, preconditions, or return value semantics.
+
+**13. Idiom Recognition:** Score: 9/10  
+Justification: Excellent recognition of standard library functions: `strcpy`, `strlen`, `strcmp`, `memcpy`, `memcmp`, `printf`, `fopen`, `fread`, `fwrite`, `malloc`, `free`, `pthread_create`, `pthread_join`, `pthread_mutex_lock`. System calls like `syscall` are identified with numeric constants. Threading primitives are correctly identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present but they're generic and not actionable. The `WARNING: Unknown calling convention` messages don't help understand the code. No indication of indirect calls that couldn't be resolved, or potential undefined behavior. The code presents everything with equal confidence regardless of decompilation certainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. For example, `param_strcpy` should document that `dst` must have sufficient space, but this is not indicated. Error return semantics (-1, -2, etc.) are not documented. No contracts or assertions recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure but not documented. It's clear that `call_strcpy` calls `param_strcpy`, but there's no explicit comment about this relationship. Global variables like `signal_received`, `signal_number`, `shared_counter` are used across functions but their relationships aren't explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: standard library tests, system call tests, thread tests. However, all 75 functions are in a single flat listing without clear section headers matching the source's `// ==== ... ====` divisions. Static vs. non-static scope is not distinguished.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code is valid C and would compile with minimal modifications. External declarations are implicit (standard library functions). No compiler-specific hacks. The main issue is that some functions like `param_linux_syscall` use raw syscall numbers that would need `sys/syscall.h` definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+1. Variable naming is predominantly generic (`local_30`, `iVar1`, `puVar5`) making it difficult to track purpose
+2. Complete absence of semantic comments explaining algorithm intent, preconditions, or return value meanings
+3. Composite types like `ThreadData` struct are not reconstructed - passed as raw stack values
+4. Magic numbers (0x2a, 0x38, 0x39, 10, 0xe) appear without named constant explanations
+5. `const` correctness is lost - function parameters like `src` in param_strcpy should be `const char *`
+
+**Best Quality Aspect:** Idiom Recognition (9/10)  
+The decompiler excellently identifies standard library functions (strcpy, strlen, pthread_create, etc.) and system call patterns. This is the strongest area where the decompiler adds value.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled code has almost no useful comments explaining what functions do, their preconditions, or the meaning of complex logic. Combined with generic variable names, this makes the code require significant reverse-engineering effort to understand.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: When a variable is used as a loop counter, name it `i` or `index`; when it's a string buffer, use `buffer` or `str`; when it's a size, use `size` or `len`
+2. **Recover struct types from stack layout**: The ThreadData structure in pthread_join tests should be reconstructed as a struct with fields `start`, `end`, `result` rather than raw stack values
+3. **Add semantic comments**: Document function purpose, parameter expectations, return value meanings, and explain magic numbers with their symbolic names (e.g., `// 0x2a = 42 (TEST_SUCCESS)`)

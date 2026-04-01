@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Heavy use of generic names like `iVar1`, `iVar2`, `lVar1`, `local_10` obscures semantic meaning (e.g., `iVar1` in `thread_sum` should be `sum` or `result`). Some variables like `buffer`, `thread_ret`, `consumer_ret` are well-named, creating inconsistent quality.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `thread_compute`, `consumer_thread`), clearly indicating purpose. Compiler-generated functions like `FUN_00102020` are generic but expected for initialization code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x12` (18), signal numbers as `10` and `0xe` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2,1,0` instead of `AF_INET,SOCK_STREAM,0`. String literals like `"HelloLib"` remain clear.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`, `__stack_chk_fail()`) appear in most functions. LOCK()/UNLOCK() macros for atomics add noise. Compiler warnings ("Unknown calling convention") clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops use natural do-while constructs. Some functions use goto labels (`LAB_00103a1f`, `LAB_00103d20`) for error handling, which is acceptable but less idiomatic than early returns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity with param_*/call_* separation. Thread functions properly extracted (`thread_sum`, `thread_increment`). No monolithic functions; sizes are reasonable for decompiled output.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Stack canary checks at function ends create minor non-linearity. Goto labels for error paths (`LAB_00103f06`) slightly disrupt flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Stack canary repetition is security-related, not redundant. Thread functions show similar patterns but this reflects source structure, not decompiler artifact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `size_t`, `FILE*`, `pthread_t`). Some degradation: `atomic_int` shown generically, casts like `(int)sVar1` present. Pointer types mostly accurate.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` partially recovered (fields visible but `sin_zero` array accessed element-by-element). `stat` struct used but fields not fully named.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple casts present: `(int)sVar1`, `(char *)0x0`. Pointer arithmetic in `thread_tls_test`: `(long)in_FS_OFFSET + -0x24`. Atomic operations use LOCK()/UNLOCK() instead of proper `_Atomic` types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var"). No algorithm explanations, no API contracts, no semantic documentation of function purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Thread patterns (pthread_create/join), mutex/condition variable patterns visible but not explicitly named. Signal handling pattern present but not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Removing unreachable block" in some functions. "Unresolved local var" indicates decompilation uncertainty. Stack canary warnings present. Some anomalies flagged but not comprehensively explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values (-1, -2, -3) visible but meanings not documented. No postcondition or invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear (param_strcpy → strcpy, strlen). Global variables referenced (`signal_received`, `atomic_counter`) but relationships not documented. No call graph or callback documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Related functions grouped (param_*/call_* pairs, thread functions together). No header file separation or module structure (expected for decompilation).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions (pthread_create, malloc, syscall) without declarations. LOCK()/UNLOCK() macros need definition. Stack canary checks require proper runtime setup. Would need significant headers to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+5+6)/4 = 6.0 × 0.30 = 1.80
+Level 2 (Structural):   (7+8+7+8)/4 = 7.5 × 0.25 = 1.875
+Level 3 (Type):         (7+7+6)/3   = 6.7 × 0.20 = 1.34
+Level 4 (Semantic):     (4+5+6+3)/4 = 4.5 × 0.15 = 0.675
+Level 5 (Contextual):   (6+5+5)/3   = 5.3 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.22/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects
+- **Magic numbers everywhere**: `0x2a`, `0x12`, `10`, `0xe` instead of named constants (42, SIGUSR1, SIGALRM)
+- **Generic variable names**: `iVar1`, `iVar2`, `lVar1`, `local_10` obscure semantic meaning throughout
+- **No semantic comments**: Only auto-generated warnings, no explanation of function purpose or algorithm
+- **Stack canary noise**: Every function has `local_10 = *(long *)(in_FS_OFFSET + 0x28)` and `__stack_chk_fail()` checks
+- **No contract documentation**: Return value meanings (-1, -2, -3, 42) not documented anywhere
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most source function names preserved accurately (`param_strcpy`, `thread_compute`, `consumer_thread`), making function purposes immediately clear.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error code documentation recovered, making it difficult to understand function contracts without referring to source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover named constants from usage patterns** - Detect repeated values (0x2a=42, 10=SIGUSR1) and suggest named constant definitions
+2. **Infer variable names from usage context** - Variables used in size calculations should be named `size`/`length`, loop counters should be `i`/`index`
+3. **Add semantic comments for library function patterns** - When strcpy/strlen sequences are detected, add comments explaining the string operation being performed

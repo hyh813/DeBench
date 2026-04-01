@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic auto-generated names like `iVar1`, `piVar2`, and `uVar9`, completely obscuring the semantic intent of variables like `sum`, `i`, or `len` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `struct_simple` are perfectly preserved, likely due to the presence of debug symbols in the binary.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Readable constants like `'A'`, `'Z'`, and `32` in `process_char` are transformed into obscure magic numbers like `0x19`, `0xbfU`, and `' '` within a complex unsigned comparison, and float literals in `test_data_types_l1` appear as raw hex (e.g., `0x400c000000000000`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise including frequent casts to `(long)` or `(int *)`, `undefined` types, and "Unresolved local var" comments which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple `for` loops in the source (e.g., `array_1d_stack`, `array_3d`) are completely unrolled into massive blocks of arithmetic operations or giant sum statements, destroying the natural iterative structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source code boundaries; despite the internal complexity due to optimization, the granularity and separation of concerns are maintained.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads mostly top-to-bottom without excessive jumping, but the massive unrolled blocks (e.g., in `array_1d_stack`) make it difficult to track the execution flow visually.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiled code is bloated with redundancy compared to the source; for example, `array_2d_stack` is a single line summing 10 specific indices rather than a compact loop, and `array_1d_stack` repeats the same accumulation logic multiple times.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While basic types and structs are generally correct, `process_ld` incorrectly returns `longdouble *` instead of `long double`, and many parameters are generic `undefined` types or require explicit casting.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs like `Point3D`, `Rect`, and `Flags` are recovered with correct field names (e.g., `x`, `y`, `z`), and nested struct access like `r->position.x` is accurately represented.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code is littered with unsafe casts such as `(int *)((long)arr + lVar12 + lVar11 * 4)` and `(int *)0x0`, which, while accurate to the optimized assembly, reduce type safety and readability.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are primarily limited to decompiler warnings like "WARNING: Removing unreachable block" or "Unresolved local var", providing no insight into the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are obscured; the `strlen` logic in `array_string` is transformed into a `do-while` loop, and the `switch` statement in `enum_switch` is replaced by a jump table lookup.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra effectively flags potential issues, such as "WARNING: Could not recover jumptable" in `ptr_func_simple` and "Unresolved local var" warnings where stack analysis failed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants; for example, the check `if (arr[i] != NULL)` in `pointer_array` is present but not documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow, though data flow is obscured by the generic variable names.
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions are listed in a flat manner, but they are grouped roughly by their appearance in the source file, maintaining some logical order.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile without significant modification due to `undefined` types, missing headers, and the incorrect return type for `process_ld`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Loop Unrolling:** Functions like `array_1d_stack` and `array_3d` are completely unrolled, replacing simple loops with hundreds of lines of arithmetic, making them unreadable.
+- **Variable Naming:** Extensive use of generic names (`iVar1`, `piVar2`) instead of semantic names (`sum`, `i`) hinders understanding.
+- **Obfuscated Logic:** The range check in `process_char` is converted to `0x19 < (byte)(c + 0xbfU)`, losing the clarity of `c >= 'A' && c <= 'Z'`.
+- **Type Errors:** `process_ld` returns a pointer `longdouble *` instead of the value `long double`.
+- **Literal Representation:** Floating-point constants in test functions are represented as raw hex integers (e.g., `0x400c000000000000`) rather than readable floats.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the original function names from the binary, making the high-level purpose of each unit immediately identifiable.
+
+**Most Needs Improvement:** Redundancy Elimination (scored 2/10)
+- The aggressive loop unrolling present in the binary results in massive code expansion (1831 LOC vs 830 LOC source), which severely impacts readability by replacing concise loops with repetitive blocks.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Loop Re-rolling:** Implement pattern matching to detect and collapse aggressively unrolled loop bodies back into concise `for` or `while` loops to improve readability.
+2.  **Semantic Variable Naming:** Enhance analysis to infer variable names based on usage patterns (e.g., accumulators named `sum`, indices named `i`) rather than relying solely on generic `iVar` sequences.
+3.  **Constant Propagation for Literals:** Improve the analysis of floating-point constants to convert raw hex representations back into human-readable decimal or hexadecimal float literals, especially in `printf` arguments.

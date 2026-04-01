@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic auto-generated names (`param_1`, `iVar1`, `uVar3`, `local_2c`, `local_d`) with zero semantic meaning. Original names like `result`, `encrypted`, `decrypted`, `buffer` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `call_fake_branch`) but many corrupted with compiler suffixes (`param_division_by_zero.constprop.0/1`). Critical function `param_fake_branch` reduced to empty stub losing all logic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x14`, `0x2c`, `0x7a314`, `0x13ba`, `0xe1`). Original meaningful constants like `0xDEADBEEF` and encryption key `0x5A` preserved but lack context comments.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function wrappers (`raise`, `__libc_start_main`, `__aeabi_idiv`) add significant noise. Stack canary checks (`__stack_chk_fail`) appear throughout. `__aeabi_idiv` function has 30+ boolean variables from division algorithm expansion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original clean if-else/for/while converted to do-while with manual increments. `param_opaque_predicate` GCD loop reconstructed but more complex than original. `param_fake_branch` dead code eliminated entirely (logic lost).
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure: `param_fake_branch` reduced to empty `return;`. `param_division_by_zero` incorrectly split into `.constprop.0/1` variants. `param_buffer_overflow_stack` also empty stub losing overflow logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Moderate non-linearity from optimization recovery. Some functions read top-to-bottom but others have forward jumps disrupting flow. `test_obf_opt_edge` has complex inline decryption logic instead of function call.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__aeabi_idiv` extremely verbose with 30+ boolean variables for bit-by-bit division. Constant folding occurred (good) but creates inconsistency between computed vs. constant-returning functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `void*`, `byte*` instead of precise types. Original `int`, `char*`, `size_t` degraded. Function signatures often wrong (`param_division_by_zero` takes `undefined4` not `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure. Original struct with bitfields in `param_implementation_defined` completely lost—function just returns constant `0x2c`. No struct/union reconstruction visible anywhere.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(code *)`, `(undefined4 *)`, `(__sighandler_t)0x0`). Pointer arithmetic without type safety. `param_null_pointer_deref` signature changed from `int*` to `undefined4*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining obfuscation techniques, expected values, and test purposes. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption in `decrypt_string` not labeled. Tail-call optimization transformation not noted.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly flagging. One `UNRECOVERED_JUMPTABLE` appears in `param_division_by_zero.constprop.0` but not explained. No warnings about lost logic in empty stub functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expected return values in comments (e.g., "期望: 10"). Decompiled has no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jmp_buffer`, `encrypted_0`, `div_zero_caught`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. External library functions mixed with application code. No separation between test harness and target functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies unresolved (`__aeabi_idiv`, `__printf_chk`, `__stack_chk_fail`). Would require significant stubbing to compile standalone. Architecture-specific ARM helpers present.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+5)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+3+5+4)/4 = 4.00  × 0.25 = 1.00
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+3)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────
+Overall Score:                                  3.54/10
+```
+
+### Overall Readability Score: **3.5/10**
+
+### Critical Defects:
+- **`param_fake_branch` reduced to empty function** - All obfuscation logic (永假条件 branches) completely lost
+- **`param_buffer_overflow_stack` reduced to empty function** - Stack overflow test logic eliminated
+- **Zero comments** - Original had extensive documentation; decompiled has none
+- **Generic variable names everywhere** - `param_1`, `iVar1`, `local_2c` provide no semantic information
+- **Struct/bitfield recovery failed** - `param_implementation_defined` returns constant instead of computing bitfield operations
+- **Function splitting errors** - `param_division_by_zero.constprop.0/1` incorrectly duplicated
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Some original function names preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`) providing minimal semantic anchors
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding decompiler decisions and recovered logic impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function body logic for obfuscation patterns** - Dead code elimination should be optional for reverse engineering; `param_fake_branch` must show the永假 conditions even if compiler optimized them
+2. **Add decompilation confidence annotations** - Mark regions where logic was simplified, constants folded, or structures lost (e.g., `// DECOMPILER: Constant folded from original computation`)
+3. **Infer semantic variable names from usage patterns** - Variables used in string operations should be named `buffer`/`encrypted`; loop counters should be `i`; encryption keys should be `key`

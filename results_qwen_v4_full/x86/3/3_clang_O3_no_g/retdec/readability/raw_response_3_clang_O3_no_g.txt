@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `a1`, `a2` with no semantic meaning. For example, in `heap_basic`, `mem` is the only meaningful name while loop counters and indices are all `v1`, `v2`, `v3`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved for test functions (`local_vars`, `heap_basic`) but helper functions named generically (`function_1040`, `function_1050`). Many functions have incorrect parameter counts (e.g., `call_static_func(int32_t a1)` should take one parameter but signature suggests otherwise).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0x4ea4`, `0x4dd3`, `0x20d5`). Some constants preserved (42, 10, 20) but no named constants recovered from original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__x86_get_pc_thunk_*` functions and frame pointer manipulation. Some dead code from register spilling visible in function prologues.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops transformed to while-loops with manual indexing instead of for-loops. At `-O0` optimization, we'd expect near-perfect recovery but loops are unnecessarily complex (e.g., `vla_stack` has unrolled loop logic).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but parameter signatures incorrect (e.g., `static_local(int32_t a1, int32_t a2)` has extra parameter). Some functions overly simplified (`tree_heap_traversal` just returns 60).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward references disrupt flow (e.g., `v1` used before declaration in `test_stack_memory`). Some functions have excessive nesting.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling artifacts present in `large_stack_frame` and `vla_stack`. Some redundant variable assignments from compiler optimization not cleaned up.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type distinctions. Pointer types degraded to `int32_t *` without proper type information. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types (`Point`, `Node`, `TreeNode`) completely lost. Access through pointer arithmetic only (e.g., `*(int32_t *)(v1 + 4)` instead of `node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(int32_t *)a2`, `(char *)v1`). Pointer arithmetic without bounds checking. Function pointer types lost (e.g., `global_func_ptr` becomes generic `int32_t`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. No algorithm explanations, no documentation of non-obvious logic. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal) not identified or named. No design pattern recognition visible in output.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Dangerous patterns (dangling pointer, double free) not flagged despite being present in source.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postconditions or invariants recovered from original code.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Global variable usage opaque (`g1`, `g2` etc. with no semantic meaning).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. No header file separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present and mostly compilable with stubs. External function declarations present but some signatures incorrect.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+4+5)/4 = 4.00
+Level 2 Average: (5+5+6+6)/4 = 5.50
+Level 3 Average: (5+2+4)/3 = 3.67
+Level 4 Average: (2+3+3+3)/4 = 2.75
+Level 5 Average: (5+5+6)/3 = 5.33
+
+Overall = (4.00 × 0.30) + (5.50 × 0.25) + (3.67 × 0.20) + (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.20 + 1.375 + 0.734 + 0.4125 + 0.533
+        = 4.25/10
+```
+
+**Overall Readability Score:** 4.25/10
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` all reduced to pointer arithmetic
+- **Global variables named generically** - `g1`, `g2`, `g3` instead of `global_counter`, `global_array`, etc.
+- **Function signatures incorrect** - Many functions have wrong parameter counts (e.g., `static_local` has 2 params instead of 1)
+- **No semantic comments** - Original documentation completely absent
+- **Variable names meaningless** - `v1`, `v2`, `a1`, `a2` throughout with no type hints
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code is mostly compilable with proper includes and external function declarations present
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, forcing all access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Analyze consistent offset patterns (e.g., `+4`, `+8`) to reconstruct `Node { data, next }` structure
+2. **Preserve original symbol names from debug info** - Since compiled with `-g`, variable and global names should be recoverable from DWARF sections
+3. **Add confidence annotations for uncertain decompilation** - Flag functions like `dangling_pointer` where undefined behavior exists to warn analysts

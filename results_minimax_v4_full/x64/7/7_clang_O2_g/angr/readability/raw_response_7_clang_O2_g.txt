@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`). For example, in `param_fake_branch`, parameter `a0` should be `x`, and in `param_opaque_predicate`, variables like `v1`, `v2`, `result` completely obscure their semantic roles as predicate calculations.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered their source names (e.g., `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`), but many use mechanical address-based naming like `sub_401020`, `sub_40102c`. The verb choice is absent - functions are named as data objects rather than actions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently without explanation. String literals are referenced via memory addresses (`&g_402004`) with no clarity. The original code's meaningful constants like `0xDEADBEEF` were optimized away, but the decompiler doesn't explain why.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present, including: redundant CONCAT operations (`v8 >> 31 CONCAT v8`), unnecessary type casts (`(unsigned int)a0`), and complex conditional expressions that don't reflect original logic. The decompilation shows 1043 LOC vs 464 source LOC - more than 2x bloat.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The original `param_fake_branch` had clear if-else structure with fake branches, but the decompiled version simply returns `a0` - the compiler completely optimized away the fake branches. In `param_opaque_predicate`, the decompiler produces convoluted conditional expressions like `!((char)_ccall(4, 23, ...))` that are nearly incomprehensible.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized (not monolithic), but many are just thin wrappers (e.g., `sub_4011a3` calls `call_fake_branch`). Parameter lists expose implementation details - functions like `param_tail_call_optimized` take parameters that should be internal accumulators.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has goto statements and complex nested expressions. The `param_vectorized_loop` function has extensive forward jumps and computed addresses that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `param_vectorized_loop` but recognizable. Common subexpression elimination artifacts visible (e.g., repeated calculations of `a0 + 1`). Not severe but adds cognitive load.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `unsigned int`, `unsigned long`, `long long` are correctly inferred. However, some type erosion exists: `char*` used where `const char*` would be more accurate, and some pointer types are generic `void*`. The original `int` parameters became `unsigned int` in some cases.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex struct recovery needed for these functions. Simple types handled adequately. The few struct references (like `struct_0`) are appropriately minimal.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor type safety issues present: some unnecessary casts, pointer arithmetic in `param_vectorized_loop` using raw offsets. No severe violations like type-confused function pointers. The code is generally safe to reason about.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), test scenarios, and expected values - all completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The opaque predicate pattern in `param_opaque_predicate` (which implements GCD calculation for consecutive integers) is completely obscured by the convoluted expression. No recognition of the fake branch pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The decompiler silently accepts the optimized-away fake branches without indicating they existed in source. The `_ccall` function is unexplained. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had explicit expectations (e.g., "期望: 10" for call_fake_branch) that are completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible through the code (e.g., `call_fake_branch` calls `param_fake_branch`), but not explicitly documented. Global variables referenced via addresses (`g_403fe8`, `g_404008`) without explanation of their purpose.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions dumped into single file with arbitrary ordering. No logical grouping matching the original source's chapter-based organization (OBF-L4, OPT-L4, EDGE-L3 sections). Static vs extern scoping not clearly indicated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has numerous `extern` declarations but lacks proper headers. The `_start` function and `__libc_start_main` call suggest Linux-specific code. Would require significant patching to compile standalone. Missing stdio.h, stdlib.h, string.h declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`a0`, `v1`, `v2`) making semantic understanding nearly impossible
+- The fake branch obfuscation (OBF-L4-02) was completely optimized away by compiler, losing the original intent
+- No comments whatsoever - original source's extensive documentation completely lost
+- Control flow in `param_opaque_predicate` is convoluted with unexplained `_ccall` and CONCAT operations
+- Function names use mechanical address-based naming (`sub_401020`) for many functions
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.3/10)  
+Types are mostly precise and accurate - integer types, pointers, and signed/unsigned distinctions are generally correct. This is the one area where the decompiler performs adequately.
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.5/10)  
+Variable and function naming is the primary blocker to understanding. The decompiler uses only generic mechanical names rather than inferring semantic meaning from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0 * a0 < 0` suggests `x` as a numeric parameter; `strlen()` result suggests `length` or `size`)
+2. **Recover comments from debug symbols**: The source was compiled with `-g` (debug info) - extract DWARF information to recover original comments and variable names
+3. **Flag optimized-away code**: When decompiling at -O0, indicate when branches or code were eliminated (e.g., "NOTE: fake branch at source line 18 was optimized away") rather than silently removing them

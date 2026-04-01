@@ -1,0 +1,23 @@
+Testing preprocessing features:
+
+PPL.201: 64
+PPL.202: 30
+PPL.203: 32
+PPL.204: 57122
+PPL.301: 116
+PPL.302: 19
+PPL.303: 60
+LOG: Values: 10, 20, 30
+PPL.304: 60
+PPL.305: 16
+PPL.306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:49
+PPL.307: 382
+Testing assembly features:
+
+ASM.L401: 15
+ASM.L402: 15
+ASM.L403: 42
+ASM.L404: 36
+ASM.L405: 30
+ASM.L406: 77

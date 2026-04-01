@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v1, v2, v3, result) with zero semantic meaning. For example, in `array_1d_stack`, variables like `v16`, `v17`, `v25` obscure their roles as array pointers and accumulators.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (process_char, array_1d_stack, struct_simple, linked_list), but runtime functions use generic names (function_1030, function_1040) and some signatures are incorrect.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Floating-point constants appear as hex magic numbers (0x3fc00000, 0x3f000000) without explanation. Test functions have hardcoded expected values instead of actual function calls, obscuring the computation flow.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy assembly intrinsic pollution (__asm_movdqu, __asm_paddd, __asm_pshufd, __asm_pxor) throughout. Unnecessary type casts and bit-masking operations (e.g., `& 0xffffffff`) clutter simple arithmetic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While loops are recovered, SIMD loop unrolling creates complex nested structures. The `array_1d_stack` function has multiple while loops with confusing termination conditions that obscure the simple sum operation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but parameter lists are often wrong (e.g., `array_1d_stack` has 3 parameters instead of 2, `ptr_increment` has 6 parameters instead of 2).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but assembly intrinsics and complex loop unrolling create non-linear reading patterns. Some functions use goto labels (lab_0x2490) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: SIMD vectorization creates massive redundancy - `array_3d` has 55+ temporary variables (v1-v55) for what should be a simple triple-nested loop sum operation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion - everything becomes int64_t or int128_t. Original types (char, short, float, double, long double, _Bool) are completely lost. `process_float` returns int128_t instead of float.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure - all struct/union/enum definitions lost. `struct_simple` uses raw pointer arithmetic (`*(int32_t *)(a1 + 8)`) instead of `p->x + p->y + p->z`. No field names recovered.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts and pointer arithmetic. Functions like `ptr_void` use bit-shifting tricks (`0x100000000 * v2 >> 56`) instead of proper type casting. No const/volatile preservation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated file headers present. No explanation of algorithm intent, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized - linked list traversal appears as raw pointer chasing, tree recursion not identified as such, no pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about significant decompilation issues. Functions like `process_ld` return uninitialized `result` without any uncertainty flag. No indication of lost type information.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist but aren't documented as contracts. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Test functions call hardcoded values instead of actual functions, breaking the call graph. Global variables (g1-g19) have no semantic names.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped together but organization is arbitrary (alphabetical/by-address). No logical grouping by feature (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (stdint.h, stdio.h, stdlib.h) and should compile with warnings. External function declarations present but some intrinsics may need special handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+5+5+4)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type System): (2+1+2)/3   = 1.67  × 0.20 = 0.33
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):  (4+5+6)/3   = 5.00  × 0.10 = 0.50
+
+Overall Score: 3.45/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Complete type system collapse**: All original types (char, short, float, double, structs, unions, enums) reduced to int64_t/int128_t with pointer arithmetic
+- **Zero composite type recovery**: Struct fields accessed via raw offsets (`a1 + 8`, `a1 + 20`) instead of named field access
+- **Assembly intrinsic pollution**: SIMD operations (__asm_movdqu, __asm_paddd) obscure simple arithmetic operations
+- **Test functions broken**: Expected values hardcoded instead of actual function calls, breaking verification
+- **No semantic documentation**: Zero comments explaining algorithm intent or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (process_char, array_1d_stack, linked_list, binary_tree_sum), providing crucial semantic anchors despite other failures.
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct, union, or enum definitions - all composite types reduced to raw pointer arithmetic, making complex data structure code nearly unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union pattern recognition**: Detect repeated offset patterns (e.g., +0, +4, +8 for 3-int structs) and reconstruct named composite types with field access syntax.
+
+2. **Add type inference from usage context**: Analyze how values are used (character comparisons, floating-point operations, boolean logic) to recover original types instead of defaulting to int64_t.
+
+3. **Reduce assembly intrinsic exposure**: Translate common SIMD patterns back to high-level loop constructs with optional comments noting vectorization, rather than exposing raw __asm_* calls.

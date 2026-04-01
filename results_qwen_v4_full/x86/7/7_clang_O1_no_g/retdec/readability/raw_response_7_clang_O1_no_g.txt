@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `x`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but helper functions use mechanical names (`function_1040`, `function_1050`) instead of `printf`, `strlen` wrappers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x29eb`, `0x29bf`, `0x29ab` appear without explanation. XOR key `90` (0x5A) is visible but not documented as encryption key from original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains compiler artifacts (`__x86_get_pc_thunk_*`, `register_tm_clones`, `deregister_tm_clones`). Each library call wrapped in separate function (`function_1050` for printf) adds unnecessary indirection.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use while constructs but with awkward variable management. Critical issue: `param_fake_branch` lost all conditional logic (just `return result`), destroying the fake branch obfuscation entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized but over-fragmented (each library call is separate function). Some functions lost logic entirely (`param_buffer_overflow_stack` just returns parameter).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable structure. Some forward jumps in loop bodies but not severely disruptive to flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple similar wrapper functions for standard library calls create redundancy. Loop structures in `test_obf_opt_edge` duplicate logic from individual functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t`, `char*` appropriately but degrades to generic types. Original `size_t`, `const char*`, `volatile` qualifiers are lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `__jmp_buf_tag` struct recovered but with generic field names (`e0`, `e1`, `e2`). Original `jmp_buf` opaque type partially preserved but field semantics lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`int32_t` to `char*`, pointer arithmetic without bounds). Expression `(char *)(v1 + 0x2c9a)` shows raw pointer manipulation without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original had extensive documentation explaining obfuscation techniques (OBF-L4-02, opaque predicates, etc.) - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not recognized. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about critical logic loss. `param_fake_branch` returning just `result` should be flagged as suspicious (original had fake branches that were eliminated).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires signal handler setup). No error condition documentation for edge case functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g1`, `g2`, `g3`, `g4`, `g5`) have no semantic meaning - original had `jmp_buffer`, `div_zero_caught`, etc.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) - organization completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers and metadata claims compilation succeeds. However, some functions reference undefined globals and may require stubs for full compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+5+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+5+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+6)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.61/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost obfuscation logic** - original had two fake branch conditions (`x*x < 0`, `strlen(str) < 0`) that are entirely missing
+- **Variable names are all generic** (`v1`, `v2`, `a1`, `a2`) making it impossible to track data flow semantically
+- **Global variables lost semantic meaning** - `g1`-`g5` instead of `jmp_buffer`, `div_zero_caught`, `segv_caught`
+- **No comments explaining obfuscation techniques** - original had detailed documentation of each technique (OBF-L4-02 through EDGE-L4-02)
+- **Library wrapper functions add noise** - `function_1050` for printf, `function_10a0` for strlen serve no purpose
+
+### Best Quality Aspect:
+- **Type Precision (6/10)** - Basic integer types (`int32_t`, `uint32_t`) are preserved reasonably well, allowing some type-aware analysis despite degradation from original source types.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding the obfuscation techniques impossible without referring to original source, defeating the purpose of decompilation for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve semantic logic in obfuscated code** - Detect and preserve fake branches and opaque predicates even when they appear dead, as they may be intentional obfuscation
+2. **Infer variable names from usage context** - Variables used in signal handling should be named `handler`, `buffer`; XOR operations should suggest `key`, `encrypted`
+3. **Add decompiler confidence annotations** - Flag functions where logic appears simplified/lost (like `param_fake_branch`) with warnings like "WARNING: Conditional branches may have been optimized away"

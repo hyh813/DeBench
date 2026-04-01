@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use cryptic names (`local_c`, `local_10`, `local_14`, `local_1c`). For example, in `sequential_ops`, parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`. In `loop_for_fixed`, the sum variable is `local_10` and loop counter is `local_c`, completely obscuring their semantic purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `recursion_factorial`, `duffs_device`. The test functions are correctly named `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`. Minor deduction for some internal functions like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers remain unexplained: `0x3e9` (1001), `0x65` (101), `0xe9` (233). Array initializations use hex: `local_28[0] = 0x14` (should be 20), `local_28[1] = 0x1e` (should be 30). The comment "/* WARNING: Removing unreachable block */" adds noise but doesn't explain the logic. Some values like `1000` in loop bounds are understandable from context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`) appear frequently, adding noise. Comments like "/* WARNING: Subroutine does not return */" and "/* WARNING: Removing unreachable block */" are present. However, at -O0, these are expected compiler artifacts. The code is otherwise clean without redundant casts or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops are correctly identified as `for`/`while`/`do-while`. The `goto_backward` function is nicely converted to a `for` loop. However, `switch_fallthrough` uses confusing `goto` labels (`LAB_001014b1`, `LAB_001014b9`) instead of proper fallthrough semantics. Some switch statements are converted to if-else chains which is less natural. At -O0, control flow should be nearly perfect, but this shows room for improvement.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The original source has 20+ small functions in L1 alone, and the decompiled version maintains this granularity. Each function remains separate with appropriate size. The decomposition matches the source exactly - no inlining or outlining artifacts that would occur at higher optimization levels.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `single_if` and `if_else`. The `switch_fallthrough` has forward goto labels that slightly disrupt linear flow, but most functions are well-linearized.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination is not excessive. The code is clean without duplicate logic blocks that would obscure the original algorithm.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision - parameters use `int`, `undefined4`, `undefined8`, `uint`. Return types vary: `int`, `undefined4`, `undefined8`, `bool`. Function pointers use generic `code *` type. Some unsigned types are correct: `uint`, `ulong`. At -O0, types should be more precise. The `bool` return type for `if_else` is correct.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery visible. Arrays are used directly: `int local_28 [6]`, `int local_48 [14]`. The original source has no complex structs either, so this is partially expected, but the decompiler could at least group related variables.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic: `*(undefined4 *)(param_1 + (long)local_c * 4)` in `process_with_callback`. Function pointer type `code *` is generic. Stack canary checks add runtime safety. No severe type safety violations that would cause undefined behavior, but the generic `code *` type loses signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. File header shows "Decompiled by Ghidra 12.0". Some WARNING comments about unreachable blocks and stack_chk_fail. No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The comments are auto-generated noise rather than helpful analysis.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognized: state machine in `state_machine` function, Duff's device partially recognized with switch case labels (`switchD_00101cdd_caseD_7`). Function pointer arrays are identified. However, the goto-based patterns in `goto_forward` and `goto_backward` could be better explained as idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly handling - WARNING comments about unreachable blocks, indirect jumps that couldn't be resolved ("/* WARNING: Could not recover jumptable at 0x001028b5. Too many branches */"). The `computed_goto` function has appropriate warnings about treating indirect jump as call. Some anomalies are flagged, though not all potential issues are documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No recovery of error handling contracts from the original source. The multi-return paths in functions like `multi_return` could have contract annotations but none are present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear and direct. No documentation of caller/callee relationships. No global variable usage transparency. The test functions call other functions but there's no comment explaining the call graph or relationships between functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions are in a single monolithic file. The original source had logical groupings (Control Flow L1, L2, L3 sections with comments), but this organization is lost in decompilation. Static functions like `double_value`, `triple_value` are properly scoped but not grouped logically.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses standard C types mostly. Has compiler-specific `__stack_chk_fail` which requires linking libgcc. Should compile with minor fixes. The `code *` type is non-standard and would need typedef. External dependencies (libc functions like `printf`, `puts`, `__stack_chk_fail`) are not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- All variable names are generic (`param_1`, `local_c`, `local_10`) losing semantic meaning
+- No composite type recovery - all arrays use raw indices
+- Magic numbers like `0x3e9`, `0x65` not explained
+- No struct/struct field name recovery
+- Comments are auto-generated noise, not helpful analysis
+
+**Best Quality Aspect:** Function Decomposition (9/10)  
+- Function granularity perfectly matches original source; each small function remains separate with appropriate size, no inlining artifacts
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every parameter and local variable uses cryptic generic names that completely obscure their purpose; at -O0, the decompiler should be able to infer semantic names from usage patterns
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `local_c` used as loop counter should be named `i` or `index`; `local_10` accumulating sum should be `sum`
+2. Detect magic numbers and suggest named constants - `0x3e9` is clearly `MAX_ITERATIONS` or similar
+3. Add meaningful comments explaining algorithms and patterns - the current auto-generated warnings add noise rather than value

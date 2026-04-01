@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_e0`, `iVar1`, `uVar2` instead of semantic names like `count`, `sum`, `args`. Original source had meaningful names (`count`, `sum`, `args`, `val`, `ptr`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some runtime functions use generic names (`FUN_00101020`, `_init`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0x10`, `0x30`, `0x28`). Double literal `0x40091eb851eb851f` not recognized as 3.14. String literals shown as `&DAT_00103008` instead of actual text like `"Hello"`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks repeated in most functions (`if (local_10 != *(long *)(in_FS_OFFSET + 0x28))`). Frame pointer manipulation visible. At -O0, this noise is excessive and obscures logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow mostly natural with proper if-else and for loops. Switch statements converted to if-else chains (`ret_multi_branch`). No excessive goto usage, loops are recognizable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. Each function has single responsibility. No monolithic functions, though some wrapper functions are unnecessary.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear execution flow. Loop structures are linear. Some forward references to DAT symbols but not disruptive to reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant return patterns (`iVar1 = ...; return iVar1;`). Stack canary checks duplicated across functions. Some unnecessary local variables just to hold return values.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `undefined8`, `long`, generic `int *` instead of specific types. `call_cdecl` returns `void` but should return `int`. `func_no_args` returns `undefined8` instead of `int`. Function pointers shown as `code *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` and `SmallStruct` completely lost. `func_struct_byval` shows no struct parameter, just stack access (`*(long *)(&stack0x00000008 + ...)`). `func_struct_byptr` shows `int *` instead of `SmallStruct *`. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)`, `(char *)`, `(undefined4 *)`, `(code *)`. Pointer arithmetic on generic types. `func_mixed_args` parameter order changed (double first instead of int). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated warnings ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No algorithm explanations or API contracts documented.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern partially recognized but signature completely wrong (14 parameters instead of 2). Function pointer callbacks recognized but not named. Standard library calls (strlen, printf) identified but no pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unreachable blocks and non-returning subroutines. Stack canary checks visible. However, varargs complexity not flagged as uncertain. No decompilation confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL`). Null checks present but not documented as contracts. No postcondition inference or invariant recognition. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear but global variables shown as `&DAT_00103008`. No call graph documentation. Callback relationships not explicitly documented. External functions (printf, strlen) recognizable.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order with test functions grouped. No header file structure or namespace organization. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols (`__gmon_start__`, `__libc_start_main`). String literals not recovered. Type mismatches would cause compilation errors. Missing includes and type definitions. Requires extensive stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+4+5)/4 = 5.00
+L2 Average: (7+7+7+6)/4 = 6.75
+L3 Average: (4+2+4)/3 = 3.33
+L4 Average: (3+4+5+2)/4 = 3.50
+L5 Average: (5+5+3)/3 = 4.33
+
+Overall = (5.00 × 0.30) + (6.75 × 0.25) + (3.33 × 0.20) + (3.50 × 0.15) + (4.33 × 0.10)
+        = 1.50 + 1.69 + 0.67 + 0.53 + 0.43
+        = 4.82/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` not recovered; `func_struct_byval` shows no parameters instead of struct value
+- **Varargs signature catastrophically wrong**: Shows 14 `undefined8` parameters instead of `int count, ...`
+- **String literals not recovered**: All strings shown as `&DAT_00103XXX` references instead of actual text
+- **Return type errors**: `call_cdecl` returns `void` but should return `int`; `func_no_args` returns `undefined8` instead of `int`
+- **Variable names completely generic**: `param_1`, `local_e0`, `iVar1` provide no semantic information
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct types, field names, and layouts; this is critical for understanding the code's data structures
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference from stack access patterns** - Detect regular offset patterns (`+0`, `+4`, `+8`) to reconstruct struct layouts and field names
+2. **Improve varargs signature detection** - Recognize `va_list` patterns and AL register usage to correctly identify variadic functions with proper `...` syntax
+3. **Recover string literals from .rodata section** - Map DAT references to actual string content for printf format strings and constant data

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_clang_O0_no_g/binaryai/syntactic/bin/7_clang_O0_no_g_fixed",
+  "stdout": "testfake_branch: 10\nopaque_predicate: 20\ninstruction_substitution: 225\nstring_encryption: 89\ntail_call_optimized: 500500\nnon_tail_call: 5050\nvectorized_loop: 151587080\nlink_time_optimization: 20\ndivision_by_zero: 1\nnull_pointer_deref: 41\nbuffer_overflow: 30\ninteger_overflow: 2000000000\nundefined_behavior: 10\nimplementation_defined: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

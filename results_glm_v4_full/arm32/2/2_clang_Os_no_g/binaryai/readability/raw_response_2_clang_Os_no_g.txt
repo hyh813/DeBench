@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, `local_20`, and `puVar3`, providing no semantic context about their role (e.g., `sum`, `index`, `buffer`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table (e.g., `process_char`, `array_1d_stack`, `binary_tree_sum`), matching the original source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Floating-point constants are represented as opaque hex values (e.g., `0x3fc00000` instead of `1.5f`), and character range checks are obscured by hex arithmetic (e.g., `(byte)(param_1 + 0xbfU) < 0x1a`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant decompiler artifacts like `undefined4`, `CONCAT44`, `SBORROW4`, and `CARRY4`, which obscure the underlying logic and standard C types.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While the code is generally linear due to `-O0`, simple `for` loops are often represented as `do-while` constructs with manual pointer arithmetic, and conditionals are sometimes optimized into range checks.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are perfectly preserved with no inlining, maintaining the original granularity and cohesion of the test suite.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps or spaghetti logic, making the execution path easy to trace despite the `do-while` preference.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code typical of higher optimizations, resulting in clean, non-repetitive logic blocks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Specific types are often degraded; `short` becomes `int`, `float`/`double` become `undefined4`, and type qualifiers like `const` and `volatile` are completely lost in signatures.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are not recovered; functions accepting `Point3D*` or `Rect*` are decompiled as taking `int*`, with struct fields accessed via raw array indexing (e.g., `param_1[1]`, `param_1[3]`).
+
+**11. Type Safety:** Score: 3/10
+Justification: Heavy use of `undefined*` types and explicit casts (e.g., `*(undefined4 *)(param_1 + ...)`) creates a type-unsafe appearance, and function pointers are often generic `code *`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining logic, algorithms, or variable usage; only a header identifying the decompiler tool is present.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common patterns like string length calculation or list traversal are present but not explicitly recognized or labeled as idioms (e.g., `strlen` or `iterator` patterns).
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags indirect calls as `UNRECOVERED_JUMPTABLE`, providing a useful warning where function pointers could not be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants (e.g., non-null pointer checks are not documented as requirements).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to both external libraries (`printf`, `puts`) and internal user-defined functions are clear and easily traceable.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the original file's logical grouping of functions (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on Ghidra-specific macros (`CONCAT44`, `undefined4`) and will not compile without significant modification or a compatibility shim.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite types (structs/unions) are completely lost, flattened to `int*` and array offsets.
+- Floating-point literals are displayed as raw hex (e.g., `0x3fc00000`), destroying semantic meaning.
+- Variable names are generic (`param_1`, `local_20`), requiring manual tracking of data flow.
+- Type qualifiers (`const`, `volatile`) are stripped from function signatures.
+- Ghidra-specific artifacts (`undefined4`, `CONCAT44`) render the code non-compilable and noisy.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The symbol table was perfectly preserved, allowing exact mapping of function names like `process_char` and `binary_tree_sum`.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `Point3D`, `Rect`, or `Node` structures turns high-level data manipulation into confusing pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement structure recovery based on sequential field access patterns (e.g., `p[0]`, `p[1]`, `p[2]` should suggest a struct).
+2. Convert IEEE 754 hex constants back to human-readable floating-point literals (e.g., `1.5f`).
+3. Replace decompiler-specific types (`undefined4`) and macros (`CONCAT44`) with standard C types (`uint32_t`, shifts) for output portability.

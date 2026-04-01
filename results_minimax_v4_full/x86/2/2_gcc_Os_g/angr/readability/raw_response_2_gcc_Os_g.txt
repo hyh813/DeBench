@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `a0`, `a1`. Struct fields are named `field_0`, `field_4`, `field_8` - completely losing semantic meaning. The original source had meaningful names like `packet_size`, `sum`, `i` but these are entirely lost.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use address-based naming (`sub_401030`, `sub_401040`) which is meaningless. Only a few functions like `double_value`, `process_int`, `complex_callback` correctly recovered their names. The original source had 30+ well-named functions but most are now generic addresses.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `65` (for 'A'), `32` (for case conversion), and `4294967295` (0xffffffff) appear without explanation. However, the decompiler did inline some expected values in printf statements (e.g., `300`, `11`, `200`), showing some literal recovery capability.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present including: unsupported VEX expressions in `process_float`, `process_double`, `process_ld`; stack canary checks (`__stack_chk_fail_local`); complex struct definitions with padding arrays like `char padding_0[20135]`; and multiple thunk functions. This severely impacts readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are generally recognizable as for/while constructs. Some goto usage for function pointer calls (`goto a0`, `goto ptr[1]`). At -O0, control flow should be nearly 1:1 with source, but some awkward patterns exist like computed jumps in `ptr_func_simple`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching the original source. Test functions (`test_data_types_l1`, `test_array_types`, etc.) are preserved. The original source's function boundaries are mostly respected in the decompilation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some disruption from goto statements for indirect calls and early returns in thunk functions. Not as linear as source but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns in test functions where values are computed inline rather than calling the actual functions. Loop constructs show some redundancy but nothing severe. At -O0, minimal optimization artifacts expected, so this is acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost all parameters use `unsigned int` regardless of original type (char, short, int, long, long long all become unsigned int). Function pointers are typed as `unsigned int` instead of proper function signatures. The original had precise types like `char`, `short`, `float`, `double`, `long double` - all lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted with generic names (`struct_0`, `struct_1`). Field names are generic (`field_0`, `field_4`, `field_8`) losing semantic meaning. Union types not well recovered - `union_type` shows union handling but without proper union semantics. Nested structures like `Point3D`, `Rect`, `Widget` reduced to flat arrays.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic without proper type context (`ptr + idx * 4`), function pointer type confusion (treating functions as `unsigned int`), incorrect pointer arithmetic in `ptr_diff` (`a0 - a1 >> 2` should be `(a0 - a1) / 4`). The code could cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithms or logic. Only auto-generated function headers with addresses. No documentation of what functions do, parameters mean, or return values represent. Original source had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Common C idioms like linked list traversal, binary tree recursion, switch statements (reduced to array lookup in `enum_switch`) are not recognized or named. The semantic purpose of each function is not communicated.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some "[D] unsupported" markers present for VEX expressions in floating-point functions, showing decompilation limitations. However, these are generic and don't explain what the original code might have been. No flagging of potential undefined behavior or suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of assert statements or validation logic. The original source had clear expectations about parameter ranges - completely lost in decompilation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some extern declarations present for global variables (`g_403008`, `g_403173`, etc.) but relationships between functions not documented. No indication of call graphs, who calls whom, or callback relationships. The original test structure implied clear caller/callee relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, data processing functions together) but no clear organization matching the original source's structured sections. The original had clear groupings: Data Types, Array Types, Pointer Types, Composite Types - not reflected in decompiled output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has extern declarations for some globals and standard library functions. Should compile with additional stubs for undefined references. However, the code would require significant patching to build due to missing function definitions and type mismatches.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`v0`, `v1`, `a0`, `field_0`) - loses all semantic meaning from source
+- Function names are address-based (`sub_401030`) for most functions instead of meaningful names
+- Type precision severely degraded - all integer types become `unsigned int`, losing char/short/int/long distinctions
+- No comments or documentation explaining algorithm intent
+- Composite types (structs/unions) recovered with generic field names losing semantic meaning
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Function boundaries mostly match the original source, with test functions and helper functions appropriately separated. The decompiler preserved the original function count and general structure.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 1/10) and Assertion & Contract Recovery (scored 1/10)  
+Variable names are completely generic, making it nearly impossible to understand what each variable does without analyzing its usage. Additionally, no semantic information about function contracts, preconditions, or expected behavior is communicated.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `index`, `sum`, `length`, `pointer` instead of generic `v0`, `v1`
+2. **Recover precise types from stack layout and operations**: Distinguish char/short/int/long from how variables are used in operations and their stack sizes
+3. **Add semantic comments explaining function purpose**: Use string constants in the binary, common patterns, and parameter usage to infer and document what each function does

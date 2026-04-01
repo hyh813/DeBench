@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2` instead of semantic names (e.g., `dst`, `src`, `buffer`, `fp`). Some better names exist (`ptr`, `count`, `idx`, `i`, `j`) but original intent is largely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered original names (`param_strcpy`, `call_strcpy`, `param_strcmp`), but ~50% have generic names (`sub_402020`, `sub_4024a9`). Wrapper functions add noise without semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Error codes shown as `4294967295` (-1 unsigned) instead of `-1`. Socket constants as numbers (`2`, `1`, `0`) instead of `AF_INET`, `SOCK_STREAM`. Signal numbers (`10`, `14`) instead of `SIGUSR1`, `SIGALRM`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some redundant assignments (`v2 = v0; return v2;`), but no severe compiler artifacts. Generally clean for decompiled code at -O0.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for`/`while`, but signal handling uses `while(true)` with break instead of cleaner pattern. No goto statements (positive). Nested conditionals could be flattened.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Unnecessary wrapper functions created (`sub_4024a9` just calls `param_strcpy`). Core functions appropriately sized but fragmentation from wrapper functions reduces clarity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some functions have deep nesting (signal handling ~6 levels) but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments present (`v1 = v3; v2 = v1;`). No dead code observed but could be cleaner with temporary variable elimination.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types (`unsigned int`, `unsigned long long`) instead of `size_t`, `ssize_t`. `const` correctness lost (`char*` instead of `const char*`). `FILE*` recovered but struct definition empty.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `sockaddr` struct partially recovered with field names. `FILE` struct empty. `ThreadData` struct lost (accessed via array indexing `ptr[2]`, `ptr[1]`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present. Pointer arithmetic used where struct access should be (`*((int *)&v0)`). Type confusion between `char*` and `unsigned int` in several functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code. No explanation of non-obvious logic, magic numbers, or decompilation confidence indicators. Completely bare.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `printf`, `pthread_create`). pthread patterns partially recognized but no explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). No indication of uncertain decompilation elsewhere. No warnings about potential type confusion or unresolved calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values not explained (what does `-3` mean vs `-2`?).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) referenced but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Original section organization (6.1, 6.2, 6.3) not preserved. No logical grouping visible in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with proper headers. External dependencies (pthread, libc) not documented. Some platform-specific code present without explanation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 Average: (4+6+5+7)/4 = 5.50
+LEVEL 2 Average: (6+5+7+6)/4 = 6.00
+LEVEL 3 Average: (5+5+5)/3 = 5.00
+LEVEL 4 Average: (2+5+4+3)/4 = 3.50
+LEVEL 5 Average: (5+5+6)/3 = 5.33
+
+Overall = (5.50 × 0.30) + (6.00 × 0.25) + (5.00 × 0.20) + (3.50 × 0.15) + (5.33 × 0.10)
+        = 1.65 + 1.50 + 1.00 + 0.525 + 0.533
+        = 5.21/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` should be named semantically (e.g., `dst`, `src`, `return_value`) based on usage patterns
+- Magic numbers like `4294967295` should be shown as `-1` or named constants (`ERROR_CODE`)
+- No comments explaining non-obvious logic (signal handling loops, error codes)
+- Unnecessary wrapper functions (`sub_4024a9`) add noise without value
+- `const` correctness lost throughout (e.g., `char *a0` instead of `const char *src`)
+- Struct `ThreadData` not recovered, accessed via confusing array indexing
+
+### Best Quality Aspect:
+- **Noise Reduction (scored 7/10)** - Code is relatively clean without severe compiler artifacts, no goto statements, and minimal debug instrumentation for -O0 compilation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Completely absent comments make understanding non-obvious logic (signal handling, error codes, atomic operations) extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, file pointers should be `fp`, destination buffers should be `dst`/`buffer`
+2. **Recover named constants from magic numbers** - Detect common patterns like `4294967295` = `-1` (unsigned), socket constants, signal numbers, and replace with symbolic names
+3. **Add decompilation confidence annotations** - Mark uncertain type recoveries, unresolved indirect calls, and potential semantic ambiguities with comments for analyst review

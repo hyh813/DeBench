@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 10/10  
+Justification: The decompiled function contains no variables, so there are no naming errors or obscurities to report.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: The function name `param_fake_branch` matches the original source exactly, preserving the semantic identifier.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: There are no literals (magic numbers or strings) present in the decompiled function body to evaluate.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The code is extremely clean with zero compiler artifacts, redundant casts, or debug instrumentation, though this is largely because the function body is empty.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The original source contains two `if` statements demonstrating fake branches, but the decompiled code is an empty function with no control flow structures, resulting in a total loss of logic.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized (trivial), though this is a result of optimization rather than good decomposition practices.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly linearly from top to bottom, consisting only of a return statement.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: There is no redundancy or dead code in the decompiled output, as the compiler eliminated the original logic entirely.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: The original source defines `int param_fake_branch(int x)`, but the decompiled code shows `void param_fake_branch(void)`, completely losing the parameter and return type information.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so there is nothing to recover or fail.
+
+**11. Type Safety:** Score: 10/10  
+Justification: There are no unsafe casts or operations present in the empty function body.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no comments explaining why the function is empty or noting the discrepancy with the likely source logic.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "Fake Branch" obfuscation idiom (the core purpose of the function) is entirely absent and unrecognizable in the decompiled output.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler provides no warning that the function body is empty or that the signature might be incorrect relative to standard calling conventions or debug symbols.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or recoverable from the empty stub.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: The caller `call_fake_branch` is inlined to `return 10`, completely obscuring the relationship and the flow of the argument `10`.
+
+**17. Module Organization:** Score: 10/10  
+Justification: The function is listed in the correct module context alongside other related test functions.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The empty function compiles without errors or missing dependencies.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Function signature completely lost (`int(int)` vs `void(void)`), obscuring the interface.
+- Control flow logic (fake branches) eliminated by compiler optimization, leaving an empty function that conveys no source logic.
+- No warnings or comments indicating the function was optimized out or inlined.
+
+**Best Quality Aspect:** Noise Reduction (Score: 10/10)  
+- The decompiled output is perfectly clean and free of artifacts, though this is largely due to the absence of code.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1/10)  
+- The decompiler fails to convey the intent of the code (fake branches) and provides no comments or anomaly warnings about the empty body.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Signature Recovery from Debug Info:** If available, prioritize using debug symbols to recover `int` return and parameter types even if the body is optimized/empty.
+2. **Optimization Warning:** Add a heuristic warning when a function with a non-trivial name (like "fake_branch") decompiles to an empty stub, suggesting aggressive optimization.
+3. **Cross-Reference Linking:** Even if inlined, attempt to maintain a comment or reference linking the caller to the callee (e.g., "Inlined call to param_fake_branch").

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic IDA-generated names like `v1`, `v2`, `v3`, `v4`, `a1`, `a2`, `a3`, `w0`, `w9`, `w21`, `w22`, `x8`, `x19`, `x20`. While some semantic names like `obj`, `result`, `size`, `idx`, `value` are preserved, the majority are single letters or v-prefixed identifiers that obscure purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ name demangling works correctly (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`), and standard library functions (`strlen`, `printf`, `puts`) are properly identified. However, many internal functions use mechanical IDA names like `sub_D60`, `sub_137C`, `sub_1464` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful like `42` (exception value), `1001 * LifecycleClass::instance_count + 21` (constructor logic), and `0x80000000` (sign bit check). However, magic numbers like `0x1234` (class ID), `8u` (object size), and embedded strings like "Test" lack explanation or constant naming.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some unusual constructs like `*(_OWORD *)v1` for string handling and `JUMPOUT(0)` exist but don't significantly impede readability. The code is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - most functions return computed values directly without goto or confusing conditionals. Loops are properly recognized (e.g., `for` loops become `if` + indexed access in template functions). At -O3, some inlining is expected and present.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate. Template instantiations are correctly identified as distinct functions (`template_max<int>`, `template_max<double>`).
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns are used appropriately. No forward jumps into loop bodies or computed goto patterns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in template functions is handled cleanly (the Container template methods show proper inlining). No significant redundant expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are reasonable - `int`, `double`, `char*`, `void*`, `_BYTE`, `_DWORD`, `_QWORD`. However, some precision is lost: `unsigned __int8` should be `bool` in some contexts, `int` used where `size_t` would be more accurate, and function pointer types like `int (*)(int, char **, char **)` could be more precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class names are recovered (`Base`, `Derived`, `SimpleClass`, `LifecycleClass`, `Container<int>`, `Container<double>`, `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB`). However, struct/class member fields are not properly recovered - the code accesses `this->data`, `this->size` directly without showing the underlying struct definition with field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `*(_OWORD *)v1` for string handling, `*(_QWORD *)v1` for vtable manipulation, and `(int)size` casts. These are common in decompiled code but represent type safety concerns. No alignment annotations or restrict keywords recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very sparse comments. Only basic annotations like "// attributes: thunk" and "// positive sp value has been detected, the output may be wrong!" No explanation of what functions do, algorithm reasoning, or relationship documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic C++ idioms recognized (virtual function calls via vtable, `__dynamic_cast` for RTTI, `__cxa_throw` for exceptions). However, no explicit naming of patterns like "RAII", "virtual dispatch", "template instantiation" or higher-level design patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does flag some issues: "positive sp value has been detected, the output may be wrong!" and marks failed decompilations with "FAILED to decompile:". However, these are generic warnings without specific guidance on what the anomaly means or how to handle it.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The code provides no guidance on what constraints functions expect (e.g., "requires: ptr != NULL") or guarantee (e.g., "ensures: return is heap-allocated").
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships documented. No indication of which functions call which, global variable usage, or callback relationships. The code is presented in isolation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably in a single file. Related template instantiations are placed together. Static functions are properly scoped. However, no header file structure or namespace information is recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses `__noreturn` attributes correctly for some functions. However, `test_cpp_exception` is marked `__noreturn` but actually returns in the original source. Some functions like `test_cpp_oo_features` are incorrectly marked `__noreturn`. External dependencies (libstdc++, libc) are not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `w0`, `w9`, `x19`, `x20` completely obscure variable purpose
+- **Missing struct recovery**: Class member fields (`data`, `size` in Container, `value`, `name` in SimpleClass) are accessed without proper struct definitions
+- **No cross-reference documentation**: Functions are presented in isolation with no call graph or relationship information
+- **Incorrect `__noreturn` attributes**: `test_cpp_exception` and `test_cpp_oo_features` incorrectly marked as noreturn
+- **Sparse comments**: No explanation of algorithm logic, virtual dispatch mechanisms, or template instantiation patterns
+
+### Best Quality Aspect: Structural Intelligibility (8.25/10)
+Control flow is natural, function decomposition matches the original source, and code linearization is excellent with minimal jumps disrupting readability.
+
+### Most Needs Improvement: Contextual Coherence (4.67/10)
+Cross-reference clarity is nearly absent (2/10), with no documentation of function relationships, call graphs, or how code connects to external modules.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Variables like `v1` used as array with `strlen()` should be named `name_buffer` or similar; `v2` used as counter should be `size` or `count`
+2. **Recover struct/class definitions**: Show complete struct layouts with field names rather than just `this->field` access
+3. **Add cross-reference comments**: Document which functions call each function and what globals they access (e.g., "// Called by: test_cpp_oo_features, main")

@@ -1,0 +1,132 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+Let me analyze this specific function from the decompiled output, comparing it to the original source.
+
+### Original Source for `param_fake_branch`:
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    // 永假条件：x*x < 0 对于实数x恒不成立
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // 另一个永假条件：字符串长度不可能为负
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Version:
+```c
+int param_fake_branch(unsigned int a0)
+{
+    return a0;
+}
+```
+
+---
+
+## Detailed Evaluation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: The parameter is named `a0` (generic). The original had `int result = x;` which was eliminated entirely. At -O0, we should see local variables preserved. The loss of `result` variable is significant - it was semantically meaningful in the source.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` matches the original source exactly. This is excellent recovery - the decompiler preserved the exact function name from the symbol table.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in the simplified output. The magic number `0xDEADBEEF` from the source is completely eliminated along with the dead branch. This is appropriate since the branch never executes.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean output with no compiler artifacts. No redundant casts, no debug instrumentation. The function is minimal and readable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **CRITICAL DEFECT** - The decompiler has completely eliminated both fake branches. The original intentionally has two "always false" conditions (obfuscation technique OBF-L4-02), but the decompiled version shows no control flow whatsoever - just `return a0;`. This destroys the semantic intent of the obfuscation pattern.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized - just a single return statement. No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear - reads top-to-bottom with no jumps or branches.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code - the function is minimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **CRITICAL DEFECT** - The parameter type changed from `int` (signed) to `unsigned int`. This is semantically significant: at -O0, the original type should be preserved. The unsigned type changes the function's type signature and could affect analysis. Return type is `int` which matches.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types used in this function, so nothing to recover.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The unsigned/signed mismatch is a type safety concern, but there are no unsafe casts or pointer operations in this simple function.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **CRITICAL DEFECT** - No comments explaining the obfuscation pattern. The original source had detailed comments about "永假条件" (always-false conditions). The decompiled code provides no indication that this is an obfuscation function with intentionally dead branches. A reverse engineer would have no idea this was meant to demonstrate fake branch obfuscation.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: **CRITICAL DEFECT** - The "fake branch" (永假分支) obfuscation idiom is completely lost. The original explicitly demonstrates OBF-L4-02 pattern with two always-false conditions. The decompiler should recognize this pattern and perhaps add a comment like "// OBF-L4-02: Dead code branch (always false)".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No anomalies flagged. The decompiler doesn't indicate that significant code was eliminated or that the function's behavior differs from typical patterns.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No contract information. Could have noted "ensures: returns input unchanged" or similar.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function calls `call_fake_branch()` which passes constant 10. This relationship is preserved in the decompiled code.
+
+**17. Module Organization:** Score: 9/10  
+Justification: The function appears in a logical position among other obfuscation/optimization test functions. Good grouping.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function compiles cleanly with minimal external dependencies (just standard library).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Control flow completely eliminated**: Both fake branches (OBF-L4-02 obfuscation pattern) are removed, destroying the semantic intent of the original code
+- **Type mismatch**: Parameter changed from `int` to `unsigned int` - semantically significant at -O0
+- **No idiom recognition**: The "fake branch" (永假分支) obfuscation pattern is completely lost with no indication it ever existed
+- **No comments**: The detailed obfuscation comments from the source are absent, leaving no trace of the intentional dead code
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- The function name `param_fake_branch` was perfectly preserved from the original source symbol
+
+**Most Needs Improvement:** Control Flow Naturalness + Idiom Recognition (both 1/10)  
+- The decompiler aggressively eliminated the very purpose of this function - demonstrating fake branch obfuscation. At -O0, these dead branches should be preserved and annotated
+
+**Top 3 Recommendations:**
+1. **Preserve dead code branches**: At -O0, the fake branches `if (x*x < 0)` and `if (strlen(str) < 0)` should be recovered, even if the decompiler marks them as "always false"
+2. **Add obfuscation pattern comments**: Recognize OBF-L4-02 pattern and add comment like "// Always-false condition (obfuscation)"
+3. **Preserve original types**: Keep `int` parameter type instead of converting to `unsigned int` - type fidelity is critical at debug optimization levels

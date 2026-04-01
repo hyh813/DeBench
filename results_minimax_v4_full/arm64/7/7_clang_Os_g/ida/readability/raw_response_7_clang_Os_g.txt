@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Function Focus: `param_fake_branch` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` in `param_opaque_predicate` are completely generic. The decompiler eliminated local variables from `param_fake_branch` entirely (it just returns `x`), losing the `result` variable that held semantic meaning in the original.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved accurately: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` all match source. Minor issue: some internal functions like `sub_730` are generic.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: Critical failure - the magic constant `0xDEADBEEF` from the fake branch is completely absent. The decompiler eliminated the dead code that contained it. Similarly, the string "test" and `strlen(str) < 0` check are gone. These literals were essential to understanding the obfuscation technique.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The decompiled output is clean without obvious compiler artifacts, redundant casts, or debug instrumentation. No significant noise observed.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **Critical defect** - `param_fake_branch` is reduced to just `return x`, eliminating both fake branches entirely. The decompiler performed aggressive dead code elimination that destroyed the obfuscation technique being tested. The original had two always-false conditions that should be preserved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions remain properly separated with appropriate granularity. Each test function (`param_fake_branch`, `param_opaque_predicate`, etc.) is correctly isolated. No over-fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The simplified code reads linearly top-to-bottom. No forward jumps or complex control flow disrupting readability in the decompiled output.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: The decompiler over-eliminated "redundant" code - specifically the fake branches which were intentionally dead code for obfuscation testing. This is a fundamental failure to recognize obfuscation patterns vs. actual redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correctly preserved - `int` for parameters and return values, `char*` for strings, `size_t` for lengths. Minor generic typing but nothing severe. The `unsigned int` for shift operations is correct.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in the target functions, but `param_string_encryption` correctly handles the `char buffer[32]` from source. The `jmp_buffer` type is properly recognized.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts or pointer arithmetic errors. The decompiled code is type-safe. Minor: `signal` takes int but is called with literal 8 (SIGFPE) - could use constant.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Severe failure** - no comments whatsoever in the decompiled output. The original source had detailed comments explaining obfuscation techniques (永假条件, OBF-L4-02, etc.) that are completely lost. No indication of what the fake branches were testing.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The fake branch idiom (always-false condition) is not recognized - it's completely eliminated. The opaque predicate pattern in `param_opaque_predicate` is partially preserved but not identified as such. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that branches were eliminated or that the code underwent transformation. The decompiler silently removed the obfuscation without warning. A note like "Dead code eliminated" or "Fake branch removed" would be appropriate.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The implicit contract of `param_fake_branch` (always returns input) is trivial but not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `call_fake_branch()` calls `param_fake_branch(10)`. However, the decompiled `call_fake_branch` just returns 10 directly, losing the call relationship visible in source.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably but not perfectly matching source organization (obfuscation, optimization, edge case sections). The test harness functions are interspersed with implementation functions.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code appears compilable with minimal stubs. External functions like `signal`, `printf`, `strlen` are properly declared. Some string format variables like `asc_1121` are referenced but not shown.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Fake branches eliminated**: `param_fake_branch` reduced to `return x`, destroying the OBF-L4-02 obfuscation technique being tested
+- **Magic constant lost**: `0xDEADBEEF` from the fake branch is completely absent
+- **No comments**: Zero documentation explaining obfuscation patterns or what was eliminated
+- **No anomaly indication**: Silent removal of dead code without warning
+- **Generic variable names**: `v1`-`v6` in `param_opaque_predicate` obscure the computation
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.7/10)  
+Types are reasonably precise - basic types match, no obvious type safety violations, and composite types are handled adequately.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.3/10)  
+The decompiler provides zero insight into what it eliminated. Comments, idiom recognition, and anomaly indication are all severely lacking. This is particularly critical for obfuscation analysis where understanding what was removed is as important as what remains.
+
+**Top 3 Recommendations:**
+1. **Preserve dead code for analysis**: Add a flag to keep unreachable basic blocks for obfuscation analysis, with comments like "// DEAD CODE: always-false condition x*x < 0"
+2. **Recover variable names from usage**: Infer names like `result` from patterns like `result = x; ... return result;`
+3. **Add semantic annotations**: Flag eliminated branches with explanations (e.g., "// Eliminated: strlen(str) < 0 is always false") rather than silent removal

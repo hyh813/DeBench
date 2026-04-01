@@ -1,0 +1,16 @@
+Test output:
+
+Value: 10
+Result: 20
+Hex: 225
+Sum: 0
+Val1: 500500
+Val2: 5050
+Val3: 72
+Val4: 20
+Div result: 2
+Ptr result: 41
+Buffer: 30
+Overflow: 2000000000
+UB: 10
+Impl: 48

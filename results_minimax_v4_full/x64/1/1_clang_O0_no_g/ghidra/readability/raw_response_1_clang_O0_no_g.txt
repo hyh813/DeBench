@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) instead of source names (`a`, `b`, `c`). Local variables are named `local_c`, `local_10`, `local_14`, `local_18` - completely non-descriptive. For example, in `sequential_ops`, the original variables `temp1`, `temp2`, `temp3` are completely lost.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names are almost perfectly preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, etc. All match the original source function names exactly. Minor deduction for some internal functions like `FUN_00101020`.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Some magic numbers remain unexplained (e.g., `0x3e9` = 1000, `0x65` = 101, `0x2694` = 9876). However, context often reveals meaning (e.g., `0x3e9` used as loop limit). The switch case values are correctly recovered but not named as constants.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise from compiler artifacts: unreachable block warnings, initialization functions (`_init`, `_start`, `deregister_tm_clones`) that aren't part of the source. The `_start` function has an infinite loop comment that adds confusion. However, core logic functions are relatively clean.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and matches source well. Loops use `for`/`while` constructs correctly. The `goto_forward` correctly became a conditional without goto. The `goto_backward` was properly converted to a for loop. At -O0, this is excellent.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are properly separated. Test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are correctly extracted. Main functions maintain appropriate granularity. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. The `duffs_device` has goto-based jumps between switch cases, which is expected for that pattern. Minor forward jumps in `loop_break` but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy in core logic. The `duffs_device` shows unrolled loop structure which is expected. No dead code observed in the main functions. Good elimination of redundant computations.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses `undefined4` instead of `int`, `undefined8` instead of `long` or pointers. Function parameters correctly use `int` but return types sometimes use `undefined4`. Signed/unsigned distinction is lost in some places (e.g., `uint` for some operations). Mixed quality.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Arrays are partially recovered - `loop_break` has `int local_28[6]` which correctly recovers the array. However, field names are generic. The matrix in `loop_multi_exit` is recovered via `memcpy` from data section rather than as a proper array literal.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: Generally type-safe code. Function pointers use `code *` type which is imprecise but functional. No obviously dangerous casts. Pointer arithmetic is minimal and safe. The `duffs_device` uses pointer arithmetic correctly.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Minimal useful comments. Most comments are auto-generated warnings ("WARNING: Removing unreachable block"). No explanation of algorithm intent, preconditions, or postconditions. The decompilation header comment is generic. No documentation of what functions do.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns recognized but not named. Duff's device is partially identified with switch case labels but not explicitly named as such. State machines are recognized as switch statements. No explicit pattern naming (e.g., "This implements Duff's device").
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some warnings present: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". However, these are generic and don't explain the implications. The `opaque_predicate` has a comment about unreachable block but doesn't explain why.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: Almost no contract recovery. No preconditions documented (e.g., "requires: n > 0" for factorial). No postconditions. No error condition documentation. The multi-return paths in `multi_return` show error codes but aren't explained.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls are visible and traceable. Callback relationships are partially clear (e.g., `process_with_callback` shows callback parameter). However, no documentation of who calls what or global variable usage. Static functions correctly marked.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - test functions together, implementation functions together. Static functions properly scoped. However, the file is a single monolithic output rather than matching source organization into multiple logical units.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code appears to compile. Functions have proper declarations. External dependencies are minimal (just standard C library). The decompilation includes necessary includes. Should compile with minimal patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 6 + 4) / 4 = 5.25
+L2_avg = (8 + 8 + 7 + 8) / 4 = 7.75
+L3_avg = (5 + 5 + 8) / 3 = 6.00
+L4_avg = (4 + 5 + 5 + 3) / 4 = 4.25
+L5_avg = (6 + 7 + 8) / 3 = 7.00
+
+Overall = (5.25 × 0.30) + (7.75 × 0.25) + (6.00 × 0.20) + (4.25 × 0.15) + (7.00 × 0.10)
+        = 1.575 + 1.9375 + 1.2 + 0.6375 + 0.7
+        = 6.05/10
+```
+
+### Overall Readability Score: 6.05/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `param_N` and locals use `local_N` - completely loses semantic meaning (e.g., `a`, `b`, `c`, `temp1`, `temp2` become `param_1`, `param_2`, `param_3`)
+- **Type precision**: Uses `undefined4`/`undefined8` instead of proper `int`/`long` types, losing type information
+- **Comment absence**: No meaningful comments explaining algorithm intent, preconditions, or what functions do
+- **Contract recovery**: Zero recovery of preconditions/postconditions; error handling paths undocumented
+- **Literal clarity**: Magic numbers like `0x3e9`, `0x65` remain unexplained
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are almost perfectly preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The complete loss of variable names is the most severe readability issue. Every meaningful variable name (`temp1`, `temp2`, `count`, `sum`, `x`, `y`) is replaced with generic `param_N` or `local_N`, forcing analysts to manually track variable purposes.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to suggest semantic names (e.g., `temp_1` used in addition → suggest `sum` or `result`)
+2. **Add algorithm documentation**: Recognize common patterns (Duff's device, state machines) and add explanatory comments
+3. **Recover type precision**: Replace `undefined4`/`undefined8` with proper `int`/`long` types based on usage context and architecture awareness

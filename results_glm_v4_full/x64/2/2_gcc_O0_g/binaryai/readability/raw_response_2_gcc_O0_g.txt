@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compiling with debug symbols (`-g`), local variables are generic (`param_1`, `local_10`, `uVar1`). Meaningful names like `sum`, `arr`, or `x` are lost, forcing the reader to track usage manually.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`double_value`, `process_char`, `array_1d_stack`) are perfectly preserved from the source, providing immediate semantic context for every operation.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0x20` (32) and `0x28` (40, array stride) appear instead of named constants or decimal values. While hex is standard for offsets, it obscures the original logic (e.g., `c + 32`).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`in_FS_OFFSET`) appear in almost every function, cluttering the logic. Types like `undefined4` and `undefined8` are used instead of concrete types, adding unnecessary noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Simple loops are recovered well, but conditional logic is often inverted (e.g., `process_char` uses `||` instead of `&&`). Switch statements (`enum_switch`) are lowered into nested `if-else` chains, which are harder to read than the original `switch`.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source exactly. There is no inlining or outlining, maintaining the original modularity and granularity perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing goto-based loops or forward jumps that disrupt the execution flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Generally clean, but `volatile_access` incorrectly merges two distinct memory reads (`*p + *p`) into a single expression, hiding the volatile semantics required by the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost. `process_ld` is decompiled as `void` instead of returning `long double`, and `binary_tree` loses its `int` return type. Structs are passed as raw pointers (`int *`, `long *`) rather than typed structs.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are completely flattened. `struct_simple` accesses fields via array indexing (`param_1[2]`) rather than member access (`p->z`), and `struct_bitfields` uses raw bit shifts, losing all semantic structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: Heavy use of unsafe casts (e.g., `(long)local_c * 0x28`) and pointer arithmetic on `void*`/`int*` instead of typed struct pointers makes the code look unsafe and harder to reason about.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The only comment is a decompiler header ("Decompiled by BinaryAI"), providing zero semantic value.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns are not recognized. The "State Machine" pattern in `enum_switch` is presented as raw conditionals, and the "Linked List" traversal is just pointer arithmetic without identifying the data structure.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect code confidently. It does not flag the missing return value in `binary_tree` or the empty body of `process_ld` as potential errors or anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `array_complex_index` that indices must be within bounds is not explicitly stated, though the logic exists.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to standard library (`printf`, `puts`) and internal functions are clear and correctly resolved. The call graph is easily traceable.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure. Related test functions are grouped together, maintaining the original organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile as-is due to Ghidra-specific types (`undefined8`, `code *`, `undefined4`) and missing struct definitions. Significant manual cleanup is required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Function `process_ld`**: Decompiled as `void` with an empty body, completely losing the `long double` arithmetic logic.
+- **Function `binary_tree`**: Return value of `binary_tree_sum` is ignored, changing the signature from `int` to `void`.
+- **Composite Types**: All structs (e.g., `Point3D`, `Node`) are flattened to raw pointer arithmetic (`param_1[2]`), destroying semantic meaning.
+- **Control Flow**: Switch statements are converted to nested `if-else` trees, reducing readability.
+- **Variable Naming**: Debug symbols (`-g`) were ignored for local variables, resulting in generic names like `local_10`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler perfectly preserved all original function names from the symbol table, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The complete failure to recover struct definitions, reducing complex data structures to untyped memory offsets, is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Leverage Debug Info for Types**: Prioritize parsing DWARF/debug symbols to recover local variable names and composite type definitions (structs/unions) rather than defaulting to raw offsets.
+2.  **Preserve Switch Statements**: Implement pattern recognition to reconstruct `switch` statements from jump tables or conditional chains instead of lowering them to nested `if-else`.
+3.  **Fix Floating-Point/Return Analysis**: Correct the analysis of functions returning floating-point values (specifically `long double` on ARM64) and ensure wrapper functions propagate return values correctly.

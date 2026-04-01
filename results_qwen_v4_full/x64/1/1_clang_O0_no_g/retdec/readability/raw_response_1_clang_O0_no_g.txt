@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Original `temp1`, `sum`, `count`, `i`, `j` are all lost. Even `result` is used inconsistently across functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions preserved well (`sequential_ops`, `single_if`, `loop_for_fixed`). However, helper functions are generic (`function_1030`, `function_1040`) and some signatures changed (`loop_while` takes pointer instead of value).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers from type conversions (`0x100000000`, `0xffffffff`, `32`) obscure simple arithmetic. Original constants like array size `5` in `loop_break` are buried in pointer arithmetic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casting (`(int32_t)`, `(int64_t)`) and bit masking (`& 0xffffffff`) throughout. Simple `x * 2` becomes `2 * a1 & 0xfffffffe`. Compiler artifacts dominate readable logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops converted to mathematical formulas (`loop_for_fixed` uses sum formula instead of iteration). `single_if` uses bit shift trick instead of simple conditional. Switch statements become jump table pointer arithmetic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. Each test case is its own function. However, some functions are overly complex due to decompilation artifacts rather than original logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Mostly reads top-to-bottom but has spurious labels (`lab_0x1c61`, `lab_0x1cfd`) indicating goto usage where none existed. `loop_multi_exit` has particularly awkward jump structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive type conversion patterns throughout (`0x100000000 * x >> 32` appears dozens of times). No consolidation of common bit manipulation idioms that represent simple casts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters became `int64_t` regardless of original `int`. Lost distinction between signed/unsigned in many places. Original `volatile int *flag` sometimes becomes `int32_t *` or `int64_t *` inconsistently.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) but with generic field names (`e0`, `e1`, `e2`). Array handling poor—`loop_break` uses pointer arithmetic instead of `arr[i]` syntax.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts between `int64_t` and `int32_t`. Pointer arithmetic on stack variables (`&v1 - 32`) is error-prone. Function pointer calls lose type information (`call_func_ptr` takes `int64_t` instead of function pointer).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive Chinese documentation explaining each function's purpose, test cases, and difficulty level. All semantic context lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Simple for-loops become mathematical formulas. Switch-case fallthrough not identified. State machine patterns in `state_machine` and `fsm_func_table` not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Minimal `UNREACHABLE` markers present. No warnings about indirect calls, potential issues with `setjmp/longjmp`, or function pointer resolution problems. Silent failures on complex constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions or error condition documentation. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables opaque (`g1`, `g2`, `g7` with hex addresses). No call graph information. String literals referenced via globals instead of inline.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 79 functions in single file. No header file separation. Related functions (state machine handlers) not grouped logically. Original test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers and has prototypes. Should compile with modifications. Some function signatures mismatch original (pointer vs. value parameters). External dependencies documented minimally.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+7+4+4)/4 = 4.50
+L2 Average: (5+7+6+5)/4 = 5.75
+L3 Average: (4+5+4)/3 = 4.33
+L4 Average: (1+3+4+2)/4 = 2.50
+L5 Average: (5+5+6)/3 = 5.33
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + (2.50 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.44 + 0.87 + 0.38 + 0.53
+        = 4.57/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `sum`, `count`, `result`)
+- **Simple arithmetic obscured** - `x * 2` becomes `2 * a1 & 0xfffffffe` with unnecessary bit masking
+- **Zero comments preserved** - Original had extensive documentation explaining purpose and test cases
+- **Type information lost** - All `int` became `int64_t`, losing original type semantics
+- **Control flow degraded** - Simple for-loops converted to mathematical formulas instead of iteration
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main test function names preserved accurately from source, making identification possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop counters should be named `i`, `j`, `count`)
+2. **Preserve or recover comments** from debug symbols when `-g` flag was used during compilation
+3. **Simplify type conversion artifacts** - recognize `0x100000000 * x >> 32` patterns as simple 32-bit to 64-bit casts and emit cleaner code

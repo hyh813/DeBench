@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5` throughout. The original parameters `x`, `y`, `z`, `counter`, `increment` are lost. Only `result` is somewhat descriptive. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved accurately: `param_variadic_macro`, `call_asm_atomic`, `param_builtin_macros`, `param_dynamic_code`. The naming follows action-verb patterns and matches source intent well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are resolved (e.g., `__LINE__` → 282, `__FILE__` → "src/5-23.c"), but magic numbers like `7` (PROT_READ|PROT_WRITE|PROT_EXEC), `34` (MAP_PRIVATE|MAP_ANONYMOUS), `1` (PROT_READ), `3` (PROT_READ|PROT_WRITE) remain unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some pointer arithmetic artifacts (`(int32_t *)v2`) but no major debris from register spilling or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is readable with while loops, but the pointer arithmetic in `param_asm_simd` uses confusing offset calculations (`v2 += 4`, `v3 += 4`) instead of array indexing. The `call_asm_multi_insn` has unreachable code after return.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated with appropriate granularity. Each test function (`call_asm_*`, `param_*`) is distinct. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns in `param_dynamic_code` and `param_memory_protection`. Some forward jumps in the loop structures but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in `param_asm_simd` but it's the compiler's natural output at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` appropriately for most integers. However, mixing `int32_t*` with `char*` in functions like `param_asm_multi_insn` shows some type confusion. The `mmap` return type is cast to `int32_t*` instead of `void*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays are handled via pointer arithmetic (`v2 += 4`) rather than proper array syntax. Original arrays like `int arr[5]`, `char src[10]`, `char dst[32]` are not clearly recovered as structured types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: `(int32_t *)v2` casts, pointer arithmetic without bounds checking, and the problematic expression `v1 == 15 == param_memory_protection() == 42` in `call_asm_privileged` which is semantically incorrect (compares boolean to 42).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Source file and line number comments present (e.g., "From module: /work/src/5-23.c"), but no semantic explanation of what the functions do or why certain operations occur. No indication of decompilation confidence.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operation `__sync_fetch_and_add_4` is recognized, but inline assembly blocks from the original source are completely replaced with C implementations. The SIMD assembly is replaced with scalar loops. The macro expansion patterns are lost.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The `__stack_chk_fail` call appears without explanation. The unreachable code after return in `call_asm_multi_insn` is not flagged. The incorrect boolean comparison expression is not flagged as potentially wrong.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/post conditions or invariants documented. The `mmap` failure check (`v2 != (int32_t *)-1`) is present but not explained as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `call_asm_atomic()` calls `param_asm_atomic()`), but there's no documentation of who calls these functions or their role in the larger system.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (preprocessing tests, asm tests). However, all in one file without clear section organization matching the original source's chapter structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing critical includes (e.g., `<stdio.h>` for printf, `<string.h>` for memcpy). The `__printf_chk` and `__stack_chk_fail` stubs need definitions. The code would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable names are all generic (`v1`, `v2`, `v3`, `v4`, `v5`), losing all semantic meaning from original parameters (`x`, `y`, `z`, `counter`, `increment`)
+- Inline assembly code completely replaced with C implementations, losing the original low-level semantics
+- The expression `v1 == 15 == param_memory_protection() == 42` is semantically incorrect - it compares boolean results rather than checking all conditions
+- Magic numbers like `7`, `34`, `1`, `3` for mprotect/mmap flags are unexplained
+- Arrays recovered as pointer arithmetic rather than structured types
+- Missing includes prevent compilation (`<stdio.h>`, `<string.h>`)
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Function names are well-preserved with action verbs matching the source: `param_variadic_macro`, `call_asm_atomic`, `param_builtin_macros`. This makes it easy to identify what each function does.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+All meaningful variable names are lost, replaced with generic `v1`-`v5` patterns. This makes understanding function logic extremely difficult - for example, in `param_asm_atomic`, the original `counter` and `increment` parameters become meaningless.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `counter` used in atomic operations, `increment` added to result) to generate semantic names
+2. **Recover inline assembly semantics**: When assembly is replaced with C, add comments explaining what the original assembly did (e.g., "Replaced x86 lock xadd with __sync_fetch_and_add")
+3. **Flag semantic anomalies**: The boolean comparison chain `v1 == 15 == param_memory_protection() == 42` should be flagged as likely incorrect decompilation

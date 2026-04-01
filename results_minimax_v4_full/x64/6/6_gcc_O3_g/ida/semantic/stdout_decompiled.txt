@@ -1,0 +1,20 @@
+Standard Library Test
+strcpy: 8
+strcmp: 0
+strlen: 12
+memcpy: 90
+memcmp: 1
+Value: 42, Name: Test
+printf: 22
+scanf: 579
+fopen: 42
+fread: 42
+malloc: 90
+memset: 0
+strchr: 15
+System Calls Test
+syscall: 42
+stat: 42
+fork/exec: 42
+pipe: 42
+socket: 42

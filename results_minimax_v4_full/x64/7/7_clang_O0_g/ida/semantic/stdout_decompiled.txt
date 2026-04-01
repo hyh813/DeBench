@@ -1,0 +1,15 @@
+Testing obfuscation, optimization, and edge cases:
+Obf/L4/02/Decoy branch: 10
+Obf/L4/03/Opaque predicate: 20
+Obf/L4/04/Instruction substitution: 225
+Obf/L4_05/String encryption: 110
+Opt/L4/01/Tail call: 500500
+Opt/L4/01/Non-tail call: 5050
+Opt/L4/02/Vectorized loop: 72
+Opt/L5/01/LTO: 20
+Edge/L3/01/Division by zero: 1
+Edge/L3/02/Null pointer deref: 41
+Edge/L3/03/Buffer overflow: 30
+Edge/L3/04/Integer overflow: 2000000000
+Edge/L4/01/Undefined behavior: 10
+Edge/L4/02/Implementation-defined: 47

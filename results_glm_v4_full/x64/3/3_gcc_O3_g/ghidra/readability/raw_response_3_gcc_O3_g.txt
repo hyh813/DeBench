@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `puVar2`, `__ptr`, `auStack_18`), providing no semantic hint about their purpose, such as loop counters or buffer pointers.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source symbols (e.g., `double_value`, `local_vars`, `test_stack_memory`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant folding (e.g., `0x2a` for 42, `0x14` for 20, `0x28` for 40), obscuring the original logic and constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including stack canary checks (`in_FS_OFFSET`), generic `undefined` types (`undefined8`, `undefined1`), and verbose stack probing logic in `alloca` functions that clutters the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple functions are readable, aggressive compiler optimizations (loop unrolling, vectorization) have transformed loops into massive blocks of arithmetic (e.g., `large_stack_frame`) or complex pointer arithmetic (e.g., `vla_stack`), making flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; the decompiler did not fragment functions excessively, though inlined logic within `test_...` functions makes them long.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code readability is disrupted by unrolled loops and stack probing routines that require jumping back and forth to understand, rather than a clean top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler fails to re-roll unrolled loops (e.g., in `heap_basic`), resulting in pages of repetitive assignment statements that obscure the simple iterative logic of the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often imprecise, using generic `void*` or `undefined8` for pointers, and `int` for specific sizes, though basic integer types are generally correct.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Structs like `Node` and `Point` are defined and used in some functions (e.g., `heap_nested`), but in others (e.g., `linked_list_heap`), they are treated as raw `int*` with manual offset arithmetic (`+2` for `next`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts, such as casting `undefined8` to `int*` and performing pointer arithmetic on `void*`, which risks misinterpretation of memory layout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and purely technical warnings (e.g., "WARNING: Unknown calling convention"), offering no semantic explanation of algorithms or complex memory operations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms like `alloca`/VLA allocation are represented as complex stack pointer manipulation loops rather than being recognized and simplified back to allocation idioms.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags issues like "Unresolved local var" and "Removing unreachable block," which helps identify where optimization or analysis failed, though it doesn't explain *why*.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions; for example, the check `if (n <= 0)` in `alloca_usage` is present but not highlighted as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names are preserved, cross-references are clear; calls like `malloc`, `free`, and user-defined functions are easily identifiable.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order that roughly groups related functionality (stack, heap, static), matching the source structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to `undefined` types, missing `DAT_` symbol definitions, and non-standard syntax like `undefined1`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`iVar1`, `puVar2`), obscuring the purpose of loop counters and pointers.
+- Loop unrolling is not abstracted; functions like `heap_basic` and `large_stack_frame` are expanded into massive repetitive blocks.
+- Struct usage is inconsistent; `Node` is defined but treated as `int*` with offset arithmetic in `linked_list_heap`.
+- Stack probing logic for `alloca` is verbose and low-level, hiding the simple allocation intent.
+- Magic numbers from constant folding (e.g., `0x2a` for 42) replace meaningful constants.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The preservation of original symbol names makes navigating the high-level structure trivial despite the low-level mess.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to recognize and simplify compiler optimizations (unrolling, stack probing) into high-level constructs is the biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement loop rolling detection to consolidate unrolled arithmetic blocks back into `for` or `while` loops.
+2. Improve type propagation to ensure defined structs (like `Node`) are applied consistently across all functions instead of reverting to `int*` and offsets.
+3. Infer variable names from context (e.g., variables used as loop counters should be named `i` or `idx`) to replace generic `iVar1` labels.

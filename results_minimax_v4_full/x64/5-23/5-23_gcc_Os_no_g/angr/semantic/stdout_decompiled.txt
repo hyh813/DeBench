@@ -1,0 +1,19 @@
+macro constant: -749221864
+macro value: 64
+macro conditional: 30
+macro multi: 32
+macro compile: 57122
+macro recursion: 116
+macro token: 19
+macro variadic: 60
+LOG: Values: 10, 20, 30
+macro override: 60
+macro override: 16
+include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:41
+builtin macros: 382
+asm basic: 0
+asm clobber: 420152511
+asm multi: -1
+asm simd: 6
+asm atomic: 35

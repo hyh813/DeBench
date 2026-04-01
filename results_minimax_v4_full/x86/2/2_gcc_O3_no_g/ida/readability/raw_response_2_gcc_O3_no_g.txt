@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v2`, `v3`, `v4`, `i`, `result`). For example, in `process_char`, parameter `a1` should be named `c` based on the source. The only exception is loop counter `i` in some functions, but overall naming is unusable for analysis.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match the original source exactly (e.g., `process_char`, `process_short`, `array_1d_stack`, `ptr_single`). Test functions are correctly named. Minor deduction for some helper functions without clear purpose, but the primary API functions are well-named.
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Justification: Magic numbers like `65` and `32` for ASCII conversion in `process_char` are present without explanation. The condition `(unsigned __int8)(a1 - 65) < 0x1A` is technically correct but obscures the `'A'` to `'Z'` range check. Some literals like array indices in `array_2d_stack` are uncommented.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+Justification: Clean decompilation with minimal compiler artifacts. No excessive register spilling code or debug instrumentation. Type casts are present but necessary for the decompilation context. The output is readable without significant noise pollution.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Loops are properly recovered as `for` and `while` constructs. The `array_1d_stack` uses a clear do-while pattern. Conditionals in `process_char` and `process_bool` are natural. At `-O0`, control flow should be nearly identical to source, and the decompiler achieves this.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single responsibility (e.g., `array_string` computes length, `ptr_increment` sums array elements). No monolithic functions or over-fragmentation observed. Parameter counts match original signatures.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most code reads top-to-bottom with minimal disruption. Early returns in functions like `array_1d_stack` (when `a2 <= 0`) are appropriate. Some nested conditions in `pointer_array` create moderate complexity, but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Significant loop unrolling in `array_3d` (125 array accesses expanded individually) and `pointer_array` (10 separate if-blocks). This is expected at higher optimization but the source was compiled at `-O0`. The redundancy makes the code verbose and harder to understand.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Mixed results - basic types like `int`, `char` are mostly correct, but `process_char` takes `int` instead of `char`. Pointers are correctly typed as `_DWORD *` for int pointers. However, `const_param` uses `_DWORD *` instead of `const int *`, losing const semantics. Float types sometimes shown as `long double` instead of `float`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Struct fields are accessed via array indices (`a1[0]`, `a1[1]`, `a1[2]`) rather than named fields. The `struct_simple` function accesses `*a1`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`. Nested structures like `Rect` and `Widget` are flattened to raw offsets. Union types are treated as `char *` without union semantics.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Function pointer types are correctly preserved (e.g., `int (__cdecl *a1)(int)`). However, unsafe casts are present: `ptr_void` uses `*(_DWORD *)a1` and `*a1` without type safety. The `array_complex_index` uses pointer arithmetic that could overflow. Some type-confused operations in `ptr_cast`.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: No meaningful comments explaining algorithm logic or purpose. The only comments are the IDA Pro header and function boundaries. No documentation of parameters, return values, or non-obvious logic. The source had extensive comments (e.g., "// DT-L1-01: 字符类型") that were completely lost.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+
+Justification: Common patterns like linked list traversal (`while (current != NULL)`) and tree traversal are recognizable. The `linked_list` function clearly shows pointer chasing pattern. However, no explicit naming or comments identify these as established patterns from the original source.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: Failed functions are listed at the end (`__libc_start_main`, `__stack_chk_fail`, etc.) but without explanations of why they failed or what they contain. No warnings about potential undefined behavior in functions like `array_oob` (which has intentional out-of-bounds access). No confidence indicators for indirect calls.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 15") that are not recovered. No documentation of error conditions or boundary checks beyond what's in the code.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are present and traceable (e.g., `main` calls `test_data_types_l1`, etc.). However, no documentation of call relationships, global variable usage, or callback patterns. The `ptr_func_simple` calls function pointer `a1(a2)` but doesn't indicate it's used as a callback mechanism.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are logically grouped - data type functions first, then array functions, pointer functions, composite type functions. This matches the original source organization. Static functions like `double_value` are properly scoped. However, no header file or API boundary separation.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: The decompiled code shows "Compilation Result: Yes" indicating it compiles. External dependencies (libc functions like `puts`, `__printf_chk`) are referenced but not declared. Would require adding `#include <stdio.h>` and potentially stub functions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2 + 8 + 6 + 8) / 4 = 6.0
+Level 2 Average: (8 + 8 + 7 + 6) / 4 = 7.25
+Level 3 Average: (5 + 4 + 6) / 3 = 5.0
+Level 4 Average: (3 + 6 + 4 + 2) / 4 = 3.75
+Level 5 Average: (5 + 7 + 7) / 3 = 6.33
+
+Overall = (6.0 × 0.30) + (7.25 × 0.25) + (5.0 × 0.20) + (3.75 × 0.15) + (6.33 × 0.10)
+        = 1.80 + 1.8125 + 1.0 + 0.5625 + 0.633
+        = 5.81/10
+```
+
+### Overall Readability Score: 5.81/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is unusable**: All parameters use generic names (`a1`, `a2`) and local variables use cryptic names (`v2`, `v3`), making code flow extremely difficult to trace.
+
+2. **Struct/union field names completely lost**: Composite types are accessed via array indices (`a1[0]`, `a1[1]`) instead of semantic field names (`p->x`, `p->y`), losing all structural meaning.
+
+3. **No comments or documentation**: Despite extensive comments in the original source (830 LOC with detailed explanations), the decompiled output has zero meaningful comments.
+
+4. **Excessive loop unrolling**: The `array_3d` function is expanded to 125 individual array accesses instead of a clean loop, making the code 100+ lines longer than necessary.
+
+5. **Type precision issues**: `const` qualifiers lost (`const_param` uses `_DWORD *` instead of `const int *`), and `char` parameters often promoted to `int`.
+
+---
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+
+The decompiler correctly recovers loop constructs and conditional logic. At `-O0`, the control flow should closely match the source, and the decompiler achieves natural-looking `for` and `while` loops with appropriate break/continue handling.
+
+---
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+
+The generic parameter names (`a1`, `a2`, `a3`) and local variable names (`v2`, `v3`, `i`, `result`) make the code nearly unusable for analysis. At `-O0`, the decompiler should be able to infer semantic names from usage patterns - for example, `a1` in `process_char` is used in character range checks and should be named `c`.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `a1 - 65 < 0x1A` suggests ASCII range check → name as `c` or `character`). Use data flow analysis to suggest descriptive names.
+
+2. **Recover struct field names**: Use known struct layouts, size analysis, and field access patterns to reconstruct field names. The original source defines `Point3D { x, y, z }` - the decompiler should recover `p->x` not `*a1`.
+
+3. **Add semantic comments automatically**: Generate comments explaining magic numbers (e.g., "// Range check: 'A' to 'Z'"), recovered enum values, and algorithm purpose. The original source had extensive documentation that should be partially recoverable.

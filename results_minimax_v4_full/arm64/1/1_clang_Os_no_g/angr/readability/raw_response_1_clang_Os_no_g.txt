@@ -1,0 +1,154 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Almost all variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. The decompiler uses ARM64 register annotations (e.g., `// w8`, `// x9`) instead of semantic names. For example, in `sequential_ops`, parameters should be `a`, `b`, `c` but are `a0`, `a1`, `a2`. This makes tracking variable purpose nearly impossible.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Function names are excellent - `sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`, `switch_fallthrough`, `duffs_device`, `recursion_factorial`, `state_machine`, etc. all match the original source exactly. The decompiler correctly recovered meaningful names for nearly all 40+ functions. Minor deduction for some helper functions that could have better names.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: The code is littered with unexplained magic numbers. `4294967295` (unsigned -1) appears constantly without comment. The value `1717986919` is the magic multiplier for division by 10 but is unexplained. `__ROL__` (rotate left) operations lack explanation. The mask `& 4294967294` appears frequently but its purpose (sign extension handling) is not documented.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise pollution. Functions like `loop_continue` and `recursion_factorial` contain literal text `[D] unsupported_Iop_ZeroHI96ofV128()` and `[D] unsupported_Iop_ZeroHI64ofV128()` indicating decompilation failures. Excessive bit manipulation masks (`& 4294967295`, `& 4294967294`) clutter every expression. Register annotations (`// w8`, `// x9`) add noise without semantic value.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Basic control structures (if-else, for, while, switch) are correctly recovered. However, some functions have extremely convoluted expressions - `loop_while` has a single line with 6 operations that makes tracing impossible. At -O0, this complexity is unexpected. The `goto` usage in `call_func_ptr` and `conditional_func_ptr` is appropriate for function pointer invocation.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are appropriately sized, generally under 50 lines. The test functions (`test_control_flow_l1`, etc.) are longer (~100 lines) but contain sequential test cases which is reasonable. Some functions like `duffs_device` could be cleaner but overall decomposition is acceptable.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some disruption from goto in function pointer calls (`goto a0;`, `goto v4;`). The `loop_complex_cond` has confusing control flow with multiple variables in the condition.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No obvious dead code. Some loop unrolling present in `duffs_device` which is expected given the pattern. The bit manipulation masks are repetitive but appear to be necessary for correct semantics (sign extension handling in ARM64).
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Severe type degradation. All `int` parameters became `unsigned int` or `unsigned long`. For example, `int sequential_ops(int a, int b, int c)` became `int sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`. This loses sign information critical for understanding. No const-correctness recovered. Function pointer types are just `unsigned long` instead of proper function signatures.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: The code primarily uses primitives, so struct recovery isn't heavily tested. Array accesses like `g_401950[a0]` and `*((int *)(4200812 + 4 * v0))` show some array recovery but without proper type information. The matrix in `loop_multi_exit` is accessed via pointer arithmetic without struct recovery.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Significant type safety issues. The pervasive use of unsigned types for what were signed parameters creates potential for misinterpretation. The bit manipulation masks (`| a0 >> 31`) are attempts to handle sign extension but create unsafe code. No bounds checking on array accesses like `g_401950[a0]`.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. The only comments are register annotations like `// w8`, `// x9` which are noise. No explanation of algorithms, no documentation of preconditions/postconditions. The decompiler provides no insight into what the code does.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: The decompiler did not recognize any patterns. Duff's device in `duffs_device` is presented as a messy switch with gotos instead of being identified. State machines in `state_machine` and `fsm_func_table` are just switch statements. Recursion in `recursion_factorial` is not identified as such (though the function name helps).
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: The decompiler silently produces `[D] unsupported_Iop_ZeroHI96ofV128()` and `[D] unsupported_Iop_ZeroHI64ofV128()` as if they were valid C code. These are not flagged as errors or explained. No indication that something went wrong. The code looks confident but is actually broken.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contract information recovered. No preconditions (e.g., "requires: n >= 0"), no postconditions, no invariants documented. The decompiler provides no guidance on how to use these functions correctly.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+Justification: While function names are correct, there's no documentation of call relationships. No indication of which functions call which. No global variable usage documentation. The `extern` declarations show dependencies but not the nature of relationships.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are logically grouped - test functions together, helper functions (op_add, op_sub, etc.) together, state machine functions together. This matches the original source organization well. Static functions are properly scoped.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: The code will NOT compile. The `[D] unsupported_Iop_Zero...` tokens are not valid C. Missing `#include <stdio.h>` and other headers. Many undefined identifiers. The code requires significant patching to even attempt compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 2) / 4 = 4.0
+L2_avg = (5 + 7 + 6 + 7) / 4 = 6.25
+L3_avg = (3 + 6 + 4) / 3 = 4.33
+L4_avg = (2 + 3 + 1 + 1) / 4 = 1.75
+L5_avg = (2 + 8 + 2) / 3 = 4.0
+
+Overall = (4.0 × 0.30) + (6.25 × 0.25) + (4.33 × 0.20) + 
+          (1.75 × 0.15) + (4.0 × 0.10)
+        = 1.20 + 1.5625 + 0.866 + 0.2625 + 0.4
+        = 4.29/10
+```
+
+### Overall Readability Score: 4.29/10
+
+### Critical Defects
+
+- **Type Precision**: All `int` parameters became `unsigned int`, losing critical sign information (e.g., `single_if` with negative input returns wrong value)
+- **Anomaly Handling**: Unsupported operations like `[D] unsupported_Iop_ZeroHI64ofV128()` appear as valid code without error flags
+- **Variable Naming**: All variables use generic names (`a0`, `v0`, `v1`) making semantic tracking impossible
+- **Literal Clarity**: Magic numbers like `4294967295` and `1717986919` are unexplained
+- **Comment Absence**: No algorithm explanations, no preconditions/postconditions, no useful documentation
+
+### Best Quality Aspect
+
+**Function Naming (scored 9/10)** - The decompiler correctly recovered meaningful names for nearly all 40+ functions, matching the original source exactly. This is the standout success.
+
+### Most Needs Improvement
+
+**Semantic Transparency (scored 1.75/10)** - The combination of no comments, no pattern recognition, silent failure on unsupported operations, and no contract recovery makes the code nearly unusable for understanding the original intent.
+
+### Top 3 Recommendations
+
+1. **Recover variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparisons) to infer semantic names like `packet_size`, `index`, `count` instead of `v0`, `v1`, `a0`
+
+2. **Flag unsupported operations prominently**: Instead of outputting `[D] unsupported_Iop_ZeroHI64ofV128()` as if it were valid C, emit clear error comments like `// DECOMPILER ERROR: Could not resolve vector operation`
+
+3. **Preserve signed types**: Implement better signed/unsigned inference from comparison operations and arithmetic context. The constant `-O0` compilation should preserve signedness information from the source.

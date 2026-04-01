@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_28`, `local_30` throughout. The original source uses meaningful names like `dst`, `src`, `buffer` but these are completely lost in decompilation. Cannot track variable purpose without analyzing usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names correctly recovered from source: `param_strcpy`, `call_strcpy`, `param_strcmp`, `param_memcpy`, etc. Some internal functions have generic names like `FUN_000113d0`, but user-facing API functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x42` (character 'B'), `0x2a` (42), `0xffffffff` (-1) appear without explanation. Some strings referenced via data symbols (e.g., `&DAT_00014011`) rather than inline literals. Mixed clarity - some constants recoverable, others not.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Some unusual constructs like `__regparm3` attribute on certain functions and one suspicious function `FUN_000113d0` using undefined register, but overall code is clean without redundant casts or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. Uses standard `for` loops, `if-else` constructs, and `while` loops. No spurious goto statements. At `-O0` optimization, control flow should closely match source, which it does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and decomposed. `param_strcpy` and `call_strcpy` are separate as in source. Each function has single responsibility. Minor issue: some internal helper functions could be better organized.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling paths. No excessive forward jumps or deep nesting (>4 levels). Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in `call_memcmp` but it's minimal. Code is clean without duplicate expressions or unnecessary operations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `char*` correctly for string parameters, but extensive use of `undefined4` instead of precise types like `int`, `size_t`, `uint`. Return types often `undefined4` rather than proper types. `param_strlen` returns `size_t` but decompiled as generic type.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct definitions recovered. Global variables like `signal_received`, `shared_counter`, `ready`, `data` exist but their types are unclear. Thread data structures like `ThreadData` are not reconstructed - accessed via pointer arithmetic on `local_3c`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. Pointer arithmetic like `(int)param_1 + local_14` in `param_memset`. Casts between `int*` and `void*` without explicit casts. Function pointer types not precisely typed (generic function pointers).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments in decompiled code. No algorithm explanations, no uncertainty indicators, no API contracts. Just raw decompiled code without documentation. At `-O0`, comments could help explain decompiler confidence.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions correctly identified (`strcpy`, `strlen`, `pthread_create`). Some patterns like producer-consumer visible in `consumer_thread`/`producer_thread` but not explicitly named or documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The suspicious `FUN_000113d0` function using undefined register is not flagged. Indirect calls or uncertain patterns not indicated. Code presents everything as confident decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (like `-1`, `-2`) not explained. No documentation of what conditions must hold before function calls.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code (`param_strcpy` calls `strcpy`, `strlen`). But no explicit documentation of who calls whom, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Related functions (standard library wrappers) not grouped separately from system calls or threading functions. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present (e.g., `<EXTERNAL>::strcpy`). Uses `undefined4` which may cause compilation issues. Would require some patching to compile cleanly. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- Variable names are entirely generic (`param_1`, `param_2`, `local_28`) - original `dst`, `src`, `buffer` completely lost
+- No comments or documentation explaining algorithm logic or decompiler confidence
+- Type precision severely degraded - extensive use of `undefined4` instead of proper types
+- No struct recovery - composite types like `ThreadData` accessed via raw pointer arithmetic
+- No anomaly indication for suspicious code patterns like `FUN_000113d0`
+
+### Best Quality Aspect: Control Flow Naturalness (9/10)
+- Control flow structures match source exactly at `-O0` optimization
+- No spurious goto statements or confusing jumps
+- Loops and conditionals are idiomatic
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- All variables use generic numbered names
+- Cannot determine purpose without analyzing usage
+- Should infer names from context (e.g., `param_1` used as destination → `dst`)
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` passed to `strcpy` as first arg → infer as `dst`; `local_28` initialized with string literal → infer as `buffer`
+2. **Add type precision**: Replace `undefined4` with `int`, `size_t` based on function signatures and usage
+3. **Recover struct types**: `ThreadData` can be reconstructed from access patterns (`local_3c[0]`, `local_3c[1]`, `local_3c[2]` correspond to `start`, `end`, `result`)
+4. **Add semantic comments**: Document function purpose, return value meanings, and flag uncertain decompilations
+5. **Flag anomalies**: Mark suspicious constructs like `FUN_000113d0` that use undefined registers

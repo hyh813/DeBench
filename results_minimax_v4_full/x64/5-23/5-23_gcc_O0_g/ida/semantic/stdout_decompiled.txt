@@ -1,0 +1,20 @@
+Preprocessing Tests
+Param macro constants: 64
+Param macro functions: 30
+Param conditional compile: 32
+Param multi branch compile: 57122
+Param macro recursion: 116
+Param stringize: 19
+Param token paste: 60
+LOG: Values: 10, 20, 30
+Param variadic macro: 60
+Param macro override: 16
+Param include guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:23
+Param builtin macros: 382
+ASM Features Tests
+Param asm basic: 15
+Param asm clobber: 15
+Param asm multi insn: 42
+Param asm SIMD: 36
+Param asm atomic: 30

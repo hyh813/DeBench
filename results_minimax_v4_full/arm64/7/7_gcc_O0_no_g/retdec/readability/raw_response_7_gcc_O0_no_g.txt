@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original source implements a fake/always-false branch obfuscation technique (OBF-L4-02) with two never-executed code paths:
+1. `x * x < 0` (always false for real numbers)
+2. `strlen(str) < 0` (string length cannot be negative)
+
+The decompiled version severely degrades readability through generic naming and structural issues.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled `param_fake_branch` uses only `v1` as parameter, completely losing the semantic meaning of `x` and `result`. All other functions similarly use generic `v1`-`v8` naming that provides no insight into variable purpose (e.g., `v2` should be `str`, `v3` should be `strlen(str)`).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions like `param_fake_branch`, `param_opaque_predicate`, `call_fake_branch` are correctly named. However, the file is cluttered with 30+ spurious functions with mechanical names (`function_880`, `function_890`, `function_8a0` through `function_950`) that obscure the actual program logic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The magic constant `0xDEADBEEF` from the original source is completely lost. String literals are encoded as hex escape sequences (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95..."`) making them unreadable. The constant `0x12345678` used as canary appears without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes 30+ spurious wrapper functions (e.g., `function_8c0` wrapping `signal`, `function_8d0` wrapping `malloc`), redundant struct definitions, and auto-generated boilerplate that triples the code size (701 LOC vs 464 original).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: At `-O0` optimization, control flow should closely match source. The `param_fake_branch` correctly shows a simple conditional, though the condition itself is obscured. Other functions like `param_opaque_predicate` have convoluted expressions that could be simplified.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The decompiler creates excessive granularity - standard library calls are wrapped in separate functions (e.g., `function_880` for `strlen`, `function_940` for `strncpy`). This creates 57 functions from what should be ~15 meaningful ones, fragmenting the logic unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The `param_fake_branch` is linear. However, some functions like `param_opaque_predicate` have complex nested ternaries that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns exist, particularly in `param_vectorized_loop` where the loop appears to be partially unrolled but not clearly marked as such. The decompiler doesn't distinguish between intentional unrolling and natural code structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: The decompiler uses `int64_t` for virtually all integer types, losing the original `int` type precision. For `param_fake_branch`, the original `int x` and `int result` become `int64_t v1`. This obscures signedness and width. The frequent `& 0xffffffff` masks suggest type confusion.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` are partially reconstructed but with generic field names (`e0`, `e1`, `e2`). The bitfield structure in `param_implementation_defined` is not recovered; instead it uses mysterious `__asm_bfi` and `__asm_ubfx` intrinsics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns exist: frequent `& 0xffffffff` casts suggesting type confusion, pointer arithmetic without bounds checking (e.g., `*(char *)(i + (int64_t)&v1)` in buffer overflow functions), and mixing of signed/unsigned in `param_integer_overflow` with complex boolean expressions.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explain the obfuscation techniques. The original source's detailed comments about "永假条件" (always-false condition) and "不透明谓词" (opaque predicates) are completely absent. Only address ranges like `// Address range: 0xa94 - 0xabc` are present.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler completely fails to recognize the fake branch pattern (OBF-L4-02), opaque predicates (OBF-L4-03), or instruction substitution (OBF-L4-04). These are core obfuscation techniques that should be identifiable. The code presents them as opaque computations without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The obviously dead code paths (e.g., `if (x * x < 0)` branch) are not marked as unreachable. The buffer overflow patterns in `param_buffer_overflow_stack` and `param_buffer_overflow_heap` are presented without any warning about the intentional bug.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source's expectations (e.g., "期望: 10" for `call_fake_branch`) are not recovered. No documentation of the signal handler contracts or the setjmp/longjmp behavior.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships exist but are not documented. The caller-callee relationships (e.g., `call_fake_branch` → `param_fake_branch`) are present but there's no comment explaining the test harness structure or the relationships between test cases.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped somewhat logically but the file is bloated with 57 functions. The original source's clear section organization (OBF-L4, OPT-L4, EDGE-L3) is lost. Static functions are not properly scoped with internal linkage indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Issues include: undefined `__asm_bfi` and `__asm_ubfx` intrinsics, malformed struct initializers in `longjmp` calls, and missing proper includes. The hex-encoded Chinese strings would also cause issues.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming uses only generic `v1`-`v8` completely losing semantic meaning (e.g., `x`, `result`, `str`)
+- 30+ spurious wrapper functions (`function_880`-`function_950`) triple code size without adding value
+- Magic constant `0xDEADBEEF` completely lost; obfuscation techniques not recognized
+- Type precision severely degraded - all `int` become `int64_t` with mask operations
+- No comments explaining the fake branch pattern or other obfuscation techniques
+- String literals encoded as hex escape sequences making them unreadable
+- Build would fail due to undefined `__asm_bfi`/`__asm_ubfx` intrinsics
+
+**Best Quality Aspect:** Function Naming Quality (5/10)  
+- Core test functions (`param_fake_branch`, `param_opaque_predicate`, etc.) retain their original names, providing some anchor for understanding
+
+**Most Needs Improvement:** Idiom Recognition (1/10)  
+- The decompiler completely fails to identify the core obfuscation patterns (fake branches, opaque predicates, instruction substitution) that are the entire point of the source code
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `v1` used in arithmetic operations and returned should be named `x` or `result` based on data flow analysis
+2. **Detect and flag unreachable code**: The always-false conditions (`x*x < 0`, `strlen(str) < 0`) should be marked as dead code with explanations
+3. **Recover string literals in readable form**: Decode UTF-8 strings instead of presenting hex escapes; the Chinese text "测试混淆与保护" should be readable

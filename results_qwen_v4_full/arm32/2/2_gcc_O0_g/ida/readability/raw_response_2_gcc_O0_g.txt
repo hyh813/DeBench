@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Local variables use generic names (`v0`, `v1`, `v2`, `temp_1`) while some test variables are meaningful (`val1`, `arr1`, `matrix`). Function parameters are better (`p`, `arr`, `n`, `x`) but local temporaries obscure purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names (`double_value`, `process_char`, `struct_simple`). However, helper functions use generic names (`sub_103C0`, `sub_12434`) and 7 library imports failed completely.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `32` (char conversion), `0x40u`, `0x5Au` lack explanation. Floating point literals (`1.5`, `2.0`, `0.1`) are clear but no named constants were recovered from the original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive register comments (`[sp+8h] [bp-Ch]`), type casting noise (`_DWORD`, `__int64`, `_BOOL4`), and redundant temporary variables (`v0` through `v14` in test functions) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered as `for`/`while` constructs correctly. Switch statement recovered for `enum_switch`. Some functions use verbose if-else instead of ternary operators but flow is generally natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has clear single responsibility. No excessive inlining or fragmentation observed in user code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Test functions have sequential structure. No excessive `goto` usage in recovered user functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant temporaries (`v0 = process_char(65); printf(..., v0)` could be inline). Not severely redundant but could be more concise in test functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char`, `float`, `double`). Platform-specific types used (`__int16`, `__int64`). `long` degraded to `int` on ARM. Pointer types mostly preserved correctly.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types preserved well (`Point3D`, `Rect`, `Widget`, `Node`). Field names maintained. However, `struct_bitfields` uses raw byte access (`*(_BYTE *)f & 1`) instead of proper bitfield syntax.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(_DWORD)`, `(void *)size`). Pointer arithmetic preserved but void pointer conversions lack safety checks. No buffer overflow patterns introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no comments in decompiled code. Original source had extensive documentation (test case IDs, expected values). Only basic function headers present with no algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns present (linked list traversal, tree recursion, array summation) but not explicitly identified. No design pattern recognition or naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 7 functions marked "FAILED to decompile" which is honest. However, no warnings about potential issues in successfully decompiled code (e.g., bitfield degradation, volatile optimization).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Null checks exist in code but not documented as contracts. Original source's test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. No call graph documentation. Global variable usage not clearly documented. Callback relationships visible but not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output. Original source had logical grouping (Data Types, Arrays, Pointers, Composite). No namespace or category organization recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 7 library functions failed (`__imp_puts`, `__imp_printf`, etc.) requiring stubs. Some type definitions need adjustment. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (6+8+6+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):   (8+8+7+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type System):  (7+7+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):     (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):   (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.18/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Variable `v0`-`v14`** should be named based on usage (e.g., `char_result`, `int_result`, `bool_result`)
+- **`struct_bitfields`** uses raw byte manipulation instead of recovered bitfield syntax, losing semantic meaning
+- **No comments** recovered from original source's extensive documentation (test case IDs, expected values, scene tags)
+- **7 library functions** failed to decompile (`__imp_puts`, `__imp_printf`, etc.) requiring manual stubs
+- **Magic numbers** like `32`, `0x40u`, `0x5Au` lack explanation (should be `'a'-'A'`, `'A'`, `'Z'`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most user-defined function names were preserved accurately from debug symbols, maintaining semantic clarity for the core logic.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete loss of original source documentation including test case identifiers, expected values, and scenario tags that would aid understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug string literals as comments** - The original source had test labels like "DT-L1-01" that could be extracted from printf format strings and added as function comments.
+2. **Infer variable names from usage context** - Variables used in printf calls could be named after their format specifier purpose (e.g., `char_result` for `%c`, `int_result` for `%d`).
+3. **Detect and annotate bitfield patterns** - When consecutive bit masks and shifts are detected (`& 1`, `>> 1 & 3`, `>> 3 & 7`), suggest bitfield struct recovery with appropriate field names.

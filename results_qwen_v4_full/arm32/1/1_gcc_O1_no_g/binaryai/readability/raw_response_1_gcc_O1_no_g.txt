@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar1`, `local_20`) with zero semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly from source (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). This is the decompiler's strongest aspect - action-oriented names clearly reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex literals (`0xffffffff` for -1, `0x14` for 20, `0x32` for 50) instead of clear decimal values. Original used readable decimal constants throughout.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Output includes 20+ runtime startup functions (`_init`, `_start`, `__do_global_dtors_aux`) not in original source. Compiler artifacts like `__stack_chk_fail` calls clutter user code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most structures recovered (if/else, switch, loops) but `loop_for_fixed` uses do-while instead of for, and `switch_fallthrough` has awkward goto labels (`LAB_00010908`). At -O0, should be near-perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and helper functions separated (`op_add`, `op_sub`). However, some signatures are wrong (`loop_break` returns `void` instead of `int`, losing return value semantics).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but `duffs_device` and `switch_fallthrough` have multiple goto labels disrupting flow. `computed_goto` uses function pointer array instead of labeled goto.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `__aeabi_idiv` has 35 boolean variables (`bVar5` through `bVar35`) creating massive redundancy. Loop unrolling not recognized or abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many functions use `undefined4`, `uint` instead of `int`. Critical errors: `if_else` returns `bool` instead of `int`, `state_done` has no parameters but original takes `event`. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Stack arrays shown as `local_20[4]`, `apcStack_18[3]` but without semantic names. Function pointer arrays recovered but not typed properly (`code *` instead of specific signatures).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts visible (`(int)param_1`, `(uint)param_1`). Function pointer calls use generic `code *` type. Stack canary checks present but add noise without safety benefit.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output despite original having extensive documentation explaining each function's purpose, test cases, and difficulty level. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition - Duff's device not identified, state machine functions not labeled as such, recursion patterns not noted. Original explicitly documented these as control flow patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about incorrect return types, missing parameters, or decompilation uncertainty. `call_func_ptr_array` has stack canary failure path but no explanation of why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`), no postconditions, no error condition documentation. Original had explicit test validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global `jump_buffer` used without declaration context. No indication of which functions call which.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with runtime code mixed with user code. No logical grouping (L1/L2/L3 test functions not separated). Original had clear section headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined symbols (`__aeabi_idiv`, `__aeabi_idivmod`, `__gmon_start__`). Would require significant stubbing and ARM-specific libraries to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 5.25/10 | 30% | 1.58 |
+| L2: Structural Intelligibility | 6.00/10 | 25% | 1.50 |
+| L3: Type System Fidelity | 5.67/10 | 20% | 1.13 |
+| L4: Semantic Transparency | 2.50/10 | 15% | 0.38 |
+| L5: Contextual Coherence | 4.33/10 | 10% | 0.43 |
+
+**Overall Readability Score: 5.02/10**
+
+### Critical Defects
+- **Zero comments** despite original having extensive documentation explaining purpose, test cases, and difficulty levels
+- **Generic variable names** (`param_1`, `iVar1`, `uVar1`) lose all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Incorrect type signatures** - `if_else` returns `bool` instead of `int`, `loop_break` returns `void` instead of `int`
+- **Hex literals** (`0xffffffff`, `0x14`, `0x32`) instead of readable decimal values from source
+- **Runtime code pollution** - 20+ startup functions mixed with user code, obscuring actual functionality
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved correctly, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original having comprehensive comments explaining each function's purpose, test validation, and control flow difficulty level.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - Integrate debug symbol comment extraction or use LLM-based comment generation based on function semantics
+2. **Infer semantic variable names** - Use usage pattern analysis to rename `param_1` → `a`, `iVar1` → `result`, `local_20` → `array` based on context
+3. **Flag type signature anomalies** - Add confidence indicators when return types or parameter counts differ from expected patterns, especially for functions with obvious semantics

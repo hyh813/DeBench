@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `call_opaque_predicate`), but helper functions are generic (`sub_400498`, `sub_400574`). Better than typical but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` instead of `-1`, signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`, `0x77359400` unexplained. Original constants completely lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition` calls, register spilling (`v0 = v1`, `v1 = v2`), and goto labels (`LABEL_400598`). Compiler artifacts dominate the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive goto statements replace natural if/else structures. `param_fake_branch` loses both conditional branches entirely. Do-while loops used where for/while would be clearer.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical functions broken: `param_fake_branch` returns just `v0` (lost all logic), `param_buffer_overflow_stack/heap` similarly broken. Some functions like `param_instruction_substitution` work but oversimplified.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps and goto labels disrupt top-to-bottom reading. `param_opaque_predicate` has complex jump patterns that obscure the original simple logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding visible (functions return pre-computed constants like `call_fake_branch` returns `10`). Some redundancy from optimization but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int` or `int`. Original had `const char*`, `size_t`, `jmp_buf`, `volatile` - all lost. Return type `char [2]` for `decrypt_string` is incorrect (should be `const char*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. The bitfield struct in `param_implementation_defined` completely lost (function returns constant `44`). All composite types flattened to primitives.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(unsigned int)v0`, `(char)result`, `(unsigned int *)vvar_5{r64|4b}`. Pointer arithmetic without type safety throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments like `/* do not return */`. No algorithm explanations, no documentation of obfuscation patterns, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` obscured by `armg_calculate_condition`. String decryption XOR pattern not identified. No pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Broken functions (`param_fake_branch`, `param_buffer_overflow_*`) show no warning they're incomplete. Code confidently presents incorrect/missing logic without flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions. Error handling via `setjmp/longjmp` not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables named generically (`g_412008`, `g_412044`). No call graph or callback documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping by category (obfuscation vs. optimization vs. edge cases). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains angr-specific calls (`armg_calculate_condition`) that won't compile standalone. Many external symbols undefined. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+3+4+5)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (2+2+1+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                              3.46/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken** - Returns `v0` instead of implementing the two fake branch conditions from source
+- **`param_buffer_overflow_stack/heap` non-functional** - Both return `v0` instead of implementing overflow logic
+- **`armg_calculate_condition` calls** - Angr-specific artifacts make code uncompilable and unreadable
+- **No anomaly warnings** - Broken functions present incorrect logic without any decompilation confidence indicators
+- **Type system collapsed** - All specific types (`const char*`, `jmp_buf`, `volatile`) degraded to `unsigned int`
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test functions retained original semantic names (`param_fake_branch`, `call_opaque_predicate`), providing some anchor points for understanding.
+
+### Most Needs Improvement: **Anomaly Indication (1/10)**
+- Broken functions present confidently incorrect code without any warnings, which is dangerously misleading for reverse engineers.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add decompilation confidence flags** - Mark functions where control flow or logic could not be fully recovered (e.g., `// DECOMPILATION_INCOMPLETE: conditional branches lost`)
+2. **Remove platform-specific artifacts** - Replace `armg_calculate_condition` with standard C conditionals or mark as requiring manual review
+3. **Recover semantic variable names from usage patterns** - Infer names like `encrypted_buffer`, `decryption_key`, `canary_value` from how variables are used rather than `v0`, `v1`

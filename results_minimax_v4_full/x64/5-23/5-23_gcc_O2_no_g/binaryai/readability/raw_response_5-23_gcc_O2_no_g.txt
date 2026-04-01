@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `uVar2`, `lVar1`, `puVar2`, `puVar3`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. This is a severe degradation - the decompiler provides no semantic inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Most function names are correctly preserved from the source: `param_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `call_asm_atomic`. The naming accurately reflects the original function purposes. Minor deduction for some internal functions like `FUN_00101020` which are not meaningful.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals are meaningful (e.g., `0x40` for return value, `0xdf22` for platform constant), but many magic numbers lack explanation. For example, `0x22` in mmap flags, `0x1e` in sysconf, `7` in mmap protection - these should be annotated as `PROT_READ|PROT_WRITE|PROT_EXEC` equivalents.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation. The `__printf_chk` replacement for `printf` is a minor artifact but expected at -O0.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow structures are mostly natural - if/else, for loops are correctly recovered. The assembly loops in `param_asm_clobber` and `param_asm_multi_insn` are properly converted to C loops. Some minor awkwardness in the atomic operations where `LOCK()`/`UNLOCK()` appear as function calls rather than inline hints.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function granularity - each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly separated. Functions are cohesive with single responsibilities. The original source's function boundaries are well preserved.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns in `param_dynamic_code` and `param_memory_protection` are appropriately used. No goto statements or spaghetti code patterns observed.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy. The SIMD code shows some element-wise operations that could be seen as redundant but this is a direct translation of the vector operations. Dead code is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - `int` and `undefined4` are used correctly for 32-bit values, `undefined8` for 64-bit. However, `long` is used for pointer types in `param_asm_clobber(long param_1, int param_2)` when it should be `int*`. The `size_t` is not recovered for `mmap` length parameter.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Limited struct recovery. The decompiled code uses raw pointer arithmetic like `*(int *)(param_1 + uVar2 * 4)` instead of array indexing. No struct reconstruction for the arrays passed to SIMD functions. The `undefined (*param_3) [16]` is a creative but unclear representation of `int result[4]`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic like `param_1 + uVar2 * 4` is potentially error-prone. The `(*(code *)__addr)(param_1)` in `param_dynamic_code` is an unsafe function pointer cast. However, no obvious buffer overflow patterns or severe violations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The decompiled code lacks any explanation of macro semantics, assembly behavior, or algorithm intent. No indication that this is preprocessor-expanded code vs. original macro code. The source had extensive comments explaining each test case - none are preserved.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No explicit pattern recognition. The atomic operations show `LOCK()`/`UNLOCK()` which hints at the atomic pattern, but it's not named or documented. The SIMD operations are just element-wise additions without indicating vector processing. No recognition of the self-modifying code pattern in `param_dynamic_code`.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The indirect function call `(*(code *)__addr)(param_1)` should be flagged as potentially dangerous. The dynamic code generation in `param_dynamic_code` should have a warning about executing generated machine code. No indication of the conditional compilation branches that were collapsed.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. Preconditions like "requires: page_size > 0" for mmap, postconditions like "ensures: memory is unmapped" for cleanup code are not documented. No error condition documentation for the various failure paths (-1, -2, -3 returns).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are somewhat clear through naming (`call_xxx` functions call `param_xxx`). However, no documentation of which functions call which, no indication of the test harness structure, and no global variable usage documentation (e.g., `global_var` in `param_memory_clobber_demo`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing functions first, then assembly functions. Static functions like `my_func` are properly scoped. However, the original source's clear section comments (PP-L2-01, ASM-L4-01, etc.) are lost, and there's no grouping by test category.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code compiles (as indicated by "Compilation Result: Yes"). External functions are declared. Minor issues: `LOCK()` and `UNLOCK()` are not standard - they appear to be Ghidra's representation of x86 lock prefix. The code would need these defined or replaced with proper atomic intrinsics to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic names (`param_1`, `param_2`) losing semantic meaning from source (`size`, `x`, `y`, `counter`)
+- **No comments**: Zero recovery of the extensive source documentation explaining each test case and macro semantics
+- **Type precision**: Pointer types not properly recovered (uses `long` instead of `int*` for array parameters)
+- **No struct recovery**: Arrays passed to functions remain as raw pointer arithmetic instead of being recognized as array/struct parameters
+- **Anomaly indication**: No flags for indirect function calls, self-modifying code, or collapsed conditional compilation branches
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+The decompiler correctly preserved nearly all function names from the original source, making it easy to identify which test function is being analyzed.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+The original source had extensive comments explaining preprocessing behavior, macro expansion, assembly semantics, and test expectations. None of this semantic information was recovered. Adding even basic explanations of what each function tests would dramatically improve readability.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` used in comparison with `0x400` should be named `size` based on the original source pattern `if (size > MAX_SIZE)`
+2. **Add semantic comments**: Explain that macro functions are preprocessor-expanded, that conditional compilation branches are collapsed, and what inline assembly does
+3. **Recover array types**: Instead of `long param_1` with manual `param_1 + uVar2 * 4`, use `int* param_1` with array-style access `param_1[uVar2]`

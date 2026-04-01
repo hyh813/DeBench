@@ -1,0 +1,100 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters are renamed to generic `a1`, `a2`, `a3` instead of the source's `a`, `b`, `c`, and the semantically meaningful intermediate variables `temp1`, `temp2`, `temp3` are eliminated entirely.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The function name `sequential_ops` is perfectly preserved from the source, likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 10/10
+Justification: All literals (e.g., `2`) are preserved exactly as in the source; no magic numbers were introduced or obscured.
+
+**4. Noise Reduction:** Score: 9/10
+Justification: The code is very clean with no register spilling artifacts, though the addition of the `__fastcall` attribute is a minor decompiler-specific annotation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The decompiler collapsed the explicit sequential assignments into a single optimized expression `2 * (a1 + a2) - a3`, which is mathematically cleaner but obscures the original step-by-step structure.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The function boundaries are correctly identified, and the logic is contained appropriately without fragmentation.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The execution flow is perfectly linear, reading naturally from top to bottom without jumps or breaks.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: The decompiler successfully eliminated the redundant intermediate variables present in the source code to produce a concise expression.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10
+Justification: Parameter and return types are correctly identified as `int`, matching the source exactly with no type erasure.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: While `sequential_ops` uses no structs, the decompiler failed to recover the array initializer in the surrounding `loop_break` function, expanding it into individual stack assignments (e.g., `*v1 = 10; v1[1] = 20;`).
+
+**11. Type Safety:** Score: 10/10
+Justification: There are no unsafe casts or pointer arithmetic operations present in the decompiled code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: No comments are present in the decompiled output; the source's explanation "// Purely sequential operations, no branches" is completely lost.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The arithmetic logic is clearly recognized and simplified, though the specific "sequential assignment" teaching pattern was optimized away.
+
+**14. Anomaly Indication:** Score: 10/10
+Justification: No anomalies are present; the code is straightforward and correctly decompiled.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: No explicit contracts or assertions are recovered, which is consistent with the simple nature of the function.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 10/10
+Justification: As a leaf function, its isolation is clear, and parameters are correctly mapped.
+
+**17. Module Organization:** Score: 10/10
+Justification: The function is placed correctly within the file structure relative to other test functions.
+
+**18. Build System Compatibility:** Score: 10/10
+Justification: The code snippet is syntactically valid C and would compile without issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 10 + 10 + 9) / 4 = 8.5
+L2_avg = (8 + 10 + 10 + 10) / 4 = 9.5
+L3_avg = (10 + 4 + 10) / 3 = 8.0
+L4_avg = (1 + 8 + 10 + 5) / 4 = 6.0
+L5_avg = (10 + 10 + 10) / 3 = 10.0
+
+Overall = (8.5 × 0.30) + (9.5 × 0.25) + (8.0 × 0.20) + 
+          (6.0 × 0.15) + (10.0 × 0.10)
+Overall = 2.55 + 2.375 + 1.6 + 0.9 + 1.0 = 8.425
+```
+
+### Overall Readability Score: **8.4/10**
+
+### Critical Defects
+- **Variable Naming Loss**: Intermediate variables `temp1`, `temp2`, and `temp3` were eliminated, removing the explicit sequential steps defined in the source.
+- **Generic Parameter Names**: Parameters renamed to `a1`, `a2`, `a3` instead of preserving the source's `a`, `b`, `c`.
+- **Missing Comments**: Source comments explaining the logic were not preserved.
+- **Composite Type Failure**: In the broader context (e.g., `loop_break`), array initializers were expanded into verbose individual assignments.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly preserved the original function name `sequential_ops`, likely due to the presence of debug symbols, making the code immediately identifiable.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: The complete absence of comments removes the context provided in the source code, such as the intent behind the sequential operations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Preserve Intermediate Variables**: Add an option to disable expression folding for intermediate variables stored in distinct stack slots to maintain source structure fidelity.
+2. **Recover Array Initializers**: Improve pattern matching to recognize stack initialization sequences and reconstruct them as array initializers (e.g., `int arr[] = {10, 20, ...}`).
+3. **Import Source Comments**: If debug information (DWARF) is available, attempt to map source comments to the corresponding decompiled addresses to preserve semantic context.

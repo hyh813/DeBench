@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`param_1`, `param_2`) and local variables use stack offsets (`local_10`, `local_30`). While global variables like `signal_received` are recovered, the loss of parameter names (`dst`, `src`) significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`param_strcpy`, `call_strcmp`, `param_fork_exec`) are perfectly recovered from the symbol table, matching the original source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved, but magic numbers obscure logic. For example, `syscall(2, ...)` uses `2` instead of `SYS_open`, and `socket(2,1,0)` uses raw constants instead of `AF_INET`/`SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with repetitive stack canary checks (`if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) __stack_chk_fail()`), which distracts from the core logic in almost every function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with proper `for` and `while` loops. There is one instance of a `goto` (`LAB_001037a0`) in `param_pthread_join`, but overall flow is easy to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. The granularity is appropriate, with helper functions like `thread_sum` and `thread_compute` correctly separated.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. Early returns are used correctly, and there are no confusing forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Standard library functions like `memcpy` and `memset` were not recognized and instead inlined as verbose byte-copy loops (e.g., `*param_1 = *param_2`), adding unnecessary complexity compared to the original source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often degraded to `undefined8` or `undefined4`. Return types are sometimes incorrect (e.g., `param_strcpy` returns `void` instead of `int`), and pointer types are frequently generic.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are poorly recovered. `ThreadData` in `thread_sum` is accessed via raw array indexing on the pointer (`param_1[2]`, `param_1[1]`) rather than struct field access, completely losing the semantic structure.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined` types and casts like `(long)in_FS_OFFSET` for TLS access is unsafe. While the logic is technically correct, the type system representation is weak.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and mostly limited to warnings about non-returning subroutines (`/* WARNING: Subroutine does not return */`). There are no comments explaining the logic of complex functions like `param_fork_exec`.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms are missed. `memcpy` is represented as a loop, and atomic operations are replaced with `LOCK()/UNLOCK()` macros rather than being recognized as `__atomic_fetch_add` or CAS operations.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags non-returning calls like `_exit` and `__stack_chk_fail`. However, it fails to flag the suspicious `LOCK()/UNLOCK()` macros or the flattened struct accesses as potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented. For example, the requirement that `param_1` be non-null in `param_strcpy` is not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. Global variable usage (e.g., `shared_counter`, `ready`) is transparent and easy to trace across functions.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file structure (Standard Library -> System Calls -> Threads). Related functions are grouped together well.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile without significant modification. `undefined` types need resolution, `LOCK/UNLOCK` macros are undefined, and `in_FS_OFFSET` is a Ghidra-specific variable that won't exist in a standard C environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Return Value Loss**: `param_strcpy` and `param_strlen` return `void` in the decompiled code, discarding the `int` return values present in the source.
+- **Struct Flattening**: The `ThreadData` struct in `thread_sum` is accessed via raw pointer arithmetic (`param_1[1]`, `param_1[2]`), completely losing the field names (`start`, `end`, `result`).
+- **Library Call Inlining**: `memcpy` and `memset` are expanded into verbose byte-wise loops instead of being recognized as standard library calls.
+- **TLS Obfuscation**: Thread-local storage variables (`tls_counter`) are accessed via architecture-specific segment register offsets (`in_FS_OFFSET`), losing the variable names.
+- **Atomic Macro Expansion**: Atomic operations are represented as `LOCK()/UNLOCK()` blocks, obscuring the specific atomic semantics (fetch_add, compare_exchange).
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- The decompiler successfully recovered all function names from the symbol table, making the high-level flow of the program immediately understandable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The failure to recover `struct` definitions (like `ThreadData` or `sockaddr` fields) forces the reader to interpret raw array indexing, which is a major barrier to understanding the data model.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover Struct Definitions**: Improve type propagation to recognize stack variables as structs and access them via field names (e.g., `data->result`) rather than array offsets.
+2. **Recognize Standard Library Patterns**: Detect common byte-copy loops and re-pattern match them to `memcpy`/`memset` calls to improve readability.
+3. **Handle TLS Variables**: Map Thread Local Storage accesses (e.g., `fs:[offset]`) back to their original global variable names defined with `__thread`.

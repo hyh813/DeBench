@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 30,
+  "source_file": "decompiled/BinaryAI_out/x64/4/4_clang_Os_g.c",
+  "fixed_file": "results_minimax_v4_full/x64/4/4_clang_Os_g/binaryai/syntactic/fix_4_clang_Os_g.c"
+}

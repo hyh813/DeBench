@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `str`, `len`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `obj`, `result`, `ptr1` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions retain mangled C++ names (`_Z20test_cpp_member_funcv`) with demangled comments, but helper functions use address-based names (`function_2150`, `function_2160`) providing no semantic information.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (`0x125c`, `0x3018`, `0x59a0`) without explanation. String literals are hex-encoded globals (`g2`, `g3`). Constants like `42`, `100`, `200` appear without context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readfsqword(40)` stack canary checks, `__asm_movsd`, `__asm_cvttsd2si` intrinsics, and runtime initialization functions (`__do_global_dtors_aux`, `register_tm_clones`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses explicit `goto` labels (`lab_0x277d`) instead of structured control flow. Several test functions are reduced to constant returns (`_Z29test_cpp_multiple_inheritancev` returns `71` directly), losing actual logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical functions are stubbed out (`_Z26test_cpp_operator_overloadv`, `_Z23test_cpp_template_classv`, `_Z15test_cpp_lambdav` all just `return`). Template instantiations fragmented into separate functions without clear organization.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Mixed quality - some functions read top-to-bottom reasonably, but exception handling (`_Z18test_cpp_exceptionv`) and RTTI testing create non-linear flow with multiple jump targets disrupting readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Vtable structures duplicated (`vtable_59a0_type`, `vtable_59d0_type` nearly identical). Multiple thunk functions for same operations. No dead code removal evident.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int64_t`, `int32_t` appropriately for primitives, but all class objects degraded to `int64_t *` pointers. Original `SimpleClass`, `Container<T>`, `std::unique_ptr` types completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtable structures recovered (`vtable_59a0_type` with function pointers), but NO class structures defined. `SimpleClass` with `value` and `name[32]` members not recovered. Only comments list class names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int64_t)(int32_t)(float32_t)`, pointer arithmetic on `int64_t *`. Function `_Z17call_virtual_funcP4Basei` returns `(int64_t)a1` instead of calling virtual function - type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments show demangled names and source line ranges (`Line range: 41 - 50`), but no algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ vtable mechanism partially visible through struct definitions, but no explicit pattern naming. Exception handling, RTTI, and template patterns not identified or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Functions like `_Z26test_cpp_operator_overloadv` silently return without explanation. No flags for potentially incorrect virtual call recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero preconditions, postconditions, or invariants documented. Original source had clear expectations (`期望: 4704`) completely lost in decompilation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, global variables referenced (`g1`, `g2`, `g16` vtable). Virtual dispatch partially visible through vtable structures but callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions grouped by address range rather than logical purpose. No header file separation, no namespace organization despite C++ source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has standard includes (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`), external function declarations present. Would require significant stubbing for C++ runtime functions (`__cxa_*`, `_Znwm`, `_ZdlPvm`) to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+4+5+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type System): (4+3+3)/3 = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (5+4+3+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3 = 4.67 × 0.10 = 0.467
+
+Overall Score: 3.91/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on semantic usage (e.g., `obj_ptr`, `result`, `instance_count`)
+- **Test functions stubbed** - `_Z26test_cpp_operator_overloadv`, `_Z23test_cpp_template_classv`, `_Z15test_cpp_lambdav` return without executing original logic
+- **Class structures lost** - `SimpleClass`, `Container<T>`, `LifecycleClass` definitions not recovered, only vtables
+- **Virtual call broken** - `_Z17call_virtual_funcP4Basei` returns pointer value instead of calling virtual function
+- **No anomaly warnings** - Silent failures on complex C++ features (lambdas, operator overloading, templates)
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Demangled C++ names preserved in comments provide some semantic information about original function purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Complete absence of precondition/postcondition documentation makes it impossible to verify correctness without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class structures from vtable layouts** - Infer member variables from constructor/destructor access patterns and field offsets
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries (e.g., `// UNCERTAIN: lambda closure structure`) to guide manual review
+3. **Preserve semantic variable names from debug symbols** - With `-g` flag present, variable names should be recoverable from DWARF debug information rather than generic `v1`, `v2`

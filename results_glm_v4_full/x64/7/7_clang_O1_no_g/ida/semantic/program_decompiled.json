@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/7/7_clang_O1_no_g/ida/syntactic/bin/7_clang_O1_no_g_fixed",
+  "stdout": "Starting test_obf_opt_edge...\nTest fake branch: 10\nOpaque predicate result: 20\nInstruction substitution: 225\nDecrypted string: 133\nTail call optimized: 500500\nNon-tail call: 5050\nVectorized loop: sum=396, last=88, arrays: 0x6517c818f070 0x14 (nil) 0x160000000b\nLTO result: 20\nDivision by zero: 1\nNull pointer deref: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation defined: 47\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most local variables are marked as "Unresolved local var" with `[???]` markers. Parameters (a, b, c, x) are preserved but intermediate variables like temp1, temp2, temp3, sum, i, matrix are not recovered. This severely impedes understanding of data flow.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (sequential_ops, single_if, if_else, nested_if_2, loop_for_fixed, recursion_factorial, etc.). Only internal runtime functions have generic names. This is excellent preservation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some magic numbers remain unexplained (0x3e9=1001, 0x65=101, 0x12=18 for loop conditions). Jump table references like `DAT_00101a20` are not explained. However, some arithmetic patterns are correctly collapsed (e.g., x*10+10 for if_elseif_chain).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from "Unresolved local var" comments throughout. WARNING comments about unreachable blocks and jumptables add clutter. However, no obvious register spilling artifacts or debug instrumentation remains.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures are natural (while, do-while, switch recovered). However, some awkward expressions like `x << (0 < x)` for conditional doubling in single_if, and goto patterns in goto_forward/goto_backward are less natural. Loop unrolling in loop_continue and recursion_factorial is extreme but expected at -O3.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching original source. Each function handles its specific task without over-fragmentation. No 500-line monoliths observed. Parameter counts match original signatures.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Switch statements have forward jumps but are structured. Some complex nested conditions in loop_continue disrupt linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Massive loop unrolling in loop_continue (40+ lines of unrolled code) and recursion_factorial creates significant redundancy. No comments explaining these are optimizations. Some common subexpression elimination artifacts present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `int`. Function pointer types recovered as `_func_int_int`. Limited unsigned/signed distinction (uses (uint)x casts). No size-specific types (int32_t, uint64_t). Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. Arrays like `int matrix[3][4]` and `int arr[5]` remain unresolved. Raw pointer arithmetic used throughout (e.g., `arr = arr + 1`). The decompiler treats everything as primitives.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code without obvious undefined behavior. Some indirect calls flagged with "Could not recover jumptable" warnings. Function pointer handling has issues but is not dangerous. No buffer overflow-prone patterns obvious.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present ("Unresolved local var", "WARNING: Subroutine does not return"). No algorithm explanations, no recovery confidence indicators, no API contracts. Comments are noise rather than helpful.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (switch, loops, if-else). No explicit naming of design patterns (state machine, strategy, etc.). The state_machine and fsm_func_table functions could be labeled as such but aren't.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments present ("Could not recover jumptable", "Too many branches", "Treating indirect jump as call"). However, many anomalies are silently handled without flagging to the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The decompiler provides no semantic contract information.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls within code are clear. Static functions properly marked. However, no documentation of which functions call whom, no global variable usage transparency, no callback relationship documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped (test functions together, helper functions near callers). Static functions properly scoped. Overall organization reasonable, matching source structure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Marked as "Compilation Result: Yes". Standard library calls (puts, printf, __gmon_start__) are proper. No obvious compiler-specific hacks. Code appears compilable with minimal patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming: "Unresolved local var" comments everywhere; temp1/temp2/temp3 not recovered; sum, i, matrix all unresolved
+- Composite type recovery: No structs or arrays recovered; all treated as primitives
+- Comment quality: Only auto-generated noise; no algorithm explanations or semantic context
+- Loop unrolling: Massive unrolling in loop_continue and recursion_factorial without optimization comments
+- Type precision: Generic int throughout; no int32_t, size_t, or const correctness
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names almost perfectly match the original source (sequential_ops, single_if, if_else, nested_if_2, etc.), making it immediately clear what each function does.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+Arrays like `int matrix[3][4]` and `int arr[5]` are completely lost, treated as unresolved. Struct recovery is absent entirely. This loses significant semantic information from the original source.
+
+**Top 3 Recommendations:**
+1. Recover local variable names from usage patterns (e.g., temp1 used as a+b → should be "sum_ab")
+2. Add struct/array reconstruction: matrix[3][4] is clearly a 2D array, arr[5] is a fixed array
+3. Add optimization explanation comments when loop unrolling is detected ("// Loop unrolled 8x for performance")
+4. Improve comment quality: add algorithm explanations, not just "Unresolved local var"
+5. Recover type information: use int32_t, size_t, const where applicable rather than generic int

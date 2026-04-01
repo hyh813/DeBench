@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `param_3` for parameters and cryptic abbreviations like `iVar1`, `uVar2`, `bVar5` for locals. These provide no semantic meaning - e.g., `param_1` should be `a` or `x` based on source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About half the functions have correct names matching source (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`), but many have cryptic addresses like `FUN_00011030`, `FUN_000112f5`, `FUN_00011455` that provide no semantic value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout - e.g., `0x15` (21), `0x33` (51), `0x65` (101), `0x3e9` (1001). Test functions hardcode expected results without explaining what they represent. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Uses `undefined4` and `undefined` types which are decompilation artifacts but don't impede readability significantly. No obvious register spilling or debug instrumentation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple unnatural transformations - `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of if-statement; `loop_for_fixed` uses complex mathematical formula instead of loop; `loop_while` uses unusual condition `0x12 < uVar2` instead of `x != 0`. At -O0, these should be more natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function handles its own logic. No obvious over-fragmentation or monolithic functions. Parameter counts match original.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately. Some complexity in `loop_continue` and `goto_backward` but generally follows linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `loop_continue` with complex iteration patterns. `goto_backward` shows unusual redundant calculations. However, no obvious dead code. Moderate impact on readability.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed type precision - uses `int`, `uint`, `longlong`, `byte`, `char` appropriately in some places but defaults to `int` or `undefined4` elsewhere. Signed/unsigned sometimes incorrect (e.g., `param_1` as `uint` in `single_if`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery visible. Functions like `loop_multi_exit` use raw pointer arithmetic with hardcoded offsets like `&DAT_00013108 + param_1 * 4` instead of array access. All composite types lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations - pointer arithmetic in array access, function pointer type `code *` is generic. However, no obviously dangerous patterns like buffer overflows. Minor type safety issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comment present. No useful comments explaining algorithm logic, non-obvious transformations, or decompilation confidence. Zero manual comments throughout 1086 lines.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - switch statements use `switch` keyword, do-while loops identified. But no explicit naming of patterns like "Duff's device" in `duffs_device` or recognition of state machine patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. Indirect calls in `call_func_ptr_array`, `fsm_func_table` are handled silently without indicating resolution uncertainty. No flags for unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Functions like `duffs_device` with complex pointer manipulation have no contract hints. Error conditions not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear (e.g., `(*param_1)(param_2)`). But no documentation of call relationships - which functions call which, callback relationships, or global state usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`), helper functions near their users. Static functions properly scoped. Some arbitrary ordering but acceptable.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile - uses `undefined4`, `undefined` types which are not valid C. External dependencies on `libc` functions declared but implementation missing. Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_N` and cryptic `iVarN`/`uVarN` - should infer semantic names from usage
+- Control flow unnatural - `single_if` uses bit-shift instead of if-statement, loops converted to formulas
+- No comments whatsoever - 1086 lines with zero explanatory text
+- Composite types completely lost - raw pointer arithmetic instead of struct/array access
+- Type `undefined4`/`undefined` makes code uncompilable
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are appropriately sized with clear single responsibilities, matching the original source structure well.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic parameter names (`param_1`, `param_2`) and cryptic local variables (`iVar1`, `uVar2`) completely obscure semantic meaning. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `param_1` used in `a + b` should be `a`, `iVar1` accumulating sum should be `sum`
+2. Recover natural control flow constructs - the bit-shift trick in `single_if` should be `if (x > 0) x = x * 2;`
+3. Add minimal comments explaining non-obvious transformations and flag anomalies like indirect calls that couldn't be resolved

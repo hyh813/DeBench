@@ -1,0 +1,132 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names like `param_1`, `param_2`, `local_d8`, `local_d0`, `local_b8`. The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum`. Stack variables like `in_stack_00000010` are completely opaque. This makes tracking variable purpose nearly impossible without cross-referencing the source.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`. Minor issues: `FUN_00101020` is an auto-generated stub, and some wrapper functions like `<EXTERNAL>::puts` are marked as external.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers appear throughout: `0xf` (15), `0x32` (50), `0x2a` (42), `0x29` (41 - stack boundary). The original source uses decimal and meaningful constants. While some values are inferable from context, the hex notation without explanation degrades readability significantly.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Moderate noise present: `undefined8`/`undefined4` return types instead of proper `int`; stack frame annotations like `in_stack_00000010`, `in_stack_00000020`; redundant stack pointer manipulations in varargs functions. However, no debug instrumentation or obvious dead code from register spilling.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Control flow is mostly natural - loops use while/do-while constructs, conditionals are clear. The varargs functions (`varargs_func`, `param_varargs`) have complex index manipulation with `local_d8` and `local_d0` that obscures the simple "process pairs of arguments" logic. At -O0, this is more complex than necessary.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function granularity closely matches source - small wrapper functions like `call_cdecl()`, `call_stdcall()` are preserved. The test functions `test_calling_conventions`, `test_parameter_passing`, `test_return_values` are appropriately sized. Minor: some static helper functions could be better organized.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Most functions read top-to-bottom. The varargs functions have forward jumps and complex loop indexing that disrupts linear reading. Early returns are used appropriately in functions like `func_struct_byptr` and `param_double_ptr`.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: The varargs functions show repetitive pattern of checking `local_d8 < 0x29` and accessing stack vs. local buffer - this appears to be loop unrolling or register allocation artifacts. Otherwise, no significant redundancy. The duplicate code between `varargs_func` and `param_varargs` is expected since they're separate functions in source.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Severe type degradation: `undefined8` used for functions returning int (e.g., `call_cdecl`, `call_stdcall`, `call_by_value_int`); `code *` used for function pointers instead of proper function pointer types; `long` used inconsistently for pointers. The original uses `int`, `char*`, `double`, `long long` precisely.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: Struct recovery is poor. `LargeStruct` (128 bytes) is decomposed into individual stack parameters: `param_7`, `in_stack_00000010`, etc. `SmallStruct` is accessed via array indexing (`param_1[1]`, `*param_1`). `BigStruct` similarly decomposed. The original source clearly defines `struct BigStruct { int data[16]; }` but decompiled version loses this structure entirely.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Some unsafe operations present: `param_1[1] * *param_1` in `func_struct_byptr` assumes int* with at least 2 elements; `*(undefined4 *)*param_1` in `param_double_ptr` is a dangerous cast; mixing `long` and `int*` in `ret_pointer`. However, most pointer operations are reasonably safe.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments except for auto-generated function headers like `// Function: cdecl_func @ 0x101160`. The original source has extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定"). No algorithm explanations, no decompilation confidence indicators.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are recognizable: varargs handling (va_list simulation), function pointers as parameters, struct by-value passing. However, these are not explicitly named or documented. The original source explicitly tests "CALL-L2-06: 可变参数函数" and "CALL-L3-01: 函数指针参数" - these test purposes are lost.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No anomaly flags. The decompiled code presents everything with equal confidence. For example, `ret_small_struct` returns `ulong` with bit manipulation (`param_1 | param_2 << 0x20`) which is unusual but not flagged as potentially incorrect struct return mechanism.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No pre/postcondition recovery. The original source has implicit contracts: `func_struct_byptr` requires non-null pointer, `varargs_func` requires count > 0, etc. These are not documented in the decompiled output.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are structurally clear (e.g., `main` calls `test_calling_conventions`). However, no documentation of who calls whom, no indication of callback relationships (e.g., `param_func_ptr` takes a function pointer). Global variable relationships (like `ret_opaque_handle_handle1`) are not explained.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped by address but not logically organized. The original groups functions by category (calling conventions, parameter passing, return values). External functions (`puts`, `printf`, `strlen`) are mixed with internal functions. Static functions are not explicitly marked as static in output.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: The code will NOT compile as-is. Issues: `undefined8` and `undefined4` are Ghidra types not valid C; `code *` is not a valid type; function signatures don't match (e.g., `call_cdecl` returns `undefined8` instead of `int`). Requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 6) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (4 + 3 + 6) / 3 = 4.33
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg = (5 + 6 + 3) / 3 = 4.67
+
+Overall = (5.25 × 0.30) + (7.25 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (4.67 × 0.10)
+        = 1.575 + 1.8125 + 0.866 + 0.45 + 0.467
+        = 5.17/10
+```
+
+### Overall Readability Score: 5.2/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`param_1`, `local_d8`) making semantic tracking impossible without source
+- **Type precision**: `undefined8`/`undefined4` return types for int functions; `code *` for function pointers; structs decomposed into individual parameters
+- **Struct recovery failure**: `LargeStruct`, `BigStruct`, `SmallStruct` all lost - accessed via raw stack offsets and array indexing
+- **No comments**: Complete absence of explanatory comments for algorithms, test purposes, or decompilation confidence
+- **Build incompatibility**: Code uses Ghidra-specific types that won't compile with standard C compilers
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names mostly match the original source exactly (`cdecl_func`, `varargs_func`, `func_many_args`), making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+Generic parameter names like `param_1`, `param_2`, `local_d8`, `local_b8` completely obscure the semantic purpose of variables. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage**: Analyze how parameters are used (arithmetic, indexing, dereferencing) to suggest names like `count`, `sum`, `array`, `pointer`
+2. **Recover struct types**: Detect consecutive stack parameters and array accesses to reconstruct struct layouts instead of exposing raw offsets
+3. **Replace Ghidra internal types**: Convert `undefined8`/`undefined4` to standard `int`/`long` types, and `code *` to proper function pointer signatures for compilation compatibility

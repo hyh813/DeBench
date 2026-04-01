@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `ptr`, `i` throughout. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` - all lost in decompilation. Even `flag1` is ambiguous compared to source's `instance_count`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions like `test_cpp_member_func`, `call_virtual_func`, `template_max<int>` correctly recover source names, but many use mechanical `sub_XXXXX` pattern (e.g., `sub_401020`, `sub_40102c`, `sub_401342`). The mangled C++ names are partially decoded but inconsistent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers: `20` (array size), `4` (string length), `50` (loop bound), `10` (increment). The original source had `sizeof(name)-1`, `s`, `i*10` - all semantically meaningful. No constants or enum values recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Found problematic patterns like `goto *((long long *)*((long long *)&arg_0));` for vtable dispatch, and several empty stub functions (`sub_401245`, `sub_401196`). However, no obvious debug artifacts or register spilling noise. Some compiler artifacts present but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Several unnatural patterns: `goto g_404010;` for what appears to be initialization, computed goto for virtual dispatch obscures the clean `obj->virtual_func(x)` pattern. Many functions are empty stubs (`test_cpp_virtual_func`, `test_cpp_multiple_inheritance` return immediately). At -O0, these should be more readable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template functions properly separated (`template_max<int>`, `template_swap<int>`), class methods grouped (`Container<int>::push`, `Container<int>::get`). However, many test functions are completely empty stubs, losing all decomposition. Some functions like `sub_401342` appear to be exception handling fragments that should be integrated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The exception handling code (`test_cpp_exception`) has some non-linear flow with throw/catch patterns. Forward jumps are minimal. Generally readable but exception handling disrupts flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. Loop in `test_cpp_constructor` is properly structured as `do-while`. Some redundant pointer arithmetic in template code but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mixed precision - `unsigned int`, `unsigned long`, `unsigned long long` used but `int` remains generic. Class names partially recovered (`class Base`, `Container<int>`) but many parameters use `void*` or `unsigned long`. Original had precise types like `size_t`, `int*`, `std::unique_ptr<int>` - mostly lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Partial struct recovery with generic names: `struct struct_0 { char padding_0[8]; struct struct_1 *field_8; }`. Original had `LifecycleClass` with `int* data`, `size_t size` - completely lost. RTTI structures have `field_0`, `field_8` naming. Very limited reconstruction.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `*((int *)ptr)` casts, `*((unsigned int *)&ptr[40])` pointer arithmetic with void*. The vtable call `goto *((long long *)*((long long *)&arg_0))` is dangerous type punning. No const correctness preserved. Many operations risk undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are auto-generated like "do not return" on `__libc_start_main`. Original source had extensive Chinese comments explaining each test case - completely lost. No algorithm explanations or logic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms partially recognized: vtable dispatch visible through computed goto, template instantiation shows `Container<int>` and `Container<double>`. However, no explicit naming of patterns like "RAII", "virtual dispatch", "lambda closure". Smart pointer patterns completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The weird `goto *((long long *)*((long long *)&arg_0))` pattern should be flagged as "UNCERTAIN: indirect vtable call". Empty stub functions (`test_cpp_virtual_func` returning nothing) should indicate "function appears to be stubbed". Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. Original had clear preconditions like `if (idx < size)` checks, postconditions like `return T()` for out-of-bounds. All lost. No documentation of error conditions or invariants.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through naming (`test_cpp_oo_features` calls other test functions). However, no explicit call graph documentation. Virtual dispatch relationships unclear. Global variable usage (`_ZN14LifecycleClass14instance_countE`) visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions somewhat grouped by class (Container methods together, RTTI classes together) but overall organization is arbitrary based on address. Original had clear sections: "CPP-L3-01", "CPP-L3-02" etc. - completely lost. No namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations present but incomplete. Functions like `operatornew[]`, `operatordelete[]` are unresolved. Would require significant patching to compile. No dependency documentation. Template instantiations present but scattered.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All meaningful names replaced with `v0`, `v1`, `v2`, `ptr`, `i` - original names like `value`, `data`, `size`, `multiplier` completely lost
+- **Empty stub functions**: `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` all return immediately without implementing logic
+- **No comments**: Zero useful comments explaining algorithms, intent, or non-obvious logic
+- **Type degradation**: Original precise types (`size_t`, `std::unique_ptr<int>`) reduced to generic `int`, `void*`, `unsigned long`
+- **Anomaly silence**: Weird vtable goto pattern not flagged; empty functions not explained
+
+### Best Quality Aspect: Function Decomposition (5/10)
+- Template functions properly separated by type parameter
+- Class methods grouped together (Container<int> methods, RTTI class methods)
+- Some C++ name demangling working (mangled names partially decoded)
+
+### Most Needs Improvement: Lexical Clarity (3.5/10)
+- Variable naming is nearly unusable with generic `v0`/`v1` patterns
+- Function naming inconsistent (good names for some, `sub_XXXXX` for others)
+- No literal explanation - magic numbers throughout
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: `v0` used as `instance_count` (incremented/decremented) should be named `instance_count`. `ptr` used in loop should indicate it's `data` array.
+2. **Recover complete function bodies**: Many test functions are empty stubs - the decompiler failed to recover the actual logic (object creation, method calls, etc.)
+3. **Add semantic comments**: At minimum, flag the vtable dispatch pattern, explain magic numbers like `20` (array size), and document why functions return empty

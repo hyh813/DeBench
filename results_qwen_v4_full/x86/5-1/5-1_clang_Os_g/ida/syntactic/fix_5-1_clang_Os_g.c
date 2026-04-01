@@ -1,0 +1,720 @@
+/* Auto-injected type definitions by preprocessor */
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <sys/types.h>
+#include <ctype.h>
+#include <math.h>
+
+
+
+/* Additional headers for standard functions */
+#include <errno.h>
+#include <limits.h>
+#include <stdarg.h>
+
+/* Forward declarations for CRT and profiling functions */
+extern void *_gmon_start__;
+extern void frame_dummy(void);
+extern int _do_global_ctors_aux(void);
+extern void _do_global_dtors_aux(void);
+
+/* C++ standard library and runtime declarations */
+/* Note: These functions have stub implementations below */
+
+/* External library functions */
+extern int __libc_start_main(int (*main)(int, char **, char **), int argc, char **argv, void (*init)(void), void (*fini)(void), void (*rtld_fini)(void), void (*stack_end));
+
+/* Global variables */
+extern void *_dso_handle;
+extern int off_3ECC;
+extern int off_3EE0;
+extern char asc_21D8[];
+extern char aCppL301D[];
+extern char aCppL302D[];
+extern char aCppL303D[];
+extern char aCppL304D[];
+extern char aCppL305D[];
+extern char aCppL306D[];
+extern char aCppL307D[];
+extern char aCppL308D[];
+extern char aCppL309D[];
+
+/* Global variable definitions */
+void *_dso_handle = 0;
+int off_3ECC = 0;
+int off_3EE0 = 0;
+char asc_21D8[] = "C++ OO Features Test";
+char aCppL301D[] = "CPP_L301: %d\n";
+char aCppL302D[] = "CPP_L302: %d\n";
+char aCppL303D[] = "CPP_L303: %d\n";
+char aCppL304D[] = "CPP_L304: %d\n";
+char aCppL305D[] = "CPP_L305: %d\n";
+char aCppL306D[] = "CPP_L306: %d\n";
+char aCppL307D[] = "CPP_L307: %d\n";
+char aCppL308D[] = "CPP_L308: %d\n";
+char aCppL309D[] = "CPP_L309: %d\n";
+int LifecycleClass_instance_count = 0;
+
+/* Stub implementations for C++ runtime functions */
+void *operator_new(size_t size) {
+    return malloc(size);
+}
+
+void *operator_new_array(size_t size) {
+    return malloc(size);
+}
+
+void operator_delete(void *ptr) {
+    free(ptr);
+}
+
+void operator_delete_array(void *ptr) {
+    free(ptr);
+}
+
+void *__cxa_allocate_exception(size_t size);
+void *__cxa_allocate_exception(size_t size) {
+    return malloc(size);
+}
+
+void __cxa_throw(void *exc, void *type_info, void *dest);
+void __cxa_throw(void *exc, void *type_info, void *dest) {
+    (void)exc;
+    (void)type_info;
+    (void)dest;
+}
+
+void __cxa_atexit(void (*func)(void *), void *arg, void *dso_handle);
+void __cxa_atexit(void (*func)(void *), void *arg, void *dso_handle) {
+    (void)func;
+    (void)arg;
+    (void)dso_handle;
+}
+
+void *__dynamic_cast(const void *src, const void *src_type, const void *dst_type, ptrdiff_t src2dst);
+void *__dynamic_cast(const void *src, const void *src_type, const void *dst_type, ptrdiff_t src2dst) {
+    (void)src;
+    (void)src_type;
+    (void)dst_type;
+    (void)src2dst;
+    return 0;
+}
+
+int __cxa_begin_catch(void *exc);
+int __cxa_begin_catch(void *exc) {
+    (void)exc;
+    return 0;
+}
+
+void __cxa_end_catch(void) {
+}
+
+void __cxa_rethrow(void) {
+}
+
+void __cxa_finalize(void *dso) {
+    (void)dso;
+}
+
+/* Type info structures */
+struct type_info {
+    void *vptr;
+    const char *name;
+};
+
+struct __class_type_info {
+    void *vptr;
+    const char *name;
+};
+
+struct type_info typeinfo_for_int = {0, "int"};
+struct __class_type_info typeinfo_for_RTTIBase = {0, "RTTIBase"};
+struct __class_type_info typeinfo_for_RTTIDerivedA = {0, "RTTIDerivedA"};
+struct __class_type_info typeinfo_for_RTTIDerivedB = {0, "RTTIDerivedB"};
+
+/* Forward class declarations */
+struct Base;
+struct RTTIBase;
+struct RTTIDerivedA;
+struct RTTIDerivedB;
+struct LifecycleClass;
+
+/* Base class with vtable */
+struct Base {
+    void **_vptr_Base;
+};
+
+/* RTTI classes */
+struct RTTIBase {
+    void **_vptr_RTTIBase;
+};
+
+struct RTTIDerivedA {
+    void **_vptr_RTTIDerivedA;
+};
+
+struct RTTIDerivedB {
+    void **_vptr_RTTIDerivedB;
+};
+
+/* LifecycleClass */
+struct LifecycleClass {
+    int dummy; /* placeholder */
+};
+
+/* Container templates */
+struct Container_int {
+    int data[10];
+    int size;
+};
+
+struct Container_double {
+    double data[10];
+    int size;
+};
+
+/* std::ios_base::Init */
+struct std_ios_base_Init {
+    char dummy;
+};
+struct std_ios_base_Init _ZSt8ioinit = {0};
+#define std___ioinit _ZSt8ioinit
+
+/* Function declarations for C++ methods */
+extern void _ZSt8ios_base4InitC1Ev(struct std_ios_base_Init *this);
+extern void _ZSt8ios_base4InitD1Ev(struct std_ios_base_Init *this);
+#define std_ios_base_Init_Init _ZSt8ios_base4InitC1Ev
+#define std_ios_base_Init_D1 _ZSt8ios_base4InitD1Ev
+
+/* Forward declarations for test functions */
+extern size_t test_cpp_member_func(void);
+extern int test_cpp_constructor(void);
+extern int call_virtual_func(struct Base *obj, int x);
+extern int test_cpp_virtual_func(void);
+extern int test_cpp_multiple_inheritance(void);
+extern int test_cpp_diamond_inheritance(void);
+extern int test_cpp_operator_overload(void);
+extern int test_cpp_template_func(void);
+extern int test_cpp_template_class(void);
+extern int test_cpp_lambda(void);
+extern void test_cpp_exception(void);
+extern void test_cpp_exception_wrapper(void);
+extern int test_cpp_smart_ptr(void);
+extern int test_cpp_rtti(void);
+extern void test_cpp_oo_features(void);
+extern int template_max_int(int a, int b);
+extern double template_max_double(double a, double b);
+extern void template_swap_int(int *a, int *b);
+extern void Container_int_C2(struct Container_int *this);
+extern void Container_int_push(struct Container_int *this, int value);
+extern int Container_int_get(const struct Container_int *this, int idx);
+extern int Container_int_getSize(const struct Container_int *this);
+extern void Container_double_C2(struct Container_double *this);
+extern void Container_double_push(struct Container_double *this, double value);
+extern double Container_double_get(const struct Container_double *this, int idx);
+extern int Container_double_getSize(const struct Container_double *this);
+extern void RTTIDerivedA_D0(struct RTTIDerivedA *this);
+extern int RTTIDerivedA_getType(const struct RTTIDerivedA *this);
+extern int Base_virtual_func(struct Base *this, int x);
+extern void RTTIBase_D2(struct RTTIBase *this);
+extern void RTTIDerivedB_D0(struct RTTIDerivedB *this);
+extern int RTTIDerivedB_getType(const struct RTTIDerivedB *this);
+
+/* Stub implementations for C++ iostream init functions */
+void _ZSt8ios_base4InitC1Ev(struct std_ios_base_Init *this) {
+    (void)this;
+}
+
+void _ZSt8ios_base4InitD1Ev(struct std_ios_base_Init *this) {
+    (void)this;
+}
+
+/* CRT stub function implementations */
+void frame_dummy(void) { }
+int _do_global_ctors_aux(void) { return 0; }
+void _do_global_dtors_aux(void) { }
+
+/*
+ * Decompiled by IDA Pro 9.1 with Hex-Rays
+ * Binary: build/x86/5-1/5-1_clang_Os_g
+ * Processor: pc
+ */
+
+/* Function: .init_proc @ 0x1000 */
+int init_proc()
+{
+ if ( &_gmon_start__ )
+ ((void (*)(void))_gmon_start__)();
+ frame_dummy();
+ return _do_global_ctors_aux();
+}
+
+
+/* Function: sub_1030 @ 0x1030 */
+void sub_1030()
+{
+ /* Inline assembly removed for portability */
+}
+
+
+/* Function: sub_1160 @ 0x1160 */
+int sub_1160(int a1)
+{
+ int (*func)(void) = (int (*)(void))(a1 - 24);
+ return func();
+}
+
+
+/* Function: _GLOBAL__sub_I_5_1.cpp @ 0x1170 */
+void GLOBAL__sub_I_5_1_cpp()
+{
+ std_ios_base_Init_Init(&std___ioinit);
+ __cxa_atexit((void (*)(void *))_ZSt8ios_base4InitD1Ev, &std___ioinit, &_dso_handle);
+}
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+/* Function: sub_11DC @ 0x11DC */
+void sub_11DC(void)
+{
+}
+
+
+/* Function: __x86.get_pc_thunk.bx @ 0x11E0 */
+void _x86_get_pc_thunk_bx(void)
+{
+}
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+/* Function: __x86.get_pc_thunk.dx @ 0x1319 */
+void _x86_get_pc_thunk_dx(void)
+{
+}
+
+
+/* Function: __x86.get_pc_thunk.di @ 0x131D */
+void _x86_get_pc_thunk_di(void)
+{
+}
+
+
+/* Function: _Z20test_cpp_member_funcv @ 0x1324 */
+size_t test_cpp_member_func()
+{
+ char dest[40]; // [esp+4h] [ebp-28h] BYREF
+
+ memcpy(dest, "Test", 0x1Fu);
+ dest[31] = 0;
+ return strlen(dest) + 4700;
+}
+
+
+/* Function: _Z20test_cpp_constructorv @ 0x1370 */
+int test_cpp_constructor()
+{
+ int v0; // esi
+ unsigned int *v1; // eax
+ unsigned int *v2; // ecx
+ int v3; // esi
+
+ v0 = 0;
+ v1 = (unsigned int *)operator_new_array(0x14u);
+ v2 = v1;
+ do
+ {
+ *v2 = v0;
+ v0 += 10;
+ ++v2;
+ }
+ while ( v0 != 50 );
+ ++LifecycleClass_instance_count;
+ v3 = v1[2] + LifecycleClass_instance_count;
+ operator_delete_array(v1);
+ --LifecycleClass_instance_count;
+ return v3 + 1000 * LifecycleClass_instance_count;
+}
+
+
+/* Function: _Z17call_virtual_funcP4Basei @ 0x13CF */
+int call_virtual_func(struct Base *obj, int x)
+{
+ int (*func)(struct Base *, int) = (int (*)(struct Base *, int))obj->_vptr_Base[0];
+ return func(obj, x);
+}
+
+
+/* Function: _Z21test_cpp_virtual_funcv @ 0x13F4 */
+int test_cpp_virtual_func()
+{
+ return 42;
+}
+
+
+/* Function: _Z29test_cpp_multiple_inheritancev @ 0x13FA */
+int test_cpp_multiple_inheritance()
+{
+ return 71;
+}
+
+
+/* Function: _Z28test_cpp_diamond_inheritancev @ 0x1400 */
+int test_cpp_diamond_inheritance()
+{
+ return 650;
+}
+
+
+/* Function: _Z26test_cpp_operator_overloadv @ 0x1406 */
+int test_cpp_operator_overload()
+{
+ return 22;
+}
+
+
+/* Function: _Z22test_cpp_template_funcv @ 0x140C */
+int test_cpp_template_func()
+{
+ return 39;
+}
+
+
+/* Function: _Z23test_cpp_template_classv @ 0x1412 */
+int test_cpp_template_class()
+{
+ return 16;
+}
+
+
+/* Function: _Z15test_cpp_lambdav @ 0x1418 */
+int test_cpp_lambda()
+{
+ return 85;
+}
+
+
+/* Function: _Z18test_cpp_exceptionv @ 0x141E */
+void test_cpp_exception()
+{
+ unsigned int *exception; // eax
+
+ exception = __cxa_allocate_exception(4u);
+ *exception = 42;
+ __cxa_throw(exception, (void *)&typeinfo_for_int, 0);
+}
+
+/* Wrapper to handle exception safely */
+void test_cpp_exception_wrapper()
+{
+ /* Exception test skipped to avoid termination */
+}
+
+
+/* Function: _Z18test_cpp_smart_ptrv @ 0x1502 */
+int test_cpp_smart_ptr()
+{
+ return 703;
+}
+
+
+/* Function: _Z13test_cpp_rttiv @ 0x1508 */
+int test_cpp_rtti()
+{
+ unsigned int *v0; // esi
+ void *v1; // edi
+ void *v2; // eax
+ int v3; // esi
+ int v4; // ebp
+ void *v6; // [esp+8h] [ebp-14h]
+
+ v0 = (unsigned int *)operator_new(4u);
+ *v0 = (unsigned int)&off_3ECC;
+ v6 = v0;
+ v1 = (void *)operator_new(4u);
+ *(unsigned int *)v1 = (unsigned int)&off_3EE0;
+ v2 = __dynamic_cast((const void *)v0, (const void *)&typeinfo_for_RTTIBase, (const void *)&typeinfo_for_RTTIDerivedA, (ptrdiff_t)0);
+ v3 = 130;
+ if ( !v2 )
+ v3 = 30;
+ v4 = v3 + 200;
+ if ( !__dynamic_cast((const void *)v1, (const void *)&typeinfo_for_RTTIBase, (const void *)&typeinfo_for_RTTIDerivedB, (ptrdiff_t)0) )
+ v4 = v3;
+ operator_delete(v6);
+ operator_delete(v1);
+ return v4 + 14;
+}
+
+
+/* Function: _Z20test_cpp_oo_featuresv @ 0x15C0 */
+void test_cpp_oo_features()
+{
+ size_t v0; // eax
+ int v1; // eax
+ char dest[40]; // [esp+14h] [ebp-28h] BYREF
+
+ puts(asc_21D8);
+ memcpy(dest, "Test", 0x1Fu);
+ dest[31] = 0;
+ v0 = strlen(dest);
+ printf(aCppL301D, v0 + 4700);
+ v1 = test_cpp_constructor();
+ printf(aCppL302D, v1);
+ printf(aCppL303D, 42);
+ printf(aCppL304D, 71);
+ printf(aCppL305D, 650);
+ printf(aCppL306D, 22);
+ printf(aCppL307D, 39);
+ printf(aCppL308D, 16);
+ printf(aCppL309D, 85);
+ test_cpp_exception_wrapper();
+}
+
+
+/* Function: main @ 0x1722 */
+int main(int argc, const char **argv, const char **envp)
+{
+ test_cpp_oo_features();
+}
+
+
+/* Function: _Z12template_maxIiET_S0_S0_ @ 0x173E */
+int template_max_int(int a, int b)
+{
+ int result; // eax
+
+ result = b;
+ if ( a > b )
+ return a;
+ return result;
+}
+
+
+/* Function: _Z12template_maxIdET_S0_S0_ @ 0x174C */
+double template_max_double(double a, double b)
+{
+ double v2;
+
+ v2 = b;
+ if ( a > b )
+ return a;
+ return v2;
+}
+
+
+/* Function: _Z13template_swapIiEvRT_S1_ @ 0x175D */
+void template_swap_int(int *a, int *b)
+{
+ int v2; // edx
+
+ v2 = *a;
+ *a = *b;
+ *b = v2;
+}
+
+
+/* Function: _ZN9ContainerIiEC2Ev @ 0x1770 */
+void Container_int_C2(struct Container_int *this)
+{
+ this->size = 0;
+}
+
+
+/* Function: _ZN9ContainerIiE4pushEi @ 0x177C */
+void Container_int_push(struct Container_int *this, int value)
+{
+ int size; // ecx
+
+ size = this->size;
+ if ( size <= 9 )
+ {
+ this->size = size + 1;
+ this->data[size] = value;
+ }
+}
+
+
+/* Function: _ZNK9ContainerIiE3getEi @ 0x1798 */
+int Container_int_get(const struct Container_int *this, int idx)
+{
+ int result; // eax
+
+ result = 0;
+ if ( idx >= 0 && this->size > idx )
+ return this->data[idx];
+ return result;
+}
+
+
+/* Function: _ZNK9ContainerIiE7getSizeEv @ 0x17B0 */
+int Container_int_getSize(const struct Container_int *this)
+{
+ return this->size;
+}
+
+
+/* Function: _ZN9ContainerIdEC2Ev @ 0x17B8 */
+void Container_double_C2(struct Container_double *this)
+{
+ this->size = 0;
+}
+
+
+/* Function: _ZN9ContainerIdE4pushEd @ 0x17C4 */
+void Container_double_push(struct Container_double *this, double value)
+{
+ int size; // ecx
+
+ size = this->size;
+ if ( size <= 9 )
+ {
+ this->size = size + 1;
+ this->data[size] = value;
+ }
+}
+
+
+/* Function: _ZNK9ContainerIdE3getEi @ 0x17E2 */
+double Container_double_get(const struct Container_double *this, int idx)
+{
+ double result;
+
+ result = 0.0;
+ if ( idx >= 0 && this->size > idx )
+ return this->data[idx];
+ return result;
+}
+
+
+/* Function: _ZNK9ContainerIdE7getSizeEv @ 0x17FC */
+int Container_double_getSize(const struct Container_double *this)
+{
+ return this->size;
+}
+
+
+/* Function: _ZN12RTTIDerivedAD0Ev @ 0x1804 */
+void RTTIDerivedA_D0(struct RTTIDerivedA *this)
+{
+ operator_delete(this);
+}
+
+
+/* Function: _ZNK12RTTIDerivedA7getTypeEv @ 0x1826 */
+int RTTIDerivedA_getType(const struct RTTIDerivedA *this)
+{
+ return 1;
+}
+
+
+/* Function: _ZN10Base_class15Base_virtual_funcEi @ 0x1820 */
+int Base_virtual_func(struct Base *this, int x)
+{
+ (void)this;
+ return x;
+}
+
+
+/* Function: _ZN8RTTIBaseD2Ev @ 0x182A */
+void RTTIBase_D2(struct RTTIBase *this)
+{
+ (void)this;
+}
+
+
+/* Function: _ZN12RTTIDerivedBD0Ev @ 0x182C */
+void RTTIDerivedB_D0(struct RTTIDerivedB *this)
+{
+ operator_delete(this);
+}
+
+
+/* Function: _ZNK12RTTIDerivedB7getTypeEv @ 0x184E */
+int RTTIDerivedB_getType(const struct RTTIDerivedB *this)
+{
+ return 2;
+}
+
+
+
+/* CRT stub function __do_global_ctors_aux removed by preprocessor */
+
+
+
+/* Function: .term_proc @ 0x18AC */
+void term_proc()
+{
+ _do_global_dtors_aux();
+}
+
+
+/* FAILED to decompile: _Znwj @ 0x4084 */
+
+/* FAILED to decompile: __cxa_finalize @ 0x4088 */
+
+/* FAILED to decompile: __cxa_begin_catch @ 0x408C */
+
+/* FAILED to decompile: __cxa_allocate_exception @ 0x4090 */
+
+/* FAILED to decompile: memcpy @ 0x4094 */
+
+/* FAILED to decompile: strlen @ 0x4098 */
+
+/* FAILED to decompile: __cxa_atexit @ 0x409C */
+
+/* FAILED to decompile: __libc_start_main @ 0x40A4 */
+
+/* FAILED to decompile: _Znaj @ 0x40A8 */
+
+/* FAILED to decompile: _ZdlPv @ 0x40AC */
+
+/* FAILED to decompile: __dynamic_cast @ 0x40B0 */
+
+/* FAILED to decompile: _ZdaPv @ 0x40B4 */
+
+/* FAILED to decompile: printf @ 0x40BC */
+
+/* FAILED to decompile: __cxa_rethrow @ 0x40C0 */
+
+/* FAILED to decompile: puts @ 0x40C4 */
+
+/* FAILED to decompile: _ZNSt8ios_base4InitC1Ev @ 0x40C8 */
+
+/* FAILED to decompile: __cxa_end_catch @ 0x40CC */
+
+/* FAILED to decompile: __gxx_personality_v0 @ 0x40D0 */
+
+/* FAILED to decompile: __cxa_throw @ 0x40D4 */
+
+/* FAILED to decompile: _Unwind_Resume @ 0x40D8 */
+
+/* FAILED to decompile: _ZNSt8ios_base4InitD1Ev @ 0x40DC */
+
+/* Total functions decompiled: 46, failed: 21 */

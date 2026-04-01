@@ -1,0 +1,10 @@
+%s
+
+Result: 10
+Opaque: 20
+Instr: 225
+String: 84
+Tail: 500500
+Non-tail: 5050
+Vector: 72
+LTO: 20

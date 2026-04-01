@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `pbVar2` instead of semantic names like `x`, `result`, `encrypted`. Original `param_fake_branch(int x)` becomes `param_fake_branch(void)` losing the parameter entirely.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved (`param_fake_branch`, `call_opaque_predicate`, `param_tail_call_optimized`) matching original source. Action verbs and purpose are clear from naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Original had comments explaining expected values (e.g., "期望: 10"). Signal numbers (8, 0xb) are not named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime boilerplate included (`_init`, `_start`, `__do_global_dtors_aux`, `register_tm_clones`). External function stubs that call themselves (`raise`, `printf`, `strlen`) add confusion without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `do-while` loops instead of `for` loops (e.g., `param_vectorized_loop`). Dead code branches from original (`if (x * x < 0)`) are completely eliminated without indication.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical functions lost entirely: `param_fake_branch(void)` is empty, `param_buffer_overflow_stack(void)` and `param_buffer_overflow_heap(void)` return void with no body. Constant folding collapsed `call_fake_branch` to just `return 10`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable structure. Some awkward patterns like the 30+ boolean variable chain in `__divsi3` disrupts flow significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `__divsi3` function has extreme redundancy with 30+ boolean variables (bVar5-bVar35) for bit-by-bit division. Constant folding removed original logic without preserving intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic `int`, `uint`, `byte`, `undefined4` instead of precise types (`int32_t`, `size_t`, `char*`). `param_fake_branch` loses its `int` parameter entirely. Signal handlers use raw numbers (8, 0xb) instead of `SIGFPE`, `SIGSEGV`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `__jmp_buf_tag` struct referenced but not defined. `jmp_buffer` used as opaque pointer. No bit-field recovery for the implementation_defined test struct.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(byte *)puVar1`, `(undefined4 *)(byte *)`, `(__sighandler_t)0x0`. Pointer arithmetic with type confusion throughout `test_obf_opt_edge`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Division algorithm in `__divsi3` not identified. XOR decryption pattern in `decrypt_string` not labeled. Opaque predicate logic not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about lost function bodies (`param_fake_branch` empty). No indication that `call_fake_branch` was constant-folded. Silent failures on code that couldn't be recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note division by zero handling). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jmp_buffer`, `div_zero_caught`, `segv_caught`) referenced without context or declaration visibility.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Runtime initialization functions mixed with application code. No logical grouping between obfuscation tests, optimization tests, and edge case tests. All 464 LOC source expanded to 1072 LOC with boilerplate.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Marked as compilable ("Compilation Result: Yes"). External dependencies declared but many are self-referential stubs. Would require significant cleanup for standalone use.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+6+3)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.41/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects
+- **Function body lost**: `param_fake_branch(void)` is completely empty despite original having logic
+- **Parameter type loss**: `param_fake_branch` lost its `int x` parameter entirely
+- **Zero documentation**: No comments recovered from extensive original source documentation
+- **Unsafe casts pervasive**: Multiple `(byte *)`, `(undefined4 *)` casts without safety indication
+- **Constant folding without warning**: `call_fake_branch` returns literal `10` with no indication original had conditional logic
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, maintaining semantic meaning across decompilation
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation despite original having extensive comments explaining obfuscation techniques and expected values
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Preserve function bodies at -O0**: Debug builds should recover complete function logic; empty functions indicate decompilation failure not optimization
+2. **Recover and propagate source comments**: When debug symbols (-g) are available, extract and preserve original documentation
+3. **Flag constant folding and dead code elimination**: When optimizer removes branches, annotate with "OPTIMIZED: dead branch eliminated" rather than silent removal

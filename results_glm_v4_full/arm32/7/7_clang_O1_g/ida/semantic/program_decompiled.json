@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/7/7_clang_O1_g/ida/syntactic/bin/7_clang_O1_g_fixed",
+  "stdout": "Test: obfuscation and optimization edge cases\n\nobf: l4.02 = 10\nobf: l4.03 = 20\nobf: l4.04 = 225\nobf: l4.05 = 113\nopt: l4.01 = 500500\nopt: l4.01 = 5050\nopt: l4.02 = 396\nopt: l5.01 = 20\nedge: l3.01 = 1\nedge: l3.02 = 41\nedge: l3.03 = 30\nedge: l3.04 = 2000000000\nedge: l4.01 = 10\nedge: l4.02 = 44\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

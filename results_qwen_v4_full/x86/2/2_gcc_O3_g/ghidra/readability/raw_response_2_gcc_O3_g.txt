@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `iVar1`, `iVar2`, `pPVar1`, `local_70` instead of semantic names. Original parameter names (`arr`, `n`, `p`, `x`) are preserved, but loop counters show "Unresolved local var: int i@[???]" indicating lost naming information.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). A few helper functions have generic names (`FUN_00011030`), but core test functions maintain semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions output pre-computed constants (`0x61`, `0x400c0000`, `0xcccccccd`) instead of actual computations, obscuring the original logic. Some literals are clear (`' '`, `0x1a`), but magic numbers in `process_ll` bit manipulation are unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86.get_pc_thunk.bx` injections, `__stack_chk_fail_local` calls, multiple "WARNING" comments, and "Unresolved local var" annotations throughout. These artifacts clutter otherwise simple functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops recover well (`array_1d_stack`, `linked_list`), but `binary_tree_sum` shows extreme loop unrolling destroying recursive structure. `pointer_array` uses 10 nested if-statements instead of a loop. `enum_switch` uses jump table lookup instead of clear switch.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but `binary_tree_sum` expanded to 200+ lines from optimization. Test functions collapsed to constant printing. Helper functions maintain reasonable size, but decomposition quality varies significantly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. However, `binary_tree_sum` has extreme nesting (8+ levels) disrupting linear reading. Simple functions like `process_int` maintain clean linear flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy from optimization: `array_3d` unrolled to 125 explicit additions, `pointer_array` has 10 nearly identical conditional blocks. This optimization artifact significantly obscures the original loop intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char`, `short`), but critical errors exist: `process_ld` returns `longdouble *` instead of `longdouble`, `process_double` casts through float unnecessarily. Function pointer types degraded to `_func_int_int`. Pointer arithmetic loses type info: `(int)p1 - (int)p2 >> 2`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions well-recovered (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`) with field names intact (`x`, `y`, `z`, `width`, `data`, `next`). However, bitfield access in `struct_bitfields` degraded to manual bit operations (`bVar1 & 1`, `bVar1 >> 1 & 3`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int)handle`, `(void *)size`, `(char *)p`. Void pointer conversions lack safety checks. Stack canary checks present but don't address core type safety. No restrict or alignment annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments primarily indicate problems ("Unresolved local var", "WARNING", "Could not recover jumptable") rather than explain functionality. No algorithm explanations or API contracts. Comments highlight decompilation uncertainty but don't aid understanding.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop and linked list patterns recognized (`linked_list`, `doubly_linked_list`). However, recursive tree traversal in `binary_tree_sum` completely lost, converted to nested loops. Switch statements partially recovered via jump tables. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Decompilation issues flagged with "WARNING" comments and "Unknown calling convention" notices. Indirect call problems noted ("Could not recover jumptable"). However, anomalies are flagged without explanation of impact or suggested fixes.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Almost no contract information recovered. NULL checks present in code but not documented as preconditions. No postcondition inference or invariant recognition. Bounds checking in `array_complex_index` not documented as contract.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, but no call graph documentation. Global variable references unclear (`DAT_00013008`, `DAT_000133bd`). Callback relationships not documented. Function pointer calls show target but no relationship context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure. However, single output file with no header generation. Static functions not clearly marked. No namespace or package structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing type definitions (`_func_int_int`, `EVP_PKEY_CTX`). External dependencies not documented. Custom types undefined. Would require significant modification and stub creation to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):   (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type System):  (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):     (4+5+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):   (5+5+3)/3   = 4.33 × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  5.13/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **`binary_tree_sum` completely destroyed**: Recursive algorithm converted to 200+ line nested loop mess, losing all semantic clarity
+- **Test functions constant-folded**: All test functions print pre-computed results instead of actual computations, hiding original logic
+- **`process_ld` return type wrong**: Returns `longdouble *` instead of `longdouble`, fundamental type error
+- **Severe loop unrolling**: `array_3d` (125 additions), `pointer_array` (10 nested ifs) obscure simple loop patterns
+- **No compilation readiness**: Missing type definitions, undefined custom types (`_func_int_int`), requires extensive patching
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names correctly preserved from source, maintaining semantic meaning for core functions like `process_char`, `array_1d_stack`, `struct_simple`
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - Almost no precondition, postcondition, or invariant documentation recovered; NULL checks present but not documented as contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover loop constructs from unrolled code**: Detect repeated addition/access patterns and reconstruct original for/while loops with comments indicating optimization level
+2. **Preserve recursive structure in tree/graph functions**: Avoid converting recursive algorithms to iterative equivalents when the original structure is recoverable from debug symbols
+3. **Generate compilable type stubs**: Automatically create header files with recovered struct/union/typedef definitions and document external dependencies for standalone compilation

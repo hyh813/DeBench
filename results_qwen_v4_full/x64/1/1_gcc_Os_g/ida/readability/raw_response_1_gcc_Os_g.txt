@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables are mostly generic (`v1`, `v2`, `result`, `v5`) obscuring their purpose. Parameter names (`a`, `b`, `c`, `x`) are preserved from debug symbols, but loop counters become `v1` instead of `i`, `sum`, or `count`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `recursion_factorial`, `state_idle`). However, some stubs remain as `sub_1020`, `sub_1030` without semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x28u` (stack canary offset) and `0x12345678` appear without explanation. Some expressions are simplified well (`100 * (x + 1)` for `if_elseif_long`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) and register annotations (`// eax`, `// r8d`) add visual noise. Eight functions marked "FAILED to decompile" without recovery attempts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as while/for constructs, but `switch_fallthrough` uses goto labels (`LABEL_7`) instead of natural fall-through. `duffs_device` has excessive goto chains disrupting readability.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. Helper functions (`op_add`, `state_idle`) remain separate. Test functions are verbose but appropriately structured.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `switch_fallthrough`, `duffs_device`, and `non_local_jump` use goto statements that disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repetitive `result` variable pattern across functions. Test functions contain hardcoded expected values rather than computing them dynamically.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved but no enhanced precision (`int32_t`, `size_t`). Pointer types lack specificity. Function pointer signatures correctly recovered.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays (`arr[5]`, `matrix[3][4]`) and function pointer arrays recovered correctly. Original code has minimal struct usage so limited evaluation possible.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor casts present (`(unsigned int)x`) but generally type-safe. Function pointer types preserved with correct signatures. No dangerous pointer arithmetic visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output despite original having extensive documentation. No decompiler confidence indicators or logic explanations provided.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (factorial, state machine, digit counting) not identified or labeled. `recursion_factorial` converted to iterative without noting the transformation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" markers present for 8 functions but no explanation why. Stack canary code appears without context about its purpose.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or error condition documentation recovered. Original parameter validation logic not annotated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships visible through direct calls. Callback relationships (`process_with_callback`) preserved but not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order with test functions grouped. No header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions (`__printf_chk`, `__readfsqword`) undeclared. Eight functions failed decompilation. Won't compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.333
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (7+6+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.86/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Zero comments** despite original having extensive documentation explaining each function's purpose and test cases
+- Variable names like `v1`, `v2`, `result` obscure semantic meaning (e.g., loop counter should be `i`, accumulator should be `sum`)
+- `switch_fallthrough` uses goto labels (`LABEL_7`) instead of natural C fall-through semantics
+- Eight functions marked "FAILED to decompile" with no recovery attempt or explanation
+- `recursion_factorial` converted from recursive to iterative without noting this semantic transformation
+- Magic numbers (`0x28u`, `0x12345678`) appear without explanation of their purpose
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately from debug symbols, maintaining semantic clarity about each function's purpose
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments makes understanding non-trivial logic significantly harder, especially for complex patterns like Duff's device and state machines
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug information (-g flag) or infer semantic comments from code patterns
+2. **Infer meaningful variable names** from usage context (e.g., loop accumulator → `sum`, counter → `count`, index → `i`)
+3. **Add decompiler confidence annotations** for transformed code (e.g., "// Original was recursive, optimized to iterative") and explain failed decompilations

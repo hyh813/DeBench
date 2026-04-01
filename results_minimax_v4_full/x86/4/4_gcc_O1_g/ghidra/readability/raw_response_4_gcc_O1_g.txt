@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `piVar1`, `uVar2`, `pLVar4`, `auStack_118`, `local_10` which obscure their semantic purpose. For example, in `varargs_func`, the loop variable is completely unresolved. Only a few well-named variables like `count` and `n` appear.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered matching the source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `callback_func`, `ret_basic_type`. A few have generic prefixes (e.g., `FUN_00011030`) but the core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21). While these are correct values, there's no named constant recovery. The decompiler uses hex notation inconsistently with decimal in the original printf statements.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from 50+ WARNING comments including "Unknown calling convention", "Unresolved local var: int i@[???]", "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "WARNING: Removing unreachable block", and "WARNING: Subroutine does not return". These auto-generated warnings clutter every function and make reading difficult.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with recognizable loops and conditionals. The `varargs_func` uses a do-while loop correctly. At `-O0`, no loop unrolling or goto abuse. Minor awkwardness in `ret_multi_branch` with complex conditional expression but still readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines typical). The test wrapper functions like `call_cdecl` are simple return constants, which is correct for -O0. No over-fragmentation or monoliths observed. Good separation between test functions and implementation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `func_struct_byptr` and `param_double_ptr`. No forward jumps into loops. The `test_calling_conventions` function has some complex nesting but remains traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in `test_calling_conventions` where values are computed inline then printed. The `ret_large_struct` has explicit field-by-field copy that could be optimized but represents the actual code. No obvious dead code elimination failures.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int` for integers, `char*` for strings, `int*` for pointers. Function pointer types use `_func_int_int` which is non-standard but understandable. Some loss of const correctness. The `longlong` type is used instead of `long long`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct names successfully recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `TestIntPair`. Field names preserved: `data[]`, `x`, `y`. The `LargeStruct` has correct 16-element array. Minor issue: `TestIntPair` fields not named (uses `*(int*)p + 4`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: In `param_complex_cast`, void* is cast to int* and char* without validation. In `func_mixed_args`, casting between int and double with ROUND(). The `ret_small_struct` returns a pointer to stack memory (`in_stack_00000004`) which is a serious bug. Several instances of `(int)` casts that could overflow.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Extensive auto-generated WARNING comments (50+) but these document decompiler limitations, not code semantics. No useful algorithm explanations or API contracts. The "Unresolved local var" comments are the only helpful indicators. Original source comments about calling conventions are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard calling convention patterns present but not explicitly identified as "cdecl", "stdcall", etc. in comments. The varargs pattern (va_list, va_start, va_arg) is correctly recognized. No design pattern naming (State machine, Strategy, etc.). The calling convention test scenarios from source are not documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments flag unknown calling conventions and unresolved variables. However, the critical bug in `ret_small_struct` (returning stack pointer) is not flagged. The "WARNING: Subroutine does not return" appears but doesn't explain why. Some indirect calls could not be resolved but impact is minimal.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no explicit assertions either, but the decompiled code doesn't add helpful contracts. For example, `func_struct_byptr` could have "requires: p != NULL" but doesn't.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear within test functions (e.g., `call_cdecl` calls `cdecl_func`). However, no documentation of who calls whom beyond immediate invocations. The callback relationship between `param_func_ptr` and `callback_func` is implicit, not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with arbitrary ordering (not matching source grouping). Related functions like calling convention tests are scattered. No header file recovery. Static functions not properly scoped (all globals in decompiled output).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata states "Compilation Result: Yes", indicating successful compilation. External dependencies (printf, strlen, stack_chk_fail) are properly declared. No obvious syntax errors. Minor issues with non-standard type names (`longlong` vs `long long`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `piVar1`, `local_10`) making code flow extremely difficult to trace
+- Severe noise pollution with 50+ WARNING comments obscuring actual logic
+- `ret_small_struct` returns pointer to stack variable (`in_stack_00000004`) - a serious semantic bug not flagged
+- No contract or precondition recovery; functions like `func_struct_byptr` lack null-check documentation
+- Magic numbers used throughout without named constant recovery (0xf, 0x32, 0x2a)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered most function names from the source, making it easy to identify the purpose of key functions like `cdecl_func`, `varargs_func`, and `callback_func`.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Despite -O0 compilation producing straightforward code, the decompiler used generic variable names throughout. With no optimization to obscure intent, variables like `iVar1`, `piVar1`, and `auStack_118` should have been inferable from usage patterns (e.g., loop counters, pointer iterations).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: At -O0, loop counters should be named `i` or `index`, pointer variables should reflect their type (`ptr`, `arr`, `p`), and stack variables should use semantic names based on how they're used
+2. **Eliminate auto-generated WARNING noise**: Filter or collapse repetitive warnings about "unknown calling convention" into a summary section; only keep actionable anomalies
+3. **Recover struct field names**: The decompiler successfully identified struct types but left fields as generic accesses; field names like `a`, `b` in `TestIntPair` should be recovered from type analysis

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and locals are `v0`, `v1`, `v2` with no semantic meaning. Original had meaningful names like `temp1`, `sum`, `count`, `total` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions retained original names (`sequential_ops`, `single_if`), but many helpers are generic (`sub_4004dc`, `$a.14`, `$a.16`). About 60% of functions have meaningful names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (should be `-1`), `1717986919` (division optimization constant), `0x80000000`. No constants recovered or explained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe angr-specific artifacts (`armg_calculate_condition` calls throughout), unreachable code after returns, excessive goto labels (`LABEL_400720`, `LABEL_400824`), and compiler runtime functions exposed.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `single_if` becomes incomprehensible bit manipulation instead of simple `if`. `nested_if_deep` collapses into goto mess. Loops (`loop_for_fixed`, `loop_while`) fail to recover as proper loop constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Duff's device incorrectly fragments into multiple helpers (`sub_400d6c`, `sub_400d74`, etc.). Most original functions intact but some over-fragmented with odd helper functions.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Excessive goto labels disrupt reading flow. Many functions have unreachable assignments after return statements. Control flow jumps around rather than following linear progression.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate condition checks throughout. Unreachable code after returns. `armg_calculate_condition` calls repeat unnecessarily in multiple branches.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: All parameters become `unsigned int` regardless of original `int` types. Signed/unsigned distinction completely lost. Function pointers degrade to `unsigned int` with no proper signature recovery.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays like `int arr[] = {10, 20, 30, 40, 50}` not recovered—`loop_break` becomes a switch statement. No struct/union recovery attempted.
+
+**11. Type Safety:** Score: 3/10  
+Justification: `call_func_ptr` uses `goto a0` instead of proper function call syntax. Implicit casts throughout. Function pointer calls completely broken with type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation. No decompiler confidence indicators or uncertainty warnings anywhere.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop patterns not recognized (converted to do-while with complex conditions). Switch fallthrough partially recognized but mangled. State machine patterns completely unidentified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about `armg_calculate_condition` calls. No indication of uncertain decompilation despite obvious semantic failures. Confidently presents broken code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented. No postconditions inferred. No error condition documentation. Complete absence of contract recovery.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Global variables named generically (`g_401ded`, `g_413008`). No call graph documentation or callback relationship clarity.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping beyond original function order. Helper functions scattered without organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains external declarations but many functions incomplete (empty bodies like `computed_goto`). Compiler runtime functions (`__divsi3`, `__aeabi_idivmod`) require stubs. Would need substantial work to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+6+3+2)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):     (3+5+3+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type System):    (2+4+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):       (1+2+1+1)/4 = 1.25 × 0.15 = 0.1875
+Level 5 (Contextual):     (4+5+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 3.11/10
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **`armg_calculate_condition` artifacts** pollute every complex function, making logic incomprehensible
+- **All variable names generic** (`a0`, `v0`, `v1`) losing all semantic meaning from original source
+- **Control flow destruction**: `single_if` becomes bit manipulation expression; loops fail to recover as proper constructs
+- **Type system collapse**: Everything becomes `unsigned int`; function pointers use `goto` instead of calls
+- **Zero comments or anomaly warnings**: Decompiler confidently presents broken code without indicating uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Main test functions retained original names (`sequential_ops`, `nested_if_2`, etc.) providing some anchor points for understanding
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, confidence indicators, or uncertainty warnings despite severe decompilation failures throughout
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate angr-specific artifacts**: Replace `armg_calculate_condition` calls with proper conditional expressions or flag uncertainty explicitly
+2. **Recover loop constructs from backward jumps**: Current output converts simple for/while loops into incomprehensible do-while with bit manipulation
+3. **Add decompilation confidence annotations**: Mark functions/expressions where semantic recovery failed (e.g., `// DECOMPILER_UNCERTAIN: condition expression`)

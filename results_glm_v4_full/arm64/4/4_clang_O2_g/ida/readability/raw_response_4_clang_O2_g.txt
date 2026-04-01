@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v2`, `v3`, `v4`, `v5`, `v7`, `v8`, `v9`, `v10`, `v11` in `varargs_func`), obscuring the logic of summing arguments. While `va` is used for the va_list, the lack of semantic names like `sum` or `i` significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `varargs_func`, and `test_calling_conventions` are preserved exactly from the source, making the high-level purpose immediately clear. Only a few runtime stubs (`sub_640`, `init_proc`) use generic names.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code contains many "magic numbers" resulting from compilation/decompilation, such as `0xFFFFFF80FFFFFFC8LL` in `varargs_func` (stack offset) and `0xE0000000DLL` in `ret_large_struct`. While constants like `15` in `test_calling_conventions` are clear results, the internal magic numbers lack context.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts like `LODWORD`, `HIDWORD`, and redundant casts (e.g., `(unsigned __int64)(unsigned int)y << 32` in `ret_small_struct`). While the structure is clean, these low-level type manipulations add noise not present in the source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The decompiled code shows significant structural divergence from the source due to apparent optimization or decompiler heuristics. For example, `varargs_func` replaces a simple `for` loop with a complex `do-while` loop involving pointer arithmetic and a `goto` (`LABEL_5`), and `param_ptr_array` uses loop unrolling (`v2 = n & 0xFFFFFFFE`) which obscures the simple iteration logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. There is no monolithic inlining or fragmentation; complex logic like `ret_large_struct` remains a distinct function despite its internal complexity.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most functions read top-to-bottom, `varargs_func` and `param_ptr_array` contain non-linear flow patterns (unrolled loops, manual pointer iteration) that require significant mental effort to trace compared to the source's linear loops.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiled code exhibits redundancy likely from optimization or decompiler modeling, such as the manual unrolling of `va_arg` into `v7[1]` through `v7[7]` in `varargs_func`, followed by a loop to process them, rather than the single loop found in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, with `int`, `char *`, and `gcc_va_list` correctly identified. However, the use of `__int64` and `unsigned __int64` for pointer arithmetic and the specific SIMD types (`int32x4_t`) in `ret_large_struct` are technically precise but lower-level than the source's intent.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structures like `SmallStruct`, `LargeStruct`, and `SmallPoint` are perfectly recovered with correct field names (`x`, `y`, `data`) and array indexing, matching the source definitions exactly.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is type-safe but verbose, using explicit casts like `(_DWORD *)p` and `LODWORD(s->data[15])`. While these ensure correctness, they represent a lower-level view of memory manipulation than the high-level source code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent. There is no explanation for the complex pointer arithmetic in `varargs_func` or the SIMD operations in `ret_large_struct`. Only a single comment `// attributes: thunk` exists for `frame_dummy`.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The decompiler fails to recognize the `va_list` iteration idiom in `varargs_func`, replacing it with manual array copying and pointer math. It also fails to simplify the SIMD idiom in `ret_large_struct` back to a scalar loop, leaving the user to interpret vector intrinsics.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While the decompiler lists "FAILED to decompile" for external library functions, it does not flag the significant structural differences (like the unrolled loops or SIMD usage) that might confuse a user comparing this to the `-O0` source code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., `count` limits in `varargs_func`) or postconditions. The logic is presented "as-is" without semantic contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard. The relationship between `test_calling_conventions` and the various `call_*` functions is obvious. The use of `printf` with format strings is preserved.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the logical grouping of functions found in the source, with calling convention tests, parameter tests, and return value tests appearing in distinct blocks.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on decompiler-specific types like `__int64` and compiler intrinsics (`vdupq_n_s32`). It would require significant patching (headers, type definitions) to compile, whereas the source is standard C.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming is generic (`v0`-`v11`), losing semantic meaning (e.g., `sum`, `i`).
+- `varargs_func` control flow is obfuscated, replacing a simple loop with manual array copying and complex pointer arithmetic.
+- `ret_large_struct` uses low-level SIMD intrinsics (`vdupq_n_s32`, `vaddq_s32`) instead of the source's simple scalar loop, making it hard to read.
+- Magic numbers like `0xFFFFFF80FFFFFFC8LL` appear without explanation.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Structures like `SmallStruct` and `LargeStruct` are perfectly reconstructed with correct field names and types.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)
+- The lack of comments and failure to recognize high-level idioms (like `va_list` loops) makes the optimized/decompiled logic very difficult to understand compared to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve `va_list` handling to preserve the original loop structure instead of materializing arguments into a temporary array.
+2. Add annotations or simplification options for SIMD intrinsics to map them back to scalar loops where possible.
+3. Implement heuristic variable renaming to infer names like `sum`, `i`, or `count` based on usage patterns in loops.

@@ -1,0 +1,1 @@
+TRACE_ENT|0|test_control_flow_l1|0|Arg0=1,Arg1=-930798152,Arg2=-930798136,Arg3=-909709904|rax=0x0,rbx=0x7fffc88525b8,rcx=0x58b0c9c6edb0,rdx=0x7fffc88525c8,rsi=0x7fffc88525b8,rdi=0x1,r8=0x0,r9=0x7a3a44499380

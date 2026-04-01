@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/6/6_clang_O1_g/ghidra/syntactic/bin/6_clang_O1_g_fixed",
+  "stdout": "HelloLib\nstrlen: 14\nstrcmp: 0\nstrcmp result: 12\nmemcmp: 90\nsscanf: -1\nValue: 42, Name: Lib\nprintf chars: 21\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

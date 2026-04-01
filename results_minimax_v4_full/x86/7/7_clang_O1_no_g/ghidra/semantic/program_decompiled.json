@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_O1_no_g/ghidra/syntactic/bin/7_clang_O1_no_g_fixed",
+  "stdout": "Testing param_fake_branch: %d\n\nTesting call_fake_branch: 10\nTesting param_opaque_predicate: 20\nTesting call_opaque_predicate: 225\nTesting param_string_encryption: 0\nTesting call_string_encryption: 0\nTesting param_tail_call_optimized: 5050\nTesting call_vectorized_loop: 0\nTesting param_link_time_optimization: 20\nTesting call_division_by_zero: 1\nTesting call_null_pointer_deref: 41\nTesting call_buffer_overflow: 30\nTesting call_integer_overflow: 2000000000\nTesting call_undefined_behavior: 10\nTesting call_implementation_defined: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

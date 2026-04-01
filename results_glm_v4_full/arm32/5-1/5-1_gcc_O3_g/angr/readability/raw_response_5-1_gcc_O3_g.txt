@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `flag1`, completely obscuring semantic meaning (e.g., `ptr` used for `this` or exception objects).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z18test_cpp_exceptionv` to `test_cpp_exception`), preserving the original semantic names accurately.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are represented as raw memory addresses (e.g., `puts(0x114d8)`) rather than their content, and magic numbers like `42` or `71348` appear without context.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with lifting artifacts, specifically `armg_calculate_condition`, which represents ARM condition codes as function calls rather than native C control flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is unnatural, relying heavily on `goto` statements and `armg_calculate_condition` calls to simulate branching, making it difficult to follow the logic.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While function boundaries are respected, many functions (e.g., `test_cpp_constructor`) are empty stubs likely due to optimization/inlining, which is accurate but unhelpful for understanding the original logic.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is non-linear with frequent jumps to labels (e.g., `LABEL_10a90`) and computed jumps, disrupting the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy in the form of stack guard checks (`__stack_chk_guard`) and condition calculation calls that obscure the core logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Object-oriented types are lost; `this` pointers are cast to `void*` or `unsigned int`, and specific class types (e.g., `Base`, `Derived`) are replaced by generic `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered; instead, generic structs like `struct_0` with padding and anonymous pointers are used, failing to represent fields like `value` or `name`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts, such as `(int)(*(ptr))[4]` to access vtable pointers or member data, which erases type safety and makes the code fragile.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of obscure operations like `armg_calculate_condition`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: C++ idioms like virtual function calls are reduced to raw pointer dereferencing and jumps (`goto *((int *)*((int *)arg_0))`) without recognizing the vtable pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging anomalies, such as the suspicious `armg_calculate_condition` calls or the empty function bodies resulting from aggressive optimization.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the non-null requirement for `this` pointers is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Cross-references are readable only because the function names are demangled; the actual data flow between functions is obscured by generic parameter types.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions; while grouped by address, there is no logical reconstruction of namespaces or class groupings found in the source.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to undefined symbols like `armg_calculate_condition` and the use of raw memory addresses for strings.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+**Critical Defects:**
+- Lifting artifacts like `armg_calculate_condition` obscure control flow logic.
+- Class structures (fields, inheritance) are completely lost, replaced by raw pointer arithmetic.
+- String literals are displayed as raw hex addresses (e.g., `0x114d8`) instead of text.
+- Virtual function calls are decompiled to raw indirect jumps without semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully demangled C++ mangled names, preserving the original function identifiers.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The lack of comments, idiom recognition, and anomaly indication makes the decompiled code extremely difficult to map back to high-level C++ concepts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pattern-matching pass to replace `armg_calculate_condition` calls with native C `if/else` blocks.
+2. Develop a C++ class recovery engine to reconstruct `this` pointer usage, member offsets, and inheritance hierarchies.
+3. Resolve string literals from the binary's data section and inline them into the pseudo-code to replace raw addresses.

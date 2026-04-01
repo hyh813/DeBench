@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most local variables use generic names like `iVar1`, `iVar2`, `lVar1`, `pcVar1` instead of semantic names (e.g., `fd`, `bytes`, `written`). Function parameters are better named (`dst`, `src`, `filename`), but locals lose all meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_strcpy`, `thread_sum`, `consumer_thread`, `param_signal_handling`). Only startup/runtime functions use generic names (`FUN_00102020`, `_init`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy use of hex magic numbers: `0x2a` (42), `0xc` (12), `0x5a` (90), `0x1f` (31), `0x1000` (4096). String literals preserved but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) repeated in most functions. "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter output. LOCK()/UNLOCK() macros for atomics add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs reasonably well. However, stack canary checks create artificial branches at function ends. Some conditional logic is verbose (e.g., `param_strcmp` normalization).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto labels disrupt flow (`LAB_00103d63`, `LAB_0010403a`, `LAB_00104237`). Stack canary checks at function ends create backward-looking validation patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code duplicated across ~30 functions. Some constant folding occurred (`call_strcpy` returns 8 directly instead of calling `param_strcpy`). Atomic LOCK/UNLOCK pairs add repetition.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `void*`). Some degradation: `pthread_mutex_t` cast from pointer, `atomic_int` shown as plain int with LOCK/UNLOCK. TLS accessed via `in_FS_OFFSET` offset.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct partially recovered with field access (`data[0].start`, `data[0].end`). `sockaddr_in`, `stat` structures accessed but not fully defined. TLS variables accessed via raw offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(int *)`, `(void *)`, `(pthread_mutex_t *)`, `(pthread_cond_t *)`. Pointer arithmetic on TLS (`in_FS_OFFSET + -0x24`). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("Unresolved local var", "WARNING: Subroutine does not return"). No algorithm explanations, no API contracts, no semantic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`, `pthread_create`). Thread patterns visible but not explicitly named. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unknown calling convention" warnings flag potential issues. "Unresolved local var" indicates decompilation uncertainty. "Subroutine does not return" correctly marks `_exit` calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error returns (-1, -2, -3) present but undocumented. No null-check contracts or buffer size requirements noted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Global variables referenced (`shared_counter`, `atomic_counter`, `signal_received`) but not documented. No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 70 functions in single output. No file organization matching source sections (6.1, 6.2, 6.3). Functions somewhat grouped by type (thread functions together).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions requiring headers (pthread, stdio, syscalls). Undefined globals need declaration. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+5+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (4+5+6+3)/4 = 4.50 × 0.15 = 0.68
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 5.37/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- Variable `iVar1`, `iVar2`, `lVar1` should be named semantically (e.g., `fd`, `bytes_read`, `result`)
+- Magic numbers like `0x2a`, `0xc`, `0x5a` should be replaced with named constants (SUCCESS, EXPECTED_LEN, EXPECTED_SUM)
+- Stack canary checks (`__stack_chk_fail`) create noise in every function without adding semantic value
+- TLS variables accessed via raw offset (`in_FS_OFFSET + -0x24`) instead of named thread-local storage
+- No documentation of error return codes (-1, -2, -3 have different meanings per function)
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Ghidra successfully preserved most original function names from debug symbols, making navigation and identification straightforward.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- No preconditions, postconditions, or error semantics documented; readers must trace each function to understand return value meanings.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`length`, file descriptors should be `fd`, etc.
+2. **Replace magic numbers with symbolic constants** - Detect repeated values (0x2a=42 appears 20+ times) and suggest named constants.
+3. **Add contract documentation for error returns** - Analyze return value patterns and document meaning (e.g., "Returns -1 on failure, -2 on timeout, 42 on success").

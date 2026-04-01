@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `piVar1`, `uVar3` instead of semantic names (e.g., `sum`, `args`, `count` in varargs_func). Many marked as "Unresolved local var" losing all naming information.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names preserved perfectly from source (`cdecl_func`, `varargs_func`, `param_by_value_int`). Action-oriented test functions also retained (`test_calling_conventions`, `test_parameter_passing`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Constants shown in hex (`0xf`, `0x32`, `0x2a`) instead of decimal (15, 50, 42), requiring mental conversion. String literals replaced with `&DAT_000117d6` references losing readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention" messages (20+ occurrences) and "Unresolved local var" comments create visual noise. Compiler runtime functions (`__adddf3`, `__floatsidf`) expanded inline.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions maintain natural flow, but varargs functions use do-while instead of for loops. Test functions constant-folded losing original call structure entirely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but test functions optimized to constants (e.g., `call_cdecl` returns `0xf` directly). Runtime library functions mixed with user code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but floating-point library code (`__adddf3`, `__subdf3`) is extremely non-linear with 200+ lines of bit manipulation.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates information loss (computations shown as results). Floating-point operations show significant redundancy from library expansion with repeated bit-shift patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, longlong), but function pointers degraded to `_func_int_int *`. Some void* where specific types existed (varargs handling).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types preserved (`LargeStruct`, `SmallStruct`) but field names lost (all show as `data[i]`). `func_struct_byval` shows field access as `s.data[0]._0_4_` indicating partial recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts visible (`(int)uVar3`, `(ulonglong)uVar3 >> 0x20`). Pointer arithmetic present but generally safe. Function pointer calls recovered with proper signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Technical warnings present ("Unknown calling convention", "Unresolved local var") but no semantic comments explaining algorithm purpose. No API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern partially recognized (shows `...` in signature). Struct access patterns recognized. No design pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with "WARNING" messages and "Unresolved local var" indicators. Calling convention uncertainty clearly communicated to analyst.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. NULL checks preserved in code (`if (p == (SmallStruct *)0x0)`) but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many constant-folded away. Global variable references shown as `&DAT_000117d6` without symbolic names. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no file/module separation. Runtime functions (`__adddf3`, `__fixdfsi`) mixed with user code without clear boundaries.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions (`printf`, `puts`, `strlen`) requiring stubs. Type mismatches in floating-point operations would need fixing. Would require moderate work to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (6+5+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.713
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.48/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable `iVar1`, `uVar3` should be named semantically** (e.g., `sum`, `result`, `float_value`) based on usage patterns
+- **Test functions constant-folded** losing call structure (`call_cdecl` returns `0xf` instead of showing `cdecl_func(5, 10)`)
+- **String literals replaced with data references** (`&DAT_000117d6`) making printf statements unreadable
+- **Struct field names lost** (all show as `data[i]` instead of meaningful names)
+- **Floating-point library code expanded inline** (200+ lines of `__adddf3` obscuring simple arithmetic)
+
+### Best Quality Aspect:
+- **Function Naming Quality (scored 9/10)** - Function names preserved perfectly from source, maintaining semantic clarity for all 86 decompiled functions
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (scored 3/10)** - No precondition/postcondition documentation despite NULL checks and validation logic being present in code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (accumulators, counters, pointers) to suggest semantic names like `sum`, `count`, `buffer_ptr`
+2. **Preserve constant expressions instead of folding** - Show `cdecl_func(5, 10)` instead of `0xf` to maintain call structure visibility for reverse engineering
+3. **Recover string literal content** - Resolve `&DAT_000117d6` references to actual string content ("=== 测试基础调用约定 ===") for printf statements

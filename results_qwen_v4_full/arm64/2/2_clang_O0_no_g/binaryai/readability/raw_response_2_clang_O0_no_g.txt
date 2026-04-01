@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `local_14`, `uVar1`, `local_18`) with no semantic meaning recovered. For example, `process_char` uses `param_1` instead of `input_char`, and test functions use `local_14` instead of meaningful names like `test_value`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), but helper functions have generic names (`FUN_00100680`, `FUN_001021cc`). The main test functions are correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x41` instead of `'A'`, `0x20` instead of `32` for case conversion). Hex values like `0x12345678` are preserved but not contextualized.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (redundant casts like `(ulong)(uVar2 & 0xff)`), but basic functions are relatively clean. The floating-point library functions (`__addtf3`, `__multf3`) contain excessive noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals preserved well (e.g., `array_1d_stack` has natural for-loop). However, `volatile_access` shows `*param_1 + *param_1` instead of two separate volatile reads, losing semantic intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. Original structure mostly preserved with test functions separated from implementation. Some compiler helper functions (`__do_global_dtors_aux`) appear unnecessarily.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom well. However, floating-point functions (`FUN_001021cc` at 500+ lines) are extremely non-linear with excessive goto-style labels (`LAB_00102ac0`, `joined_r0x0010245c`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The `__addtf3` and `__multf3` functions contain massive redundancy from software floating-point emulation. Basic functions show minimal redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char`, `short`), but `long double` becomes `undefined8`, `float` becomes `undefined4` in `process_float`. Pointer types often degraded to `long` (e.g., `array_1d_stack(long param_1, int param_2)`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs completely lost. `Point3D` accessed as `param_1[1]`, `param_1[2]` instead of `p->y`, `p->z`. `Widget`, `Rect`, `Node` all become raw pointer arithmetic with no struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)`, `(long *)`). Function pointers become `code *` losing signature information. Pointer arithmetic on `long` instead of typed pointers creates safety risks.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments recovered from source. No decompiler-generated comments explaining logic. The only comment is a header (`// Decompiled by BinaryAI`).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common idioms not recognized (character case conversion `0x40 < param_1 && param_1 < 0x5b` not identified as `isupper()`). No pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about potential issues. Volatile semantics completely lost (`volatile_access` doesn't indicate two separate memory reads required). No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not explained). No postconditions or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no relationship documentation. No call graph information. Callback relationships (e.g., `ptr_func_simple`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No header file separation. Original logical grouping (data types, arrays, pointers, composites) not preserved in organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies present (`printf`, `memcpy`) but standard library functions. Some platform-specific artifacts (`NEON_fmadd`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+5+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.69/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects
+- **Struct definitions completely lost** - All composite types (`Point3D`, `Widget`, `Node`, `Graph`) accessed via raw pointer arithmetic instead of field names
+- **Variable names are entirely generic** - `param_1`, `local_14`, `uVar1` provide no semantic information about purpose
+- **Volatile semantics lost** - `volatile_access` shows `*param_1 + *param_1` instead of two distinct memory reads
+- **No comments recovered** - Zero documentation of algorithm intent, preconditions, or non-obvious logic
+- **Floating-point functions unreadable** - `__addtf3` and `__multf3` are 500+ lines of incomprehensible bit manipulation
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core function names were preserved from debug symbols (`process_char`, `array_1d_stack`, `ptr_single`), making basic navigation possible
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite type access through error-prone pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct definitions from access patterns** - Analyze consistent offset patterns (e.g., `param_1 + 0`, `param_1 + 4`, `param_1 + 8` for `Point3D`) to reconstruct struct layouts with field names
+2. **Preserve volatile semantics** - Detect `volatile` qualified accesses and generate separate read statements with comments indicating memory barrier requirements
+3. **Infer variable names from usage context** - Use data flow analysis to name variables based on their role (e.g., loop counters, array indices, return values) rather than generic `local_N` patterns

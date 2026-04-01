@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, temp, result) with zero semantic meaning. Original names like `arr`, `p`, `local`, `head`, `current` are completely lost despite -O0 debug compilation that should preserve them.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test function names preserved correctly (local_vars, heap_basic, test_stack_memory), but helper functions degraded to generic names (function_1140, function_1150). Core functionality names match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x4d94`, `0x4ce7` appear without explanation. Some values like `42`, `10`, `20` are clear, but array sizes and offsets lack context. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: stack canary checks (__readgsdword(20), __stack_chk_fail_local) in every function, x86 thunk functions (__x86_get_pc_thunk_bx) despite arm64 target, redundant casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: linked_list_heap uses explicit goto labels (lab_0x19ff, lab_0x1a08) instead of while loops. At -O0, original for/while constructs should be recoverable but decompiler failed to recognize loop patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some functions fragmented (function_1160-1240 are just malloc/free wrappers). No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Stack canary checks at function ends create non-linear exit paths. Generally readable top-to-bottom but with interruptions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeated identically across 40+ functions. Some expression duplication in pointer arithmetic calculations. No dead code removal evident.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything collapsed to int32_t. Original types lost: size_t, Point struct, Node*, TreeNode*, char*, void*. No signed/unsigned distinction (uint32_t rarely used). Function pointers become int32_t.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure. Point, Node, TreeNode structs entirely lost. All struct access became pointer arithmetic (*(int32_t *)(v2 + 4)). No field names recovered. This is catastrophic for heap_struct, linked_list_heap, tree_heap_traversal.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: (char *)(v1 + 0x1a20), (int32_t *)v2. Pointer arithmetic without type checking. No const correctness preserved. Buffer overflow patterns not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive comments (// MEM-L1-01, // 场景) all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation/traversal pattern in linked_list_heap not identified. Tree traversal in tree_heap_traversal not recognized. Memory allocation patterns not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: dangling_pointer's use-after-free not flagged. double_free's double-free not warned. heap_overflow's buffer overflow not indicated. Critical undefined behaviors silently presented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: a1 != NULL"). No postconditions. Error return values (-1, -2, -3) not explained. NULL checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (g1-g17) have no semantic names. Callback relationships (set_global_callback → call_global_callback) not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed alphabetically/by address, not by logical grouping. Stack/heap/static memory functions intermixed. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present (stdio.h, stdlib.h, string.h). External functions declared. Would require stubs for __readgsdword, __printf_chk. Architecture mismatch (x86 thunks for arm64) problematic.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+5+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+5+6)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (3+1+4)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+
+Overall = 1.275 + 1.313 + 0.534 + 0.263 + 0.533 = 3.92/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Complete struct type loss**: Point, Node, TreeNode structures reduced to raw pointer arithmetic, making heap_struct, linked_list_heap, tree_heap_traversal nearly unreadable
+- **Zero variable name recovery**: All variables named v1, v2, v3 despite -O0 debug compilation that should preserve debug symbols
+- **No comments preserved**: Original source had extensive documentation (// MEM-L1-01, 场景 markers) completely lost
+- **Goto instead of loops**: linked_list_heap uses explicit goto labels instead of while loops, violating natural C patterns
+- **Architecture mismatch**: x86 thunk functions (__x86_get_pc_thunk_*) appear despite arm64 target compilation
+- **Stack canary pollution**: Every function has __readgsdword/__stack_chk_fail checks obscuring core logic
+- **Undefined behavior unflagged**: dangling_pointer, double_free, heap_overflow anomalies not warned
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most test function names preserved correctly from source (local_vars, heap_basic, test_stack_memory), allowing basic function identification despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct/union types. This is catastrophic for a memory operations test suite where struct manipulation is central to the code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Integrate debug symbol parsing**: At -O0 with -g flag, variable names, struct definitions, and type information should be extracted from DWARF debug sections rather than inferred from binary patterns.
+
+2. **Implement struct pattern recognition**: Detect repeated pointer+offset access patterns (*(ptr+0), *(ptr+4), *(ptr+8)) and propose struct recovery with field type inference based on usage.
+
+3. **Add anomaly detection for undefined behavior**: Flag use-after-free (dangling_pointer), double-free, and buffer overflow patterns with explicit warnings rather than presenting them as normal code.

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `v1`, `ptr`, `idx`). In `func_mixed_args`, variables like `v7`, `v8`, `v9` obscure the original parameters `x`, `s`, `d`, `ll`.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level semantic names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are preserved and accurate. However, many functions are reduced to generic addresses like `sub_401030` or `sub_40103c`.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like `"CALL-L1-01: %d\n"` are preserved and clear. However, magic numbers like `15`, `50`, and `6` appear as direct return values in `call_cdecl`/`call_stdcall` due to constant propagation, obscuring the original arithmetic logic.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is littered with severe decompiler artifacts, such as `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] PutI`, and `[D] unsupported_<class 'pyvex.expr.GetI'>()`, which render sections of the code unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily disrupted. Functions like `sub_401030` use `goto ptr[2];` (indirect jump), and `sub_401090` uses `goto v1->field_24;`. `func_mixed_args` is a mess of `if` blocks containing unsupported operations rather than readable logic.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decomposition generally follows the source structure, but some functions are fragmented into trivial wrappers (e.g., `sub_40103c` just calls `sub_401040`). The logic is mostly contained within the correct functions, but the internal structure is poor.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is difficult to read linearly due to the prevalence of `goto` statements for control flow and the interruption of logic by decompiler error messages.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While some functions are optimized (e.g., `call_cdecl` returning `15`), this removes the semantic context of the calling convention test. The `test_calling_conventions` function contains repetitive `sub_4010e0` calls (likely `printf`) which could be cleaner.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Types are significantly degraded. `func_struct_byval` loses its struct parameter entirely in the signature (shows no args) and accesses stack via `(&v0)`. `func_mixed_args` fails to recover the `double` type correctly, listing it as "Other Possible Types".
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct recovery has failed completely. `LargeStruct` and `SmallStruct` are not defined. In `func_struct_byval`, the struct is accessed as a raw array `(&v0)[2 * idx]` rather than `s.data[i]`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains unsafe casts and pointer arithmetic, such as `*((int *)&(&v0)[4 * idx])` in `varargs_func`. The decompiler output also includes invalid syntax like `goto v1->field_24;`, which implies a severe misunderstanding of types/pointers.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no helpful comments explaining the logic. The only comments are raw decompiler error messages (`[D] ...`), which hinder rather than help understanding.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are not recognized. `varargs_func` is decompiled to manual stack walking (`(&v0)[4 * idx]`) rather than using `va_list` concepts. Structs are treated as byte arrays.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While the `[D] ...` messages indicate the decompiler failed, they are technical error logs rather than semantic explanations (e.g., "Indirect call target could not be resolved").
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic for `param_double_ptr` checking `if (ptr && *(ptr))` is present but not explicitly commented as a safety check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Global variables are referenced by address (e.g., `extern unsigned int g_402008;`) rather than name, making it hard to correlate with source. Function calls are visible, but the context is lost in the noise.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed, but the organization is flat and address-based. Related helper functions (like `__x86.get_pc_thunk`) are intermixed with logic, though the main test functions are grouped.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not valid C. It contains syntax errors like `unsigned int [2]` (return type of `ret_small_struct`), `goto variable;`, and embedded debug tags, making it impossible to compile without major manual repair.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Decompiler failure artifacts (`[D] Unsupported...`, `[D] PutI`) are embedded directly in the code body, rendering sections unreadable.
+- Invalid C syntax generated, such as `goto v1->field_24;` and array return types `unsigned int [2]`.
+- Complete failure to recover composite types; structs are accessed as raw pointer arithmetic on the stack.
+- Function signatures are corrupted (e.g., `func_struct_byval` shows no parameters).
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- Despite the poor decompilation, the high-level function names from the original source (e.g., `cdecl_func`, `test_calling_conventions`) were successfully preserved and mapped.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- The presence of internal decompiler error messages and debug artifacts within the pseudo-code output completely destroys the readability of the affected functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Filter Internal Artifacts:** Implement a post-processing step to remove or hide internal decompiler error messages (like `[D] ...`) from the final output view.
+2.  **Improve Struct Recovery:** Enhance stack frame analysis to identify structure passing patterns and recover struct definitions/parameters instead of defaulting to raw stack offsets.
+3.  **Validate Syntax Generation:** Ensure the generated pseudo-code conforms to valid C syntax, specifically fixing invalid `goto` targets and return type specifications.

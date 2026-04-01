@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The function has no variables at all - it's completely empty. This is a complete failure to recover any variable information from the original source which had `int result = x`.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Function name `param_fake_branch` is preserved, but the signature is completely wrong - it should accept `int x` parameter and return `int`, but decompiled as `void param_fake_branch()` with no parameters.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: No literals present at all - the function body is empty. The original had magic numbers like `0xDEADBEEF` and string "test" that are completely lost.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: No noise present because there's no code at all. However, this is not a positive - the absence of noise is due to complete decompilation failure.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The original had two if-statements with always-false conditions. The decompiled version has no control flow at all - just an empty function body with `;`.
+
+**6. Function Decomposition:** Score: 1/10  
+Justification: The function is trivially small (should be ~15 lines), but the decompilation failed completely - no decomposition possible from an empty function.
+
+**7. Code Linearization:** Score: 1/10  
+Justification: With an empty function body, there's no code to linearize. The original had a clear top-to-bottom flow that's completely lost.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundancy because no code exists. Again, this is not a positive outcome.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Critical type failure - original function signature was `int param_fake_branch(int x)` but decompiled as `void param_fake_branch()`. Both return type and parameter type are completely wrong.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types were used in this function, so none were lost. (Not a positive score - just not applicable.)
+
+**11. Type Safety:** Score: 1/10  
+Justification: The function returns void but should return int. This is a severe type safety violation - the caller expects an int return value but gets nothing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: No comments within the function. The decompiler header mentions it was "Decompiled by IDA Pro 9.1 with Hex-Rays" but no functional comments explaining the fake branch logic.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The original uses "fake branch" obfuscation idiom (always-false conditions). This pattern is completely unrecognizable in the empty function body.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the decompilation failed. The empty function with no parameters should have been flagged as a potential decompilation issue.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions or postconditions recovered. Original had implicit contract: "x can be any int, returns x".
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: The call site `call_fake_branch()` is correctly identified as calling `param_fake_branch(10)` and returning 10, but the actual function definition is missing.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The function appears in the correct location among other obfuscation-related functions, but this is only due to address ordering, not semantic grouping.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The function signature mismatch (`void` vs `int`) would cause compilation errors. The caller expects an int return but gets nothing.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.6/10
+
+**Critical Defects:**
+- Function signature completely wrong: `void param_fake_branch()` instead of `int param_fake_branch(int x)`
+- Empty function body - the entire implementation is missing (should contain two fake if-statements)
+- No parameters recovered - the `x` parameter is completely lost
+- No return value - should return `int` but declared as `void`
+- No anomaly indication that decompilation failed
+
+**Best Quality Aspect:** Function Naming Quality (scored 3/10)  
+- The function name `param_fake_branch` was preserved from the original, though this is the only positive aspect
+
+**Most Needs Improvement:** Type System Fidelity (scored 4.0/10)  
+- The complete loss of function signature (parameter type and return type) represents the most severe failure
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function signatures from call sites**: The call site `call_fake_branch()` shows `param_fake_branch(10)` is called with integer argument 10, which should allow recovery of the parameter type
+2. **Detect and flag empty function bodies**: An empty function body with no parameters should be flagged as a potential decompilation failure requiring manual review
+3. **Preserve return type from caller expectations**: Since `call_fake_branch` returns the result of `param_fake_branch`, the return type should be inferred as `int`

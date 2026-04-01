@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with occasional meaningful names (`len`, `idx`, `count`, `fp`). Original source had semantic names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but helper functions use mechanical names (`sub_400c2c`, `sub_400f78`) and signal handler is cryptically named `$a.42` instead of `signal_handler`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers: `4294967295` (unsigned -1), `42` (test constant), socket constants `2, 1, 0` (should be `AF_INET, SOCK_STREAM, 0`), signal numbers `10, 14` (should be `SIGUSR1, SIGALRM`). No symbolic constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: `armg_calculate_condition` calls obscure simple conditionals, redundant variable assignments (`v0 = v1; goto`), and critical bug where `call_*` functions invoke their `param_*` counterparts twice (e.g., `call_scanf` calls `param_scanf` twice).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto` in initialization functions instead of structured constructs, `armg_calculate_condition` replaces natural `if` statements, though most functions use standard `if/else/for` patterns. At `-O0` this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable with thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`), but `call_*` wrapper functions contain decompiler bugs with duplicate calls that break semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom with appropriate early returns, but signal handling has deeply nested conditionals and initialization functions use forward jumps that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Critical redundancy in `call_*` functions that call their `param_*` counterparts twice (e.g., `return param_scanf("123,456");` appears twice), plus redundant variable assignments throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `size_t` becomes `unsigned int`, `pid_t` becomes `unsigned int`, `pthread_t` becomes `char` or `unsigned int`, `FILE*` partially recovered. Original `const char*` parameters lose const-qualification.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct sockaddr` partially recovered with wrong field layout, `struct FILE` is empty definition, `ThreadData` struct completely lost (uses array indexing `(&v4)[12 * i]` instead), TLS variables not recovered as `__thread`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(volatile int*)&atomic_counter`), pointer arithmetic on generic `unsigned int*` types, function pointer types degraded to `unsigned int`. No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in entire decompilation. No explanation of `armg_calculate_condition`, no documentation of error return values, no decompilation confidence indicators. Original source had extensive comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcpy`), pthread patterns partially identified, but no explicit pattern naming (producer-consumer, mutex protection, atomic operations not labeled).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about `armg_calculate_condition` usage, signal handler `$a.42` unexplained, no indication of unresolved indirect calls, decompiler presents incorrect code confidently (duplicate function calls).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, error return values (`4294967295` = -1) not explained, no invariant documentation for concurrent code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented, global variables (`signal_received`, `atomic_counter`) referenced without context, callback relationships (thread entry functions) unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure, test functions grouped together, but no header file structure, no static function scoping, all globals exposed.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile: `armg_calculate_condition` undefined, `__atomic_*` functions use wrong signatures, missing external declarations, requires extensive patching to build.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+4+5)/3 = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+5+2+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+3)/3 = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.45/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects
+- **Duplicate function calls**: `call_*` functions invoke `param_*` twice (e.g., `call_scanf` returns `param_scanf("123,456");` called twice), breaking semantics
+- **`armg_calculate_condition`**: Obscures all conditional logic with opaque helper calls instead of natural `if` statements
+- **Zero comments**: Complete absence of documentation despite complex concurrent code and error handling
+- **Type erosion**: `pthread_t`, `pid_t`, `size_t` all degraded to `unsigned int`, losing semantic meaning
+- **Magic numbers everywhere**: `4294967295` (-1), `42`, socket constants `2,1,0`, signal numbers `10,14` unexplained
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Main test functions preserved original semantic names (`param_strcpy`, `param_mutex_lock`, `param_signal_handling`), making core functionality identifiable despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments is unacceptable for complex concurrent code with signal handlers, atomic operations, and error handling that requires explanation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Eliminate duplicate call artifacts**: Fix the bug where `call_*` wrapper functions invoke their `param_*` counterparts twice, which breaks program semantics and confuses analysis.
+2. **Replace `armg_calculate_condition` with native conditionals**: At `-O0` optimization, conditionals should decompile to standard `if/else` constructs, not opaque helper function calls.
+3. **Add decompilation confidence annotations**: Insert comments indicating uncertainty (e.g., `// DECOMPILER: condition recovered from armg_calculate_condition`) and document magic numbers with their semantic meaning.

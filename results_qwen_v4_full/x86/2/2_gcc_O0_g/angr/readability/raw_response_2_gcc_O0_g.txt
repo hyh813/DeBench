@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Loop counters like `idx`, `i`, `j`, `k` are acceptable, but critical variables like `v20` in `test_data_types_l1` should be `ll_result` based on usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`double_value`, `process_char`, `array_1d_stack`), but many helper functions are generic (`sub_401030`, `sub_401040`). Runtime functions like `_init`, `_start`, `_fini` are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals lost (`65` instead of `'A'`, `98` instead of `'b'`). Magic numbers like `4294967295` (UINT_MAX/-1) and `4294967197` (-99) appear without explanation. Test values (100, 200, 300) remain as raw numbers.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from `__x86.get_pc_thunk.*` calls in nearly every function, `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers throughout float functions, and redundant stack variable declarations (`v0; // [bp+0x0]`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops recovered as `for` constructs correctly, but several functions use `goto` statements (`sub_401030`, `sub_401080`, `sub_401090`). Float/double functions have completely broken control flow with unsupported markers.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is appropriate (most under 50 lines), but many wrapper functions exist (`sub_40104e` just calls `sub_401050`). Original test functions are monolithic but match source structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate loop structures. Some forward jumps disrupt flow (`goto ptr[2]` in `sub_401030`), and float functions have non-linear execution due to decompilation failures.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from compiler artifacts (repeated `__x86.get_pc_thunk` calls), but no severe loop unrolling or dead code. Stack check code at function ends is repetitive but expected.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `long long` becomes two `unsigned int` params (`process_ll`), `float`/`double`/`long double` completely broken returning `unsigned int`. `char` parameters often become `unsigned int`. Signedness frequently wrong (`process_char` returns `int` not `char`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_4`). Nested structs partially recovered (`struct_nested` works), but bitfields converted to manual bit operations. Unions lost type distinction.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic on `unsigned int` instead of typed pointers, function pointers typed as `unsigned int *`, void* casts without recovery. `ptr_double` uses `struct_0 **` instead of `int **`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments recovered. Original source had extensive comments explaining each test case (e.g., `// DT-L1-01: 字符类型（char）⭐`), all lost. Only auto-generated type definitions present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion (`binary_tree_sum`) not annotated. Switch-on-enum pattern in `enum_switch` not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers indicate decompilation failures but provide no actionable guidance. Messages like `[D] unsupported_<class 'pyvex.expr.GetI'>()` don't explain what went wrong or how to fix. Architecture mismatch (arm64 source → X86 decompilation) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not annotated). No postconditions. Stack canary checks (`__stack_chk_fail_local`) present but not explained as security features.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global variables (`g_403010`, `g_40317c`) referenced without context. Callback relationships (`ptr_func_simple` calling `double_value`) not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output with no logical grouping. Original source had clear sections (Data Types, Arrays, Pointers, Composite Types) - all lost. Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile due to `[D]` markers in code. Missing external declarations for many functions. Architecture-specific thunks (`__x86.get_pc_thunk.*`) need stubs. Float operations completely non-functional.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.54/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Float/double/long double functions completely broken** - `[D] unsupported` markers make `process_float`, `process_double`, `process_ld` unusable
+- **Architecture mismatch** - Source compiled for arm64 but decompiled as X86, causing fundamental incompatibilities
+- **Type system severely degraded** - `long long` split into two `int` params, all floating-point types lost
+- **Zero semantic comments recovered** - All original documentation (test case descriptions, expected values) lost
+- **Generic struct field names** - `field_0`, `field_4` instead of `x`, `y`, `z`, `next`, `data`
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core algorithm functions preserved original names (`double_value`, `process_char`, `array_1d_stack`, `linked_list`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete loss of all source documentation means users cannot understand test purposes, expected values, or design intent without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover floating-point operations properly** - The pyvex/Angr backend fails completely on FPU instructions; integrate better FP semantic recovery or flag these as high-confidence failures with recovery hints.
+
+2. **Preserve literal semantics** - Convert numeric character literals (65, 98) back to `'A'`, `'b'` and document magic numbers like `4294967295` as `UINT_MAX` or `-1` based on context.
+
+3. **Recover type information from debug symbols** - With `-g` flag present in compilation, leverage DWARF debug info to restore original type names, struct field names, and function signatures instead of generic `struct_0`/`field_0` naming.

@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 18,
+  "source_file": "decompiled/BinaryAI_out/arm64/6/6_clang_O0_g.c",
+  "fixed_file": "results_qwen_v4_full/arm64/6/6_clang_O0_g/binaryai/syntactic/fix_6_clang_O0_g.c"
+}

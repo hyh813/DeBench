@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/6/6_clang_Os_no_g/ida/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "Library functions:\nstrlen: 8\nstrlen: 0\nstrlen: 12\nmemcpy: 90\nmemcmp: 1\nValue: 42, Name: Test\nprintf: 22\nsscanf: 579\nfopen: 42\nfread/fwrite: 42\nmalloc/free: 90\nmemset: 0\nstrchr/strstr: 15\nSystem calls:\nlinux_syscall: 42\nstat: 42\nfork_exec: 42\npipe: 42\nsocket: 42\nshmget/shmat: -1\nsignal: 42\nThread concurrency:\npthread_create: 49\npthread_join: 0\nmutex_lock: 42\ncond_var: 42\natomic_ops: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

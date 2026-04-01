@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler frequently marks variables as "Unresolved local var" with `[???]` annotations. Generic names like `iVar1`, `iVar2`, `uVar2` dominate, while source names like `sum`, `i`, `j`, `count`, `target`, `matrix` are lost. The source had descriptive names like `temp1`, `temp2`, `temp3` which were partially preserved in `sequential_ops` but lost elsewhere.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from debug symbols: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, etc. All 20+ test functions from the source are correctly named. Minor deduction for some internal runtime functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some constants like `0x3e9` (1001) and `0x65` (101) are used without explanation. Switch statements reference undefined jump tables like `&CSWTCH_56`. However, DWARF debug info is partially used, and some hex values like `0x14` (20) are correct. Many magic numbers remain unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise pollution with numerous "WARNING" comments about unreachable blocks, unresolved jump tables, and unknown calling conventions. The output includes verbose internal functions like `__aeabi_idiv` (200+ lines) that obscure the actual user code. "Unresolved local var" annotations clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures are natural and recognizable - loops use do-while, conditionals are if-else, switches are properly identified. However, `loop_for_fixed` uses an unusual do-while pattern instead of for-loop, and `loop_modify_var` produces convoluted output. At -O0, more natural structures expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function boundaries maintained - each function remains separate with appropriate parameter lists. No inlining artifacts observed. Functions like `recursion_factorial` correctly show recursive structure. Static helper functions (`double_value`, `triple_value`) properly scoped.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with manageable nesting depth (2-3 levels typical). Some forward jumps exist in complex functions like `loop_multi_exit` but flow is traceable. Early returns used appropriately in functions like `multi_return`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some loop unrolling present in `duffs_device` but structure is recognizable. Common subexpression elimination artifacts are minimal. Overall acceptable for decompiled code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` types throughout rather than platform-specific types like `int32_t` or `uint32_t`. Function pointer types are sometimes generic `_func_int_int` or `code *`. However, unsigned types are correctly identified (`uint`, `uVar1`). Basic type safety maintained.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor recovery of composite types. Arrays shown as `int[5] arr@[???]` with unresolved markers. No struct reconstruction - raw pointer arithmetic used instead. The source's `matrix[3][4]` becomes unresolved. Bit-field recovery absent.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: casts to `code *` for indirect calls, raw pointer arithmetic in array operations. Function pointer calls use generic `_func_int_int` type. No `restrict` or alignment annotations. However, no severe violations like buffer overflows.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Sparse but present comments. Auto-generated warnings dominate ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable"). DWARF debug info referenced but not fully utilized. No algorithm explanations or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not explicitly named. Switch statements identified, but Duff's device (`duffs_device`) not recognized as such - shown as complex switch-do-while. State machines partially identified. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Various anomalies flagged with warnings: unresolved jump tables, indirect calls that couldn't be resolved, unreachable blocks. However, warnings are generic and don't explain potential causes or suggest manual analysis. Some issues silently handled.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges. The source's defensive programming (e.g., `if (n <= 0) return -1`) shown but not annotated as contract.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. No indication of who calls whom or global variable usage. Callback relationships in `process_with_callback` not explained. Static functions properly marked but relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically in single output file. Test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) grouped together. Runtime functions separated. However, organization reflects binary layout rather than intentional design.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard library functions (`puts`, `__printf_chk`, `memset`) requiring libc linking. Some compiler-specific functions need stubs (`call_weak_fn`, `__gmon_start__`). Would require moderate patching to compile standalone. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 4) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (6 + 3 + 6) / 3 = 5.00
+L4_avg = (5 + 5 + 6 + 2) / 4 = 4.50
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (5.25 × 0.30) + (7.25 × 0.25) + (5.00 × 0.20) + (4.50 × 0.15) + (5.33 × 0.10)
+        = 1.575 + 1.8125 + 1.0 + 0.675 + 0.533
+        = 5.60/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects (Bullet List)
+- Variable naming is severely degraded with "Unresolved local var" annotations and generic names like `iVar1`, `iVar2` obscuring semantic meaning
+- Composite type recovery is poor - arrays and matrices shown as `[???]` with no struct field reconstruction
+- Excessive noise from auto-generated warnings ("WARNING: Could not recover jumptable", "WARNING: Removing unreachable block") cluttering output
+- No contract or assertion recovery - preconditions, postconditions, and invariants not documented
+- Internal compiler runtime functions (`__aeabi_idiv` - 200+ lines) included in output, obscuring user code
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are excellently preserved from debug symbols, matching the original source almost perfectly across all 20+ test functions.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+Most variables are either generic (`iVar1`, `uVar2`) or marked as unresolved (`@[???]`), losing the descriptive names from source like `sum`, `i`, `j`, `count`, `target`, `matrix`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to infer semantic names - e.g., variables used as loop counters should be named `i`, `j`; accumulators should be `sum`, `result`
+2. **Recover composite types from stack frame analysis**: Reconstruct struct layouts and array dimensions from DWARF debug info rather than showing `[???]`
+3. **Filter compiler runtime artifacts**: Exclude internal functions like `__aeabi_idiv` from user-facing output or move to separate "Runtime Support" section

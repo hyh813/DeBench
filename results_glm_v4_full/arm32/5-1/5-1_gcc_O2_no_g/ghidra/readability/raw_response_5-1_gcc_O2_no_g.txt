@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `piVar1`, `acStack_2c`, `local_c`). In `test_cpp_rtti`, `piVar1` represents `obj1` but provides no semantic hint. In `test_cpp_member_func`, `acStack_2c` is a character array but lacks the original name `name`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully demangled most C++ symbols, recovering names like `test_cpp_member_func`, `Base::virtual_func`, and `Container<int>::push`. It also correctly identified compiler artifacts like `virtual thunk to MiddleA::func()`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Due to aggressive optimization (constant propagation), logic is replaced by magic numbers (e.g., `return 0x2a;` instead of `return 42;`, `return 0x125c;` instead of `4704`). While `0x1f` in `strncpy` is inferable as `31`, the lack of `sizeof(name)` reduces clarity.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but artifacts like `undefined4 extraout_r0` and `undefined4 extraout_r1` in `test_cpp_template_func` represent floating-point register residue. `SUB84(param_1,0)` in `template_max<double>` is a decompiler idiom that adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The control flow is highly linear and simple, largely because the compiler optimized away complex logic into constant returns or simple arithmetic. Where logic exists (e.g., `test_cpp_rtti`), `if` statements are natural.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods are correctly separated into their own functions (e.g., `Container<int>::push`, `Derived::virtual_func`). The granularity is appropriate, though the separation of "deleting" vs "non-deleting" destructors is a compiler detail that clutters the view.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps. The complex control flow of the original source (exceptions, virtual inheritance) has been flattened by the compiler into linear execution paths.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The compiler successfully eliminated redundant calculations (e.g., `test_cpp_virtual_func` is just `return 0x2a;`). The decompiler presents this optimized result cleanly without dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While function signatures are often correct (e.g., `Base *param_1`), return types and local variables frequently degrade to `undefined4` or `undefined8`. For example, `template_max<double>` returns `undefined8` instead of `double`, and `MiddleA::func` uses `int` casts for pointer arithmetic.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Class structures are not reconstructed; member access is shown as raw pointer arithmetic. In `Derived::virtual_func`, `*(int *)(this + 4)` accesses `multiplier`, but the struct definition is lost. In `MiddleA::func`, complex offsets like `*(int *)(*(int *)this + -0xc)` obscure the virtual base class layout.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on C-style casts and pointer arithmetic (e.g., `(int)&PTR__RTTIDerivedA_0001162c`). This is inherent to decompiling C++ to C, but the lack of type abstraction makes the code fragile and harder to reason about compared to the original.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., `WARNING: Unknown calling convention`, `WARNING: Removing unreachable block`). There are no comments explaining the *intent* of the code, such as the logic behind the constant returns or the virtual inheritance adjustments.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Virtual function calls are represented as indirect calls (`(*(code *)**(undefined4 **)param_1)()`), which is accurate but low-level. However, Ghidra correctly identifies and names "thunks" (e.g., `virtual thunk to DiamondDerived::~DiamondDerived()`), showing awareness of C++ ABI idioms.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra provides useful warnings where it struggles, such as `WARNING: Could not recover jumptable` for `call_virtual_func` and `WARNING: Subroutine does not return` for `__cxa_throw`. These alerts accurately guide the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants. For instance, the bounds check in `Container<int>::get` is visible as code, but there is no annotation indicating it enforces the contract `idx < size`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls use the recovered names, making the call graph easy to follow (e.g., `test_cpp_oo_features` calls `test_cpp_member_func`). The relationship between base and derived class methods is clear via naming.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in memory address order. While related functions (like destructors and their thunks) are often adjacent, the overall organization does not group classes or logical sections as the source file did.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on compiler intrinsics (`__aeabi_d2iz`, `__stack_chk_fail`) and standard library calls (`__cxa_throw`) without including necessary headers. Types like `undefined4` would require manual correction to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Composite types (classes) are not recovered; member access is raw pointer arithmetic (e.g., `*(int *)(this + 4)`).
+- Variable names are generic (`iVar1`, `local_c`), obscuring the data flow.
+- High optimization has replaced logic with magic numbers (e.g., `return 0x2a;`), making the algorithmic intent opaque.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Ghidra successfully demangled C++ symbols, preserving the original function names and accurately identifying compiler-generated thunks.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct class structures forces the reader to interpret complex pointer arithmetic offsets manually, which is the biggest barrier to understanding the object-oriented logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class structure recovery to replace raw pointer arithmetic (e.g., `this + 4`) with member access (e.g., `this->multiplier`).
+2. Infer variable names from context or debug information to replace generic names like `iVar1`.
+3. Annotate constant-propagated return values with the original expression or a comment indicating the value was computed at compile time.

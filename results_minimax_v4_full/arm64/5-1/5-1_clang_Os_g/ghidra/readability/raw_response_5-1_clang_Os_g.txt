@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all local variables use generic names like `local_38`, `local_34`, `uStack_2c`, `sVar1`, `iVar1`, `puVar1`. The decompiler explicitly marks variables as "Unresolved local var" with no semantic recovery. Compare to source where variables like `obj`, `r1`, `r2`, `r3` are meaningful.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Test functions are perfectly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc.). Template instantiations correctly show `template_max<int>`, `template_max<double>`. Class methods properly include class scope (`Container<int>::push`). Minor issue: some internal functions like `FUN_00100d60` remain unnamed.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout without explanation: `0x125c` (should be 4704), `0x3e9` (1000), `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x27` (39), `0x10` (16), `0x55` (85), `0x2bf` (703). The decompiler outputs raw hex values instead of meaningful constants, making it impossible to understand what these return values represent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with 20+ warning messages: "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". Comments like "Unresolved local var" appear repeatedly. DWARF prototype annotations clutter the output but provide limited value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else statements and loops preserved. At -O0, the structure closely matches source. Minor issue: `call_virtual_func` has "WARNING: Treating indirect jump as call" indicating some indirect call resolution issues.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template instantiations correctly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Class member functions properly extracted (`Container<int>::push`, `Container<int>::get`). Function granularity is appropriate. However, some test functions return computed constants directly rather than showing the actual logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately in template functions. The main `test_cpp_oo_features` function is linear, calling other functions sequentially.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Template functions are clean. Some optimization artifacts exist but are minimal for -O0 compilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int`, `double`, `size_t` are correct. However, heavy use of undefined types: `undefined4`, `undefined8`, `undefined7`, `undefined1`. The decompiler uses `ulong` for pointer-sized integers inconsistently. Const correctness is not well preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class method names recovered correctly, but struct/class field names are completely lost. Variables like `SimpleClass obj` show as stack space with "Unresolved local var" comments. The decompiler cannot reconstruct the `SimpleClass` structure with `value` and `name` fields.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate pointer usage. Virtual function calls use proper vtable indirection. Some casts present but not dangerous. Minor issue: pointer arithmetic in `Container<int>::get` uses `(uint)idx` which is acceptable but could be cleaner.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Mixed quality - DWARF original prototypes are useful ("DWARF original prototype: void push(Container<int> * this, int value)"), but warnings dominate. The "Unresolved local var" comments are honest but don't help readability. No explanation of what functions do or algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms recognized: virtual function calls through vtable shown as `(**obj->_vptr_Base)(obj,(ulong)(uint)x)`, template instantiations separated. However, no explicit pattern naming (e.g., "vtable dispatch pattern"). Exception handling shows `__cxa_throw` but no explanation of try-catch flow.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection - warnings for unresolved jumptables, indirect jumps treated as calls, unknown calling conventions. However, anomalies are not clearly explained or categorized. The code presents some incorrect information (e.g., `test_cpp_exception` shows only throw, missing catch handlers).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The decompiler provides no documentation of expected input constraints or return value guarantees. This is a significant gap for understanding function contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - `main` calls `test_cpp_oo_features`, which calls all test functions. Virtual dispatch relationships partially shown. However, no explicit documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Logical grouping - test functions together, template functions together, class methods grouped by class. Static functions properly marked. However, all functions in single file with no namespace recovery.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata shows "Compilation Result: Yes", indicating the code compiles. External dependencies (like `std::ios_base::Init`) are referenced. However, "WARNING: Unknown calling convention" suggests potential issues. No clear dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable naming completely generic**: `local_38`, `local_34`, `sVar1`, `iVar1` - no semantic recovery of original variable names like `obj`, `r1`, `value`, `name`
+- **Magic numbers everywhere**: `0x125c`, `0x3e9`, `0x2a` without explanation - return values are opaque
+- **Test functions return constants**: `test_cpp_member_func` returns `(int)sVar1 + 0x125c` instead of showing the actual computation logic
+- **Struct/class field recovery failure**: `SimpleClass` fields `value` and `name` completely lost, shown as raw stack space
+- **Severe noise pollution**: 20+ warning messages clutter output, "Unresolved local var" repeated dozens of times
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names are excellent - test functions match source exactly, template instantiations properly distinguished, class methods include scope resolution. This is the decompiler's strongest area.
+
+### Most Needs Improvement: Variable Naming (2/10)
+The decompiler fails completely at recovering local variable names from debug information. At -O0 with debug symbols (`-g`), variable names should be recoverable via DWARF debug info. The generic `local_XX` naming makes it impossible to track data flow.
+
+### Top 3 Recommendations:
+1. **Recover debug variable names**: At -O0 with `-g`, DWARF info contains variable names. Extract them properly instead of using generic `local_N` naming.
+2. **Replace magic numbers with computed constants**: When returning known values like 4704, show the computation `10 + 34 + 4660` rather than just `0x125c`.
+3. **Reduce warning noise**: Consolidate "Unresolved local var" into a single summary comment rather than repeating for every variable. Move warnings to a separate section or use collapsible blocks.

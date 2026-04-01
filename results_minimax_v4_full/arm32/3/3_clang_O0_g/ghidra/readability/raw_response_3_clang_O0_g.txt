@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost universally named with generic patterns like `local_30`, `local_14`, `local_c`, `iStack_c`, `aiStack_2c`. The decompiler has extensive "Unresolved local var" comments showing DWARF debug info was not utilized. For example, in `local_array`, the array should be named `arr` and loop counter `i`, but instead we see `aiStack_2c` and `local_30`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from source: `local_vars`, `heap_basic`, `global_var_access`, `double_value`, `memop_memset`, `stack_alias`. The decompiler correctly recovered all function names with appropriate action verbs matching the original source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals like `0x2a` (42 in `address_of_local`) and `0x800` (2048 in `large_stack_frame`) lack explanation, while alignment masks like `0xfffffff8` are used but not documented. The magic number `0x14` appears for both 20 and as a loop bound without distinction.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise pollution from auto-generated warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Heritage AFTER dead removal", "WARNING: Subroutine does not return". Additionally, extensive "Unresolved local var" comments clutter every function. These compiler/runtime warnings should be filtered or moved to separate metadata.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - for loops, if-else chains, and while loops are correctly identified. However, `stack_alias` shows confusing control flow with the "Heritage AFTER dead removal" warning, and VLA/alloca handling uses awkward pointer arithmetic that obscures the original loop structure. At -O0, this level of control flow degradation is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are monolithic. The test wrapper functions (`test_stack_memory`, `test_heap_memory`) appropriately call individual test cases. Static helper functions like `static_helper` and `create_tree_node` are properly extracted. Minor扣分 for some large test functions that could be split.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with early returns for error conditions (e.g., null pointer checks). The VLA functions (`vla_stack`, `alloca_usage`) have some non-linear pointer arithmetic patterns that disrupt flow. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or severe redundancy. Loop unrolling in `large_stack_frame` is appropriate for the 2KB buffer. Some common subexpression patterns exist in index calculations but don't significantly impede readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used throughout instead of more specific types like `int32_t` or `size_t`. Function pointers have bizarre reconstructed types like `_func_int_int` instead of proper function signatures. The `volatile` qualifier is missing from `flag` in `memop_memory_barrier`. However, basic pointer types are correctly identified.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The `Node` and `TreeNode` structures are partially recovered with field names (`data`, `next`, `left`, `right`). However, the `Point` struct is completely lost - in `local_struct` and `heap_struct`, field access becomes raw pointer arithmetic (`__ptr[1]` instead of `p->y`). The `Point` typedef is not recovered at all.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe pointer arithmetic patterns, especially in VLA handling where `*(int *)((int)local_28 + local_28[1] * 4 + iVar1 + 0x28)` is used without bounds checking. The `memop_unaligned_access` directly casts `buf + 1` to `int*` which violates strict aliasing. However, most malloc/free pairs are correctly matched.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely auto-generated noise: "Unresolved local var", "WARNING: Unknown calling convention", etc. No algorithm explanations, no API contracts (@param, @return), no documentation of non-obvious logic. The few useful comments are generic warnings about unreachable code that don't explain *why* it's unreachable.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some recognizable patterns exist - linked list traversal in `linked_list_heap`, tree traversal in `tree_heap_traversal` - but they're not explicitly identified or named. Memory allocation patterns (malloc/free pairs) are recognized but not highlighted as a pattern. No explicit pattern naming like "singleton", "factory", or "iterator".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some anomalies with WARNING messages (unreachable blocks, unknown calling conventions, heritage issues). However, the warnings are generic and don't explain the root cause. The `stack_alias` function has a critical defect where the logic is completely wrong (comparing stack addresses) but no anomaly is flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error return values (-1, -2) are present but not explained. The implicit contracts like "requires: n > 0" for `alloca_usage` or "ensures: returns heap-allocated index" are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within test functions (e.g., `test_stack_memory` calls all the stack test functions). Global variable usage is transparent (`global_counter`, `global_array`). However, there's no documentation of which functions call which others, no callback relationships documented, and extern dependencies aren't fully specified.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably grouped by category: stack functions together, heap functions together, static/global functions together, memory operation functions together. Static functions are properly marked. However, there's no file structure or header-like organization - everything is in one flat listing.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile with minimal modifications. External functions like `printf`, `malloc`, `free`, `memset` are properly declared. Some stubs would be needed for the TLS functions and the sync builtins. The code is mostly self-contained but would need linking with libc.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is severely degraded - all locals are generic `local_X` patterns despite DWARF debug info being present ("Unresolved local var" comments show the decompiler saw the debug info but didn't use it)
+- The `Point` struct is completely lost - field access becomes raw pointer arithmetic losing semantic meaning
+- `stack_alias` function has completely wrong logic - it compares stack addresses (`&stack0x00000000 == 0x10`) instead of the actual aliasing behavior
+- Comment quality is near zero - almost entirely auto-generated warnings with no useful documentation
+- Type precision is poor - generic `int` and `void*` everywhere, function pointer types are bizarre (`_func_int_int`)
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The decompiler has access to DWARF debug information (evidenced by "Unresolved local var" comments referencing DW_OP_breg13) but fails to use it to recover meaningful variable names. Every local variable is a generic `local_X` pattern.
+
+**Top 3 Recommendations:**
+1. **Integrate DWARF debug info for variable names**: The comments show the decompiler parses DWARF but doesn't use it - implement proper variable name recovery from debug information
+2. **Recover struct/union types**: The `Point` struct was completely lost. Implement better composite type recovery by analyzing initialization patterns and field access
+3. **Add semantic comments**: Replace auto-generated warnings with useful documentation explaining algorithms, contracts, and identified patterns

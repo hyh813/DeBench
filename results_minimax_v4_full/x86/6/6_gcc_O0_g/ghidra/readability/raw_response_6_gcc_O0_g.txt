@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related library functions)
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `sVar1` for strlen result are generic. While parameter names `dst` and `src` are preserved, the decompiled code uses `sVar1` instead of the more descriptive `len` or `length` that would match the source's semantic intent.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_strcpy` exactly matches the source. The naming is action-oriented and semantically accurate. Minor deduction for inconsistent naming in helper functions (e.g., `FUN_00011030`).
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" are correctly preserved. However, some magic numbers like `0x12345` in syscall parameters and `0x2a` (42) used for return values lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Generally clean, but there are numerous "WARNING" comments from Ghidra about inlined functions and unreachable blocks. The `__stack_chk_fail_local()` calls add noise. The `in_GS_OFFSET` references for stack canary checking are compiler artifacts that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control flow is natural and matches source patterns. The `param_strcmp` and `param_memcmp` functions correctly recover the ternary logic for normalizing return values. Minor issues with some loop constructs being less idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and maintain single responsibility. The decompilation correctly separates `param_*` wrapper functions from their `call_*` invokers. Some static helper functions like `thread_sum` could have better parameter abstraction.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (e.g., `param_fopen_fclose`) are properly structured. Some nested conditionals in `param_fread_fwrite` create moderate complexity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. However, `strlen("BinBench Test Data")` is called twice in `param_fread_fwrite` - once before fwrite and once after - which is redundant. The original source only calls it once before writing.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: The `const` qualifier is lost - `param_strcpy` has `char *src` instead of `const char *src`. Integer types are generic `int` rather than specific types like `pid_t`, `size_t`. The `param_strlen` returns `size_t` cast to `int`, which loses type precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `ThreadData` struct is partially recovered with fields `start`, `end`, `result`. However, field names are lowercase in decompiled code while source uses camelCase. Some structures like `sockaddr_in` are recovered but with numeric constants instead of named fields (e.g., `addr.sin_family = 2` instead of `AF_INET`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code. However, in `param_malloc_free`, there's a critical bug: `__ptr[size + 0x3fffffff]` is clearly incorrect - this appears to be a decompilation error where the original `ptr[size - 1]` was miscompiled or mis-decompiled. This is a severe type safety issue.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments in function bodies. Ghidra's auto-generated warnings about "Unknown calling convention" and "Function: __x86.get_pc_thunk.bx replaced" are present but not helpful for understanding the actual logic. No explanation of algorithm intent.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (strcpy, strlen, memcpy, etc.) are correctly identified. The signal handling uses numeric constants (10 for SIGUSR1, 0xe for SIGALRM) without mapping to symbolic names. Some patterns like the producer-consumer condition variable are recognizable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra provides warnings about stack canary checks and inlined functions, but these are compiler artifacts rather than actual code anomalies. The critical bug in `param_malloc_free` (`__ptr[size + 0x3fffffff]`) is presented without any indication that it's likely incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function contracts are completely implicit. For example, `param_strcpy` should document that `dst` must have sufficient buffer space.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear (e.g., `call_strcpy` calls `param_strcpy`). However, global variables like `signal_received`, `signal_number`, `shared_counter`, `atomic_counter` are used without documentation of their scope or purpose. Callback relationships (e.g., thread functions) are not explicitly documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - standard library functions, system calls, thread functions. The test functions (`test_standard_library_functions`, etc.) are properly separated. Static functions like `signal_handler` are correctly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc. However, missing declarations for `ThreadData` struct would cause compilation errors. The `__stack_chk_fail_local` and other internal symbols need stubs. Some numeric constants like `0x42` for open flags need translation to O_CREAT|O_RDWR.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- **Type Safety Bug**: In `param_malloc_free`, `__ptr[size + 0x3fffffff]` is clearly incorrect - should be `ptr[size - 1]`. This appears to be a decompilation error that would cause memory corruption.
+- **Const Qualifier Lost**: `param_strcpy` uses `char *src` instead of `const char *src`, losing important type information.
+- **No Comments**: Complete absence of meaningful comments explaining function intent, parameters, or return values.
+- **Magic Numbers**: Signal numbers (10, 0xe), socket constants (2 for AF_INET, 1 for SOCK_STREAM), and other constants lack symbolic names.
+- **Struct Field Names**: `ThreadData` struct fields are lowercase (`start`, `end`, `result`) while source uses different naming, and some structures lack proper field recovery.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names like `param_strcpy`, `param_strcmp`, `call_strcpy` exactly match the source and clearly indicate purpose.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 2/10)  
+No documentation of preconditions, postconditions, or invariants. Functions like `param_strcpy` should document that the caller must ensure `dst` has sufficient space.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover const qualifiers**: Track `const` through function signatures - `param_strcpy` should have `const char *src` not `char *src`.
+2. **Fix critical decompilation errors**: The `param_malloc_free` bug (`size + 0x3fffffff`) suggests a fundamental issue with array index recovery that needs debugging.
+3. **Add semantic comments**: Automatically generate comments explaining function purpose, parameters, and return values based on pattern matching against known library functions.

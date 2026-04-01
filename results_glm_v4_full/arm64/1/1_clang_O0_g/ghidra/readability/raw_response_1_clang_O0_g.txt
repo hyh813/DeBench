@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Semantic variable names from the source (e.g., `sum`, `i`, `count`, `result`) are replaced with generic names like `local_8`, `local_c`, and `local_4`. While debug symbols seem partially present (evidenced by "Unresolved local var" comments), the mapping to stack locations failed, leaving only generic offsets.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `duffs_device`, `loop_multi_exit`). The names accurately reflect the functionality and use appropriate verbs/nouns, making the API surface very clear.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: There is inconsistent handling of numeric literals; some remain decimal (e.g., `100`, `200`), while others are converted to hexadecimal (e.g., `0x14` for 20, `0x3e9` for 1000). This inconsistency forces mental conversion for simple arithmetic checks.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with `/* Unresolved local var: ... */` comments and the use of non-standard types like `undefined4`. While the control flow is clean, these artifacts and the prevalence of `undefined` types act as noise that impedes clean reading.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The decompiler successfully recovered high-level constructs; for example, `goto_backward` was correctly restructured into a `for` loop, and `goto_forward` was linearized. However, `switch_fallthrough` was flattened into nested `if` statements, which, while readable, obscures the specific fallthrough intent of the original code.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly with 1:1 mapping. There is no inlining or outlining of code blocks; each test function (e.g., `CF-L1-01` through `CF-L3-10`) remains distinct and cohesive.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom. The decompiler successfully eliminated the `goto` statements in `goto_forward` and `goto_backward`, replacing them with standard conditional and loop constructs, significantly improving linear readability compared to the source's explicit jumps.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Simple expressions were effectively combined (e.g., `sequential_ops` collapsed to a single return statement). There is no visible dead code or loop unrolling artifacts, keeping the logic concise and matching the source's intent despite the `-O0` compilation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Standard `int` types are frequently represented as `undefined4`, and `uint` is used where `int` might have been expected (e.g., `if_else` return). While the size (4 bytes) is correct, the loss of signedness information and the use of Ghidra-specific types reduce precision.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Multi-dimensional arrays are not recovered. In `loop_multi_exit`, the source `int matrix[3][4]` is decompiled as a flat `int aiStack_48 [12]` initialized via `memcpy`. The semantic structure of the matrix is completely lost, forcing the analyst to manually track indices.
+
+**11. Type Safety:** Score: 8/10
+Justification: Despite the use of `undefined4`, the operations performed are generally safe and match the source. There are no dangerous pointer casts or incorrect arithmetic operations that would lead to undefined behavior in the decompiled view.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to auto-generated warnings (e.g., "Removing unreachable block") and "Unresolved local var" notes. There are no semantic comments explaining the logic (e.g., "Duff's Device implementation" or "Calculates factorial"), leaving the purpose of complex algorithms unstated.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: While standard loops and switches are recognized, specific idioms like Duff's Device are not explicitly labeled; they are just rendered as complex switch/goto structures. The decompiler does not highlight that `switch_fallthrough` relies on fallthrough logic, instead flattening it.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags issues like "Subroutine does not return" for `longjmp` and "Could not recover jumptable" for `computed_goto`. However, the "Unresolved local var" warnings are pervasive and sometimes distracting when the variable is simply optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, the requirement that `n > 0` in `duffs_device` is not documented, nor are the constraints on `idx` in `call_func_ptr_array` explicitly stated as contracts, only as runtime checks.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. Callbacks and function pointers (e.g., in `call_func_ptr_array`) are resolved to their target functions (`double_value`, `triple_value`), making the call graph easy to understand.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure. Helper functions like `double_value` are placed near their usage or at the end, maintaining a coherent module layout.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses Ghidra-specific types (`undefined4`, `code *`, `undefined8`) which are not valid standard C. Significant manual cleanup would be required to compile this output, as these types do not exist in standard headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (5 + 9 + 6 + 6) / 4 = 6.5
+L2_avg: (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg: (5 + 3 + 8) / 3 = 5.33
+L4_avg: (3 + 5 + 6 + 2) / 4 = 4.0
+L5_avg: (8 + 8 + 5) / 3 = 7.0
+
+Overall = (6.5 * 0.30) + (8.25 * 0.25) + (5.33 * 0.20) + 
+          (4.0 * 0.15) + (7.0 * 0.10)
+Overall = 1.95 + 2.0625 + 1.066 + 0.6 + 0.7
+Overall = 6.38
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects
+- **Variable Naming Loss**: Semantic names like `sum`, `count`, and `result` are replaced with generic `local_X` variables, significantly hindering comprehension.
+- **Composite Type Failure**: The 2D array `matrix[3][4]` in `loop_multi_exit` is flattened to a 1D array `aiStack_48[12]` with `memcpy`, destroying the data structure semantics.
+- **Type Precision**: Frequent use of `undefined4` instead of `int` and `uint` reduces type clarity and requires manual interpretation.
+- **Literal Inconsistency**: Simple decimal constants are arbitrarily converted to hex (e.g., `0x3e9` for 1000), adding unnecessary cognitive load.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler perfectly preserved the original function names, making the high-level API and test structure immediately recognizable and navigable.
+
+### Most Needs Improvement
+- **Composite Type Recovery (3/10)**: The inability to recover multi-dimensional arrays or struct layouts (relying on flat arrays and memcpy) is the biggest barrier to understanding data manipulation logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Stack Variable Mapping**: Leverage debug symbols more aggressively to map `local_X` variables back to their original source names (`sum`, `i`, `count`) rather than leaving them as "Unresolved".
+2.  **Recover Multi-Dimensional Arrays**: Implement pattern recognition to identify stack-allocated 2D arrays (based on access patterns like `base + row*stride + col`) and reconstruct the proper type definition instead of flattening to `memcpy`.
+3.  **Standardize Literal Representation**: Prefer decimal representation for simple arithmetic constants unless they are clearly bitmasks or flags, to improve readability of mathematical logic.

@@ -1,0 +1,16 @@
+=== Testing Standard Library Functions ===
+
+param_strcpy: 12
+call_strcmp: 0
+call_strlen: 12
+param_memcpy: 90
+param_memcmp: 0
+Value: 42, Name: Test
+param_printf: 22
+param_scanf: 579
+param_fopen_fclose: 12144648
+param_fread_fwrite: 4294967293
+param_malloc_free: 134433
+call_memset: 0
+param_strchr_strstr: 15
+param_strchr_strstr: 15

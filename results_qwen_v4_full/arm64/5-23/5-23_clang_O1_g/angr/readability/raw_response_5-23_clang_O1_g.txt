@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning; original parameters like `size`, `x`, `y` are reduced to `a0`, `a1`, `a2` obscuring their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names are preserved (`param_macro_constants`, `call_macro_functions`) matching source, but helper functions use mechanical names (`sub_4007b4`, `sub_4008a4`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE=1024), `0x200` (512), `57072` (0xDEF0) replace named constants; string literals are references to globals (`g_401223`) instead of inline text.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated stack frame setup (`v0 = &v1`) appears in nearly every function; architecture-specific artifacts like `arm64g_calculate_condition` pollute the output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple conditionals recover well (if-else), but some functions use `goto g_411ff8` instead of proper calls; do-while loops are recognizable but verbose.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate, but aggressive constant folding makes some functions trivial (`call_macro_constants()` just returns 64) losing call relationship clarity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps; loop structures use natural do-while patterns rather than goto chains.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy exists (`memcpy` called twice in `sub_4007b4` return statement); constant folding eliminates some but creates other artifacts.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are overly generic (`unsigned long long`, `unsigned int`) losing original specificity; `size_t` becomes `unsigned long`, signed `int` becomes `unsigned int` incorrectly in some cases.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible; arrays accessed via pointer arithmetic (`*((int *)(a2 + i))`); original composite types completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) used without type guarantees; implicit casts throughout; pointer arithmetic lacks bounds checking.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output; original documentation about macro behavior, preprocessing semantics, and expected values completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations partially recognized (`__aarch64_ldadd4_acq_rel`), but macro expansion patterns (SQUARE, MAX, ADD_16) not identified as idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One failure noted ("Failed to decompile function __aarch64_ldadd4_acq_rel"); architecture mismatch (x86 assembly source → AARCH64 decompilation) not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or expected return values documented; original comments like "期望: 64" completely lost.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables use opaque names (`g_401223`, `g_401478`); string references through globals obscure message content.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping; original section comments (5.2, 5.3) and test organization lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Architecture-specific intrinsics prevent standalone compilation; external dependencies (`__getauxval`, `__libc_start_main`) not declared; won't compile without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4+7+5+5)/4 = 5.25
+L2_avg = (6+7+7+6)/4 = 6.50
+L3_avg = (5+4+5)/3 = 4.67
+L4_avg = (2+4+4+3)/4 = 3.25
+L5_avg = (5+5+4)/3 = 4.67
+
+Overall = (5.25×0.30) + (6.50×0.25) + (4.67×0.20) + (3.25×0.15) + (4.67×0.10)
+        = 1.575 + 1.625 + 0.934 + 0.488 + 0.467
+        = 5.09/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **Variable `a0`, `a1`, `a2`** should be named `size`, `x`, `y` based on original source semantics
+- **Magic numbers** like `0x400`, `57072`, `282` replace original constants (MAX_SIZE, 0xDEF0, line+counter sum)
+- **String literals** replaced with global references (`g_401223`) making printf messages unreadable
+- **Zero comments** despite original code having extensive documentation about macro behavior and expected values
+- **Architecture mismatch** not indicated (x86 assembly in source decompiled as AARCH64 with different intrinsics)
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core function names preserved accurately (`param_macro_constants`, `call_macro_functions`), maintaining semantic connection to original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all original documentation about preprocessing semantics, expected values, and macro behavior.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover constant semantics** - Detect folded constants and suggest original macro names (e.g., `0x400` → `MAX_SIZE`, `64` → `BUFFER_COUNT * 4`)
+2. **Preserve string literals inline** - Instead of global references (`g_401223`), embed actual strings for printf format strings
+3. **Add decompilation confidence annotations** - Flag architecture mismatches, unrecoverable macros, and optimization artifacts with comments explaining transformations

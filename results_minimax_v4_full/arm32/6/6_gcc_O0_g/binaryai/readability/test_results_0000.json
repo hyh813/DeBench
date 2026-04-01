@@ -1,0 +1,39 @@
+{
+  "eval_id": "6_gcc_O0_g",
+  "overall_score": 7.0,
+  "levels": {
+    "L1_lexical_clarity": 6.75,
+    "L2_structural_intelligibility": 8.5,
+    "L3_type_system_fidelity": 7.33,
+    "L4_semantic_transparency": 4.75,
+    "L5_contextual_coherence": 7.67
+  },
+  "dimensions": {
+    "1_variable_naming_quality": 4.0,
+    "2_function_naming_quality": 9.0,
+    "3_literal_clarity": 6.0,
+    "4_noise_reduction": 8.0,
+    "5_control_flow_naturalness": 9.0,
+    "6_function_decomposition": 8.0,
+    "7_code_linearization": 9.0,
+    "8_redundancy_elimination": 8.0,
+    "9_type_precision": 7.0,
+    "10_composite_type_recovery": 8.0,
+    "11_type_safety": 7.0,
+    "12_comment_quality": 2.0,
+    "13_idiom_recognition": 7.0,
+    "14_anomaly_indication": 6.0,
+    "15_assertion_contract_recovery": 4.0,
+    "16_cross_reference_clarity": 7.0,
+    "17_module_organization": 8.0,
+    "18_build_system_compatibility": 8.0
+  },
+  "tokens": {
+    "prompt": 36279,
+    "completion": 2937,
+    "total": 39216
+  },
+  "time_cost_seconds": 58.42,
+  "schema_version": 1,
+  "raw_response_file": "raw_response_6_gcc_O0_g.txt"
+}

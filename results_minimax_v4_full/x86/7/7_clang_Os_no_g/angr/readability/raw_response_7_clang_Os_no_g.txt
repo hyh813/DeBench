@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+Let me analyze the specific function `param_fake_branch` from both the original source and the decompiled output.
+
+### Original Source (param_fake_branch):
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    // 永假条件：x*x < 0 对于实数x恒不成立
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // 另一个永假条件：字符串长度不可能为负
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Version:
+```c
+int param_fake_branch(unsigned int a0)
+{
+    return a0;
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:3/10  
+Justification: The parameter is named `a0` (generic), while the original uses `x`. The decompiled version has no local variables at all since the dead branches were eliminated. The generic `a0` provides no semantic meaning about the parameter's purpose.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: The function name `param_fake_branch` was correctly recovered, matching the original source exactly. This is excellent preservation of the original identifier.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: There are no literals in the simplified decompiled output. The original had `0xDEADBEEF` and `1000` but these were in dead code paths that were eliminated. The return value is simply the input.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The code is extremely clean - just a single return statement. No compiler artifacts, no register spills, no debug information remnants.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is trivially simple - just a return statement. This is natural and easy to follow, though it represents a complete loss of the original control flow structure.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized (1 line). No decomposition issues - it's a simple pass-through function in the decompiled form.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly linearly - top to bottom with no jumps, branches, or disruption to flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundancy present. The simplified form is the most direct expression of the computed result.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The original used `int x` but the decompiled version shows `unsigned int a0`. This is a type change from signed to unsigned, which could affect behavior in edge cases. The return type is also `int` in source but `int` in decompiled (correct).
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so there's nothing to recover. This is appropriate.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The unsigned int parameter could cause subtle issues if the original signed behavior matters, but there are no unsafe casts or pointer operations in this simple function.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are NO comments in the decompiled function. The original had two explanatory comments about the "永假条件" (always-false conditions). The decompiler provides no indication that dead code elimination occurred or that this represents obfuscated code.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler did not recognize this as an obfuscation pattern (fake/dead branch). The original intentionally uses always-false conditions as an obfuscation technique (OBF-L4-02), but this is completely lost in the decompiled form.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly is flagged. The decompiler should indicate that significant code transformations occurred - the elimination of two entire if-blocks with their associated computations. This is a silent semantic change.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function appears deceptively simple, hiding the fact that it originally contained obfuscation logic.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch` which is correctly identified. The relationship to the wrapper function is preserved.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function appears in the appropriate location among other test functions (param_*, call_*). The grouping is logical.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function would compile cleanly as standalone C code. Minimal dependencies - just requires a standard C environment.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 10 + 10) / 4 = 8.25
+L2_avg = (10 + 10 + 10 + 10) / 4 = 10.0
+L3_avg = (5 + 10 + 8) / 3 = 7.67
+L4_avg = (1 + 1 + 1 + 2) / 4 = 1.25
+L5_avg = (8 + 8 + 9) / 3 = 8.33
+
+Overall = (8.25 × 0.30) + (10.0 × 0.25) + (7.67 × 0.20) + 
+          (1.25 × 0.15) + (8.33 × 0.10)
+Overall = 2.475 + 2.5 + 1.534 + 0.1875 + 0.833 = 7.53/10
+```
+
+**Overall Readability Score:** 7.53/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Lost obfuscation semantics**: The decompiler eliminated both fake branches (`x*x < 0` and `strlen(str) < 0`) that were intentionally designed as always-false conditions. This destroys the obfuscation pattern (OBF-L4-02) that the source code demonstrates.
+
+- **No anomaly indication**: The function should have a comment or flag indicating that dead code elimination occurred, as the original contained meaningful (though unreachable) logic that was intentionally placed there.
+
+- **Type mismatch**: Parameter changed from `int x` to `unsigned int a0`, losing the signedness of the original parameter which could affect behavior in edge cases.
+
+- **No pattern recognition**: The decompiler failed to identify this as an obfuscation test case (fake branch pattern). The semantic intent of the original code is completely lost.
+
+- **Missing comments**: The original had explanatory comments about "永假条件" (always-false conditions) that are completely absent from the decompiled version.
+
+---
+
+### Best Quality Aspect: Structural Intelligibility (10/10)
+The control flow is perfectly linear and natural. The function is trivially simple to read and understand structurally, with no goto statements, no complex nesting, and no compiler artifacts.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (1.25/10)
+The decompiler provides almost no semantic information. There are no comments explaining the code, no recognition of the obfuscation pattern, no indication that significant transformations occurred, and no documentation of preconditions or contracts. The function appears deceptively simple, hiding the fact that it originally contained intentional obfuscation logic.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Detect and flag dead code elimination**: When the decompiler removes code paths (like the always-false if-blocks), it should add a comment like `// Dead code eliminated: condition always false` to preserve the understanding that the original contained meaningful logic.
+
+2. **Recover obfuscation patterns**: For functions like this that test obfuscation techniques (OBF-L4-02 fake branches), the decompiler should recognize the pattern and add a comment identifying it, e.g., `// OBF-L4-02: Fake branch (always-false condition)`.
+
+3. **Preserve type signatures accurately**: The parameter should maintain `int` rather than `unsigned int` to match the original source signature, as signed vs. unsigned can affect program semantics significantly.

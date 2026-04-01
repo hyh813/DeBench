@@ -1,0 +1,29 @@
+Testing obfuscation and optimization edge cases:
+
+  10
+
+  20
+
+  225
+
+  50
+
+  500500
+
+  5050
+
+  -831776551
+
+  20
+
+  1
+
+  41
+
+  30
+
+  2000000000
+
+  10
+
+  47

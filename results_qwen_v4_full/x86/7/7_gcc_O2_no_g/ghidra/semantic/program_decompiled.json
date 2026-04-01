@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_gcc_O2_no_g/ghidra/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "Testing obfuscated optimizations...\n\ncall_opaque_predicate: 10\ncall_opaque_predicate result: 20\ncall_instruction_substitution: 225\nparam_string_encryption: 31\ncall_tail_call_optimized: 500500\ncall_non_tail_call: 5050\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

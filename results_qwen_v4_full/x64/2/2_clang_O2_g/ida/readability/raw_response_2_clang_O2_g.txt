@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `result`, `a1`) with no semantic meaning. Parameters like `arr`, `n`, `p` are preserved from debug symbols, but all local temporaries obscure their purpose (e.g., `v5`, `v6`, `v7` in `array_1d_stack` should indicate SIMD accumulators).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user function names preserved accurately from debug symbols (`process_char`, `array_1d_stack`, `struct_simple`). Some runtime functions remain generic (`sub_1020`, `deregister_tm_clones`), but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: SIMD shuffle constants `238`, `85` are cryptic; ASCII value `65` and offset `32` in `process_char` are inferable but not documented. Test functions show constant-folded values (15, 300, 10000) losing computation context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy SIMD intrinsics clutter simple functions (`_mm_add_epi32`, `_mm_loadu_si128`, `_mm_shuffle_epi32`). Stack annotations like `[rsp-8h] [rbp-8h] BYREF` add verbosity. Type casts `(__int64)`, `(_DWORD *)` appear throughout without necessity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`process_int`, `ptr_single`) have natural flow. Complex array functions use `goto LABEL_13` patterns instead of proper loop constructs. SIMD vectorization creates unrecognizable loop structures that obscure the original `for` loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; no monolithic functions. Thunk functions properly identified (`binary_tree` → `binary_tree_sum`). Test functions separated from implementation. No excessive inlining observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to `LABEL_13` disrupt reading flow in multiple functions. Simple functions read top-to-bottom, but optimized array functions have multiple jump points. Loop tail handling creates non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: SIMD loop unrolling creates massive code duplication (see `array_1d_stack`, `array_3d`, `union_array` - nearly identical 100+ line blocks). Same vectorization pattern repeated across functions without abstraction or comments.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (`int`, `char`, `double`, `long`). `long long` degraded to `__int64`. Pointer types generally accurate. `bool` correctly recovered as `bool` type. Function pointer signatures preserved (`int (*f)(int)`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered with field names (`Point3D`, `Rect`, `Widget`). Nested access works (`w->bounds.position.z`). **Critical issue:** `struct_bitfields` degraded to manual bit operations `((*(_WORD *)f >> 3) & 7)` instead of bitfield syntax. Unions preserved (`UnionData`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(char *)p`, `(_DWORD *)p`, `(void *)size`. Pointer arithmetic visible in `ptr_diff` as byte subtraction then shift. Void pointer handling requires explicit casts. No buffer overflow warnings despite `array_oob` function.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Virtually no comments** in decompiled code. Original source comments explaining each function's purpose completely lost. Only metadata header present. No algorithm explanations, no decompilation confidence indicators, no parameter documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not recognized: linked list traversal appears as raw pointer chasing without "linked list" annotation. Array sum patterns not identified. `enum_switch` partially recognized with jump table `dword_3040[s]`. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One warning present: "positive sp value has been detected, the output may be wrong!" in `_start`. Failed decompilations listed at end (`__libc_start_main`, `printf`). SIMD operations not flagged as optimization artifacts. No warnings about constant-folding in test functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). NULL checks exist in code (`if (next)`) but not documented as contracts. No postconditions or invariants. Error returns (`-1`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible inline. No call graph documentation. Test functions show expected outputs but actual function calls replaced with constants. Global variable usage (`_bss_start`, `dword_3040`) not explained. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single file dump with no logical grouping. Functions appear in address order, not semantic order. No header file structure. Static functions not clearly scoped. Related functions (e.g., `binary_tree` and `binary_tree_sum`) adjacent but not grouped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Five functions marked "FAILED to decompile" (`printf`, `puts`, `__libc_start_main`). Would require stubs for all library functions. Type definitions for structs present but no forward declarations. Significant modification needed to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (5+7+5+4)/4 = 5.25  × 0.25 = 1.313
+Level 3 (Type):        (7+7+6)/3   = 6.67  × 0.20 = 1.333
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+4)/3   = 4.33  × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  5.18/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_data_types_l1()` prints pre-computed values (15, 300, 10000) instead of calling actual functions, losing all computational logic
+- **SIMD optimization obscures simple loops**: `array_1d_stack` (originally 8 lines) becomes 80+ lines of unintelligible vector intrinsics
+- **Zero comment recovery**: All 200+ lines of source comments explaining function purposes completely lost
+- **Bitfield degradation**: `struct_bitfields` converted from clean bitfield access to manual bit manipulation `((*(_WORD *)f >> 3) & 7)`
+- **Metadata inconsistency**: Header claims "IDA Pro 9.1" but metadata says "Ghidra"; binary path shows "clang_O2" but source metadata says "gcc_O0"
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most user function names accurately, making core logic identifiable despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation; decompiler should at minimum preserve or regenerate explanatory comments for non-trivial logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimization artifacts**: When SIMD vectorization is detected, add comments like "// Compiler vectorized: original was simple for-loop" to help users understand the transformation
+2. **Preserve or regenerate function documentation**: Extract comments from debug info when available, or generate minimal documentation based on function signature and usage patterns
+3. **Avoid constant-folding in test functions**: Recognize when test functions call other functions and preserve those call relationships rather than computing results at decompilation time

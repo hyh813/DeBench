@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables in complex functions like `varargs_func` are generic (`v1`, `v3`, `vars0`, `vars8`) and obscure the semantic meaning of the variadic arguments. While simple functions use parameter names (`a`, `b`), the lack of descriptive names for stack variables in optimized code hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting their purpose. The decompiler successfully recovered symbol names, making the API surface very clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Aggressive constant propagation (e.g., `return 15` instead of `cdecl_func(5, 10)`) and constant folding (e.g., `return 8` instead of `sizeof(arr)`) remove the context of the original logic. While semantically correct, these "magic numbers" obscure the source intent.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts such as `__fastcall` annotations on ARM64 (where it is not a standard convention) and redundant casts like `(__int64 (__fastcall *)(_QWORD))`. However, there is no dead code or debug instrumentation present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompilation of `varargs_func` fails to recover the loop structure, instead presenting raw stack pointer arithmetic and complex `while` conditions. Additionally, `ret_small_struct` uses bitwise shifts (`<< 32`) and OR operations to construct a struct, which is far less natural than the source's struct initialization.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions maintain appropriate granularity. While some small functions were inlined (e.g., `call_cdecl` returning a constant), this is a result of `-O3` optimization. The remaining functions are cohesive and well-scoped.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `varargs_func` and `param_varargs` suffer from non-linear pointer arithmetic (`v12 = &v19 + v3`) that disrupts the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious code duplication or dead code. However, the compiler's loop unrolling and vectorization (seen in `func_struct_byval`) introduce complexity that looks like redundancy but is actually optimized logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Integer types are often widened to `__int64` or `unsigned int` unnecessarily (e.g., `ret_basic_type` returns `__int64` instead of `int`). The decompiler also struggles with the specific integer types used in bit-packing structs.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Struct types like `LargeStruct`, `SmallStruct`, and `SmallPoint` are correctly identified and used in function signatures. Field access (e.g., `s->data[0]`) is accurate, which is a strong point.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are unsafe casts present, such as `*(_QWORD *)&y` in `ret_small_struct` to pack struct fields into a register. While this reflects the binary reality, it violates the type safety of the original source code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the SIMD operations or the varargs stack walking, is left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize standard C idioms. The `va_list` loop is not recovered; the `switch` statement in `ret_multi_branch` is represented as arithmetic (`10 * (op + 1)`); and simple loops are replaced by SIMD intrinsics (`vaddvq_s64`).
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags a potential issue in `ret_small_struct` with the comment `// local variable allocation has failed, the output may be wrong!`, which is helpful and accurate given the bitwise reconstruction.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if ( !pp )` in `param_double_ptr` is not documented as a precondition requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard. The relationships between functions (e.g., `test_calling_conventions` calling specific test functions) are preserved and easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are grouped logically, matching the source file's structure. Helper functions and test functions are distinct.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard types like `__int64`, `int32x4_t` (implying `<arm_neon.h>`), and specific calling convention attributes (`__fastcall`) that would require significant patching to compile on a standard ARM64 GCC setup.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **Varargs Logic Loss**: `varargs_func` is decompiled into raw stack pointer arithmetic (`v12 = &v19 + v3`) instead of a readable `va_arg` loop.
+- **Struct Packing Obscured**: `ret_small_struct` uses bitwise shifts and ORs (`x | (y << 32)`) instead of the original struct literal initialization.
+- **SIMD Intrinsics**: Simple summation loops in `func_struct_byval` are replaced by complex SIMD intrinsics (`vaddvq_s64`), hiding the simple logic.
+- **Switch Optimization**: The `switch` statement in `ret_multi_branch` is optimized into a mathematical formula, losing the explicit branching logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function names, making the high-level API and module structure immediately understandable.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to recover standard control flow idioms (loops, switches, varargs) into their C source equivalents significantly degrades the semantic transparency of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Varargs Recovery**: Enhance pattern matching for `va_list` usage to reconstruct standard `for` loops with `va_arg` instead of emitting raw stack pointer arithmetic.
+2.  **SIMD-to-Loop Pseudo-code**: When auto-vectorization is detected, offer an option or heuristic to simplify SIMD intrinsics back into a scalar loop representation for better readability.
+3.  **Struct Return Reconstruction**: Detect bitwise register packing patterns (common in small struct returns on RISC architectures) and reconstruct them as struct member assignments or literals.

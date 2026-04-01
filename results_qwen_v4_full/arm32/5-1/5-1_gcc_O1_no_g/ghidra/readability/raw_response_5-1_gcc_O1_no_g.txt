@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_c`, `local_14`, `iVar1`, `uVar2`, `pvVar1` with zero semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods show partial recovery (`Base::virtual_func`, `Derived::getName`). However, helper functions use cryptic names like `FUN_000109bc`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x47`, `0x16`, `0x55`, `0x2bf`. Some match expected values (0x47=71 for multiple inheritance test) but provide no context about their meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", `__stack_chk_fail()` calls, `__thiscall` annotations, and register spilling artifacts (`extraout_r0`, `extraout_d0`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many functions have broken control flow with `__stack_chk_fail()` as false error paths. `test_cpp_virtual_func` and `test_cpp_exception` don't return properly. Stack check patterns disrupt natural reading.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are oversimplified to constant returns (`test_cpp_multiple_inheritance` just returns `0x47`). Class methods are recovered but template instantiations lose structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by stack check patterns and warning comments. Virtual thunk functions create confusing duplicate entries.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple thunk functions for same method (`DiamondDerived::func` has 3 versions). Destructor functions are duplicated with slight variations for virtual/non-virtual thunks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `undefined1` dominate. Original types like `size_t`, `int*`, `std::unique_ptr` are lost. Some recovery of `int`, `double`, `char*` but inconsistent.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes not reconstructed as structs. Field access uses pointer arithmetic: `*(int *)(this + 4)`, `*(int *)(this + 0x28)`. Original field names (`value`, `name`, `data`, `size`) completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(undefined4 **)param_1`, `(int)((ulonglong)uVar2 >> 0x20)`. Pointer arithmetic instead of field access creates potential undefined behavior. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention"). No semantic comments explaining algorithm purpose, C++ feature being tested, or expected behavior.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns partially visible (vtable calls via `**(undefined4 **)param_1`) but not identified. Virtual inheritance, multiple inheritance thunks present but not explained as C++ idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with explicit warnings about unreachable blocks, unknown calling conventions, and stack check failures. Helps identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling (`__cxa_throw`) present but contracts not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered (`PTR_virtual_func_0001187c`) but vtable structure not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed sequentially without logical grouping. No header file structure, namespace organization, or separation between test functions and class implementations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone. External dependencies undeclared (`operator_new__`, `__cxa_allocate_exception`, `std::type_info::operator==`). Missing includes and library dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+5+5+6)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+4+7+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.12/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_c`, `iVar1`, `uVar2`) losing all semantic meaning from original (`capture_by_value`, `instance_count`, `multiplier`)
+- **Class structures not recovered** - field access uses raw pointer arithmetic (`*(int *)(this + 4)`) instead of named fields (`this->value`)
+- **Control flow broken** - many functions have `__stack_chk_fail()` paths that don't match original logic, some functions don't return values properly
+- **Type system severely degraded** - `undefined4`, `undefined8` instead of precise types (`int32_t`, `size_t`, `std::unique_ptr`)
+- **Template instantiation lost** - `template_max<int>` and `template_max<double>` signatures unclear, return types degraded
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - Ghidra properly flags uncertainty with "WARNING: Unknown calling convention" and unreachable block warnings, helping analysts identify decompilation limitations.
+
+### Most Needs Improvement:
+- **Variable Naming Quality (2/10)** - Complete failure to infer semantic names from usage patterns, making code analysis extremely difficult without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Recover C++ class structures** - Detect vtable patterns and object layouts to reconstruct struct definitions with named fields instead of pointer arithmetic
+3. **Preserve control flow semantics** - Distinguish between actual error paths and compiler-inserted stack checks, removing false branches that don't exist in source

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Most variables preserve original names (`dst`, `src`, `buffer`, `fp`), but compiler artifacts create awkward names like `attemptsa`, `thread_counta`, `iterations_per_threada` with 'a' suffixes from register allocation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User functions like `param_strcpy`, `param_signal_handling`, `thread_compute` are preserved accurately; however, some initialization functions use generic names like `sub_13D0`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical magic numbers obscure semantics: syscall 56/57 instead of `SYS_open`/`SYS_close`, signal 10/14 instead of `SIGUSR1`/`SIGALRM`, socket constants 2/1/0 instead of `AF_INET`/`SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive architecture-specific noise: `_ReadStatusReg(TPIDR_EL0)` for TLS, `(_DWORD *)` casts throughout, `[xsp+18h] [xbp+18h]` stack annotations, and 63 "FAILED to decompile" entries pollute output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals generally recovered well, but `param_signal_handling` uses awkward `v1 = attempts--; if (v1 <= 0) break` pattern instead of clean `while(attempts-- > 0)`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity; thread functions (`thread_compute`, `thread_sum`) properly separated from wrapper functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally, but `param_socket_create` has deeply nested if-else chains (5 levels) that could be flattened with early returns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_mutex_lock` calculates `thread_counta * iterations_per_threada` twice; `param_fread_fwrite` calls `strlen("BinBench Test Data")` multiple times instead of caching.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `FILE*`), but pthread types become opaque, atomic operations degrade to `_aarch64_ldadd4_acq_rel`, and TLS loses `__thread` semantics.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct accessed via array indexing `*((_DWORD *)arg + 2)` instead of field names; `sockaddr_in` fields partially recovered (`sin_family`, `sin_port`) but TLS variables completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts `(_DWORD *)`, `(_QWORD *)` throughout; pointer arithmetic `*((unsigned __int8 *)buffer + i)` obscures array semantics; function pointer casts `(void *(*)(void *))` add noise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, algorithms, or API contracts; only function headers with addresses present; no decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library patterns (`strcpy`, `strlen`, `memcpy`) recognized, but signal handling loses `SIGUSR1`/`SIGALRM` semantics (becomes 10/14), atomic ops become architecture intrinsics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 63 failed decompilations listed at end but not flagged at call sites; TLS access via `TPIDR_EL0` not marked as architecture-specific; magic numbers unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for strcpy), no postconditions, no error condition explanations; return values lack semantic documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation; global variables (`signal_received`, `shared_counter`) used without usage context; callback relationships implicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source order with test functions grouped; however, no header file structure, no namespace organization, and failed library functions listed at end disrupt flow.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 63 library functions failed to decompile requiring external linkage; no dependency documentation; architecture-specific intrinsics (`_aarch64_cas4_acq_rel`) prevent portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (7+8+4+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+7+3)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.60/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Magic numbers replace symbolic constants**: Signal numbers 10/14 instead of `SIGUSR1`/`SIGALRM`, syscall 56/57 instead of `SYS_open`/`SYS_close`
+- **TLS semantics completely lost**: `_ReadStatusReg(TPIDR_EL0)` instead of `__thread` variable access
+- **63 library functions failed to decompile**: Creates compilation dependency hell and breaks standalone usability
+- **Zero documentation**: No comments explaining logic, contracts, or decompilation confidence
+- **Architecture-specific intrinsics exposed**: `_aarch64_ldadd4_acq_rel`, `_aarch64_cas4_acq_rel` prevent portability
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User-defined function names like `param_strcpy`, `param_signal_handling`, `thread_compute` are preserved accurately, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments, API contracts, or decompilation confidence indicators makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants from debug info**: Use `-g` DWARF information to restore `SIGUSR1`, `SYS_open`, `AF_INET` instead of raw numbers
+2. **Add decompilation confidence annotations**: Flag uncertain regions (TLS access, indirect calls) with comments like `// DECOMPILER UNCERTAINTY: architecture-specific TLS access`
+3. **Generate stub declarations for failed functions**: Instead of just listing "FAILED", produce proper extern declarations with parameter types for the 63 failed library functions

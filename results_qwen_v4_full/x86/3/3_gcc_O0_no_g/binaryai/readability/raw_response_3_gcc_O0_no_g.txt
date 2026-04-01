@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `local_10`, `iVar1`, `uVar2`, `piVar4`) with no semantic meaning. Original names like `arr`, `local`, `p` are lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`double_value`, `local_vars`, `heap_basic`), but library calls degraded to `FUN_00011xxx` (malloc→`FUN_000111f0`, printf→`FUN_00011160`), obscuring critical operations.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent without explanation (`0x2a` for 42, `0x14` for 20, `0x1e` for 30). Hex values used inconsistently with decimal, and no named constants recovered from original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) appear in nearly every function. Redundant `undefined` type casts and compiler artifacts pollute the code throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as for/while constructs, but `stack_alias` function is catastrophically wrong (compares `&stack0x00000000` to `0x14` instead of pointer aliasing logic). Stack check epilogues disrupt natural flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved with reasonable sizes. However, helper functions like `create_tree_node` lost proper return types (`undefined4*` instead of `TreeNode*`), and library calls aren't properly abstracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate loop structures. Stack canary checks at function ends create minor disruption, but no severe goto chains or forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary check pattern repeated identically across 30+ functions. No dead code elimination visible; each function carries full security instrumentation regardless of actual risk.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type erosion with `undefined4`, `undefined*`, `byte*` replacing proper types. `size_t` parameters become `int` or `uint`. Function pointers degraded to `code*` or `undefined4`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure - `Point` struct accessed as array indices (`piVar1[0]`, `piVar1[1]`). `Node` linked list struct completely lost (fields as `local_2c[1]`). `TreeNode` not recovered at all. Global struct `global_point` accessed as `DAT_0001604c + global_point` (nonsensical).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4*)`, `(int*)`, `(char*)`). Pointer arithmetic on generic types throughout. `access_bss_buffer` returns `(int)bss_buffer` (address instead of value). No bounds checking recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (malloc/free pairs) not identified. Linked list traversal in `linked_list_heap` not recognized as such. Tree structure operations in `tree_heap_traversal` appear as raw pointer manipulation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `stack_alias` function is completely broken but not flagged. `dangling_pointer` use-after-free not warned. Indirect calls through `FUN_00011xxx` not marked as unresolved. No uncertainty indicators anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postconditions inferred (e.g., "returns heap-allocated memory"). Error return values (`-1`, `-2`, `0xffffffff`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible but library calls obscured as `FUN_00011xxx`. Global variables inconsistently named (`global_counter` preserved, but `complex_init` becomes `DAT_00016064`). Callback relationship in `set_global_callback`/`call_global_callback` recoverable but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source (stack tests, heap tests, static tests, memory ops). Test functions grouped appropriately. No header file structure or proper scoping declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone - `FUN_00011xxx` functions need stubs. External declarations (`extern_global_var`, `extern_function`) present but target undefined. Missing standard library includes. Significant patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+2+3)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.33/10
+```
+
+**Overall Readability Score:** 4.33/10
+
+### Critical Defects:
+- **`stack_alias` function completely broken** - compares stack address to constant `0x14` instead of implementing pointer aliasing logic
+- **All struct types lost** - `Point`, `Node`, `TreeNode` accessed as raw array indices (`piVar1[0]`, `piVar1[1]`)
+- **Library calls obscured** - `malloc`/`free`/`printf` replaced with `FUN_00011xxx` making code unreadable
+- **Zero comments** - no documentation of any kind despite complex memory operations
+- **Type erosion** - `undefined4`, `undefined*` throughout instead of proper C types
+
+### Best Quality Aspect: **Function Decomposition (6/10)**
+- Original function boundaries and sizes mostly preserved, maintaining logical separation between test cases
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of any documentation makes understanding complex memory operations extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Detect consistent field offsets (e.g., `[0]` and `[1]` access) and propose struct types with field names
+2. **Resolve library function signatures** - Match `FUN_00011xxx` calls to known libc functions (malloc, free, printf) and restore proper names/types
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (like `stack_alias`) and indicate where manual review is needed

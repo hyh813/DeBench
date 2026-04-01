@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic and uninformative (e.g., `local_8`, `iVar1`, `acStack_2c`), providing no semantic context about their role in the object-oriented logic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent demangling of C++ symbols results in highly readable names like `Container<int>::push`, `Base::virtual_func`, and `test_cpp_member_func`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x125c` (4704) and `0x2a` (42) are used directly without being replaced by named constants or explained, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, though standard stack canary checks (`___stack_chk_guard`) are present, which is expected for secure binaries.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The `try/catch` structure in `test_cpp_exception` is completely lost; the function is decompiled as merely throwing an exception, missing the control flow for catching and calculating the result.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Class methods and template instantiations are correctly separated into individual functions (e.g., `template_max_int_`, `Container<double>::get`), maintaining good granularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom in most functions, with minimal forward jumps or confusing branching where logic is present.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious dead code or aggressive loop unrolling artifacts; the logic is presented concisely, though some original logic (like lambdas) is over-simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Complex types like `Container_int_` and `Derived*` are recovered well, but `test_cpp_exception` is incorrectly typed as `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not reconstructed; members are accessed via raw offsets (e.g., `*(int *)(this + 0x28)`) rather than field names like `size` or `data`.
+
+**11. Type Safety:** Score: 6/10
+Justification: Code uses necessary casts like `(undefined4 *)__cxa_allocate_exception(4)`, which are accurate but appear unsafe compared to the original high-level types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the recovered functions.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Virtual function calls are presented as raw pointer dereferences (`(***(code ***)param_1)`) rather than being abstracted as a virtual method call pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided about the missing exception handling logic or the fact that lambda logic was constant-folded away.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no documentation of preconditions, postconditions, or invariants (e.g., the non-null requirement for pointers).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: References to vtables and type info (e.g., `PTR__RTTIDerivedA_00112c28`) are explicit, making the relationships clear despite the low-level representation.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, with class methods and template specializations appearing in coherent blocks.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: External functions are declared, but the lack of struct definitions and reliance on raw offsets would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Exception handling logic (`try/catch` blocks) is completely missing in `test_cpp_exception`, reducing the function to a mere throw.
+- Class member fields are accessed via raw offsets (e.g., `this + 0x28`) instead of semantic field names.
+- Lambda logic in `test_cpp_lambda` is constant-folded away, hiding the closure structure and capture semantics.
+- Variable names are generic (`local_8`, `iVar1`), losing all semantic meaning from the original source.
+- Magic numbers (e.g., `0x125c`) are not explained or replaced with constants.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully demangled complex C++ symbols, making the API surface of classes and templates immediately recognizable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct class structures with field names forces the reader to interpret raw pointer arithmetic, which is critical for understanding C++ code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class structure recovery to map member offsets to their original field names.
+2. Reconstruct `try/catch` blocks using Language-Specific Data Areas (LSDA) to restore exception control flow.
+3. Infer variable names from constructor parameters or usage context to replace generic stack variable names.

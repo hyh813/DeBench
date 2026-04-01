@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `a2`) obscuring semantic purpose; original source had meaningful names like `size`, `counter`, `increment` that are lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`param_macro_constants`, `call_macro_constants`), but many wrapper functions use generic `sub_XXXXXX` naming that adds confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`1025`, `4294967295`, `316912650112397582603894390785`); array initializations shown as large integers instead of readable byte sequences; `MAX_SIZE` constant not recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Numerous wrapper/thunk functions (`sub_401189`, `sub_4011a4`) that just call real functions; uninitialized variable patterns (`v0 = v2;` where v2 is undefined) create visual noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs, but some goto usage remains (`goto g_404010;`); constant folding obscures original conditional logic (e.g., `call_macro_constants()` returns 64 directly).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with many single-call wrapper functions; original function structure preserved but thunk functions create artificial granularity issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with natural flow; loop structures are linear; minor forward jumps in initialization code don't significantly disrupt reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (caller and callee both show same computed value); wrapper functions duplicate call patterns; no obvious dead code loops.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation with generic `unsigned long long`, `unsigned long` instead of `int`, `size_t`; pointer types often degraded to `void*` or `char*`; return types frequently wrong width.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only one struct defined (`struct_0` with `field_0`); array initializations shown as large integers (`316912650112397582603894390785`); no union recovery; stack variables not grouped into structs.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple implicit casts visible (`(unsigned int)idx`, `(char *)&v0`); pointer arithmetic on void pointers; atomic operations correctly recovered as `atomic_exchange_add`; nothing critically dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code; no explanation of magic numbers or algorithm intent; only one auto-generated anomaly note (`[D] Unsupported jumpkind Ijk_SigTRAP`).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop patterns for array sum and memcpy visible but not named; atomic operations recognized; no design pattern identification; SIMD operations shown as `AddV` without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted (`Unsupported jumpkind`); no warning about constant folding obscuring original logic; large integer array representations not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`); no postconditions inferred; error conditions like `mmap` failure returns not documented; no invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented; global variables referenced as `g_40XXXX` without semantic context; string references through globals unclear; no call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping; original source sections (5.2 Preprocessing, 5.3 Assembly) not preserved; no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared (`printf`, `mmap`, etc.); some globals as extern; would require significant patching to compile standalone; platform-specific AMD64 code present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+5+7+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names are generic** (`v0`, `v1`, `a0`) instead of semantic names like `size`, `counter`, `increment`
+- **Array data shown as large integers** (`316912650112397582603894390785`) instead of readable byte sequences
+- **No comments explaining magic numbers** or recovered logic (e.g., why `1025` instead of `MAX_SIZE`)
+- **Excessive wrapper/thunk functions** (`sub_401189`, `sub_4011a4`) that add noise without value
+- **Constant folding obscures original logic** - `call_macro_constants()` returns 64 directly instead of showing `param_macro_constants(2048)` call
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names like `param_macro_constants`, `call_macro_constants` are preserved, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation explaining recovered logic, magic numbers, or decompilation confidence; makes understanding intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size comparisons should be named `size` or `limit`; counter variables in loops should be named `i`, `idx`, or `count`.
+2. **Recover array/struct initializations as readable literals** - Convert large integer representations back to byte arrays or struct initializers for human readability.
+3. **Add decompilation confidence annotations** - Mark constant-folded code, note where original conditionals were simplified, and flag uncertain type recoveries with comments.

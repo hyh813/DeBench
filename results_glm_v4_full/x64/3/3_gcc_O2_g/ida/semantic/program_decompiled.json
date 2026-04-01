@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/3/3_gcc_O2_g/ida/syntactic/bin/3_gcc_O2_g_fixed",
+  "stdout": "Stack Memory Test\nMEM-L1-01 (local_vars): 20\nMEM-L1-02 (local_array): 10\nMEM-L1-03 (local_struct): 15\nMEM-L1-04 (address_of_local): 42\nMEM-L1-05 (address_of_array): 2\nMEM-L2-01 (large_stack_frame): 0\nMEM-L2-02 (vla_stack): 10\n",
+  "stderr": "*** stack smashing detected ***: terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

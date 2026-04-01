@@ -1,0 +1,123 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `temp_1`) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions use mechanical names (`function_1070`, `function_1080`). Core test functions remain identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0x100000000`, `48`, `40`) without explanation. String literals stored as hex-encoded globals (`g1`, `g2`) instead of readable text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Assembly intrinsics pollute code (`__asm_movd`, `__asm_paddq`, `__asm_movdqu`). Stack canary checks (`__readfsqword(40)`) and bit masking (`& 0xffffffff`) add significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Varargs functions use `goto` labels (`lab_0x14e0`, `lab_0x1960`) instead of natural while loops. Bit manipulation obscures simple comparisons (`v2 == 0 | v2 < 0 != ((v2 ^ v1) & ...)`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Aggressive constant folding collapsed test functions to single returns (`call_cdecl()` returns 15 directly). Cold path functions (`varargs_func_cold`) appear to be compiler artifacts, not logical decomposition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto jumps disrupt top-to-bottom reading in varargs handling. Most simple functions read linearly, but complex functions have forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive bit masking on every return (`& 0xffffffff`). Stack canary checks duplicated across functions. No dead code elimination visible.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t`/`int32_t`. Original `char*`, `double`, `LargeStruct`, `SmallStruct` all lost. Misleading `typedef int64_t int128_t` for struct representation.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure. `LargeStruct` (128 bytes) becomes `int128_t`. `SmallStruct` accessed via pointer arithmetic (`*(int32_t *)(a1 + 4) * (int32_t)a1`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts everywhere (`(int32_t)a1`, `(char *)str`, `(void**)ctx`). Pointer arithmetic on typed data. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining function purpose, algorithm, or non-obvious logic. Original source had extensive documentation; decompiled code has none.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern (`va_list`, `va_start`, `va_arg`) not recognized—shown as raw stack access. Struct passing idioms completely obscured by SIMD intrinsics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Assembly intrinsics presented confidently without noting they may not reflect original source intent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL). Null checks present but not explained as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph information. Global variable usage (`g1`-`g26`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed in arbitrary order by address. No logical grouping of related functions (calling convention tests scattered).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers (`stdio.h`, `stdlib.h`, `string.h`). However, compiler-specific intrinsics (`__asm_*`, `__readfsqword`) limit portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):   (4+5+5+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type System):  (3+2+4)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):     (1+2+3+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):   (5+4+6)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.79/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic** (`a1`, `a2`, `v1`) — original semantic names like `count`, `sum`, `args` entirely lost
+- **Composite types not recovered** — `LargeStruct`, `SmallStruct`, `TestIntPair` all reduced to `int128_t` or pointer arithmetic
+- **Assembly intrinsics pollute output** — `__asm_movd`, `__asm_paddq`, `__asm_movdqu` obscure simple arithmetic operations
+- **Zero documentation** — no comments explaining function purpose despite complex varargs and struct handling
+- **Constant folding destroys structure** — test functions return hardcoded values (15, 50, 6) instead of showing actual computation
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (6/10)** — Original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), allowing identification of test purposes despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** — Complete absence of any documentation; even simple explanations of varargs handling or struct passing would dramatically improve usability.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover variable names from usage patterns** — Analyze how variables are used (loop counters, accumulators, pointers) to infer semantic names like `i`, `sum`, `ptr` instead of `v1`, `v2`, `a1`.
+
+2. **Recognize and reconstruct composite types** — Detect struct access patterns (offset-based field access) and recover struct definitions with field names rather than representing as `int128_t` or raw pointer arithmetic.
+
+3. **Replace assembly intrinsics with high-level operations** — Translate `__asm_paddq`, `__asm_movdqu` sequences back to simple arithmetic and memory operations, adding comments when confidence is low.

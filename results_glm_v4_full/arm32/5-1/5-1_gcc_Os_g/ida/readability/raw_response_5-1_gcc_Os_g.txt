@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Object variables like `obj`, `base`, and `derived` are well-named and match the source. However, register-based temporaries like `v4`, `v5`, and `a1` are generic, and internal library members like `_M_head_impl` obscure the high-level intent of `unique_ptr`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangled C++ symbols, recovering exact names like `test_cpp_virtual_func`, `Base::virtual_func`, and `std::unique_ptr<int>::~unique_ptr`. This provides excellent semantic context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The code is littered with "magic numbers" resulting from compiler constant folding, such as `4700` in `test_cpp_member_func` and `71` in `test_cpp_multiple_inheritance`. While accurate to the binary, these obscure the original arithmetic logic (e.g., `10 + 34 + 4660`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but retains C++-specific noise like explicit destructor calls (e.g., `std::unique_ptr<int []>::~unique_ptr(&arr)`) and vtable pointer assignments (`base._vptr.Base = ...`), which are necessary for correctness but add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is natural and linear where logic remains (e.g., `if` statements in `test_cpp_rtti`). The "spaghetti" appearance in some functions is due to the compiler optimizing entire blocks into constants (e.g., `return 71;`), which the decompiler accurately represents as a simple exit.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler excellently recovered class methods, template instantiations (e.g., `template_max<int>`), and even virtual inheritance thunks as separate, cohesive functions. The granularity matches the original source structure very well.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps. Even complex RTTI checks in `test_cpp_rtti` are presented as a linear sequence of conditional checks, making the logic easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code without redundant calculations. For example, in `test_cpp_template_func`, it directly uses the results of `template_max` rather than showing the intermediate steps removed by the compiler.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including complex C++ constructs like `std::unique_ptr<int>`, `Base*`, and `const type_info*`. The decompiler correctly distinguishes between `int` and `double` template instantiations.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Class structures like `SimpleClass` (with field `name`) and `Derived` (with field `multiplier`) are accurately reconstructed. While internal `std` library structures (e.g., `_M_t._M_t`) are exposed rather than abstracted, the layout is correct.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code uses appropriate casts for C++ features like vtables (`(int (**)(...))&off_11AF0`) and RTTI. There are no obviously dangerous or incorrect pointer arithmetic operations that would lead to undefined behavior in the decompiled view.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: The decompiled output is almost entirely devoid of comments. Complex behaviors, such as the "virtual thunk to" functions or the RTTI type comparison logic, lack explanatory annotations, leaving the user to infer the mechanics.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies and names C++ idioms like vtables (`_vptr.Base`), RTTI (`type_info`), and smart pointers. The presence of `virtual thunk to` in function names explicitly indicates the compiler-generated adjustment for multiple inheritance.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler flags potential issues like "positive sp value has been detected" in `_start`. However, it silently presents optimized-away functions (e.g., `test_cpp_lambda` returning `85`) without noting that the logic was constant-folded, which might confuse a user comparing it to source.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no explicit recovery of preconditions or invariants. For example, the decompiler does not indicate that `dynamic_cast` implies a specific inheritance relationship contract, nor does it document the expected state of `this` in thunks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Virtual function calls are clearly resolved to vtable offsets, and static member accesses (e.g., `LifecycleClass::instance_count`) are explicit. However, the relationship between a thunk and its target function is only visible via the naming convention, not explicit cross-referencing.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in address order rather than logical grouping (e.g., all `SimpleClass` methods together). While standard for decompilers, it requires effort to mentally reassemble the class structure compared to the source file.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on standard C++ library headers (`<memory>`, `<typeinfo>`) and compiler intrinsics (`_cxa_throw`). While the types are correct, compiling this output would require providing the exact standard library implementation used to build the binary.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- **Magic Numbers**: Functions like `test_cpp_member_func` return constants like `4700` instead of the original expression `r1 + r2 + r3`, obscuring the source logic due to compiler optimization.
+- **Lack of Comments**: Complex C++ mechanisms, specifically virtual inheritance thunks (`virtual thunk to`) and RTTI structures, are presented without explanatory comments.
+- **Exposed Internals**: Standard library internals (e.g., `std::unique_ptr`'s `_M_t._M_t._M_head_impl`) are exposed, cluttering the code with implementation details rather than the abstract "smart pointer" concept.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly demangled C++ symbols (e.g., `_Z21test_cpp_virtual_funcv` -> `test_cpp_virtual_func`), making the high-level purpose of every function immediately clear.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The output is practically devoid of comments. Adding annotations for compiler-generated artifacts (thunks, vtables) and optimization effects (constant folding) would significantly improve understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Annotate Optimized Constants**: When a function reduces to a constant return (e.g., `return 71;`), add a comment like "Logic optimized away by compiler" or attempt to show the symbolic expression if debug info is available.
+2.  **Abstract Library Internals**: Provide an option to view standard library types (like `std::unique_ptr`) as abstract types rather than exposing their internal `_M_t` pointer structures.
+3.  **Explain Thunks**: Automatically generate comments for "virtual thunk" functions explaining the `this` pointer adjustment being performed (e.g., "Adjusts `this` by +8 bytes for BaseB subobject").

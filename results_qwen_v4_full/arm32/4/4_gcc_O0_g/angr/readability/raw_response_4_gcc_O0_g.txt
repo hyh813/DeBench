@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, but decompiled code uses `v6`, `v7`, `v8` throughout `varargs_func` obscuring their roles as stack pointers and accumulators.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`cdecl_func`, `varargs_func`, `main`), but helper functions are generic (`sub_10408`, `sub_104c0`). Function names don't indicate parameter types or calling conventions despite this being the test's purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (should be `-1` or `UINT_MAX`), `143440`, `0x12400` for string addresses. Original string literals like `"Hello"` and `"test"` replaced with hex addresses. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Stack canary checks (`__stack_chk_guard`) duplicated in nearly every function. Redundant assignments common (`v0 = v1; return v1;`). ARM-specific artifacts like `armg_calculate_flag_c` and `armg_calculate_condition` clutter complex functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions use natural constructs, but complex functions like `__aeabi_dadd` use excessive `goto` labels (`LABEL_11f6a`, `LABEL_12159`). Original `for` loops in `varargs_func` recovered but with awkward pointer arithmetic instead of `va_arg`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but `param_struct_byval` exploded from 1 struct parameter to 16 `unsigned int` parameters. `__aeabi_dadd` is catastrophically large (500+ lines) compared to original library call.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but complex functions have frequent forward jumps disrupting flow. `test_calling_conventions` has reasonable linearity but `__aeabi_dadd` has deeply nested conditional branches with goto.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate return statements common (`return v0; return v0;` in `call_cdecl`). Stack canary checks repeated identically in 20+ functions. No dead code removal visible despite -O0 compilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Nearly everything degraded to `unsigned int` or `char*`. Original `double`, `long long`, `va_list` types lost. `func_mixed_args` had `double d` but decompiled shows `unsigned int a2, a3, a4, a5` with `__aeabi_dadd` calls.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` with 16 `long long` fields became 16 separate parameters. `SmallStruct` became pointer arithmetic (`a0[1] * *(a0)`). `struct_0` recovered but with generic `field_0`, `field_4` names losing semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointers treated as `unsigned int*` (`param_func_ptr` calls `a0(a1)`). Implicit casts throughout floating-point operations. No const correctness. Pointer arithmetic on struct fields unsafe (`(&v4)[2 * v0]`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function headers with register annotations (`// r0`, `// [bp-0xc]`). No algorithm explanations, no varargs handling documentation, no calling convention notes.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not identified (no `va_list`, `va_start`, `va_arg` recovery). Struct passing conventions not documented. Floating-point ABI calls (`__aeabi_dadd`, `__aeabi_d2iz`) not explained as compiler runtime helpers.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. `__aeabi_dadd` is 500+ lines of incomprehensible code with no flag that this is likely incorrect. Stack canary presence not explained as security feature.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks present (`if (!p) return -1`) but not as documented contracts. No preconditions/postconditions. Varargs count parameter not documented as requiring matching argument count.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced by address (`g_12400`, `g_124c4`) instead of string names. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`__aeabi_*`, `__stack_chk_fail`) mixed with application code. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External declarations present but many undefined (`GLIBC_2.4::__stack_chk_guard`, `armg_calculate_condition`). ARM-specific runtime functions not portable. Would require significant stubs to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 6 + 4 + 3) / 4 = 4.0
+Level 2 Average: (4 + 5 + 5 + 4) / 4 = 4.5
+Level 3 Average: (3 + 3 + 4) / 3 = 3.33
+Level 4 Average: (2 + 3 + 3 + 3) / 4 = 2.75
+Level 5 Average: (5 + 4 + 4) / 3 = 4.33
+
+Overall = (4.0 × 0.30) + (4.5 × 0.25) + (3.33 × 0.20) + (2.75 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.125 + 0.666 + 0.4125 + 0.433
+        = 3.84/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- Variable `v0`-`v9` throughout `varargs_func` should be named `stack_ptr`, `sum`, `i`, `count` based on usage patterns
+- `__aeabi_dadd` function is 500+ lines of incomprehensible ARM condition code instead of recognized floating-point addition
+- Struct `LargeStruct` passed as 16 separate `unsigned int` parameters instead of single struct
+- String literals replaced with hex addresses (`0x12400`) losing all readability
+- Function pointer `param_func_ptr` typed as `unsigned int*` instead of proper callback signature
+- No recovery of `va_list`, `va_start`, `va_arg`, `va_end` pattern in varargs functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original semantic names (`cdecl_func`, `varargs_func`, `main`), providing anchor points for understanding despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; no explanation of ARM calling conventions, varargs handling, or floating-point ABI calls that would help analysts understand the recovered code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level patterns from ARM condition codes** - Replace `armg_calculate_condition` chains with natural C conditionals and recognize `__aeabi_*` calls as floating-point operations
+2. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, `idx`; accumulators should be `sum`; pointers should indicate target type
+3. **Reconstruct composite types from parameter patterns** - When 16 consecutive `int` parameters are accessed sequentially, recover as struct with array field rather than individual parameters

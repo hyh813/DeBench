@@ -1,0 +1,884 @@
+#include <setjmp.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+typedef unsigned long ptrdiff_t;
+typedef long long intmax_t;
+typedef unsigned long long uintmax_t;
+
+/* Additional type definitions for decompiled code */
+typedef unsigned int undefined4;
+typedef unsigned char byte;
+typedef unsigned char undefined1;
+typedef unsigned int uint;
+typedef void (*code)(void);
+
+/* Global variable declarations */
+int div_zero_caught = 0;
+int segv_caught = 0;
+jmp_buf jmp_buffer;
+jmp_buf segv_buffer;
+
+/* External data references - now defined here */
+const char encrypted_0[] = {0x32,0x7b,0x3d,0x7a,0x33,0x68,0x3c,0x73,0x38,0x66,0x3e,0x6b,0x39,0x61,0x3f,0x6e,0x30,0x69,0x3b,0x70,0x35,0x7c,0x37,0x7d,0x3a,0x77,0x36,0x7a,0x34,0x79,0x00};
+const char DAT_00012008[] = "Testing obfuscation and optimization techniques:\n";
+const char DAT_00012038[] = "Tail call optimized: %d\n";
+const char DAT_00012064[] = "Non-tail call: %d\n";
+const char DAT_0001208c[] = "Vectorized loop: %d\n";
+const char DAT_000120b4[] = "Link time optimization: %d\n";
+const char DAT_000120d4[] = "Integer overflow: %d\n";
+const char DAT_00012108[] = "Implementation defined: %d\n";
+const char DAT_0001212f[] = "Fake branch: %d\n";
+const char DAT_0001214b[] = "Opaque predicate: %d\n";
+const char DAT_00012167[] = "Instruction substitution: %d\n";
+const char DAT_00012184[] = "String encryption: %d\n";
+const char DAT_000121a0[] = "Division by zero: %d\n";
+const char DAT_000121bc[] = "Null pointer dereference: %d\n";
+const char DAT_000121d9[] = "Buffer overflow: %d\n";
+const char DAT_000121f6[] = "Undefined behavior: %d\n";
+
+/* Function declarations */
+static void invalidInstructionException_div0(void);
+code *invalidInstructionException(void);
+void __longjmp_chk(jmp_buf env, int val);
+void __stack_chk_fail(void);
+
+/*
+ * Decompiled by Ghidra 12.0
+ * Binary: build/x86/7/7_gcc_O3_no_g
+ * Processor: x86
+ * Compiler Spec: gcc
+ */
+
+
+/* CRT stub function _init removed by preprocessor */
+
+
+
+
+/* Function: FUN_00011030 @ 00011030 */
+
+void FUN_00011030(void)
+
+{
+ (*(code *)(void *)0x0)();
+ return;
+}
+
+
+
+/* Function: invalidInstructionException_div0 @ 00011040 */
+
+static void invalidInstructionException_div0(void)
+
+{
+ int x = 10;
+ int y = 0;
+ x = x / y;
+ return;
+}
+
+
+
+/* Function: invalidInstructionException @ 00011050 */
+
+code *invalidInstructionException(void)
+
+{
+ return (code *)invalidInstructionException_div0;
+}
+
+
+
+/* Function: main @ 000111b0 */
+
+undefined4 main(void)
+
+{
+ test_obf_opt_edge();
+ return 0;
+}
+
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+
+/* Function: __i686.get_pc_thunk.bx @ 000111fc */
+
+/* WARNING: This is an inlined function */
+
+void __i686_get_pc_thunk_bx(void)
+
+{
+ return;
+}
+
+
+
+/* Function: __x86.get_pc_thunk.bx @ 00011200 */
+
+/* WARNING: This is an inlined function */
+
+void __x86_get_pc_thunk_bx(void)
+
+{
+ return;
+}
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* Function: __x86.get_pc_thunk.dx @ 00011339 */
+
+/* WARNING: This is an inlined function */
+
+void __x86_get_pc_thunk_dx(void)
+
+{
+ return;
+}
+
+
+
+/* Function: __x86.get_pc_thunk.di @ 0001133d */
+
+/* WARNING: This is an inlined function */
+
+void __x86_get_pc_thunk_di(void)
+
+{
+ return;
+}
+
+
+
+/* Function: div_zero_handler @ 00011350 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+void div_zero_handler(void)
+
+{
+ div_zero_caught = 1;
+ /* WARNING: Subroutine does not return */
+ __longjmp_chk(jmp_buffer,1);
+}
+
+
+
+/* Function: segv_handler @ 00011380 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+void segv_handler(void)
+
+{
+ segv_caught = 1;
+ /* WARNING: Subroutine does not return */
+ __longjmp_chk(segv_buffer,1);
+}
+
+
+
+/* Function: param_division_by_zero.constprop.0 @ 000113b0 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+undefined4 param_division_by_zero_constprop_0(void)
+
+{
+ code *pcVar1;
+ int iVar2;
+ 
+ signal(8,div_zero_handler);
+ iVar2 = _setjmp(jmp_buffer);
+ if (iVar2 == 0) {
+ /* WARNING: Does not return */
+ pcVar1 = (code *)invalidInstructionException();
+ (*pcVar1)();
+ }
+ return 0xffffffff;
+}
+
+
+
+/* Function: param_division_by_zero.constprop.1 @ 00011400 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+int param_division_by_zero_constprop_1(void)
+
+{
+ int iVar1;
+ 
+ signal(8,div_zero_handler);
+ iVar1 = _setjmp(jmp_buffer);
+ return (-(uint)(iVar1 == 0) & 3) - 1;
+}
+
+
+
+/* Function: param_fake_branch @ 00011440 */
+
+undefined4 param_fake_branch(undefined4 param_1)
+
+{
+ return param_1;
+}
+
+
+
+/* Function: call_fake_branch @ 00011450 */
+
+undefined4 call_fake_branch(void)
+
+{
+ return 10;
+}
+
+
+
+/* Function: param_opaque_predicate @ 00011460 */
+
+int param_opaque_predicate(int param_1)
+
+{
+ int iVar1;
+ int iVar2;
+ int iVar3;
+ int iVar4;
+ 
+ iVar1 = param_1 + 1;
+ iVar2 = param_1;
+ iVar4 = iVar1;
+ if (iVar1 != 0) {
+ do {
+ iVar3 = iVar4;
+ iVar4 = iVar2 % iVar3;
+ iVar2 = iVar3;
+ } while (iVar4 != 0);
+ if ((iVar3 == 1) && (param_1 * 2 + 1 + param_1 * param_1 == iVar1 * iVar1)) {
+ return param_1 * 2 + 10;
+ }
+ }
+ return param_1 * 3 + 0x14;
+}
+
+
+
+/* Function: call_opaque_predicate @ 000114c0 */
+
+undefined4 call_opaque_predicate(void)
+
+{
+ int iVar1;
+ undefined4 uVar2;
+ int iVar3;
+ int iVar4;
+ 
+ iVar1 = 5;
+ iVar4 = 6;
+ do {
+ iVar3 = iVar4;
+ iVar4 = iVar1 % iVar3;
+ iVar1 = iVar3;
+ } while (iVar4 != 0);
+ uVar2 = 0x14;
+ if (iVar3 != 1) {
+ uVar2 = 0x23;
+ }
+ return uVar2;
+}
+
+
+
+/* Function: param_instruction_substitution @ 000114f0 */
+
+int param_instruction_substitution(uint param_1)
+
+{
+ return param_1 * 0x15 + (param_1 >> 1) + (param_1 & 0xf);
+}
+
+
+
+/* Function: call_instruction_substitution @ 00011520 */
+
+undefined4 call_instruction_substitution(void)
+
+{
+ return 0xe1;
+}
+
+
+
+/* Function: decrypt_string @ 00011530 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+byte * decrypt_string(char *param_1,byte *param_2,size_t param_3,byte param_4)
+
+{
+ byte bVar1;
+ byte *pbVar2;
+ 
+ strncpy((char *)param_2,param_1,param_3);
+ param_2[param_3 - 1] = 0;
+ bVar1 = *param_2;
+ pbVar2 = param_2;
+ while (bVar1 != 0) {
+ *pbVar2 = bVar1 ^ param_4;
+ bVar1 = pbVar2[1];
+ pbVar2 = pbVar2 + 1;
+ }
+ return param_2;
+}
+
+
+
+/* Function: param_string_encryption @ 00011590 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+int param_string_encryption(void)
+
+{
+ byte bVar1;
+ byte *pbVar2;
+ size_t sVar3;
+ int in_GS_OFFSET;
+ byte local_30 [31];
+ undefined1 local_11;
+ int local_10;
+ undefined4 uStack_c;
+ 
+ uStack_c = 0x1159b;
+ local_10 = *(int *)(in_GS_OFFSET + 0x14);
+ strncpy((char *)local_30,(char *)&encrypted_0,0x1f);
+ local_11 = 0;
+ pbVar2 = local_30;
+ bVar1 = local_30[0];
+ while (bVar1 != 0) {
+ *pbVar2 = bVar1 ^ 0x5a;
+ bVar1 = pbVar2[1];
+ pbVar2 = pbVar2 + 1;
+ }
+ sVar3 = strlen((char *)local_30);
+ if (local_10 == *(int *)(in_GS_OFFSET + 0x14)) {
+ return sVar3 + (int)(char)local_30[0];
+ }
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail_local();
+}
+
+
+
+/* Function: call_string_encryption @ 00011630 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+int call_string_encryption(void)
+
+{
+ byte bVar1;
+ byte *pbVar2;
+ size_t sVar3;
+ int in_GS_OFFSET;
+ byte local_30 [31];
+ undefined1 local_11;
+ int local_10;
+ undefined4 uStack_c;
+ 
+ uStack_c = 0x1163b;
+ local_10 = *(int *)(in_GS_OFFSET + 0x14);
+ strncpy((char *)local_30,(char *)&encrypted_0,0x1f);
+ local_11 = 0;
+ pbVar2 = local_30;
+ bVar1 = local_30[0];
+ while (bVar1 != 0) {
+ *pbVar2 = bVar1 ^ 0x5a;
+ bVar1 = pbVar2[1];
+ pbVar2 = pbVar2 + 1;
+ }
+ sVar3 = strlen((char *)local_30);
+ if (local_10 == *(int *)(in_GS_OFFSET + 0x14)) {
+ return sVar3 + (int)(char)local_30[0];
+ }
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail_local();
+}
+
+
+
+/* Function: param_tail_call_optimized @ 000116d0 */
+
+int param_tail_call_optimized(int param_1,int param_2)
+
+{
+ if (0 < param_1) {
+ do {
+ param_2 = param_2 + param_1;
+ param_1 = param_1 + -1;
+ } while (param_1 != 0);
+ }
+ return param_2;
+}
+
+
+
+/* Function: call_tail_call_optimized @ 000116f0 */
+
+undefined4 call_tail_call_optimized(void)
+
+{
+ return 0x7a314;
+}
+
+
+
+/* Function: param_non_tail_call @ 00011700 */
+
+int param_non_tail_call(int param_1)
+
+{
+ int iVar1;
+ 
+ iVar1 = 0;
+ if (0 < param_1) {
+ do {
+ iVar1 = iVar1 + param_1;
+ param_1 = param_1 + -1;
+ } while (param_1 != 0);
+ }
+ return iVar1;
+}
+
+
+
+/* Function: call_non_tail_call @ 00011720 */
+
+undefined4 call_non_tail_call(void)
+
+{
+ return 0x13ba;
+}
+
+
+
+/* Function: param_vectorized_loop @ 00011730 */
+
+int param_vectorized_loop(int param_1,int param_2,int *param_3,int param_4)
+
+{
+ int *piVar1;
+ int iVar2;
+ 
+ if (0 < param_4) {
+ iVar2 = 0;
+ do {
+ param_3[iVar2] = *(int *)(param_2 + iVar2 * 4) + *(int *)(param_1 + iVar2 * 4);
+ iVar2 = iVar2 + 1;
+ } while (param_4 != iVar2);
+ piVar1 = param_3 + param_4;
+ iVar2 = 0;
+ do {
+ iVar2 = iVar2 + *param_3;
+ param_3 = param_3 + 1;
+ } while (piVar1 != param_3);
+ return iVar2;
+ }
+ return 0;
+}
+
+
+
+/* Function: call_vectorized_loop @ 00011790 */
+
+undefined4 call_vectorized_loop(void)
+
+{
+ return 0x48;
+}
+
+
+
+/* Function: param_link_time_optimization @ 000117a0 */
+
+int param_link_time_optimization(int param_1)
+
+{
+ return param_1 * 2 + 10;
+}
+
+
+
+/* Function: call_link_time_optimization @ 000117b0 */
+
+undefined4 call_link_time_optimization(void)
+
+{
+ return 0x14;
+}
+
+
+
+/* Function: param_division_by_zero @ 000117c0 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+undefined4 param_division_by_zero(int param_1)
+
+{
+ int iVar1;
+ undefined4 uVar2;
+ 
+ signal(8,div_zero_handler);
+ iVar1 = _setjmp(jmp_buffer);
+ if (iVar1 == 0) {
+ uVar2 = (undefined4)(10 / (long long)param_1);
+ }
+ else {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+}
+
+
+
+/* Function: call_division_by_zero @ 00011820 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+int call_division_by_zero(void)
+
+{
+ int iVar1;
+ int iVar2;
+ 
+ iVar1 = param_division_by_zero_constprop_1();
+ iVar2 = param_division_by_zero_constprop_0();
+ signal(8,(__sighandler_t)0x0);
+ return iVar1 + iVar2;
+}
+
+
+
+/* Function: param_null_pointer_deref @ 00011860 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+undefined4 param_null_pointer_deref(undefined4 *param_1)
+
+{
+ int iVar1;
+ undefined4 uVar2;
+ 
+ signal(0xb,segv_handler);
+ iVar1 = _setjmp(segv_buffer);
+ if (iVar1 == 0) {
+ uVar2 = *param_1;
+ }
+ else {
+ uVar2 = 0xffffffff;
+ }
+ return uVar2;
+}
+
+
+
+/* Function: call_null_pointer_deref @ 000118b0 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+int call_null_pointer_deref(void)
+
+{
+ int iVar1;
+ int iVar2;
+ int in_GS_OFFSET;
+ undefined4 local_14;
+ int local_10;
+ 
+ local_10 = *(int *)(in_GS_OFFSET + 0x14);
+ local_14 = 0x2a;
+ iVar1 = param_null_pointer_deref(&local_14);
+ iVar2 = param_null_pointer_deref(0);
+ signal(0xb,(__sighandler_t)0x0);
+ if (local_10 == *(int *)(in_GS_OFFSET + 0x14)) {
+ return iVar1 + iVar2;
+ }
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail_local();
+}
+
+
+
+/* Function: param_buffer_overflow_stack @ 00011920 */
+
+undefined4 param_buffer_overflow_stack(undefined4 param_1)
+
+{
+ return param_1;
+}
+
+
+
+/* Function: param_buffer_overflow_heap @ 00011930 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+undefined4 param_buffer_overflow_heap(undefined4 param_1)
+
+{
+ void *__ptr;
+ 
+ __ptr = malloc(0x10);
+ if (__ptr == (void *)0x0) {
+ param_1 = 0xfffffffe;
+ }
+ else {
+ free(__ptr);
+ }
+ return param_1;
+}
+
+
+
+/* Function: call_buffer_overflow @ 00011970 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+undefined4 call_buffer_overflow(void)
+
+{
+ void *__ptr;
+ undefined4 uVar1;
+ 
+ __ptr = malloc(0x10);
+ if (__ptr == (void *)0x0) {
+ uVar1 = 8;
+ }
+ else {
+ free(__ptr);
+ uVar1 = 0x1e;
+ }
+ return uVar1;
+}
+
+
+
+/* Function: param_integer_overflow @ 000119b0 */
+
+int param_integer_overflow(uint param_1,uint param_2)
+
+{
+ int iVar1;
+ 
+ iVar1 = param_1 + param_2;
+ if ((0 < (int)param_1) && (0 < (int)param_2)) {
+ if (iVar1 < 0) {
+ iVar1 = -1;
+ }
+ return iVar1;
+ }
+ if (((int)(param_1 & param_2) < 0) && (0 < iVar1)) {
+ iVar1 = -2;
+ }
+ return iVar1;
+}
+
+
+
+/* Function: call_integer_overflow @ 000119f0 */
+
+undefined4 call_integer_overflow(void)
+
+{
+ return 2000000000;
+}
+
+
+
+/* Function: param_undefined_behavior @ 00011a00 */
+
+int param_undefined_behavior(int param_1)
+
+{
+ return param_1 * 2;
+}
+
+
+
+/* Function: call_undefined_behavior @ 00011a10 */
+
+undefined4 call_undefined_behavior(void)
+
+{
+ return 10;
+}
+
+
+
+/* Function: param_implementation_defined @ 00011a20 */
+
+undefined4 param_implementation_defined(void)
+
+{
+ return 0x2b;
+}
+
+
+
+/* Function: call_implementation_defined @ 00011a30 */
+
+undefined4 call_implementation_defined(void)
+
+{
+ return 0x2b;
+}
+
+
+
+/* Function: test_obf_opt_edge @ 00011a40 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+void test_obf_opt_edge(void)
+
+{
+ byte bVar1;
+ byte *pbVar2;
+ undefined4 uVar3;
+ size_t sVar4;
+ int iVar5;
+ void *__ptr;
+ int iVar6;
+ int iVar7;
+ int in_GS_OFFSET;
+ undefined4 local_34;
+ byte local_30 [31];
+ undefined1 local_11;
+ int local_10;
+ 
+ local_10 = *(int *)(in_GS_OFFSET + 0x14);
+ puts(&DAT_00012008);
+ __printf_chk(1,&DAT_0001212f,10);
+ iVar5 = 5;
+ iVar7 = 6;
+ do {
+ iVar6 = iVar7;
+ iVar7 = iVar5 % iVar6;
+ iVar5 = iVar6;
+ } while (iVar7 != 0);
+ uVar3 = 0x14;
+ if (iVar6 != 1) {
+ uVar3 = 0x23;
+ }
+ __printf_chk(1,&DAT_0001214b,uVar3);
+ __printf_chk(1,&DAT_00012167,0xe1);
+ strncpy((char *)local_30,(char *)&encrypted_0,0x1f);
+ local_11 = 0;
+ pbVar2 = local_30;
+ bVar1 = local_30[0];
+ while (bVar1 != 0) {
+ *pbVar2 = bVar1 ^ 0x5a;
+ bVar1 = pbVar2[1];
+ pbVar2 = pbVar2 + 1;
+ }
+ sVar4 = strlen((char *)local_30);
+ __printf_chk(1,&DAT_00012184,(int)(char)local_30[0] + sVar4);
+ __printf_chk(1,&DAT_00012038,0x7a314);
+ __printf_chk(1,&DAT_00012064,0x13ba);
+ uVar3 = call_vectorized_loop();
+ __printf_chk(1,&DAT_0001208c,uVar3);
+ __printf_chk(1,&DAT_000120b4,0x14);
+ iVar5 = param_division_by_zero_constprop_1();
+ iVar7 = param_division_by_zero_constprop_0();
+ signal(8,(__sighandler_t)0x0);
+ __printf_chk(1,&DAT_000121a0,iVar5 + iVar7);
+ local_34 = 0x2a;
+ iVar5 = param_null_pointer_deref(&local_34);
+ iVar7 = param_null_pointer_deref(0);
+ signal(0xb,(__sighandler_t)0x0);
+ __printf_chk(1,&DAT_000121bc,iVar5 + iVar7);
+ __ptr = malloc(0x10);
+ if (__ptr == (void *)0x0) {
+ uVar3 = 8;
+ }
+ else {
+ free(__ptr);
+ uVar3 = 0x1e;
+ }
+ __printf_chk(1,&DAT_000121d9,uVar3);
+ __printf_chk(1,&DAT_000120d4,2000000000);
+ __printf_chk(1,&DAT_000121f6,10);
+ __printf_chk(1,&DAT_00012108,0x2b);
+ if (local_10 == *(int *)(in_GS_OFFSET + 0x14)) {
+ return;
+ }
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail_local();
+}
+
+
+
+/* Function: __stack_chk_fail_local @ 00011ca0 */
+
+/* WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx */
+
+void __stack_chk_fail_local(void)
+
+{
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+}
+
+
+
+
+/* CRT stub function __do_global_ctors_aux removed by preprocessor */
+
+
+
+
+
+/* CRT stub function _fini removed by preprocessor */
+
+
+
+
+/* Total functions decompiled: 49 */

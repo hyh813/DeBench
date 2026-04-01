@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `result`, `g1`, `g2`, `g3` throughout. The original source uses meaningful names like `sum`, `len`, `c`, `x`, `p`, `arr`, `str`. The decompiled code loses all semantic meaning - e.g., `int64_t v1` should be `int value` or `int sum`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions are correctly named: `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. However, compiler/runtime functions have generic names like `function_6a0`, `function_15bc`. The core test functions match source names well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers appear without explanation (e.g., `0x8000000000000000`, `0x7fff`, `40`, `12`). The expression `2 * x | 1` in `process_int` should be `x * 2 + 1`. String literals are UTF-8 encoded Chinese text without translation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: many `__asm_mrs`, `__asm_ubfiz`, `__asm_bfi` ARM instruction intrinsics; floating-point library functions `__addtf3`, `__multf3` (hundreds of lines); uninitialized variables like `int64_t v1;` without assignment; redundant casts throughout. The `__addtf3` function alone is ~1200 lines of decompiled library code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops and conditionals are recognizable, but some expressions are awkward: `process_bool` uses `2 * x / 2 == x` instead of `x % 2 == 0`. The `enum_switch` has an unusual expression `s >= 3 == (s != 3)` instead of proper switch handling. Some goto-like patterns in complex functions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is preserved - each test function remains separate. The original small functions (e.g., `double_value`, `process_char`) are correctly extracted. However, some compiler runtime functions are unnecessarily exposed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps in complex functions like `binary_tree_sum` and `graph_traverse`. Deep nesting in `array_3d` with nested loops and pointer arithmetic disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present in `array_3d` with manual index manipulation. Redundant variable assignments like `v5 = v3; result = v5;` in `pointer_array`. Dead code not eliminated in some paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good type precision with `int32_t`, `int64_t`, `uint32_t`, `float32_t`, `float64_t`, `float128_t`. Function pointer types are mostly correct. Minor issues: some `char*` used for `void*`, some `int` vs `int32_t` inconsistency.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - no struct types recovered. All struct access uses raw pointer arithmetic: `*(int32_t *)((int64_t)p + 4)` instead of `p->y`. Original source defines `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Graph` - all lost. Union types not recovered. Bitfields accessed as raw integers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int32_t)v1`, `(int64_t)p`, `(char*)p`. Pointer arithmetic without bounds checking in array functions. Type-confused operations like `(int32_t)(int64_t)handle` in `opaque_handle_op`. No `const` correctness in many pointer parameters.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated line number comments like `// Line range: 16 - 21`. No algorithm explanations. No decompilation confidence indicators. No documentation of what functions do. The Chinese strings in comments are not translated.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`. However, no explicit naming of patterns (e.g., "implements linked list traversal"). The array indexing patterns are obscured by pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `array_oob` function (original intentionally accesses out of bounds) shows no indication of undefined behavior. No flags for indirect calls that couldn't be resolved. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No NULL check documentation. No invariant recognition. The `volatile_access` function (original tests volatile) shows no indication of the volatile semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear - you can see what's called. But no documentation of relationships: "Called by main", "Calls process_int". Global variables like `g1-g16` have no usage documentation. Callback relationships not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically: test functions together, runtime functions separate. Static functions properly identified. However, the massive library functions (`__addtf3`, `__multf3`) pollute the output and should be in a separate section or stubbed.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Many undefined references: `printf`, `memcpy`, `memset`, `abort`. External function declarations present but incomplete. No clear dependency documentation. The code requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Variable naming**: All meaningful variable names lost - `v1`, `v2`, `result` instead of `sum`, `len`, `count`
+- **Struct recovery failure**: All struct types lost - `Point3D`, `Rect`, `Node`, `TreeNode` become raw pointer arithmetic
+- **Noise pollution**: 1200+ lines of `__addtf3` floating-point library code mixed in
+- **No type safety**: Unsafe casts throughout, no const correctness
+- **No semantic indicators**: No comments explaining algorithms, no anomaly warnings
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+The decompiler correctly uses `int32_t`, `int64_t`, `float32_t`, etc. matching the original types well.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+Struct and union types are completely lost - all access is through raw pointer arithmetic like `*(int32_t *)((int64_t)p + 4)` instead of `p->y`. This is the most severe readability issue.
+
+**Top 3 Recommendations:**
+1. **Recover struct types**: Analyze memory layout patterns to reconstruct struct definitions with field names
+2. **Infer variable names from usage**: If a variable is used as loop counter, name it `i` or `index`; if accumulated, name it `sum` or `total`
+3. **Separate runtime/library code**: Move `__addtf3`, `__multf3` to a separate file or use stubs to reduce noise

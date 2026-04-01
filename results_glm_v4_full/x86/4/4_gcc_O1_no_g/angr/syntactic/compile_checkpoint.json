@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 44,
+  "source_file": "decompiled/angr_out/x86/4/4_gcc_O1_no_g.c",
+  "fixed_file": "results_glm_v4_full/x86/4/4_gcc_O1_no_g/angr/syntactic/fix_4_gcc_O1_no_g.c"
+}

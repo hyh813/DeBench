@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `idx`) losing semantic meaning from original names like `large_buf`, `global_counter`, `tls_var`. Some functions like `local_vars` preserve parameter name `a0` but internal variables lack purpose-indicating names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions recovered with original names (`local_vars`, `heap_basic`, `vla_stack`), but many wrapper functions use mechanical names (`sub_401030`, `sub_401130`). Runtime functions (`_init`, `_start`, `_fini`) correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1) and `4294967294` (-2) appear without explanation. String literals externalized as `g_401563`, `g_4035c1` instead of inline. Array sizes (`10`, `2048`, `0x800`) lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `deregister_tm_clones`, `register_tm_clones`. Redundant wrapper functions (`sub_4012b1` just calls `local_vars`). Stack offsets (`[bp-0x828]`) create visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while patterns but `vla_stack` has extremely complex index calculations obscuring simple array access. Some functions use inappropriate goto (`sub_401030`: `goto ptr[2]`). At -O0, this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive wrapper functions that just call the real function (e.g., `sub_4012ca` → `local_array`). Main test functions properly separated but fragmentation creates unnecessary indirection. Original single-responsibility design obscured.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom reasonably. `test_stack_memory` has complex variable assignments jumping around. Forward references in some functions disrupt flow but generally traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate wrapper functions create redundancy. Similar loop patterns repeated without consolidation. Decompiled code is 2030 LOC vs 888 LOC original (129% bloat) indicating poor redundancy handling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers are `unsigned int` instead of specific `int` types. `size_t` becomes `unsigned int`. Function pointer types degraded to `unsigned int`. Original `static int` becomes `unsigned int` losing signedness semantics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`) losing semantic meaning. `Node` struct becomes `struct_0` with `field_0`/`field_4`. Original `Point {x, y}` struct lost in many places. Excessive padding fields (`padding_0[16]`) obscure layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(char *)`, `(int *)`) throughout. Pointer arithmetic often unclear. Error codes as large unsigned values (4294967295 = -1) confusing. `double_free` function signature changed from `int *p` to `unsigned int *a0` with logic altered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original source had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）"). No decompilation confidence indicators or algorithm explanations present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns (malloc/free) recognizable. Loop patterns for array initialization visible. Linked list and tree patterns recoverable but not explicitly identified or named. No pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP`. No warnings about dangling pointer, double free, or heap overflow undefined behavior. Decompiler presents incorrect code confidently without uncertainty flags.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: ptr != NULL"). Error conditions present but undocumented. Original source had clear test expectations in comments (e.g., "// 期望: 20"). No contract inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage present but not explained. Callback relationships (`global_func_ptr`) visible but not highlighted. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping by test category. Original source had clear section headers (3.1 Stack, 3.2 Heap, 3.3 Static, 3.4 MemOp). No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`extern char g_4035c1`) but many reference undefined globals. Platform mismatch (original ARM64, decompiled X86). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on usage (e.g., `counter`, `buffer_size`, `node_ptr`)
+- **Control flow uses goto** in `sub_401030` and `sub_401130` instead of proper function calls
+- **Struct fields all generic** (`field_0`, `field_4`) losing semantic meaning from original `x`, `y`, `data`, `next`
+- **No comments** despite original having extensive documentation for each test case
+- **Platform mismatch** (ARM64 source → X86 decompilation) indicates potential architecture translation errors
+- **Error codes as UINT_MAX** (4294967295) instead of -1 obscures error handling intent
+- **Wrapper function proliferation** creates unnecessary indirection (e.g., `sub_4012b1` → `local_vars`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original semantic names (`local_vars`, `heap_basic`, `vla_stack`, `linked_list_heap`) making primary functionality identifiable despite wrapper noise.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original source having extensive comments explaining each test case's purpose, expected values, and scene classification.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns - detect `v0 = malloc(n*4)` followed by loop indexing should suggest `array` or `buffer`
+2. **Recover and preserve source comments** from debug symbols when `-g` flag is present, especially test expectations and scene classifications
+3. **Eliminate wrapper function artifacts** - detect functions that immediately call another function with same parameters and inline or mark as thunk

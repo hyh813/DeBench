@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic Ghidra names (`param_1`, `iVar1`, `uVar1`, `lVar1`) with no semantic meaning. For example, `param_1` in `param_macro_constants` should be `size`, and `uVar1` should be `result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_macro_constants`, `test_preprocessing_features`, `param_asm_clobber`). Only a few helper functions like `FUN_00101020` lack meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate: `0x400` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0xdef0` (platform constant). Original named constants are completely lost to constant folding.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in most functions. Ghidra-specific artifacts like `LOCK()`, `UNLOCK()`, and `undefined8` types add noise not present in original source.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recovered as `for` constructs (e.g., `param_asm_clobber`, `param_asm_multi_insn`). Conditionals are clear, but stack canary epilogues disrupt natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each function has single responsibility. Call hierarchy preserved (`call_macro_constants` → `param_macro_constants`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Stack canary checks at function ends create minor disruption but don't impede understanding significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding creates redundancy issues—`call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants(2048)`, losing the call relationship.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types (`undefined8`, `undefined4`) replace specific types. Original `int`, `size_t`, `long` distinctions are blurred. Pointer types present but imprecise.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`local_28 [6]`, `local_38 [16]`). No complex structs in this code, but stack arrays are properly typed with sizes.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(undefined4 *)mmap(...)`, `(code *)__addr`. Pointer arithmetic visible but not always type-safe. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining macro behavior, assembly semantics, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Assembly patterns converted to C but not identified (e.g., `LOCK()/UNLOCK()` for atomics not explained as atomic operations). No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about decompilation uncertainty. Stack canary checks present but unexplained. Indirect calls not flagged for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` range constraints). Error conditions not explained. Return value semantics undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`global_var`, `DAT_001021f0`) lack context about their purpose.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires stubs for external functions (`__printf_chk`, `mmap`, `sysconf`). Ghidra-specific types (`undefined8`, `LOCK()`) prevent direct compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75  × 0.25 = 1.688
+Level 3 (Type):        (5+7+5)/3   = 5.67  × 0.20 = 1.134
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):  (6+6+4)/3   = 5.33  × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.31/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on comparison usage pattern
+- **Magic numbers `0x400`, `0x40`, `0xdef0`** replace original named constants (MAX_SIZE, BUFFER_COUNT*4, platform constants)
+- **Zero comments** despite original source having extensive documentation explaining macro semantics and assembly behavior
+- **`call_macro_constants` returns `0x40` directly** instead of calling `param_macro_constants(2048)`, losing call relationship
+- **Ghidra-specific types (`undefined8`, `LOCK()`, `UNLOCK()`)** prevent standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names are accurately preserved from source, maintaining semantic meaning for most functions like `param_macro_constants` and `test_preprocessing_features`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all original documentation about macro behavior, assembly semantics, and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from constant usage patterns** - Detect repeated values (0x400, 0x40) and suggest constant definitions with inferred names based on context
+2. **Preserve call relationships during constant folding** - When functions are optimized to constants, add comments showing original call structure (e.g., `// Originally: return param_macro_constants(2048)`)
+3. **Infer variable names from usage context** - Analyze comparison operations, arithmetic patterns, and function parameters to suggest semantic names (e.g., `param_1` compared to 0x400 → `size`)

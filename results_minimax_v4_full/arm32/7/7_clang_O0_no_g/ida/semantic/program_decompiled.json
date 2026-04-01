@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_O0_no_g/ida/syntactic/bin/7_clang_O0_no_g_fixed",
+  "stdout": "Test Obfuscation & Optimization:\nObfuscation Level 1: fake_branch: 10\nObfuscation Level 2: opaque_predicate: 20\nObfuscation Level 3: instruction_substitution: 225\nObfuscation Level 4: string_encryption: 143\nOptimization Level 1: tail_call: 500500\nOptimization Level 2: non_tail_call: 5050\nOptimization Level 3: vectorized_loop: 72\nOptimization LTO: 20\nEdge Case division_by_zero: 1\nEdge Case null_pointer_deref: 41\nEdge Case buffer_overflow: 30\nEdge Case integer_overflow: 2000000000\nEdge Case undefined_behavior: 10\nEdge Case implementation_defined: 44\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

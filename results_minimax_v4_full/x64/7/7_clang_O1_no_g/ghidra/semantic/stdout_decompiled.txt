@@ -1,0 +1,10 @@
+test_obf_opt_edge called
+
+opaque predicate: 10
+call_opaque_predicate: 20
+instruction substitution: 225
+string encryption: -20
+tail call optimized: 1000
+non tail call: 5050
+vectorized loop: 396
+

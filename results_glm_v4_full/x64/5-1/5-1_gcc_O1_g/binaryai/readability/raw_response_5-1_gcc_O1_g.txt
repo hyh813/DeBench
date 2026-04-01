@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic stack offsets like `local_34`, `local_2c`, and `param_1`. For example, in `test_cpp_member_func`, `local_34` holds the string "Test" (encoded as hex `0x74736554`), but the name provides no semantic hint.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent recovery of symbol names due to debug information (`-g`). Functions like `test_cpp_member_func`, `Base::virtual_func`, and `Container<int>::push` match the original source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String constants are often represented as hex integers (e.g., `0x74736554` for "Test") or opaque pointers. Magic numbers like `0x125c` (4704) appear in return statements without context, obscuring the original arithmetic logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Contains expected compiler artifacts like stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`). However, the pervasive use of `undefined` types (e.g., `undefined8`, `undefined4`) adds significant noise to the data flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The code is highly linear due to `-O0` compilation, reading naturally from top to bottom. However, exception handling logic in `test_cpp_exception` is flattened to just the `throw` call, losing the structural context of the `try-catch` blocks.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods are correctly separated into their own functions (e.g., `Derived::virtual_func`). However, simple accessors like `getValue` and constructors are inlined into test functions (e.g., `test_cpp_member_func`), creating monolithic blocks that mix object setup with logic.
+
+**7. Code Linearization:** Score: 9/10
+Justification: Execution flow is very easy to follow with minimal jumps or spaghetti code, characteristic of unoptimized (`-O0`) builds.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No obvious dead code or redundant instructions cluttering the logic. The code is concise relative to the low-level operations performed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While some types like `Base *` are recovered, many variables and parameters are generic (`undefined8`, `undefined4`, `void *`). For instance, `pvVar2` in `test_cpp_constructor` is a `void *` despite being a `LifecycleClass` object.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Class member access is represented as raw pointer arithmetic (e.g., `*(int *)(this + 0x28)` in `Container<int>::push`) rather than field names (`this->size`). The structure of classes is lost, forcing the reader to decipher offsets.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, such as `(long)pvVar2` and `(undefined *)0x0`, to perform operations that were type-safe in the original C++ source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the logic, algorithms, or the purpose of obscure hex values.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Virtual function calls are exposed as raw vtable lookups (e.g., `(***(code ***)param_1)()`), which is technically accurate but fails to highlight the high-level "virtual call" idiom used in the source.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The output presents the code as-is without flagging potential issues, such as the indirect call in `call_virtual_func` or the opaque hex-encoded strings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the bounds check in `Container::get` is present as logic but not annotated as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Vtable references are visible (e.g., `PTR_virtual_func_001059a0`), and function calls are clearly resolved. The relationship between base and derived classes is implied by the naming but not explicitly structured.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by address, which roughly correlates with the class structure in the source. Related class methods appear in clusters.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without significant modification due to `undefined` types, mangled internal names (e.g., `operator_new__`), and missing struct definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Composite Type Recovery**: Class members accessed via raw offsets (e.g., `this + 0x28`) instead of semantic field names (`size`).
+- **Literal Clarity**: String "Test" is obfuscated as hex integer `0x74736554`, and magic numbers like `0x125c` are not explained.
+- **Variable Naming**: Generic stack variables (`local_34`, `local_2c`) obscure the data flow of object construction.
+- **Type Precision**: Heavy use of `undefined` types (`undefined8`, `undefined4`) degrades type safety and readability.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The presence of debug symbols (`-g`) allowed perfect recovery of original function names, making the high-level flow easy to trace.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- **Why?** The failure to reconstruct class structures and map member offsets to field names turns C++ object-oriented code into C-style pointer arithmetic, which is the biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance C++ Class Recovery**: Analyze constructor and method usage to map stack offsets to specific struct fields, replacing `*(int *)(this + 0x28)` with `this->size`.
+2.  **Improve String Literal Detection**: Recognize hex constants that represent valid ASCII strings (e.g., `0x74736554`) and render them as string literals ("Test").
+3.  **Annotate Virtual Calls**: Automatically detect and comment on vtable indirection patterns (e.g., `// Virtual Call via vtable`) to clarify C++ polymorphism.

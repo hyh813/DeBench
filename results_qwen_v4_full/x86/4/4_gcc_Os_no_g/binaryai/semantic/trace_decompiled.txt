@@ -1,0 +1,10 @@
+TRACE_ENT|0|call_func_ptr_param|0|Arg0=-1208959528,Arg1=-1079313344,Arg2=0,Arg3=-1210798175|eax=0xb7f0bdd8,ebx=0x0,ecx=0xbfaafc40,edx=0xbfaafc64,esi=0xb7f0a000,edi=0x0
+TRACE_ENT|1|param_func_ptr|1|Arg0=4216098,Arg1=5,Arg2=-1079313308,Arg3=-1079313344|eax=0x405522,ebx=0x0,ecx=0xbfaafc40,edx=0xbfaafc64,esi=0xb7f0a000,edi=0x0
+TRACE_ENT|2|callback_func|2|Arg0=5,Arg1=0,Arg2=-1079313308,Arg3=-1079313344|eax=0x405522,ebx=0x0,ecx=0xbfaafc40,edx=0xbfaafc64,esi=0xb7f0a000,edi=0x0
+TRACE_EXT|2|callback_func|2|10
+TRACE_EXT|1|param_func_ptr|1|20
+TRACE_EXT|0|call_func_ptr_param|0|20
+TRACE_ENT|3|call_ret_large_struct|0|Arg0=-1208959528,Arg1=-1079313344,Arg2=0,Arg3=-1210798175|eax=0x14,ebx=0x0,ecx=0xbfaafc40,edx=0xbfaafc64,esi=0xb7f0a000,edi=0x0
+TRACE_ENT|4|ret_large_struct|1|Arg0=-1079313456,Arg1=100,Arg2=0,Arg3=-1079313308|eax=0xbfaafbd0,ebx=0x0,ecx=0xbfaafc40,edx=0xbfaafc64,esi=0xb7f0a000,edi=0x0
+TRACE_EXT|4|ret_large_struct|1|0
+TRACE_EXT|3|call_ret_large_struct|0|100

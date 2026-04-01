@@ -1,0 +1,11 @@
+Test starting...
+
+Value: 10
+Result: 20
+Instruction sub: 225
+String enc: 0
+Tail call: 0
+Non-tail call: 0
+Vectorized: 0
+LTO: 20
+Div zero: 2

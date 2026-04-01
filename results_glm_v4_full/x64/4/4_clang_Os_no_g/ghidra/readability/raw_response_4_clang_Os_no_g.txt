@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_88`, and `lVar2`, providing no semantic hint about their purpose (e.g., `local_88` represents a `LargeStruct`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with pointers to data segments (e.g., `&DAT_001023ca`), and numeric constants are in hex (e.g., `0xf` instead of `15`), reducing immediate readability.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise such as `undefined8` types, `stack0x00000008` offset references, and `undefined` return types that obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While basic loops are preserved, complex logic like `varargs_func` is decompiled into manual pointer arithmetic and register stack access rather than standard `va_list` idioms, making it hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with clear execution paths, though some optimized initialization loops in `test_calling_conventions` are slightly dense.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully presents the optimized logic (e.g., constant folded returns) without introducing redundant variables or dead code itself.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type errors exist, such as `func_mixed_args` having incorrect parameter order/types (`double` first instead of `int`) and functions returning `undefined8` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are largely lost; `func_struct_byval` takes `void` and accesses raw stack offsets, and `SmallStruct` is treated as a raw `int*` rather than a structured type.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe pointer arithmetic (e.g., `*(long *)(&stack0x00000008 + lVar1 * 8)`) and casts `void*` to access specific stack locations, which is error-prone.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings (e.g., "Removing unreachable block") and provide no insight into the algorithm's purpose or variable usage.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `va_list` (varargs) are not recognized; instead, the decompiler exposes the underlying register/stack manipulation implementation.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Anomalies are implicitly indicated by the presence of `undefined` types and stack offsets, but there are no explicit warnings about the potential unreliability of these constructs.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, null checks in `param_double_ptr` are present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to understand despite the poor variable naming.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source structure, and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to Ghidra-specific types (`undefined8`), macros (`stack0x00000008`), and missing data definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Composite types (structs) are not recovered; large struct arguments are accessed via raw stack offsets (`stack0x00000008`).
+- Variable names are generic (`param_1`, `local_88`), losing semantic context.
+- Varargs logic is decompiled into manual pointer arithmetic rather than `va_list` idioms.
+- String literals are referenced by address pointers (`&DAT_...`) rather than inline strings.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function symbols, making the high-level flow easy to trace.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions forces the reader to interpret raw pointer arithmetic, significantly hindering understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement stack frame analysis to reconstruct struct layouts for arguments passed by value, replacing raw stack offsets with struct field access.
+2. Recognize standard varargs implementation patterns (e.g., `va_start`, `va_arg` on x64) and emit standard C `va_list` code instead of raw register/stack pointer math.
+3. Improve type inference for mixed integer/floating-point arguments to match the System V AMD64 ABI correctly, avoiding parameter order confusion.

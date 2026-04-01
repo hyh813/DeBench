@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_gcc_O2_no_g/ida/syntactic/bin/7_gcc_O2_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization edge cases:\n\nOpaque Predicate: 10\nFake Branch: 20\nInstruction Substitution: 225\nString Encryption: 0\nTail Call: 500500\nNon-Tail Call: 5050\nVectorized Loop: 0\nLTO: 20\nDivision by Zero: 2\nNull Pointer Dereference: 41\nBuffer Overflow: 30\nInteger Overflow: 2000000000\nUndefined Behavior: 10\nImplementation Defined: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

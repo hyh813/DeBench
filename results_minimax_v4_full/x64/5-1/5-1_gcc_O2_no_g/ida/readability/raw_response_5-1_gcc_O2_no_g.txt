@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic identifiers like `v0`, `v1`, `v2`, `a1`, `a2`, `s`, `exception`. The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count`, `capture_by_value`, `capture_by_ref`. The decompiled code completely loses this semantic information.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are correctly demangled from C++ name mangling (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`, `_ZN4Base12virtual_funcEi` → `Base::virtual_func`). The naming accurately reflects the original source function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `42` (thrown exception), `1001` (constructor calculation), and various vtable offsets (`-24LL`, `-16`) appear without explanation. However, some values like `42` are inferable from context. The string "Test" is encoded as `1953719636` (0x74736554) without clarification.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: 16 spurious `sub_XXXX` functions that just call `sub_1020()`, `JUMPOUT(0)` statements, stack canary checks `__readfsqword(0x28u)`, and numerous virtual thunk functions (`_ZThn16_N12MultiDerived5funcBEv`). The "FAILED to decompile" section shows 21 functions that couldn't be processed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions are simple return statements with computed values (e.g., `return 42;`, `return 71;`). The exception handling is not properly structured as try-catch blocks - it directly calls `__cxa_throw`. Virtual function calls use indirect vtable dispatch which is expected. Overall flow is readable but exception semantics are lost.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function decomposition matches the original source well. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is properly separated. Member functions like `Container<int>::push`, `template_max<int>` are correctly extracted. Function granularity is appropriate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without complex jumps. The virtual function thunks have some complexity with pointer adjustments but remain followable. Early returns are used appropriately in some functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code exists (the 16 `sub_XXXX` stub functions). The `test_cpp_member_func` function allocates stack space for `SimpleClass` objects but doesn't fully construct them - the decompiler optimized away the actual object operations to just compute the return value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are imprecise - uses raw types like `_DWORD`, `_QWORD`, `__int64` instead of semantic types. The original `int` becomes `unsigned int` in some places. Pointers are often shown as `__int64` rather than typed pointers. Const correctness is lost (e.g., `const char*` becomes `char*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions were recovered. All struct access uses raw pointer arithmetic: `*(_DWORD *)(a1 + 40)` instead of `this->size`, `*(_QWORD *)this` instead of vtable pointer. The original classes (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) are completely lost - only their member functions are visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic (`(char *)this + *(_QWORD *)(*(_QWORD *)this - 24LL)`), unchecked array access in `Container`, type-confused operations in virtual function thunks. The RTTI code has complex pointer manipulations that could easily cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments exist in the decompiled code. The only comment is the header indicating decompilation by IDA Pro with Hex-Rays. No explanation of algorithms, vtable mechanics, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or idioms are recognized or named. The original C++ patterns (RAII with smart pointers, virtual inheritance, lambda expressions, operator overloading) are not identified. The decompiler treats everything as raw computation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The "FAILED to decompile" section lists 21 functions that couldn't be processed (good indicator of failure). However, suspicious code patterns like the complex virtual thunk calculations or the optimized-away object construction are not flagged with warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had bounds checking in `Container::get` and null checks in `test_cpp_smart_ptr` that are not visible in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships are documented. It's unclear which functions call which, what callbacks exist, or how the test harness invokes these functions. The virtual dispatch relationships are not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by feature but not clearly organized. The file is a flat list of 85 functions with no logical grouping, headers, or namespace structure visible.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code cannot compile as-is. Missing: standard library includes (`<iostream>`, `<memory>`, `<typeinfo>`), standard function declarations (`puts`, `strlen`, `operator new`, `operator delete`), and type definitions. The "FAILED to decompile" section indicates missing implementations.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`v0`, `v1`, `a1`, `a2`) losing all semantic meaning from original source
+- No struct/class type recovery - all composite types accessed via raw pointer arithmetic
+- No comments explaining vtable mechanics, virtual inheritance, or exception handling
+- 21 functions failed to decompile, including critical functions like `__printf_chk` and `__cxa_throw`
+- Type precision is severely degraded - uses `_DWORD`, `_QWORD`, `__int64` instead of semantic types
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler correctly demangled C++ mangled names, preserving the original function names like `test_cpp_member_func`, `Base::virtual_func`, and `template_max<int>`.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The decompiled code has zero useful comments. Without comments explaining vtable layout, virtual inheritance mechanics, thunk adjustments, or the optimized-away object construction, the code is extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/class definitions** from vtable layouts and constructor patterns - currently all composite types are lost to raw pointer arithmetic
+2. **Add explanatory comments** for complex patterns like virtual inheritance thunks (`_ZThn16_...`), vtable indirect calls, and exception handling mechanics
+3. **Infer variable names from usage patterns** - e.g., variables used as array indices should be named `index` or `idx`, loop counters should preserve their semantic role

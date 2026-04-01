@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `iVar1`, `uVar1`, `local_28`) and do not reflect the original semantic meaning (e.g., `size`, `arr`, `n`). This forces the reader to reverse-engineer the purpose from usage.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_macro_constants`, `test_preprocessing_features`, and `param_dynamic_code` are perfectly preserved from the source symbols (likely due to `-g` flag), providing excellent context.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Macro constants are replaced by magic numbers (e.g., `0x400` instead of `MAX_SIZE`, `0x40` instead of `BUFFER_COUNT`, `0xdef0` instead of platform constant). The logic `return 0x13` in `param_stringize` obscures the string length calculations.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the control flow is clean, there is significant type noise (`undefined8`, `undefined4`, `undefined *`) and stack canary checks (`in_FS_OFFSET`) that clutter the code, though this is typical for decompilation without precise type info.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: The control flow is excellent; loops are recovered as `for` loops, conditionals as `if/else`, and there is no spaghetti code. The structure matches standard C idioms perfectly.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source. No inlining or outlining has occurred (consistent with `-O0`), maintaining the original logical boundaries and granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or computed branches that disrupt the reading flow within the functions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling artifacts. The code is verbose (due to `-O0`) but not redundant in a way that hides logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Many types are degraded to `undefined` or generic types (`undefined8` return values). While `int` is used correctly for parameters, the loss of specific types like `size_t` (becoming `long` or `undefined`) and `void*` (becoming `undefined *`) reduces precision.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Arrays and structs are often treated as raw memory. For example, `local_28 [6]` represents an array, and `undefined auVar1 [16]` in `param_asm_simd` represents a vector/struct, but no field definitions or semantic types are recovered.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is generally safe, but the use of `undefined` types and casts like `*(undefined *)puVar2` suggests a lack of strict type enforcement in the recovery, which could lead to misinterpretation of data widths.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of magic numbers. The reader is left to deduce everything from the code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `mmap`, `__printf_chk`, and `munmap` are recognized. Atomic operations are wrapped in `LOCK()`/`UNLOCK()` pseudo-ops, which is helpful, but higher-level patterns like the macro logic are lost.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There are no warnings or flags indicating suspicious behavior, such as the self-modifying code in `param_dynamic_code` or the hardcoded machine code injection, which are significant anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or error handling contracts are documented. For example, the failure checks for `mmap` returning `MAP_FAILED` are present in code but not highlighted as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct targets (e.g., `test_preprocessing_features` calling specific test functions). The relationship between `main` and the test suites is clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, roughly following the source order. Helper functions and test functions are distinct, though the lack of file separation (headers) makes it a flat list.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses `undefined` types and Ghidra-specific macros (`LOCK`, `UNLOCK`, `in_FS_OFFSET`) which would require significant patching to compile, as they are not standard C.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 2 + 6) / 4 = 5.0
+L2_avg: (9 + 9 + 9 + 8) / 4 = 8.75
+L3_avg: (5 + 4 + 6) / 3 = 5.0
+L4_avg: (1 + 5 + 1 + 1) / 4 = 2.0
+L5_avg: (8 + 7 + 3) / 3 = 6.0
+
+Overall = (5.0 × 0.30) + (8.75 × 0.25) + (5.0 × 0.20) + 
+          (2.0 × 0.15) + (6.0 × 0.10)
+Overall = 1.5 + 2.1875 + 1.0 + 0.3 + 0.6
+Overall = 5.5875
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects
+- **Macro Erasure**: Named constants (`MAX_SIZE`, `BUFFER_COUNT`) are replaced by magic numbers (`0x400`, `0x40`), destroying the semantic intent of the preprocessing logic.
+- **Generic Variable Naming**: Parameters and locals are named `param_1`, `iVar1`, etc., obscuring their specific roles (e.g., `size`, `counter`).
+- **Type Information Loss**: Pervasive use of `undefined` types (`undefined8`, `undefined *`) instead of concrete types like `int`, `void*`, or `size_t`.
+- **Missing Documentation**: Complete absence of comments explaining complex logic, such as the machine code injection in `param_dynamic_code`.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?**: The decompiler successfully preserved the original function names from the symbol table, making the high-level flow and purpose of each unit immediately obvious.
+
+### Most Needs Improvement
+- **Semantic Transparency (2.0/10)**
+- **Why?**: The lack of comments, combined with the failure to recover macro semantics (reducing code to magic numbers), makes understanding the *why* behind the code extremely difficult despite the clean structure.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Magic Number Detection**: Analyze usage patterns of integer literals (e.g., `0x400` used in size checks) to suggest or auto-define named constants.
+2. **Variable Name Inference**: Utility to infer variable names from context (e.g., `param_1` used in `mmap` length -> `size` or `length`).
+3. **Type Propagation**: Improve type analysis to eliminate `undefined` types, especially for standard integers and pointers, by tracking their usage in standard library calls and arithmetic.

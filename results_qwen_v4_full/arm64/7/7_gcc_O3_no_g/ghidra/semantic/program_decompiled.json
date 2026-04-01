@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_gcc_O3_no_g/ghidra/syntactic/bin/7_gcc_O3_no_g_fixed",
+  "stdout": "Test started\n\nValue: 10\nResult: 20\nSubstitution: 225\nString: 0\nTail call: 500500\nNon-tail: 5050\nVectorized: 72\nLTO: 20\nDiv zero: 1\nNull ptr: 41\nBuffer: 30\nInteger: 2000000000\nUndefined: 10\nImplementation: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,42 @@
+=== Calling Conventions Test ===
+
+CALL-L1-01: 15
+CALL-L1-02: 50
+CALL-L1-03: 6
+CALL-L1-04: 15
+CALL-L1-05: 15
+CALL-L1-06: 100
+CALL-L1-07: 21
+CALL-L1-08: 15
+CALL-L1-09: 10
+CALL-L1-10: 33
+CALL-L2-01: varargs_func(5, 1,2,3,4) = 0
+CALL-L2-02: func_no_args() = 42
+CALL-L2-03: func_many_args() = 36
+CALL-L2-04: func_mixed_args() = 117
+CALL-L2-05: func_struct_byval() = 136
+CALL-L2-06: func_struct_byptr() = 50
+=== Parameter Passing Test ===
+
+PARAM-L1-01: 15
+PARAM-L1-02: 11
+PARAM-L2-01: 8
+PARAM-L2-02: 173
+PARAM-L2-03: 300
+PARAM-L2-04: 0
+PARAM-L3-01: 20
+PARAM-L3-02: 21
+PARAM-L3-03: 305419896
+PARAM-L3-04: 15
+PARAM-L3-05: 4
+=== Return Values Test ===
+
+RET-L1-01: ret_basic_type() = 42
+RET-L1-02: ret_pointer() = 20
+RET-L1-03: ret_small_struct() = 7
+RET-L1-04: ret_large_struct() = 215
+RET-L2-01: ret_func_ptr() = 10
+RET-L2-02: ret_opaque_handle() = 1
+RET-L3-01: ret_complex_expr() = 40
+RET-L3-02: ret_multi_branch() = 60
+RET-L3-03: ret_void() = 21

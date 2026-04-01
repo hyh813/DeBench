@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `result`, `a1`, `a2`, `a3`, `a4`. In `_Z20test_cpp_member_funcv`, variables `v1`, `v2`, `v3` are stack-allocated objects but have no semantic meaning. In `_Z18test_cpp_smart_ptrv`, variables `v1` through `v13` make the code nearly impossible to track without constant reference to usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ name demangling is excellent - `_ZN11SimpleClass8getValueEv` correctly becomes `SimpleClass::getValue()`. However, many internal helper functions remain as `function_d58`, `function_14008`, etc. The demangler successfully recovers meaningful names for user-defined functions but leaves compiler-generated stubs with generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "Test", "Base", "Derived" are preserved correctly. However, magic numbers like `0x40000000` in `LifecycleClass` constructor, `31` for strncpy limit, and `0x1000` in `getClassID()` are unexplained. The decompiler does not suggest named constants for these values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from numerous stub functions like `function_14008`, `function_14070`, `function_14080` that just return uninitialized values. The output is 2809 LOC compared to 540 original - over 5x expansion. Many redundant template implementation details are exposed that should be abstracted.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow closely matches source. Loops and conditionals are recognizable. The exception handling in `_Z18test_cpp_exceptionv` uses indirect calls that obscure the try-catch structure, but this is expected at any optimization level. Generally reads naturally.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Main test functions are preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.). However, std:: template implementations are over-fragmented into dozens of tiny functions (`_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv`, etc.). Some functions like `function_17c0` appear to be outline artifacts.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. Some forward jumps exist in exception handling code but are manageable. The code flow is mostly linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in std:: template implementations - the same patterns repeat for `unique_ptr<int>`, `unique_ptr<int[]>`, etc. Dead code is minimal but some unreachable paths exist. The boilerplate for smart pointer implementations creates substantial redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for ARM64. `float32_t` and `float64_t` typedefs are provided. Function pointer types are sometimes generic but generally accurate. The decompiler correctly identifies const methods with `ZNK` prefix. Minor issues with some parameter types being too generic.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions are recovered. All access is through raw pointer arithmetic like `*(int32_t *)(result2 + 4)`. Field names like `value`, `name`, `size`, `data` from the original source are completely lost, replaced with offset-based accesses. This is a critical failure - the decompiler treats all objects as opaque byte arrays.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts between pointer types. Manual pointer arithmetic without bounds checking (e.g., `*(int32_t *)(4 * a2 + v1)` in `getData`). No indication of null checks or validation. Some type-confused operations in template code. The code would benefit from explicit casts and bounds checking annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in the decompiled output. The only annotations are the demangled function signatures. No explanation of algorithms, no documentation of preconditions/postconditions. The decompiler provides no guidance to the analyst about what the code does.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly present (vtable setup in constructors, smart pointer move semantics) but not explicitly named or documented. The decompiler correctly identifies virtual function thunks (`_ZThn8_`) but doesn't explain their purpose. Template instantiation patterns are recognized but not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or ambiguous code. Indirect calls in exception handling are resolved without warning. The decompiler doesn't flag potential issues like the unusual `function_d70(4)` call that allocates then throws. No confidence indicators for complex code paths.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions like non-null pointers, postconditions like allocated memory, and invariants like buffer limits are not documented. The decompiler provides no semantic information about what the functions expect or guarantee.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and demangled. Global variables have generic names (`g1`, `g2`, etc.) but their purposes can be inferred from usage. Virtual dispatch is handled through vtable pointers but not explicitly documented. Relationships between classes (inheritance) are visible in constructor vtable setup but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in a single massive file (2809 lines). Related functions (class methods) are grouped together but there's no logical ordering. No namespace or package structure recovered. The organization is essentially flat and arbitrary.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes `<stdint.h>` and `<stdlib.h>`. Uses standard types. Should compile with minimal changes. However, many stub functions (`function_*`) would need to be removed or filled in for a real build. No external dependencies are documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `result`, `a1`) making code nearly impossible to track
+- **No struct recovery**: All composite types lost - accessed via raw pointer arithmetic with no field names
+- **No comments**: Zero semantic guidance - no algorithm explanation, no contracts, no anomalies flagged
+- **Excessive noise**: 2809 LOC vs 540 original - 5x expansion from template boilerplate and stub functions
+- **No type safety**: Manual pointer arithmetic without bounds checking, unsafe casts
+
+### Best Quality Aspect: Type Precision (7/10)
+The decompiler uses appropriate integer types (`int32_t`, `uint32_t`) and correctly demangles C++ function names including const qualifiers and parameter types.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+The decompiler completely fails to recover struct/union definitions. All field access is through opaque pointer arithmetic like `*(int32_t *)(result2 + 4)`, losing all semantic meaning of the original data structures.
+
+### Top 3 Recommendations:
+1. **Recover struct definitions**: Analyze object layouts and infer field names from usage patterns (e.g., `result + 4` after `value` field assignment becomes `obj->value`)
+2. **Add semantic comments**: Include algorithm explanations, preconditions/postconditions, and flag uncertain code with confidence indicators
+3. **Infer variable names**: Use usage patterns to name variables (e.g., `v1` used as size parameter → `size`)

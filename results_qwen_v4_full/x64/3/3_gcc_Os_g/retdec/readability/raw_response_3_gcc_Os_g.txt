@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `temp`, `result`) with no semantic meaning. Original parameter names like `n` and `x` are preserved in some functions but most become `a1`, `a2`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`double_value`, `heap_basic`, `local_array`) but many helper functions are generically named (`function_1100`, `function_1110`). Library wrappers lost meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xfffffffe`, `0x100000000`, `0x40000000` appear without explanation. String literals stored as hex-encoded globals (`g1`, `g2`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__readfsqword(40)` stack canary checks, `__stack_chk_fail()` calls, `__asm_rep_stosb_memset`, `__asm_mfence()` inline assembly blocks throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `linked_list_heap` uses goto labels (`lab_0x1877`) instead of structured loops. For loops converted to while loops with manual increment, making iteration logic harder to follow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but library calls split into separate helpers (`function_1150` for calloc, `function_1160` for malloc) adding unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto labels (`lab_0x1877`, `lab_0x1c37`) disrupt top-to-bottom reading. `test_heap_memory` has complex branching that could be structured with if-else chains.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Complex bit manipulation patterns repeated: `(0x100000000 * (0x100000000 * (int64_t)(n >> 31) | v1 & 0xffffffff) / 2 >> 30)` appears multiple times for simple division operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Overuse of `int64_t` where `int32_t` would be correct. Pointer types often generic (`int64_t *` instead of `struct Node *`). Some signedness lost in conversions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` and `Node` struct definitions completely lost. All struct access converted to raw pointer arithmetic (`*(int64_t *)(v1 + 8)` instead of `node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int64_t *)mem`, `(int32_t *)mem`. No const-correctness preserved. Function pointer types degraded to generic `int64_t`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. Only auto-generated metadata headers present. No explanation of algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation/traversal pattern in `linked_list_heap` not recognized. Tree structure operations in `tree_heap_traversal` appear as raw memory operations without pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous patterns like dangling pointer access in `dangling_pointer()` and double-free in `double_free()` not flagged with warnings. No indication of undefined behavior risks.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `n > 0` requirements). Null pointer checks present but not documented as contracts. Return value semantics unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible through code but no call graph documentation. Global variable usage (`global_counter`, `global_func_ptr`) not annotated with readers/writers.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by memory address rather than logical grouping. Related test functions (`test_stack_memory`, `test_heap_memory`) not grouped with their tested functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers and should compile with minor modifications. `__asm_*` functions may need stubs. External dependencies (`extern_function`) properly declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.09/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Struct definitions completely lost** - `Point` and `Node` structs reduced to raw pointer arithmetic, destroying all field semantics
+- **Variable names universally generic** - `v1`, `v2`, `v3` provide zero semantic information about purpose
+- **Zero documentation** - No comments explaining function purpose, algorithm intent, or non-obvious logic
+- **Control flow degradation** - Goto labels (`lab_0x1877`) used where structured loops would be clearer
+- **Type precision loss** - `int64_t` overused, function pointers degraded, const-correctness absent
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code includes proper headers and external declarations, requiring minimal modification to compile
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze memory access patterns to reconstruct struct layouts with meaningful field names based on usage context
+2. **Implement semantic variable naming** - Use data flow analysis to infer variable purposes (e.g., loop counters, size parameters, pointers) and assign descriptive names
+3. **Add decompilation confidence annotations** - Insert comments indicating uncertain reconstructions, potential optimization artifacts, and recognized code patterns (linked lists, trees, etc.)

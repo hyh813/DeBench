@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `local_18`, `pcVar2`) with no semantic meaning recovered. For example, `param_1` in `param_macro_constants` should be `size`, and loop counters lack descriptive names like `i` or `index`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (e.g., `param_macro_constants`, `call_asm_basic`, `param_atomic_c11`). This is Ghidra's strongest feature - original symbol names survived compilation with `-g` flag.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate: `0x200` (should be `MAX_SIZE/2`), `0x40` (should be `BUFFER_COUNT*4`), `0xdef0` (platform constant). Original macros like `MAX_SIZE=1024` are not recovered as named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present: `LOCK()/UNLOCK()` pseudo-functions for atomics, redundant array zero-initialization in `call_asm_multi_insn` (32 explicit assignments). Generally manageable but noticeable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For-loops successfully recovered from assembly (e.g., `param_asm_clobber`). However, conditional compilation branches are collapsed (e.g., `param_conditional_compile` shows only release path `*3+2`, losing debug branch visibility).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - each test function remains separate. No monolithic functions or over-fragmentation. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Some disruption in `test_asm_features` with complex stack variable initialization (`local_48 = CONCAT44(...)`) that obscures flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `call_asm_multi_insn` has excessive zero-initialization (32 individual assignments). Otherwise, dead code is reasonably eliminated without significant duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `undefined8`, `undefined4`, `undefined1` instead of precise types. `param_stringize` loses its `int value` parameter entirely. Pointer types present but often generic (`void*`, `long`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (e.g., `local_18[6]` in `call_asm_clobber`). No complex structs in this code to recover, so limited applicability. Stack arrays correctly sized.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(undefined *)0x0`, `(code *)`). Pointer arithmetic in `param_asm_clobber` is correct but uses generic types. No obvious buffer overflow patterns introduced.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical loss** - zero comments recovered from extensive source documentation. Original had detailed section headers, macro explanations, and expected values. Only decompiler warnings present ("WARNING: Removing unreachable block").
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C but not identified (e.g., `param_asm_atomic` shows LOCK/UNLOCK but no indication this was `lock xadd` instruction). No algorithm or pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unreachable blocks. However, no indication of decompilation uncertainty for complex cases like `param_dynamic_code` (self-modifying code) or atomic operations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` should note `arr != NULL, n > 0`). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variable `global_var` usage visible. No explicit call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file (expected from decompilation). No header file separation or logical grouping comments. Original section organization (5.2, 5.3) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone - `LOCK()/UNLOCK()` are Ghidra pseudo-functions, `__gmon_start__` undefined, `CONCAT44` macro not standard. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3+9+4+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (25%): (7+8+7+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (20%): (5+7+6)/3   = 6.00 × 0.20 = 1.20
+Level 4 (15%): (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (10%): (6+5+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall = 1.65 + 1.81 + 1.20 + 0.53 + 0.50 = 5.69/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects
+- **Zero comments recovered** from extensively documented source code (original had 200+ lines of comments)
+- **Variable names entirely generic** (`param_1`, `iVar1`) losing all semantic meaning
+- **Magic numbers everywhere** - macros like `MAX_SIZE`, `BUFFER_COUNT` not recovered as constants
+- **Function signature degradation** - `param_stringize(int value)` became `param_stringize(void)`
+- **Non-compilable pseudo-functions** - `LOCK()`, `UNLOCK()`, `CONCAT44` require manual replacement
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved due to `-g` debug symbols, making navigation and identification straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation, section headers, expected values, and macro explanations that made the original code self-documenting.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement comment recovery from debug sections** - DWARF debug info contains source line mappings that could preserve at least section headers and key documentation.
+2. **Add constant macro detection** - Analyze repeated literal values across functions to suggest named constants (e.g., detect `0x400` used in size comparisons → suggest `MAX_SIZE`).
+3. **Improve variable name inference** - Use usage pattern analysis (e.g., parameters used in size comparisons should be named `size`, loop counters should be `i`/`index`).

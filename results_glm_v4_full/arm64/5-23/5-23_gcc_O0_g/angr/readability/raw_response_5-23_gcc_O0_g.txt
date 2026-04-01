@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`), obscuring semantic meaning like `size`, `result`, or `arr`. Only rare instances like `dst` and `src` in `param_asm_multi_insn` retain meaning.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_macro_constants`, `call_asm_basic`), likely due to the presence of debug symbols (`-g`), providing perfect semantic context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are perfectly recovered (e.g., `"Hello World"`), but numeric constants are often raw hex values (e.g., `0x400` instead of `1024`) or obscured by complex bitwise operations (e.g., `4294967294` instead of simple arithmetic).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with stack canary checks (`__stack_chk_guard`) and redundant stack pointer assignments (`v0 = &v1`) typical of `-O0` builds, which adds significant visual noise to the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow structures like `if` statements and `for` loops are correctly identified and natural. The logic flow is easy to follow, despite the obfuscated arithmetic expressions within the blocks.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct granularity and boundaries matching the source. There is no artificial splitting or merging of functions, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom. There are no confusing jumps or `goto` statements interrupting the flow, making it easy to trace execution paths.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Mostly clean, but `param_asm_multi_insn` contains a redundant double call to `memcpy` (once assigned to `dst`, once returned), likely an artifact of register handling or tail call optimization at `-O0`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate (`unsigned int`, `unsigned long long`, `void*`). The decompiler correctly distinguishes between integer sizes and pointer types, preserving the original signatures well.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Array types are completely lost. In `call_asm_clobber`, the local array `int arr[] = {1, 2, 3, 4, 5}` is decompiled into separate 64-bit integer variables `v1` and `v2` with packed values (`8589934593`, `17179869187`), destroying the array abstraction.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic is explicit (e.g., `*((int *)(a0 + ...))`). While safe, the use of `__ROL__` (rotate) macros for array indexing is a type/confusion issue where a shift operation is misrepresented as a rotation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The rich documentation and section headers from the original source are entirely absent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common arithmetic idioms are obscured. Simple multiplication by 3 (`x * 3 + 2`) is decompiled into a complex bitwise expression `((v0 * 2 | v0 >> 31) & 4294967294) + v0 + 2`, failing to recognize the high-level intent.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The decompiler confidently presents the incorrect `__ROL__` usage for array indexing and the obfuscated multiplication without any warning or uncertainty indication.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic of the functions must be entirely reverse-engineered from the code.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names. The relationship between callers and callees is easily traceable due to the accurate function naming.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source file structure. Grouping of related test functions is preserved.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific macros like `__ROL__` and compiler intrinsics like `__aarch64_ldadd4_acq_rel` without defining them, making it impossible to compile without significant modification or including specific Ghidra headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 4 + 5) / 4 = 5.5
+L2_avg = (8 + 9 + 8 + 7) / 4 = 8.0
+L3_avg = (8 + 3 + 7) / 3 = 6.0
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (8 + 8 + 3) / 3 = 6.33
+
+Overall = (5.5 × 0.30) + (8.0 × 0.25) + (6.0 × 0.20) + 
+          (1.25 × 0.15) + (6.33 × 0.10)
+Overall = 1.65 + 2.0 + 1.2 + 0.1875 + 0.633
+Overall = 5.67
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.7/10
+
+### Critical Defects (Bullet List)
+- **Arithmetic Obfuscation**: Simple multiplication (e.g., `x * 3`, `x * 10`) is decompiled into complex bitwise masking and shifting operations (e.g., `& 4294967294`), destroying readability.
+- **Array Loss**: Local arrays (e.g., `int arr[]`) are flattened into packed 64-bit integer variables (e.g., `v1 = 8589934593`), making data structures unrecognizable.
+- **Incorrect Idiom Representation**: Array indexing using register offsets is represented as `__ROL__(i, 2)` (rotate) instead of `i << 2` (shift), which is semantically confusing and incorrect for this context.
+- **Missing Variable Names**: Variables are generic (`v0`, `a0`), losing the semantic context provided in the source (e.g., `size`, `result`).
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The debug symbols (`-g`) allowed the decompiler to perfectly recover the original function names, providing immediate context for every code block.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (1.25/10)**
+- **Why?** The decompiler fails to explain the "why" behind the code; it lacks comments, fails to recognize standard arithmetic idioms, and presents complex bitwise logic where simple math existed, leaving the user to decipher the intent manually.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Arithmetic Pattern Matching**: Implement simplification rules to detect and collapse ARM64 shifted-register operations (e.g., `ADD x0, x0, x0, LSL #1`) back into standard multiplication (e.g., `x * 3`).
+2.  **Enhance Array Recovery**: Analyze stack variable initialization patterns to identify contiguous memory assignments and reconstruct them as array types instead of separate packed integer variables.
+3.  **Fix Addressing Mode Lifting**: Correctly identify register-offset addressing modes (e.g., `[base, reg, LSL #2]`) as array indexing (`base[index]`) rather than misinterpreting the shift as a bitwise rotation (`__ROL__`).

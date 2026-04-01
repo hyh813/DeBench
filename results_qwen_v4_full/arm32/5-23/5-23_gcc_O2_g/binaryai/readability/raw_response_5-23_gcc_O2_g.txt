@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_20` with no semantic meaning recovered. At `-O0` with debug symbols (`-g`), original variable names should have been preserved but were completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`) matching original source exactly, likely due to debug symbol availability.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the code (`0x401` for MAX_SIZE, `0x200` for 512, `0x40` for 64, `0xdef0`) with no constant name recovery despite macros being explicit in source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts, though unnecessary wrapper functions for external calls (`mprotect`, `memcpy` wrappers) add slight noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions show natural control flow with proper if-else and loop structures, though some functions are over-optimized (e.g., `call_macro_constants` returns constant `0x40` directly instead of calling the function).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity, though some caller functions are trivial constant returns that could be inlined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate do-while loop recovery, though some forward references disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding created redundancy where caller functions duplicate printf calls and computations instead of calling the actual functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4` instead of specific types in many places; some function signatures are wrong (e.g., `test_asm_features` has extra `undefined4` parameters that don't exist in source).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays handled reasonably (`local_20[5]`, `local_44[4]`), but no struct recovery needed for this code; pointer arithmetic visible but not egregious.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (e.g., `(int *)(param_1 + -4)` in `param_asm_simd`), and atomic functions have incorrect signatures (`__sync_fetch_and_add_4()` called without proper arguments).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output; no explanation of logic, no decompiler confidence indicators, no documentation of non-obvious transformations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible; atomic operations not identified as such, macro expansions not annotated, SIMD patterns not recognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite clear issues (wrong function signatures, incorrect atomic operation calls, broken control flow in `call_asm_simd` with unreachable `__stack_chk_fail`).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented; error conditions (MAP_FAILED checks) present but not explained as contract requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented; no call graph information; relationship between `param_*` and `call_*` functions not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order matching source, but no clear module boundaries or grouping indicators for preprocessing vs. assembly sections.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but some signatures wrong; atomic helper functions have incorrect prototypes; would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable names completely lost** despite `-g` debug symbols (`param_1`, `iVar1` instead of `size`, `result`)
+- **Zero comments** explaining macro expansions, atomic operations, or assembly semantics
+- **Incorrect function signatures** (`test_asm_features` has 3 extra `undefined4` parameters)
+- **Atomic operations broken** (`__sync_fetch_and_add_4()` called without proper pointer arguments)
+- **Magic numbers everywhere** (`0x401`, `0x200`, `0xdef0`) with no constant name recovery
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names preserved exactly from source due to debug symbols, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompiler confidence indicators makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - When `-g` is present, extract DWARF debug info to restore original variable names instead of generic `param_N` patterns.
+
+2. **Add semantic annotations for macro expansions** - Detect constant-folded macros and add comments like `// Expanded from: MAX_SIZE (1024)` to explain magic numbers.
+
+3. **Flag uncertain reconstructions** - Add anomaly indicators for functions with suspicious signatures, broken control flow, or unresolvable indirect calls to guide manual review.

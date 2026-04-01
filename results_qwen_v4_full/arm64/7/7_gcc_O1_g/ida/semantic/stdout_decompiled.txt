@@ -1,0 +1,11 @@
+Testing obfuscated optimizations edge cases
+
+10
+Opaque predicate result: 20
+Instruction substitution result: 225
+String encryption result: 31
+Tail call optimized result: 500500
+Non-tail call result: 5050
+Vectorized loop result: 1754237324
+Link time optimization result: 20
+Division by zero result: 2

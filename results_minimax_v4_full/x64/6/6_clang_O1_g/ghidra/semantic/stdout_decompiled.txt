@@ -1,0 +1,8 @@
+HelloLib
+strlen: 14
+strcmp: 0
+strcmp result: 12
+memcmp: 90
+sscanf: -1
+Value: 42, Name: Lib
+printf chars: 21

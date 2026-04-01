@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_gcc_O0_no_g/ghidra/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "Testing obfuscation optimizations:\n\nFake branch: 0\nOpaque predicate: 0\nInstruction substitution: 0\nString encryption: (null)\nTail call: 0\nNon-tail call: 0\nVectorized loop: 0\nLTO: 0\nDivision by zero: 1\nNull pointer: 41\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

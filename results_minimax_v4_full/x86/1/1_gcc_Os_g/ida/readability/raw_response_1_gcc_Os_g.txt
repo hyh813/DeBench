@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout. While function parameters like `a`, `b`, `c` in `sequential_ops` match source, internal variables are completely non-descriptive (e.g., `v1` in `loop_for_fixed` should be `sum` or `i`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `recursion_factorial`, `duffs_device`. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `100` in `multi_return` (should indicate overflow threshold), `10 * op` in `switch_large`, and `100 * op` in `switch_default` lack explanations. However, array sizes like `5` in `loop_break` and matrix dimensions `3,4` in `loop_nested` are inferable from context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some stack canary checks (`__readgsdword(0x14u)`) appear in security-sensitive functions, and `qmemcpy` is used for array initialization - both acceptable. No redundant casts or debug instrumentation cluttering the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops properly recognized as `while`/`for`, if-else chains are clear. However, `switch_fallthrough` uses confusing goto labels (`LABEL_7`, `_L201`) instead of clearer fall-through semantics. Duff's device has fragmented label-based structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function is correctly separated. No inlining artifacts or monolithic functions. Function granularity is appropriate - each function has single responsibility matching the source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `loop_break` and `multi_return` are appropriate. Minor forward jumps in `switch_fallthrough` but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `duffs_device` is present but structurally necessary. Common subexpressions like `2 * x` appear but reflect actual computation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integer types are generic `int` with no `int32_t`, `uint64_t`, or `size_t` differentiation. Function parameters and return types are uniformly `int`. At -O0, more precise types could be recovered. Pointer types are correct (`int*`, `int**`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are handled via `qmemcpy` which is acceptable for decompilation. The `matrix[3][4]` in `loop_multi_exit` is correctly reconstructed. No struct recovery needed for this flat code, but nested arrays handled adequately.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Function pointer types are correctly typed as `int (*)(int)` in `call_func_ptr`. Array bounds checks present in `call_func_ptr_array` (`if (unsigned int)idx > 2`). Minor issues with `volatile` not always specified.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source has extensive comments explaining each function's purpose, test cases, and difficulty ratings. Zero recovery of this documentation is a severe readability failure.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized - state machine structure in `state_machine` and `fsm_func_table`, callback pattern in `process_with_callback`. However, Duff's device (`duffs_device`) is not identified as such, and the computed goto in `computed_goto` uses raw assembly jump instead of labeled explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "bad sp value at call has been detected" in `test_control_flow_l2` and `test_control_flow_l3`. However, failed decompilations are listed at the end but not inline with the functions. No indication of uncertainty in indirect calls or complex patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Preconditions like "n must be > 0" in `duffs_device` are not indicated. Error handling paths (e.g., `return -1` for invalid input) are not explained as contract violations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - test functions call target functions. Global variables like `jump_buffer` for setjmp/longjmp are properly shared. However, no documentation of who calls whom beyond the test harness.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are in logical order matching source (L1 tests, L2 tests, L3 tests). Static functions like `double_value`, `triple_value` are properly scoped. Single file output matches the original single-source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata states "Compilation Result: Yes", indicating the code compiles. External dependencies (libc functions like `puts`, `__printf_chk`) are called but not declared. Would need standard library headers to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- **No comments recovered** - The original source has 900+ lines of explanatory comments documenting function purpose, test cases, and difficulty ratings; zero were recovered
+- **Generic variable names** - Variables like `v1`, `v2`, `v3` throughout obscure their semantic roles (e.g., `v1` in `loop_for_fixed` is the sum accumulator)
+- **No type precision** - All integers are generic `int` instead of potentially more specific types; at -O0, decompiler could infer more
+- **Duff's device not identified** - The complex switch-do-while pattern is not labeled as the well-known Duff's device idiom
+- **No contract/precondition documentation** - Functions like `duffs_device` (requiring n>0) have no indication of preconditions
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to locate specific functions and understand their high-level purpose.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+The complete absence of comments is the most severe readability failure. The original source is heavily documented with algorithm explanations, test case descriptions, and semantic context that would dramatically improve understandability if recovered.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover documentation from debug symbols**: At -g compilation, DWARF info contains function descriptions and variable names that should be extracted
+2. **Infer variable names from usage patterns**: Variables used as loop counters, accumulators, or array indices can be named based on their role (e.g., `v1` in `while (v1 < n)` → `i` or `index`)
+3. **Identify and label known idioms**: Duff's device, state machines, and other recognized patterns should be explicitly labeled with their canonical names

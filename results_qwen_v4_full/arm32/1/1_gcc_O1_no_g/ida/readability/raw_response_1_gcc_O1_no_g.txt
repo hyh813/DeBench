@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic register-based names (`a1`, `a2`, `v1`, `v2`, `result`) instead of semantic names like `temp1`, `sum`, `count` from original. For example, `sequential_ops` uses `a1, a2, a3` instead of `a, b, c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`). Some helper functions have generic names (`sub_10454`), but core test functions match source.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Switch case values (0-9) are clear in context. Magic numbers like array sizes are implicit. The opaque predicate's `0x12345678` was optimized away entirely by compiler.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains stack annotations (`[sp+0h] [bp-20h] BYREF`), register hints (`r0`, `r12`), and calling convention markers (`__fastcall`). Failed decompilation notices at end add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions (`sequential_ops`, `single_if`) recover well. `switch_fallthrough` degrades to goto labels (`LABEL_7`, `LABEL_6`). `nested_if_deep` becomes sequential ifs losing nesting structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Helper functions (`op_add`, `double_value`) remain separate. Test functions are large but cohesive with printf sequences.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `duffs_device` and `switch_fallthrough` use extensive goto patterns disrupting flow. Most other functions read top-to-bottom naturally with appropriate loop constructs.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_nested` has unnecessary complexity in inner loop (empty for-loop). `switch_fallthrough` has redundant label jumps. Some functions have excessive temporary variables.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed types (`int`, `__int64`, `char`, `bool`, `_DWORD`). `op_shl` uses `char a2` instead of `int`. `state_idle` returns `bool` instead of `int` (semantic change from original).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered as stack variables (`v8[12]`, `v16[5]`). Function pointer arrays recovered but with generic naming. No complex structs in this code to evaluate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe function pointer casts in `call_func_ptr_array` (`((int (__fastcall *)(int))v4[a1 - 4])`). `computed_goto` has inline assembly. Pointer arithmetic in `loop_break` is suspicious.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated decompiler warnings ("positive sp value has been detected"). Original's extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Control flow patterns recognized (if/else, switch, loops). State machine pattern in `state_machine` preserved but not explicitly named. `duffs_device` pattern partially recognized but messy.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (10 functions). Some stack warnings present. `computed_goto` inline assembly noted. No inline anomaly flags within code body.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Original test cases and expected values not preserved in function comments. Error conditions undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variables referenced (`jump_buffer`, `completed_0`). No explicit call graph documentation but relationships visible through code.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation. Test functions grouped but helper functions scattered. No namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Claims compilation success but has 10 failed decompilations. External dependencies (`_printf_chk`, `puts`, `setjmp`) not declared. Architecture mismatch (original arm64, decompiled arm32).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+7+5)/4 = 6.0  × 0.30 = 1.80
+Level 2 (Structural):   (6+7+5+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type System):  (6+7+5)/3 = 6.0    × 0.20 = 1.20
+Level 4 (Semantic):     (3+5+4+2)/4 = 3.5  × 0.15 = 0.53
+Level 5 (Contextual):   (6+5+4)/3 = 5.0    × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.47/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`, `v2`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **`switch_fallthrough` uses goto labels** instead of preserving fall-through semantics, making logic harder to follow
+- **No comments recovered** - original's extensive documentation explaining each function's purpose completely lost
+- **Type inconsistencies** - `state_idle` returns `bool` instead of `int`, `op_shl` uses `char` parameter
+- **10 functions failed to decompile** including critical library functions (`_printf_chk`, `setjmp`, `longjmp`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names like `sequential_ops`, `recursion_factorial`, `loop_for_fixed` were preserved accurately from source, maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or test case documentation recovered. Original's test validation comments completely absent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Detect `sum` accumulators, `count` iterators, and `result` return values based on operation semantics
+2. **Preserve fall-through switch semantics** - Recognize intentional fall-through patterns and add `// fall-through` comments instead of converting to goto labels
+3. **Recover test assertions as comments** - Extract printf test cases and expected values into function documentation blocks for validation context

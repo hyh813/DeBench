@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `v29`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained names (`process_char`, `array_1d_stack`, `ptr_single`), but many runtime functions are generic (`sub_4006e4`, `sub_4007b0`) and some are misnamed (`$x`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Severe magic number pollution throughout: `4294967295`, `18446744073709551612`, `65535`. Simple operations like `x * 2` became `(a0 * 2 | a0 >> 31) & 4294967294`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_guard`), frame pointer setup (`v0 = &v1`), and runtime library calls (`__addtf3`, `__multf3`) mixed with user code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops recovered as for-loops in some cases, but `enum_switch` uses confusing if-else chains instead of switch. Some functions use goto patterns unnecessarily.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failures: `process_float()` and `process_double()` take no parameters (should take float/double). Runtime functions like `__addtf3` are 500+ line monoliths.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but excessive local variable declarations at function start and stack canary checks at end disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant bit manipulation patterns repeat across functions. `process_int` and `double_value` share identical complex patterns that should be simple arithmetic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type errors: `process_float` returns `long long` instead of `float`, `process_double` returns `long long` instead of `double`. Pointer types degraded to `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with generic fields (`field_0`, `field_8`). Original `Point3D`, `Rect`, `Widget` structures completely lost semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe casts throughout. void* used extensively for pointer operations. No const correctness preserved (e.g., `const_param` loses const qualifier).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated function headers. No algorithm explanations or decompilation confidence indicators anywhere.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop idioms sometimes recognized (for-loops recovered), but no design patterns identified. Linked list traversal not annotated as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions presented confidently without warnings. `process_float()` taking no parameters should be flagged as decompilation failure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions or error handling documentation recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Global variables referenced (`g_414f88`, `g_403000`) without explanation of purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`__addtf3`, `__multf3`) mixed with user test code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies not declared. Runtime functions need linking. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+3+4)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.78/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Function signature corruption**: `process_float()` and `process_double()` take no parameters, making them unusable
+- **Type system collapse**: Float/double functions return `long long`, destroying floating-point semantics
+- **Magic number explosion**: Simple `x * 2` became `(a0 * 2 | a0 >> 31) & 4294967294`
+- **Struct field anonymization**: `Point3D.x/y/z` became `field_0/field_4/field_8` losing all semantic meaning
+- **No anomaly warnings**: Broken decompilations presented confidently without indicating uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names were preserved from debug symbols, providing some anchor points for understanding
+
+### Most Needs Improvement: **Semantic Transparency (2.25/10 average)**
+- Complete absence of comments, anomaly indicators, and contract documentation makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag parameter type mismatches** - When a function's binary signature doesn't match expected types (like float functions), emit warnings rather than silent corruption
+2. **Recover magic numbers to named constants** - Detect patterns like `4294967295` (UINT32_MAX) and `65535` (UINT16_MAX) and suggest constant names
+3. **Preserve struct field semantics from debug info** - When `-g` flag is present, extract field names from DWARF debug information rather than generic `field_0` naming

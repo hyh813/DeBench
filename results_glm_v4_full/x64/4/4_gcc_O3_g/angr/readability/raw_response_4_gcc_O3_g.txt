@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `a0`, `ptr`, or `v0`. No semantic names like `sum`, `count`, or `seed` were recovered, making it difficult to understand the purpose of local variables without deep analysis.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names from the source (e.g., `cdecl_func`, `test_calling_conventions`, `main`) are preserved, likely due to symbol table presence. However, some wrapper functions use generic names like `sub_401020`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code contains many "magic numbers" such as `40` (stack offset for canary), `8` (pointer size), and `4294967295` (unsigned -1). String literals are referenced via global pointers (e.g., `&g_402008`) rather than displaying the string content inline.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The decompilation includes significant noise such as stack canary checks (`__stack_chk_fail`), non-standard intrinsics (`AddV`, `InterleaveLOV`), and redundant casts that obscure the original logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions are readable, complex logic like `varargs_func` is transformed into an unintelligible loop (`for (v13 = 0; i <= 47; i += 8)`) that does not resemble the original `va_arg` iteration, making the control flow confusing.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The granularity matches the source well; functions are not inlined into monolithic blocks. However, the decompiler failed to recover the body of `func_struct_byval`, leaving it empty.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal spaghetti-like jumps. Forward jumps are rare, and the structure is mostly sequential, which aids readability.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler's constant propagation (e.g., `call_cdecl` returning `15`) is preserved, which is clean. However, the decompiler introduces redundancy in complex types, such as the verbose bit-masking in `func_mixed_args`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Critical type information is lost or incorrect. For example, `double` parameters in `func_mixed_args` are represented as `uint256_t` (YMM registers), and standard integers are often widened to `unsigned long long`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite type recovery failed completely. `func_struct_byval` is decompiled as an empty function returning `void`, losing the `LargeStruct` parameter and the summation logic entirely. Small struct returns use the `InterleaveLOV` intrinsic instead of a struct definition.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe casts and confusing type manipulations, such as treating a `double` as a `uint256_t` and performing bitwise operations on it. Pointer arithmetic is exposed directly in varargs functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or data structures. The only comments are register annotations (e.g., `// rax`), which offer no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are not recognized. The `va_list` pattern in `varargs_func` is not detected; instead, it is represented as raw stack pointer manipulation and a counting loop.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect or nonsensical code (e.g., the empty `func_struct_byval`) without any warning or "UNCERTAIN" markers, leading the user to believe the code is accurate when it is not.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For example, the requirement for `ptr` to be non-null in `param_double_ptr` is not documented, though the check exists.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clearly visible, and the relationship between callers and callees is preserved. The use of standard library functions like `__printf_chk` is clear.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the order of the source file. Related test functions (e.g., calling conventions) appear together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types (`uint256_t`) and intrinsics (`InterleaveLOV`, `AddV`) that do not exist in standard C, making it impossible to compile without significant modification or defining custom headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- **Struct Handling Failure**: `func_struct_byval` is completely empty, losing the logic for summing a `LargeStruct`.
+- **Varargs Obfuscation**: `varargs_func` logic is replaced by unintelligible stack pointer arithmetic and a counting loop, failing to recover the `va_list` pattern.
+- **Type Corruption**: `double` types are represented as `uint256_t` with bitwise operations, destroying the semantic meaning of floating-point math.
+- **Missing Return Logic**: `ret_small_struct` uses the `InterleaveLOV` intrinsic instead of returning a struct, making the return value opaque.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully preserved the original function names from the symbol table, making it easy to locate specific test cases.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The complete failure to recover `LargeStruct` and the mangling of `SmallStruct` returns into intrinsics renders a significant portion of the code unreadable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Struct Passing Analysis**: The decompiler must correctly identify structures passed by value (especially large ones) and recover their field access patterns instead of producing empty functions.
+2. **Enhance Varargs Recovery**: Implement better pattern matching for `va_start`, `va_arg`, and `va_end` to reconstruct loops rather than falling back to raw stack offset arithmetic.
+3. **Refine Floating-Point/SIMD Type Mapping**: Correctly map SIMD/YMM registers back to standard C types (like `double`) when the usage context implies scalar floating-point operations, avoiding `uint256_t` pollution.

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1` instead of semantic names. For example, in `param_strcpy`, parameters are `ptr` and `a1` instead of `dst` and `src`. Some variables like `len`, `fp`, `count`, `result` are well-named, but the majority obscure their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`, `param_mutex_lock`). However, helper/runtime functions use generic names like `sub_4013e4`, `sub_401824`, `sub_401870` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (unsigned -1), `18446744073709551612` (bitmask), `85899345930`. String literals preserved well ("HelloLib", "/etc/passwd"), but numeric constants lack explanation. Signal numbers appear as raw values (10, 14) instead of `SIGUSR1`, `SIGALRM`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_guard`, `__stack_chk_fail()`) appear in every function. Frame pointer setup (`v0 = &v1`) is redundant throughout. ARM64-specific operations like `__ROL__` and `arm64g_calculate_condition` add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use standard if-else and while constructs. However, `param_malloc_free` has complex bit manipulation in loop conditions. Signal handling uses `while(true)` with manual break instead of cleaner condition. Some functions have awkward nested conditionals.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. Thread functions (`thread_compute`, `thread_sum`, `thread_increment`) properly separated. Some runtime functions like `register_tm_clones` are fragmented with goto statements.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. However, `param_pthread_join` has deeply nested while loops with complex index calculations. Some functions use goto patterns (`register_tm_clones`) disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. `param_strcpy` calls `strlen(ptr)` twice (once assigned to `len`, once returned). `call_memcpy` and similar caller functions call their target function twice unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types: `unsigned long long`, `char*`, `void*`. Original `size_t`, `pid_t`, `pthread_t` lost. `param_memset` signature changed from `(void*, size_t)` to `(void*)` losing the size parameter. Many `unsigned int` where `int` was original.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct FILE`, `struct sockaddr`, `struct struct_0`) but with generic field names (`field_0`, `field_5`, `padding_0`). TLS struct in `thread_tls_test` partially recovered but field names lost. ThreadData struct flattened to array access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)ptr + (__ROL__(i, 2) & 18446744073709551612)`. Pointer arithmetic obscures array access. `param_memset` missing size parameter creates type mismatch. Function pointer types degraded to generic signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. Only auto-generated markers like `// [bp-0x20]` and `// Failed to decompile function`. No algorithm explanations, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `memcpy`, `pthread_create`). Signal handling pattern visible but signal numbers not named. Producer-consumer pattern in condition variables not identified. Atomic operations partially recognized (`__aarch64_ldadd4_acq_rel`).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Two functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`). `arm64g_calculate_condition` calls indicate unresolved patterns. No explicit warnings about potential issues or uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). Return value semantics not explained. Error codes like `4294967295` not documented as -1. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through direct calls. Global variables referenced (`shared_counter`, `atomic_counter`, `signal_number`) but relationships not documented. Callback relationships (thread functions) visible through `pthread_create` arguments.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical groups (library functions, system calls, thread functions). Test functions grouped together. However, runtime initialization functions scattered throughout. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`extern char __stack_chk_guard`, `extern unsigned long long g_414dc8`). Some functions marked `/* do not return */`. Would require significant stubbing for standalone compilation. Architecture-specific intrinsics need resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 5.03/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- Variable `a1` in `param_strcpy` should be named `src` based on `strcpy(ptr, a1)` usage pattern
+- Magic number `4294967295` used throughout instead of `-1` or `UINT_MAX` constant
+- Signal numbers (10, 14) not recovered as `SIGUSR1`, `SIGALRM` constants
+- `param_memset` lost size parameter in signature, breaking type safety
+- No comments explaining decompilation uncertainty or algorithm purpose
+- Stack canary checks duplicated in every function adding noise
+- Complex bit manipulation in `param_malloc_free` loop obscures simple `i * 10` calculation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names preserved accurately from source, making core functionality identifiable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation, no decompilation confidence indicators, no algorithm explanations, making complex code extremely difficult to understand.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., parameters passed to `strcpy` should be `dst`/`src`, loop counters should be `i`/`j`)
+2. **Recover named constants from magic numbers** - Detect common patterns like `4294967295` → `-1`, signal numbers → `SIG*` constants, syscall numbers → `SYS_*` names
+3. **Add decompilation confidence annotations** - Mark uncertain regions, failed recoveries, and architecture-specific intrinsics with explanatory comments to guide manual review

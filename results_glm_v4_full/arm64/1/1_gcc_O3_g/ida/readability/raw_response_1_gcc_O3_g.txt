@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Function arguments (`a`, `b`, `c`) are preserved, but local variables in optimized functions (e.g., `v2`, `v3`, `v4` in `loop_for_fixed`) are generic and obscure semantic meaning like loop counters or accumulators.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`sequential_ops`, `duffs_device`, `loop_for_fixed`) are perfectly recovered from the debug symbols, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers used in SIMD vectorization (e.g., `0x100000001LL`, `0x400000004LL` in `recursion_factorial`) appear as opaque hex constants without explanation of their vector purpose (e.g., `{1, 1, 1, 1}`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but artifacts like `__fastcall` (an x86 convention applied to ARM64 code) and `JUMPOUT` macros in `sub_940` add unnecessary noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Simple functions like `sequential_ops` are natural, but aggressive compiler optimization (loop unrolling and vectorization) has destroyed the structure of loops like `loop_for_fixed`, replacing them with complex SIMD intrinsics and unrolled blocks that are hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no artificial outlining or merging of functions, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While simple functions read top-to-bottom, optimized loops like `duffs_device` and `loop_for_fixed` contain deep nesting and repetitive unrolled blocks that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler fails to abstract compiler optimizations; loop unrolling results in massive code redundancy (e.g., repeated `result += ...` blocks in `recursion_factorial`), making the output significantly longer and more repetitive than the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, and the decompiler successfully identifies SIMD types (`int32x4_t`, `int8x16_t`) rather than treating them as raw opaque integers, which is a high-quality recovery of low-level implementation details.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Function pointer arrays (e.g., `int (*funcs[3])(int)` in `call_func_ptr_array`) are correctly reconstructed with proper signatures, preserving the indirection structure.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts appear correct and safe; there are no obvious misinterpretations of data types that would lead to undefined behavior in the generated C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the complex logic in vectorized loops or Duff's device is presented without explanation or context.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard `switch` statements are recognized, but complex idioms like Duff's device or vectorized summation loops are not identified or abstracted, leaving the user to decipher raw optimized assembly logic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the heavily optimized code (e.g., SIMD intrinsics replacing a simple `for` loop) with high confidence, offering no warning that the control flow has been significantly altered from standard C patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are inferred or documented (e.g., the requirement for `n > 0` in `duffs_device` is not explicitly stated).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between callers and callees is preserved; the use of recovered names makes the call graph easy to understand.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly mirrors the source, and helper functions are grouped appropriately with their test harnesses.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses `__fastcall` on ARM64, which is non-standard and may cause compilation errors on strict compilers, and relies on compiler intrinsics that might require specific headers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- **Optimized Loop Obfuscation**: The function `loop_for_fixed` is decompiled into SIMD intrinsics (`vaddq_s32`) and unrolled blocks, completely losing the simple "sum 0 to n" logic of the source.
+- **Magic Numbers**: Vector constants like `0x100000001LL` are used without comments explaining they represent `{1, 1, 1, 1}` in vector lanes.
+- **Redundancy**: Functions like `recursion_factorial` contain pages of unrolled multiplication logic (`result *= n - 13`) instead of the original concise loop or recursion.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler leveraged debug symbols perfectly, recovering exact names like `sequential_ops` and `duffs_device`, which anchors the analysis significantly.
+
+**Most Needs Improvement:** Redundancy Elimination (scored 3/10)
+- **Why?** The failure to roll up unrolled loops or abstract vectorized operations results in massive code bloat that obscures the simple logic present in the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Pattern Matching for Vectorization**: Detect SIMD loop patterns and annotate them with high-level pseudo-code (e.g., `// Vectorized loop: sum += i`) alongside the intrinsics.
+2.  **Loop Rolling**: Attempt to re-roll unrolled loops when the pattern is strictly repetitive to improve readability.
+3.  **Annotate Vector Constants**: Automatically comment hex constants used in SIMD operations with their equivalent array values (e.g., `// {1, 1, 1, 1}`).

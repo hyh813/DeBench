@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `uVar2`, `bVar5`. For example, in `loop_for_fixed`, the variable `lVar1` is completely cryptic. Only direct parameter usage in simple functions like `sequential_ops` is acceptable.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions correctly recovered (e.g., `sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`), but several use generic patterns like `FUN_00011030`, `FUN_000112f5`, `FUN_00011455`, `FUN_00012055`, `FUN_00012135`. Mixed result - good for simple functions, poor for complex ones.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions embed hardcoded expected values like `0x15` (21), `0x14` (20), `0xfffffffb` (-5) without explanation. Magic numbers like `0x12` (18), `0x3e9` (1001), `0x29` (41) appear without context. Some values are inferable but not documented.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. The main noise is the use of `undefined4`, `uint`, and `code*` types which are Ghidra-specific. No redundant casts or debug instrumentation observed. Clean overall for decompiled code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `loop_for_fixed` uses bizarre arithmetic formula instead of loop: `lVar1 = (ulonglong)(param_1 - 1) * (ulonglong)(param_1 - 2)`. `loop_continue` uses cryptic bit manipulation. `goto_backward` uses goto with complex computed expressions. At -O0, these should be recognizable loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain original granularity. Most are appropriately sized (10-50 lines). `test_control_flow_l1` and `test_control_flow_l2` are longer but acceptable. No over-fragmentation or inlining issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Forward jumps are minimal. `goto_forward` and `goto_backward` have jumps but are relatively traceable. Generally good linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some optimization artifacts in `loop_for_fixed` and `goto_backward` with complex expressions, but these appear contained. No obvious dead code. Loop unrolling is present but not excessive.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `undefined4`, `uint`, `byte`, `char`. Function pointers use `code *` which is non-standard. Some signed/unsigned mixing (e.g., `param_1` as `int` vs `uint`). `bool` used inconsistently. Mixed precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types reconstructed. All composite types lost. In `loop_multi_exit`, data is accessed via `*(int *)(&DAT_00013108 + param_1 * 4)` - raw pointer arithmetic without struct recovery.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts. Some unusual type combinations (e.g., `code *param_1` in `call_func_ptr`). No obvious buffer overflow patterns. Generally safe despite type imprecision.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. Only function signatures present. No explanation of algorithm logic, no recovery confidence indicators, no pre/postconditions. Test functions have no comments explaining expected values.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device (`duffs_device`) is partially recognized with switch-case structure. Some state machine patterns detected (`fsm_func_table`). But no explicit naming of patterns like "state machine", "Duff's device", "tail recursion".
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. Indirect calls in `call_func_ptr_array`, `large_jump_table`, `fsm_func_table` not marked as uncertain. No warnings about unresolved call targets.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` with requirements (n > 0) not indicated. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication of who calls whom. Callback relationships in `process_with_callback` not explained. Global data access (`DAT_00013108`) not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file output. Functions grouped by address which is logical for binary. Static functions properly scoped. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Would require typedefs for `undefined4`, `uint`, `byte`, `code*`, `bool`. External declarations for `printf`, `puts`, `longjmp`, `_setjmp` needed. Not standalone compilable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`param_1`, `iVar1`, `uVar1`) - impossible to track purpose
+- Complex control flow in `loop_for_fixed`, `loop_continue`, `goto_backward` uses cryptic arithmetic instead of loops
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- No comments or documentation - completely opaque semantics
+- No anomaly indication for indirect calls that couldn't be resolved
+
+**Best Quality Aspect:** Noise Reduction (8/10)  
+- Clean output with minimal compiler artifacts; only Ghidra-specific type noise
+
+**Most Needs Improvement:** Semantic Transparency (2.25/10)  
+- No comments, no pattern recognition, no anomaly indication, no contract recovery - completely lacks semantic context
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `temp1` used as accumulator → `sum`)
+2. Recognize loop constructs from backward jump patterns even when optimized to arithmetic
+3. Add comments for indirect calls indicating uncertainty: `// UNCLEAR: indirect function call via function pointer array`

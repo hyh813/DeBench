@@ -1,0 +1,23 @@
+Testing standard library functions...
+strlen test: 8
+strcmp test: 0
+param_strlen test: 12
+param_memcpy test: 90
+param_memcmp test: -1
+Value: 42, Name: TestName
+param_printf test: 26
+param_scanf test: 579
+param_fopen_fclose test: 42
+param_fread_fwrite test: 42
+param_malloc_free test: 90
+param_memset test: 0
+param_strchr_strstr test: 15
+Testing system calls...
+param_linux_syscall test: 42
+param_win32_api test: passed
+call_fork_exec test: passed
+param_pipe_communication test: 42
+param_socket_create test: 42
+param_shmget_shmat test: 42
+param_signal_handling test: passed
+Testing thread concurrency...

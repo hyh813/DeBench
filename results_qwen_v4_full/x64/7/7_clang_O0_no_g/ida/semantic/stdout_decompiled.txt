@@ -1,0 +1,15 @@
+Test Output
+Fake Branch: 10
+Opaque Predicate: 20
+Instruction Substitution: 225
+String Encryption: 91
+Tail Call Optimized: 500500
+Non Tail Call: 5050
+Vectorized Loop: 72
+LTO: 20
+Division by Zero: 1
+Null Pointer Deref: 41
+Buffer Overflow: 30
+Integer Overflow: 2000000000
+Undefined Behavior: 10
+Implementation Defined: 47

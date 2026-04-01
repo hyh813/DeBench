@@ -1,0 +1,8 @@
+Testing standard library functions
+
+Strcmp result: 8
+Strlen result: 0
+Strcpy length: 12
+Memcmp: 90
+Memcmp result: -1
+Value: 42, Name: TestName

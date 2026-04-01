@@ -1,0 +1,15 @@
+Test Obfuscation and Optimization Edge Cases
+Obf: fake_branch = 10
+Obf: opaque_predicate = 20
+Obf: instruction_substitution = 225
+Obf: string_encryption = 63
+Opt: tail_call_optimized = 500500
+Opt: non_tail_call = 5050
+Opt: vectorized_loop = 72
+Opt: link_time_optimization = 20
+Edge: division_by_zero = 1
+Edge: null_pointer_deref = 41
+Edge: buffer_overflow = 30
+Edge: integer_overflow = 2000000000
+Edge: undefined_behavior = 10
+Edge: implementation_defined = 44

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` throughout. Local variables are numbered (`local_8`, `local_4`, `local_10`) with no semantic meaning. For example, in `param_macro_constants`, `param_1` should be `size` based on the comparison `param_1 < 0x401` (1025).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` are correctly named matching source. However, many utility functions use generic addresses (e.g., `FUN_00100880`, `FUN_00100a7c`) and some internal helpers like `__aarch64_ldadd4_acq_rel` are compiler-generated rather than source-derived.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like `"Hello World"`, `"1.2.3"`, and format strings are preserved correctly. However, numeric constants like `0x401` (1025), `0x200` (512), `0x40` (64) appear as magic numbers without explaining they represent MAX_SIZE, MAX_SIZE/2, and BUFFER_COUNT*4 respectively.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack check guards (`___stack_chk_guard`) present but expected at -O0. Some redundant type casts in function calls. No significant debug artifacts. The code is relatively clean for debug-level compilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures and for loops. In `param_asm_clobber`, the loop `for (local_4 = 0; local_4 < param_2; local_4++)` is correctly recovered. At -O0, no goto abuse or unusual patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each test function (param_asm_basic, param_asm_clobber, etc.) is separate. The 713 LOC is reasonable for the amount of functionality. Parameter lists are clean without exposing implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_dynamic_code` and `param_memory_protection` are used appropriately. No forward jumps into loop bodies or computed goto disruption.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination not problematic. Clean code without duplicate logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used for most integers. Some precision with `size_t` for memory sizes and `uint` for variadic parameters. Pointer types are `void*` or `long` (for addresses). Const correctness not preserved in string parameters.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. Arrays accessed via pointer arithmetic (e.g., `*(int *)(param_1 + (long)local_4 * 4)`). The `param_asm_clobber` function uses raw pointer arithmetic instead of recognizing `int arr[]` from source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic (array indexing via pointer arithmetic). Function pointer types not properly typed (using `undefined8`). No alignment annotations. Moderate risk of undefined behavior in memory operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled output whatsoever. The original source had extensive comments explaining macro expansions, test scenarios, and expected values. None of this semantic information was recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible but not named or documented. The atomic operation pattern in `param_asm_atomic` uses `__aarch64_ldadd4_acq_rel` but there's no comment explaining this is a lock-free atomic add. The include guard pattern in `header_func` isn't identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The inline assembly in original source (which would appear as indirect calls or unusual patterns in ARM64) has no indicators. The dynamic code generation in `param_dynamic_code` (which generates machine code at runtime) has no warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information. Preconditions like "ptr != NULL" for mmap results, postconditions like "returns new value" for atomic operations, and invariants are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in code (e.g., `call_macro_constants()` calls `param_macro_constants()`). However, there's no documentation of call graphs, global variable usage (`global_var` in `param_memory_clobber_demo`), or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing test functions together, asm test functions together. Static functions like `header_func` properly scoped. However, the original source's chapter organization (PP-L2-01, ASM-L4-01) is lost.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile with minimal stubs. External functions (memcpy, strlen, printf, mmap, etc.) are properly declared. The `__aarch64_ldadd4_acq_rel` function is compiler-generated and included. Some type mismatches may need fixing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming uses generic numbered patterns (`param_1`, `local_8`) completely obscuring semantic meaning
+- No comments recovered - all macro documentation, test scenarios, and expected values lost
+- No struct recovery - arrays accessed via pointer arithmetic losing original type information
+- No anomaly indication for complex patterns like inline assembly or self-modifying code
+- Type precision is low - generic `int` and `void*` instead of specific types
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, loops and conditionals are correctly recovered in natural form without goto abuse or spurious jumps
+
+**Most Needs Improvement:** Comment Quality (2/10)  
+- Zero comments in output; all semantic information about macros, test purposes, and expected values is completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` compared to `0x401` should suggest `size` or `MAX_SIZE`
+2. Recover comments from debug symbols - the `-g` flag should enable extraction of source comments
+3. Detect and document preprocessor macro expansions - recognize constant patterns like `0x401` → `MAX_SIZE` (1024+1) from debug info

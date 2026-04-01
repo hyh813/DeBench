@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `i`, `v4`, `addr`, `len`. The original source had meaningful names like `size`, `result`, `arr`, `n`, `x`, `y`, `z` but these were not recovered. Only `page_size` and `addr` show some semantic awareness.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All 20+ function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler achieved perfect function name recovery.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are preserved correctly (e.g., `1024`, `512`, `64`, `57072` for 0xDEF0). However, macro names like `MAX_SIZE`, `BUFFER_COUNT`, `DEBUG_MODE`, `PLATFORM` are lost - only their values remain. The string `"155"` for `__LINE__` is hardcoded rather than indicating it was a preprocessor macro.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some calling convention annotations (`__fastcall`, `__cdecl`) are present but don't significantly impede readability. No redundant casts or debug instrumentation observed.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. The if-else structures, for loops (`for ( i = 0; i < n; ++i )`), and return statements match typical C patterns. At -O0, the decompiler correctly recovered the original control flow structure without goto artifacts.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches the original source perfectly. Each small function (20-50 lines) is preserved as a separate function with clear single responsibility. No over-fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns are used appropriately. No forward jumps into loop bodies or computed goto patterns that would disrupt flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy observed. Loop unrolling is not present (as expected at -O0). Common subexpression elimination artifacts are minimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types are accurate: `int size`, `int x, y`, `int *arr`, `int n`, `void *dst`, `const void *src`, `size_t n`, `int *counter`, `int increment`. Some return types use `unsigned int` where `int` might be more natural, but type precision is generally good.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: The source code doesn't contain complex struct/union definitions - it uses simple types and arrays. The decompiler correctly handles `int arr[]` and `int a[4]` without attempting to fabricate struct types. No struct recovery issues.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `arr[i]`). Function pointers are properly typed. The code uses appropriate types for system calls (`size_t` for memory sizes).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only the decompiler header comment is present: "Decompiled by IDA Pro 9.1 with Hex-Rays". No useful comments explaining algorithm logic, macro semantics, or assembly behavior. The original source had extensive comments about preprocessing stages that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms are explicitly named or identified. However, the code is readable enough that patterns could be inferred by a human. The inline assembly sections are correctly replaced with C equivalents.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly flags 12 functions that failed to decompile: `memcpy`, `strlen`, `__libc_start_main`, `__cxa_finalize`, `__getauxval`, `abort`, `mmap`, `munmap`, `sysconf`, `printf`, `mprotect`, `__gmon_start__`. However, it doesn't flag potential issues in the recovered code (e.g., the hardcoded `"155"` for __LINE__).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_dynamic_code` requires knowledge that it allocates executable memory and the caller should handle potential mmap failures - this is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit call graph or relationship documentation. Functions like `call_*` calling `param_*` are obvious from naming but not documented. Global variable `_aarch64_have_lse_atomics` usage is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in memory address order (0x780, 0x7A0, 0x880, etc.) rather than logical grouping. The original source had clear sections: preprocessing features, asm features, test functions - this organization is lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code uses compiler-specific annotations (`__int64`, `__fastcall`, `__cdecl`) that may need adjustment for portable compilation. External dependencies (printf, mmap, sysconf, etc.) are not explicitly documented. The "FAILED to decompile" sections indicate missing functionality.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable names are almost entirely generic (`v0`, `v1`, `i`, `v4`) losing all semantic meaning from the original source
+- No comments explaining preprocessing semantics, inline assembly behavior, or algorithm logic
+- Macro names completely lost (DEBUG_MODE, PLATFORM, MAX_SIZE become literal values)
+- Cross-reference relationships not documented (which functions call which)
+- Module organization lost (functions in address order rather than logical groups)
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names perfectly match the original source, which is remarkable given the complexity of the code.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The decompiler failed to infer meaningful variable names from usage patterns. Even simple cases like `size` for the parameter to `param_macro_constants` were rendered as generic names.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: The parameter `size` in `param_macro_constants` is used in comparison `size <= 1024` - this should suggest `size` or `max_size` as a name
+2. **Recover macro semantics**: When a literal value matches a known macro definition (e.g., 1024 = MAX_SIZE, 57072 = 0xDEF0), add a comment indicating the possible macro origin
+3. **Add semantic comments**: Explain what preprocessing macros did, what inline assembly was replaced with, and document function relationships (caller/callee)

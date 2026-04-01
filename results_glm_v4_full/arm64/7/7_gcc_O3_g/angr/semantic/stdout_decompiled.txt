@@ -1,0 +1,4 @@
+Test Results:
+
+Opaque Predicate: 10
+Instruction Substitution: 35

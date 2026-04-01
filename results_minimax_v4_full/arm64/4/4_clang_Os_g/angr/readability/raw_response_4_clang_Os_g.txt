@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a0`-`a7` for parameters and `v0`-`v35` for locals. The original source had meaningful names like `count`, `args`, `sum`, `ptr` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly preserve original names (`cdecl_func`, `call_cdecl`, `func_no_args`), but many use address-based naming like `sub_400694`, `sub_400770`. The original source function names are only partially recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear, such as `18446743528248704968` (0xFFFFFFFFFFFFFFE8), `4294967295` (0xFFFFFFFF), and complex expressions like `0x3000000020000000100000000`. Hardcoded results like `15`, `50`, `6` are used without explaining they are computed values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant code exists, such as `return memcpy(v0, v1, v2);` appearing twice in `sub_400694`. Register artifacts like `// x0`, `// x16` annotations add noise. Complex operations like `__ROL__` and `[D] unsupported_Iop_ZeroHI64ofV128()` indicate decompilation difficulties.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow uses natural if/else and while constructs. However, `varargs_func` and `param_varargs` contain complex goto-based loops that are difficult to follow. The `register_tm_clones` function has convoluted conditional logic with bitwise operations.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with reasonable granularity. Test wrapper functions like `call_cdecl` correctly separate from implementation functions. No severe monolithic functions, though `test_calling_conventions` is large (expected for test code).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some forward jumps exist in `varargs_func` loop structure. Nested conditionals are manageable at 2-3 levels deep.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant duplicate returns exist, such as `return frame_dummy();` called twice in `sub_400848`. Some expressions like `v0 = v3; v1 = v3;` appear unnecessary. Loop unrolling in `test_calling_conventions` creates repetitive code blocks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters use `unsigned int` and `unsigned long long` while original source used `int`. Type mixing occurs like `unsigned long v3; // d8`. Some variables have conflicting types declared (`unsigned int v19; // [bp-0x8], Other Possible Types: unsigned long long`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Limited struct recovery - `param_ptr_array` uses `struct_0` with generic `field_0`. Most composite types are lost; `LargeStruct` and `SmallStruct` from source are not recovered. The decompiler uses raw pointer arithmetic instead of struct access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The `param_double_ptr` function has complex pointer manipulation with potential issues. Function pointer calls like `a0(a1)` lack type safety. Some questionable casts in `ret_small_struct` combining 32-bit and 64-bit operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments exist. Only register location annotations like `// x0`, `// x16` appear. No algorithm explanations, no decompilation confidence indicators, no API contracts. The original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C idioms are present but not explicitly named or documented. The varargs handling pattern is recognizable but not labeled. No design patterns or algorithm patterns are identified or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged with `[D] unsupported_Iop_ZeroHI64ofV128()` and "Other Possible Types" annotations. However, many issues are silent - the complex bit operations in `register_tm_clones` have no explanation. The string literal handling in `ret_opaque_handle` shows `return "d";` which is incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. No error condition documentation. The original source had clear expectations (e.g., "期望: 15") which are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some `extern` declarations show external dependencies. However, no clear call graph documentation exists. The relationship between `test_calling_conventions` and its called functions is not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Related functions (calling convention tests) are scattered. No clear separation between test infrastructure and implementation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses proper `extern` declarations for external functions. Should compile with minimal changes. Some issues like `return "d";` in `ret_opaque_handle` need fixing. Dependencies on standard library functions are implicit.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`a0`-`a7`, `v0`-`v35`) completely losing semantic meaning from source
+- No comments explaining algorithms, decompilation confidence, or original test expectations
+- Struct types not recovered - `LargeStruct` and `SmallStruct` are lost, replaced with raw pointer arithmetic
+- Anomalies like `[D] unsupported_Iop_ZeroHI64ofV128()` indicate failed decompilation but lack explanation
+- Type precision issues - original `int` parameters become `unsigned int`, losing sign semantics
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are appropriately sized with good separation between test wrappers and implementations. No severe monolithic functions.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic variable names make code nearly unusable for analysis. Parameters should be named based on semantic purpose (e.g., `count`, `args`, `sum`) not register-based names (`a0`, `a1`, `v0`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `strlen(a1)` suggests `a1` is a string, `va_arg(args, int)` suggests `args` is va_list) to generate semantic names
+2. **Recover struct types from pointer arithmetic**: Detect patterns like `ptr->field` or `ptr[i]` with fixed strides to reconstruct struct layouts with field names
+3. **Add decompilation confidence comments**: Flag uncertain decompilations with explanations (e.g., "Complex bit operations could not be fully resolved") rather than outputting low-level IR operations

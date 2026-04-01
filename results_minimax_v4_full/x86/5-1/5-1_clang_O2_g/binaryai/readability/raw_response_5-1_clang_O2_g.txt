@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `local_28`, `local_24`, `uStack_10`, `puVar1`, `piVar2`, `iVar3`. These provide zero semantic meaning compared to source variables like `value`, `name`, `data`, `size`, `instance_count`. The decompiler made no attempt to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Some test functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`), but many critical functions have auto-generated names like `FUN_00011030`, `FUN_00011385`. Template instantiations use awkward names like `template_max_int_` and `Container_int_` instead of proper C++ naming conventions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `0x125c` (should be 4704), `0x3e9` (1000), `0x2a` (42), `0x47` (71). The string `0x74736554` represents "Test" but is displayed as raw hex. Constants like `0x28` (40) for array offset lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation. Some unnecessary casts present but not severe.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures are readable, but many functions return hardcoded constants instead of computing results (e.g., `test_cpp_virtual_func` returns `0x2a` directly). At -O0, this represents decompiler failure rather than optimization artifact.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and template instantiations are properly separated. However, some functions like `test_cpp_oo_features` are monolithic (40+ lines) mixing multiple test cases without clear separation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. The `test_cpp_oo_features` function has sequential calls that are easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Template functions are instantiated cleanly without redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost all types are `undefined4` (4-byte undefined) or `undefined`. Integer types lost (`int` vs `size_t`), pointers use generic types. The source used `int`, `size_t`, `char*`, `bool` but decompiler provides none of this precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. All class members accessed via raw offsets: `*(undefined4 *)(this + 0x28)` for `size`, `*(undefined4 *)(this + 0x50)` for Container<double> size. Field names completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Pointer arithmetic present but not egregious. Function pointer casts like `***(code ***)param_1` are unsafe but necessary for virtual calls.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comments ("Decompiled by BinaryAI"). No explanation of algorithms, no uncertainty markers for indirect calls, no documentation of what functions do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns recognizable (virtual function calls via vtable, `__dynamic_cast` usage), but not explicitly named or documented. The decompiler doesn't explain "this is a virtual dispatch" or "this is RTTI".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Indirect virtual calls like `(***(code ***)param_1)(param_1,param_2)` have no warning about resolution uncertainty. No flags for suspicious patterns or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had bounds checking in `getData()` but decompiled code doesn't indicate this contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call which, no call graph hints, no global variable usage documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (test functions together, template instantiations together), but no namespace recovery or class structure preservation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies not clearly documented (printf, operator new, etc. are marked `<EXTERNAL>`). Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable names are completely generic (`local_28`, `puVar1`, `iVar3`) providing zero semantic meaning
+- Composite types not recovered - all struct/class members accessed via raw offsets (`this + 0x28`)
+- Type precision severely degraded - almost everything is `undefined4`
+- Many functions return hardcoded constants instead of computing results (e.g., `test_cpp_virtual_func` returns `0x2a` directly)
+- No struct/class field names recovered - compare `*(undefined4 *)(this + 0x28)` to source `size`
+
+**Best Quality Aspect:** Redundancy Elimination (scored 8/10)  
+The decompiled code has no obvious dead code or duplicate expressions. Functions are clean and don't contain unnecessary repetition.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+The decompiler failed to reconstruct any class or struct definitions. All member access uses raw memory offsets with no field names, making the code essentially unreadable for any class with more than trivial members.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/class layouts** - Analyze vtable pointers and member access patterns to reconstruct composite types with meaningful field names
+2. **Infer variable names from usage** - When a variable is used as size, name it `size`; when used as count, name it `count`
+3. **Add semantic comments** - Document virtual calls, RTTI operations, and indicate confidence levels for unresolved indirect calls

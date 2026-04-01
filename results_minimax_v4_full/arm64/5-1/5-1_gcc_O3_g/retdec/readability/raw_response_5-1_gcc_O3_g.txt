@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `a1`, `a2`). Function parameters use single letters with numbers (`a1`, `a2`, `a3`, `a4`). Global variables are `g3`, `g4`, `g5`, etc. Only `result` and `str` are somewhat descriptive. This makes tracking variable purpose nearly impossible without constant cross-referencing.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`, `_ZN12MultiDerived5funcAEv`) which are technically accurate but unreadable. While demangled names appear in comments, the primary identifiers are cryptic. The decompiler correctly identifies class methods but doesn't provide human-readable English names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42`, `1`, `2`, `3`, `8`, `16`, `24`, `32`, `48` appear without explanation. String literals like `"Base"`, `"Derived"`, `"12RTTIDerivedA"` are preserved but their meanings are unclear. The value `42` in exception handling should be recognized as a thrown exception value, not a magic number.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution from compiler artifacts including: multiple thunk functions (`_ZThn16_*`, `_ZTv0_n*`), vtable structures (`struct vtable_12c28_type`), exception handling scaffolding (`__cxa_throw`, `__cxa_begin_catch`), and dynamic linking functions. Many functions are empty stubs returning immediately. The code is buried in artifacts making it nearly unusable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The exception handling code (`_Z18test_cpp_exceptionv`) uses goto statements and complex conditional logic that doesn't map to natural C++ try-catch blocks. Many functions are completely empty (returning immediately), which is unnatural. The control flow in RTTI testing uses convoluted if-else chains instead of cleaner pattern matching.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is mixed. Some functions like `test_cpp_rtti()` are over 100 lines with complex logic, while many others are trivial stubs (single return statement). Template functions are properly separated. However, the decomposition doesn't reflect the clean class structure of the original source.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The exception handling function has multiple goto labels (`lab_0x10e0`, `lab_0x10e4`) creating non-linear flow. Forward jumps interrupt reading. The RTTI function has deeply nested conditionals that disrupt top-to-bottom reading. Many early returns in empty functions are acceptable but contribute to fragmentation.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: In `test_cpp_rtti()`, the same `__dynamic_cast` calls and `strlen` operations appear multiple times in different branches. The code has dead paths that are never executed. Template instantiation shows some redundancy with repeated type handling patterns.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of `int32_t` and `int64_t` for integer types. Function signatures generally match (e.g., `int32_t` for return values). Some parameter type confusion exists (mixing `int32_t*` and `int64_t*` in template functions). The decompiler correctly identifies `float64_t` for doubles.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures are partially reconstructed with fields (`e0`, `e1`, `e2`), but class member fields are almost entirely lost. Classes like `SimpleClass`, `Base`, `Derived` have no recovered data members - just raw pointer arithmetic. The decompiler doesn't reconstruct the `name[32]` array or `value` int from SimpleClass.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts overall. Pointer arithmetic in Container template class is reasonable. Some concerning patterns like `(int64_t)(int64_t)v1` are redundant but not dangerous. The code generally avoids obviously unsafe operations, though it lacks proper const-correctness for member functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated metadata (file path, address range, line range). The demangled function names in comments are helpful but there's no explanation of algorithm logic, purpose, or non-obvious decisions. No documentation of what the code is trying to accomplish.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified or named. The decompiler doesn't recognize: RAII patterns (constructor/destructor pairs), virtual function dispatch mechanisms, exception handling patterns, or template instantiation. These are completely opaque.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The decompiler presents all code with equal confidence, including empty stub functions and dead code paths. No warnings about the many functions that return immediately without doing anything.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The decompiler doesn't document requirements like "ptr != NULL" or expected return value properties. Error handling paths are not distinguished from normal paths.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are not documented. Global variable usage is unclear (g3, g4, g5 are used but not explained). Virtual dispatch through vtables is not explained. No indication of which functions call which or the overall program structure.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code is in one monolithic file. Functions are ordered by address, not logically grouped. Related class methods are scattered. No namespace or class structure is recovered - everything is flat. The original class hierarchy is lost in the flat function list.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`) and has function prototypes. It would compile with minor issues (some undefined references to standard library functions like `__printf_chk`). The decompiler correctly identified this is a gcc-compiled ARM64 binary.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v1`-`v6`, `a1`-`a4`, `g3`-`g30`), making code comprehension extremely difficult
+- Class data members are completely lost - no field names recovered for any class (SimpleClass, Base, Derived, etc.)
+- Control flow uses goto statements and convoluted conditionals instead of natural C++ exception handling patterns
+- Severe compiler artifact pollution (thunk functions, vtable structures, exception scaffolding) obscures actual program logic
+- Many functions are empty stubs returning immediately, suggesting incomplete decompilation or optimization stripping
+
+**Best Quality Aspect:** Type Precision (scored 7/10)  
+The decompiler correctly uses `int32_t`, `int64_t`, and `float64_t` types, showing reasonable type fidelity for integers and floats.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Variables are universally generic with no semantic meaning. The decompiler should infer names from usage patterns (e.g., `v1` used as size_t should be named `size` or `count`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing, string operations, arithmetic) to suggest semantic names like `index`, `length`, `count`, `pointer`
+2. **Recover class data members**: Analyze constructor implementations and member access patterns to reconstruct struct/class field layouts with meaningful names
+3. **Recognize and reconstruct C++ idioms**: Transform exception handling goto chains back to try-catch blocks, identify RAII patterns, and recover virtual dispatch mechanisms as cleaner code

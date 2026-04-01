@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`, `str`, `str2`) with no semantic meaning. Original source used descriptive names like `dst`, `src`, `buffer`, `fd`, `pid` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`param_strcpy`, `call_strcpy`, `thread_compute`) but wrapper functions are generic (`function_1040`, `function_1050`). Better than complete loss but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x6c6c6548` (ASCII "Hell"), `0x1000`, `42` without explanation. String literals encoded as hex constants rather than readable strings in many places.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*` stubs, frame pointer manipulation, redundant casts. Some cleanup achieved but significant noise remains.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`lab_0x24c0`, `lab_0x25e8`) replace natural loop constructs. Complex nested conditionals obscure original simple logic like `for` loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions constant-folded entirely (`call_strcmp` returns literal `0`). Others bloated with unnecessary complexity. Inconsistent granularity throughout.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple `goto` statements force non-linear code tracing.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated variable assignments (`v1 = v2; v2 = v1`), redundant type casts throughout. Some dead code from optimization not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int32_t` - lost `size_t`, `pid_t`, `FILE*`, `pthread_t`. Pointer vs array distinction erased. Original type semantics completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined with generic fields (`e0`, `e1`, `e2`...). `ThreadData` struct lost entirely - accessed via pointer arithmetic. `struct stat` fields unnamed.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere: `(int32_t *)`, `(char *)`, `(void (*)())`. Pointer arithmetic on typed data. No const-correctness preserved from original.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or intent. No decompilation confidence indicators. Completely bare code with no documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls identified (`strcpy`, `strcmp`, `pthread_create`) but not labeled as such. Thread patterns, signal handling not recognized as idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved indirect calls, suspicious patterns, or potential undefined behavior. Code presented confidently despite significant uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions or invariants recovered. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced as `g1`, `g2` with no semantic meaning. Callback relationships obscured.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions roughly grouped but no logical separation between library tests, syscall tests, and thread tests from original.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present and mostly correct. Some functions may need stubs. Metadata indicates "Compilation Result: Yes" but would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.98/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `a1`, `a2`** should be named based on semantic usage (e.g., `buffer_ptr`, `thread_id`, `file_descriptor`)
+- **Control flow uses `goto lab_0xXXXX`** instead of natural `for`/`while` loop constructs
+- **Struct fields all generic (`e0`, `e1`, `e2`)** losing all semantic meaning from original `ThreadData`, `stat`, etc.
+- **Zero comments** explaining any non-trivial logic, algorithms, or decompilation uncertainty
+- **Type degradation to `int32_t`** everywhere loses `size_t`, `pid_t`, `FILE*`, `pthread_t` semantics
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Includes are mostly correct and metadata indicates compilation succeeds with minimal patching
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding decompiled logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in `strlen()` calls should be named `string` or `buffer`)
+2. **Recover high-level control structures** - Convert `goto` + comparison patterns back to `for`/`while` loops with proper loop variable naming
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILE UNCERTAINTY: indirect call target unresolved`

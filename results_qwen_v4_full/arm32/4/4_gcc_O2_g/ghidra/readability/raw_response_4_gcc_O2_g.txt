@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `uVar2`, `param_1`, `local_c` instead of semantic names. Many marked as "Unresolved local var" (e.g., `int sum@[???]`), losing original intent like `packet_size` or `encryption_key`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation - `cdecl_func`, `varargs_func`, `func_struct_byval` all match original source names accurately. Action verbs preserved where applicable (`call_*`, `test_*`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of hex magic numbers (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. String literals shown as `&DAT_000114cc` instead of actual content. Constant folding obscures original values (e.g., `call_cdecl` returns `0xf` instead of showing `cdecl_func(5, 10)`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple warning artifacts throughout: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var" comments. Runtime functions (`__aeabi_*`, `__printf_chk`) add noise but are necessary.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions maintain natural flow, but complex functions like `func_mixed_args` expand floating-point into bit manipulation loops. Some functions constant-folded entirely (`call_cdecl` returns literal `0xf`), losing call semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions properly separated but caller functions lose their purpose through constant folding. `call_cdecl`, `call_stdcall`, etc. no longer show actual function calls, breaking the test structure semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but floating-point helper functions (`__aeabi_dadd`, `__subdf3`) are extremely non-linear with 200+ lines of bit manipulation. Do-while loops used appropriately in most cases.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates semantic redundancy (caller functions don't call). Floating-point operations show significant redundancy in bit manipulation code. No dead code removal in complex functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `longlong`) but function pointers degraded to `code*` or `_func_int_int*`. Some type confusion in struct handling (`s.data[0]._0_4_` suggests field access confusion).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct names preserved (`LargeStruct`, `SmallStruct`, `BigStruct`) but field access is problematic. `func_struct_byval` shows confusing access patterns like `s.data[1]._4_4_ = local_10` instead of clean field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(int *)p`, `(char *)int_ptr` in `param_complex_cast`). Pointer arithmetic visible but not egregious. No buffer overflow protections documented.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING:", "Unresolved local var"). No semantic comments explaining algorithm purpose, no API contracts (`@param`, `@return`), no original source comments recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Varargs handling not explained as standard C idiom. Structure passing conventions (hidden pointer for large structs) not documented despite being visible in code.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with "WARNING: Unknown calling convention" and "Removing unreachable block" messages. "Unresolved local var" clearly indicates decompilation uncertainty. This is a strength.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Null checks present (`if (p == (SmallStruct *)0x0)`) but not documented as contracts. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but many constant-folded away losing call relationships. Global variables shown as `&DAT_xxxxx` without names. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping by test category (calling conventions vs. parameter passing vs. return values). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external runtime functions (`__printf_chk`, `__aeabi_*`, `__libc_start_main`) without declarations. Would require significant stubbing and linking to compile standalone. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+3+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+5+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+2+7+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 4.98/10 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Constant folding destroys semantics**: Functions like `call_cdecl` return `0xf` instead of showing `cdecl_func(5, 10)` call, losing test structure
+- **Variable names lost**: `iVar1`, `uVar2`, `param_1` instead of semantic names like `sum`, `count`, `result`
+- **String literals obscured**: All strings shown as `&DAT_xxxxx` instead of actual content
+- **Struct field access confused**: `s.data[0]._0_4_` patterns instead of clean field names
+- **No semantic comments**: Zero recovery of original source documentation explaining test purposes
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making it easy to identify test purposes and call relationships at a high level.
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No recognition of standard C patterns (varargs, calling conventions, struct passing), missing opportunity to explain ABI-specific behaviors visible in the code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant folding for test code** - Preserve function call relationships even when results are computable at compile time
+2. **Recover string literals from data sections** - Map `&DAT_xxxxx` references back to actual string content for printf calls
+3. **Add semantic comments for ABI patterns** - Document calling convention differences, hidden pointer parameters for large struct returns, and varargs handling explicitly

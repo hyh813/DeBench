@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i` with no semantic meaning. For example, in `test_calling_conventions()`, variables `v7`, `v8`, `v9` should be named based on their usage (likely related to stack canary checks), but remain cryptic.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`cdecl_func`, `func_a`, `main`, `test_calling_conventions`), but many functions renamed to `sub_401030`, `sub_401040` format. Wrapper functions like `sub_4012ab` that just call `cdecl_func()` add no value and obscure the call graph.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `15`, `50`, `6` appear as direct returns (constant-folded from original calls), making it unclear these are test expected values. However, printf format strings like `"CALL-L1-01: %d\n"` are preserved, providing some context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with decompiler artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, and `[D] PutI(72:F64x8)[t3,0] = t6()`. Function `func_mixed_args()` is nearly unreadable due to these artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple functions use `goto` for simple control flow (e.g., `sub_401090()` has `goto v1->field_24;`). The `varargs_func()` uses a do-while loop correctly, but `test_calling_conventions()` has complex, non-idiomatic loop structures with manual pointer arithmetic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation with wrapper functions (`sub_4012bd` just calls `call_cdecl()`). Many original functions constant-folded to single returns (`call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`), losing semantic structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by goto statements and forward jumps. The `register_tm_clones()` function has deeply nested conditionals with computed addresses that break linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper function pairs create redundancy (e.g., `sub_4012ab`/`cdecl_func`, `sub_4012bd`/`call_cdecl`). Some functions like `ret_large_struct()` have 16 individual local variables (`v0` through `v15`) instead of an array, creating artificial redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` regardless of original type. `func_mixed_args()` originally had `char *s`, `double d`, `long long ll` but decompiled as all `unsigned int`. Function pointers lose signature information (`param_func_ptr()` shows `a0(a1)` without proper typedef).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are incomplete with generic field names (`field_0`, `field_24`, `padding_0[36]`). `LargeStruct` with `long long data[16]` lost entirely; `func_struct_byval()` operates on raw pointers. Multiple conflicting `struct_0` definitions throughout the file.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`cur += 2`, `iter += 1` on char pointers). `func_struct_byptr()` returns `4294967295` (UINT_MAX) for NULL instead of `-1`, losing signed semantics. Multiple implicit casts between pointer and integer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler error markers like `[D] Unsupported jumpkind` present. No algorithm explanations, no parameter documentation, no indication of what each test function validates.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Calling convention patterns not identified or documented. Varargs pattern in `varargs_func()` recognizable but not labeled. Stack canary checks (`__stack_chk_fail_local`) present but not explained as security features.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Decompiler does flag issues with `[D]` markers, but these are technical errors not semantic warnings. `func_mixed_args()` has multiple `[D] unsupported_` markers indicating failed recovery, but no guidance on manual analysis needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr()` should note `requires: p != NULL`). NULL checks exist in code but not as explicit contracts. No postcondition information for return values.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables like `g_402008`, `g_40202c` referenced without context (these are printf format strings). No call graph documentation or callback relationship identification.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order mixed with initialization code (`_init`, `_start`, `_fini`). Test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) scattered with helper functions. No logical grouping.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile due to `[D]` decompiler artifacts embedded in source. External dependencies (`_ccall`, `__x86.get_pc_thunk.*`) not properly declared. Multiple redefined `struct_0` types would cause compilation errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+6+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+4+5+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+5+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+2)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.81/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Decompiler artifacts embedded in code**: `[D] Unsupported jumpkind`, `[D] unsupported_<class 'pyvex.expr.GetI'>()` make `func_mixed_args()` practically unreadable
+- **Variable names completely generic**: `v0`, `v1`, `v2` throughout with no semantic meaning recoverable from usage patterns
+- **Constant folding destroyed test structure**: Functions like `call_cdecl()` return `15` directly instead of showing `cdecl_func(5, 10)` call, losing educational value
+- **Struct definitions fragmented and conflicting**: Multiple `struct_0` definitions with different layouts (`field_0`, `field_24`, `padding_0[36]`, etc.)
+- **No comments or documentation**: Zero explanation of calling convention tests, parameter patterns, or expected behaviors
+
+### Best Quality Aspect:
+- **Literal Clarity (Score: 6/10)** - Printf format strings preserved and some return values match expected test outputs, providing minimal context for what each function should produce.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (Score: 1/10)** - Complete absence of any documentation, explanations, or decompiler confidence indicators makes the code unusable for learning or analysis without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate embedded decompiler artifacts**: Replace `[D]` markers with proper C comments indicating uncertainty (e.g., `// DECOMPILER_ERROR: Unsupported instruction`) or attempt alternative recovery strategies
+2. **Implement semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables used in loop counters should be `i`, `idx`; variables holding return values should reflect the function's purpose)
+3. **Preserve call structure over constant folding**: For test/educational code, maintain function call relationships even when values are known at compile time, as the call pattern itself is semantically important

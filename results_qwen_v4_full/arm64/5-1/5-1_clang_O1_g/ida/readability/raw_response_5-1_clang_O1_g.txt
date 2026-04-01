@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, temp_1) with no semantic meaning. In `test_cpp_constructor`, `v0` should be `data`, `v1` should be `i`, and `v3` should be `result` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions recovered original names from symbols (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions remain generic (`sub_1630`, `sub_2008`). C++ methods use partially readable mangled names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Numerous unexplained magic numbers throughout (4700, 21, 31, 0x14u, 8u, 100, 200, 150, 250). Many are constant-folded results that obscure original computation logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (redundant variable assignments, type casts) but code remains mostly readable. No severe noise pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered in some functions (`test_cpp_constructor`), but many test functions collapsed to single return statements due to constant folding. Exception handling uses `__cxa_throw` calls that aren't idiomatic C++.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but constant folding means many test functions lost original structure entirely. Class methods properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with some forward references to vtables and offsets. No severe non-linearity issues.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant variable assignment chains (v0, v1, v2 sequences) that could be streamlined. No dead code observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mix of generic types (_DWORD, __int64, _BYTE, _QWORD) without clear semantic meaning. Pointer types mostly preserved but integer types lack precision.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with vtable pointers visible (`_vptr$Base`, `_vptr$BaseA`, `_vptr$BaseB`), but field names largely lost except in cases like `dataA` and `dataB` in `MultiDerived`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`_DWORD *`, `__int64 *`, `_QWORD *`). Pointer arithmetic for vtable access and virtual inheritance adjustments visible but opaque.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Minimal comments—mostly auto-generated function headers with no algorithm explanations or logic documentation. No useful semantic information.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (vtables, RTTI, exceptions) present but not explicitly identified as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("positive sp value has been detected, the output may be wrong!"), and 23 failed decompilations listed, but suspicious code lacks detailed explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented anywhere. No contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible and vtable relationships partially shown, but connections aren't clearly explained. Virtual dispatch recovery incomplete.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized by feature or purpose. No clear module structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 23 functions failed to decompile entirely (including critical runtime functions like `operator new`, `operator delete`, exception handling), making standalone compilation impossible.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+3+6)/4 = 4.00  → 4.00 × 0.30 = 1.20
+Level 2 Average: (5+6+7+6)/4 = 6.00  → 6.00 × 0.25 = 1.50
+Level 3 Average: (4+5+4)/3 = 4.33    → 4.33 × 0.20 = 0.87
+Level 4 Average: (2+3+5+2)/4 = 3.00  → 3.00 × 0.15 = 0.45
+Level 5 Average: (5+5+3)/3 = 4.33    → 4.33 × 0.10 = 0.43
+
+Overall Score: 1.20 + 1.50 + 0.87 + 0.45 + 0.43 = 4.45/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects:
+- **Constant folding destroyed logic**: Test functions like `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_lambda`, `test_cpp_smart_ptr` return precomputed constants (22, 39, 85, 703) instead of showing actual computation
+- **Variable naming completely generic**: All local variables named `v0`, `v1`, `v2` with no semantic meaning, making data flow tracking extremely difficult
+- **23 critical functions failed to decompile**: Including `operator new`, `operator delete`, `__cxa_throw`, `__dynamic_cast`, `printf`, `strlen` - essential for understanding program behavior
+- **Exception handling broken**: `test_cpp_exception` marked as `__noreturn` despite needing to catch and handle exceptions properly
+- **Magic numbers without context**: Values like 4700, 21, 31, 0x14u appear throughout with no explanation of their semantic meaning
+
+### Best Quality Aspect:
+- **Code Linearization (scored 7/10)** - Code generally reads top-to-bottom with minimal forward jumps, making basic execution flow traceable despite other issues
+
+### Most Needs Improvement:
+- **Variable Naming Quality (scored 2/10)** - Generic variable names (`v0`, `v1`, `v2`) completely obscure data flow and semantic intent, requiring manual reverse engineering of every variable's purpose
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer meaningful names (e.g., variables used in array indexing should be named `index`, variables holding allocation results should be named `buffer` or `data`)
+2. **Preserve computation logic over constant folding**: When optimization is detected, add comments showing original computation rather than just returning precomputed constants
+3. **Recover C++ idioms explicitly**: Label vtable calls as "virtual dispatch", mark RTTI operations, and document exception handling flow with appropriate comments

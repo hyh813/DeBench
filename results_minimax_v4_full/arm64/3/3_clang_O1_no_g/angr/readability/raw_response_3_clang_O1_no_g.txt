@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2`, `i`, `j`, `k` for locals. Stack variables like `char v0; // [bp-0x28]` provide no semantic meaning. Compare to source where variables like `arr`, `n`, `i` are descriptive.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `memop_memset`, `double_value`, etc. The decompiler recovered the exact function names from debug symbols.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Error return value `4294967295` (0xFFFFFFFF) is used consistently but unexplained. Some computed expressions like `(a0 * 2 | a0 >> 31) & 4294967294` are obscure. However, string format literals in printf calls are preserved.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts present including: `vvar_90{r264|8b} = &v0;` in vla_stack, `[D] MBusEvent-Imbe_Fence()` for memory barriers, complex bit manipulation expressions like `__ROL__` and `(v2 * 0x100000000 >> 63 & 0xfffffffc00000000 | __ROL__(v2, 2) & 17179869180 & 17179869183)` for multiplication.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are correctly represented as do-while constructs. However, vla_stack and alloca_usage have extremely complex computed loop bounds that obscure the simple `for (int i = 0; i < n; i++)` pattern from source. At -O0, this complexity is unnecessary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately granular, matching the original source decomposition. Test functions like `test_stack_memory` are large but mirror the source structure. No inlining artifacts observed at -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns for error conditions (NULL checks). Some forward jumps exist but are manageable. The flow is mostly natural.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate calls present: `sub_4008f4` calls `memcpy` twice redundantly. Some redundant register saves like `v0 = &v1;` at function entry. Loop unrolling is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` but loses signed/unsigned distinction in many places. Function parameters like `unsigned int a0` lose the original `int` type. Size_t is not recovered. Pointers often generic.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered with generic names: `struct_0`, `struct_1`, `struct_2`. Field names are `field_0`, `field_8` (offset-based) rather than semantic names like `data`, `next`. The Node structure in linked_list_heap loses its name.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns present: `dangling_pointer` correctly shows undefined behavior (`return *(ptr)` after free). Some incorrect pointer arithmetic in complex expressions. Function pointer types are imprecise (generic function pointers rather than specific signatures).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic, purpose, or non-obvious operations. The source had detailed comments like "// MEM-L1-01: 局部变量（基础类型）" which are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. Common patterns like linked list traversal, tree operations, memory pool usage are not annotated.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only the memory barrier shows `[D] MBusEvent-Imbe_Fence()` as anomaly indicator. No flags for potential issues like the dangling pointer access, double free potential, or heap overflow in the source code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source had explicit checks like `if (n <= 0 || n > 1000) return -1;` but the reasoning behind these contracts is not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions are marked with `extern` keyword. Some relationships are clear (e.g., `double_value` used as callback). However, no explicit documentation of call graph or usage patterns.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in binary order rather than logical grouping. The original source organized functions by category (stack, heap, static, memory ops) which is lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations required. The code would need significant stubs to compile (external variables like `extern_global_var`, functions like `extern_function`). No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2`; locals use `v0`, `v1`, `i`, `j` - completely losing semantic meaning from source
+- **Struct field names**: Recovered as `field_0`, `field_8` (offsets) rather than `data`, `next`, `left`, `right`
+- **Complex expressions**: VLA and alloca functions have extremely convoluted loop bound calculations that obscure simple `for` loops
+- **No comments**: All source code comments explaining test scenarios and expected values are completely lost
+- **Noise artifacts**: Expressions like `vvar_90{r264|8b}` and `[D] MBusEvent-Imbe_Fence()` add confusion
+
+### Best Quality Aspect: Function Naming (scored 10/10)
+The decompiler perfectly recovered all function names from debug symbols, matching the original source exactly. This is exceptional and makes it easy to locate specific functions.
+
+### Most Needs Improvement: Variable Naming (scored 2/10)
+Despite -O0 (no optimization) where variables should be clearly recoverable, the decompiler uses only generic names. At this optimization level, variables like `arr`, `n`, `i`, `ptr`, `head` from the source should have been recovered.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: For `local_array(int n)`, the parameter `n` is used as loop bound - should be named `n` not `a0`. Stack variables used as arrays should be named after their purpose.
+2. **Recover struct field semantics**: Use field offset analysis and usage patterns to name fields. `field_8` used as `next` pointer in linked list should be named `next`.
+3. **Simplify VLA/alloca expressions**: The complex bit manipulation for VLA bounds `(a0 * 0x100000000 >> 63 & 0xfffffffc00000000 | __ROL__(a0, 2) & 17179869180 & 17179869183)` should be simplified to `n` or `size` - this is -O0 code with no optimization excuse.

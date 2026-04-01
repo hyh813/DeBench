@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `iVar2`, `pbVar3`, `local_2c`) with no semantic meaning. Original source used meaningful names like `x`, `result`, `str`, `encrypted`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User function names are well-preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`) matching source exactly. However, runtime functions use generic names (`FUN_00011030`, `__i686_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0x5a`, `0x14`, `0x23`, `0xe1`, `0x7a314`) without explanation. String literals are referenced as `&DAT_00012219` instead of actual text. Some constants are pre-computed by optimizer (e.g., `call_fake_branch` returns `10` directly).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts (`__x86.get_pc_thunk.bx` warnings, "Removing unreachable block" comments). Runtime boilerplate (_init, _start, _fini, register_tm_clones) inflates output from 464 LOC source to 778 LOC decompiled.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` collapsed to single return (fake branches optimized away correctly). However, `param_tail_call_optimized` shows bizarre math instead of recursion. Do-while loops used where while loops would be clearer.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. `decrypt_string` properly separated from `param_string_encryption`. Handler functions (`div_zero_handler`, `segv_handler`) correctly isolated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Some do-while patterns disrupt natural flow. `call_vectorized_loop` has explicit 8-line array initialization that could be cleaner.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_vectorized_loop` and `test_obf_opt_edge` duplicate the same array initialization logic. `call_opaque_predicate` duplicates GCD computation from `param_opaque_predicate` instead of calling the function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses Ghidra-specific `undefined4` type reducing portability. `param_instruction_substitution` takes `uint` instead of original `int`. Mixed `int`, `uint`, `byte`, `longlong` without clear rationale. Original type information partially lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in source to recover. `jmp_buf` referenced as `__jmp_buf_tag *` (accurate). Arrays declared properly (`local_2c [31]`, `local_24 [8]`). No bit-field recovery needed for this code.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(undefined4)(10 / (longlong)param_1)`, `(char *)local_2c`, `(__sighandler_t)0x0`. Pointer arithmetic visible (`param_3 + iVar2 * 4`). No buffer overflow warnings despite vulnerable patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler warnings present ("WARNING: Function...replaced", "WARNING: Removing unreachable block"). Zero semantic comments explaining algorithm purpose. No documentation of what functions actually compute.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not recognized. Tail-call optimization pattern completely lost. No design pattern detection whatsoever.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Good: "Subroutine does not return" for longjmp calls. "Removing unreachable block" warnings present. Bad: No indication that `param_fake_branch` logic was optimized away. No warning about semantic changes in tail-call functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition/postcondition documentation. No indication that `param_division_by_zero` requires `param_1 != 0` for normal path. No error condition documentation for signal handlers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variables referenced as `DAT_00012028`, `jmp_buffer` without context. No indication of which functions are test entry points vs. helpers.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 46 functions in single output with no logical grouping. Runtime functions (_init, _start, _fini) mixed with user code. No separation between obfuscation tests, optimization tests, and edge case tests from source.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims "Compilation Result: Yes" but uses Ghidra-specific types (`undefined4`, `byte *`). External dependencies (signal.h, setjmp.h, string.h) not declared. Would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **`param_fake_branch` completely collapsed** - Returns `param_1` directly, losing all fake branch logic that should be visible for analysis
+- **`param_tail_call_optimized` semantically wrong** - Shows complex multiplication math instead of recursive tail-call pattern
+- **`param_non_tail_call` semantically wrong** - Same issue, recursion replaced with incorrect arithmetic
+- **Zero semantic comments** - No explanation of what any function computes or why
+- **Ghidra-specific types** - `undefined4`, `byte *` reduce portability and clarity
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User-defined function names preserved exactly from source, making identification straightforward
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No algorithm patterns identified (GCD, XOR decryption, tail-recursion), missing opportunity to aid analyst understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimized-away code** - When fake branches are eliminated, add comments like "// Original: if(x*x<0) branch optimized away at -O0"
+2. **Recognize common algorithm patterns** - Identify GCD loops, XOR decryption, tail-recursion and add explanatory comments
+3. **Recover semantic variable names** - Use data-flow analysis to infer names like `gcd_result`, `decrypted_buffer`, `signal_handler` from usage patterns

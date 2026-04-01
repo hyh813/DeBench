@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3` are generic and uninformative. However, some variables like `obj`, `x`, `size`, `result`, `a`, `b` are semantically meaningful. The mix heavily favors generic names, making it difficult to track variable purposes across functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`). Template functions properly show type parameters (`template_max<int>`, `Container<int>::push`). Some mangled names remain (e.g., `_Z20test_cpp_member_funcv`), but overall naming is clear.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Return values like 42, 71, 650, 22, 39, 16, 85, 703 are actually the computed results from the original source - this is excellent clarity. Magic numbers like `0x14` (20 for array size) and `9` (bounds check) are present but inferable from context. The computed constants provide perfect semantic transparency.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled code is clean with minimal compiler artifacts. No redundant casts, debug instrumentation, or frame pointer manipulation clutter the output. The "FAILED to decompile" functions are external library calls, not internal noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with clear loops (e.g., `do-while` in `test_cpp_constructor`), conditionals, and returns. The `call_virtual_func` shows proper indirect call through vtable. At `-O0`, control flow should closely match source, and it does.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized - most are single-purpose test functions. Template instantiations are properly separated (`template_max<int>` vs `template_max<double>`). The `Container` class methods are well-decomposed. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately. The `test_cpp_constructor` loop is straightforward. No deep nesting or spaghetti code disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The constant folding (returning computed values like 42, 71) is a compiler optimization, not redundancy in the decompiled output. Loop unrolling is minimal and natural.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types are mostly generic `int` rather than specific `int32_t` or `size_t`. Pointer types are generally correct (`Base *obj`, `int *a`, `int *b`). Function pointer types in virtual calls are properly typed. Some type precision lost but not severe.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Template classes recovered well: `Container<int>` and `Container<double>` with `data`, `size` fields. The `Base` class vtable is recognized. However, some class structures like `SimpleClass` are not explicitly reconstructed - only the function results are shown.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts observed. Pointer arithmetic in `Container<int>::push` is safe with bounds checking. Virtual function calls use proper type signatures. Minor issues but generally type-safe code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. The only notable comment is "// attributes: thunk" for destructor functions. No explanation of algorithms, computed constants, or vtable mechanisms. This severely impacts understandability.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms recognized: virtual function calls through vtable (`*obj->_vptr$Base`), template instantiation naming, exception throwing mechanism. However, patterns like RAII (in smart pointer tests) are not explicitly identified - just the result is shown.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are clearly marked with "FAILED to decompile" for external functions. However, the constant-folded functions (returning computed values) don't indicate this is due to compile-time evaluation - could confuse analysts. No flags for indirect call resolution issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The bounds checking in `Container::get` (`if (idx >= 0 && this->size > idx)`) could be documented as a precondition but isn't. No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `call_virtual_func` calls `obj->virtual_func`). Virtual dispatch is shown through vtable access. However, relationships to external code (like what calls `test_cpp_oo_features`) are not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - test functions together, template instantiations together, Container methods together. However, the file is flat with no namespace or class structure organization visible. Some organization present but could be better.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code appears compilable with standard library stubs. External dependencies (printf, operator new, etc.) are clearly identified as external. However, no build instructions or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4+7+8+8)/4 = 6.75
+L2_avg = (7+7+8+8)/4 = 7.50
+L3_avg = (6+6+7)/3 = 6.33
+L4_avg = (2+5+5+2)/4 = 3.50
+L5_avg = (5+6+7)/3 = 6.00
+
+Overall = (6.75 × 0.30) + (7.50 × 0.25) + (6.33 × 0.20) + 
+          (3.50 × 0.15) + (6.00 × 0.10)
+Overall = 2.025 + 1.875 + 1.266 + 0.525 + 0.60 = 6.29/10
+```
+
+**Overall Readability Score:** 6.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is predominantly generic**: Variables like `v0`, `v1`, `v2`, `v3` obscure their semantic purpose (e.g., `v0` should be `data_ptr`, `v1` should be `index`)
+- **No comments explaining computed constants**: Functions returning 42, 71, 650 etc. don't indicate these are compile-time computed results from the original source logic
+- **Missing class structure recovery**: Classes like `SimpleClass`, `LifecycleClass` are not reconstructed - only their function results are shown
+- **No semantic annotations**: No explanation of vtable mechanisms, RAII patterns, or template instantiation
+- **Failed to recover exception handling logic**: `test_cpp_exception` shows only the throw mechanism, not the try-catch flow
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (7/10)** - At `-O0` optimization, the decompiled control flow closely matches the original source with natural loops, conditionals, and function calls. The virtual function call through vtable is properly represented.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (2/10)** - The decompiled code has almost no comments. Without comments explaining computed constants (which are actually compile-time evaluated results), vtable mechanisms, or algorithm intent, the code requires significant reverse engineering effort to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add comments for compile-time computed results**: When a function returns a constant that was computed from source logic, add a comment like "// Computed at compile time: original logic calculated 42 from 10+34+4660"
+2. **Recover class structures from vtable and allocation sites**: Reconstruct class definitions by analyzing vtable pointers, constructor allocations, and member access patterns
+3. **Document C++ idioms explicitly**: Add comments explaining vtable dispatch ("// Virtual call through vtable"), RAII patterns, and template instantiation when detected

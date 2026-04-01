@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 5/10**
+Justification: Parameters like `size`, `x`, `y`, `arr`, `n`, `dst`, `src`, `result` are reasonably named and match source intent. However, local variables use generic names like `v2`, `v3`, `v4`, `v5` which obscure their semantic purpose (e.g., `v4` in `param_asm_clobber` represents loop counter, `v3` in `param_dynamic_code` represents result).
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`. Only `sub_7A0` is generic, but that's a startup stub, not user code.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Magic numbers like `1024`, `512`, `64` in macro constant functions are directly visible but unexplained. The value `57072` (0xDEF0) in `param_multi_branch_compile` is a raw hex constant without explanation that it represents the default platform case. However, string literals in printf are preserved accurately.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Code is clean with minimal compiler artifacts. The comment `// attributes: thunk` appears for some functions, which is minor. No redundant casts, register spills, or debug instrumentation visible. The "FAILED to decompile" notices for external functions are appropriate indicators.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and idiomatic. Loops use `do-while` constructs correctly (e.g., `param_asm_clobber`), conditionals are straightforward if-else. At -O0, no aggressive optimizations like loop unrolling that would distort control flow. The `param_asm_multi_insn` correctly decompiled to `memcpy` call.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Each test function is properly separated: `param_*` functions contain implementation logic, `call_*` functions invoke them with test values. Function granularity is appropriate - no monolithic functions. The inline assembly in `param_asm_basic` was correctly simplified to `x + 10`.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in `param_dynamic_code` and `param_memory_protection` are appropriate. No forward jumps into loop bodies. The nesting depth is reasonable (max 2-3 levels).
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code observed. Common subexpressions are not unnecessarily duplicated. The atomic operations use proper intrinsics (`_aarch64_ldadd4_acq_rel`) without redundant wrapping.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 8/10**
+Justification: Integer types use `int` appropriately for 32-bit values. `size_t` is used for memory sizes (e.g., `param_asm_multi_insn` parameter `n`). Pointers are correctly typed as `void*`, `int*`, `const void*`. Minor issue: `atomic_uint*` could be more precisely typed as `_Atomic int*`.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: No complex struct recovery needed in this code - it's mostly scalar operations. The decompiler correctly handles the array parameters in `param_asm_simd` as `int*`. The atomic counter in `call_asm_atomic` is correctly identified as `int` with address-of operator.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `*arr++` in loop). Function pointer types are implicit but not misused. The `param_memory_protection` correctly handles `int*` casting from `mmap` returns.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+Justification: Comments are sparse. The decompiler provides file/function/line information in string literals for builtin macros, which is excellent. However, most functions lack explanatory comments. The "FAILED to decompile" notices are useful but could include more context about why.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: The decompiler correctly recognized inline assembly patterns and replaced them with high-level operations (e.g., `param_asm_basic` → `x + 10`, `param_asm_multi_insn` → `memcpy`). The atomic operations are properly identified using ARM64 LSE intrinsics. However, no explicit pattern naming (e.g., "This implements atomic fetch-add").
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: The "FAILED to decompile" notices for external functions (memcpy, printf, mmap, etc.) are appropriately flagged. However, there's no indication of uncertainty for indirect calls or unusual patterns. The builtin macro function shows hardcoded values which could be flagged as "values from __FILE__, __LINE__, etc."
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_asm_clobber` could have "requires: n > 0" or "ensures: returns sum of first n elements". The memory protection functions have implicit contracts (returns -1 on failure) but these aren't documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear from the code structure - `call_*` functions call `param_*` functions. The test functions call the various implementations. However, no explicit comments about who calls whom or global variable usage (e.g., `global_var` in `param_memory_clobber_demo`).
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are grouped logically: preprocessing tests first, then asm tests, then main/test wrappers. Static functions are properly scoped. The decompiled output maintains this logical grouping from the original source.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+Justification: The code compiles successfully (as indicated by "Compilation Result: Yes" in metadata). External dependencies (libc functions) are implicitly available. No compiler-specific hacks that would break portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 9 + 6 + 8) / 4 = 7.0
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (8 + 7 + 8) / 3 = 7.67
+L4_avg = (5 + 7 + 6 + 4) / 4 = 5.5
+L5_avg = (7 + 8 + 9) / 3 = 8.0
+
+Overall = (7.0 × 0.30) + (8.25 × 0.25) + (7.67 × 0.20) + 
+          (5.5 × 0.15) + (8.0 × 0.10)
+        = 2.10 + 2.0625 + 1.534 + 0.825 + 0.80
+        = 7.3215 ≈ 7.3/10
+```
+
+### Overall Readability Score: 7.3/10
+
+### Critical Defects
+- Local variables use generic names (`v2`, `v3`, `v4`, `v5`) obscuring semantic purpose - e.g., `v4` in `param_asm_clobber` is the loop counter but named generically
+- No contract documentation (preconditions/postconditions) for functions like `param_asm_clobber` that have implicit requirements (`n > 0`)
+- Magic numbers like `57072` (0xDEF0) in `param_multi_branch_compile` are unexplained - the decompiler should recognize this as the default case constant from `#if-#elif-#else`
+- Sparse comments throughout - most functions lack explanation of their purpose or algorithm
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+The decompiler almost perfectly recovered the original function names from the source, making it easy to identify which test case each function implements.
+
+### Most Needs Improvement: Assertion & Contract Recovery (4/10)
+The decompiler provides no documentation of function contracts, preconditions, or postconditions. For a decompiler targeting security analysis, documenting implicit requirements like "n must be positive" or "returns sum of array elements" would significantly improve utility.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used as a loop counter, name it `i` or `counter`; when it's used for size calculation, name it `size` or `num_elements`. The current `v2`, `v3` naming is unhelpful.
+2. **Document magic numbers with explanations**: When encountering constants like `57072`, check if they match known hex values (0xDEF0) and annotate: "likely default case constant from #if-#elif-#else preprocessing"
+3. **Recover and document function contracts**: Add basic preconditions/postconditions based on parameter validation and return value patterns, e.g., "requires: n > 0" or "ensures: return value is sum of first n elements"

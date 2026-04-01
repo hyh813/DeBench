@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns like `v1`, `v2`, `v3`, `v4` throughout the entire codebase. For example, in `process_char`, the parameter `c` is preserved but all local variables use numbered scheme. This makes tracking variable purpose extremely difficult compared to original meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most application-level functions correctly recovered their original names (e.g., `double_value`, `process_char`, `array_1d_stack`, `ptr_single`). However, some CRT/internal functions use generic names like `function_1060`, `function_1070`. Overall good recovery but not perfect.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The code contains many unexplained magic numbers, particularly floating-point constants like `0x3fc00000`, `0x4000000000000000`, `0x3fb999999999999a` used in inline assembly. The pointer arithmetic pattern `0x100000000 * (int64_t)arr >> 32` is opaque. Original source had clear literals like `'A'`, `'Z'`, `32` for case conversion.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler/decompiler artifacts present: `__asm_movss_1`, `__asm_mulss`, `__asm_addss`, `__readfsqword(40)` for stack canary, `__asm_pxor`, `__stack_chk_fail`. Excessive inline assembly blocks for what should be simple floating-point operations obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use while constructs, conditionals are readable. However, `process_int` uses `2 * x | 1` instead of the clearer `x * 2 + 1`. Array access patterns like `*(int32_t *)(4 * v1 + (0x100000000 * (int64_t)arr >> 32))` are convoluted. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler preserved the original function granularity - each small test function and processing function remains separate. Functions like `test_data_types_l1`, `test_array_types` are properly decomposed. No monolithic functions observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `array_1d_stack` and `array_vla`. Some complex conditions in array indexing create minor non-linearity but nothing severe.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in array operations (e.g., `array_3d` has explicit loop expansion). The pointer arithmetic pattern `0x100000000 * (int64_t)arr >> 32` appears repeatedly. Not severe but noticeable redundancy from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type precision with `int32_t`, `int64_t`, `uint32_t`, `int16_t`, `float32_t`, `float64_t`, `float128_t`, and `bool`. However, `const_param` takes `int32_t * p` instead of `const int32_t * p` - const correctness is lost. Some pointer types are generic.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: This is a critical failure. All struct types are lost - `Point3D`, `Rect`, `Node`, `DNode`, `TreeNode`, `Widget`, `Device`, `Graph`, `Edge` are all represented as `int32_t *` with manual pointer arithmetic. For example, `struct_simple(int32_t * p)` accesses fields via offsets `*(int32_t *)(v1 + 4)` instead of `p->y`. No union types recovered either.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant type safety issues: unsafe casts in array indexing like `*(int32_t *)(4 * v1 + (0x100000000 * (int64_t)arr >> 32))`, mixing pointer and integer arithmetic in `ptr_increment` where `v2` is cast to `int64_t` then used for arithmetic. Function pointer types have some confusion (e.g., `ptr_func_complex` takes generic signatures).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present: `// From module: /work/2.c`, `// Address range: 0x1189 - 0x119b`, `// Line range: 6 - 8`. No functional comments explaining what code does, algorithm explanations, or decompilation confidence indicators. Original source had extensive comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified or named. The linked list traversal, binary tree recursion, and graph traversal are present but not labeled as such. Original source clearly marked these patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code, potential undefined behavior, or indirect calls that couldn't be resolved. The `array_oob` function has intentional out-of-bounds access but this is not flagged. No warnings about unusual stack layouts or hand-written assembly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expectations (e.g., "requires: ptr != NULL") but none are recovered. The decompiled code silently performs operations that could have documented contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes are declared showing some relationships (e.g., `int32_t double_value(int32_t x);`). However, no clear documentation of who calls whom, global variable usage, or callback relationships. The `complex_callback` usage in `ptr_func_complex` is not clearly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - test functions together, data type functions together, array functions together. However, all in one large file with CRT startup code mixed in. Some static functions could be better scoped. Basic organization present but could be improved.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code has proper includes (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`), function prototypes declared. Should compile with minor fixes. The `__asm_*` functions may need definitions. External dependencies like `__libc_start_main` are declared. Basic compilation readiness present.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **Composite type recovery completely failed**: All structs (`Point3D`, `Node`, `Rect`, etc.) reduced to `int32_t *` with manual offset calculations, losing all semantic meaning of field access
+- **Variable naming is unusable**: Generic `v1`, `v2`, `v3` patterns make tracking variable purpose nearly impossible
+- **Excessive noise from inline assembly**: `__asm_movss_1`, `__asm_mulss` and similar constructs obscure simple floating-point operations
+- **Const correctness lost**: `const_param` function takes `int32_t *` instead of `const int32_t *`
+- **No struct/union type recovery**: Original composite types completely lost, replaced with raw pointer arithmetic
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+The decompiler preserved the original function granularity - each small, focused function remains separate, maintaining good cohesion and reasonable parameter lists.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+All struct and union types are lost. The original source had clearly defined types like `Point3D {x, y, z}` and `Node {data, next}`, but the decompiled code treats everything as raw `int32_t *` with manual offset calculations like `*(int32_t *)(v1 + 4)`, completely losing the semantic structure.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types from field access patterns**: Analyze offset patterns in memory accesses to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Infer variable names from usage patterns**: Use data flow analysis to name variables based on how they're used (e.g., if `v1` is used as array index, name it `index` or `i`)
+3. **Eliminate inline assembly noise for standard operations**: Recognize standard floating-point operations and emit clean C code instead of `__asm_*` calls; the pattern `__asm_movss` → `__asm_mulss` → `__asm_addss` clearly represents `f * 1.5f + 0.5f`

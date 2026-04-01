@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `a2` (parameters) and `v0`, `v1`, `v2`, `v3` (locals). The original source uses meaningful names like `a`, `b`, `c`, `x`, `sum`, `i`, `j`, `target` - completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly recovered: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, etc. However, many helper functions have generic names like `sub_4004dc`, `$a.14`, and some internal functions like `double_value` are unnamed ($a.16).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF, representing -1 in unsigned) appears without explanation. Some arithmetic like `10 + a0 * 10` is reasonably clear, but the decompiler doesn't explain why certain values are used.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Relatively clean output overall. Some redundant register annotations like `// r0`, `// r1` comments present but not overwhelming. No obvious dead code from register spilling.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Multiple severe issues: `loop_for_fixed` produces nonsensical arithmetic instead of a for loop; `loop_while` has broken logic with confusing do-while structure; `goto_forward` uses goto instead of structured code. The control flow is significantly degraded.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated. Main functions like `sequential_ops`, `loop_for_fixed` are distinct. Some helper functions like the divsi3 implementation are correctly extracted as separate functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Many functions have excessive goto statements and forward jumps. The `nested_if_deep` function has 8+ labels disrupting flow. The `loop_while` function has confusing nested structure that doesn't read top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns exist, particularly in condition checking. The `armg_calculate_condition` function is called multiple times with same arguments in some functions. Loop unrolling not properly recognized or commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost all parameters and variables are `unsigned int` when original uses `int`. The original `single_if(int x)` becomes `single_if(unsigned int a0)`, losing sign information. No `int32_t`, `size_t`, or other precise types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The original `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` becomes a switch statement with hardcoded values. The 2D array `matrix[3][4]` in `loop_multi_exit` becomes `g_401e3c[4]` and `g_401e6c[4]` with raw indexing. No struct recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer arithmetic present (e.g., `*(v2 + 1)` in `process_with_callback`). Function pointer casting issues in `call_func_ptr` (uses `goto a0` which is dangerous). Mixed but not catastrophic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments. Only auto-generated register annotations like `// r0`, `// [bp-0x4]`. No explanation of algorithm intent, preconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like switch statements are recognized. The ternary operator in `ternary_op` is correctly recovered. But no explicit naming of patterns (e.g., "State machine pattern detected").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Functions with completely wrong logic (like `loop_for_fixed` computing `(v1 - 1) * (v1 - 2) >> 1` instead of sum) aren't marked as suspicious. The `computed_goto` function has empty body but no warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No documentation of error conditions or input validation requirements. The original's `if (x <= 0) return 1;` in `goto_backward` isn't clearly documented as a precondition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some external references visible like `g_401e3c`, `g_401e6c`. But relationships between functions (e.g., `double_value` used by `call_func_ptr`) aren't documented. No call graph information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address rather than functionality. The test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are separated from the functions they test. No logical grouping matching original source sections.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Many undefined references: `g_401e3c`, `g_401dbd`, `g_401de1`, `g_401e05`, etc. Won't compile as standalone. External dependencies on libc functions (printf, puts) but not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming completely generic (`a0`, `v0`, `v1`) - no semantic meaning recovered
+- Type precision lost - all `int` become `unsigned int`, losing sign semantics
+- Control flow severely degraded - `loop_for_fixed` produces wrong arithmetic instead of for loop, `loop_while` has broken logic
+- No comments explaining algorithm intent or non-obvious logic
+- Composite types lost - arrays become raw pointer indexing, no struct recovery
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Main function names like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` are correctly recovered from symbols, making it possible to identify the intended function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete lack of semantic variable names makes it extremely difficult to understand what each variable represents. At -O0, the decompiler should be able to track variable usage and infer meaningful names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (e.g., `v0 += 1` suggests a counter, `*v2` suggests a pointer) to generate names like `counter`, `ptr`, `index`
+2. **Recover loop constructs from CFG patterns**: Recognize the classic for/while loop patterns (initialization, condition, increment) instead of producing broken arithmetic expressions
+3. **Preserve type information**: Use debug symbols (-g flag present) to recover precise integer types (int vs unsigned int) and preserve sign semantics

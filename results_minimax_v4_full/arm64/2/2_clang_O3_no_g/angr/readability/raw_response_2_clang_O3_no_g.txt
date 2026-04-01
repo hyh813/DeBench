@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr`, `i`, `j`, `cur` throughout. The original source used semantic names like `c`, `a`, `b`, `x`, `d`, `str`, `arr`, `n`, `p`, `head`, `root`. For example, in `process_char`, parameter `a0` should be `c`, and in `array_1d_stack`, variables like `ptr` and `i` should be `arr` and `i` respectively.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions and core logic functions are correctly named (`process_char`, `process_int`, `array_1d_stack`, `ptr_single`). However, runtime initialization functions have generic names like `sub_400634`, `sub_4006f0`, `sub_40077c`. The mix of well-named and auto-generated names creates inconsistency.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `65`, `32`, `26` in character processing, and `4294967295` (0xFFFFFFFF) as unsigned mask appear without explanation. Some literals are pre-computed (e.g., `printf("DT-L1-01: %c\n", 97)` shows 'a'), but the underlying constants are not named. The original had clear comments like "// 大写转小写" explaining the logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts include: `unsupported_Iop_ZeroHI96ofV128()` for unhandled SIMD operations, `__ROL__` used for simple operations like multiplication by 2, complex bit manipulation expressions replacing straightforward arithmetic, and frame pointer manipulation code. These obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is readable with if/else and while loops. However, `goto` is used inappropriately in `ptr_func_simple` ("goto a0") and `struct_func_ptr` ("goto a0->field_8") for function pointer calls. Some complex conditionals like `(a0 - 65 & 255) >= 26` replace simple range checks. At -O0, such goto usage is unnecessary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly. Each test function (`test_data_types_l1`, `test_array_types`, etc.) is separate. The original source's function structure is maintained. Minor issue: some functions like `test_data_types_l1` have constant-folded print statements rather than function calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `process_char`. However, some computed jumps and complex loop conditions in array processing functions (`array_1d_stack`, `array_vla`) with unrolling make linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is present in `array_1d_stack` and `array_3d` with 8-element chunks processed separately. This creates redundant code patterns. The original had clean `for` loops; the decompiled version has manual loop splitting with separate handling for remainder elements.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int` and `unsigned int` are used, but smaller types are upgraded: `char` becomes `unsigned int`, `short` becomes `unsigned int`. The original had `char process_char(char c)` but decompiled shows `long long process_char(unsigned int a0)`. Const/volatile qualifiers are lost: `const_param` should have `const int *` but shows `unsigned int *a0`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs are recovered with generic names (`struct_0`, `struct_1`) and field names (`field_0`, `field_8`). For example, `struct_with_ptr` has proper field names but uses generic struct names. Nested structs like `Rect` and `Widget` are flattened to raw offsets. Bitfields in `Flags` are not properly recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: extensive pointer arithmetic (e.g., `ptr + v1 * 4`), casts like `*((int *)(ptr + ...))` for array access, and function pointer calls via `goto`. The `ptr_void` function uses type punning with `*((char *)a0)` and `*((int *)a0)` without safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only external function declarations have minimal annotations like "/* do not return */" for `__libc_start_main`. No explanation of algorithm intent, no recovery of original Chinese comments like "// 大写转小写", no pre/post conditions documented.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: linked list traversal in `linked_list`, function pointer callbacks in `ptr_func_simple`, array indexing in `array_2d_stack`. However, no explicit naming or documentation of these patterns. The original source explicitly had patterns like "CMP-L2-12: 自引用结构体（链表）".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler marks `unsupported_Iop_ZeroHI96ofV128()` for unhandled SIMD operations, showing it's an anomaly. However, no explanation of why these couldn't be resolved or what the original operation might have been. Indirect calls are handled with `goto` without warning about resolution uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear contracts like "// requires: ptr != NULL" patterns in comments, but none are recovered. The decompiled code presents the logic without any contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: External functions are marked with `extern` keyword (e.g., `extern char g_40303f;`). However, the relationships between functions (who calls whom) are not documented. The original had clear call graphs in test functions; the decompiled version shows `test_data_types_l1()` calling `process_char()` but doesn't document this relationship.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are organized by memory address (0x4007d4, 0x4007ec, etc.) rather than logically grouped. The original had clear sections: "2.1 基础数据类型", "2.2 数组类型", "2.3 指针类型", "2.4 复合类型". The decompiled output is a flat list sorted by address.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone. Missing definitions for standard library functions (`puts`, `printf`, `__libc_start_main`), runtime functions (`__addtf3`, `__multf3`), and global variables. No header declarations or build instructions. The decompiled code assumes all dependencies are available.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `a0`, `a1`) instead of semantic names from source (`c`, `x`, `arr`, `n`, `p`)
+- Type precision severely degraded: `char`→`unsigned int`, `short`→`unsigned int`, `const` qualifier lost
+- Loop unrolling creates redundant, hard-to-read code in array functions
+- No comments explaining algorithm intent or recovering original documentation
+- Struct/union field names use generic `field_0`, `field_1` instead of meaningful names like `data`, `next`, `x`, `y`
+- Excessive compiler artifacts (`__ROL__`, `unsupported_Iop_*`, goto for function pointers) obscure logic
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Function boundaries are correctly preserved, and core logic functions retain their original names. The decompiler successfully identified individual functions and maintained separation between test functions and implementation functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic variable names make it extremely difficult to track data flow and understand function logic. Combined with the loss of type precision, the code is nearly unreadable without significant manual analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `index`, `count`, `buffer`, `result`
+2. **Recover type qualifiers and smaller integer types**: Use data flow analysis to detect `const`, `volatile` usage and preserve `char`/`short` types instead of widening to `int`
+3. **Comment loop unrolling and mark optimization artifacts**: Add annotations like "// Loop unrolled by compiler" or "// SIMD operation" to help readers understand why code looks complex

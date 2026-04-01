@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function**: `param_fake_branch` (lines 464-479 in source)
+
+### Original Source Purpose:
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    //永假条件：x*x < 0 对于实数x恒不成立
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // 另一个永假条件：字符串长度不可能为负
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Version:
+```c
+// Function: param_fake_branch @ 0x106a4
+void param_fake_branch(void)
+{
+  return;
+}
+```
+
+**Critical Finding**: The decompiled function is completely empty/wrong - return type is `void` instead of `int`, no parameters, and no function body. This is a **complete decompilation failure** for this specific function.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The function has no variables because the body is completely empty. This is a catastrophic failure - the original had `result`, `str` variables that are completely lost.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Function name `param_fake_branch` is preserved correctly, but the function signature is completely wrong (returns `void` with no parameters instead of `int x`). The name is accurate but the function is non-functional.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: No literals present because function body is empty. The original contained magic number `0xDEADBEEF` and string `"test"` which are completely lost.
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: The "clean" appearance is deceptive - the function is empty due to decompilation failure, not because it's clean. No compiler artifacts to evaluate.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: No control flow exists - the function body is completely empty. The original had two if-statements with always-false conditions that are completely missing.
+
+**6. Function Decomposition:** Score: 1/10  
+Justification: The function should contain the fake branch logic but it's completely absent. Cannot evaluate decomposition of non-existent code.
+
+**7. Code Linearization:** Score: 1/10  
+Justification: No code to linearize - the function is just `return;`. The original had a clear linear structure (variable declarations → two if checks → return) that is lost.
+
+**8. Redundancy Elimination:** Score: 1/10  
+Justification: No code to evaluate for redundancy. The empty function eliminates everything including the actual logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Severe type degradation - return type is `void` instead of `int`, parameter list is empty instead of `(int x)`. This makes the function unusable and incompatible with call sites.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Not applicable to this specific function (no structs used). However, examining other functions in the decompiled output shows struct recovery is generally poor (e.g., `local_30` used as generic byte array).
+
+**11. Type Safety:** Score: 5/10  
+Justification: The empty function has no type safety issues, but this is because there's no code at all. The function signature mismatch with call sites (`call_fake_branch` calls it with parameter 10) creates a type safety problem at the call site.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the function's purpose, the always-false conditions, or that this is obfuscation code. The original had detailed comments about the obfuscation technique.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The obfuscation pattern (always-false branches) is completely unrecognized. The original explicitly marked this as "OBF-L4-02: 虚假分支（永假）" which is not reflected in the decompiled output.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the function is incomplete, incorrect, or that the decompilation failed. The empty function is presented as if it's correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. The original had implicit preconditions (x can be any int) and postconditions (returns x) that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: The call site `call_fake_branch()` calls `param_fake_branch(10)` but the decompiled function has no parameters. This creates a complete mismatch - the cross-reference is broken.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The function appears in the output among other related functions (call_fake_branch, param_opaque_predicate, etc.), showing basic logical grouping. However, the organization is superficial.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The function will not compile correctly - `void` return type mismatches the call site expecting `int` return value. The code is not compilation-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (1+2+1+1)/4 = 1.25
+L2_avg = (1+1+1+1)/4 = 1.00
+L3_avg = (1+5+5)/3 = 3.67
+L4_avg = (1+1+1+1)/4 = 1.00
+L5_avg = (1+5+1)/3 = 2.33
+
+Overall = (1.25 × 0.30) + (1.00 × 0.25) + (3.67 × 0.20) + 
+          (1.00 × 0.15) + (2.33 × 0.10)
+        = 0.375 + 0.25 + 0.734 + 0.15 + 0.233
+        = 1.74/10
+```
+
+**Overall Readability Score:** 1.74/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Function body completely missing**: `param_fake_branch` returns `void` with empty body instead of `int` with fake branch logic
+- **Parameter loss**: Function parameter `int x` is completely missing from decompiled output
+- **Return type wrong**: Function returns `void` instead of `int`, making it incompatible with call site `call_fake_branch()` which expects return value 10
+- **All literals lost**: Magic number `0xDEADBEEF` and string `"test"` from original are completely absent
+- **No obfuscation pattern recognition**: The always-false conditions (x*x < 0, strlen(str) < 0) that are the core purpose of this function are entirely missing
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+- **Which dimension scored highest? Module Organization (5/10)**  
+- **Why?** The function appears in the correct location among related obfuscation functions, showing basic logical grouping in the output file.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+- **Which dimension scored lowest? Multiple dimensions scored 1/10**  
+- **Why?** The function is completely decompiled incorrectly - empty body, wrong return type, missing parameters. This represents a fundamental failure of the decompilation process for this specific function. The function should contain the fake branch obfuscation logic but instead contains nothing.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Detect and preserve always-false condition branches**: The decompiler should recognize patterns like `x * x < 0` and `strlen(str) < 0` as always-false conditions and preserve them in the output, not eliminate them as "dead code."
+
+2. **Preserve function signatures accurately**: The parameter list `(int x)` and return type `int` must match the original. The current output creates an unusable function that won't compile and breaks call sites.
+
+3. **Flag decompilation failures explicitly**: When a function body cannot be recovered, the decompiler should add comments like `/* DECOMPILATION FAILED: function body not recovered */` rather than presenting empty functions as correct code.

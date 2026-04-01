@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use mechanical names (`local_c`, `local_8`, `local_10`). No semantic inference from usage patterns (e.g., `param_1` used as array base should be `arr` or `array_ptr`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (`double_value`, `process_char`, `array_1d_stack`, `ptr_single`). Minor issues: test functions retain internal suffixes (`_l1`), and some helper functions like `complex_callback` are preserved but not clearly documented.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals converted to hex (`0x41` for 'A', `0x62` for 'b') without comments. Magic number `0x20` (32) used for case conversion offset. Loop bounds like `10`, `5` are clear. Mixed clarity - some literals understandable, others are magic numbers.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact pollution: "WARNING: Function: __x86.get_pc_thunk.ax replaced with injection", "WARNING: Removing unreachable block", stack canary checks (`__stack_chk_fail_local`), and numerous "This is an inlined function" warnings. These 50+ warning comments severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recovered as `for` constructs. `enum_switch` uses if-else chain (appropriate for -O0). Minor awkwardness in `process_bool` where `(int)param_1 < 1` should be `param_1 <= 0`. Overall natural flow matching source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity preserved from source - each function remains small and focused. No obvious inlining artifacts. Parameter counts mostly match source (except some variadic/aggregate handling issues). Good cohesion maintained.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but appropriate. No excessive forward jumps. Some nested conditions in `array_complex_index` and `ptr_void` but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy introduced by decompilation. Loop unrolling not present (expected at -O0). Dead code detection appears correct. Clean output without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Major issues with floating-point types: `process_ld` returns `undefined **` instead of `long double`; `process_double` takes two `undefined4` parameters instead of single `double`; `process_ll` returns `undefined8` instead of `long long`. Basic integer types mostly correct (`int`, `uint`, `ushort`, `byte`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs/unions. All composite types reduced to raw integers: `Point3D *p` → `int *param_1`, `Rect *r` → `int *param_1`, `UnionData *u` → `float *param_1`, `Node *node` → `int *param_1`. No field names recovered - all accessed via array indexing (`param_1[2]`, `param_1[1]`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Manual pointer arithmetic throughout (`param_1 + local_8 * 4`) without bounds checking. Function pointers use generic `code *` type instead of proper signatures. Some unsafe casts present. However, no obviously dangerous buffer operations that would cause immediate undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments about compiler artifacts. No algorithm explanations, no decompilation confidence indicators, no API contracts. The comment "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection: get_pc_thunk_bx" is noise, not useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible in structure (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`) but not explicitly named or documented. No recognition of state machine patterns, algorithm names, or design patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag compiler-related anomalies: inlined functions, unreachable blocks, globals overlap. However, these are artifact warnings, not semantic anomalies. No indication of uncertain indirect calls or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts absent. Error conditions not explicitly marked (e.g., `array_complex_index` returning -1 for invalid bounds).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names preserved so call relationships partially inferable. However, no explicit documentation of "called by" or "calls" relationships. Callback relationships (e.g., `ptr_func_simple` using `double_value`) not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions near tested functions, data type functions together). Single flat output file. Static functions correctly identified. Basic organization present but no header/API separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile. Uses undefined types (`undefined4`, `undefined8`, `byte`, `ushort`). Missing standard library declarations (`printf`, `puts`, `main`). Function pointer type `code` is non-standard. Requires extensive patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- All composite types (structs/unions) completely lost - accessed as raw integer arrays (`param_1[2]`, `param_1[1]`)
+- Floating-point type recovery failures: `long double` → `undefined **`, `double` split into two parameters
+- Variable naming uses only generic patterns (`param_1`, `local_c`) with no semantic inference
+- Heavy compiler artifact noise (50+ WARNING comments) obscuring actual code
+- Type precision uses non-compilable types (`undefined4`, `byte`, `code *`)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Most function names match source exactly, preserving semantic meaning and allowing easy cross-reference with original
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+- All struct/union types reduced to raw integers, losing all field semantics. A `Point3D` with x,y,z fields becomes `int *` accessed via array indices, completely obscuring the data structure design.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover composite type layouts**: Infer struct definitions from field access patterns and offset calculations. A struct with fields accessed at offsets 0, 4, 8 should be reconstructed with named fields, not array indices.
+2. **Implement semantic variable naming**: Analyze usage patterns - a parameter used as array base with index multiplication should be named `arr` or `array_ptr`, not `param_1`.
+3. **Fix floating-point type handling**: `long double` and `double` have significant recovery failures. The decompiler should recognize floating-point calling conventions (XMM registers on x86).

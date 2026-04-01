@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_strcpy` from the original source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+Decompiled version:
+```c
+/* Function: param_strcpy @ 0x2160 */
+__int64 __fastcall param_strcpy(char *a1, const char *a2)
+{
+  return (unsigned int)stpcpy(a1, a2) - (unsigned int)a1;
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a1` (dst) and `a2` (src) with no semantic recovery. Local variables like `v3`, `v4` in other functions are equally opaque. The original meaningful names `dst` and `src` are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_strcpy` exactly matches the original source function name. This is a strong point - the decompiler correctly recovered the function's identity.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No magic numbers or unexplained literals in this function. The arithmetic `stpcpy(a1,a2) - a1` is straightforward pointer math with clear intent.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean code with minimal artifacts. The `__fastcall` annotation is appropriate for ARM64 calling convention. No redundant casts or debug instrumentation observed in this function.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: Single expression with no branches - perfectly natural. The decompiler correctly recognized this as a simple return statement, not introducing spurious goto labels.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is 3 lines - appropriate granularity. The original source also had a simple function. No inlining or outlining issues here.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Reads top-to-bottom with zero jumps or branches. Perfect linear flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. The stpcpy optimization is a single-pass alternative to strcpy+strlen, not redundant.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Parameter types are precise: `char *a1` and `const char *a2` match the original. Return type `__int64` is appropriate for pointer-sized returns on ARM64. Minor note: original returns `int`, but __int64 is conservative.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) in this function - not applicable.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The casts `(unsigned int)` on pointer arithmetic are appropriate for the computation. No unsafe operations detected.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the function. The critical semantic difference - using `stpcpy` instead of `strcpy`+`strlen` - is not documented. A comment like "// Uses stpcpy for efficient length calculation" would help.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The stpcpy pattern (returns end pointer, subtract start for length) is a recognized C idiom but not named or explained. The decompiler shows the optimized form rather than the source's strcpy+strlen pattern.
+
+**14. Anomaly Indication:** Score: 10/10  
+Justification: No anomalies in this function. The stpcpy usage is valid, not suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions. The original source had implicit contracts about buffer overflow that are not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The call to `stpcpy` (a libc function) is clear. The relationship to `call_strcpy` (which calls this function) is preserved in the decompiled output.
+
+**17. Module Organization:** Score: 8/10  
+Justification: `param_strcpy` appears near other string functions (param_strcmp, param_strlen, param_memcpy). Logical grouping is preserved.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The function compiles cleanly with standard libc. No missing declarations or dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.8/10
+
+**Critical Defects:**
+- Variable names `a1` and `a2` completely lose the semantic meaning of `dst` and `src`
+- No comments explaining the stpcpy optimization vs. original strcpy+strlen pattern
+- Missing precondition documentation (buffer size requirements)
+- Many other functions in the decompiled output use generic names (v0, v1, v2, etc.)
+
+**Best Quality Aspect:** Structural Intelligibility (scored 10/10)  
+- Control flow is natural, function decomposition is appropriate, code is linear with no redundancy
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.25/10)  
+- No comments, no idiom recognition, no contract recovery. The decompiler provides code but no understanding aids.
+
+**Top 3 Recommendations:**
+1. Infer parameter names from usage patterns - `a1` is written to (dst), `a2` is read from (src)
+2. Add comments explaining optimization patterns like stpcpy vs. strcpy+strlen
+3. Recover preconditions/postconditions from function context (e.g., "requires: dst buffer >= strlen(src)+1")

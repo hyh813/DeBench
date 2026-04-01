@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `iVar1`, `puVar1`, `uVar3`, `local_c`, `local_d`, `param_1`, `param_2`. The stack buffer `acStack_2c` is cryptic. No semantic meaning is conveyed - a variable like `acStack_2c` should be named `name_buffer` based on its usage with strncpy("Test").
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, etc.) matching source. However, class member functions use generic patterns like `FUN_0001092c` for external stubs, and some duplicate functions (e.g., `MultiDerived::funcB` appears twice at 0x11108 and 0x11110).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout without explanation: `0x2a` (42), `0x125c` (4704), `0x3e9` (1000), `0x15` (21), `0x1f` (31 for buffer size), `0x96` (150), `0xfa` (250). The string "Test" is embedded but not clearly identified as a class member name.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from external function stubs (`operator_new`, `__cxa_begin_catch`, `strlen`, `strncpy`, etc.) that are just pass-through wrappers. Duplicate function definitions (e.g., `MiddleA::func` appears twice, `DiamondDerived::func` appears three times) create confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is readable with if/else and returns. However, `test_cpp_template_func` has complex stack manipulation with `CONCAT44` and unusual parameter passing that obscures logic. Some computed jumps present in virtual function handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Test functions are appropriately sized (20-50 lines). Class methods are reasonably decomposed. However, `test_cpp_oo_features` at ~50 lines could be split. Some functions like `call_virtual_func` are trivial stubs.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately. Some complexity in `test_cpp_rtti` with nested conditionals but manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy - multiple identical function definitions: `MultiDerived::funcB` duplicated at 0x11108 and 0x11110, `MiddleA::func` duplicated at 0x11118 and 0x11130, `DiamondDerived::func` appears three times (0x11190, 0x111a8, 0x111cc). This is likely decompiler artifact from different code paths.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `undefined4`, `undefined8`, `undefined1*` instead of specific types (int, char*, void*). Return types often `undefined4` instead of `int`. Parameter types generic. However, some type inference present (e.g., `int *piVar1`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Template classes recovered as `Container_int_` and `Container_double_` with reasonable structure. Field offsets used (0x28, 0x50). However, field names are numeric indices (`field0`, `field1` style via offsets). Vtable structure partially recognized.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe pointer operations: `*(int *)(this + 4)` for member access, complex vtable dereferencing like `***(code ***)param_1`. Type casts abundant. Some buffer access patterns could be unsafe (`*(int *)(this + iVar1 * 4)` without bounds in some paths).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only function signatures and the "Decompiled by BinaryAI" header. No explanation of algorithms, no recovery confidence indicators, no documentation of non-obvious logic. The comment "Function: test_cpp_exception @ 0x10a60" is just metadata.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms partially recognized - virtual function calls via vtable (`***(code ***)param_1`), thiscall conventions noted. However, no explicit naming of patterns like "virtual dispatch", "vtable lookup", or "RAII pattern" for destructors.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The duplicate functions, unresolved indirect calls, and complex virtual inheritance accesses are not flagged or explained. Code confidently presents potentially incorrect information (duplicate functions).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of requirements like "requires: idx < size" for Container::get, or "ensures: return value is valid".
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function relationships partially clear through naming. Virtual dispatch relationships visible through vtable access patterns. However, no explicit call graph documentation or callback relationships noted.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions organized by address rather than logically. Related test functions grouped but class methods scattered. No namespace recovery (all global). External stubs mixed with user code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but incomplete prototypes (e.g., `void operator_delete(void *param_1,uint param_2)` missing proper signature). No headers or dependencies documented. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable naming**: All variables use cryptic names (`iVar1`, `puVar1`, `local_c`, `param_1`) with no semantic meaning
+- **Duplicate functions**: `MultiDerived::funcB`, `MiddleA::func`, `DiamondDerived::func` each appear 2-3 times
+- **Magic numbers**: Values like `0x125c`, `0x3e9`, `0x96`, `0xfa` without explanation
+- **No comments**: Zero explanatory comments for algorithms or non-obvious logic
+- **Type precision**: Generic `undefined4`/`undefined8` instead of `int`/`size_t`
+
+### Best Quality Aspect: Function Naming (7/10)
+Test functions correctly match source names (`test_cpp_member_func`, `test_cpp_constructor`, etc.), making the entry points easy to identify.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Every variable uses cryptic names that require reverse-engineering to understand purpose. A buffer `acStack_2c` used with strncpy("Test") should be named `name_buffer`.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `acStack_2c` used with strncpy("Test") and strlen() should be `name_buffer` or `class_name`
+2. **Deduplicate function definitions**: The 3-4 duplicate functions (MultiDerived::funcB, MiddleA::func, DiamondDerived::func) should be merged into single definitions
+3. **Add explanatory comments**: Document magic numbers (0x125c = expected return value), algorithm intent, and flag anomalies like indirect virtual calls

@@ -1,0 +1,18 @@
+Macro constants: 0x14f0df08
+macro_functions: 64
+conditional_compile: 30
+multi_branch_compile: 32
+macro_recursion: 57122
+stringize: 116
+token_paste: 19
+variadic_macro: 60
+LOG: Values: 10, 20, 30
+variadic_macro: 60
+macro_override: 16
+include_guard: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:39
+builtin_macros: 382
+asm_basic: PASSED
+asm_clobber: -1445204868
+asm_multi_insn: 42
+asm_simd: 36

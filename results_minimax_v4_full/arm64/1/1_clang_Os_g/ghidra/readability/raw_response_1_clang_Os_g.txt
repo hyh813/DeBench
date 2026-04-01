@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (iVar1, uVar1, lVar1, puVar3). Many locals marked as "Unresolved local var: int temp1@[???]", "int sum@[???]", "int i@[???]". Only a few like `result` and `flag` retain semantic meaning. The original source had clear names like `temp1`, `temp2`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`. Only standard runtime functions like `_init` have generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `0x3e9` = 1001 for loop limit, `0x65` = 101), but many magic numbers lack explanation. Test functions print computed values like `0x15` (21) without explaining the derivation. Constants like `0x12` in loop_while are unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise present including "Unresolved local var" comments throughout, "WARNING: Removing unreachable block" messages, "WARNING: Unknown calling convention" annotations, and "WARNING: Could not recover jumptable" warnings. These clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - switch statements properly recovered, loops use do-while/for constructs. However, `loop_continue` is heavily restructured into complex bit manipulation, and `goto_backward` uses an unusual loop structure with NEON intrinsics. At -O0, such restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each original function is preserved as a separate decompiled function with appropriate parameter lists. Function granularity matches source - no monoliths or over-fragmentation. Static helper functions like `double_value`, `triple_value` properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `single_if`, `if_else`. Some forward jumps exist but are manageable. The `loop_break` uses goto for early exit which is acceptable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling present in `loop_continue`, `goto_backward`, `recursion_factorial`, `tail_recursion`, `call_func_ptr_array` - all using complex NEON-style vectorization that obscures the original logic. At -O0, this unrolling is inappropriate.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are `int` which matches the original. Function pointer types use `_func_int_int *` which is somewhat generic but usable. No use of more specific types like `int32_t` or `size_t`. Signed/unsigned handling is mostly correct.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery. Arrays like `int[5] arr` marked as "Unresolved local var". Matrix in `loop_multi_exit` accessed via raw pointer arithmetic: `puVar3[lVar4]`. Original had clear `int matrix[3][4]` and `int arr[]`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some pointer arithmetic present but correct. Function pointer calls use proper signature types. Minor issues like redundant null checks in `op_div`: checks `if (b != 0)` twice.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated comments ("Unresolved local var", "WARNING"). No meaningful documentation explaining algorithm intent. Test functions have no comments about what they verify. Original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (switch-case, loops). Duff's device partially recognized with switch labels but fall-through logic unclear. State machines recognized but not named as such. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "WARNING: Could not recover jumptable" for call_func_ptr, "WARNING: Removing unreachable block" for initialization functions. However, indirect recursion in `indirect_recursion_a` not clearly marked as such.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling contracts. Original source had clear test cases verifying behavior - this semantic information is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls within each function are clear. Static functions like `double_value`, `triple_value` properly identified. However, no documentation of which functions call which, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions separate from implementation, helper functions near their usage. Static functions properly scoped. However, all in single output file.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C compiler. External dependencies are standard library (puts, printf, __gmon_start__). Some functions like `call_virtual_func` have C++ guards but fall back to C implementation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: generic names like `iVar1`, `uVar1`, `lVar1` and "Unresolved local var" comments throughout
+- Loop unrolling at -O0: functions like `loop_continue`, `goto_backward`, `recursion_factorial` show heavy vectorization that obscures original logic
+- No composite type recovery: arrays and matrices accessed via raw pointer arithmetic
+- No contract/precondition recovery: semantic intent of functions lost
+- Excessive noise: "WARNING" and "Unresolved" comments clutter output
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names match original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic variable names and unresolved local variable comments make it extremely difficult to track data flow and understand variable purposes
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., variables used as loop counters should be named `i`, `j`; accumulators should be `sum`, `result`
+2. At -O0, preserve original loop structures without unrolling - the vectorized code in `loop_continue` and `recursion_factorial` is inappropriate for debug builds
+3. Recover composite types from stack frame analysis - detect array accesses like `arr[i]` and reconstruct `int arr[5]` rather than using pointer arithmetic

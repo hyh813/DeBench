@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/5-23/5-23_gcc_Os_g/ghidra/syntactic/bin/5-23_gcc_Os_g_fixed",
+  "stdout": "Macro constants: 0x14f0df08\nmacro_functions: 64\nconditional_compile: 30\nmulti_branch_compile: 32\nmacro_recursion: 57122\nstringize: 116\ntoken_paste: 19\nvariadic_macro: 60\nLOG: Values: 10, 20, 30\nvariadic_macro: 60\nmacro_override: 16\ninclude_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:39\nbuiltin_macros: 382\nasm_basic: PASSED\nasm_clobber: -1445204868\nasm_multi_insn: 42\nasm_simd: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

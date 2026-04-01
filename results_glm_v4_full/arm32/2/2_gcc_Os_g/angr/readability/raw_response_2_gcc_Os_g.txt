@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `a0`, and `a1`. While `ptr` appears occasionally, the vast majority of names like `vvar_22{r64|4b}` provide zero semantic context, making it nearly impossible to track data flow without mapping registers manually.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `process_char`, `array_1d_stack`, `test_data_types_l1`). This is the strongest aspect of the decompilation, providing immediate high-level context that matches the source perfectly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are prevalent and unexplained. For example, in `process_char`, the ASCII values `65` ('A') and `32` (space) are used directly instead of character literals. Floating point constants like `0x3f000000` in `process_float` are not converted to readable decimal values.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with noise, specifically the `armg_calculate_condition` helper function calls which simulate CPU flags. This artifact obscures the actual logic (e.g., simple comparisons) and makes the code look like a low-level IR dump rather than high-level C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural, relying heavily on `goto` statements and labels (e.g., `LABEL_10652`) even for simple logic. The `process_bool` function is a prime example, where a simple boolean expression is expanded into a complex web of conditional jumps and flag calculations.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are mapped 1:1 with the source, and there is no aggressive inlining or outlining that obscures the module boundaries. The granularity is appropriate, even if the internal implementation is messy.
+
+**7. Code Linearization:** Score: 2/10
+Justification: The code does not read linearly. Frequent forward jumps (e.g., `goto LABEL_1092e`) and the use of `armg_calculate_condition` break the top-to-bottom reading flow, requiring the reader to jump around the function to understand simple conditional blocks.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated `armg_calculate_condition` calls. In `process_char`, the condition `v0 <= 25` is checked multiple times via the helper function, adding verbosity without adding semantic value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. `char` parameters become `unsigned int`, and `float`/`double` operations are replaced by calls to compiler intrinsics like `__mulsf3` and `__muldf3` with `void` return types, completely losing the semantic meaning of arithmetic operations.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structures are recognized but flattened. For example, `struct_simple` takes `unsigned int *a0` and accesses elements via array indexing (`a0[1]`, `a0[2]`) rather than member access (`p->y`, `p->z`). While the layout is preserved, the semantic field names are lost to generic `struct_0` definitions.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code exhibits unsafe type handling. Pointers are frequently cast to `unsigned int` for arithmetic, and the distinction between `char`, `int`, and pointers is blurred (e.g., `*((int *)&v0)`), which could lead to misinterpretation of data sizes and sign extension.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. No algorithm explanations, no parameter descriptions, and no annotations about the `armg_calculate_condition` calls, leaving the user to guess the intent behind obscure logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. The range check `if (c >= 'A' && c <= 'Z')` in `process_char` is not identified as a character class check or simplified; it is merely lifted into arithmetic and flag checks.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the `armg_calculate_condition` calls and the mangled `main` function logic (passing void return values as arguments) as standard code without any warning flags or comments indicating potential issues or uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For instance, the requirement that pointers in `ptr_single` be non-null is not documented, nor are the constraints on array indices.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function names are preserved, the call graph in `main` is corrupted. `test_array_types` (which returns `void` in source) is treated as returning a value passed to `test_pointer_types`, creating a confusing and incorrect dependency graph.
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions are listed in a sequence that roughly corresponds to the source file order, which helps in locating specific test functions. However, the lack of logical grouping or separation (e.g., headers/sections) makes it a flat list.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on non-standard helper functions like `armg_calculate_condition` and `vvar_` variables that do not exist in any standard library, making it impossible to build without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Floating point arithmetic is replaced by compiler intrinsics (`__mulsf3`) instead of operators (`*`), destroying semantic meaning.
+- Control flow is obfuscated by `armg_calculate_condition` calls, making simple boolean logic unreadable.
+- Variable types are aggressively generalized to `unsigned int`, losing critical type information (e.g., `char`, `float`).
+- The `main` function logic is structurally incorrect, treating `void` function calls as data-producing expressions.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully preserved the original function names from the source, which is the only reliable anchor for understanding the code's purpose.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- The pervasive use of `armg_calculate_condition` to simulate low-level CPU flags renders the high-level logic almost completely opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pattern-matching pass to replace `armg_calculate_condition` sequences with native C comparison operators (`<`, `>`, `==`).
+2. Enhance type recovery to identify floating-point operations and replace compiler intrinsics with standard arithmetic operators.
+3. Improve variable type inference to distinguish between `char`, `int`, and pointers based on ABI and usage context, rather than defaulting to `unsigned int`.

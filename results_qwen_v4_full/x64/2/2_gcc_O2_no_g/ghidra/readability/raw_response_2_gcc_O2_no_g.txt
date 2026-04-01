@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `iVar1`, `param_1`, `piVar1`, `pcVar1` with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`process_char`, `array_1d_stack`, `struct_simple`). However, `process_ld` is empty, `FUN_00101020` is unnamed, and some signatures are wrong.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x20` (char conversion), `0x6e` (array offset), `0x1e` (loop bound) lack explanation. Test functions inline expected constants (`0xf`, `0x69`) instead of computing them.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts: stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`), initialization functions (`_init`, `_fini`, `deregister_tm_clones`), and infinite loop in `_start`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while with pointer comparisons (`param_1 != piVar1`). `binary_tree_sum` recursion transformed into deeply nested iterative loops, obscuring the tree traversal pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `binary_tree_sum` expanded to 150+ lines with excessive nesting. Helper functions like `complex_callback` not recovered.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt flow in multiple functions. Stack canary checks at function exits add non-linear elements. `binary_tree_sum` has extreme nesting breaking top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling visible in `array_3d` (`*piVar4 + piVar4[1] + piVar4[2]...`). Test functions inline constants instead of calling actual functions, losing computation traceability.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `process_ll` returns `long` instead of `long long`, `process_ld` returns `void` instead of `long double`, `volatile_access` loses volatile qualifier. Function pointers become `code*`, struct pointers become `int*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct definitions recovered. `Point3D`, `Rect`, `Widget`, `Node`, `UnionData` all represented as `int*` with array indexing. Nested struct access uses hardcoded offsets (`param_1 + 8`, `param_1 + 0x14`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts proliferate: `(undefined4 *)`, `(int **)`, `(undefined8 *)`. Function pointers lack proper signatures. Pointer arithmetic on generic types creates undefined behavior risks.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler metadata comments present ("Decompiled by Ghidra 12.0", "WARNING: Could not recover jumptable"). No algorithm explanations, no API contracts, no logic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal, binary tree recursion, switch-on-enum patterns all appear as generic code. No design patterns named or explained despite clear algorithmic structures.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for problematic areas ("WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call"). However, warnings are generic without actionable guidance.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but aren't explained as contracts. Error conditions lack documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage not transparent. Callback relationships unclear (e.g., `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping. No header file structure. Related functions (e.g., struct operations) not clustered together.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone - missing struct definitions, undefined externals (`__printf_chk`, `puts`), compiler-specific constructs (`in_FS_OFFSET`). Requires extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+6+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.54/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects
+- **Composite types completely lost** - All structs (`Point3D`, `Rect`, `Widget`, `Node`) represented as `int*` with hardcoded offsets
+- **`process_ld` function empty** - Returns `void` with no implementation instead of `long double` computation
+- **Recursive algorithms destroyed** - `binary_tree_sum` transformed from clean recursion to 150+ line nested loop nightmare
+- **Type information severely degraded** - `long long` → `long`, `volatile` qualifier lost, function pointers → `code*`
+- **Variable names completely generic** - `iVar1`, `param_1`, `piVar1` provide zero semantic information
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved correctly (`process_char`, `array_1d_stack`, `struct_simple`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite type access through opaque pointer arithmetic with hardcoded offsets.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement struct/union type recovery** - Analyze memory access patterns to reconstruct composite type definitions with field names based on usage context
+2. **Preserve recursive call patterns** - Detect tail recursion and tree traversal patterns to maintain original algorithmic structure instead of converting to iterative loops
+3. **Add semantic variable naming** - Use data flow analysis to infer variable purposes (e.g., `sum` for accumulators, `len` for counters, `ptr` for pointers) from usage patterns

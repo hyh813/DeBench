@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite `-O0 -g` compilation, variables are generic (`param_1`, `local_c`, `local_3c`, `aiStack_38`). Original semantic names like `x`, `n`, `i`, `arr`, `p` are completely lost, requiring significant mental effort to track data flow.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols (e.g., `local_vars`, `heap_basic`, `linked_list_heap`), matching the source exactly and providing clear context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are presented as hex (e.g., `0x2a` instead of `42`, `0x800` instead of `2048`, `0xffffffff` instead of `-1`). While accurate, this obscures the original decimal logic and intent without comments.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is generally clean, but Ghidra introduces noise with `undefined` types (e.g., `undefined4`, `undefined [16]`) and redundant casts like `(undefined4 *)0x0` which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent due to `-O0`; loops are reconstructed as `for` loops, and conditionals are standard `if` statements. The logic in `linked_list_heap` is easy to follow despite the complexity.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source. There is no inlining or outlining, preserving the original modular structure perfectly (e.g., `create_tree_node` is separate).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or `goto` spaghetti; early returns are handled cleanly.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No dead code or loop unrolling artifacts are present. The decompiler successfully abstracted away the stack frame manipulations typical of `-O0` builds.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often imprecise. VLA functions like `vla_stack` return `undefined [16]` instead of `int`. Integers are often `undefined4` or `uint` instead of strictly `int`, and signedness is sometimes lost.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are not recovered. `Point` and `Node` are accessed via raw pointer arithmetic (e.g., `__ptr[1]`, `*(int **)(local_18 + 2)`), completely obscuring the data structure layout and field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: Heavy reliance on casts (e.g., `(long)param_1`, `(undefined4 *)0x0`) and pointer arithmetic on `void*` makes the code look unsafe and harder to reason about compared to the typed source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: Zero comments are preserved from the source. The rich documentation explaining memory operations, test cases, and logic is entirely absent, leaving only raw logic.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls (`malloc`, `free`) are recognized, but higher-level patterns like "Linked List Traversal" or "Tree Creation" are not explicitly identified or annotated.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The `undefined [16]` return types for VLA functions are presented as normal code without warning. The logic in `stack_alias` (`&stack0x00000000`) looks suspicious but is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., `n > 0` checks) are visible as code but not documented as contracts. The `assert`-like nature of the checks is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear. The relationship between `test_heap_memory` and its sub-functions is obvious.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order. Helper functions like `static_helper` are correctly placed near their callers.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile as-is due to `undefined` types and missing struct definitions. Significant manual cleanup would be required to make it buildable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `local_c`) instead of semantic names (`x`, `result`), severely hindering readability.
+- Composite types (`Point`, `Node`) are not recovered; structs are accessed via raw pointer arithmetic/indexing.
+- All comments and documentation from the source are stripped, removing context for the test cases.
+- Variable Length Array (VLA) functions return `undefined [16]` instead of the correct scalar type.
+
+**Best Quality Aspect:** Function Decomposition (Score: 10/10)
+- The 1:1 mapping of functions to the source preserves the original architecture perfectly, making navigation easy.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 3/10)
+- The failure to reconstruct `Point` and `Node` structures turns high-level data manipulation into low-level memory offsetting, which is the biggest barrier to understanding the heap logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover Debug Symbols for Variables**: Utilize the DWARF debug information (present in `-g` builds) to restore original variable names like `i`, `n`, and `arr`.
+2. **Structure Type Recovery**: Implement heuristic analysis to identify and reconstruct `struct` types from sequential memory accesses (e.g., detecting `malloc` followed by field writes).
+3. **Type Propagation for VLAs**: Fix the type signature for functions using Variable Length Arrays on the stack to return the correct scalar type instead of a generic `undefined` struct.

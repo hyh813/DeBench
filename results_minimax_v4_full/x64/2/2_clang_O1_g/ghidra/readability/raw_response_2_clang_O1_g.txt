@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `lVar2`, `uVar3`, `puVar1` throughout. Many have "Unresolved local var" annotations with DW_OP debug info. The original source used meaningful names like `sum`, `i`, `c`, `str`, `n` which are almost entirely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all functions retain their original names: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Test functions are also correctly named. Minor deduction for some internal functions like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (0xf=15, 0xb=11, 0x14=20), but many magic numbers remain unexplained. Test functions print pre-computed values (e.g., `printf("DT-L1-02: %d\n",300)`) rather than expressions, losing the algorithmic clarity from source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise present including "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations with DW_OP debug info. The decompiled output has ~1277 LOC vs 830 source LOC, indicating substantial artifact addition.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For loops are typically converted to do-while constructs (e.g., `array_1d_stack` uses `do { ... } while (n != uVar2)`). This is standard decompilation behavior at -O0. Control flow is traceable, though less idiomatic than source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function handles a single responsibility (e.g., `process_char`, `array_string`, `ptr_single`). No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `array_3d` with nested loops, but flow is traceable. No severe disruption to linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Test functions pre-compute values (expected for decompilation). Loop constructs are unrolled but recognizable. Minor redundancy in some struct access patterns.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (int, short, char, float, double) are correctly identified. However, `process_ld` returns `longdouble*` instead of `longdouble`. Function pointer types use generic names like `_func_int_int` instead of proper signatures. Const correctness partially preserved.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered: `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `DNode`, `Edge`, `Graph`, `Device`, `Flags`. Field names preserved: `x`, `y`, `z`, `data`, `next`, `left`, `right`. Union types correctly identified. Nested structures handled properly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Most casts are appropriate. Some pointer arithmetic in array functions but within bounds. No severe type safety violations like buffer overflows. Minor issues with void pointer handling in `ptr_void`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. Mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Variable defined which should be unmapped"). No algorithm explanations or intent documentation. The source had Chinese comments explaining test scenarios which are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized (linked list traversal in `linked_list`, binary tree recursion in `binary_tree_sum`), but not explicitly named or documented. No designation of "state machine", "callback pattern", or "iterator" idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "Unresolved local var" annotations, "WARNING: Unknown calling convention". However, many issues are silently handled (e.g., the `process_ld` return type problem has no warning). Could be more comprehensive in flagging uncertain decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had clear expectations (e.g., "期望: 15") which are lost. No contract information recovered whatsoever.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (e.g., `main` calls `test_data_types_l1`). However, relationships like "process_int is used by test_data_types_l1" or callback relationships (e.g., `complex_callback` used by `ptr_func_complex`) are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically, matching source organization (data types, array types, pointer types, composite types sections). Static functions properly scoped. Minor issues with some internal functions at beginning.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many undefined types: `_func_int_int`, `_func_int_int_ptr_char_ptr_ptr`. External dependencies not documented (e.g., `puts`, `printf` from libc). Would require adding includes and function prototypes to compile. The "Compilation Result: Yes" in metadata seems incorrect given the issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `lVar2`, `uVar3`) losing all semantic meaning from source
+- `process_ld` returns `longdouble*` instead of `longdouble`, a type error
+- No comments explaining algorithms or intent; source had detailed Chinese documentation
+- Test functions print pre-computed values rather than expressions, losing algorithmic transparency
+- Function pointer types use generic names like `_func_int_int` instead of proper signatures
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct, union, and nested type structures are well-reconstructed with accurate field names matching the original source almost perfectly.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The decompiler failed to recover meaningful variable names from debug symbols, leaving almost all variables with generic names that obscure their purpose.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables used as loop counters should be named `i`, `j`, `k`; accumulators should be `sum`, `total`, `count` based on operations performed
+2. **Recover function pointer signatures**: Instead of `_func_int_int`, infer the actual signature from call sites (e.g., `int (*)(int)`)
+3. **Preserve expressions in test functions**: Instead of printing `printf("DT-L1-02: %d\n",300)`, print `printf("DT-L1-02: %d\n", process_short(100, 200))` to preserve algorithmic intent

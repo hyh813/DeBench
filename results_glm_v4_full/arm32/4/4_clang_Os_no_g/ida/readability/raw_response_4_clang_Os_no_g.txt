@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v0`, and `v4`, providing no semantic context (e.g., `count` or `sum` in `varargs_func` became `a1` and `v3`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols, matching the original source exactly (e.g., `cdecl_func`, `test_calling_conventions`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers resulting from compiler optimization (e.g., `15`, `50`, `0x51EB851F`) obscure the original logic, and floating-point constants are split into opaque integer pairs.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler/decompiler-specific macros like `__PAIR64__`, `COERCE_DOUBLE`, `__CFADD__`, and `JUMPOUT`, which significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with recovered `do-while` and `for` loops, though some `JUMPOUT(x)` statements and `goto` usage in library functions slightly disrupt the flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-separated and match the source granularity; the decompiler correctly identifies distinct functions rather than merging them into a monolith.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with standard loop structures, though some complex pointer arithmetic in `varargs_func` requires careful tracing.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations (like inlining) without adding its own redundant code, resulting in concise logic where the binary allows.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost; `double` types are split into `unsigned int` pairs (e.g., `a3`, `a4` in `func_mixed_args`), and `long long` is handled via `__int64` macros rather than native types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed significantly; `LargeStruct` in `func_struct_byval` is decompiled as four separate integer arguments (`a1`-`a4`) rather than a struct parameter, and `SmallStruct` is accessed via raw pointer arithmetic (`_DWORD *`).
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on unsafe type punning macros like `COERCE_DOUBLE` and `__PAIR64__` to reconstruct 64-bit values from 32-bit registers, which is accurate to the ABI but unsafe and hard to read.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of complex macro operations; only auto-generated headers exist.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While the varargs logic is present, it is expressed via low-level pointer manipulation (`va_copy`, pointer arithmetic) rather than the standard `va_arg` idiom, obscuring the intent.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: Anomalies like `JUMPOUT` are present but unexplained; there is no indication of why a function might jump out or what the `__CFADD__` intrinsic represents semantically.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `va_list` usage or pointer validity).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace; the relationship between `main` and the test functions is clear and preserved.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the logical order of functions found in the source, grouping related test functions together effectively.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Hex-Rays specific intrinsics (`__PAIR64__`, `COERCE_DOUBLE`) and non-standard types (`__int64`), making it non-compilable without significant modification or a specific environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite type recovery failed: `LargeStruct` is represented as scattered integers (`a1`, `a2`, `a3`, `a4`) instead of a struct.
+- Floating-point types are degraded: `double` arguments are split into `unsigned int` pairs and reconstructed with `COERCE_DOUBLE`, losing semantic clarity.
+- Variable naming is entirely generic (`a1`, `v0`), requiring the user to manually infer the purpose of parameters like `count` or `sum`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the symbol table, making navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The inability to reconstruct `LargeStruct` and `SmallStruct` parameters forces the reader to interpret raw register arguments, which is a major barrier to understanding the data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve composite type argument recovery to aggregate scattered registers/stack slots into structs based on usage patterns (e.g., summing fields in `func_struct_byval`).
+2. Detect and recombine 32-bit register pairs (common in 32-bit ABIs) into 64-bit integers or doubles to eliminate `__PAIR64__` and `COERCE_DOUBLE` noise.
+3. Implement heuristic variable naming to infer names like `count`, `sum`, or `result` based on usage context (e.g., loop counters or accumulators).

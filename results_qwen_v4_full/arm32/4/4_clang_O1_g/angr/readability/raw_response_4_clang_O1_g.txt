@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that indicated purpose clearly.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions use generic names (`sub_4003f0`, `sub_400490`). Action verbs are preserved where names survived.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295`, `0x100000`, `0x80000000` appear without explanation. Some literals are clear (42, 15, 50) but floating-point constants and bit masks are opaque.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from `armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v` calls throughout. Functions like `__adddf3` are buried under hundreds of lines of condition flag calculations that obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive use of `goto LABEL_XXXX` patterns instead of natural loops and conditionals. Original `for` and `while` loops converted to backward jumps with manual counter management.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but granularity is inconsistent. Simple functions like `call_cdecl` are just constant returns, while `__adddf3` is a 400+ line monolith that should be a library call.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearization with frequent forward and backward jumps. The `__adddf3` function has deeply nested conditional branches that make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from condition flag calculations repeated throughout. Same `armg_calculate_condition` patterns appear multiple times with identical parameters.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned int` regardless of original type. Original `double`, `long long`, `char*`, and struct types all collapsed to generic integers. Function `func_mixed_args` lost all type distinction for `double d` and `long long ll`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs partially recovered as `struct_0` with generic fields (`field_0`). `LargeStruct` with 16 `long long` elements became raw pointer arithmetic (`*((int *)((char *)&v0 + v7))`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts present. Pointer arithmetic without bounds checking (`ptr + 1`), function pointers as `unsigned int*`, and void pointer conversions without safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated function headers with addresses. No algorithm explanations or decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls (`strlen`, `printf`, `va_arg`) not annotated. Varargs pattern in `varargs_func` not recognized as standard C variadic function idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code patterns. `armg_calculate_condition` calls not explained. No indication that floating-point operations may be inaccurate.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL`). No postconditions or error condition documentation recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables (`g_4014b4`, `g_40175e`) referenced without explanation of their purpose as string constants.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by section (calling conventions vs. parameter passing vs. return values). No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubs for external functions (`__libc_start_main`, `puts`, `__adddf3`). Undefined globals (`g_412008`, `__TMC_END__`) need resolution. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+4+2)/4 = 3.75
+Level 2 Average: (3+5+3+4)/4 = 3.75
+Level 3 Average: (3+3+3)/3 = 3.00
+Level 4 Average: (2+3+2+2)/4 = 2.25
+Level 5 Average: (4+4+4)/3 = 4.00
+
+Overall = (3.75 × 0.30) + (3.75 × 0.25) + (3.00 × 0.20) + 
+          (2.25 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 0.9375 + 0.60 + 0.3375 + 0.40
+        = 3.40/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- Variable names like `v0`, `v1`, `a0` provide zero semantic information about their purpose
+- `armg_calculate_condition` and flag calculation calls create hundreds of lines of noise obscuring actual logic
+- All type information collapsed to `unsigned int`, losing `double`, `long long`, struct distinctions
+- Control flow uses `goto LABEL_XXXX` instead of natural loop/conditional constructs
+- No comments explaining the purpose of complex operations like floating-point arithmetic
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names were preserved from the original source, maintaining some semantic connection to purpose
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding complex functions like `__adddf3` nearly impossible without referring to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., loop counters → `i`, accumulators → `sum`, pointers → `ptr_buffer`)
+2. **Suppress or annotate ARM condition flag calculations**: Either eliminate `armg_calculate_condition` noise or add comments explaining these are compiler artifacts
+3. **Recover high-level control structures**: Convert `goto` patterns back to `for`/`while` loops and `if`/`else` conditionals based on jump pattern analysis

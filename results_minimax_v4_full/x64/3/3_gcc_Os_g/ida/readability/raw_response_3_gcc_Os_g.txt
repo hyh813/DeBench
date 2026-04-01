@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses generic variable names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9` extensively throughout all functions. For example, in `local_vars` the computation `2 * x + 10` uses no intermediate variables at all (fully constant-folded), and in `local_array` the loop uses `i` and `v1` without semantic meaning. These should be named based on usage patterns (e.g., `input`, `doubled`, `result`, `index`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are correctly recovered from debug symbols: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `global_var_access`, `static_local`, etc. All match the original source function names exactly. Minor deduction for some helper functions like `sub_1020` which are compiler-generated.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear and meaningful: `42` in `address_of_local`, `10` in loop bounds, `2048` in `large_stack_frame`. However, some magic numbers like `0x28` (stack canary offset) and `0x14` (20 bytes for 5 ints) lack explanation. The decompiler correctly preserves constant values but doesn't annotate their semantic meaning.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Stack canary reads (`__readfsqword(0x28u)`) appear but are expected at -O0. No redundant casts or debug instrumentation clutter the output. The `qmemcpy` macro in `memop_memcpy` is a minor artifact but doesn't impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches the source. Loops use `for` constructs (`for (i = 0; i != 10; ++i)`), conditionals are clear, and early returns are preserved. At -O0, no loop unrolling or goto conversion occurred, which is excellent. The `stack_alias` function returns constant 20 (optimization artifact) but the logic is still traceable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains appropriate granularity matching the source. Functions like `local_vars` (3 lines), `heap_basic` (12 lines), and `linked_list_heap` (35 lines) are cohesive with single responsibilities. No over-fragmentation or monoliths. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom without disruptive jumps. Early returns in error checking (`if (!v3) return -1`) are used appropriately. No forward jumps into loop bodies. The `vla_stack` and `alloca_usage` functions have complex stack allocation logic but it's still traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The decompiler correctly eliminated unreachable code paths. Loop unrolling is minimal (appropriate for -O0). Common subexpressions like `n/2` are computed once and reused. The code is clean without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - `int` is used for most integers (appropriate), `size_t` for memory sizes, and pointers are correctly typed. However, `unsigned int` vs `int` distinction is lost in some places (e.g., `global_array_access` uses `(unsigned int)idx` but original had `int`). Function pointer types are properly preserved (`int (*f)(int)`). Some type erosion exists but it's manageable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types `Node` and `TreeNode` are correctly recovered with proper field names (`data`, `next`, `left`, `right`). The `Point` struct is used correctly in `heap_struct`. However, some struct operations use raw pointer arithmetic (e.g., `*(_DWORD *)v0` in linked_list_heap) instead of proper field access. Overall decent recovery given -O0.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several type safety issues exist: unsafe casts like `*(_DWORD *)((char *)dst + (n & 0xFFFFFFFFFFFFFFFCLL) - 4)` in `memop_memcpy`, pointer arithmetic that could overflow, and the `dangling_pointer` function returns `*v0` after `free(v0)` (undefined behavior presented as normal code). The `memop_unaligned_access` uses direct memory access without safety checks. These issues reflect the original code's unsafe patterns but the decompiler doesn't flag them.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments present. The decompiler provides only auto-generated function headers ("Decompiled by IDA Pro 9.1") but no algorithm explanations, no decompilation confidence indicators, no API contracts. The original source had extensive comments (MEM-L1-01, MEM-L2-01, etc.) which are completely lost. This is a major readability issue.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognizable (linked list traversal, tree traversal, memory allocation patterns) but not explicitly named or documented. The decompiler doesn't identify "linked list" or "binary tree" structures - it just shows the code. No bonus for naming patterns like "circular buffer" or "memory pool".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication whatsoever. The dangerous `dangling_pointer` function is presented as normal code without any warning about the undefined behavior of accessing freed memory. The `double_free` function shows the double-free bug but no annotation warns about it. The `heap_overflow` loop `i != 11` when malloc was for 10 elements is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The original source had safety checks (e.g., `if (n <= 0 || n > 1000) return -1` in vla_stack) but these are shown as raw conditionals without explaining they're input validation. No error handling contracts are documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are explicit and traceable (e.g., `test_stack_memory()` calls `local_array(2)`). Global variable usage is visible (`global_counter`, `global_array`). Callback relationships like `global_func_ptr = f` are clear. However, no explicit documentation of "called by" or "calls" relationships. The extern functions `extern_global_var` and `extern_function` are referenced but their definitions aren't shown.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: stack memory functions together, heap functions together, static/global functions together, memory operation functions together. Static functions like `static_local`, `call_static_func` are properly scoped. However, there's no header file structure or API boundary separation - everything is in one flat output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile with minimal modifications. Function declarations are present, external dependencies (malloc, free, memcpy, etc.) are standard C library functions. Some minor adjustments might be needed (e.g., `qmemcpy` macro). The code uses standard C constructs without compiler-specific hacks, making it relatively portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 7 + 8) / 4 = 6.75
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (6 + 7 + 6) / 3 = 6.33
+L4_avg = (2 + 5 + 2 + 2) / 4 = 2.75
+L5_avg = (6 + 7 + 7) / 3 = 6.67
+
+Overall = (6.75 × 0.30) + (8.25 × 0.25) + (6.33 × 0.20) + 
+          (2.75 × 0.15) + (6.67 × 0.10)
+        = 2.025 + 2.0625 + 1.266 + 0.4125 + 0.667
+        = 6.433 / 10
+```
+
+**Overall Readability Score:** 6.4/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `v0`-`v9` throughout all functions obscure semantic purpose; should infer names from usage patterns (e.g., `temp` → `packet_size`, `index` → `buffer_index`)
+- **No comments**: Zero algorithm explanations, no decompilation confidence indicators, no API contracts - original source's extensive comments (MEM-L1-01, etc.) completely lost
+- **No anomaly flagging**: Dangerous patterns like `dangling_pointer` (use-after-free), `double_free`, and `heap_overflow` (buffer overflow) presented as normal code without warnings
+- **Type safety issues**: Unsafe casts and undefined behavior patterns shown without annotation (e.g., `*v0` after `free(v0)`)
+- **Missing contracts**: Preconditions/postconditions from original source's safety checks (e.g., `if (n <= 0) return -1`) not documented
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are almost perfectly recovered from debug symbols, matching the original source exactly. This is the strongest dimension and makes the code highly navigable.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+The decompiler provides almost no semantic information - no comments, no pattern recognition, no anomaly warnings, no contract documentation. This severely impacts understandability of the code's purpose and risks.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add semantic comments**: Include algorithm explanations, decompilation confidence indicators, and API contracts (@param, @return) to explain what the code does and any uncertainties
+2. **Flag anomalies**: Add warnings for dangerous patterns like use-after-free, double-free, buffer overflows, and undefined behavior with severity levels
+3. **Infer variable names from usage**: Analyze variable usage patterns (arithmetic, indexing, pointer dereferencing) to suggest semantically meaningful names instead of generic `v0`-`v9`

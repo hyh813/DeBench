@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context (e.g., `sum`, `count`, `target` are lost).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `loop_for_fixed`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers like `0x66666667` (compiler division optimization) and casts of global addresses to integers (e.g., `(int32_t)&g20`) instead of actual values.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Excessive type casting noise is present, such as `(uint32_t)(int32_t)(bool)(a1 > 0)`, and the inclusion of the full `__aeabi_idiv` implementation adds significant clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily obfuscated; simple `if` statements are replaced by bit shifts (`single_if`), loops are converted to arithmetic formulas (`loop_for_fixed`), and switches become boolean expressions (`switch_small`).
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without unwanted inlining or outlining.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While the code is short, it relies on dense, nested ternary operators and complex boolean expressions that disrupt top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler aggressively eliminates "redundant" loop structures, replacing them with math formulas that, while efficient, obscure the original iterative logic intended by the developer.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are generally correct (`int32_t`), but the decompiler introduces a custom `int33_t` typedef and incorrectly casts pointers to integers for return values.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The `jmp_buf` structure is recovered, but local arrays (like in `loop_break`) are accessed via raw pointer arithmetic on stack variables (`v1`) rather than array types.
+
+**11. Type Safety:** Score: 1/10
+Justification: Severe type confusion exists; `switch_small` returns a memory address cast to an `int` instead of the calculated result, and `test_control_flow_l1` passes string pointers to integer parameters.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the complex transformations, magic numbers, or the logic behind the obfuscated control flow.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard idioms, missing the "divide by 10" pattern (leaving magic multiplication), Duff's device, and standard switch constructs.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided for the suspicious pointer-to-int casts or the fact that `switch_small` returns an address instead of a value.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, the arguments in `test_control_flow_l1` are corrupted (passing strings to ints), breaking the logical flow of the test harness.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and helper functions like `__aeabi_idiv` are placed at the end, maintaining a reasonable file structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is unlikely to compile or run correctly due to type mismatches (e.g., passing `char*` to `int` arguments) and the reliance on specific global addresses for logic.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- **Logic Corruption in `switch_small`**: Returns a global memory address `(int32_t)&g20` instead of the arithmetic result (e.g., `a+b`), making the function logic completely wrong.
+- **Control Flow Obfuscation**: `single_if` uses bit shifting on boolean casts (`a1 << (bool)(a1 > 0)`) instead of a simple conditional, destroying readability.
+- **Type Safety Violation**: `test_control_flow_l1` passes string literals (e.g., `"-10 (tail_recursion): %d\n"`) as integer arguments to functions like `loop_while`.
+- **Idiom Failure**: `loop_for_fixed` converts a simple summation loop into a closed-form arithmetic series formula, hiding the intended loop structure.
+- **Magic Numbers**: Division by 10 is represented by magic multiplication `0x66666667` without explanation or recovery of the original operator.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function names, making it easy to locate specific logic blocks despite the poor internal code quality.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.0/10)
+- The complete lack of comments, idiom recognition, and anomaly indication makes the transformed code nearly impossible to understand or trust.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Disable Aggressive Expression Folding**: Stop converting simple control structures (like `if` or `switch`) into complex ternary expressions or boolean math; prioritize structural fidelity over compactness.
+2.  **Fix Type/Value Propagation**: Resolve the issue where global addresses are substituted for calculated values in return statements (e.g., in `switch_small`).
+3.  **Recover Standard Idioms**: Implement pattern matching to recognize compiler optimizations (like `0x66666667` for division) and restore the original high-level operators.

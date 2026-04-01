@@ -1,0 +1,125 @@
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality (10% weight)
+**Score: 3/10**
+**Justification:** Variables are generic (`param_1`, `iVar1`, `puVar1`, `local_220`) and lack semantic meaning. While `param_1` is standard for decompilation, the lack of recovery for names like `arr`, `n`, or `sum` significantly hinders understanding.
+
+#### 2. Function Naming Quality (10% weight)
+**Score: 9/10**
+**Justification:** Function names are perfectly recovered from the source symbols (e.g., `process_char`, `array_1d_stack`, `struct_simple`). Only runtime/internal functions use generic names like `FUN_00100620`.
+
+#### 3. Literal Clarity (5% weight)
+**Score: 2/10**
+**Justification:** Extensive use of magic numbers due to constant propagation; `0x61` is used instead of `'a'`, and `0x400c000000000000` instead of `3.5f`. This obscures the original logic and data values.
+
+#### 4. Noise Reduction (5% weight)
+**Score: 4/10**
+**Justification:** The code is cluttered with `undefined8`, `undefined1`, and `undefined4` types. While this reflects the binary's type information, it acts as noise that impedes readability in a high-level C representation.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness (8% weight)
+**Score: 4/10**
+**Justification:** The code reflects aggressive compiler optimizations (likely -O3) rather than source structure. `array_3d` is a single massive expression, and `array_1d_stack` uses complex pointer arithmetic for unrolling, making the flow unnatural and hard to follow.
+
+#### 6. Function Decomposition (7% weight)
+**Score: 7/10**
+**Justification:** Function boundaries match the source well. However, the inclusion of massive compiler intrinsics like `__addtf3` and `__multf3` (soft float implementations) clutters the output, though this is an artifact of the build configuration.
+
+#### 7. Code Linearization (5% weight)
+**Score: 5/10**
+**Justification:** While the code reads top-to-bottom, functions like `array_3d` and `array_2d_stack` are flattened into single return statements with hundreds of terms, destroying the logical linearity of the original loops.
+
+#### 8. Redundancy Elimination (5% weight)
+**Score: 3/10**
+**Justification:** The decompiler fails to abstract loop unrolling. The massive sum expressions in `array_3d` and the manual unrolling in `array_1d_stack` represent significant redundancy that makes the code difficult to read.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision (8% weight)
+**Score: 5/10**
+**Justification:** Basic types like `int` and `long` are preserved, but `long double` is returned as `undefined1 [16]`. Pointers are often cast to `undefined8 *` or `void *`, losing type precision.
+
+#### 10. Composite Type Recovery (7% weight)
+**Score: 2/10**
+**Justification:** Struct types are completely lost. `struct_simple` takes `int *` instead of `Point3D *`, accessing fields via array indices (`param_1[1]`). Nested structs and unions are similarly flattened into raw pointer arithmetic.
+
+#### 11. Type Safety (5% weight)
+**Score: 4/10**
+**Justification:** Frequent casting between `undefined8`, `int *`, and `void *` (e.g., `(int)*(undefined8 *)piVar1`) creates type confusion and potential safety hazards in the decompiled view.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence (5% weight)
+**Score: 3/10**
+**Justification:** Comments are limited to auto-generated warnings like "WARNING: Removing unreachable block" or "WARNING: Could not recover jumptable". There are no comments explaining the logic or the heavy optimizations applied.
+
+#### 13. Idiom Recognition (3% weight)
+**Score: 3/10**
+**Justification:** Common idioms like string length calculation or array summation are obscured by optimization. Bitfields are correctly identified as shifts/masks, but high-level patterns like "summing a diagonal" are lost.
+
+#### 14. Anomaly Indication (3% weight)
+**Score: 6/10**
+**Justification:** The decompiler correctly flags the indirect jump in `ptr_func_simple` with "WARNING: Could not recover jumptable". However, it does not flag the suspicious flattened loops as potential optimization artifacts.
+
+#### 15. Assertion & Contract Recovery (4% weight)
+**Score: 1/10**
+**Justification:** No preconditions, postconditions, or invariants are documented. For example, the requirement for `array_complex_index` that `x` and `y` be within bounds is not explicitly stated in the decompiled output.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity (4% weight)
+**Score: 8/10**
+**Justification:** Function calls are clear, and string references (e.g., `puts(&DAT_0010303f)`) are preserved. The relationship between the test functions and the logic functions is maintained.
+
+#### 17. Module Organization (3% weight)
+**Score: 8/10**
+**Justification:** Functions are ordered logically, matching the source file structure. Helper functions and main entry points are distinct.
+
+#### 18. Build System Compatibility (3% weight)
+**Score: 2/10**
+**Justification:** The code will not compile as-is due to `undefined` types and the presence of compiler runtime intrinsics (`__addtf3`) without headers. Significant patching would be required.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 2 + 4) / 4 = 4.5
+L2_avg: (4 + 7 + 5 + 3) / 4 = 4.75
+L3_avg: (5 + 2 + 4) / 3 = 3.67
+L4_avg: (3 + 3 + 6 + 1) / 4 = 3.25
+L5_avg: (8 + 8 + 2) / 3 = 6.0
+
+Overall = (4.5 * 0.30) + (4.75 * 0.25) + (3.67 * 0.20) + (3.25 * 0.15) + (6.0 * 0.10)
+Overall = 1.35 + 1.1875 + 0.734 + 0.4875 + 0.6 = 4.359
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects
+- **Struct Type Loss**: `struct_simple` and `struct_nested` are flattened to `int*`, accessing fields via array offsets (`param_1[1]`) instead of member names (`p->y`).
+- **Aggressive Loop Unrolling**: `array_3d` is decompiled into a single massive return statement summing ~100 terms, completely obscuring the nested loop logic.
+- **Literal Obfuscation**: Constant propagation results in unreadable values like `0x400c000000000000` (float) and `0x61` (char) instead of their source representations.
+- **Type Erasure**: `long double` is represented as `undefined1 [16]`, and pointers are frequently cast to `undefined8 *`, degrading type safety and clarity.
+
+### Best Quality Aspect
+- **Function Naming (Score: 9/10)**: The decompiler successfully recovered all original function names from the binary symbols, making the high-level API easy to navigate despite the low-level implementation details being obscured.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**: The complete failure to recover `struct`, `union`, and `enum` types reduces complex data structure manipulations to raw pointer arithmetic, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Loop Rolling**: Implement pattern matching to detect and re-roll aggressively unrolled loops (like in `array_3d`) back into iterative `for` or `while` loops to improve readability.
+2. **Struct Type Recovery**: Analyze access patterns (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]`) to suggest or reconstruct struct definitions, rather than defaulting to flat array access.
+3. **Literal De-propagation**: Attempt to replace hex constants with their likely ASCII or floating-point representations (e.g., `0x61` -> `'a'`) based on context or data type.

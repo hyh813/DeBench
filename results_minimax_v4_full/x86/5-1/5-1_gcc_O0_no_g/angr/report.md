@@ -1,0 +1,2022 @@
+# BinBench Evaluation Report
+
+**Generated:** 2026-03-20 02:47:59
+
+## 1. Test Object
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `src/5-1.cpp` |
+| Decompiled | `decompiled/angr_out/x86/5-1/5-1_gcc_O0_no_g.c` |
+| Decompiler | ANGR |
+| Architecture | x86 |
+| Compiler | gcc |
+| Optimization | O0 |
+| Debug | no |
+
+## 2. Evaluation Results
+
+| Dimension | Status |
+|-----------|--------|
+| Readability | ✅ Completed |
+| Syntactic | ❌ Failed |
+| Semantic | ⏭ Skipped |
+
+## 3. Detailed Results
+
+### 3.1 Readability Evaluation
+
+*No readability results found.*
+
+### 3.2 Syntactic Correctness Evaluation
+
+#### Repair Trace Log
+
+```json
+{
+  "file_name": "results_minimax_v4_full/x86/5-1/5-1_gcc_O0_no_g/angr/syntactic/fix_5-1_gcc_O0_no_g.c",
+  "total_iterations": 50,
+  "successful_tool_calls": 50,
+  "final_status": "compile_failed",
+  "termination_reason": "max_iters_reached",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [
+    {
+      "iteration": 1,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 967,
+        "stats": {
+          "Other": 504,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 48,
+          "Redefinition": 41,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36083,
+        "completion_tokens": 810,
+        "total_tokens": 36893
+      },
+      "time_cost": 18.441742420196533,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 2,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 973,
+        "stats": {
+          "Syntax Error": 350,
+          "Other": 503,
+          "Argument Count Mismatch": 48,
+          "Redefinition": 42,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36222,
+        "completion_tokens": 900,
+        "total_tokens": 37122
+      },
+      "time_cost": 16.383728981018066,
+      "phase": "compile",
+      "new_errors_introduced": 5
+    },
+    {
+      "iteration": 3,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 967,
+        "stats": {
+          "Other": 503,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 48,
+          "Redefinition": 42,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 156 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36244,
+        "completion_tokens": 749,
+        "total_tokens": 36993
+      },
+      "time_cost": 12.675845384597778,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 4,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 959,
+        "stats": {
+          "Other": 467,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 77,
+          "Redefinition": 42,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36259,
+        "completion_tokens": 553,
+        "total_tokens": 36812
+      },
+      "time_cost": 10.296014070510864,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 5,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 958,
+        "stats": {
+          "Other": 466,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 77,
+          "Redefinition": 42,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36295,
+        "completion_tokens": 782,
+        "total_tokens": 37077
+      },
+      "time_cost": 50.56343483924866,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 6,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 956,
+        "stats": {
+          "Other": 465,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 77,
+          "Redefinition": 41,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36311,
+        "completion_tokens": 704,
+        "total_tokens": 37015
+      },
+      "time_cost": 23.478206157684326,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 7,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 954,
+        "stats": {
+          "Other": 464,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 77,
+          "Redefinition": 40,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36412,
+        "completion_tokens": 755,
+        "total_tokens": 37167
+      },
+      "time_cost": 51.26212477684021,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 8,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 952,
+        "stats": {
+          "Other": 463,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 77,
+          "Redefinition": 39,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36569,
+        "completion_tokens": 756,
+        "total_tokens": 37325
+      },
+      "time_cost": 17.06580114364624,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 9,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 950,
+        "stats": {
+          "Other": 460,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 77,
+          "Redefinition": 39,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36658,
+        "completion_tokens": 763,
+        "total_tokens": 37421
+      },
+      "time_cost": 15.663269758224487,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 10,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 958,
+        "stats": {
+          "Other": 488,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 39,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36811,
+        "completion_tokens": 779,
+        "total_tokens": 37590
+      },
+      "time_cost": 15.036158084869385,
+      "phase": "compile",
+      "new_errors_introduced": 2
+    },
+    {
+      "iteration": 11,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 958,
+        "stats": {
+          "Other": 488,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 39,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36848,
+        "completion_tokens": 634,
+        "total_tokens": 37482
+      },
+      "time_cost": 23.300808429718018,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 12,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 958,
+        "stats": {
+          "Other": 488,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 39,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 36915,
+        "completion_tokens": 730,
+        "total_tokens": 37645
+      },
+      "time_cost": 14.484506368637085,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 13,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 958,
+        "stats": {
+          "Other": 488,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 39,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37039,
+        "completion_tokens": 910,
+        "total_tokens": 37949
+      },
+      "time_cost": 37.38361668586731,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 14,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 957,
+        "stats": {
+          "Other": 487,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37170,
+        "completion_tokens": 627,
+        "total_tokens": 37797
+      },
+      "time_cost": 13.671175956726074,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 15,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 957,
+        "stats": {
+          "Other": 487,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37244,
+        "completion_tokens": 763,
+        "total_tokens": 38007
+      },
+      "time_cost": 31.283199787139893,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 16,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 956,
+        "stats": {
+          "Other": 486,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37318,
+        "completion_tokens": 773,
+        "total_tokens": 38091
+      },
+      "time_cost": 45.17418074607849,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 17,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 955,
+        "stats": {
+          "Other": 485,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37366,
+        "completion_tokens": 696,
+        "total_tokens": 38062
+      },
+      "time_cost": 19.419453859329224,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 18,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 954,
+        "stats": {
+          "Other": 484,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37418,
+        "completion_tokens": 631,
+        "total_tokens": 38049
+      },
+      "time_cost": 12.0118248462677,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 19,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 953,
+        "stats": {
+          "Other": 483,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37466,
+        "completion_tokens": 607,
+        "total_tokens": 38073
+      },
+      "time_cost": 27.389371156692505,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 20,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 952,
+        "stats": {
+          "Other": 482,
+          "Void Value Error": 15,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37504,
+        "completion_tokens": 759,
+        "total_tokens": 38263
+      },
+      "time_cost": 14.425148010253906,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 21,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 952,
+        "stats": {
+          "Other": 483,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37542,
+        "completion_tokens": 794,
+        "total_tokens": 38336
+      },
+      "time_cost": 15.86944055557251,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 22,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 952,
+        "stats": {
+          "Other": 483,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37593,
+        "completion_tokens": 632,
+        "total_tokens": 38225
+      },
+      "time_cost": 12.094588279724121,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 23,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 952,
+        "stats": {
+          "Other": 484,
+          "Void Value Error": 15,
+          "Syntax Error": 342,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 38,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37484,
+        "completion_tokens": 787,
+        "total_tokens": 38271
+      },
+      "time_cost": 24.884495735168457,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 24,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 951,
+        "stats": {
+          "Other": 483,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37423,
+        "completion_tokens": 692,
+        "total_tokens": 38115
+      },
+      "time_cost": 13.559391021728516,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 25,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 950,
+        "stats": {
+          "Other": 482,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37339,
+        "completion_tokens": 809,
+        "total_tokens": 38148
+      },
+      "time_cost": 16.996471166610718,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 26,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 949,
+        "stats": {
+          "Other": 481,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37387,
+        "completion_tokens": 732,
+        "total_tokens": 38119
+      },
+      "time_cost": 13.375427722930908,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 27,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 948,
+        "stats": {
+          "Other": 480,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37409,
+        "completion_tokens": 554,
+        "total_tokens": 37963
+      },
+      "time_cost": 20.368308544158936,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 28,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 947,
+        "stats": {
+          "Other": 479,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37383,
+        "completion_tokens": 593,
+        "total_tokens": 37976
+      },
+      "time_cost": 12.674167156219482,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 29,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 946,
+        "stats": {
+          "Other": 478,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "Replaced all 1 occurrences"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37346,
+        "completion_tokens": 464,
+        "total_tokens": 37810
+      },
+      "time_cost": 15.8353853225708,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 30,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 945,
+        "stats": {
+          "Other": 477,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37305,
+        "completion_tokens": 1016,
+        "total_tokens": 38321
+      },
+      "time_cost": 25.593965530395508,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 31,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 944,
+        "stats": {
+          "Other": 476,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37320,
+        "completion_tokens": 749,
+        "total_tokens": 38069
+      },
+      "time_cost": 33.181838035583496,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 32,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 943,
+        "stats": {
+          "Other": 475,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 37,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37322,
+        "completion_tokens": 638,
+        "total_tokens": 37960
+      },
+      "time_cost": 20.904913663864136,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 33,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 941,
+        "stats": {
+          "Other": 474,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 36,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37311,
+        "completion_tokens": 515,
+        "total_tokens": 37826
+      },
+      "time_cost": 10.697943210601807,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 34,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 940,
+        "stats": {
+          "Other": 473,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 36,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37314,
+        "completion_tokens": 578,
+        "total_tokens": 37892
+      },
+      "time_cost": 14.614757776260376,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 35,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 938,
+        "stats": {
+          "Other": 472,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37299,
+        "completion_tokens": 690,
+        "total_tokens": 37989
+      },
+      "time_cost": 32.06645464897156,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 36,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 937,
+        "stats": {
+          "Other": 471,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37294,
+        "completion_tokens": 787,
+        "total_tokens": 38081
+      },
+      "time_cost": 15.181371688842773,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 37,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 936,
+        "stats": {
+          "Other": 470,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37195,
+        "completion_tokens": 906,
+        "total_tokens": 38101
+      },
+      "time_cost": 24.00098705291748,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 38,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 935,
+        "stats": {
+          "Other": 469,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37198,
+        "completion_tokens": 906,
+        "total_tokens": 38104
+      },
+      "time_cost": 28.22345805168152,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 39,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 934,
+        "stats": {
+          "Other": 468,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37233,
+        "completion_tokens": 667,
+        "total_tokens": 37900
+      },
+      "time_cost": 54.55794906616211,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 40,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 933,
+        "stats": {
+          "Other": 467,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37223,
+        "completion_tokens": 698,
+        "total_tokens": 37921
+      },
+      "time_cost": 14.300814390182495,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 41,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 932,
+        "stats": {
+          "Other": 466,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37213,
+        "completion_tokens": 649,
+        "total_tokens": 37862
+      },
+      "time_cost": 10.522027969360352,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 42,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 931,
+        "stats": {
+          "Other": 465,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37203,
+        "completion_tokens": 780,
+        "total_tokens": 37983
+      },
+      "time_cost": 36.30951547622681,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 43,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 930,
+        "stats": {
+          "Other": 464,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "edit_code_block",
+            "success": true,
+            "msg": "Code block uniquely matched and replaced."
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37193,
+        "completion_tokens": 661,
+        "total_tokens": 37854
+      },
+      "time_cost": 12.941394090652466,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 44,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 929,
+        "stats": {
+          "Other": 463,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37148,
+        "completion_tokens": 1018,
+        "total_tokens": 38166
+      },
+      "time_cost": 17.16385006904602,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 45,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 929,
+        "stats": {
+          "Other": 463,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37238,
+        "completion_tokens": 690,
+        "total_tokens": 37928
+      },
+      "time_cost": 23.162506580352783,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 46,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 928,
+        "stats": {
+          "Other": 462,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37230,
+        "completion_tokens": 769,
+        "total_tokens": 37999
+      },
+      "time_cost": 25.41122555732727,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 47,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 928,
+        "stats": {
+          "Other": 462,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37326,
+        "completion_tokens": 885,
+        "total_tokens": 38211
+      },
+      "time_cost": 35.96257305145264,
+      "phase": "compile",
+      "new_errors_introduced": 1
+    },
+    {
+      "iteration": 48,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 927,
+        "stats": {
+          "Other": 461,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37315,
+        "completion_tokens": 831,
+        "total_tokens": 38146
+      },
+      "time_cost": 17.13493514060974,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 49,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 926,
+        "stats": {
+          "Other": 460,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37319,
+        "completion_tokens": 640,
+        "total_tokens": 37959
+      },
+      "time_cost": 23.767195224761963,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    },
+    {
+      "iteration": 50,
+      "compile_success": false,
+      "error_summary": {
+        "total_count": 925,
+        "stats": {
+          "Other": 459,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "phase": "compile"
+      },
+      "result": {
+        "tool_results": [
+          {
+            "call": "replace_string",
+            "success": true,
+            "msg": "String replaced"
+          }
+        ]
+      },
+      "token_usage": {
+        "prompt_tokens": 37321,
+        "completion_tokens": 641,
+        "total_tokens": 37962
+      },
+      "time_cost": 19.130215406417847,
+      "phase": "compile",
+      "new_errors_introduced": 0
+    }
+  ],
+  "enhanced_summary": {
+    "tier": 3,
+    "final_status": "compile_failed",
+    "total_iterations": 50,
+    "total_tokens": 1892030,
+    "total_time_seconds": 1109.9,
+    "initial_state": {
+      "error_count": 967,
+      "error_types": {
+        "Other": 504,
+        "Syntax Error": 344,
+        "Argument Count Mismatch": 48,
+        "Redefinition": 41,
+        "Void Value Error": 14,
+        "Incompatible Pointer Type": 4,
+        "Incomplete Type": 6,
+        "Invalid Main Signature": 1,
+        "Member Access Error": 5
+      }
+    },
+    "tier3_metrics": {
+      "oscillation": {
+        "error_growth_rate": 0.0408,
+        "error_trajectory": [
+          967,
+          973,
+          967,
+          959,
+          958,
+          956,
+          954,
+          952,
+          950,
+          958,
+          958,
+          958,
+          958,
+          957,
+          957,
+          956,
+          955,
+          954,
+          953,
+          952,
+          952,
+          952,
+          952,
+          951,
+          950,
+          949,
+          948,
+          947,
+          946,
+          945,
+          944,
+          943,
+          941,
+          940,
+          938,
+          937,
+          936,
+          935,
+          934,
+          933,
+          932,
+          931,
+          930,
+          929,
+          929,
+          928,
+          928,
+          927,
+          926,
+          925
+        ],
+        "max_error_count": 973,
+        "min_error_count": 925
+      },
+      "effort": {
+        "initial_error_count": 967,
+        "lowest_error_count": 925,
+        "lowest_at_iteration": 50,
+        "error_reduction": 42,
+        "error_reduction_ratio": 0.0434
+      },
+      "error_evolution": {
+        "initial_types": {
+          "Other": 504,
+          "Syntax Error": 344,
+          "Argument Count Mismatch": 48,
+          "Redefinition": 41,
+          "Void Value Error": 14,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "final_types": {
+          "Other": 459,
+          "Void Value Error": 15,
+          "Syntax Error": 343,
+          "Argument Count Mismatch": 57,
+          "Redefinition": 35,
+          "Incompatible Pointer Type": 4,
+          "Incomplete Type": 6,
+          "Invalid Main Signature": 1,
+          "Member Access Error": 5
+        },
+        "types_eliminated": [],
+        "types_introduced": []
+      },
+      "score": {
+        "effort_score": 2.17,
+        "stability_score": 47.96,
+        "total_score": 50.13,
+        "grade": "C-"
+      }
+    }
+  },
+  "summary": {
+    "total_unique_types": 9,
+    "type_breakdown": {
+      "Incompatible Pointer Type": {
+        "initial_count": 4,
+        "max_count": 4,
+        "final_count": "unknown"
+      },
+      "Other": {
+        "initial_count": 504,
+        "max_count": 504,
+        "final_count": "unknown"
+      },
+      "Incomplete Type": {
+        "initial_count": 6,
+        "max_count": 6,
+        "final_count": "unknown"
+      },
+      "Member Access Error": {
+        "initial_count": 5,
+        "max_count": 5,
+        "final_count": "unknown"
+      },
+      "Redefinition": {
+        "initial_count": 41,
+        "max_count": 42,
+        "final_count": "unknown"
+      },
+      "Void Value Error": {
+        "initial_count": 14,
+        "max_count": 15,
+        "final_count": "unknown"
+      },
+      "Invalid Main Signature": {
+        "initial_count": 1,
+        "max_count": 1,
+        "final_count": "unknown"
+      },
+      "Syntax Error": {
+        "initial_count": 344,
+        "max_count": 350,
+        "final_count": "unknown"
+      },
+      "Argument Count Mismatch": {
+        "initial_count": 48,
+        "max_count": 77,
+        "final_count": "unknown"
+      }
+    }
+  }
+}
+```
+
+### 3.3 Semantic Fidelity Evaluation
+
+*No semantic analysis report found.*
+

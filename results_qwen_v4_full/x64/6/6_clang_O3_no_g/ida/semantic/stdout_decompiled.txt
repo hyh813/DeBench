@@ -1,0 +1,26 @@
+Testing standard library functions
+String length: 8
+Strcpy result: 0
+Strlen result: 12
+Memcpy result: 90
+Compare result: 4294967295
+Value: 42, Name: Test
+Printf result: 22
+Scanf result: 579
+File operation result: 42
+File read/write result: -3
+Malloc test result: 90
+Memset test result: 0
+String search result: 15
+Testing system calls
+
+Syscall result: 42
+Stat result: 42
+Fork/exec result: 42
+Pipe communication result: 42
+Socket creation result: 42
+Shared memory result: 42
+Signal handling result: 42
+Testing thread concurrency
+
+Thread create result: 49

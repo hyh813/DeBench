@@ -1,0 +1,12 @@
+Obfuscation and Optimization Tests
+
+ObfL402: fake_branch = 10
+ObfL403: opaque_predicate = 20
+ObfL404: instruction_substitution = 225
+ObfL405: string_encryption = 0
+OptL401: tail_call_optimized = 500500
+OptL401: non_tail_call = 5050
+OptL402: vectorized_loop = 72
+OptL501: link_time_optimization = 20
+EdgeL301: division_by_zero = 1
+EdgeL302: null_pointer_deref = 41

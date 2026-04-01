@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `lVar1`, `pbVar1` throughout (e.g., `param_opaque_predicate` uses four `iVar` variables), obscuring semantic meaning. No inference from usage patterns (e.g., GCD variables should be `gcd_result`, `temp`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from debug symbols (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`). Action-oriented names clearly reflect purpose. Only helper functions like `FUN_00101020` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers as hex (`0x14`, `0xe1`, `0x2f`, `0x7a314`) without explanation. String literals referenced as `&DAT_00102004` instead of showing actual content. Constant folding hides original values (e.g., `call_fake_branch` returns 10 directly).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) and `in_FS_OFFSET` artifacts present. "Unknown calling convention" warnings add noise. However, no excessive register spilling or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recovered as `for` constructs (e.g., `param_tail_call_optimized` converted from recursion to iteration). Dead code from fake branches eliminated by optimizer. Some constant folding obscures original logic flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with single responsibility. `test_obf_opt_edge` is fragmented with many `__printf_chk` calls but remains coherent. No monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `test_obf_opt_edge` has forward references to data (`&DAT_00102004`). Loop structures don't disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code from fake branches properly eliminated (expected at -Os). No duplicate expressions or loop unrolling artifacts. Constant folding appropriate for optimization level.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `undefined`, `undefined8`, `undefined4` types (e.g., `param_buffer_overflow_stack(undefined4 param_1)`). Loop counters use `long` where `int` suffices. Basic types (`int`, `char*`, `size_t`) generally correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`int a[8]`, `char decrypted[32]`). No complex structs in this code to evaluate. Bit-field struct from `param_implementation_defined` not visible in decompiled output (constant-folded).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(undefined *)0x0`, `(undefined8 param_1)`, `(__sighandler_t)0x0`. Pointer arithmetic generally correct. Stack canary checks provide some safety verification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no explanatory comments. Only auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var: int temp@[???]"). No algorithm explanations (GCD not identified).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. Tail call optimization transformation not noted. No pattern recognition for instruction substitution or string decryption idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Subroutine does not return", "Unresolved local var"). However, silent constant folding hides original obfuscation intent. No indication of dead code elimination.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_division_by_zero` doesn't note x=0 triggers handler). No postcondition or error condition documentation. Contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names. Global variables (`div_zero_caught`, `jmp_buffer`) referenced but not documented. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. No clear module separation or namespace structure. Static functions not clearly marked as internal.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires stubs for `__printf_chk`, `__stack_chk_fail`, `__longjmp_chk`. `undefined` types need resolution. External dependencies not documented. Would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.82/10
+```
+
+### Overall Readability Score: **5.8/10**
+
+### Critical Defects:
+- **Variable names are entirely generic** (`iVar1`, `iVar2`, `lVar1`) with no semantic inference from usage patterns
+- **Zero explanatory comments** - no algorithm identification (GCD, tail-call optimization) or logic documentation
+- **Magic numbers as hex** (`0x14`, `0xe1`, `0x7a314`) without decimal equivalents or constant names
+- **String literals obscured** as `&DAT_00102004` references instead of showing actual string content
+- **Type degradation** with `undefined`, `undefined8` types requiring manual resolution
+
+### Best Quality Aspect: **Structural Intelligibility (7.5/10)**
+- Control flow and function decomposition recovered well despite -Os optimization, with loops correctly reconstructed and appropriate function granularity maintained.
+
+### Most Needs Improvement: **Semantic Transparency (3.0/10)**
+- Complete absence of comments, idiom recognition, and contract documentation makes understanding the original obfuscation intent nearly impossible without source comparison.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables in GCD loop should be `gcd_result`, `temp`, `divisor`)
+2. **Add algorithm pattern detection** - Recognize common patterns (GCD, tail-recursion, instruction substitution) and add explanatory comments
+3. **Recover string literals and constants** - Display actual string content instead of `&DAT_` references, and convert hex constants to decimal with named constant suggestions

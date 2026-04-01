@@ -1,0 +1,13 @@
+Testing C++ Features
+test_cpp_member_func: 4704
+test_cpp_constructor: 21
+test_cpp_virtual_func: 42
+test_cpp_multiple_inheritance: 71
+test_cpp_diamond_inheritance: 650
+test_cpp_operator_overload: 22
+template_max: 7
+test_cpp_template_class: 16
+test_cpp_lambda: 85
+test_cpp_exception: 0
+test_cpp_smart_ptr: 703
+test_cpp_rtti: 44

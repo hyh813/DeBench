@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `local_40`, `piVar2`) and lack semantic meaning. Even with debug symbols (`-g`), local variable names like `sum` or `args` were not recovered, obscuring intent.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source (e.g., `cdecl_func`, `test_calling_conventions`), providing excellent high-level context for the code's purpose.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved and readable (e.g., `"CALL-L1-01: %d\n"`), but integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x15` instead of `21`), requiring mental conversion.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including redundant type masking (`uVar3 & 0xffffffff`) and raw register references (`register0x00000008`) in `varargs_func`, which obscures the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural and linear, matching the source structure. Loops and conditionals are recognizable, though `switch` statements are sometimes represented as `if-else` chains.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. No inlining or outlining artifacts are present, which is expected for `-O0` code.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or spaghetti logic, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is noticeable redundancy, such as repeated `& 0xffffffff` masking operations on return values, which adds clutter without adding semantic value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Severe type precision failures. `func_mixed_args` has scrambled parameter order (double, int, char* vs int, char*, double), and `call_cdecl` is incorrectly typed as `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Struct types are not recovered; `LargeStruct` is treated as a raw pointer (`long param_1`) with manual pointer arithmetic, losing the semantic structure of the data.
+
+**11. Type Safety:** Score: 4/10
+Justification: The incorrect parameter order in `func_mixed_args` represents a significant type safety issue, as calling the function with the decompiled signature would lead to runtime errors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and limited to compiler warnings (e.g., "Removing unreachable block"). There are no comments explaining the logic of complex functions like `varargs_func`.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are missed. The `varargs_func` implementation is shown as raw stack pointer manipulation rather than a recognized `va_list` pattern.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The use of `register0x00000008` is an anomaly (direct register access) but is not flagged or explained, leaving the reader to guess its purpose.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct symbol names. String references are correctly mapped to data pointers (`DAT_00101dc0`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are organized logically, roughly following the source order, which helps in navigating the code.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `code *`) and invalid C syntax (`register0x00000008`), making it uncompilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Parameter order in `func_mixed_args` is scrambled (double, int, char* vs int, char*, double, long long).
+- Return type for `call_cdecl` (and similar wrappers) is incorrectly identified as `void` instead of `int`.
+- Variable names are generic (`param_1`, `local_XX`) despite debug symbols being available.
+- Varargs logic is exposed as raw stack/register manipulation (`register0x00000008`) rather than `va_list`.
+- Struct types are lost; `LargeStruct` is accessed via raw pointer arithmetic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all function symbols from the binary, making the high-level structure of the program immediately apparent.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)
+- The failure to correctly recover parameter types and orders (especially in mixed float/int scenarios) fundamentally breaks the semantic understanding of the function interfaces.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve ARM64 calling convention analysis to correctly handle interleaved integer and floating-point registers.
+2. Enhance return type propagation to ensure functions returning values are not typed as `void` when the return register is used.
+3. Implement pattern matching for `va_list`/varargs to abstract away stack pointer manipulation and register access.

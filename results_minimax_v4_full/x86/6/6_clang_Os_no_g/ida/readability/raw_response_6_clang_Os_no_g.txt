@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Most parameters and important variables have descriptive names (`dst`, `src`, `dest`, `filename`). However, generic temporaries like `v0`, `v1`, `v2` appear frequently, and register-based parameter notation (`a1@<esi>`) introduces noise. The core function `param_strcpy` uses `char *s, char *src` which is adequate.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `param_strcpy`, `call_strcpy`, `param_strcmp`, `param_memcpy`, `param_malloc_free`, `thread_compute`, `thread_sum`. The decompiler successfully recovered the semantic naming from debug symbols or pattern recognition.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals are perfectly preserved ("HelloLib", "Value: %d, Name: %s\n", "/etc/passwd"). Some magic numbers like `66` (file open flags) and `0x12` (18 bytes) lack explanation. The format string "%d,%d" is clear. Constants like `42` as success indicator are contextually understandable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts present: register-based parameter notation (`a1@<esi>`), calling convention markers (`__usercall`, `__cdecl`), "positive sp value has been detected" warnings, and 59 "FAILED to decompile" entries for library functions. The output includes assembly artifacts like `__asm { jmp dword ptr [ebx+8] }` that clutter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if/else, while loops, and for loops. The `param_strcmp` ternary chain is readable. At `-O0` (debug), no loop unrolling or goto conversion is expected, and the decompiler delivers clean structures. Minor issue: some complex boolean expressions could be clearer.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. `param_strcpy` (2 lines), `call_strcpy` (3 lines), `param_malloc_free` (18 lines) all show good granularity. The pairing of `param_*` and `call_*` functions mirrors the source structure well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom without excessive jumps. Early returns are used appropriately (e.g., `param_fopen_fclose` returns -1 on failure). No forward jumps into loops or computed goto patterns that would disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop constructs could be more elegant (e.g., `param_malloc_free` uses manual index calculation instead of enhanced for). At `-O0`, no aggressive optimization artifacts like loop unrolling should appear, and none do.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type precision for most functions: `char *s, char *src` for strcpy, `void *dest, void *src, size_t n` for memcpy, `size_t` return for strlen. However, some degradation exists: `int` used where `ssize_t` might be better, some `FILE*` could be more specific. The `param_signal_handling` uses `unsigned int` appropriately.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: For this simple function set, struct recovery is minimal but adequate. The `param_pthread_join` shows some struct-like array usage (`_DWORD arg[2]`, `_DWORD v8[10]`) but field names are lost. The `ThreadData` typedef from source isn't recovered - decompiler uses raw arrays.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. No obvious unsafe casts between incompatible pointer types. Minor issues: some implicit int-to-bool conversions, some pointer arithmetic without explicit casts. The `param_malloc_free` correctly uses `int*` cast from malloc.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments in the decompiled output. The only comments are auto-generated headers ("Decompiled by IDA Pro 9.1") and the "positive sp value has been detected" warning. No explanation of algorithm intent, no recovery of source code comments, no @param/@return documentation.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library function calls are correctly identified: `strcpy`, `strcmp`, `strlen`, `memcpy`, `memcmp`, `printf`, `fopen`, `fread`, `fwrite`, `malloc`, `free`, `pthread_create`, `pthread_join`. The patterns are recognized as idiomatic C library functions.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The "FAILED to decompile" list for 59 library functions is helpful indicator of external dependencies. However, no specific warnings about indirect calls or unusual stack layouts within the recovered functions. The warning about "positive sp value" is good but appears at wrong location (on `_start` function).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The error return semantics (-1, -2, -3 codes) from the source are preserved in behavior but not explained. No documentation of expected input constraints (e.g., "requires: dst buffer size >= src length").
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., `call_strcpy` calls `param_strcpy`). However, no explicit documentation of call graph, no indication of which functions are static vs. exported, no global variable usage documentation. The `signal_received` and `signal_number` globals are used without explanation of their scope.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: string functions first, then file I/O, then memory, then system calls, then threads. This roughly matches the source organization (section 6.1, 6.2, 6.3). However, all functions are in a single flat listing with no file/namespace separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile standalone. Missing declarations for standard library functions (strcpy, strlen, etc. are called but not declared). The "FAILED to decompile" list shows these are external. Would need `#include` statements and proper headers. Some architecture-specific code (x86) may not match original ARM64 source.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (7 + 9 + 7 + 4) / 4 = 6.75
+L2_avg = (8 + 8 + 8 + 7) / 4 = 7.75
+L3_avg = (7 + 6 + 7) / 3 = 6.67
+L4_avg = (3 + 8 + 7 + 2) / 4 = 5.00
+L5_avg = (5 + 7 + 4) / 3 = 5.33
+
+Overall = (6.75 × 0.30) + (7.75 × 0.25) + (6.67 × 0.20) + 
+          (5.00 × 0.15) + (5.33 × 0.10)
+Overall = 2.025 + 1.9375 + 1.334 + 0.75 + 0.533 = 6.58/10
+```
+
+**Overall Readability Score:** 6.58/10
+
+### Critical Defects (Bullet List)
+- **Severe noise pollution**: Register parameter notation (`a1@<esi>`), calling conventions (`__usercall`, `__cdecl`), and 59 "FAILED to decompile" entries clutter the output
+- **No comments recovered**: Source code comments are completely lost; no @param/@return documentation, no algorithm explanations
+- **Type precision degradation**: Some types use generic `int` where more specific types (ssize_t, pid_t) would aid understanding
+- **No contract recovery**: Preconditions, postconditions, and error semantics from source are not documented
+- **Architecture mismatch**: Original source is ARM64 `-O0`, but decompiled code shows x86, suggesting binary mismatch
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**: The decompiler excellently recovered function names matching the original source exactly (`param_strcpy`, `call_strcmp`, `thread_compute`, etc.)
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (3/10)**: Nearly all semantic information from source comments is lost; no @param/@return, no algorithm explanations, no decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover source comments**: Parse debug info (DWARF) to restore parameter names and attempt to recover inline comments from debug line information
+2. **Reduce assembly artifacts**: Filter out register notation (`a1@<esi>`), calling convention markers, and consolidate "FAILED to decompile" into a separate imports table rather than cluttering the code
+3. **Add semantic annotations**: Include inferred preconditions (e.g., "requires: dst != NULL"), postconditions, and error code meanings as comments to aid understanding

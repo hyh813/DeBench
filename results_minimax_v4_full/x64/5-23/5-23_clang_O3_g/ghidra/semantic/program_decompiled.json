@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_clang_O3_g/ghidra/syntactic/bin/5-23_clang_O3_g_fixed",
+  "stdout": "Testing ASM features:\n\nMacro const: 64\nMacro func: 30\nMacro cond: 32\nMacro branch: 57122\nMacro recurse: 116\nMacro stringize: 19\nMacro variadic: 60\nLOG: Values: 10, 20, 30\nMacro token: 60\nMacro override: 16\nMacro include: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:54\nMacro builtin: 382\nTesting clobber importance: %lu\n\nASM basic: 15\nASM clobber sum: 5\nASM multi-insn: 4294967295\nASM SIMD: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

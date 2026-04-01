@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v13`, `v14`, `v15`, `v16`, `v17`, `v18`, `v19`. Only loop counters (`i`) and some parameters (`x`, `y`, `a`, `b`) have meaningful names. The original source had descriptive names like `count`, `args`, `sum` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `cdecl_func`, `call_cdecl`, `stdcall_func`, `call_stdcall`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `func_struct_byval`, `func_struct_byptr`, `test_calling_conventions`, `param_by_value_int`, etc. Some internal functions like `sub_1020` are generic but these are not part of the original source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `15`, `50`, `6`, `10`, `21`, `33`, `42`, `36`, `117`, `173`, `300` are used directly without explanation. The printf format strings are obfuscated (e.g., `aCallL206`, `aCallL207`, `aRetL101D`). While the values are correct, the semantic meaning (e.g., "expected: 15") is lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No obvious register spilling code, redundant casts, or debug instrumentation. Some decompiler warnings exist ("positive sp value has been detected", "local variable allocation has failed") but these are informational, not noise in the code itself.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if/else, switch statements, and for loops. The `varargs_func` and `param_varargs` have complex loop structures due to the variadic argument handling, but this is accurate to the compiled code. At -O0, control flow should be straightforward and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single responsibility. The original source had 40+ functions and the decompilation preserves this decomposition well. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. The `varargs_func` has nested while loops which is slightly complex but necessary for the variadic argument processing. No excessive forward jumps or goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The `test_calling_conventions` function has some loop unrolling for the `LargeStruct` initialization using SIMD loads (`_mm_load_si128`), but this is a legitimate optimization at any level and the code remains readable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (`int`, `char*`, `void*`, `int*`). However, integer types are generic `int` rather than specific sizes (`int32_t`, `uint64_t`). Function pointer types are somewhat generic (e.g., `int (*callback)(int)` is preserved). Const correctness is partially preserved (`const char *str`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types are recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. Field names like `data`, `x`, `y` are preserved. However, the `LargeStruct` in `func_struct_byval` shows raw pointer arithmetic on `data[0]` which obscures the array nature. The typedef names match the source.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer usage. Some casts like `(unsigned int)` are present for return type conversion. The `param_complex_cast` uses unsafe `*(_DWORD *)p` casts but this accurately reflects the original code's type punning. No buffer overflow-prone patterns evident.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining the code logic. Only decompiler warnings: "positive sp value has been detected, the output may be wrong!", "local variable allocation has failed, the output may be wrong!", and "FAILED to decompile" for some library functions. The original source had extensive comments explaining each test case which are completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Calling conventions are annotated: `__cdecl`, `__fastcall`. The variadic function pattern (`va_list`, `va_start`, `va_arg`, `va_end`) is not explicitly named but the code structure is correct. No explicit pattern naming (e.g., "This implements a state machine").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged: "positive sp value has been detected", "local variable allocation has failed", "FAILED to decompile" for 7 functions. However, these warnings are generic and don't explain the root cause or provide resolution guidance. No indication of uncertainty in the decompiled logic itself.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no explicit assertions either, but the decompiler could infer some (e.g., "requires: count >= 0" for varargs functions). None are present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from the code (e.g., `test_calling_conventions()` calls `cdecl_func()`). However, there's no explicit documentation of caller/callee relationships, global variable usage, or callback relationships. The call graph must be inferred from the code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are listed in order of their address in the binary, which groups related functions together (e.g., all the `call_*` functions are near their corresponding `*_func`). However, this is by address, not by logical grouping. The original source had clear section comments which are lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code appears syntactically correct and would likely compile. However, external dependencies (`puts`, `strlen`, `__printf_chk`, etc.) are referenced but not declared. The struct types are used but may need forward declarations. No clear dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: generic names like `v0`-`v19` completely obscure variable purpose (e.g., should be `count`, `args`, `sum`)
+- No comments explaining test case purposes, expected values, or algorithm logic
+- Magic numbers used throughout without semantic meaning (e.g., `return 15;` instead of `return cdecl_func(5, 10);`)
+- Printf format strings are obfuscated (`aCallL206` instead of "CALL-L2-06: varargs_func(5, 1-5) = %d\n")
+- No contract recovery (preconditions, postconditions, invariants)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler preserved almost all function names from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The generic variable names (`v0`, `v1`, etc.) make it extremely difficult to understand the purpose of local variables without reading the entire function. Combined with the lack of comments, this severely impacts readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v6 += 8` in a loop context suggests `v6` is a counter or index; `v9 += *(_DWORD *)v11` suggests `v9` is an accumulator like `sum`)
+2. **Recover constant expressions**: Instead of returning literal values like `return 15;`, recognize constant propagation and reconstruct the original expression `return cdecl_func(5, 10);`
+3. **Add semantic comments**: Include the original source comments where available, or generate comments explaining what each test case verifies (e.g., "// CALL-L1-01: Tests cdecl calling convention")

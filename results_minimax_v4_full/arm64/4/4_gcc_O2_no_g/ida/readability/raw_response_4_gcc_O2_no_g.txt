@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v3`, `v4`, `v5`, `v10`, `v11`. These provide no semantic meaning - compare to source where variables are named `count`, `sum`, `args`, `ptr`, `str`. The decompiler makes no attempt to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `param_by_value_int`, `ret_pointer`, `ret_small_struct`. The naming accurately reflects the calling convention tests and parameter passing patterns from the source.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Computed results like `15`, `50`, `42`, `173`, `300`, `305419896` are correctly inlined as return values. However, magic numbers like `-56` in varargs handling and `8` for pointer size lack explanation. String format references like `asc_15B0` are not resolved to actual strings.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: At -O0, compiler artifacts are minimal. Some unnecessary casts like `(unsigned int)` appear, and there are register-related artifacts like `LODWORD(result)` in varargs handling. Overall the code is clean without debug instrumentation or frame pointer manipulation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use while constructs, conditionals are straightforward. The varargs functions (`varargs_func`, `param_varargs`) use goto-style jumps (`LABEL_5`) which is less ideal but understandable given the complex stack frame handling. At -O0, control flow should be nearly source-equivalent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Small wrapper functions like `call_cdecl()` returning constant 15 are preserved (expected at -O0). Functions like `test_calling_conventions` are appropriately sized at ~60 lines. Parameter lists are reasonable without exposing implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The varargs functions have some forward jumps and complex pointer arithmetic that disrupts linear flow. Most other functions have good linearization with appropriate early returns.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in `test_calling_conventions` for the LargeStruct initialization is expected at -O0. Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation observed. Parameters declared as `int` in source become `int a1` in some places but `unsigned int` in others (e.g., `ret_complex_expr`). Pointers are sometimes `_DWORD*`, sometimes `__int64`, sometimes `unsigned __int8*`. Function pointers lack proper signatures - `unsigned int (__fastcall *a1)(_QWORD)` is imprecise. The source uses `int` consistently but decompiler mixes signed/unsigned.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct types are recovered. The source defines `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData` - all completely lost. The decompiler uses raw pointer arithmetic: `_DWORD *a1` for `struct BigStruct*`, `__int64 *a1` for `LargeStruct*`. Array access patterns like `a1[15]` suggest struct fields but no type definitions are provided.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts. Pointer arithmetic is generally correct. Some signed/unsigned mixing (`*a1 *= 2` where `a1` is `_DWORD*`). No obvious buffer overflow patterns. The code is reasonably safe to reason about, though type confusion exists.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. Only "// attributes: thunk" appears for `frame_dummy`. No explanation of algorithms, calling convention behavior, or parameter purposes. The source has extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定") - none are recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms are implicitly present but not named. The varargs handling pattern using `va_list` approach is recognizable in the complex pointer arithmetic of `varargs_func`. The `__attribute__((unused))` pattern from source is not indicated. No design patterns or algorithms are explicitly identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler correctly marks 8 functions as "FAILED to decompile" (strlen, __libc_start_main, __printf_chk, etc.). However, no warnings about suspicious code, potential undefined behavior (like the `param_order_dep` testing sequence points), or indirect call resolution failures within successful functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source has implicit contracts (e.g., `func_struct_byptr` requires non-null pointer, `varargs_func` requires count > 0) that are not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from the code (e.g., `main` calls `test_calling_conventions`, `test_parameter_passing`, `test_return_values`). However, no explicit documentation of who calls whom or global variable usage. The callback relationship in `param_func_ptr` is visible but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output, roughly matching the source organization (calling convention tests, parameter passing tests, return value tests). Static functions like `func_a`, `func_b` used as callbacks are placed appropriately. Minor ordering differences but overall good structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses `__fastcall` which may not be portable across compilers. References undefined string symbols like `asc_15B0`, `asc_1778`, `aCallL206`. Uses non-standard types like `_OWORD`, `_DWORD`. External function declarations are missing (puts, printf, strlen). Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v3`, `v4`) with no semantic inference from usage patterns
+- No struct/union type recovery - all composite types lost to raw pointer arithmetic (`_DWORD*`, `__int64*`)
+- No comments explaining calling convention behavior, test scenarios, or algorithm logic
+- Type precision severely degraded: mixing `int`/`unsigned int`, inconsistent pointer types
+- String literals not recovered - replaced with references like `asc_15B0`
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names almost perfectly match the original source, preserving the semantic intent of the calling convention and parameter passing tests.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All variables use generic names (a1-a9, v3-v14) with no attempt to infer semantic meaning from usage patterns. Compare to source where variables like `count`, `sum`, `args`, `ptr`, `str` clearly indicate purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as loop counters should be named `i`, `j`, `index`; variables used in arithmetic accumulation should be `sum`, `total`, `result`; pointer variables should indicate pointed-to type
+2. **Recover struct/union types**: Detect repeated field access patterns (e.g., `a1[0]`, `a1[15]`) and reconstruct struct definitions with field names based on access patterns
+3. **Recover string literals**: Resolve string references like `asc_15B0` to actual string content for printf format strings and constant strings used in tests

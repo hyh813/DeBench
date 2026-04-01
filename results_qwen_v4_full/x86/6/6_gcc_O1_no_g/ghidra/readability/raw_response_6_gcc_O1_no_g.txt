@@ -1,0 +1,99 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`param_1`, `param_2`, `local_30`, `iVar1`, `uVar2`) with no semantic meaning. Some recovered names like `__stream`, `__fd`, `__ptr` show capability, but most locals remain opaque (e.g., `local_10` used for stack canary, `local_24` for arrays).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names largely preserved (`param_strcpy`, `thread_sum`, `param_mutex_lock`), accurately reflecting purpose. Minor issue: one generic `FUN_00011030` and some helper functions use mechanical names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0xffffffff` (-1), `0x12` (18 bytes), `0x1f` (31). String literals preserved well ("HelloLib", "/etc/passwd"), but numeric constants obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `__x86.get_pc_thunk.bx` warnings, stack canary checks (`__stack_chk_fail_local()`) in nearly every function, and repeated WARNING comments about function replacements that clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs appropriately, but optimization artifacts remain (e.g., `iVar1 >> 0x1f` for sign extension in `param_strcmp`). Generally follows C patterns with some awkwardness from -O0 compilation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; thread functions properly separated. Critical issue: `param_strcpy` returns `void` instead of `int`, losing the `strlen()` return value semantics from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels disrupt flow (`LAB_00012c1e`, `LAB_00012f35`, `LAB_00013143`). Early returns used appropriately but labels create non-linear reading experience.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code; stack canary checks are redundant but expected for security. Loop structures not excessively unrolled. Some repeated patterns in error handling could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision: proper types (`FILE*`, `pthread_t`, `size_t`, `__pid_t`) alongside generic `undefined4`, `undefined1`. Pointer types often degraded to `void*` (e.g., thread function arguments).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Poor struct recovery: `ThreadData` accessed as array indices (`param_1[0]`, `param_1[1]`, `param_1[2]`). `sockaddr` fields named generically (`sa_data[0]` through `sa_data[0xd]`). `stat` struct recovered but as `local_68`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(pthread_cond_t *)cond`, `(volatile int*)&atomic_counter`. Pointer arithmetic on generic types throughout thread functions creates potential undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments present (decompiler uncertainties). All original source comments completely lost. No semantic documentation explaining algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns partially identified but not named. No design pattern recognition (producer-consumer, mutex protection not explicitly documented).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly flagging: "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "Removing unreachable block", "Subroutine does not return". Helps identify decompiler uncertainty areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error return values not explained (what does `-3` mean in `param_fread_fwrite`?). No invariant recognition for shared state.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear through preserved names. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) referenced but not documented. Thread callback relationships not explicitly mapped.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped together. No header file structure or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external libraries (pthread, libc) without documentation. Architecture mismatch (decompiled as x86, original ARM64). Would require stubs for `LOCK()/UNLOCK()` macros and some system calls.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.25 | 30% | 1.575 |
+| L2: Structural Intelligibility | 4 | 6.50 | 25% | 1.625 |
+| L3: Type System Fidelity | 3 | 4.33 | 20% | 0.866 |
+| L4: Semantic Transparency | 4 | 4.25 | 15% | 0.638 |
+| L5: Contextual Coherence | 3 | 5.33 | 10% | 0.533 |
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects
+- **Return type loss**: `param_strcpy` returns `void` instead of `int`, losing the `strlen()` return value semantics
+- **Generic variable names**: `local_30`, `iVar1`, `uVar2` obscure semantic meaning throughout all functions
+- **Magic numbers**: `0x2a`, `0xffffffff`, `0x12` used without explanation or constant definitions
+- **Struct recovery failure**: `ThreadData` accessed as array indices (`param_1[0]`, `param_1[1]`, `param_1[2]`) instead of named fields
+- **Unsafe casts**: Multiple `(pthread_mutex_t *)` and `(volatile int*)` casts without type safety guarantees
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Original function names largely preserved (`param_strcpy`, `thread_sum`, `param_mutex_lock`), making it easy to correlate decompiled code with source intent.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - All original source documentation lost; only auto-generated WARNING comments remain, providing no semantic guidance for understanding logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover return type semantics** - Analyze function epilogues to detect return value usage and restore correct return types (e.g., `param_strcpy` should return `int`)
+2. **Infer variable names from usage patterns** - Use data flow analysis to name variables based on context (e.g., `local_30` in `call_strcpy` should be `buffer`)
+3. **Recover struct layouts from access patterns** - Detect consistent field access offsets and reconstruct named struct types instead of array indexing

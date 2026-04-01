@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `iVar1`, `iVar2`, `iVar3`, `iVar4`, `pbVar1`, `sVar2`, `piVar3`, `piVar4` throughout. These provide zero semantic information about their purpose (e.g., `iVar1` should be `result` or `gcd_result`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` correctly match source names. However, some utility functions have generic names like `FUN_00011030`. The core function names are accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x14` = 20, `0xe1` = 225, `0x7a314` = 500500). The decompiler uses decimal in some places and hex in others inconsistently. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive WARNING comments about "Unknown calling convention", "inlined function", and "Removing unreachable block" clutter the output. However, these do provide useful debugging information about decompilation confidence.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper for/while loops. The tail call optimization in `param_tail_call_optimized` is correctly recognized as a loop. Minor awkwardness in `param_opaque_predicate` due to complex boolean logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The large `test_obf_opt_edge` function (40+ lines) could be split, but overall decomposition is adequate for the amount of code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps disrupting flow. The code is reasonably linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in array initialization in `call_vectorized_loop` (manual loop instead of initializer). No major dead code, but some optimization artifacts remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` instead of specific types. The `unsigned int` is sometimes correctly identified (e.g., `(uint)x >> 1`), but signed/unsigned confusion exists. No `size_t` recovery, just `size_t` in function signature.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. The code uses raw pointer arithmetic throughout. The bitfield in `param_implementation_defined` is completely lost - only the result is shown.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. In `param_string_encryption`, the encrypted string is accessed via `param_string_encryption::encrypted` (static data) but with incorrect type handling. Multiple cast operations between pointer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: WARNING comments provide some utility about decompilation confidence, but no meaningful logic explanations. No algorithm documentation or intent comments. Auto-generated noise dominates.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Tail call optimization correctly recognized and converted to loop. Some patterns like gcd computation in `param_opaque_predicate` are preserved but not explicitly identified as "opaque predicate" or "gcd algorithm".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: WARNING comments flag some technical issues (unknown calling convention, unresolved local vars), but the critical semantic error in `param_fake_branch` (returning just `x` instead of implementing fake branches) is not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The function contracts are completely absent. No documentation of expected input ranges or return value semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear (e.g., `call_fake_branch` calls `param_fake_branch`). However, global variable usage (like `jmp_buffer`, `segv_buffer`) is not well documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (obfuscation functions together, edge case handlers together). However, the file is a flat list with no clear section organization matching the source's chapter structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile standalone. Many undefined types (`EVP_PKEY_CTX`, undefined `DAT_` references, `__stack_chk_fail_local`). External dependencies not documented. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **`param_fake_branch` is semantically incorrect**: Returns just `x` instead of implementing the fake branch logic with `x*x < 0` and `strlen(str) < 0` conditions. This is a severe semantic error.
+- **Variable naming is unusable**: Generic names like `iVar1`, `iVar2`, `iVar3`, `iVar4` provide zero semantic information about purpose.
+- **No composite type recovery**: All struct/union information lost; bitfield in `param_implementation_defined` completely absent.
+- **Magic numbers everywhere**: `0x14`, `0xe1`, `0x7a314` without explanation; expected values hardcoded in `call_*` functions.
+- **Build incompatible**: Undefined symbols (`DAT_00012060`, `EVP_PKEY_CTX`, `__stack_chk_fail_local`) prevent compilation.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- At -O0, the control flow is preserved well with recognizable loop constructs. Tail call optimization correctly identified.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic variable names like `iVar1`-`iVar4` completely obscure semantic purpose. The decompiler should infer names from usage patterns (e.g., `x + 1` suggests `next_value`, loop accumulator suggests `acc`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `accumulator`, `index`, `result`.
+2. **Detect and flag semantic anomalies**: When a function's complexity is suspiciously low compared to source (like `param_fake_branch`), flag it as potentially incorrect decompilation.
+3. **Recover composite types**: Analyze memory accesses to reconstruct struct layouts with field names based on offset patterns and usage context.

@@ -1,0 +1,5 @@
+Testing obfuscation and optimization edge cases:
+
+Fake branch result: 10
+Opaque predicate result: 20
+Instruction substitution result: 225

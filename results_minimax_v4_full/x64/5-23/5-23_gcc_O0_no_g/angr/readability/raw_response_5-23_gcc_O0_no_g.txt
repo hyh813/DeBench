@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: The decompiler uses completely generic parameter names (`a0`, `a1`, `a2`) and local variables (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`) throughout. For example, in `param_macro_constants`, the parameter `a0` should be named `size` based on the original source. This complete loss of semantic naming makes it extremely difficult to track variable purposes across functions.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Function names are excellently preserved from the original source. Names like `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_dynamic_code` exactly match the source. The distinction between `param_*` (implementation) and `call_*` (wrapper) functions is correctly maintained.
+
+### 3. Literal Clarity
+**Score: 7/10**
+
+Justification: Most literals are clear - string constants like `"Hello World"`, `"1.2.3"`, and built-in macro values like `"src/5-23.c"`, `"Jan 15 2026"` are correctly recovered. However, some macro constants are replaced with magic numbers: `0x400` instead of `MAX_SIZE` (1024), `0x200` instead of `512`. The value `279` for `__LINE__` is correct but appears as magic number without context.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: The code is relatively clean with minimal compiler artifacts. The frequent `& 4294967295` mask in printf statements is a minor noise issue (32-bit unsigned integer masking). Some unusual type casts like `*((unsigned int [1])v0)` in `call_asm_atomic` add noise. Overall, the code is readable without excessive artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Control flow is natural and easy to follow. Loops are correctly recovered as `for` loops (e.g., `param_asm_clobber`, `param_asm_multi_insn`). Conditional expressions are clear. The conditional compilation in `param_conditional_compile` is correctly resolved to the non-DEBUG_MODE branch. At -O0, the control flow closely matches the source.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Function decomposition is excellent. Each test case (`param_*` and `call_*` pairs) is properly separated. Helper functions like `my_func`, `header_func` are correctly extracted. The `main` function properly calls `test_preprocessing_features` and `test_asm_features`. Function granularity is appropriate with clear single responsibilities.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: The code reads mostly top-to-bottom with minimal disruption. Early returns are used appropriately. No excessive goto statements or forward jumps into loop bodies. The code flows naturally from setup to computation to return.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+Justification: No significant redundancy observed. Dead code is minimal. Loop unrolling is not excessive. The decompiled code is clean without duplicate expressions or unnecessary operations that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Type precision is mixed. The decompiler uses `unsigned int` for most parameters while the original used `int`. Pointer types are often represented as `unsigned long` or `unsigned long long` rather than proper pointer types. The `uint128_t` type for SIMD operations is appropriate. However, `size_t` is not recovered - instead we see `unsigned long long` for sizes. Many generic types lose the original type information.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: No struct or union recovery is evident in the decompiled code. The original source had no complex structs to begin with, but the decompiler doesn't attempt to reconstruct any composite types. All data is represented as flat primitives or pointers.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Some unsafe operations exist. In `param_asm_clobber`, manual pointer arithmetic `*(int *)(ptr + idx * 4)` is used without bounds checking. The unusual cast `*((unsigned int [1])v0)` in `call_asm_atomic` is concerning. However, most operations are relatively safe with proper casting. No significant buffer-overflow-prone patterns that would make the code dangerous to analyze.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No comments are present in the decompiled code whatsoever. The original source had extensive comments explaining preprocessing behavior, macro expansions, and inline assembly semantics. This complete absence of comments severely impacts understanding of non-obvious logic, especially for the complex inline assembly sections.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns are implicitly present but not explicitly named or documented. The macro expansion patterns (e.g., `SQUARE(x)`, `MAX(a,b)`) are correctly computed but not identified as macro expansions. The inline assembly patterns are not labeled as such. No design patterns, algorithms, or data structure patterns are explicitly identified.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Justification: No anomaly indication is provided. The decompiler silently produces code without flagging suspicious patterns, indirect calls that couldn't be resolved, or unusual stack layouts. For example, the dynamic code generation in `param_dynamic_code` involves machine code injection but there's no warning about this unusual pattern.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No contract information is recovered. Preconditions (e.g., "ptr != NULL" for `param_asm_clobber`), postconditions, and invariants are not documented. Error conditions from system calls (mmap, mprotect return values) are handled but not explained as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Justification: Function call relationships are somewhat clear through naming conventions (`call_*` calls `param_*`), but no explicit documentation of call graphs or global variable usage is provided. The `extern` declarations for global variables like `g_403fe8`, `global_var` indicate external references but without context about their purpose.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are logically grouped: initialization functions (`_init`, `_start`), preprocessing test functions (PP-L2-01 through PP-L3-07), assembly test functions (ASM-L4-01 through ASM-L4-06), and test runners. This organization matches the source file structure reasonably well.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: The code has `extern` declarations for external symbols (`g_403fe8`, `global_var`, string constants). Some stubs would be needed for standalone compilation. The code references standard library functions (printf, puts, mmap, mprotect, munmap, sysconf) which would need headers. Minor patching required for standalone build.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 7 + 7) / 4 = 6.25
+L2_avg = (8 + 9 + 8 + 9) / 4 = 8.50
+L3_avg = (5 + 3 + 5) / 3 = 4.33
+L4_avg = (2 + 4 + 3 + 3) / 4 = 3.00
+L5_avg = (6 + 8 + 7) / 3 = 7.00
+
+Overall = (6.25 × 0.30) + (8.50 × 0.25) + (4.33 × 0.20) + (3.00 × 0.15) + (7.00 × 0.10)
+        = 1.875 + 2.125 + 0.866 + 0.45 + 0.70
+        = 6.016 ≈ 6.0/10
+```
+
+### Overall Readability Score: 6.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is completely generic**: Parameters use `a0`, `a1`, `a2` and locals use `v0`-`v7`, completely losing semantic meaning from source (e.g., `size`, `x`, `y`, `counter`)
+- **No comments present**: Zero comments in the entire decompiled output, making complex logic (especially inline assembly) very difficult to understand
+- **Type precision issues**: Uses `unsigned int` where original had `int`, and `unsigned long long` for pointers instead of proper pointer types
+- **No anomaly indication**: Silent failures and unusual patterns (like dynamic code generation) are not flagged
+- **No contract recovery**: Preconditions, postconditions, and invariants are not documented
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are excellently preserved from the original source, maintaining the distinction between implementation functions (`param_*`) and wrapper functions (`call_*`). This makes it easy to understand the overall program structure.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+The complete absence of comments severely impacts readability, especially for complex features like inline assembly, macro expansions, and conditional compilation. Adding comments to explain these patterns would significantly improve usability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., compared to 1024 → likely "max_size", used in printf with "%d" → likely integer) to generate semantically meaningful names instead of generic `a0`, `v0`
+2. **Add comments for non-obvious patterns**: Document macro expansions, inline assembly blocks, conditional compilation decisions, and unusual operations like dynamic code generation
+3. **Recover type information more precisely**: Use debug symbols and common patterns to infer `int` vs `unsigned int`, proper pointer types, and `size_t` for memory-related operations

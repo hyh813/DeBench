@@ -1,0 +1,8 @@
+Test: opaque_predicate
+
+param_opaque_predicate = 10
+call_opaque_predicate = 35
+instruction_substitution = 225
+string_encryption = 1367695856
+tail_call_optimized = 500500
+non_tail_call = 5050

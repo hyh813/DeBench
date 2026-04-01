@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `i`, `addr`. Original source has semantic names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` - all lost in decompilation. Struct fields are named `field_0`, `field_4`, `padding_0` with no semantic meaning.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some C++ mangled names partially recovered (e.g., `_Z18test_cpp_exceptionv`, `_ZN4Base12virtual_funcEi`, `template_max<int>`), but majority use mechanical address-based names like `sub_401000`, `sub_401030`. Original function names like `test_cpp_member_func`, `call_virtual_func` are partially recovered but inconsistent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers: `20` (stack canary check), `42` (thrown exception), `4`, `8`, `16`, `24` (struct offsets), `19626`, `300` (string offsets). No named constants recovered. Original source constants like `0x1234` for `getClassID()` are lost.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with VEX IR artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(72:F64x8)[t3,0] = t6()`, `[D] Ijk_SigTRAP`. Many empty stub functions like `sub_401499()` that just call `register_tm_clones()` and return. Redundant `__x86.get_pc_thunk.*` functions throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses goto with computed addresses (e.g., `goto *((int *)*((int *)arg_0));` for virtual dispatch). Many functions have `goto v1->field_XX` patterns that are unnatural. Original source has clear `if-else`, `for` loops, `try-catch` blocks - all transformed into spaghetti code.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions are reasonable (e.g., `template_max<int>` at 5 lines), but many are empty stubs. Function granularity is inconsistent - some reasonable, others are just basic block wrappers. Original source has well-structured test functions (30-50 lines each).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearization with many forward jumps and computed goto statements. The `test_cpp_exception` function has complex nested try-catch logic that becomes unreadable with goto-based control flow. Code does not read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code present (empty stub functions), but core logic doesn't show excessive redundancy from optimizations. At -O0, compiler shouldn't produce much redundancy, and the decompiler doesn't add significant redundant expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic `unsigned int`, `int`, `char` without specific bit-widths. Original source uses `int`, `size_t`, `char` appropriately - but decompiler doesn't recover `size_t`. Some type inference like `double` for floating point, but overall imprecise.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct reconstruction with generic names. Structs named `struct_0`, `struct_1`, `struct_2` with fields like `field_0`, `field_4`, `padding_0`. Original source classes like `SimpleClass`, `Base`, `Derived`, `Container<T>` are not recovered - only mangled names appear.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: pointer arithmetic like `*((int *)((char *)ptr + 4 * index))`, casts like `(int)v1[4](ptr)`. However, no severe type safety violations that would cause undefined behavior. Generic `void*` used in many places.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated function headers like `// Function: sub_401030 at 0x401030`. No explanation of algorithms, no recovery of original comments from debug info. Original source has extensive Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Original source demonstrates: RAII (smart pointers), virtual dispatch (vtable), multiple inheritance with this adjustment, diamond inheritance, template instantiation, lambda closures, exception handling - none are recognized or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomaly markers present: `[D] unsupported_<class 'pyvex.expr.GetI'>()` indicates decompilation failure, `[D] Ijk_SigTRAP` shows signal handling. However, these are generic and don't explain what the anomaly means or provide resolution guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has implicit contracts (e.g., `Container::push` requires size < 10, `template_swap` requires valid references) - none recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships clear (e.g., `test_cpp_oo_features` calls all test functions), but not explicitly documented. Virtual dispatch relationships (Base/Derived) partially visible through vtable usage but not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions listed in address order (0x401000, 0x401030, etc.), not logically grouped. Original source has clear sections: member functions, constructors, virtual functions, templates, etc. No logical grouping in decompiled output.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code does not compile. Many undefined identifiers: `_ccall`, `g_405ff4`, `g_405dd0`, `_ZTI12RTTIDerivedA`. Missing includes. External function declarations incomplete. Would require extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `result`) losing all semantic meaning from original source
+- **Function naming**: Majority use mechanical address-based names (`sub_401000`) instead of recovered names
+- **Noise pollution**: Severe VEX IR artifacts (`[D] unsupported_`, `[D] PutI`) make code nearly unreadable
+- **Control flow**: Uses goto with computed addresses instead of natural loops/conditionals
+- **Type recovery**: Structs/classes not reconstructed - only generic `struct_0`, `struct_1` with field offsets
+
+### Best Quality Aspect: Type System Fidelity (scored 4.3/10)  
+Types are somewhat preserved (int, char, pointers) but this is the highest-scoring area simply because other areas are worse. Even here, precision is poor with generic types.
+
+### Most Needs Improvement: Lexical Clarity (scored 2.75/10)  
+Variable and function naming is the most critical failure - without meaningful names, code is nearly impossible to understand. Combined with literal clarity issues and noise, this makes the decompiled output practically unusable.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used in size check → `size`, `v0` compared to 42 → `thrown_value`)
+2. **Eliminate VEX IR artifacts**: Filter out `[D]` prefixed lines and computed goto patterns - either clean them or convert to readable constructs
+3. **Recover class/struct names**: Use debug info (when available) or vtable analysis to reconstruct class names and field names instead of generic `struct_N`

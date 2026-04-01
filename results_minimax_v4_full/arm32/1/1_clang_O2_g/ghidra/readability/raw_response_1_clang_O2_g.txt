@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler marks most local variables as "Unresolved local var" with `???` annotations (e.g., `int temp1 @[???]`, `int sum @[???]`, `int i @[???]`). The original source had meaningful names like `temp1`, `temp2`, `temp3`, `sum`, `count` which are completely lost. Only parameter names like `a`, `b`, `c` are preserved.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. The decompiler successfully preserved the function naming from the source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions use hardcoded hex values like `0x15` (21), `0x14` (20), `0xfffffffb` (-5) without explanation. However, some constants like `0x3e9` (1001) and `0x65` (101) are recognizable as loop bounds. Magic numbers in logic (e.g., `n + 7U >> 3` for Duff's device) are not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from Ghidra warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", and "Unresolved local var" annotations appear throughout. This significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is recognizable but transformed. The `single_if` uses `x << (uint)(0 < x)` instead of an explicit if-statement. Loops are converted to do-while with manual iteration. Switch statements use jump tables or if-chains. At -O0, these transformations are unnecessary and reduce readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function is appropriately sized and maintains single responsibility. No inlining or outlining artifacts observed. Functions like `sequential_ops` (3 lines), `if_else` (2 lines) are properly granular. The test functions are correctly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately. Some complex functions like `loop_complex_cond` have nested logic but remain traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. The `loop_for_fixed` uses a mathematical formula instead of explicit loop (n*(n-1)/2), which is a legitimate optimization but could be commented as such.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integer types are generic `int` rather than width-specific types like `int32_t` or `uint32_t`. No `const` correctness preserved. Function pointer types use `_func_int_int *` which is generic. The original used standard `int` as well, so this is partially acceptable.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays are marked as unresolved: `int[5] arr @[???]`, `int[3][4] matrix @[???]`. No struct recovery at all. The original source had `int arr[] = {10, 20, 30, 40, 50}` and `int matrix[3][4]` which are completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: pointer arithmetic in `duffs_device` (`dst + 1`, `src + 1`), indirect function calls without proper type safety (`*f)(x)`). No buffer overflow protection. Minor issues but not severe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings ("WARNING: Subroutine does not return", "WARNING: Could not recover jumptable") but no meaningful comments explaining algorithm intent, preconditions, or non-obvious logic. The original had detailed comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are visible but not named. Duff's device (`duffs_device`) is correctly identified as a switch-do combination but not explained. State machines use switch statements but aren't labeled as such. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag anomalies with warnings like "Could not recover jumptable at 0x00010f24. Too many branches" and "Treating indirect jump as call". However, these are generic and don't provide specific guidance on what the actual target might be.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. The original source had clear semantics (e.g., "输入10应返回20") that are completely lost. No documentation of error conditions or return value meanings.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present in the code but relationships aren't documented. No indication of which functions call which, callback relationships, or global variable usage. The test functions call the target functions but this isn't explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in a single file with no logical grouping. The original had clear sections (Control Flow Level 1, Level 2, Level 3) with comments separating them. The decompiled output is a flat list of 76 functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses types like `EVP_PKEY_CTX` (OpenSSL) without includes. External functions like `call_weak_fn`, `__gmon_start__` are referenced but not defined. The test functions have hardcoded values instead of calling functions. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable names completely unresolved (`int temp1 @[???]`, `int sum @[???]`) - original meaningful names lost
+- Composite types not recovered - arrays marked as `int[5] arr @[???]` with no element values
+- Heavy noise from Ghidra warnings ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable") obscuring logic
+- No comments explaining algorithm intent or contracts
+- Test functions have hardcoded return values instead of actual function calls, losing the ability to verify semantics
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10) and Assertion & Contract Recovery (2/10)  
+The decompiler failed to recover any meaningful variable names, leaving most as "Unresolved local var". Additionally,完全没有恢复任何前置条件、后置条件或不变式的文档, losing all semantic contract information from the original source.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `temp1 = a + b` suggests addition result, `count++` suggests counter) to generate meaningful names instead of leaving them unresolved
+2. **Recover array literals**: For `int arr[] = {10, 20, 30, 40, 50}`, the decompiler should recover the actual array contents from static data rather than showing `int[5] arr @[???]`
+3. **Add semantic comments**: Include preconditions, postconditions, and algorithm explanations (e.g., "/* CF-L1-01: Returns (a+b)*2-c */") to preserve the original documentation intent

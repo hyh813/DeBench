@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `v0`, `v1`, `v2` throughout. Original source had meaningful names like `size`, `counter`, `increment`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, some helpers like `sub_1045C` remain generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1024`, `64`, `512`, `57072` appear without named constant recovery. String literals preserved but numeric constants lose semantic meaning (e.g., `sysconf(30)` instead of `_SC_PAGESIZE`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Atomic operations expanded into verbose `MEMORY[0xFFFF0FC0]` loops. Register annotations (`// r0`, `// [sp-4h]`) add clutter. 11 external functions marked "FAILED to decompile" pollute output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions have natural if/else and while loops. However, atomic operations use confusing do-while patterns with `MEMORY` calls that obscure the original `__atomic_fetch_add` semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but signatures corrupted—`call_asm_clobber` shows 4 parameters when source has 0. `call_macro_constants` constant-folded to return literal instead of calling underlying function.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some atomic functions have confusing loop structures but generally maintain linear flow without excessive gotos.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding creates redundancy—`call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`. Multiple similar atomic functions (`_sync_fetch_and_add_1/2/4`) not consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`, `size_t`. Pointer types partially recovered (`void*`, `const void*`) but array types degraded to `_DWORD[5]`. `__int64` used inconsistently.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Stack arrays recovered as `_DWORD v6[5]` and `char v1[12]`. No struct recovery needed for this code, but array semantics partially preserved with size annotations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD *)`, `(__int16)`, `(char)`. Pointer arithmetic like `*(_DWORD *)(a1 + 4 * v2++)` loses type safety. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated register annotations (`// r0`, `// [sp+0h]`). No semantic comments explaining purpose. Original source's extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Atomic operations (`__atomic_fetch_add`) decompiled into opaque `MEMORY[0xFFFF0FC0]` loops—pattern completely unrecognizable. SIMD operations recovered as simple loops without vector semantics.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations clearly marked ("FAILED to decompile: __imp_sysconf"). However, semantic anomalies like constant-folding not flagged as potential information loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts (e.g., `param_asm_atomic` requires valid pointer) completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships unclear. `test_preprocessing_features` calls documented through code but no call graph summary. External library dependencies not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Related functions grouped (macro tests together, asm tests together). No header file separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 11 external functions failed decompilation (`__imp_sysconf`, `__imp_mmap`, `__imp_printf_chk`). Cannot compile standalone without significant stubbing. Architecture mismatch (ARM32 vs arm64 source).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (7+5+7+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (6+7+3)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.96/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `v0`, `temp`) losing all semantic meaning from original (`size`, `counter`, `exec_mem`)
+- **Constant folding destroyed call relationships** - `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`
+- **Atomic operations decompiled to opaque loops** - `__atomic_fetch_add` became incomprehensible `MEMORY[0xFFFF0FC0]` patterns
+- **11 external functions failed decompilation** - critical syscalls (`mmap`, `sysconf`, `printf`) unavailable
+- **Function signature corruption** - `call_asm_clobber` shows 4 parameters when source has 0
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, enabling quick identification of test purposes
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - Critical patterns like atomic operations and SIMD completely unrecognizable, transformed into opaque low-level constructs
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how `a1` is used (compared to 1024) to suggest `size` as the name
+2. **Recognize and annotate compiler builtin patterns** - Identify `__atomic_fetch_add`, `__sync_*` operations and restore high-level semantics instead of expanding to loops
+3. **Preserve call relationships over constant folding** - When a function call can be constant-folded, offer both the optimized value AND the original call structure as a comment

@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `result`. The original source had meaningful names like `size`, `x`, `y`, `counter`, `increment`. Only a few variables like `arr`, `n`, `dst`, `src` in specific functions are descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions preserve original names (e.g., `param_macro_constants`, `my_func`, `test_preprocessing_features`), but many are auto-generated addresses like `function_10b0`, `function_10c0`, `function_1100`. The original source had highly semantic names like `param_asm_basic`, `param_dynamic_code`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some constants are preserved (64, 30, 32, 0xdf22, 116), but most string literals are replaced with unexplained PC-relative offsets (e.g., `v1 + 3215`, `v1 + 3539`). Magic numbers like `7` for mmap prot, `34` for flags, `1` for mprotect are unexplained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution. Contains numerous x86-specific functions (`__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_cx`), stack canary checks (`__readgsdword(20)`), and helper functions (`frame_dummy`, `register_tm_clones`). These 20+ functions are not part of the original source.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The most critical failure is `param_macro_constants` which uses an extremely complex ternary expression: `v1 < 0 == ((v1 ^ a1) & (a1 ^ (int32_t)"loneTable")) < 0 == (v1 != 0) ? 64 : (int32_t)&g2`. This should be a simple if-else but is obfuscated. Some loop structures are reasonable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is preserved from original - each test case remains a separate function. Some compiler-generated functions exist but don't interfere with main logic. Parameter counts generally match original.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal jumps. The `param_asm_clobber` function has a slightly awkward structure with the loop, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checking code is duplicated across multiple functions (`call_asm_clobber`, `call_asm_multi_insn`, `call_asm_simd`). Some loop patterns could be cleaner but no severe redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for 32-bit values. Some parameters use `uint32_t` (e.g., `n` in param_asm_clobber). The original used mostly `int` which is platform-dependent. SIMD types use `int128_t` which is a creative reconstruction.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Original source had minimal struct usage (only basic types). The decompilation correctly handles arrays and pointers. No complex composite types to recover.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)a1`, `(char *)v2`, `(int32_t)dst`. Pointer arithmetic like `4 * v1 + (int32_t)arr` is manual and error-prone. The atomic operations lose their atomic semantics - `param_asm_atomic` becomes a non-atomic read-modify-write.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only metadata comments present ("From module:", "Line range:", "Address range:"). No comments explaining what functions do, the purpose of complex expressions, or the original macro/assembly semantics. Zero algorithm documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of original patterns. The inline assembly in original is completely transformed to C loops without indicating it was assembly. Macro expansions are not noted. The conditional compilation branches are resolved but not documented as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The architecture mismatch (original arm64, decompiled x86_64) is not mentioned. The complex expression in `param_macro_constants` is presented as correct without warning. The string literal "loneTable" appearing in arithmetic is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The mmap/mprotect error handling could have contract notes. The atomic operation semantics could have been explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear, but no documentation of call relationships. Global variables `g1`-`g6` are used without explaining their origin or purpose. No callback or vtable relationships identified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped (preprocessing functions, asm functions, test functions), but the file is a single monolithic output. No header file separation or API contracts.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile standalone. Requires many undefined symbols: `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `__cxa_finalize`, `sysconf`, `mmap`, `mprotect`, `munmap`. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable naming is nearly all generic (`a1`, `v1`, `v2`) making code comprehension extremely difficult
+- `param_macro_constants` has an obfuscated ternary expression that should be a simple if-else
+- Architecture mismatch: Original compiled for arm64 but decompiled as x86_64 (with `__x86_get_pc_thunk` functions)
+- No comments explaining any function purpose, algorithm, or original macro/assembly semantics
+- Severe compiler artifact pollution (20+ irrelevant functions like `__x86_get_pc_thunk_*`)
+- Atomic operations lost their atomic semantics in decompilation
+- String literals replaced with unexplained PC-relative offsets
+
+**Best Quality Aspect:** Type System Fidelity (scored 6.7/10)  
+Types are reasonably precise with consistent use of `int32_t` and proper pointer types.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.8/10)  
+Zero useful comments, no pattern recognition, no anomaly indication, and no contract recovery. The decompiled code provides no guidance to help analysts understand the original intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used in size comparison should be named `size`; `v1` as loop index should be `i` or `index`
+2. Recover simple control flow from complex expressions - the ternary in `param_macro_constants` should be rendered as `if (a1 > 1024) return 64; else return 512;`
+3. Add semantic comments explaining what the original code did - note when code was generated from inline assembly, macro expansion, or conditional compilation

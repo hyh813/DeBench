@@ -1,0 +1,1314 @@
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+typedef unsigned long ptrdiff_t;
+typedef long long intmax_t;
+typedef unsigned long long uintmax_t;
+typedef unsigned int uint;
+typedef int __pid_t;
+typedef unsigned char byte;
+
+// Global variables
+extern long ___stack_chk_guard;
+extern char completed_0;
+extern void *__dso_handle;
+static int global_counter = 0;
+static unsigned int global_array[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+static int counter_1 = 0;
+static int extern_global_var = 50;
+static char const_string[] = "test_string_data";
+static unsigned int file_scope_static = 0;
+static unsigned long long global_func_ptr = 0;
+static char DAT_001022b8[] = "Testing stack memory operations\n";
+static char DAT_00102428[] = "Testing heap memory operations\n";
+static char DAT_00102578[] = "Child process result: %d\n";
+static char DAT_00102588[] = "Exit status: %d\n";
+static char DAT_001025b0[] = "Process terminated by signal\n";
+static char DAT_001025f8[] = "fork failed";
+static char DAT_00102628[] = "Testing static and global memory\n";
+static char DAT_001028d8[] = "Testing memory operation functions\n";
+
+// External functions
+extern int __printf_chk(int flag, const char *format, ...);
+extern void __cxa_finalize(void *);
+extern void __stack_chk_fail(void);
+extern int puts(const char *s);
+extern void *malloc(size_t size);
+extern void free(void *ptr);
+extern void *calloc(size_t nmemb, size_t size);
+extern void *memcpy(void *dest, const void *src, size_t n);
+extern void *memmove(void *dest, const void *src, size_t n);
+extern int memcmp(const void *s1, const void *s2, size_t n);
+extern void *memset(void *s, int c, size_t n);
+extern int fork(void);
+extern int waitpid(int pid, int *status, int options);
+extern void exit(int status);
+extern int perror(const char *s);
+extern void *realloc(void *ptr, size_t size);
+
+// Ghidra CONCAT macros for building large values from smaller parts
+#define CONCAT11(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 8))
+#define CONCAT12(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 8))
+#define CONCAT13(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 16))
+#define CONCAT14(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 24))
+#define CONCAT15(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 32))
+#define CONCAT16(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 40))
+#define CONCAT17(a,b) ((unsigned long long)(a) | ((unsigned long long)(b) << 48))
+#define CONCAT44(a,b) ((unsigned long long)((unsigned int)(a)) | ((unsigned long long)(b) << 32))
+
+// Forward declarations
+static void test_stack_memory(void);
+static void test_heap_memory(void);
+static void test_static_global(void);
+static void test_memory_op_functions(void);
+static int extern_function_impl(int param_1);
+
+// Decompiled by BinaryAI
+// SHA256: ceccf989c3e060e0f9e264aeba07749659bd0d914871699be89ea329d74a5ebe
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Function: main @ 0x100b00
+int main(void)
+{
+ test_stack_memory();
+ test_heap_memory();
+ test_static_global();
+ test_memory_op_functions();
+ return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Function: double_value @ 0x100c60
+static int double_value(int param_1)
+{
+ return param_1 << 1;
+}
+
+// Function: alloca_usage.constprop.0 @ 0x100c70
+static unsigned long long alloca_usage_constprop_0(void)
+{
+ return 0xf;
+}
+
+// Function: local_vars @ 0x100c80
+static int local_vars(int param_1)
+{
+ return param_1 * 2 + 10;
+}
+
+// Function: local_array @ 0x100c90
+static int local_array(int param_1)
+{
+ return param_1 * 5;
+}
+
+// Function: local_struct @ 0x100cb0
+static int local_struct(int param_1)
+{
+ return param_1 * 3;
+}
+
+// Function: address_of_local @ 0x100cc0
+static void address_of_local(unsigned int *param_1)
+{
+ *param_1 = 0x2a;
+ return;
+}
+
+// Function: address_of_array @ 0x100cd0
+static int address_of_array(int *param_1)
+{
+ return *param_1 << 1;
+}
+
+// Function: large_stack_frame @ 0x100ce0
+static void large_stack_frame(void)
+{
+ char cVar1;
+ char cVar2;
+ char cVar3;
+ char cVar4;
+ unsigned long long *puVar5;
+ unsigned long long *puVar6;
+ unsigned long long uVar7;
+ unsigned long long uVar8;
+ unsigned long long auStack_810 [256];
+ unsigned long long auStack_10 [2];
+ puVar5 = auStack_810;
+ uVar7 = 0x100000000;
+ uVar8 = 0x300000002;
+ do {
+ cVar3 = (char)uVar7;
+ cVar4 = (char)((unsigned long)uVar7 >> 0x20);
+ cVar2 = (char)uVar8;
+ cVar1 = (char)((unsigned long)uVar8 >> 0x20);
+ puVar6 = puVar5 + 2;
+ puVar5[1] = CONCAT17(cVar1 + '\f',
+ CONCAT16(cVar2 + '\f',
+ CONCAT15(cVar4 + '\f',
+ CONCAT14(cVar3 + '\f',
+ CONCAT13(cVar1 + '\b',
+ CONCAT12(cVar2 + '\b',
+ CONCAT11(cVar4 + '\b',
+ cVar3 + '\b')))))));
+ *puVar5 = CONCAT17(cVar1 + '\x04',
+ CONCAT16(cVar2 + '\x04',
+ CONCAT15(cVar4 + '\x04',
+ CONCAT14(cVar3 + '\x04',
+ CONCAT13(cVar1,CONCAT12(cVar2,CONCAT11(cVar4,cVar3
+ )))))));
+ puVar5 = puVar6;
+ uVar7 = CONCAT44((int)((unsigned long)uVar7 >> 0x20) + 0x10,(int)uVar7 + 0x10);
+ uVar8 = CONCAT44((int)((unsigned long)uVar8 >> 0x20) + 0x10,(int)uVar8 + 0x10);
+ } while (auStack_10 != puVar6);
+ return;
+}
+
+// Function: vla_stack @ 0x100d90
+static void vla_stack(unsigned long param_1)
+{
+ long lVar1;
+ char *puVar2;
+ long lVar3;
+ char *puVar4;
+ uint uVar6;
+ unsigned int uVar7;
+ int iVar8;
+ unsigned long uVar9;
+ unsigned long long *puVar10;
+ unsigned long long *puVar11;
+ unsigned long long *puVar12;
+ unsigned long uVar13;
+ int iVar14;
+ int iVar15;
+ int iVar16;
+ char auStack_30 [16];
+ char *puVar5;
+ lVar3 = ___stack_chk_guard;
+ uVar6 = (uint)param_1;
+ puVar4 = auStack_30;
+ puVar5 = auStack_30;
+ if (999 < uVar6 - 1) {
+ uVar7 = 0xffffffff;
+ goto LAB_00100e8c;
+ }
+ uVar9 = (-(param_1 >> 0x1f & 1) & 0xfffffffc00000000 | (param_1 & 0xffffffff) << 2) + 0xf;
+ puVar2 = auStack_30;
+ while (puVar5 != auStack_30 + -(uVar9 & 0xffffffffffff0000)) {
+ puVar4 = puVar2 + -0x10000;
+ *(unsigned long long *)(puVar2 + -0xfc00) = 0;
+ puVar5 = puVar2 + -0x10000;
+ puVar2 = puVar2 + -0x10000;
+ }
+ uVar9 = uVar9 & 0xfff0;
+ lVar1 = -uVar9;
+ *(unsigned long long *)(puVar4 + lVar1) = 0;
+ if (0x3ff < uVar9) {
+ *(unsigned long long *)(puVar4 + lVar1 + 0x400) = 0;
+ }
+ puVar12 = (unsigned long long *)(puVar4 + lVar1 + 0x10);
+ if (uVar6 - 1 < 3) {
+ uVar9 = 0;
+LAB_00100e4c:
+ uVar13 = -(uVar9 >> 0x1f) & 0xfffffffc00000000 | uVar9 << 2;
+ iVar8 = (int)uVar9;
+ iVar14 = iVar8 * 2;
+ *(int *)(puVar4 + uVar13 + lVar1 + 0x10) = iVar14;
+ if ((iVar8 + 1 < (int)uVar6) &&
+ (*(int *)((long)puVar12 + uVar13 + 4) = iVar14 + 2, iVar8 + 2 < (int)uVar6)) {
+ *(int *)((long)puVar12 + uVar13 + 8) = iVar14 + 4;
+ }
+ }
+ else {
+ puVar10 = puVar12;
+ iVar14 = 0;
+ iVar8 = 1;
+ iVar15 = 2;
+ iVar16 = 3;
+ do {
+ puVar11 = puVar10 + 2;
+ puVar10[1] = CONCAT44(iVar16 << 1,iVar15 << 1);
+ *puVar10 = CONCAT44(iVar8 << 1,iVar14 << 1);
+ puVar10 = puVar11;
+ iVar14 = iVar14 + 4;
+ iVar8 = iVar8 + 4;
+ iVar15 = iVar15 + 4;
+ iVar16 = iVar16 + 4;
+ } while (puVar11 != puVar12 + (unsigned long)(uVar6 >> 2) * 2);
+ uVar9 = (unsigned long)(uVar6 & 0xfffffffc);
+ if ((param_1 & 3) != 0) goto LAB_00100e4c;
+ }
+ uVar7 = *(unsigned int *)((long)puVar12 + (long)((int)uVar6 >> 1) * 4);
+LAB_00100e8c:
+ if (lVar3 - ___stack_chk_guard != 0) {
+ __stack_chk_fail();
+ }
+ return;
+}
+
+// Function: alloca_usage @ 0x100ed0
+static void alloca_usage(unsigned long param_1)
+{
+ unsigned long long *puVar1;
+ long lVar2;
+ char *puVar3;
+ char *puVar4;
+ uint uVar6;
+ int iVar7;
+ unsigned long uVar8;
+ unsigned long long *puVar9;
+ unsigned long long *puVar10;
+ int iVar11;
+ int iVar12;
+ int iVar13;
+ char auStack_30 [16];
+ char *puVar5;
+ puVar4 = auStack_30;
+ puVar5 = auStack_30;
+ uVar6 = (uint)param_1;
+ if (0 < (int)uVar6) {
+ uVar8 = (-(param_1 >> 0x1f & 1) & 0xfffffffc00000000 | (param_1 & 0xffffffff) << 2) + 0xf;
+ puVar3 = auStack_30;
+ while (puVar5 != auStack_30 + -(uVar8 & 0xffffffffffff0000)) {
+ puVar4 = puVar3 + -0x10000;
+ *(unsigned long long *)(puVar3 + -0xfc00) = 0;
+ puVar5 = puVar3 + -0x10000;
+ puVar3 = puVar3 + -0x10000;
+ }
+ uVar8 = uVar8 & 0xfff0;
+ lVar2 = -uVar8;
+ *(unsigned long long *)(puVar4 + lVar2) = 0;
+ if (0x3ff < uVar8) {
+ *(unsigned long long *)(puVar4 + lVar2 + 0x400) = 0;
+ }
+ puVar1 = (unsigned long long *)(puVar4 + lVar2 + 0x10);
+ if (uVar6 - 1 < 3) {
+ uVar8 = 0;
+ }
+ else {
+ puVar9 = puVar1;
+ iVar11 = 0;
+ iVar7 = 1;
+ iVar12 = 2;
+ iVar13 = 3;
+ do {
+ puVar10 = puVar9 + 2;
+ puVar9[1] = CONCAT44(iVar13 * 3,iVar12 * 3);
+ *puVar9 = CONCAT44(iVar7 * 3,iVar11 * 3);
+ puVar9 = puVar10;
+ iVar11 = iVar11 + 4;
+ iVar7 = iVar7 + 4;
+ iVar12 = iVar12 + 4;
+ iVar13 = iVar13 + 4;
+ } while (puVar10 != puVar1 + (unsigned long)(uVar6 >> 2) * 2);
+ uVar8 = (unsigned long)(uVar6 & 0xfffffffc);
+ if ((param_1 & 3) == 0) {
+ return;
+ }
+ }
+ iVar7 = (int)uVar8;
+ iVar11 = iVar7 * 3;
+ *(int *)((long)puVar1 + (long)iVar7 * 4) = iVar11;
+ uVar8 = -(uVar8 >> 0x1f) & 0xfffffffc00000000 | uVar8 << 2;
+ if ((iVar7 + 1 < (int)uVar6) &&
+ (*(int *)((long)puVar1 + uVar8 + 4) = iVar11 + 3, iVar7 + 2 < (int)uVar6)) {
+ *(int *)((long)puVar1 + uVar8 + 8) = iVar11 + 6;
+ }
+ }
+ return;
+}
+
+// Function: stack_alias @ 0x101010
+static unsigned long long stack_alias(void)
+{
+ return 0x14;
+}
+
+// Function: test_stack_memory @ 0x101020
+static void test_stack_memory(void)
+{
+ unsigned int uVar1;
+ puts((const char *)&DAT_001022b8);
+ __printf_chk(1,"MEM-L1-01 (local_vars): %d\n",0x14);
+ __printf_chk(1,"MEM-L1-02 (local_array): %d\n",10);
+ __printf_chk(1,"MEM-L1-03 (local_struct): %d\n",0xf);
+ __printf_chk(1,"MEM-L1-04 (address_of_local): %d\n",0x2a);
+ __printf_chk(1,"MEM-L1-05 (address_of_array): %d\n",2);
+ large_stack_frame();
+ __printf_chk(1,"MEM-L2-01 (large_stack_frame): %d\n",0);
+ __printf_chk(1,"MEM-L2-02 (vla_stack): %d\n",10);
+ uVar1 = alloca_usage_constprop_0();
+ __printf_chk(1,"MEM-L2-03 (alloca_usage): %d\n",uVar1);
+ __printf_chk(1,"MEM-L2-04 (stack_alias): %d\n",0x14);
+ return;
+}
+
+// Function: heap_basic @ 0x1010f4
+static unsigned int heap_basic(unsigned long param_1)
+{
+ unsigned int uVar1;
+ uint uVar2;
+ unsigned long long *__ptr;
+ int iVar3;
+ unsigned long long *puVar4;
+ unsigned long long *puVar5;
+ unsigned long uVar6;
+ int iVar7;
+ int iVar8;
+ int iVar9;
+ uVar2 = (uint)param_1;
+ __ptr = (unsigned long long *)
+ malloc(-(param_1 >> 0x1f & 1) & 0xfffffffc00000000 | (param_1 & 0xffffffff) << 2);
+ if (__ptr == (unsigned long long *)0x0) {
+ return 0xffffffff;
+ }
+ if (0 < (int)uVar2) {
+ if (uVar2 - 1 < 3) {
+ uVar6 = 0;
+ }
+ else {
+ puVar4 = __ptr;
+ iVar7 = 0;
+ iVar3 = 1;
+ iVar8 = 2;
+ iVar9 = 3;
+ do {
+ puVar5 = puVar4 + 2;
+ puVar4[1] = CONCAT44(iVar9 << 1,iVar8 << 1);
+ *puVar4 = CONCAT44(iVar3 << 1,iVar7 << 1);
+ puVar4 = puVar5;
+ iVar7 = iVar7 + 4;
+ iVar3 = iVar3 + 4;
+ iVar8 = iVar8 + 4;
+ iVar9 = iVar9 + 4;
+ } while (puVar5 != __ptr + (unsigned long)(uVar2 >> 2) * 2);
+ uVar6 = (unsigned long)(uVar2 & 0xfffffffc);
+ if ((param_1 & 3) == 0) goto LAB_0010119c;
+ }
+ iVar3 = (int)uVar6;
+ iVar7 = iVar3 * 2;
+ *(int *)((long)__ptr + (long)iVar3 * 4) = iVar7;
+ uVar6 = -(uVar6 >> 0x1f) & 0xfffffffc00000000 | uVar6 << 2;
+ if (iVar3 + 1 < (int)uVar2) {
+ *(int *)((long)__ptr + uVar6 + 4) = iVar7 + 2;
+ if (iVar3 + 2 < (int)uVar2) {
+ *(int *)((long)__ptr + uVar6 + 8) = iVar7 + 4;
+ }
+ }
+ }
+LAB_0010119c:
+ uVar1 = *(unsigned int *)((long)__ptr + (long)((int)uVar2 / 2) * 4);
+ free(__ptr);
+ return uVar1;
+}
+
+
+
+// Function: heap_calloc @ 0x1011d0
+static int heap_calloc(uint param_1)
+{
+ unsigned long long *__ptr;
+ unsigned long long *puVar1;
+ unsigned long uVar3;
+ int iVar4;
+ int iVar5;
+ int iVar6;
+ int iVar7;
+ unsigned long long *puVar2;
+ __ptr = (unsigned long long *)calloc((long)(int)param_1,4);
+ if (__ptr == (unsigned long long *)0x0) {
+ return -1;
+ }
+ if ((int)param_1 < 1) {
+ iVar4 = 0;
+ }
+ else {
+ if (param_1 - 1 < 3) {
+ uVar3 = 0;
+ iVar4 = 0;
+ }
+ else {
+ iVar4 = 0;
+ iVar5 = 0;
+ iVar6 = 0;
+ iVar7 = 0;
+ puVar1 = __ptr;
+ do {
+ puVar2 = puVar1 + 2;
+ iVar4 = iVar4 + (int)*puVar1;
+ iVar5 = iVar5 + (int)((unsigned long)*puVar1 >> 0x20);
+ iVar6 = iVar6 + (int)puVar1[1];
+ iVar7 = iVar7 + (int)((unsigned long)puVar1[1] >> 0x20);
+ puVar1 = puVar2;
+ } while (puVar2 != __ptr + (unsigned long)(param_1 >> 2) * 2);
+ iVar4 = iVar4 + iVar5 + iVar6 + iVar7;
+ uVar3 = (unsigned long)(param_1 & 0xfffffffc);
+ if (((long)(int)param_1 & 3U) == 0) goto LAB_00101274;
+ }
+ iVar5 = (int)uVar3;
+ uVar3 = -(uVar3 >> 0x1f) & 0xfffffffc00000000 | uVar3 << 2;
+ iVar4 = iVar4 + *(int *)((long)__ptr + (long)iVar5 * 4);
+ if (iVar5 + 1 < (int)param_1) {
+ iVar4 = iVar4 + *(int *)((long)__ptr + uVar3 + 4);
+ if (iVar5 + 2 < (int)param_1) {
+ iVar4 = iVar4 + *(int *)((long)__ptr + uVar3 + 8);
+ }
+ }
+ }
+LAB_00101274:
+ free(__ptr);
+ return iVar4;
+}
+
+// Function: heap_realloc @ 0x1012a4
+static unsigned int heap_realloc(void)
+{
+ unsigned long long *__ptr;
+ void *__ptr_00;
+ unsigned int uVar1;
+ __ptr = (unsigned long long *)malloc(0x14);
+ if (__ptr == (unsigned long long *)0x0) {
+ uVar1 = 0xffffffff;
+ }
+ else {
+ *(unsigned int *)(__ptr + 2) = 5;
+ __ptr[1] = 0x400000003;
+ *__ptr = 0x200000001;
+ __ptr_00 = realloc(__ptr,0x28);
+ if (__ptr_00 == (void *)0x0) {
+ uVar1 = 0xfffffffe;
+ free(__ptr);
+ }
+ else {
+ uVar1 = 0x32;
+ if (*(int *)((long)__ptr_00 + 8) != 3) {
+ uVar1 = 0xfffffffd;
+ }
+ *(unsigned long long *)((long)__ptr_00 + 0x1c) = 0x5000000046;
+ *(unsigned long long *)((long)__ptr_00 + 0x14) = 0x3c00000032;
+ free(__ptr_00);
+ }
+ }
+ return uVar1;
+}
+
+
+
+// Function: heap_array @ 0x101330
+static unsigned int heap_array(unsigned long param_1)
+{
+ unsigned int uVar1;
+ uint uVar2;
+ unsigned long long *__ptr;
+ int iVar3;
+ unsigned long long *puVar4;
+ unsigned long long *puVar5;
+ unsigned long uVar6;
+ int iVar7;
+ int iVar8;
+ int iVar9;
+ uVar2 = (uint)param_1;
+ __ptr = (unsigned long long *)
+ malloc(-(param_1 >> 0x1f & 1) & 0xfffffffc00000000 | (param_1 & 0xffffffff) << 2);
+ if (__ptr == (unsigned long long *)0x0) {
+ return 0xffffffff;
+ }
+ if (0 < (int)uVar2) {
+ if (uVar2 - 1 < 3) {
+ uVar6 = 0;
+ }
+ else {
+ puVar4 = __ptr;
+ iVar7 = 0;
+ iVar3 = 1;
+ iVar8 = 2;
+ iVar9 = 3;
+ do {
+ puVar5 = puVar4 + 2;
+ puVar4[1] = CONCAT44(iVar9 * 3,iVar8 * 3);
+ *puVar4 = CONCAT44(iVar3 * 3,iVar7 * 3);
+ puVar4 = puVar5;
+ iVar7 = iVar7 + 4;
+ iVar3 = iVar3 + 4;
+ iVar8 = iVar8 + 4;
+ iVar9 = iVar9 + 4;
+ } while (puVar5 != __ptr + (unsigned long)(uVar2 >> 2) * 2);
+ uVar6 = (unsigned long)(uVar2 & 0xfffffffc);
+ if ((param_1 & 3) == 0) goto LAB_001013d8;
+ }
+ iVar3 = (int)uVar6;
+ iVar7 = iVar3 * 3;
+ *(int *)((long)__ptr + (long)iVar3 * 4) = iVar7;
+ uVar6 = -(uVar6 >> 0x1f) & 0xfffffffc00000000 | uVar6 << 2;
+ if (iVar3 + 1 < (int)uVar2) {
+ *(int *)((long)__ptr + uVar6 + 4) = iVar7 + 3;
+ if (iVar3 + 2 < (int)uVar2) {
+ *(int *)((long)__ptr + uVar6 + 8) = iVar7 + 6;
+ }
+ }
+ }
+LAB_001013d8:
+ uVar1 = *(unsigned int *)((long)__ptr + (long)((int)uVar2 / 2) * 4);
+ free(__ptr);
+ return uVar1;
+}
+
+// Function: heap_struct @ 0x101410
+static int heap_struct(int param_1)
+{
+ void *__ptr;
+ __ptr = malloc(8);
+ if (__ptr == (void *)0x0) {
+ param_1 = -1;
+ }
+ else {
+ param_1 = param_1 * 3;
+ free(__ptr);
+ }
+ return param_1;
+}
+
+
+
+// Function: heap_nested @ 0x101450
+static unsigned long long heap_nested(unsigned long long *param_1)
+{
+ unsigned int *__ptr;
+ unsigned int *puVar1;
+ unsigned long long uVar2;
+ __ptr = (unsigned int *)malloc(0x10);
+ *param_1 = (unsigned long long)__ptr;
+ if (__ptr == (unsigned int *)0x0) {
+ uVar2 = 0xffffffff;
+ }
+ else {
+ *__ptr = 10;
+ puVar1 = (unsigned int *)malloc(0x10);
+ *(unsigned int **)(__ptr + 2) = puVar1;
+ if (puVar1 == (unsigned int *)0x0) {
+ free(__ptr);
+ uVar2 = 0xfffffffe;
+ }
+ else {
+ uVar2 = 0;
+ *puVar1 = 0x14;
+ *(unsigned long long *)(puVar1 + 2) = 0;
+ }
+ }
+ return uVar2;
+}
+
+// Function: linked_list_heap @ 0x1014c4
+static int linked_list_heap(void)
+{
+ int iVar1;
+ int *piVar2;
+ int *piVar3;
+ int *piVar4;
+ int *__ptr;
+ int iVar5;
+ iVar5 = 0;
+ __ptr = (int *)0x0;
+ piVar4 = (int *)0x0;
+ while( true ) {
+ piVar3 = (int *)malloc(0x10);
+ if (piVar3 == (int *)0x0) {
+ while (__ptr != (int *)0x0) {
+ piVar4 = *(int **)(__ptr + 2);
+ free(__ptr);
+ __ptr = piVar4;
+ }
+ return -1;
+ }
+ *piVar3 = iVar5;
+ *(unsigned long long *)(piVar3 + 2) = 0;
+ piVar2 = piVar3;
+ if (__ptr != (int *)0x0) {
+ *(int **)(piVar4 + 2) = piVar3;
+ piVar2 = __ptr;
+ }
+ __ptr = piVar2;
+ if (iVar5 == 0x28) break;
+ iVar5 = iVar5 + 10;
+ piVar4 = piVar3;
+ }
+ iVar5 = 0;
+ piVar4 = __ptr;
+ do {
+ iVar1 = *piVar4;
+ piVar4 = *(int **)(piVar4 + 2);
+ iVar5 = iVar5 + iVar1;
+ } while (piVar4 != (int *)0x0);
+ do {
+ piVar4 = *(int **)(__ptr + 2);
+ free(__ptr);
+ __ptr = piVar4;
+ } while (piVar4 != (int *)0x0);
+ return iVar5;
+}
+
+// Function: create_tree_node @ 0x101580
+static void create_tree_node(unsigned int param_1)
+{
+ unsigned int *puVar1;
+ puVar1 = (unsigned int *)malloc(0x18);
+ if (puVar1 != (unsigned int *)0x0) {
+ *puVar1 = param_1;
+ *(unsigned long long *)(puVar1 + 2) = 0;
+ *(unsigned long long *)(puVar1 + 4) = 0;
+ }
+ return;
+}
+
+// Function: tree_heap_traversal @ 0x1015b0
+static unsigned long long tree_heap_traversal(void)
+{
+ void *__ptr;
+ void *pvVar1;
+ void *__ptr_00;
+ unsigned long long uVar2;
+ __ptr = malloc(0x18);
+ if (__ptr == (void *)0x0) {
+ uVar2 = 0xffffffff;
+ }
+ else {
+ pvVar1 = malloc(0x18);
+ if (pvVar1 == (void *)0x0) {
+ pvVar1 = malloc(0x18);
+ if (pvVar1 != (void *)0x0) {
+ free(pvVar1);
+ }
+ }
+ else {
+ __ptr_00 = malloc(0x18);
+ if (__ptr_00 != (void *)0x0) {
+ free(pvVar1);
+ free(__ptr_00);
+ free(__ptr);
+ return 0x3c;
+ }
+ free(pvVar1);
+ }
+ free(__ptr);
+ uVar2 = 0xfffffffe;
+ }
+ return uVar2;
+}
+
+// Function: memory_leak @ 0x101660
+static unsigned int memory_leak(unsigned long param_1)
+{
+ uint uVar1;
+ unsigned long long *puVar2;
+ int iVar3;
+ unsigned long long *puVar4;
+ unsigned long long *puVar5;
+ unsigned long uVar6;
+ unsigned long long uVar7;
+ unsigned long long uVar8;
+ uVar1 = (uint)param_1;
+ puVar2 = (unsigned long long *)
+ malloc(-(param_1 >> 0x1f & 1) & 0xfffffffc00000000 | (param_1 & 0xffffffff) << 2);
+ if (puVar2 == (unsigned long long *)0x0) {
+ return 0xffffffff;
+ }
+ if (0 < (int)uVar1) {
+ if (uVar1 - 1 < 3) {
+ uVar6 = 0;
+ }
+ else {
+ puVar4 = puVar2;
+ uVar7 = 0x100000000;
+ uVar8 = 0x300000002;
+ do {
+ puVar5 = puVar4 + 2;
+ puVar4[1] = uVar8;
+ *puVar4 = uVar7;
+ puVar4 = puVar5;
+ uVar7 = CONCAT44((int)((unsigned long)uVar7 >> 0x20) + 4,(int)uVar7 + 4);
+ uVar8 = CONCAT44((int)((unsigned long)uVar8 >> 0x20) + 4,(int)uVar8 + 4);
+ } while (puVar5 != puVar2 + (unsigned long)(uVar1 >> 2) * 2);
+ uVar6 = (unsigned long)(uVar1 & 0xfffffffc);
+ if ((param_1 & 3) == 0) goto LAB_001016f4;
+ }
+ iVar3 = (int)uVar6;
+ *(int *)((long)puVar2 + (long)iVar3 * 4) = iVar3;
+ uVar6 = -(uVar6 >> 0x1f) & 0xfffffffc00000000 | uVar6 << 2;
+ if (iVar3 + 1 < (int)uVar1) {
+ *(int *)((long)puVar2 + uVar6 + 4) = iVar3 + 1;
+ if (iVar3 + 2 < (int)uVar1) {
+ *(int *)((long)puVar2 + uVar6 + 8) = iVar3 + 2;
+ }
+ }
+ }
+LAB_001016f4:
+ return *(unsigned int *)((long)puVar2 + (long)((int)uVar1 / 2) * 4);
+}
+
+
+
+// Function: dangling_pointer @ 0x101720
+static unsigned int dangling_pointer(void)
+{
+ unsigned int uVar1;
+ unsigned int *__ptr;
+ __ptr = (unsigned int *)malloc(4);
+ if (__ptr == (unsigned int *)0x0) {
+ uVar1 = 0xffffffff;
+ }
+ else {
+ __printf_chk(1,"value before free: %d\n",0x2a);
+ free(__ptr);
+ uVar1 = *__ptr;
+ }
+ return uVar1;
+}
+
+// Function: double_free @ 0x101770
+static unsigned int double_free(unsigned int *param_1)
+{
+ unsigned int uVar1;
+ void *__ptr;
+ if (param_1 != (unsigned int *)0x0) {
+ return *param_1;
+ }
+ __ptr = malloc(4);
+ if (__ptr == (void *)0x0) {
+ uVar1 = 0xffffffff;
+ }
+ else {
+ free(__ptr);
+ free(__ptr);
+ uVar1 = 0xfffffffe;
+ }
+ return uVar1;
+}
+
+
+
+// Function: heap_overflow @ 0x1017c0
+static unsigned long long heap_overflow(void)
+{
+ void *__ptr;
+ unsigned long long uVar1;
+ __ptr = malloc(0x28);
+ if (__ptr == (void *)0x0) {
+ uVar1 = 0xffffffff;
+ }
+ else {
+ free(__ptr);
+ uVar1 = 0;
+ }
+ return uVar1;
+}
+
+
+
+// Function: test_heap_memory @ 0x1017f0
+static void test_heap_memory(void)
+{
+ int iVar1;
+ int *piVar2;
+ unsigned int uVar3;
+ __pid_t __pid;
+ void *pvVar4;
+ unsigned long long *puVar5;
+ unsigned int *puVar6;
+ int *piVar7;
+ int *piVar8;
+ unsigned long long uVar9;
+ long lVar10;
+ int iVar11;
+ int *__ptr;
+ uint local_c;
+ long local_8;
+ local_8 = ___stack_chk_guard;
+ puts((const char *)&DAT_00102428);
+ pvVar4 = malloc(0x28);
+ if (pvVar4 == (void *)0x0) {
+ uVar9 = 0xffffffff;
+ }
+ else {
+ *(unsigned long long *)((long)pvVar4 + 0x18) = 0xe0000000c;
+ *(unsigned long long *)((long)pvVar4 + 0x10) = 0xa00000008;
+ *(unsigned long long *)((long)pvVar4 + 0x20) = 0x1200000010;
+ free(pvVar4);
+ uVar9 = 10;
+ }
+ __printf_chk(1,"HEAP-L2-01 (heap_basic): %d\n",uVar9);
+ puVar5 = (unsigned long long *)calloc(5,4);
+ if (puVar5 == (unsigned long long *)0x0) {
+ iVar11 = -1;
+ }
+ else {
+ iVar11 = (int)*puVar5 + (int)((unsigned long)*puVar5 >> 0x20) +
+ (int)puVar5[1] + (int)((unsigned long)puVar5[1] >> 0x20) + *(int *)(puVar5 + 2);
+ free(puVar5);
+ }
+ __printf_chk(1,"HEAP-L2-02 (heap_calloc): %d\n",iVar11);
+ uVar3 = heap_realloc();
+ __printf_chk(1,"HEAP-L2-03 (heap_realloc): %d\n",uVar3);
+ pvVar4 = malloc(0x28);
+ if (pvVar4 == (void *)0x0) {
+ uVar9 = 0xffffffff;
+ }
+ else {
+ *(unsigned long long *)((long)pvVar4 + 0x18) = 0x1500000012;
+ *(unsigned long long *)((long)pvVar4 + 0x10) = 0xf0000000c;
+ *(unsigned long long *)((long)pvVar4 + 0x20) = 0x1b00000018;
+ free(pvVar4);
+ uVar9 = 0xf;
+ }
+ __printf_chk(1,"HEAP-L2-04 (heap_array): %d\n",uVar9);
+ pvVar4 = malloc(8);
+ if (pvVar4 == (void *)0x0) {
+ uVar9 = 0xffffffff;
+ }
+ else {
+ free(pvVar4);
+ uVar9 = 0xf;
+ }
+ __printf_chk(1,"HEAP-L2-05 (heap_struct): %d\n",uVar9);
+ pvVar4 = malloc(0x10);
+ if (pvVar4 == (void *)0x0) {
+ __printf_chk(1,"HEAP-L2-06 (heap_nested): %d\n",0xffffffff);
+ }
+ else {
+ puVar6 = (unsigned int *)malloc(0x10);
+ *(unsigned int **)((long)pvVar4 + 8) = puVar6;
+ if (puVar6 == (unsigned int *)0x0) {
+ free(pvVar4);
+ uVar9 = 0xfffffffe;
+ }
+ else {
+ uVar9 = 0;
+ *puVar6 = 0x14;
+ *(unsigned long long *)(puVar6 + 2) = 0;
+ }
+ __printf_chk(1,"HEAP-L2-06 (heap_nested): %d\n",uVar9);
+ free(*(void **)((long)pvVar4 + 8));
+ free(pvVar4);
+ }
+ iVar11 = linked_list_heap();
+LAB_001019d8:
+ __printf_chk(1,"HEAP-L3-01 (linked_list_heap): %d\n",iVar11);
+ uVar3 = tree_heap_traversal();
+ __printf_chk(1,"HEAP-L3-02 (tree_heap_traversal): %d\n",uVar3);
+ puVar5 = (unsigned long long *)malloc(0x14);
+ if (puVar5 == (unsigned long long *)0x0) {
+ uVar9 = 0xffffffff;
+ }
+ else {
+ uVar9 = 2;
+ *(unsigned int *)(puVar5 + 2) = 4;
+ puVar5[1] = 0x300000002;
+ *puVar5 = 0x100000000;
+ }
+ __printf_chk(1,"HEAP-L3-03 (memory_leak): %d\n",uVar9);
+ __printf_chk(1,"HEAP-L3-04 (dangling_pointer): ");
+ __pid = fork();
+ if (__pid == 0) {
+ puVar6 = (unsigned int *)malloc(4);
+ if (puVar6 == (unsigned int *)0x0) {
+ uVar3 = 0xffffffff;
+ }
+ else {
+ __printf_chk(1,"value before free: %d\n",0x2a);
+ free(puVar6);
+ uVar3 = *puVar6;
+ }
+ __printf_chk(1,(const char *)&DAT_00102578,uVar3);
+ exit(0);
+ }
+ if (__pid < 1) {
+ lVar10 = local_8 - ___stack_chk_guard;
+ if (lVar10 == 0) {
+ perror((const char *)&DAT_001025f8);
+ return;
+ }
+ }
+ else {
+ waitpid(__pid,(int *)&local_c,0);
+ if ((local_c & 0x7f) == 0) {
+ __printf_chk(1,(const char *)&DAT_00102588,local_c >> 8 & 0xff);
+ }
+ else if (0 < (int)((long)((unsigned long)((local_c & 0x7f) + 1) << 0x38) >> 0x39)) {
+ __printf_chk(1,(const char *)&DAT_001025b0);
+ }
+ lVar10 = local_8 - ___stack_chk_guard;
+ if (lVar10 == 0) {
+ return;
+ }
+ }
+ __stack_chk_fail();
+}
+
+// Function: global_var_access @ 0x101bd0
+static void global_var_access(void)
+{
+ global_counter = global_counter + 1;
+ return;
+}
+
+// Function: global_var_read @ 0x101be4
+static int global_var_read(void)
+{
+ return global_counter << 1;
+}
+
+// Function: global_array_access @ 0x101bf4
+static unsigned int global_array_access(uint param_1)
+{
+ if (param_1 < 10) {
+ return *(unsigned int *)(&global_array + (long)(int)param_1 * 4);
+ }
+ return 0xffffffff;
+}
+
+// Function: static_local @ 0x101c14
+static void static_local(int param_1)
+{
+ if (param_1 == 0) {
+ counter_1 = counter_1 + 1;
+ return;
+ }
+ counter_1 = 0;
+ return;
+}
+
+// Function: call_static_func @ 0x101c50
+static int call_static_func(int param_1)
+{
+ return param_1 * 2 + 1;
+}
+
+// Function: access_extern_global @ 0x101c60
+static int access_extern_global(void)
+{
+ return extern_global_var + 100;
+}
+
+// Function: call_extern_func @ 0x101c74
+static void call_extern_func(void)
+{
+ extern_function_impl(5);
+ return;
+}
+
+// Function: read_const_data @ 0x101c80
+static int read_const_data(void)
+{
+ return (byte)const_string[4] + 0x2a;
+}
+
+// Function: access_bss_var @ 0x101c94
+static unsigned long long access_bss_var(void)
+{
+ return 0;
+}
+
+// Function: access_bss_buffer @ 0x101ca0
+static unsigned long long access_bss_buffer(void)
+{
+ return 0;
+}
+
+// Function: global_struct_access @ 0x101cb0
+static unsigned long long global_struct_access(void)
+{
+ return 0x1e;
+}
+
+// Function: set_file_static @ 0x101cc0
+static void set_file_static(unsigned int param_1)
+{
+ file_scope_static = param_1;
+ return;
+}
+
+// Function: get_file_static @ 0x101cd0
+static unsigned int get_file_static(void)
+{
+ return file_scope_static;
+}
+
+// Function: set_global_callback @ 0x101ce0
+static void set_global_callback(unsigned long long param_1)
+{
+ global_func_ptr = param_1;
+ return;
+}
+
+// Function: call_global_callback @ 0x101cf0
+static unsigned long long call_global_callback(void)
+{
+ unsigned long long uVar1;
+ if (global_func_ptr != 0) {
+ uVar1 = ((unsigned long long (*)())global_func_ptr)();
+ return uVar1;
+ }
+ return 0xffffffff;
+}
+
+// Function: global_heap_store @ 0x101d10
+static unsigned int global_heap_store(unsigned int *param_1)
+{
+ if (param_1 != (unsigned int *)0x0) {
+ return *param_1;
+ }
+ return 0xffffffff;
+}
+
+// Function: static_complex_init @ 0x101d24
+static unsigned long long static_complex_init(void)
+{
+ return 0xf;
+}
+
+// Function: tls_access @ 0x101d30
+static int tls_access(int param_1)
+{
+ return param_1 << 1;
+}
+
+// Function: init_order_test @ 0x101d40
+static unsigned long long init_order_test(void)
+{
+ return 0x14;
+}
+
+// Function: test_static_global @ 0x101d50
+static void test_static_global(void)
+{
+ unsigned int uVar1;
+ puts((const char *)&DAT_00102628);
+ global_counter = global_counter + 1;
+ __printf_chk(1,"STM-L1-01 (global_var_access): %d\n",global_counter);
+ __printf_chk(1,"STM-L1-01 (global_var_read): %d\n",global_counter << 1);
+ __printf_chk(1,"STM-L1-02 (global_array_access): %d\n",5);
+ counter_1 = 1;
+ __printf_chk(1,"STM-L1-03 (static_local): %d\n",1);
+ counter_1 = counter_1 + 1;
+ __printf_chk(1,"STM-L1-03 (static_local): %d\n",counter_1);
+ __printf_chk(1,"STM-L1-04 (call_static_func): %d\n",0xb);
+ __printf_chk(1,"STM-L2-01 (access_extern_global): %d\n",extern_global_var + 100);
+ extern_function_impl(5);
+ __printf_chk(1,"STM-L2-02 (call_extern_func): %d\n",15);
+ __printf_chk(1,"STM-L2-03 (read_const_data): %d\n",(byte)const_string[4] + 0x2a);
+ __printf_chk(1,"STM-L2-04 (access_bss_var): %d\n",0);
+ __printf_chk(1,"STM-L2-04 (access_bss_buffer): %d\n",0);
+ __printf_chk(1,"STM-L2-05 (global_struct_access): %d\n",0x1e);
+ file_scope_static = 0x32;
+ __printf_chk(1,"STM-L2-06 (file_static): %d\n",file_scope_static);
+ global_func_ptr = (unsigned long long)double_value;
+ __printf_chk(1,"STM-L2-07 (global_func_ptr): %d\n",10);
+ __printf_chk(1,"STM-L2-08 (global_heap_store): %d\n",100);
+ __printf_chk(1,"STM-L2-09 (static_complex_init): %d\n",0xf);
+ __printf_chk(1,"STM-L3-01 (tls_access): %d\n",0x14);
+ __printf_chk(1,"STM-L3-02 (init_order_test): %d\n",0x14);
+ return;
+}
+
+// Function: memop_memset @ 0x101f40
+static unsigned long memop_memset(byte *param_1,size_t param_2,int param_3)
+{
+ if (param_1 != (byte *)0x0 && param_2 != 0) {
+ memset(param_1,param_3,param_2);
+ return (unsigned long)*param_1;
+ }
+ return 0xffffffff;
+}
+
+// Function: memop_memcpy @ 0x101f84
+static unsigned int memop_memcpy(void *param_1,void *param_2,size_t param_3)
+{
+ if ((param_2 != (void *)0x0 && param_3 != 0) && param_1 != (void *)0x0) {
+ memcpy(param_1,param_2,param_3);
+ return *(unsigned int *)((long)param_1 + ((param_3 & 0xfffffffffffffffc) - 4));
+ }
+ return 0xffffffff;
+}
+
+// Function: memop_memmove @ 0x101fd0
+static unsigned long memop_memmove(void *param_1,long param_2)
+{
+ if ((param_1 != (void *)0x0 && param_2 != 0) && (param_1 == (void *)0x0 || param_2 != 1)) {
+ memmove((void *)((long)param_1 + 1),param_1,param_2 - 1);
+ return (unsigned long)*(byte *)((long)param_1 + 1);
+ }
+ return 0xffffffff;
+}
+
+// Function: memop_memcmp @ 0x102014
+static int memop_memcmp(void *param_1,void *param_2,size_t param_3)
+{
+ int iVar1;
+ int iVar2;
+ if ((param_2 == (void *)0x0 || param_3 == 0) || param_1 == (void *)0x0) {
+ return 0;
+ }
+ iVar2 = memcmp(param_1,param_2,param_3);
+ iVar1 = -(uint)(iVar2 != 0);
+ if (0 < iVar2) {
+ iVar1 = 1;
+ }
+ return iVar1;
+}
+
+// Function: memop_bzero @ 0x102050
+static unsigned long memop_bzero(byte *param_1,size_t param_2)
+{
+ if (param_1 != (byte *)0x0) {
+ memset(param_1,0,param_2);
+ return (unsigned long)*param_1;
+ }
+ return 0xffffffff;
+}
+
+// Function: memop_bcopy @ 0x102090
+static unsigned long memop_bcopy(void *param_1,void *param_2,size_t param_3)
+{
+ byte *pbVar1;
+ if ((param_2 != (void *)0x0 && param_3 != 0) && param_1 != (void *)0x0) {
+ pbVar1 = (byte *)memmove(param_2,param_1,param_3);
+ return (unsigned long)*pbVar1;
+ }
+ return 0xffffffff;
+}
+
+// Function: memop_unaligned_access @ 0x1020d0
+static unsigned int memop_unaligned_access(long param_1)
+{
+ if (param_1 != 0) {
+ return *(unsigned int *)(param_1 + 1);
+ }
+ return 0xffffffff;
+}
+
+// Function: memop_memory_barrier @ 0x1020e4
+static int memop_memory_barrier(int *param_1)
+{
+ if (param_1 != (int *)0x0) {
+ return *param_1 + *param_1;
+ }
+ return -1;
+}
+
+// Function: test_memory_op_functions @ 0x102104
+static void test_memory_op_functions(void)
+{
+ int iVar1;
+ int iVar2;
+ unsigned long long local_148;
+ unsigned int local_140;
+ unsigned long long local_138;
+ unsigned int local_130;
+ unsigned long long local_128;
+ unsigned short local_120;
+ char local_118 [7];
+ unsigned int uStack_111;
+ unsigned long long local_108;
+ unsigned short local_100;
+ long local_8;
+ local_8 = ___stack_chk_guard;
+ puts((const char *)&DAT_001028d8);
+ local_108 = 0x4141414141414141;
+ local_100 = 0x4141;
+ __printf_chk(1,"MEMOP-L2-01: %d\n",0x41);
+ __printf_chk(1,"MEMOP-L2-02: %d\n",0x32);
+ local_118[0] = 'H'; local_118[1] = 'e'; local_118[2] = 'l'; local_118[3] = 'l'; local_118[4] = 'o'; local_118[5] = 'W'; local_118[6] = 'r';
+ uStack_111 = ('r') | (('l') << 8) | (('d') << 16);
+ memmove(local_118 + 1,local_118,9);
+ __printf_chk(1,"MEMOP-L2-03: %c\n",0x48);
+ local_140 = 3;
+ local_130 = 4;
+ local_148 = 0x200000001;
+ local_138 = 0x200000001;
+ iVar2 = memcmp(&local_148,&local_138,0xc);
+ iVar1 = -(uint)(iVar2 != 0);
+ if (0 < iVar2) {
+ iVar1 = 1;
+ }
+ __printf_chk(1,"MEMOP-L2-04: %d\n",iVar1);
+ local_128 = 0;
+ local_120 = 0;
+ __printf_chk(1,"MEMOP-L2-05: %d\n",0);
+ __printf_chk(1,"MEMOP-L2-06: %d\n",1);
+ __printf_chk(1,"MEMOP-L3-01: 0x%x\n",0x4030201);
+ if (local_8 == ___stack_chk_guard) {
+ __printf_chk(1,"MEMOP-L3-02: %d\n",10);
+ return;
+ }
+ __stack_chk_fail();
+}
+
+// Function: extern_function_impl @ 0x102290
+static int extern_function_impl(int param_1)
+{
+ return param_1 * 3;
+}
+
+
+

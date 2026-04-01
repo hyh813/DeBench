@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`local_30`, `local_10`, `pvVar1`, `iVar1`, `param_1`). The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` - all completely lost in decompilation. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) perfectly match source names. Member functions like `Base::virtual_func` and template functions like `template_max<int>` are correctly identified. Minor扣分 for some internal functions being less clear.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with magic numbers: `0x14`, `0x1e`, `0x28`, `0x32`, `0x14dc0`, `0x2a`, `0x2bf`, `0x96`, `0xfa`. No attempt to explain what `0x14` (size 20) or `0x2a` (42, the thrown exception value) represents. The literal `5` in `strncpy(local_30,"Test",5)` is correctly inferred.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from 20+ WARNING comments about inlined functions, unknown calling conventions, unreachable blocks, and subroutines that don't return. The `local_30[5] = '\0'` through `local_30[0x1f] = 0` block is redundant noise - should be a loop or memset.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and return structures are preserved. However, the redundant zero-initialization loop for `local_30` (lines 5-30) is unnatural - at -O0 this should be recognized as memset pattern. Stack canary checks (`__stack_chk_fail_local`) are compiler artifacts that clutter the code.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably decomposed - test functions are separate, member functions extracted. However, some functions like `test_cpp_member_func` are 30+ lines with mixed responsibilities (object creation + method calls + computation). Parameter handling shows "Unknown calling convention" issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. The main disruption is the massive zero-initialization block in `test_cpp_member_func` that should be abstracted. Otherwise, code flows reasonably well.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The most egregious redundancy is the 26-line zero-initialization of `local_30` array that should be a simple `memset(local_30, 0, sizeof(local_30))`. This is a clear failure to recognize a common pattern.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `undefined4`, `undefined *`, `undefined **`. The original `int` and `size_t` are lost. Template functions correctly show `int` and `double` types. Function parameters like `param_1` lack type specificity. Signed/unsigned distinction often lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery is present - `Base *this` shows proper this-pointer handling. However, the decompiler uses raw pointer arithmetic (e.g., `*(undefined4 *)((int)pvVar1 + 4)`) instead of recovering struct fields like `obj.data` or `obj.size`. No struct field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int)pvVar1` casts, pointer arithmetic like `this + 4`, `this + *(int *)(*(int *)this + -0xc)`. No bounds checking. The virtual function thunks have complex pointer manipulations that are error-prone. No `const` correctness recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some useful comments like `/* Base::virtual_func(int) */` and `/* try { // try from 00011729 to 0001172d has its CatchHandler @ 0001172e */`. However, most comments are auto-generated warnings, not explanatory. No documentation of what functions do or why certain patterns exist.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are recognizable: virtual function calls via vtable (`*(code *)**param_1`), template instantiation (`template_max<int>`), exception throw (`__cxa_throw`). But these aren't explicitly named or explained as patterns. The "thunk" functions for virtual dispatch are correctly identified but not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The WARNING comments flag decompilation issues (inlined functions, unreachable blocks) but not actual code anomalies. No indication of suspicious logic, potential undefined behavior, or confidence levels. The "Unknown calling convention" warnings are generic without guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The original source had clear semantics (e.g., "requires: idx < size" for getData) that are completely lost. No documentation of error conditions or return value guarantees.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships visible - `call_virtual_func` calls virtual methods, `test_cpp_oo_features` calls all test functions. But no explicit call graph documentation. Virtual dispatch relationships (Base→Derived) not clearly documented. Global variable `LifecycleClass::instance_count` is referenced but relationships unclear.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in decompilation order (by address), not logical grouping. The original source had clear sections (CPP-L3-01, CPP-L3-02, etc.) that are lost. Related functions (all SimpleClass methods) scattered. No namespace or class grouping visible.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`operator_new`, `operator_delete`, `strlen`, `strcmp`). Some functions like `__stack_chk_fail_local` are compiler-specific. Would require moderate patching to compile (missing headers, some function signatures). The "Compilation Result: Yes" in metadata suggests it was tested.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+8+3+2)/4 = 3.75
+L2_avg = (6+6+6+4)/4 = 5.50
+L3_avg = (4+4+4)/3 = 4.00
+L4_avg = (4+5+3+2)/4 = 3.50
+L5_avg = (5+3+6)/3 = 4.67
+
+Overall = (3.75 × 0.30) + (5.50 × 0.25) + (4.00 × 0.20) + 
+          (3.50 × 0.15) + (4.67 × 0.10)
+        = 1.125 + 1.375 + 0.80 + 0.525 + 0.467
+        = 4.29/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming completely generic**: `local_30`, `pvVar1`, `iVar1` - original names like `value`, `name`, `data` completely lost
+- **Massive redundancy**: 26-line zero-initialization loop should be `memset(local_30, 0, 32)`
+- **No struct field recovery**: Raw pointer arithmetic like `*(int*)((int)pvVar1+4)` instead of `obj->data`
+- **Magic numbers everywhere**: `0x14`, `0x1e`, `0x28` without explanation of what they represent
+- **No type precision**: Uses `undefined4`, `undefined *` instead of `int`, `int*`
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+- Test functions perfectly match source names (`test_cpp_member_func`, `test_cpp_constructor`)
+- Member functions correctly identified with class scope (`Base::virtual_func`)
+- Template instantiations properly named (`template_max<int>`)
+
+### Most Needs Improvement: Variable Naming (scored 2/10)
+- Every stack variable is generic (`local_10`, `local_14`, `local_18`, `local_30`)
+- Every temporary is cryptic (`pvVar1`, `iVar1`, `iVar2`, `sVar1`)
+- Parameters are unnamed (`param_1`, `param_2`)
+- Original semantic meaning completely obscured
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: `local_30` used with `strlen()` should be named `name` or `buffer`. `pvVar1` used with `operator_new` should be `ptr` or `obj`.
+2. **Recognize memset pattern**: The 26-line zero-initialization is clearly `memset(buf, 0, sizeof(buf))` - decompiler should collapse this.
+3. **Recover struct field names**: Instead of `*(int*)(ptr+8)`, infer field name from context (e.g., `obj->size` based on usage in bounds check).

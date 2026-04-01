@@ -1,0 +1,4 @@
+Testing strcpy... -330356936
+strcmp result: 42
+strlen result: 1
+memcpy result: 12

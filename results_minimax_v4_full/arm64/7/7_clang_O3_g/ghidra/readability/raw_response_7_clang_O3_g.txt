@@ -1,0 +1,116 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_fake_branch`
+
+### Analysis Overview
+
+The original source code implements **fake/always-false branches** as an obfuscation technique (OBF-L4-02). The function contains two intentionally unreachable code paths:
+1. `if (x * x < 0)` - mathematically impossible for real numbers
+2. `if (strlen(str) < 0)` - string length cannot be negative
+
+However, the decompiled output shows:
+```c
+int param_fake_branch(int x)
+{
+  return x;
+}
+```
+
+**Critical Finding**: The binary metadata shows path `7_clang_O3_g` suggesting it was compiled with `-O3` optimization, not `-O0` as stated in source metadata. This explains why the fake branches were completely eliminated - the compiler correctly identified them as dead code and removed them.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All local variables are marked as "Unresolved" - `int result@[DW_OP_reg0(x0)]` and `char * str@[???]` provide no semantic information. The decompiler failed to recover any variable names.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function is correctly named `param_fake_branch`, matching the original source exactly. The verb-noun pattern appropriately describes the function's purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: No literals present in this function - the dead code elimination removed all constant expressions (0xDEADBEEF, 1000, etc.). Not applicable to evaluate.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The function is extremely clean with no compiler artifacts. However, this "cleanliness" comes at the cost of losing semantic meaning - the fake branches that were the entire point of the function are gone.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The decompiled code is trivially natural - just `return x;`. However, this simplicity is misleading because it hides the original control flow entirely.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately small and focused. No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfect linear top-to-bottom reading. No jumps or branches to disrupt flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. However, the decompiler correctly eliminated the dead code (fake branches), which is actually accurate for the binary's semantics.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Parameter `int x` and return type `int` are precisely typed. The decompiler correctly inferred the 32-bit integer type from ARM64 calling conventions.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No composite types in this function. Not applicable.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No type safety issues - simple integer parameter and return value.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments indicate "Unresolved local var" but provide no explanation of what the function originally did. No mention that fake branches were eliminated or that this represents obfuscated code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The decompiler did not recognize this as an obfuscation pattern (fake/always-false branches). No indication that the original code contained intentional dead code for protection.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler marks variables as "Unresolved" but provides no warning that significant code was eliminated. A high-quality decompiler should flag: "WARNING: Dead code eliminated - fake branch obfuscation detected"
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No contracts or assertions to recover. Not applicable.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The function is called by `call_fake_branch()` which passes constant 10. This relationship is preserved in the decompiled code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: The function appears in a logical sequence with related obfuscation functions (param_opaque_predicate, param_instruction_substitution). Organization is reasonable.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function will compile cleanly as standalone C code. No external dependencies or stubs required.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- **Lost Obfuscation Semantics**: The fake branches (the entire purpose of the function) were completely eliminated, losing the obfuscation technique that was implemented
+- **Unresolved Variables**: `result` and `str` variables are marked as unresolved with DWARF debug info hints but no semantic names recovered
+- **No Anomaly Warning**: Decompiler should flag that significant code was removed (fake branch obfuscation)
+- **Comment Deficiency**: No explanation of why the function is so simple or that it originally contained dead code paths
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- The function name `param_fake_branch` was perfectly recovered, matching the original source exactly.
+
+**Most Needs Improvement:** Idiom Recognition (2/10)  
+- The decompiler failed to recognize this as an obfuscation pattern. It should identify and document that fake/always-false branches were present in the original source but eliminated by the compiler.
+
+**Top 3 Recommendations:**
+1. **Detect and flag dead code elimination**: When significant code paths are removed, add comments like "NOTE: Fake branch (always-false) was eliminated by compiler"
+2. **Recover variable names from debug info**: The DWARF annotations (`DW_OP_reg0(x0)`) provide hints - `result` should be recovered from the assignment pattern
+3. **Add obfuscation pattern recognition**: Identify fake branch patterns (mathematically impossible conditions like `x*x < 0`) and document them even if the compiler removed the code

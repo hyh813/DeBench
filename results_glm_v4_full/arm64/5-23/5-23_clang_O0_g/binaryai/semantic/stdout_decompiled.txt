@@ -1,0 +1,18 @@
+Test preprocessing features: -401197256
+  call_macro_constants: 512
+  call_macro_functions: 812
+  call_conditional_compile: 86
+  call_multi_branch_compile: 57227
+  call_macro_recursion: 51
+  call_stringize: 19
+  call_token_paste: 60
+LOG: Values: 10, 20, 30
+  call_variadic_macro: 60
+  call_macro_override: 16
+  call_include_guard: 0
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:37
+  call_builtin_macros: 382
+Test asm features: 572533912
+  call_asm_basic: 15
+  call_asm_clobber: 2164739358
+  call_asm_multi_insn: 42

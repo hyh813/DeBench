@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters named `param_1`, `param_2` instead of semantic names like `size`, `x`, `y`. Local variables use generic Ghidra patterns (`iVar1`, `uVar1`, `lVar1`) with no semantic meaning recovered from usage context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`). However, some helper functions have generic names (`FUN_00101020`) and external wrappers add noise.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers everywhere: `0x200` (should be `MAX_SIZE/2`), `0x400` (should be `MAX_SIZE`), `0xdef0` (platform constant). Original named constants completely lost during decompilation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) add noise to every function. External function wrappers (e.g., `mmap` calling `mmap`) are redundant but don't severely impede reading.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as `for` constructs (`param_asm_clobber`, `param_asm_multi_insn`). Conditionals are clear and match source structure. No spurious goto statements in main logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility. No over-fragmentation or monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom well with appropriate early returns. Stack check epilogues at function ends are slightly awkward but don't disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Stack check patterns repeat across functions but this is expected security instrumentation. No loop unrolling artifacts (appropriate for -O0).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Extensive use of `undefined8`, `undefined4`, `undefined` types instead of precise types. Return types often `undefined8` when should be `int` or `void`. `size_t` becomes `long`, losing semantic meaning.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source to recover. SIMD vector shown as `undefined (*param_3) [16]` which is reasonable. Stack arrays sometimes shown as individual variables losing array semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(undefined4 *)mmap(...)`). Pointer arithmetic generally correct. No buffer overflow patterns introduced by decompiler, but type erasure creates potential safety issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **ZERO comments** in decompiled output despite extensive original documentation. No decompiler confidence indicators, no algorithm explanations, no macro expansion notes. Critical loss of semantic information.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns converted to C loops (good). Atomic operations shown with `LOCK()`/`UNLOCK()` pseudo-functions. However, macro expansions not indicated, conditional compilation branches not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings present. Conditional compilation branches silently dropped (e.g., `#ifdef DEBUG_MODE` shows only release branch). Architecture-specific code not flagged. No uncertainty indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` range expectations). No postconditions or return value explanations. Error conditions not documented. Complete loss of API contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variable `global_var` referenced but not well documented. No call graph documentation. External dependencies shown but relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation or API declarations. External functions grouped together. No logical grouping beyond original source order.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External function declarations present. Platform-specific pseudo-functions (`LOCK()`, `UNLOCK()`) need stubs. Data references (`&DAT_001021f0`) need resolution for strings.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+6)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):   (8+8+7+8)/4 = 7.75  × 0.25 = 1.938
+Level 3 (Type System):  (5+6+6)/3   = 5.67  × 0.20 = 1.134
+Level 4 (Semantic):     (2+5+3+2)/4 = 3.00  × 0.15 = 0.450
+Level 5 (Contextual):   (6+5+6)/3   = 5.67  × 0.10 = 0.567
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 5.81/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects:
+- **Zero comments** despite extensive original documentation explaining macro behavior and test purposes
+- **Magic numbers everywhere**: `0x400`, `0x200`, `0xdef0` replace named constants like `MAX_SIZE`, `BUFFER_COUNT`
+- **Generic parameter names**: `param_1`, `param_2` instead of semantic names like `size`, `x`, `y`
+- **Conditional compilation branches silently dropped**: `#ifdef DEBUG_MODE` only shows release branch with no indication
+- **Type precision lost**: `undefined8`, `undefined4` instead of `int`, `void`, `size_t`
+
+### Best Quality Aspect:
+- **Structural Intelligibility (7.75/10)** - Control flow and function decomposition are well-preserved; loops and conditionals match source structure naturally
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.00/10)** - Complete absence of comments and contract documentation makes understanding original intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from usage patterns**: Detect repeated literals (`0x400`, `0x200`) and suggest constant definitions with semantic names based on comparison context
+2. **Add decompiler confidence annotations**: Mark regions where conditional compilation may have dropped branches, indirect calls unresolved, or types uncertain
+3. **Preserve or infer parameter semantics**: Use data flow analysis to rename `param_1` → `size` when used in size comparisons, `param_1` → `x` when used in arithmetic expressions matching source patterns

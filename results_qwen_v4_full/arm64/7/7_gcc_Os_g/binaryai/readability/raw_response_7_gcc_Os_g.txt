@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_8`, `pbVar1` instead of semantic names like `result`, `x`, `encrypted`, `decrypted` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_fake_branch`, `call_opaque_predicate`), but some are generic (`FUN_00100860`, `FUN_00100a7c`) and external wrappers are unclear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0xe1`, `0x14`, `0x30` appear without explanation; original constants like `0xDEADBEEF` were optimized away entirely.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated throughout, external function wrappers that call themselves (e.g., `strlen` wrapper), and compiler initialization code clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_fake_branch` returns void with empty body (completely wrong), `param_opaque_predicate` has awkward while loop for GCD, some functions constant-folded incorrectly losing original structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `call_fake_branch` returns constant 10 instead of calling `param_fake_branch(10)`, losing the call relationship; `param_buffer_overflow_stack` is empty void function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable function ordering, but some forward jumps in loops disrupt natural reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated in multiple functions, some optimization artifacts present but not excessively redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types (`int`, `uint`, `undefined4`, `undefined8`, `byte*`, `long`) with degradation; `param_integer_overflow` uses `uint` instead of `int` for signed overflow detection.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (constant-folded to `0x30`), no struct definitions recovered, all composite types flattened.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`undefined4*`, `(byte *)strncpy`, `(__sighandler_t)0x0`), pointer arithmetic with generic types throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code; original had extensive documentation explaining obfuscation techniques, test scenarios, and expected values.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No obfuscation patterns identified (dead code branches, opaque predicates, instruction substitution all unrecognized), algorithms not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `param_fake_branch` completely wrong (empty void function) but not flagged; no warnings for constant-folded functions that lost semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note x≠0 for normal path), no error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but call relationships not documented; global variables (`jmp_buffer`, `encrypted_0`) referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source, but no logical grouping or namespace structure; initialization code mixed with application logic.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `__printf_chk`) not properly declared, would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (4+5+6+6)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type):        (5+3+4)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- `param_fake_branch` decompiled as empty void function, losing all original logic (dead code branches not recovered)
+- `call_fake_branch` constant-folded to return 10 directly, losing the function call relationship
+- Zero comments despite original having extensive documentation of obfuscation techniques
+- Bitfield struct in `param_implementation_defined` completely lost (constant-folded to 0x30)
+- Generic variable names (`param_1`, `iVar1`, `local_8`) obscure semantic meaning throughout
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved correctly, maintaining traceability to source code.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all contextual information about obfuscation techniques and test purposes.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and preserve dead code branches** - The永假 (always-false) conditions in `param_fake_branch` should be recovered even if semantically unreachable, as they're intentional obfuscation.
+2. **Add decompilation confidence annotations** - Flag functions where constant folding may have lost original semantics (e.g., `call_fake_branch` returning constant).
+3. **Recover and document composite types** - Bitfield structs and complex data structures should be reconstructed rather than constant-folded, with field names inferred from usage patterns.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. For example, in `param_opaque_predicate`, `v1` holds `a1 + 1` but isn't named `x_plus_1`, and `v2` holds a boolean predicate but isn't named `is_identity_true`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names are preserved (`param_fake_branch`, `param_opaque_predicate`), which is good. However, compiler-generated variants like `param_division_by_zero.constprop.0` are mechanical and confusing. Some functions like `sub_860` have no meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (e.g., `0x5A` for XOR key, `0x3E8u` for 1000). However, some constants are recognizable (signal numbers 8 and 11 for SIGFPE/SIGSEGV). The decompiler didn't recover named constants from the original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: SIMD vector types (`int32x4_t`), explicit register hints (`// x0`, `// w1`), and architecture-specific constructs (`LOBYTE`, `LODWORD`). The tail call optimized function has 50+ lines of unrolled loop code that obscures the simple recursive logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original simple conditionals are transformed into complex nested if-else chains. The `param_tail_call_optimized` function shows aggressive loop unrolling with 6+ levels of nested conditionals instead of the original simple recursion. The `param_fake_branch` function is completely empty (dead code elimination).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: `param_fake_branch` is empty (lost all logic), while `call_fake_branch` is constant-folded to return 10 directly. The decompiler created `.constprop` variants for signal handling functions, fragmenting what should be one function. Some functions are appropriately sized, but the decomposition doesn't match source intent.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code has excessive forward jumps and labels (e.g., `LABEL_6`, `LABEL_16`, `LABEL_19`). The `param_vectorized_loop` function has multiple goto-style jumps that disrupt top-to-bottom reading. Original simple loops are transformed into complex control flow with multiple exit points.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling in `param_tail_call_optimized` and `param_non_tail_call` - the same addition pattern repeats 6+ times. The `test_obf_opt_edge` function duplicates decryption logic that should call `param_string_encryption`. Constant folding eliminated useful computation paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are degraded to generic forms: `__int64` instead of `int`, `unsigned int` instead of `size_t`. Pointer types lose specificity (`char *` instead of `const char *`). The `param_instruction_substitution` takes `unsigned int a1` when original used `int x`. SIMD types (`int32x4_t`) appear where simple `int` arrays existed.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost (function returns constant 48). Stack arrays like `char dest[32]` are recovered with size annotations (`[xsp+28h] [xbp+28h] BYREF`), which is helpful. However, no struct field names are recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(__sighandler_t)` for signal handlers, `(_DWORD *)` pointer casts in `test_obf_opt_edge`. The `param_null_pointer_deref` takes `unsigned int *a1` but original used `int *p`. No buffer overflow warnings despite obvious unsafe patterns in the code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated annotations like `// attributes: thunk` and `// FAILED to decompile`. No algorithm explanations, no parameter documentation, no indication of what the obfuscation tests are actually testing. The original source had extensive comments explaining each technique.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. The GCD algorithm in `param_opaque_predicate` isn't identified. The XOR string decryption pattern isn't labeled. Tail call optimization isn't noted. The decompiler treats all code uniformly without recognizing common algorithmic patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at the end ("FAILED to decompile: strlen"), but no inline warnings. The empty `param_fake_branch` function has no indication that logic was eliminated. Signal handler setup isn't flagged as potentially dangerous. No uncertainty markers on indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "a1 must not be 0" for division). No postconditions (e.g., "returns -1 on error"). The signal handling contracts (setjmp/longjmp behavior) are completely undocumented. Original source had clear expected return values in comments; none recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. The `call_*` functions that should call `param_*` functions are constant-folded, breaking the call graph. Global variables like `encrypted_0`, `jmp_buffer` appear without context. No call graph visualization or dependency documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in a reasonable order (init, main, test functions). However, the original source's logical grouping (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) is completely lost. Related functions aren't grouped (e.g., `param_division_by_zero.constprop.0/1` are separated from main function).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 14 external functions failed to decompile (strlen, signal, malloc, etc.). The code references undefined symbols (`encrypted_0`, `xmmword_1870`, `asc_1638`). Architecture-specific types (`int32x4_t`) require ARM NEON headers. Cannot compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.49/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **`param_fake_branch` is completely empty** - all logic eliminated by dead code removal, losing the obfuscation test entirely
+- **Variable names are all generic** (`v0`, `v1`, `a1`, `a2`) with zero semantic meaning across 45 functions
+- **Constant folding destroyed test structure** - `call_*` functions return constants instead of calling actual functions, breaking the test framework
+- **No comments recovered** - original had extensive documentation explaining each obfuscation technique; decompiled has none
+- **14 external functions failed to decompile** - requires manual stubbing for any practical use
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Original function names were preserved (`param_fake_branch`, `param_opaque_predicate`), providing some semantic anchor points despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero useful comments recovered despite original source having extensive documentation explaining each obfuscation technique, expected values, and test scenarios.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code paths** - Don't eliminate branches even when conditions appear always-false; add uncertainty markers instead (critical for obfuscation analysis)
+2. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`, `len`; boolean results should be named `is_valid`, `condition_met`
+3. **Recover and preserve source comments** - When debug symbols exist (-g flag), extract and embed original comments in decompiled output

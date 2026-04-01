@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `a1`, `a2`, `a3` (e.g., `int64_t local_vars(int64_t a1)`), and local variables use `v1`, `v2`, `v3`, etc. For example, in `heap_basic`, the variable `mem` is reasonably named, but the loop counters and indices are `v1`, `v2`, `v3`, `v4`, `v5` with no indication of their semantic roles. This makes it nearly impossible to track which variable represents the array size, index, or result without extensive analysis.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+A mix of well-named and poorly-named functions exists. The main test functions (`test_stack_memory`, `test_heap_memory`, `test_static_global`) and core functions (`double_value`, `local_vars`, `heap_basic`) are properly named. However, many standard library wrapper functions use mechanical names like `function_1120` (which is `free`), `function_1130`, `function_1140` (which is `puts`). The source function `address_of_local` is correctly recovered, but the pattern is inconsistent.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is riddled with unexplained magic numbers. In `vla_stack`, there's `0x100000000 * a1 / 0x40000000` without explanation. String literals are encoded as UTF-8 hex (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95\xe6\xa0\x88\xe5\x86\x85\xe5\xad\x98\xe6\x93\x8d\xe4\xbd\x9c ==="` for "=== 测试栈内存操作 ==="). Constants like `4080`, `-0x1000` in stack allocation calculations have no symbolic names. The value `0xfffffffe` appears frequently as a constant without explanation.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Significant compiler artifacts pollute the code. SIMD intrinsics like `__asm_movdqa`, `__asm_paddd`, `__asm_pslld` appear extensively in loop-heavy functions (e.g., `large_stack_frame`, `vla_stack`, `heap_basic`). Stack canary checks (`__readfsqword(40)` and `__stack_chk_fail`) add noise. Redundant casts like `(int64_t)(uint32_t)` are common. The code includes unreachable blocks marked "UNREACHABLE" that clutter the output.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The code uses goto statements extensively for control flow, particularly in functions like `vla_stack` and `alloca_usage` where it uses `goto lab_0x15ce`, `goto lab_0x159c`, etc. These create spaghetti-like flow with multiple jump targets. While some loops are properly recovered (the `while` loops in `heap_basic`), the combination of goto statements and SIMD intrinsics makes the control flow difficult to follow. The `large_stack_frame` function has deeply nested while loops with complex SIMD operations that obscure the original for-loop structure.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+Some functions are reasonably sized, but `test_heap_memory` is massive (spanning from 0x1f20 to 0x23a0, ~384 bytes of code) with deeply nested logic. The standard library wrappers (memset, memcpy, calloc, malloc, realloc, memmove) are correctly extracted into separate functions with appropriate names. However, the decompiler didn't recover the original `Point` struct, `Node` struct, or `TreeNode` struct as separate types—everything is raw pointer arithmetic.
+
+### 7. Code Linearization
+**Score: 4/10**
+
+The code has poor linearization due to excessive goto statements. In `vla_stack`, there are forward jumps into loop bodies and multiple exit points via `goto lab_0x15ce`. The `alloca_usage` function similarly has `goto lab_0x170b` and `goto lab_0x16d4` scattered throughout. Deep nesting (5+ levels) is common in the heap functions with SIMD loops. Reading the code top-to-bottom is challenging due to these interruptions.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Extensive loop unrolling is present but NOT commented or abstracted. In `heap_basic`, the loop manually processes 4 elements at a time using SIMD (`__asm_movdqa`, `__asm_pslld`) with a fallback loop for remainder elements. This pattern repeats in `heap_array`, `vla_stack`, `alloca_usage`, and `heap_calloc`. The decompiler didn't recognize these as optimized loops or add explanatory comments. Common subexpression elimination artifacts like `0x100000000 * a1 / 0x100000000` appear repeatedly.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+
+The decompiler generally uses precise integer types: `int64_t` for most values, `int32_t` for smaller values, `uint64_t` for sizes. The function signatures are mostly correct (e.g., `int64_t local_vars(int64_t a1)`). However, there's confusion between signed and unsigned in some places (e.g., `uint64_t a1` parameter but used as signed in calculations). The `size_t` concept is not recovered—it's just `uint64_t`.
+
+### 10. Composite Type Recovery
+**Score: 1/10**
+
+No struct or union types were recovered. The original code defines `Point`, `Node`, and `TreeNode` structs, but the decompiled code uses raw pointer arithmetic throughout. For example, `heap_struct` allocates `malloc(8)` (sizeof(Point)) but doesn't define or use a struct type. The `linked_list_heap` function uses `malloc(16)` for Node but never defines the struct. All field access is done via raw offsets like `*(int32_t *)mem2 = 20;` instead of `node->data = 20;`.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Multiple unsafe casts are present throughout. In `global_array_access`: `*(int32_t *)((0x100000000 * a1 >> 30) + (int64_t)&global_array)` uses complex pointer arithmetic. The code frequently casts between `int64_t*` and `int32_t*` without checks. In `memop_memcpy`, there's `(int64_t)*(int32_t *)((a3 - 4 & -4) + (int64_t)dest_mem)` which is potentially unsafe. Function pointers are handled reasonably (e.g., `int32_t (*global_func_ptr)(int32_t)`), but the callback mechanism isn't fully type-safe.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+The comments are almost entirely auto-generated with no useful semantic information. There's "From module: /work/3.c" and "Line range: 881 - 887" which are source mapping comments, but no explanation of what the code does. No algorithm descriptions, no pre/postconditions, no uncertainty flags. The comment "ANOMALY: Indirect call could not be resolved" doesn't appear—there's no anomaly indication at all. The only semi-useful comments are address ranges.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+The decompiler didn't recognize any design patterns or algorithms. The linked list creation/traversal in `linked_list_heap` is visible as a loop with `malloc(16)` and pointer chasing, but it's not labeled as a linked list pattern. The tree creation in `tree_heap_traversal` is similarly just visible as malloc calls. No recognition of common patterns like "creates linked list," "binary tree traversal," or "memory pool." The original comments in the source (like "// MEM-L1-01: 局部变量") are completely lost.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No suspicious code is flagged. The `dangling_pointer` function has undefined behavior (accessing memory after free), but there's no warning. The `double_free` function has the classic bug (freeing same pointer twice), but no anomaly is indicated. The `memory_leak` function allocates but doesn't free—also not flagged. The decompiler presents all code with equal confidence regardless of correctness.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The original source has comments like "if (arr == NULL) return -1;" but no contract information is recovered. There's no "requires: ptr != NULL" or "ensures: return is heap-allocated" style comments. Error conditions are not summarized. The decompiler doesn't infer any contracts from the code patterns.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function prototypes are listed at the top of the file, showing relationships. Global variables are declared with their addresses (e.g., `int32_t global_counter = 0; // 0x6040`). The `extern` variable `extern_global_var` is properly declared. However, there's no documentation of which functions call which, or the callback relationships. The connection between `set_global_callback` and `call_global_callback` is visible but not explicitly documented.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are reasonably grouped: test functions together, heap functions together, memory operation functions together. Static functions are properly marked. The prototype declarations at the top serve as a kind of header. However, the original source had clear section comments (like "// ============================================================================") that are lost. The organization is logical but not as clean as the original's explicit sections.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code includes standard headers (`<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>`). Function prototypes are declared. It should compile with gcc. However, the code uses some non-standard extensions like `int128_t` typedef and `__asm_*` intrinsics which may not be portable. The metadata mentions "Detected compiler/packer: gcc (11.4.0)" which is accurate.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+5+4+4)/4 = 3.75
+L2_avg = (4+5+4+4)/4 = 4.25
+L3_avg = (7+1+5)/3 = 4.33
+L4_avg = (3+3+2+1)/4 = 2.25
+L5_avg = (5+7+7)/3 = 6.33
+
+Overall = (3.75 × 0.30) + (4.25 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (6.33 × 0.10)
+        = 1.125 + 1.0625 + 0.866 + 0.3375 + 0.633
+        = 4.02/10
+```
+
+### Overall Readability Score: 4.0/10
+
+### Critical Defects
+
+1. **No struct/union type recovery**: The original code defines `Point`, `Node`, and `TreeNode` structs, but the decompiled code uses raw pointer arithmetic with no type definitions. This completely loses the semantic meaning of composite data.
+
+2. **Generic variable names**: Variables like `v1`, `v2`, `v3`, `a1`, `a2` provide no semantic information. The original had meaningful names like `arr`, `n`, `result`, `out`.
+
+3. **Unexplained loop unrolling**: Functions like `heap_basic`, `vla_stack`, `alloca_usage` contain extensive SIMD loop unrolling with no comments explaining the optimization or indicating it was originally a simple loop.
+
+4. **No pattern recognition**: Linked lists, trees, and other data structures are not recognized or named. The original comments (e.g., "// HEAP-L3-01: 复杂链表操作") are completely lost.
+
+5. **No anomaly indication**: Dangerous code patterns like dangling pointers, double-free, and memory leaks are presented without any warnings or flags.
+
+### Best Quality Aspect: Type Precision (7/10)
+The decompiler correctly uses `int64_t`, `int32_t`, and `uint64_t` appropriately. Function signatures generally match the original. This is one of the few areas where the decompilation is reasonably faithful.
+
+### Most Needs Improvement: Composite Type Recovery (1/10)
+The complete failure to recover struct types is the most severe issue. Without struct recovery, the decompiled code loses all semantic meaning of structured data. Every struct access becomes opaque pointer arithmetic.
+
+### Top 3 Recommendations
+
+1. **Recover struct/union types**: Analyze allocation sizes (malloc(X)) and field access patterns to reconstruct struct definitions with meaningful field names. For example, `malloc(16)` followed by writes to offsets 0 and 8 should create a `struct Node { int data; struct Node* next; };`.
+
+2. **Add explanatory comments for optimizations**: When detecting loop unrolling (especially with SIMD intrinsics), add comments like "// Original: for loop unrolled 4x with SSE" to help analysts understand the transformation.
+
+3. **Implement variable name inference**: Use usage patterns to infer better names. For example, a variable used as array index in a loop should be named `i` or `index`, not `v5`. Parameters to `malloc` should suggest the type being allocated.

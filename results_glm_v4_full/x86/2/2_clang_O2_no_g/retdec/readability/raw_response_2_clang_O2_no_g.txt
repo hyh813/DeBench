@@ -1,0 +1,102 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `a1`, `v1`, `v2`, and `g1` through `g13`, providing no semantic context about their role (e.g., `sum`, `index`, `matrix`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names such as `process_char`, `array_1d_stack`, and `struct_simple` are recovered perfectly from debug symbols, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers like `65` (ASCII 'A'), `32` (space offset), and memory offsets like `0x1d93` and `44` (struct/array offsets) without named constants or comments.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including Position-Independent Code (PIC) artifacts like `__x86_get_pc_thunk_bx` calls and verbose stack initialization loops in `test_array_types`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Loops are aggressively unrolled (e.g., `array_1d_stack` processes 8 items per block), and critical logic like function pointer calls in `ptr_func_simple` is completely missing (returns uninitialized `result`).
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source structure, maintaining appropriate granularity and cohesion (e.g., `binary_tree_sum` remains a separate recursive function).
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code is significantly longer than the source (1481 vs 830 LOC) due to loop unrolling and repetitive pointer arithmetic, disrupting top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: High redundancy exists from loop unrolling; for example, `array_1d_stack` repeats the same summation logic block multiple times instead of using a compact loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Function signatures are often incorrect; `process_float` takes an `int32_t` base pointer instead of a `float`, and `long long` values are split into two `int32_t` parameters.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No struct or union definitions are recovered; all composite access is flattened to raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 12)` instead of `r->size.width`).
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent unsafe casts are present, such as `(int32_t)(bool)` and `(float80_t)`, and structs are treated as raw byte arrays, obscuring type boundaries.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: The output is completely devoid of comments explaining logic, data structures, or the purpose of complex arithmetic operations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Basic traversal patterns like `linked_list` are visible, and bitfields in `struct_bitfields` are cleverly recovered as division/modulo math, but higher-level patterns like 2D array access are lost.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler silently fails on `ptr_func_simple` (returning uninitialized `result`) and suspicious global accesses in `process_float` without any warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but the relationship between data and functions is obscured by the misuse of global variables (e.g., `g2`) as stack base pointers.
+
+**17. Module Organization:** Score: 7/10
+Justification: The file maintains a standard C organization with prototypes at the top and function definitions following, matching the source structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on compiler intrinsics (`__x86_get_pc_thunk_bx`) and misidentifies stack allocations as global variables (e.g., treating `int32_t g2` as an array base), making it unlikely to compile or run correctly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 9 + 3 + 3) / 4 = 4.25
+L2_avg: (4 + 8 + 5 + 3) / 4 = 5.00
+L3_avg: (5 + 1 + 5) / 3 = 3.67
+L4_avg: (1 + 4 + 1 + 1) / 4 = 1.75
+L5_avg: (6 + 7 + 3) / 3 = 5.33
+
+Overall = (4.25 × 0.30) + (5.00 × 0.25) + (3.67 × 0.20) + 
+          (1.75 × 0.15) + (5.33 × 0.10)
+Overall = 1.275 + 1.25 + 0.734 + 0.2625 + 0.533
+Overall = 4.05
+```
+
+### Overall Readability Score: 4.1/10
+
+### Critical Defects
+- **Function Pointer Failure**: `ptr_func_simple` and `ptr_func_complex` return uninitialized variables (`result`), completely failing to recover the indirect call logic.
+- **Composite Type Loss**: Structs and unions are not recovered; access is done via raw offsets (e.g., `a1 + 12`), losing semantic field names.
+- **Loop Unrolling**: Simple loops like `array_1d_stack` are aggressively unrolled into verbose blocks, making the code significantly longer and harder to read.
+- **Architecture Mismatch**: Metadata claims ARM64, but decompiled code contains x86 intrinsics (`__x86_get_pc_thunk_bx`), indicating a decompilation target error.
+- **Variable Naming**: Universal use of generic names (`a1`, `v1`, `g1`) obscures the purpose of variables like `sum`, `index`, or `matrix`.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully preserved the original function names from debug symbols, making it easy to locate specific logic blocks.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**: The complete failure to recover struct definitions, reducing complex data structures to raw pointer arithmetic, is the single biggest barrier to understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Struct Definitions**: Analyze stack access patterns to reconstruct `struct` definitions with field names and types instead of flattening to pointer offsets.
+2.  **Fix Indirect Call Analysis**: Improve the analysis of function pointer calls to ensure the target function is invoked rather than returning an uninitialized value.
+3.  **Aggregate Unrolled Loops**: Detect and re-aggress unrolled loop bodies back into compact `for` or `while` loops to improve readability, especially at `-O0`.

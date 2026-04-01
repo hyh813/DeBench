@@ -1,0 +1,5 @@
+Standard Library Functions Test
+
+[INFO] Strcmp test
+[PASS] Strcmp test
+[INFO] Strlen test

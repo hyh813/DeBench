@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. These provide no semantic meaning - e.g., in `sequential_ops`, the parameters should be named `a`, `b`, `c` to match source, and temps should be `temp1`, `temp2`, `temp3`. The decompiler makes no attempt to infer meaningful names from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+Justification: Mixed results - target functions like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` correctly match source names. However, many helper functions use address-based names like `sub_401030`, `sub_401040`. The test functions are properly named `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic number `4294967295` appears frequently (representing -1 in unsigned) without explanation. Constants like `10` and `5` in `switch_small` are inferable as operands. No named constants recovered from source. The decompiler presents raw values making it difficult to understand error return codes.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Heavy compiler artifacts present: `__x86.get_pc_thunk.ax()` calls scattered throughout (x86 PC-relative addressing), `__stack_chk_fail_local()` references, struct definitions with meaningless `padding_0`, `padding_4e07` fields. These obscure the actual logic significantly.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Good recovery - loops properly use `for` and `while` constructs, switch statements are mostly recovered (though `switch_small` has awkward division expression for case 3). At -O0, control flow should be nearly identical to source, and the decompiler achieves this for most functions.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching source. Each test function (`test_control_flow_l1`, etc.) calls individual test cases. No obvious over-fragmentation or monoliths. Parameter counts match original functions.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `multi_return`. Some forward jumps in complex functions like `loop_multi_exit` but manageable. The `goto` statement in `computed_goto` is properly recovered.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No obvious dead code. Some optimization artifacts like complex division expressions in `loop_while` (using magic number 1717986919 for division by 10), but these are compiler-generated and expected at any optimization level.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Parameters declared as `unsigned int` when source uses `int` (loses signedness). Function pointers have proper signatures in `call_func_ptr` and `call_func_ptr_array`. Pointer types correctly identified as `unsigned int*` for array parameters. However, `int` vs `unsigned int` mismatch causes issues - e.g., `single_if` should handle negative numbers but uses unsigned comparison.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Some struct definitions created with padding fields (e.g., `struct_0 { char padding_0[40]; unsigned int field_28; }`) but these are compiler-generated and don't correspond to source structures. No meaningful struct recovery for the test data arrays in functions like `loop_break` (should be `int arr[] = {10, 20, 30, 40, 50}`).
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe patterns present - pointer arithmetic visible in `process_with_callback` (`a0 + i * 4`), function pointer calls without type checking (`a0(a1)`). The division operations use complex expressions that could overflow. However, no buffer-overflow-prone patterns that would make code dangerous.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No comments present in decompiled output. Only auto-generated function headers like `// Function: sequential_ops at 0x401281`. No explanation of algorithm logic, no documentation of parameters or return values, no indication of uncertainty.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Basic patterns recognized (loops, conditionals, switch) but not explicitly named or documented. The state machine pattern in `state_machine` and `fsm_func_table` could be identified but isn't. Duff's device in `duffs_device` is partially recognized but not flagged as such.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: One instance of `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198715()` appears in `_start`. Otherwise, no flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Code presents everything with equal confidence.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: No precondition, postcondition, or invariant documentation. Functions like `duffs_device` with requirements (n > 0) aren't documented. Error return values (-1, -2 in `multi_return`) aren't explained as error codes.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are visible in the code. External references like `g_403030`, `g_4032c8`, `g_4034c8` are declared but not documented. No indication of which functions call which, or the purpose of global variables.
+
+### 17. Module Organization
+**Score: 3/10**
+Justification: Functions grouped by address rather than logically. Initialization functions (`_init`, `frame_dummy`, `register_tm_clones`) mixed with test functions. No logical grouping matching source file structure (control flow L1, L2, L3 functions should be separated).
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Code has some external declarations (`extern unsigned int g_403030`). Many stub functions needed (`sub_4010c0` for printf). The `__x86.get_pc_thunk` functions are compiler-specific. Would require moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 3) / 4 = 3.5
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (6 + 4 + 5) / 3 = 5.0
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 3 + 5) / 3 = 4.0
+
+Overall = (3.5 × 0.30) + (7.25 × 0.25) + (5.0 × 0.20) + (2.0 × 0.15) + (4.0 × 0.10)
+        = 1.05 + 1.8125 + 1.0 + 0.3 + 0.4
+        = 4.5625 / 10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` and locals use `v0`, `v1`, `v2` - completely uninformative
+- **No comments**: Zero documentation of algorithm logic, parameters, return values, or error conditions
+- **Type mismatch**: Using `unsigned int` when source uses `int` causes semantic errors (negative number handling broken)
+- **No struct recovery**: Test arrays like `{10, 20, 30, 40, 50}` in `loop_break` not recovered as meaningful data
+- **Excessive noise**: `__x86.get_pc_thunk.ax()` calls and padding struct fields obscure logic
+
+### Best Quality Aspect
+**Control Flow Naturalness (7/10)**
+The decompiler properly recovers loops, conditionals, and switch statements. At -O0, the control flow graph closely matches source structure, making execution flow easy to follow.
+
+### Most Needs Improvement
+**Comment Quality (1/10)**
+The complete absence of comments severely impacts readability. Even basic parameter documentation (`// a: first operand`) would significantly improve usability. The decompiler should add comments explaining recovered logic and flagging uncertain reconstructions.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: When `a0 + a1` is computed and assigned to `v0`, then `v0 * 2`, name them `temp1`, `temp2` or better yet, match source names `temp1`, `temp2`, `temp3`
+2. **Add parameter documentation**: At minimum, document function parameters and return value meaning (e.g., `// Returns: (a + b) * 2 - c`)
+3. **Recover test data arrays**: Functions like `loop_break` contain fixed arrays - recognize these as initialized data rather than individual variable assignments

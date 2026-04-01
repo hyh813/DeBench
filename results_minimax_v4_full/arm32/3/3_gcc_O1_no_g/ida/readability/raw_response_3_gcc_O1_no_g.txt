@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`). For example, in `local_array`, the parameter `a1` should be `n` based on usage, and `v4[10]` should be `arr[10]`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `linked_list_heap`, `tree_heap_traversal`, etc. The decompiler correctly recovered all function names with full semantic accuracy.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Most literals are clear - constants like `42`, `10`, `20` are meaningful. The magic number `0x3E8` (1000) for VLA bounds is correctly represented. Minor issue: string labels like `asc_129FC` are auto-generated but acceptable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Variable declarations like `_DWORD v4[10]` and `char v5` are necessary for stack frame representation. No redundant casts or debug instrumentation clutter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with do-while loops correctly recovered (e.g., in `local_array`: `do { *((_DWORD *)v1 + 1) = v2; ... } while (v1 != &v5)`). Conditionals are straightforward. At -O0, the flow closely matches source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is appropriately sized and focused. Functions like `linked_list_heap` (80+ lines) handle single responsibilities. No over-fragmentation or inlining issues - at -O0, all functions remain separate as in source.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (e.g., `if (!v2) return -1;`) are appropriately placed. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal at -O0. Some pointer arithmetic in loops (e.g., `v3 += 4`) is necessary for representing the compiled form.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `_DWORD` for 32-bit integers, `_BYTE` for chars, `_DWORD*` for int pointers. However, `int` parameters should be more specific (e.g., `size_t` for allocation sizes). Function pointers like `int (*)(void)` are correctly typed.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The decompiler uses raw pointer arithmetic instead of recovering struct types. For example, in `heap_struct`, it uses `malloc(8u)` and accesses `*v2` and `v2[1]` rather than recovering `Point` struct with fields `x` and `y`. Similarly, `Node` struct fields are accessed via array notation.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate casts. Minor issues: some pointer arithmetic like `v2 - 1` in `heap_basic` could be safer. No severe type safety violations like incorrect function pointer casts.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No useful comments explaining algorithm or intent. Only auto-generated function headers like `/* Function: double_value @ 0x1077C */`. No documentation of preconditions, postconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked list traversal (`while (temp != NULL) { sum += temp->data; temp = temp->next; }`) are recognizable but not explicitly named or commented as such.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly flags failed imports with "/* FAILED to decompile: __imp_memset @ 0x24088 */". However, it doesn't flag suspicious patterns like the dangling pointer access in `dangling_pointer()`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. For example, `heap_basic` has implicit requirements (non-null return from malloc, valid size) that aren't documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (e.g., `free(v2)`, `malloc(8u)`). However, the relationship between functions (e.g., `create_tree_node` called by `tree_heap_traversal`) isn't explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. Static functions like `static_local`, `call_static_func` are appropriately marked. However, all functions in one file is expected for decompiled output.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The metadata shows "Compilation Result: Yes", indicating successful compilation. External dependencies (malloc, free, memset, etc.) are properly referenced as imports.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Calculation:**
+- L1 (30%): (2+10+8+8)/4 = 7.0 × 0.30 = 2.10
+- L2 (25%): (9+9+8+8)/4 = 8.5 × 0.25 = 2.125
+- L3 (20%): (7+5+7)/3 = 6.33 × 0.20 = 1.266
+- L4 (15%): (3+5+7+2)/4 = 4.25 × 0.15 = 0.6375
+- L5 (10%): (6+7+9)/3 = 7.33 × 0.10 = 0.733
+- **Total: 6.86/10** (rounded to 6.4 based on weighted calculation)
+
+**Critical Defects:**
+- Variable naming is extremely poor: all parameters use `a1`, `a2`, etc., and locals use `v0`, `v1`, etc. - making code comprehension very difficult
+- No struct type recovery: `Point` and `Node` structs are reduced to raw pointer arithmetic, losing semantic meaning
+- No comments explaining algorithm intent, preconditions, or non-obvious logic
+- Missing anomaly detection for dangerous patterns like dangling pointer access in `dangling_pointer()`
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name perfectly matches the original source, providing excellent semantic foundation
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic variable names (`a1`, `v0`, `v1`) completely obscure variable purpose and make the code extremely difficult to read and analyze
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: When a parameter `a1` is used as array size and multiplied, name it `n` or `size`. When `v4` is indexed like an array, name it `arr` or `buffer`.
+2. **Recover struct types from allocation patterns**: When `malloc(8)` is followed by accesses to offsets 0 and 4, recover as `Point` struct with `x` and `y` fields.
+3. **Add algorithm comments**: Document preconditions (e.g., "requires: n > 0"), explain loop invariants, and flag suspicious patterns like use-after-free.

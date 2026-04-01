@@ -1,0 +1,5 @@
+Testing obf opt edge
+
+fake_branch: 10
+opaque_predicate: 20
+instruction_substitution: 225

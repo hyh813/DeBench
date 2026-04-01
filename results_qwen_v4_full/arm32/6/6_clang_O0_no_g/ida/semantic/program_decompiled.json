@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/6/6_clang_O0_no_g/ida/syntactic/bin/6_clang_O0_no_g_fixed",
+  "stdout": "Testing standard library functions:\nLibL101: 8\nLibL102: 0\nLibL103: 12\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

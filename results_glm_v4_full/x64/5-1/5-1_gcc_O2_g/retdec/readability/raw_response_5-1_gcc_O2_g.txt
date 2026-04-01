@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context about their role in the C++ objects or logic (e.g., `v1` used for `this` pointers).
+
+**2. Function Naming Quality:** Score: 3/10
+Justification: Functions use C++ mangled names (e.g., `_Z18test_cpp_exceptionv`) which are technically accurate symbols but unreadable for high-level understanding; helper functions are named generically (e.g., `function_1130`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: While string literals are recovered (e.g., "=== 测试C++面向对象特性 ==="), logic is often replaced by magic return constants (e.g., `return 650` in `test_cpp_diamond_inheritance`) rather than the actual calculation logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with compiler artifacts like stack canary checks (`__readfsqword(40)`) and inline assembly intrinsics (`__asm_movsd`, `__asm_hlt`) that obscure the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often broken or simplified to the point of incorrectness; for example, `test_cpp_virtual_func` is an empty void function despite having logic in the source, and `test_cpp_rtti` uses complex pointer arithmetic and `goto` labels.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler failed to recover the body of many test functions, leaving them as empty stubs or constant returns (e.g., `test_cpp_smart_ptr` just returns `703`), destroying the logical structure of the program.
+
+**7. Code Linearization:** Score: 5/10
+Justification: In functions where logic is present (e.g., `test_cpp_template_func`), the code reads relatively linearly, though it is interrupted by intrinsic assembly calls.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is little redundant code, but this is largely because significant portions of the logic were eliminated entirely rather than optimized away cleanly.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: C++ class types are completely lost, replaced by generic `int64_t*` for `this` pointers and `int128_t` for floating-point registers; no distinction between classes, structs, or primitive types remains.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Vtables are recovered as simple structs (`vtable_3c70_type`), but the actual class definitions (SimpleClass, Base, Derived) are missing from the type definitions, leaving only comments to indicate they existed.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe casts, such as `*(int64_t *)v1 = (int64_t)&g14` to initialize vtables, and uses `int64_t` indiscriminately for pointers and integers.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: The decompiler provides valuable demangled names in comments (e.g., `// Demangled: test_cpp_exception()`) and source line numbers, which is the only saving grace for identifying function purposes.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms like RAII, virtual dispatch, and smart pointers are not recognized; `unique_ptr` usage is reduced to raw `new`/`delete` calls or constant returns, and virtual calls are raw memory accesses.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: There are no explicit warnings about the missing logic or the use of inline assembly for standard operations; the code is presented confidently despite being incorrect relative to the source.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; the semantic meaning of the C++ constructs is entirely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Calls to C++ ABI functions like `__cxa_throw` and `__dynamic_cast` are visible, but the relationship between class methods and their implementations is obscured by mangled names and missing bodies.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a single flat file; functions are grouped roughly by type (constructors, destructors, tests), but the logical namespace and class groupings of the original C++ are gone.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard compiler intrinsics (`__asm_movsd`, `__asm_maxsd`) and relies on specific compiler behaviors, making it unlikely to compile as standard C without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.00
+L2_avg: 4.00
+L3_avg: 2.33
+L4_avg: 2.75
+L5_avg: 3.67
+
+Overall = (3.00 × 0.30) + (4.00 × 0.25) + (2.33 × 0.20) + 
+          (2.75 × 0.15) + (3.67 × 0.10)
+Overall = 0.90 + 1.00 + 0.47 + 0.41 + 0.37
+Overall = 3.15 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.2/10
+
+### Critical Defects (Bullet List)
+- **Logic Elimination**: Functions like `test_cpp_virtual_func` and `test_cpp_smart_ptr` are reduced to empty stubs or constant returns, completely removing the implementation logic.
+- **Loss of C++ Semantics**: High-level C++ features (classes, inheritance, templates) are flattened into raw C pointer arithmetic and mangled symbol names.
+- **Inline Assembly Intrusion**: Simple floating-point operations (e.g., `template_max<double>`) are represented as obscure inline assembly (`__asm_maxsd`) rather than C operators.
+- **Type Erasure**: All class types are replaced by `int64_t*` or `void*`, destroying type safety and semantic context.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Comment Quality & Presence (6/10)
+- **Why?** The inclusion of demangled function names and source line numbers in comments provides the only reliable way to map the decompiled output back to the original C++ source.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Idiom Recognition (1/10)
+- **Why?** The decompiler completely failed to recognize standard C++ idioms like RAII, virtual function calls, and smart pointers, presenting them as raw memory operations or removing them entirely.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover C++ Class Hierarchies**: Reconstruct class definitions with inheritance relationships rather than flattening everything to structs and raw pointers.
+2.  **Preserve Function Logic**: Investigate why functions with `-O0` optimization are being reduced to constant returns or empty stubs; ensure the decompiler traces the full execution path.
+3.  **Emit Standard C Operators**: Replace inline assembly intrinsics for standard arithmetic (like floating-point max/min) with equivalent standard C operators to improve readability.

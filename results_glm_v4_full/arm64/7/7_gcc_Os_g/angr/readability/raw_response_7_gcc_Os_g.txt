@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `ptr`, providing no semantic context (e.g., `a0` is used as `x` but not renamed, `v1` in `param_opaque_predicate` obscures the GCD logic).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from symbols, matching the original source exactly (e.g., `param_fake_branch`, `param_opaque_predicate`), which significantly aids navigation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `4294967294` (0xFFFFFFFE) and `90` appear without context; furthermore, `param_implementation_defined` returns a constant `48` instead of showing the calculation logic involving bitfields and shifts.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including repetitive stack pointer setup patterns (`v0 = &v1`), verbose stack canary checks, and low-level lifting artifacts like `arm64g_calculate_condition` and `__ROL__`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural; `param_opaque_predicate` uses `while(true)` with a `break` for a simple loop, `param_integer_overflow` uses `goto LABEL_400f70`, and the dead code branches in `param_fake_branch` are missing entirely.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source granularity; there is no monolithic merging of functions, and helper functions like `decrypt_string` are correctly identified.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code reads moderately well top-to-bottom, but functions like `param_integer_overflow` and `param_opaque_predicate` are disrupted by `goto` labels and complex conditional nesting that obscures the original path.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is little bloating from loop unrolling, but some redundancy exists (e.g., `call_opaque_predicate` calls the function twice), and the one-liner expression in `param_instruction_substitution` is dense rather than clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Type precision is poor; `param_fake_branch` lacks the `int x` parameter in the signature, and stack arrays in `call_vectorized_loop` are represented as `uint128_t` instead of `int[8]`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; the bitfield struct in `param_implementation_defined` is completely lost (replaced by a constant return), and stack arrays are treated as large integers rather than composite types.
+
+**11. Type Safety:** Score: 4/10
+Justification: Unsafe casts are frequent (e.g., `*(unsigned int [1])v1`), and the use of raw integers for flag calculations in `arm64g_calculate_condition` breaks type safety abstractions, making the code dangerous to reason about.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: The code is almost entirely devoid of comments; there is no explanation of the complex math in `param_opaque_predicate` or the purpose of the magic numbers, leaving the reader to guess the intent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard algorithms are missed; the GCD logic in `param_opaque_predicate` is unrecognizable due to low-level artifacts, and the "fake branch" obfuscation pattern is not identified or preserved.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No anomalies are flagged; the missing logic in `param_fake_branch` and the constant folding in `param_implementation_defined` are presented as normal code without any warning about potential optimization or analysis errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are documented; the signal handler contracts in `param_division_by_zero` (e.g., "returns -1 on error") are not explained in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear and match the source, but global variable usage (e.g., `g_401120` for strings) obscures the context of string literals, making data flow harder to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped reasonably well, maintaining a logical order similar to the source, though the inclusion of low-level runtime stubs (`_init`, `_start`) adds minor clutter.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on external lifter-specific functions like `arm64g_calculate_condition` and `__ROL__` which do not exist in standard C libraries, making it non-compilable without significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- `param_fake_branch` completely lost the dead code logic (fake branches) despite the source being compiled with `-O0`, making the obfuscation example invisible.
+- `param_implementation_defined` logic is replaced by a constant `48`, losing the bitfield and shift implementation details entirely.
+- `param_opaque_predicate` is obfuscated by low-level lifting artifacts (`arm64g_calculate_condition`, `__ROL__`), rendering the GCD algorithm unrecognizable.
+- Stack arrays are recovered as large integer types (`uint128_t`) instead of proper array types (e.g., `int a[8]`).
+- Variable names are entirely generic (`v0`, `a0`), stripping all semantic meaning from the logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the exact function names from the binary symbols, making it easy to locate specific code sections.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The decompiler failed to preserve the semantic intent of the code, particularly by deleting "dead" code that was part of the source's logic and by replacing complex implementations with constants.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Preserve dead code paths or explicitly indicate when code has been optimized out, especially for `-O0` binaries where such code is intentional.
+2. Map stack arrays to correct array types (e.g., `int[]`) instead of large integer types (`uint128_t`) to maintain data structure semantics.
+3. Abstract away architecture/lifter-specific intrinsics (like `arm64g_calculate_condition`) into standard C control flow constructs (if/else) to improve readability.

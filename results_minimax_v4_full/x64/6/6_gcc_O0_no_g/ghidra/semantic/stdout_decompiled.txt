@@ -1,0 +1,4 @@
+Testing Standard Library Functions:
+strcpy returned: 0
+strcmp returned: 0
+strlen returned: 12

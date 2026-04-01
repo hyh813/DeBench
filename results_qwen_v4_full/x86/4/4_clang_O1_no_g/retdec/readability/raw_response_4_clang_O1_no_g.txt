@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `val`, `ptr` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). However, helper functions use generic names (`function_1040`, `function_1050`, `function_10bc`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: String literals replaced with opaque pointer arithmetic (e.g., `(char *)(v1 + (int32_t)&g7 - 0x1cae)`). Magic numbers like `0x12345678` appear without explanation. Global variables `g1-g8` are completely undocumented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*`, `frame_dummy`, `register_tm_clones`). Several empty stub functions (`function_1080`, `function_10bc`) add noise without purpose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as `while`/`for` constructs. However, constant folding creates unnatural patterns (e.g., `call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. Issue: call functions are constant-folded to single return statements, losing the call relationship structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate loop structures. Some forward references to globals (`&g7`, `&g6`, `&g2`) disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (call functions don't actually call target functions). Some loop patterns duplicated across similar functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int32_t` used consistently but loses original type information. Critical degradation: `func_mixed_args` has `str` as `int32_t` instead of `char*`, and has 6 parameters instead of 4. `float64_t` recovered for `double`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types completely lost (`LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `TestIntPair`). All struct access done through raw pointer arithmetic (e.g., `*(int32_t *)a1 * *(int32_t *)(a1 + 4)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(char *)str`, `(int32_t *)a1`). Pointer arithmetic on potentially wrong types. `func_struct_byval` uses `v1 + a1` which is semantically incorrect for struct summation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **No comments recovered** from original source. Only auto-generated file header present. Original had extensive documentation for each test case (CALL-L1-01, PARAM-L1-01, etc.) - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Varargs pattern not recognized (manual stack walking instead of `va_list` abstraction).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Functions with incorrect signatures (`fastcall_func` has 1 param instead of 3) presented confidently without flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present but not explained (e.g., `if (a1 == 0) return -1` in `func_struct_byptr`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage completely unclear (`g1-g8` with hex addresses). Call graph not recoverable due to constant folding.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) - all organization lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has necessary includes (`stdio.h`, `stdlib.h`, `string.h`). External dependencies declared but may not compile standalone due to missing struct definitions and incorrect function signatures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 7 + 2 + 5) / 4 = 4.25
+Level 2 (Structural):  (6 + 7 + 7 + 6) / 4 = 6.50
+Level 3 (Type):        (5 + 2 + 4) / 3     = 3.67
+Level 4 (Semantic):    (2 + 3 + 3 + 2) / 4 = 2.50
+Level 5 (Contextual):  (5 + 5 + 6) / 3     = 5.33
+
+Overall = (4.25 × 0.30) + (6.50 × 0.25) + (3.67 × 0.20) + (2.50 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 1.625 + 0.734 + 0.375 + 0.533
+        = 4.54/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `SmallPoint` all reduced to pointer arithmetic
+- **Variable names entirely generic** - `v1`, `v2`, `a1`, `a2` provide no semantic information
+- **String literals obfuscated** - Replaced with pointer arithmetic to globals (`&g7 - 0x1cae`)
+- **Function signatures incorrect** - `fastcall_func` has 1 parameter instead of 3, `func_mixed_args` has 6 instead of 4
+- **No comments recovered** - All original documentation (CALL-L1-01, PARAM-L1-01, etc.) completely lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `cdecl_func`, `call_cdecl`, `varargs_func` were preserved from original source, maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments recovered from original source despite extensive documentation; this severely impacts understandability of test purposes.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from memory access patterns** - Detect repeated offset patterns (e.g., `+0`, `+4`, `+8`) and propose struct types with field names based on usage context.
+2. **Infer variable names from usage semantics** - Variables used in loop counters should be `i`, `count`; accumulators should be `sum`; pointers should indicate target type.
+3. **Restore string literals from data sections** - Instead of pointer arithmetic to globals, recover actual string content from the binary's data segment and embed as literals.

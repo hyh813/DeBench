@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr`, `i`, `j`, `k` throughout. While `ptr` is somewhat descriptive, most variables lack semantic meaning. Compare source's meaningful names like `process_char` parameter `c` vs decompiled's `a0`.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+Justification: Some functions correctly recovered like `process_char`, `process_short`, `process_int`, but many still use address-based names like `sub_4011bf` (wrapper for `process_int`), `sub_401295` (wrapper for `process_bool`). The test functions are properly named but internal functions have inconsistent naming.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `65` and `90` for 'A' and 'Z' in `process_char` lack explanation. The constant `4294967295` (0xFFFFFFFF) appears repeatedly with bitwise AND operations that obscure intent. No named constants recovered from source comments.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Excessive `& 4294967295` masks throughout create noise. Long double handling shows VEX IR artifacts with "[D] unsupported" markers. Some unnecessary type conversions present, though basic control flow is clean.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Loops properly recovered as `for` constructs (e.g., `for (i = 0; i < a1; i += 1)`). Conditionals use idiomatic `if` statements. At `-O0`, control flow should closely match source, and it does for most functions.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`test_data_types_l1`, `test_array_types`, etc.) properly encapsulates its domain. Parameter lists are reasonable - not exposing implementation details.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns present in some functions (e.g., `array_complex_index`). No excessive nesting observed. Some computed jumps in switch-like structures but manageable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Loop constructs are clean. Some repetitive patterns in test setup code but that's expected from decompilation. Minor redundancy in the `& 4294967295` masks applied to multiple functions.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Mixed results - `char` correctly identified in `process_char`, but `process_bool` returns `char` instead of `_Bool`. Integer types vary between `unsigned int`, `unsigned long`, `unsigned long long` without clear rationale. Some `unsigned int *` where `const int *` expected.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Structs reconstructed with generic names (`struct_0`, `struct_1`) and generic fields (`field_0`, `field_1`, `field_8`). Linked list nodes correctly show self-referential pointer. Nested structures flattened to raw pointer arithmetic in some cases (e.g., `struct_nested` uses array indexing).
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Pointer arithmetic appears correct for the most part. Some unsafe patterns: `ptr_diff` has operator precedence issue (`a0 - a1 >> 2` should be `(a0 - a1) >> 2`). Function pointer types are `unsigned long long *` rather than proper function signatures.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No comments present in the decompiled output. Source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型"). Zero recovery of documentation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns recognizable (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`), but no explicit naming or documentation of these patterns. Could have identified "linked list traversal" or "binary tree sum" as recognizable idioms.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Long double functions show "[D] unsupported" markers for VEX operations. Some "[D]" annotations present for unhandled IR. However, not all anomalies are flagged consistently - some questionable code (like the `ptr_diff` precedence) has no warning.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No pre/post conditions recovered. Source had no explicit assertions but semantic contracts (e.g., "returns positive even number") not documented. No recovery of input constraints or return value expectations.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are explicit in the code. External dependencies declared with `extern`. But no documentation of call relationships (which functions call which, callback relationships). Test functions call their targets but this isn't documented.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: All functions in single file. Some logical grouping by type (test functions grouped together). Static functions like `double_value` and `complex_callback` properly identified. No header file structure recovered.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Code has `extern` declarations for external symbols (`g_405fe0`, `g_406008`, etc.). Would require linking against libc. Some stub functions needed. The `& 4294967295` masks may cause signed/unsigned warnings.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+5+4+5)/4 = 4.25
+L2_avg = (7+8+7+7)/4 = 7.25
+L3_avg = (6+5+6)/3 = 5.67
+L4_avg = (1+5+6+2)/4 = 3.50
+L5_avg = (5+5+6)/3 = 5.33
+
+Overall = (4.25 × 0.30) + (7.25 × 0.25) + (5.67 × 0.20) + (3.50 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 1.8125 + 1.134 + 0.525 + 0.533
+        = 5.28/10
+```
+
+**Overall Readability Score:** 5.28/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `i`) losing semantic meaning from source
+- **No comments**: Zero recovery of extensive source comments explaining test scenarios and expected values
+- **Type precision**: `process_bool` returns `char` instead of `_Bool`; inconsistent integer type usage
+- **Magic numbers**: `65`, `90` for 'A'-'Z' range not explained; `4294967295` mask obscures intent
+- **Operator precedence bug**: `ptr_diff` has `a0 - a1 >> 2` which groups incorrectly as `a0 - (a1 >> 2)`
+
+### Best Quality Aspect
+- **Function Decomposition (8/10)**: Functions are properly sized with clear single responsibilities. Test functions correctly encapsulate their domains. Parameter lists are reasonable.
+
+### Most Needs Improvement
+- **Comment Quality (1/10)**: Zero comments recovered from source. The original had extensive documentation explaining each test case, expected values, and data type scenarios. This is a major loss of semantic information.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from debug symbols**: Since compiled with `-g`, debug info should provide source variable names. The decompiler should leverage this for parameter naming.
+2. **Eliminate unnecessary masks**: The `& 4294967295` (0xFFFFFFFF) masks appear to be workarounds for type issues. Fix the underlying type problems rather than masking results.
+3. **Add pattern recognition comments**: Identify and label common patterns like "linked list traversal", "binary tree recursion", "array iteration" to improve semantic transparency.

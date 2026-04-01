@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/6/6_clang_Os_g/ghidra/syntactic/bin/6_clang_Os_g_fixed",
+  "stdout": "=== Standard Library Tests ===\nstrlen: 14\nstrcmp: 0\nstrlen: 12\nmemcmp: 90\nmemcmp: 4294967295\nValue: 42, Name: N\nprintf: 19\nscanf: 579\nfopen/fclose: 42\nfread/fwrite: 42\nmalloc/free: 90\nmemset: 0\nstrchr/strstr: 15\n=== System Call Tests ===\nsyscall: 42\nstat: size check\nfork/exec: 42\n",
+  "stderr": "\nTimed out after 30s",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": true,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

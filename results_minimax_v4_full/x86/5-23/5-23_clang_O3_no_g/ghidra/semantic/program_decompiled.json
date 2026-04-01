@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/5-23/5-23_clang_O3_no_g/ghidra/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing Preprocessing Features\n\n64\n30\n32\n57122\n116\n19\n60\nLOG: Values: 10, 20, 30\n60\n16\n500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:17\n382\nHello ASM\n15\nSum: 5\nResult: -1\n36\n30\n77\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

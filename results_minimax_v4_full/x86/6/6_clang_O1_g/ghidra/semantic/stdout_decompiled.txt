@@ -1,0 +1,15 @@
+Standard Library Tests:
+
+String length: 8
+strcmp(result): 0
+memcmp(result): 12
+printf(result): 90
+Combined cmp: 1
+Value: 42, Name: Benchmark
+printf return: 27
+scanf result: 579
+File descriptor: 42
+fread/fwrite: 42
+malloc sum: 90
+memset result: 0
+strchr/strstr: 15

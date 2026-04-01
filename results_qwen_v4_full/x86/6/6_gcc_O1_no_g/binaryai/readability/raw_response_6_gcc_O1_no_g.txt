@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `iVar2`, `local_10`, `local_20`, `puVar2`) with no semantic meaning. Only global variables like `signal_received`, `shared_counter`, and `atomic_counter` retain meaningful names from the source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: User-defined functions preserve original names (`param_strcpy`, `thread_sum`, `signal_handler`), but all library calls are reduced to opaque `FUN_00011xxx` patterns (e.g., `FUN_000115b0` for `strcpy`, `FUN_00011630` for `strlen`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved well ("HelloLib", "/etc/passwd"), but magic numbers abound without explanation (`0x2a`=42, `0x1f`=31, `0x14`=20, `0x12`=18). Return value `0x2a` should be documented as success code 42.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_fail_local`, `in_GS_OFFSET`), thunk functions (`__x86_get_pc_thunk_bx`), and initialization stubs (`deregister_tm_clones`, `register_tm_clones`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while constructs correctly. However, `param_fork_exec` has awkward branching with goto labels (`LAB_000124f1`), and some conditionals use bit-shift tricks (`iVar1 >> 0x1f`) instead of clear comparisons.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries well-preserved. Thread functions (`thread_sum`, `thread_compute`, `thread_increment`) remain separate. Function sizes are reasonable, though some could benefit from further decomposition.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Stack canary checks introduce epilogue jumps that disrupt flow. Complex functions like `param_pipe_communication` have forward references that break linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeats in nearly every function. No significant loop unrolling observed. Some expressions like `*(int *)(in_GS_OFFSET + 0x14)` appear redundantly for stack cookie checks.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `char *` becomes `undefined4`, `FILE *` becomes `int`, `pthread_t` becomes `undefined4`. Original types like `size_t`, `ssize_t`, and `pid_t` all collapsed to generic `int` or `undefined4`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery whatsoever. `ThreadData` struct accessed via array indexing (`param_1[2]`, `piVar3[1]`). Shared memory operations show raw pointer arithmetic (`puVar2[0]`, `puVar2[1]`) instead of struct field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int *)FUN_000115e0(4)`, `(undefined4 *)0xffffffff`). Pointer arithmetic on typed pointers loses safety. No const-correctness preserved. Function pointers use `void*` instead of proper signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contract documentation, no decompilation confidence indicators. Only the file header mentions "Decompiled by BinaryAI".
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library patterns not identified (all shown as `FUN_00011xxx`). Thread synchronization patterns partially recognizable through function names (`pthread_mutex_lock` → `FUN_00011550`). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for unresolved indirect calls. Stack canary failures silently call `__stack_chk_fail_local` without explanation. No uncertainty indicators for ambiguous decompilation results.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions inferred. Error return values (`0xffffffff`, `0xfffffffd`) not explained. Success code `0x2a` (42) appears throughout without documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but library functions unnamed. Global variable usage clear for preserved names (`signal_received`, `atomic_counter`). Callback relationships (thread entry points) not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output. No logical grouping by test category (standard library vs. system calls vs. threads). Static functions not properly scoped. Original section comments lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone - library functions undefined (`FUN_000115b0`, `FUN_00011630`, etc.). External dependencies not documented. Would require extensive stubbing and type corrections to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     4.25 × 0.30 = 1.275
+Level 2 (Structural):  6.25 × 0.25 = 1.563
+Level 3 (Type):        3.67 × 0.20 = 0.734
+Level 4 (Semantic):    3.00 × 0.15 = 0.450
+Level 5 (Contextual):  4.33 × 0.10 = 0.433
+─────────────────────────────────────
+Overall Score:                    4.46/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects
+- **Variable `iVar1`, `iVar2`, `local_10`** should be named based on usage (e.g., `fd`, `bytes_read`, `stack_cookie`)
+- **Library functions all show as `FUN_00011xxx`** instead of recognized names (`strcpy`, `strlen`, `printf`, `pthread_create`)
+- **No struct recovery** - `ThreadData` accessed via array indexing losing field semantics
+- **Zero comments** explaining algorithm logic, error codes, or decompilation uncertainty
+- **Magic numbers throughout** (`0x2a`=42, `0xffffffff`=-1) without constant definitions
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Original function boundaries preserved well; thread functions remain logically separated with appropriate granularity
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement library function signature matching** - Recognize common libc/pthread patterns and restore original function names with proper prototypes
+2. **Add semantic variable naming** - Infer names from usage context (e.g., variables used in `malloc` size calculations should be named `size` or `count`)
+3. **Generate decompilation confidence annotations** - Flag uncertain reconstructions, unresolved calls, and potential type ambiguities with inline comments

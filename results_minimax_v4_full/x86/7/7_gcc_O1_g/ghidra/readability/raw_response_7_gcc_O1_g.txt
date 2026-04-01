@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use cryptic generic names like `iVar1`, `iVar2`, `iVar3`, `iVar4`, `uVar2`, `pbVar2`, `piVar1`, `sVar2`, `bVar1`. The source had meaningful names like `result`, `p1`, `p2`, `p3`, `temp`, `a`, `b`. Only parameter `x` in `param_fake_branch` matches source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Primary functions correctly match source names: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `decrypt_string`. However, internal CRT functions have cryptic names like `FUN_00011030`, `_init`, `_start`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0xDEADBEEF` from source is completely lost (fake branch eliminated). Encrypted string bytes `0x1A, 0x2B, 0x3C, 0x4D` preserved but key `0x5A` shown as char `'Z'` which is helpful. Some constants like `0x14` (20) and `0xe1` (225) appear without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe decompiler artifact pollution: "WARNING: Function: __x86.get_pc_thunk.bx replaced", "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var: int i@[???]", stack canary checks (`in_GS_OFFSET`), and CRT startup code clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` is reduced to trivial `return x;` - the fake branches are completely eliminated by the decompiler, losing the obfuscation semantics. Other functions like `param_opaque_predicate` show reasonable while-loop structure for gcd calculation. At -O0, this elimination is inappropriate.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Wrapper functions like `call_fake_branch` are properly separated from implementation `param_fake_branch`. No over-fragmentation or monolith issues observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns used appropriately in functions like `param_tail_call_optimized`. Minor forward jumps in complex functions like `param_opaque_predicate`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: **Critical defect**: The decompiler eliminated the fake branches in `param_fake_branch` entirely - both the `x*x < 0` and `strlen(str) < 0` checks are gone. This is a severe semantic loss as these represent intentional obfuscation patterns that should be preserved in decompiled output.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate: `int` for integers, `uint` for unsigned, `size_t` for sizes, `char*` for strings, `byte*` for byte pointers. Minor issues: some `int*` could be more specific (e.g., `int32_t`). The parameter `x` correctly typed as `int`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this specific function set. Basic types used appropriately. The code doesn't require complex composite type recovery since source uses primitives.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: `(int *)(0x0)` for NULL, implicit conversions between signed/unsigned. Stack canary checks (`__stack_chk_fail_local`) added by compiler. No `restrict` or alignment annotations recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely decompiler warnings ("WARNING: Unknown calling convention", "Unresolved local var") rather than helpful explanations. No algorithm documentation, no explanation of fake branch obfuscation, no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. The "fake branch" (OBF-L4-02) and "opaque predicate" (OBF-L4-03) obfuscation techniques are not identified or named. The decompiler treats them as dead code rather than intentional patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present (unknown calling conventions, unresolved locals), but the most critical anomaly - removal of fake branches - is not flagged as suspicious. The decompiler "fixed" what it saw as unreachable code without marking this as a potential obfuscation pattern.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error handling semantics (e.g., setjmp/longjmp behavior in `param_division_by_zero`).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - you can see `call_fake_branch` calls `param_fake_branch(10)`. Global variables like `jmp_buffer`, `segv_buffer`, `div_zero_caught` are visible. However, no explicit documentation of call graph.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. The test function `test_obf_opt_edge` is separated from the functions it tests. No clear separation between obfuscation, optimization, and edge case categories as in source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code cannot compile standalone. Heavy dependencies on: `__libc_start_main`, `__do_global_ctors_aux`, signal handlers, `malloc`, `strlen`, `strncpy`, `__printf_chk`, `__stack_chk_fail`. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+1. **Fake branches eliminated**: `param_fake_branch` reduced to trivial `return x;` - both `x*x < 0` and `strlen(str) < 0` checks completely removed, losing intentional obfuscation semantics
+2. **Variable naming**: Cryptic names like `iVar1`, `iVar2`, `uVar2` obscure variable purpose
+3. **Noise pollution**: Excessive decompiler warnings ("WARNING: Unknown calling convention", "Unresolved local var") clutter output
+4. **No pattern recognition**: Obfuscation techniques (fake branch, opaque predicate) not identified or named
+5. **No helpful comments**: Only decompiler warnings present, no algorithm explanation
+
+### Best Quality Aspect: Function Naming (8/10)
+- Primary function names match source exactly: `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `decrypt_string`
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+- No pattern recognition for obfuscation techniques
+- No helpful comments explaining algorithms
+- Critical semantic losses (fake branch removal) not flagged
+
+### Top 3 Recommendations:
+1. **Preserve dead code as potential obfuscation**: Flag unreachable blocks with "POSSIBLE OBFUSCATION" rather than silently removing them - the fake branches are intentional patterns that should be preserved
+2. **Infer variable names from usage**: Analyze how variables are used (e.g., `iVar4` used in modulo operation should be named `temp` or `remainder`)
+3. **Add semantic comments**: Instead of "WARNING: Unknown calling convention", add "Implements: OBF-L4-02 fake branch pattern" or "Algorithm: Euclidean GCD computation"

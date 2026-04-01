@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names (v1, v2, v3, result) with zero semantic meaning. For example, `param_macro_constants` uses `v1` for the size comparison instead of `size` or `input_size`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved (param_macro_constants, call_asm_basic, param_atomic_c11). This is the decompiler's strongest aspect - semantic function identity is maintained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (0xdef0, 0xdf22, 3320, 3255). Constants like MAX_SIZE (1024) are folded into return values (64) losing original meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*` functions, generic globals (g1-g12), fake `int128_t` typedef, and `__asm_*` intrinsic stubs that don't compile.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_macro_constants` uses bizarre overflow-checking logic (`v1 < 0 == ((v1 ^ a1) & (a1 ^ (int32_t)&g11)) < 0`) instead of simple `if (size > 1024)`. Loops are recovered but awkwardly structured.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but signatures corrupted (param_variadic_macro has 4 params instead of 3). Many functions constant-folded losing original logic structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but assembly-related functions have confusing jump patterns. `param_asm_multi_insn` has while loops that could be cleaner.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions repeat similar printf patterns. Some dead code from register spilling visible in global variable declarations (g1-g12 with cryptic values).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to int32_t/int128_t. Original types lost: `size_t` becomes int32_t, `const char*` becomes char*, `void*` becomes int32_t*. The `int128_t` typedef is actually int64_t - incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No structs recovered at all. Original code had no explicit structs but pointer semantics lost. All memory accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `*(int32_t *)(4 * v1 + a1)` pointer arithmetic, incorrect int128_t usage, missing const qualifiers, atomic operations reduced to simple assignments losing memory ordering guarantees.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macro behavior, assembly semantics, and expected values - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Macro expansions (SQUARE, MAX, ADD_16) not identified. Atomic operations, SIMD intrinsics, and memory protection patterns not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite major issues: constant-folded functions returning hardcoded values, incorrect parameter counts, fake assembly intrinsics that won't compile.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "size must be positive"), no postconditions, no error handling contracts. Original comments about expected return values completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but global variable usage opaque (g1-g12). No call graph documentation. Relationship between param_* and call_* functions not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original source had clear section headers (5.2 Preprocessing, 5.3 Assembly) - all lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile: undefined `__asm_*` functions, incorrect `int128_t` typedef, missing headers (stdatomic.h, string.h), function signature mismatches.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 3.94/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on semantic usage (e.g., `size`, `result`, `counter`)
+- **`int128_t` typedef is incorrect** - defined as int64_t but used as 128-bit SIMD register
+- **Constant folding destroyed logic** - `call_macro_constants` returns hardcoded 64 instead of showing `BUFFER_COUNT * 4`
+- **Zero comments** - original 200+ lines of documentation completely lost
+- **`__asm_*` functions undefined** - code will not compile without stub implementations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means a reverse engineer must deduce all semantics from code alone, losing the original author's intent entirely.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant-folded expressions and annotate with original macro names (e.g., "// Expanded from: BUFFER_COUNT * 4")
+2. **Add confidence annotations** - Flag uncertain decompilations (e.g., "// UNCERTAIN: assembly intrinsic may not match original")
+3. **Preserve type information** - Use proper typedefs (size_t, ptrdiff_t) instead of collapsing everything to int32_t, and fix the int128_t SIMD representation

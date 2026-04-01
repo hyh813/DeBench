@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_gcc_O0_no_g/ida/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "=== Obfuscation/Optimization Edge Test ===\nFake branch result: 10\nOpaque predicate result: 20\nInstruction substitution result: 225\nString encryption result: 84\nTail call result: 500500\nNon-tail call result: 5050\nVectorized loop result: 1298232712\nLTO result: 20\nDivision by zero result: 2\nNull pointer deref result: 41\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

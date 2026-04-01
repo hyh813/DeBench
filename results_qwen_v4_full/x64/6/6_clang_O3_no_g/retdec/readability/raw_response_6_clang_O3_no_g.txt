@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names (`v1`, `v2`, `v3`, `a1`, `a2`) obscures semantic meaning. For example, `param_strcpy` uses `str` and `str2` but `str2` is uninitialized in the decompiled version, and `param_malloc_free` uses `mem`, `v1`-`v30` with no indication of their roles as array indices or loop counters.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed quality—original names preserved for some functions (`param_strcpy`, `call_strcpy`, `param_mutex_lock`) but 50+ functions use generic `function_XXXX` names (e.g., `function_2030`, `function_2090`). Library wrappers like `function_2090` (actually `strcpy`) lose semantic clarity.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals preserved well (format strings, file paths like `"/etc/passwd"`), but magic numbers abound: `0xffffffff` for -1, `42` as success code, `0x100000000` bit shifts without explanation. Chinese UTF-8 strings in globals (`g12`-`g36`) are preserved but not decoded.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Severe compiler artifacts present—SIMD intrinsics (`__asm_movdqa`, `__asm_pcmpeqb`, `__asm_paddd`) in `param_malloc_free` and `param_memset` obscure original simple loops. Redundant casts (`(int64_t)`, `(int32_t)`) throughout, and frame pointer manipulation visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive use of `goto` labels (`lab_0x2921`, `lab_0x28ff`, `lab_0x2904`) instead of natural loop constructs. `param_malloc_free` has 5+ goto labels for what should be a simple `for` loop. At `-O0`, this restructuring is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but some functions are bloated (`param_malloc_free` is 170+ lines with SIMD unrolling). Library wrapper functions (`function_2070`-`function_23b0`) are appropriately small but add noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. `param_memset` has multiple `goto` targets that break linear flow. Some simple functions (`param_strcpy`, `param_strcmp`) read naturally.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: SIMD loop unrolling visible in `param_malloc_free` and `param_memset` creates massive code duplication. Redundant type casts on nearly every operation. Dead code patterns from optimization not eliminated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—`int64_t` used universally instead of `int`, `size_t`, `char*`, `FILE*`. Function signatures wrong: `param_strcpy(int64_t a1)` should be `(char *dst, const char *src)`. `param_malloc_free(uint64_t a1, int64_t a2, int64_t a3, int64_t a4)` has 4 parameters instead of 1 (`size_t size`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Standard structs partially recovered (`_IO_FILE`, `stat`, `sockaddr`, `shmid_ds`) but all fields have generic names (`e0`, `e1`, `e2`...). `struct stat` has 20 fields (`e0`-`e19`) with no semantic meaning. Thread-local storage completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(char *)a1`, `(int64_t *)str`, `(int32_t)a2`. Pointer arithmetic on generic `int64_t*` types. `param_fread_fwrite` casts data to `int128_t` for SIMD comparison, losing type safety. No const-correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only auto-generated header comments present. Original source had extensive documentation—all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `malloc`, `pthread_create`). However, higher-level patterns not identified: producer-consumer pattern in `param_condition_variable`, mutex-protected critical sections, TLS usage all appear as raw operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present after `_exit()` calls. However, no warnings for uncertain decompilation, unresolved indirect calls, or suspicious patterns. `param_linux_syscall` logic completely wrong (uses `SYS_fork` instead of `SYS_open`) with no anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions (e.g., "ensures: returns string length"). Error conditions not explained. Original source had clear contracts—all lost in decompilation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g40`-`g53`) used without explanation—`g41` is `signal_received`, `g42` is `signal_number` but names lost. Callback relationships (thread functions) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with no logical grouping. Original source had clear section headers (`6.1 标准库函数调用`, `6.2 系统调用`, `6.3 线程与并发`)—all lost. Function order appears arbitrary rather than grouped by functionality.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but function signatures don't match standard library (wrong parameter counts/types). `param_strcpy` takes 1 parameter instead of 2. Would require significant modification to compile. Some typedefs incorrect (`int128_t` defined as `int64_t`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+6+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+5+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.40/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects
+- **Parameter signature corruption**: `param_strcpy(int64_t a1)` should be `(char *dst, const char *src)`—missing second parameter entirely
+- **Goto-based control flow**: `param_malloc_free` uses 5+ goto labels for what should be a simple for loop
+- **SIMD intrinsics pollution**: `__asm_movdqa`, `__asm_pcmpeqb` in `param_memset` obscure original memset+verify logic
+- **Struct field names lost**: All struct fields named `e0`, `e1`, `e2`... losing all semantic meaning
+- **Global variable opacity**: `g41`, `g42`, `g43` used for signal handling state with no documentation
+
+### Best Quality Aspect
+- **Literal Clarity (6/10)**: String literals and format strings preserved accurately, including UTF-8 Chinese test labels
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Zero semantic documentation; original source's extensive comments completely lost
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function parameter semantics**: Analyze call sites to infer correct parameter counts and types (e.g., `param_strcpy` clearly takes 2 pointers based on `strcpy` call)
+2. **Replace goto with structured control flow**: Detect loop patterns from backward jumps and recover for/while constructs, especially at -O0
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (e.g., "UNCERTAIN: parameter count inferred from call sites") and document global variable usage patterns

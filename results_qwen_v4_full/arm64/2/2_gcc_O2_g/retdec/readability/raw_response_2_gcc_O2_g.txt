@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, etc.) with zero semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use mechanical names (`function_6f0`, `function_700`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x7ffe`, `0x8000000000001`, `0x4000000000000`) with no constant recovery. String literals stored as hex-encoded globals (`g6`, `g7`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `__asm_ubfx`, `__asm_mrs`, `__asm_bfi` intrinsics. Redundant masking operations (`& 0xffffffff`) throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Excessive `goto` statements with labels (`lab_0x1488`, `lab_0x1590`, `lab_0x1620`). The `binary_tree_sum` function uses 50+ goto labels instead of natural recursion.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Function boundaries preserved but internal structure destroyed. `binary_tree_sum` expanded from 5 lines to 500+ lines of spaghetti code with no logical decomposition.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Constant forward jumps disrupt reading flow. Labels scattered throughout functions make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Massive code duplication in `binary_tree_sum` - identical code blocks repeated 10+ times with different variable names (`v24`, `v25`, `v26`...`v84`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Critical failure - function parameters lost! `process_char(void)` should be `process_char(char c)`. Everything coerced to `int64_t` regardless of original type.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure - no struct/union definitions recovered. Field access reduced to pointer arithmetic (`*(int32_t *)(v2 + 8)`) instead of `p->x`.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts and pointer arithmetic. `process_double` returns `(int64_t)"hello"` - completely wrong type. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero useful comments. Only address ranges and line numbers provided. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition. Linked list traversal, tree recursion, and array iteration all reduced to raw pointer arithmetic with no idiom identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for obviously broken code. `process_float` returns uninitialized `result` without any anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g1`, `g6`, `g11`) have no semantic meaning or usage documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file with all functions. Some grouping by function type but no logical module separation or header files.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes standard headers but missing type definitions. Custom types (`int80_t`, `float128_t`) defined but many external functions undeclared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+7+3+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):     (2+3+2+2)/4 = 2.25 × 0.25 = 0.563
+Level 3 (Type System):    (2+1+2)/3   = 1.67 × 0.20 = 0.333
+Level 4 (Semantic):       (1+1+2+1)/4 = 1.25 × 0.15 = 0.188
+Level 5 (Contextual):     (3+4+4)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────────
+Overall Score:                                    2.58/10
+```
+
+**Overall Readability Score:** 2.6/10
+
+### Critical Defects:
+- **Function signatures broken**: `process_char(void)` missing parameter `char c` - makes code semantically incorrect
+- **Control flow destroyed**: `binary_tree_sum` uses 50+ goto labels instead of 5-line recursive function
+- **Type system collapsed**: All structs/unions lost; field access via raw pointer arithmetic (`v2 + 8`)
+- **Floating point operations broken**: `process_float` returns uninitialized value; `process_double` returns string literal
+- **No semantic recovery**: Zero comments, no pattern recognition, no anomaly warnings for obviously broken code
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing some semantic anchor points.
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct/union definitions despite `-O0 -g` debug compilation that should preserve type information.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions** - Analyze register/stack usage at call sites to reconstruct missing parameters
+2. **Implement struct/union type inference** - Use consistent field offset patterns across functions to reconstruct composite types with field names
+3. **Add control flow pattern recognition** - Detect recursive patterns and loop structures to replace goto-based spaghetti code with natural constructs

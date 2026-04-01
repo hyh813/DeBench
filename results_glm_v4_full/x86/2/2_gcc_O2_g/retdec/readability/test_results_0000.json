@@ -1,0 +1,11 @@
+{
+  "eval_id": "2_gcc_O2_g",
+  "overall_score": 0.001,
+  "error": "context_length_exceeded",
+  "levels": {},
+  "dimensions": {},
+  "tokens": {},
+  "time_cost_seconds": 0,
+  "schema_version": 1,
+  "raw_response_file": "raw_response_2_gcc_O2_g.txt"
+}

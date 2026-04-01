@@ -1,0 +1,15 @@
+{
+  "file_name": "results_minimax_v4_full/x64/2/2_gcc_O3_g/retdec/syntactic/fix_2_gcc_O3_g.c",
+  "total_iterations": 0,
+  "successful_tool_calls": 0,
+  "final_status": "failed",
+  "termination_reason": "context_length_exceeded",
+  "resumable": false,
+  "resume_mode": null,
+  "next_iteration": null,
+  "history": [],
+  "summary": {
+    "tier": 3,
+    "final_status": "compile_failed"
+  }
+}

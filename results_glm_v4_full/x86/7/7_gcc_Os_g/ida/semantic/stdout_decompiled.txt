@@ -1,0 +1,15 @@
+Testing obfuscation and optimization edge cases:
+call_opaque_predicate() returned: 10
+Opaque predicate result: 20
+Instruction substitution: 225
+String encryption: 0
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop: 148
+Link time optimization: 20
+Division by zero test: 1
+Null pointer deref: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 43

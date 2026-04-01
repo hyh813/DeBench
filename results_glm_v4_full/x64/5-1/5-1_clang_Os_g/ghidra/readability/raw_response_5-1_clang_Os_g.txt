@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are predominantly generic types like `local_24`, `puVar1`, `iVar1`, and `sVar1`, which obscure their semantic roles (e.g., `local_24` is actually a `SimpleClass` object). While `this` is correctly identified in class methods, local stack variables in test functions lack meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent and match the source exactly (e.g., `test_cpp_member_func`, `Container<int>::push`), likely due to the presence of debug symbols (`-g`). Even compiler-generated functions like `_GLOBAL__sub_I_5_1_cpp` are appropriately named.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `0x125c`, `0x2a`, `0x47`) which represent the return values of optimized-out logic. While string literals like `"Test"` are clear, the numeric constants lack context or named constant definitions.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: There is significant noise from inlined constructors, such as the repetitive `local_24[x] = '\0'` assignments in `test_cpp_member_func`. Additionally, frequent warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally readable but obscured by optimization. For example, the initialization loop in `test_cpp_constructor` uses a `do-while` with a condition `lVar2 != 0x32` (50), which is less intuitive than a standard `for` loop over an array size.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decomposition is mostly logical, with `Container` and RTTI class methods correctly separated. However, there is inconsistent inlining; `test_cpp_member_func` logic is duplicated inside `test_cpp_oo_features`, while other test functions are called normally.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with minimal forward jumps. Even the exception handling in `test_cpp_exception` is represented linearly with clear `throw` and `catch` markers (via `__cxa_throw`).
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Redundancy exists primarily due to compiler inlining (e.g., the `SimpleClass` construction logic appears twice). While this reflects the binary state, it hinders readability by duplicating logic that should be encapsulated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: There is a major failure to recover types for local stack variables in optimized contexts. `SimpleClass` and `LifecycleClass` objects are represented as raw buffers (`char local_24 [36]`, `undefined4 *puVar1`) rather than their correct types, despite `Container<int>` being recovered correctly in other functions.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Composite types are recovered partially. `Container<int>` is well-defined with `data` and `size` fields, and `RTTIBase` is recognized. However, `SimpleClass` and `LifecycleClass` structures are completely missing in the functions where they are instantiated, reducing the code to pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10
+Justification: The use of `undefined` types (e.g., `undefined4 *puVar1`) and raw character arrays to manipulate objects eliminates type safety. The code relies on implicit casts and raw memory access patterns that would be unsafe in a high-level context.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: Ghidra provides useful technical warnings (e.g., "Could not recover jumptable") and DWARF prototype hints. However, it lacks semantic comments explaining the *purpose* of the code (e.g., "Initializing object with value 5"), leaving the reader to infer intent from assembly artifacts.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms are visible where not optimized away. Virtual calls are identified (`(**obj->_vptr_Base)()`), RTTI calls (`__dynamic_cast`) are explicit, and exception handling (`__cxa_throw`) is clear. The decompiler successfully identifies the *mechanisms* even if the *objects* are mistyped.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler is aggressive in flagging uncertainty, such as "Unknown calling convention" and "Removing unreachable block." These warnings accurately communicate where the decompilation might be unreliable, which is crucial for analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` is visible as code (`if ((-1 < idx) && (idx < this->size))`), but it is not documented as a contract or requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to standard library functions (`operator_new__`, `strlen`) and C++ runtime functions (`__cxa_atexit`) are clear. The relationship between the test functions and the classes they test is implied by the names, though the lack of type recovery in the stack frames weakens the link.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which groups related `Container` methods together but scatters the test functions and runtime initialization routines. It is a standard flat listing rather than a logical module grouping.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies heavily on the C++ standard library (e.g., `std::ios_base::Init`) and compiler builtins. While it reflects the binary accurately, recompiling this specific C output would require significant setup to handle the undefined types and missing headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Type Recovery Failure**: `SimpleClass` and `LifecycleClass` objects are represented as raw byte arrays (`char local_24`, `undefined4 *puVar1`) instead of typed objects, destroying the object-oriented context.
+- **Opaque Magic Numbers**: Return values like `0x125c` (4700) are hardcoded due to constant propagation, completely obscuring the arithmetic logic that produced them.
+- **Inconsistent Inlining**: The logic for `test_cpp_member_func` is duplicated inside `test_cpp_oo_features`, creating redundancy and confusion about the program's structure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names (e.g., `test_cpp_virtual_func`, `Container<int>::push`), providing a reliable high-level map of the binary's functionality.
+
+**Most Needs Improvement:** Type Precision (scored 4/10)
+- The failure to map stack variables to their correct C++ class types in optimized functions is the single biggest barrier to understanding, forcing the reader to manually reverse-engineer class layouts from raw memory writes.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhanced Stack Variable Typing**: Improve heuristics to match constructor/store patterns on stack buffers against known class types in the database, even when the constructor is inlined.
+2. **Symbolic Constant Substitution**: For magic numbers resulting from constant folding, attempt to cross-reference with other functions or data segments to represent them as symbolic expressions (e.g., `4700` -> `CLASS_ID + COMPUTE_VAL`).
+3. **Inline Function Annotation**: When a function is inlined, insert a comment indicating the source function (e.g., `/* Inlined call: SimpleClass::SimpleClass */`) to clarify why code is duplicated.

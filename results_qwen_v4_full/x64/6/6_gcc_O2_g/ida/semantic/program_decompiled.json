@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/6/6_gcc_O2_g/ida/syntactic/bin/6_gcc_O2_g_fixed",
+  "stdout": "Standard Library Functions Test\nLib L101: 8\nLib L102: 0\nLib L103: 12\nLib L104: 90\nLib L105: -1\nValue: 42, Name: Test\nLib L106: 22\nLib L107: 579\nLib L108: 42\nLib L109: 42\nLib L110: 90\nLib L111: 0\nLib L112: 15\nSystem Calls Test\nSys L301: 42\nSys L302: 42\nSys L303: 42\nSys L304: 42\nSys L305: 42\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

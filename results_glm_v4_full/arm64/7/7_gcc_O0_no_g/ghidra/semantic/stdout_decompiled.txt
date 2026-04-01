@@ -1,0 +1,8 @@
+Fake branch test
+
+Opaque predicate: 2236294368
+Opaque result: 20
+Instruction substitution: 225
+String encryption: 0
+Tail call: 15
+Non-tail call: 15

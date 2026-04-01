@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `v1`, `result`, or `v2`. For example, in `array_1d_stack`, the array pointer is `a1` and the accumulator is `result`, offering no semantic hint about their purpose.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully preserved the original function names from the symbol table (e.g., `process_char`, `array_1d_stack`, `main`). This makes identifying the high-level purpose of functions trivial, despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with unexplained magic numbers. In `process_char`, the logic `a1 + 191 & 254 < 26` replaces the clear source check `c >= 'A' && c <= 'Z'`, completely obscuring the ASCII range check intent.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output includes a massive amount of compiler runtime code (e.g., `__aeabi_dmul`, `__mulsf3`, `__adddf3`) which clutters the file and distracts from the user's actual source code logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple loops are often converted into complex `while` conditions or nested ternary operators. For instance, `process_int` uses `2 * a1 | 1` instead of the source's `x * 2 + 1`, and `process_char` is a dense nested ternary expression rather than a readable `if` statement.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler correctly identifies function boundaries matching the source. The user-defined functions are distinct, though the inclusion of library helper functions dilutes the modularity.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but control flow is frequently interrupted by pointer arithmetic checks and inverted loop conditions (e.g., `while (v2 != 1)`), requiring mental effort to map back to standard `for` loops.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The test functions (e.g., `test_data_types_l1`) show significant constant propagation (e.g., `printf(..., 97)` instead of calling `process_char('A')`), which, while accurate to the compiled binary, hides the original logic structure of the test harness.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: The decompiler uses specific types like `int32_t` and `uint32_t`, which accurately reflects the machine's register usage. However, it fails to distinguish semantic types like `char` or `short` where they matter (e.g., `process_char` takes `int32_t`).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: This is a critical failure. Structs are completely lost; `struct_simple` returns `*(int32_t *)(a1 + 4) + a1 + *(int32_t *)(a1 + 8)` instead of `p->x + p->y + p->z`. The code relies entirely on raw byte offsets.
+
+**11. Type Safety:** Score: 5/10
+Justification: While the code is technically "correct" for the binary, the lack of struct definitions and reliance on raw pointer casts (e.g., `(int32_t *)v1`) removes all high-level type safety guarantees and makes the code fragile.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The only annotations are address ranges (e.g., `// Address range: 0x5c8 - 0x5e0`), which are useless for understanding semantics.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. The uppercase-to-lowercase conversion in `process_char` is represented as bitwise algebra rather than a recognizable character processing pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the obfuscated logic (like the bitwise range check) with total confidence, offering no warning that this might be a compiler optimization or a complex pattern worth reviewing.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds) or postconditions. For example, `array_complex_index` checks bounds but does not document the contract that `x` and `y` must be within width/height.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to other user-defined functions are clear and use the correct names. It is easy to see that `main` calls the various `test_...` functions.
+
+**17. Module Organization:** Score: 4/10
+Justification: The file is a monolithic mix of user code and compiler runtime support. There is no logical separation between the application logic and the low-level arithmetic helpers.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: While the code includes prototypes, the reliance on specific compiler intrinsics (`__aeabi_...`) and the lack of struct definitions would make recompiling this into a functioning program difficult without significant manual intervention.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 2 + 3) / 4 = 4.0
+L2_avg = (5 + 7 + 6 + 5) / 4 = 5.75
+L3_avg = (6 + 1 + 5) / 3 = 4.0
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (7 + 4 + 4) / 3 = 5.0
+
+Overall = (4.0 × 0.30) + (5.75 × 0.25) + (4.0 × 0.20) + 
+          (1.25 × 0.15) + (5.0 × 0.10)
+Overall = 1.2 + 1.4375 + 0.8 + 0.1875 + 0.5
+Overall = 4.125
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet Points)
+- **Composite Type Loss**: Struct fields are accessed via raw offsets (e.g., `a1 + 4`) instead of field names (e.g., `p->y`), completely destroying data structure readability.
+- **Logic Obfuscation**: Simple conditional logic like `c >= 'A' && c <= 'Z'` is transformed into obscure bitwise operations (`a1 + 191 & 254 < 26`), making intent indecipherable.
+- **Magic Number Pollution**: Constants like `191`, `254`, and `26` are used without context, replacing meaningful character literals.
+- **Runtime Bloat**: The output is polluted with hundreds of lines of compiler runtime functions (`__aeabi_dmul`, etc.) that are irrelevant to the source logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 8/10)**
+- **Why?** The decompiler successfully preserved the original symbol table names, allowing the user to easily identify high-level functions like `process_int` or `main`.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (Score: 1/10)**
+- **Why?** The failure to recover `struct` definitions reduces complex data manipulation to raw pointer arithmetic, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Structure Recovery**: Analyze access patterns (e.g., consistent access to `base+4`, `base+8`) to reconstruct and define `struct` types with named fields.
+2.  **Pattern Matching for Literals**: Detect common magic number patterns (like ASCII range checks) and replace them with the original character constants or named enums.
+3.  **Filter Compiler Artifacts**: Provide an option to hide or separate compiler intrinsic/runtime functions (like `__aeabi_*`) from the main decompilation view to focus on user code.

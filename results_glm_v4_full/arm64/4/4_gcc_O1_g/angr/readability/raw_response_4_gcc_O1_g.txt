@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`), providing no semantic context about their role (e.g., `count`, `sum`, `args` in `varargs_func`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`cdecl_func`, `test_calling_conventions`, `ret_basic_type`) are perfectly preserved from the source, indicating excellent symbol recovery or accurate naming inference.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `4294967295` (UINT_MAX) and `18446744073709551608` (alignment mask) obscure the logic, while string literals are preserved clearly.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`__stack_chk_guard`) clutter the function bodies, and redundant casts like `(unsigned int)v18 + 8` appear frequently, though no dead code is present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with `do-while` loops and `if-else` chains, but `varargs_func` decompiles into complex pointer arithmetic that is hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without inlining artifacts (though the compiler optimized some calls to constants).
+
+**7. Code Linearization:** Score: 8/10
+Justification: Code reads mostly top-to-bottom with minimal forward jumps; the pointer arithmetic in `varargs_func` is the main disruptor.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects compiler optimizations (e.g., constant propagation in `call_cdecl` returning `15`) without introducing artificial redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Significant type degradation occurs; `double` parameters are treated as integers/registers (`unsigned long long v4`), and `int` is often recovered as `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are lost; `LargeStruct` is treated as `unsigned long long *`, and `SmallStruct` returns are packed into a single `unsigned long long` register value.
+
+**11. Type Safety:** Score: 4/10
+Justification: Critical safety issue in `func_mixed_args` where uninitialized variable `v7` is used in a return calculation, and pointer arithmetic on `char *` replaces struct access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: No comments are provided to explain complex logic, such as the `va_list` implementation or the struct packing in `ret_small_struct`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are missed; `varargs` is shown as raw pointer manipulation rather than `va_list` usage, and struct returns are shown as bit-packing operations.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are raised for the uninitialized variable `v7` in `func_mixed_args` or the suspicious return value `&__stack_chk_guard` in `ret_large_struct`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., pointer validity checks are not explicitly noted as contracts).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and names are preserved, but global variable references (e.g., `g_412f80`) are opaque and lack context.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in address order rather than logical groupings, though this is standard for decompilation output; related functions are at least adjacent.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: Code is not compilation-ready due to uninitialized variables (`v7` in `func_mixed_args`) and type mismatches (e.g., returning `char*` instead of `void` in `ret_large_struct`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable `v7` in `func_mixed_args` is uninitialized but used in the return statement, making the code uncompilable and logically incorrect.
+- `varargs_func` decompiles to raw pointer arithmetic and alignment masking instead of abstracting the `va_list` idiom.
+- Composite types (structs) are completely lost; `LargeStruct` is treated as a pointer to an array of integers, and `SmallStruct` returns are shown as raw bit-packing.
+- Floating point types (`double`) are lost and treated as raw integer registers (`unsigned long long`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names, making the high-level flow easy to trace.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The lack of comments, idiom recognition (especially for varargs and structs), and anomaly flags makes understanding the *intent* of the code very difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve floating point type recovery to correctly identify `double` and `float` parameters/returns rather than treating them as integer registers.
+2. Implement pattern recognition for `va_list`/varargs to abstract the complex stack pointer arithmetic into standard `va_start`, `va_arg` idioms.
+3. Enhance composite type recovery to identify struct passing by value (hidden pointers) and register packing, reconstructing the original `struct` definitions.

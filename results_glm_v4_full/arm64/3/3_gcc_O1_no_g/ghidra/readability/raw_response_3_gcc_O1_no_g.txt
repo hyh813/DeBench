@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `local_8`, `piVar2`, `uVar1`) despite the source having descriptive names (`x`, `n`, `arr`, `p`). Struct fields are accessed via raw offsets (e.g., `__ptr + 2`) rather than field names, completely obscuring semantics.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names (`double_value`, `local_vars`, `heap_basic`) are perfectly preserved from the source, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Meaningful constants from the source (e.g., `42`, `20`, `10`) are often replaced with magic hex literals (`0x2a`, `0x14`, `0xa`) or folded into expressions, requiring mental conversion to understand the logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant noise from stack guard checks (`___stack_chk_guard`) and non-standard types (`undefined4`, `undefined8`). While the logic is visible, the clutter of pointer arithmetic and casts impedes readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple loops are often represented as `do-while` with pointer arithmetic rather than array indexing. Variable Length Array (VLA) and `alloca` handling results in complex, manual stack pointer calculations that are very difficult to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well. While some small functions were inlined (e.g., `static_helper`), the overall granularity is appropriate and cohesive.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. While there are some pointer-heavy loops, the execution path is mostly linear without excessive jumping or spaghetti logic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removed dead code and redundant assignments. However, aggressive constant folding (e.g., `stack_alias` returning `0x14`) hides the original logic structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Specific types from the source (`int`, `size_t`, `Point*`) are largely replaced with generic types (`undefined4`, `void*`, `undefined8`). Signed/unsigned distinctions are often lost or obscured.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs (`Point`, `Node`, `TreeNode`) are completely unrecovered. Accessing struct members like `next` or `data` is done via raw pointer offsets (e.g., `*(undefined4 **)(__ptr + 2)`), which is a major readability failure.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on casting `void*` and `undefined*` to access memory. Pointer arithmetic on `undefined` types is unsafe and makes it hard to verify correct memory access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings (e.g., "Removing unreachable block"). There are no comments explaining the logic, data structures, or the purpose of complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls (`malloc`, `free`, `memset`) are recognized. However, higher-level idioms like Linked Lists or Trees are not identified; they appear as generic pointer manipulation.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags unreachable blocks and overlapping globals. However, it fails to indicate when logic has been aggressively optimized away (e.g., constant folding) or when struct recovery failed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not highlighted as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses are clear and use the correct names from the source. The relationships between functions are easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure. The separation between stack, heap, and global memory tests is preserved.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard Ghidra types (`undefined4`, `undefined8`) and would not compile without significant modification or a compatibility header.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Struct Loss**: Struct types (`Point`, `Node`) are completely missing; members are accessed via raw offsets (e.g., `__ptr + 2`), destroying semantic meaning.
+- **Variable Naming**: Variables are generic (`param_1`, `local_8`) despite the source having descriptive names, making it hard to map logic back to intent.
+- **VLA/Alloca Handling**: Variable Length Arrays and `alloca` result in obscure pointer arithmetic and stack alignment logic rather than readable array syntax.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names, allowing the reader to immediately understand the high-level purpose of each block.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions turns what should be readable data manipulation into confusing pointer math, which is the single biggest barrier to understanding this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Type Recovery**: Utilize stack frame analysis and usage patterns to reconstruct `struct` definitions automatically instead of defaulting to raw pointer offsets.
+2. **Leverage Debug Symbols**: If debug information is available (or even if inferring from types), map local variables to meaningful names rather than `local_8` or `param_1`.
+3. **Pattern Matching for VLAs**: Detect Variable Length Array allocation patterns and emit pseudo-code using array syntax (e.g., `arr[i]`) rather than exposing manual stack pointer adjustments.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `ptr` instead of semantic names (e.g., `size`, `result`, `counter`). Only occasional meaningful names like `idx`, `iter`, `cur` appear in loop contexts.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names partially preserved (`param_macro_constants`, `main`) but many generic `sub_401XXX` wrappers created. Function `sub_4012c1` unnecessarily wraps `param_macro_constants`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE), `0x200` (MAX_SIZE/2), `57072` (0xDF22) appear without explanation. String literals preserved but numeric constants lack semantic names.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime initialization code included (`_init`, `_start`, `register_tm_clones`, `__do_global_dtors_aux`) that wasn't in original source. Stack canary checks (`__stack_chk_fail_local`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if/else flow, but some use goto patterns (e.g., `sub_401030` with `goto ptr[2]`). Loop recovery is decent in `param_asm_clobber` and `param_asm_multi_insn`.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive wrapper functions created (`sub_4012c1`, `sub_4012ea`, `sub_4012fa` etc.) that just call original functions. Original structure fragmented with 1505 LOC vs 709 LOC source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps disrupt flow in initialization code. Some functions like `register_tm_clones` have confusing arithmetic expressions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding creates redundancy - `call_macro_constants()` returns 64 directly instead of calling `param_macro_constants(2048)`. Many functions duplicated with wrapper variants.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `unsigned int` used where `int` or `size_t` would be more accurate. SIMD types partially recovered (`uint128_t`, `int128_t`). Pointer types often generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions mostly generic with `padding_0[N]`, `field_X` naming (e.g., `struct_0 { char padding_0[11863]; struct struct_1 *field_2e57; }`). No semantic field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer arithmetic visible (`ptr + idx * 4`). Atomic operations recovered as `atomic_exchange_add` but type signatures inconsistent. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered. Original documentation (macro explanations, test expectations) completely lost. Only one anomaly marker (`[D] Unsupported jumpkind`) present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Assembly patterns converted to C but not identified as such. Loop idioms recognized but not named or documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (`[D] Unsupported jumpkind Ijk_SigTRAP`) but inconsistent. No indication of constant folding or optimization artifacts that changed semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Error conditions (MAP_FAILED checks) present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced as `g_402XXX` without semantic names. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Runtime init code mixed with application logic. No separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references external functions (`_ccall`, `AddV`, `atomic_exchange_add`) without clear declarations. Some functions may not compile standalone without stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+4+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.35/10
+```
+
+**Overall Readability Score:** 4.35/10
+
+### Critical Defects:
+- **Constant folding destroyed semantics**: `call_macro_constants()` returns hardcoded 64 instead of showing the call to `param_macro_constants(2048)`
+- **Generic struct field names**: All struct fields named `padding_0`, `field_X` losing all semantic meaning
+- **Excessive wrapper functions**: Dozens of `sub_401XXX` functions that just call original functions add no value
+- **No comment recovery**: Original documentation explaining macro behavior, test expectations completely lost
+- **Compilation flag mismatch**: Source claims `-O0` but decompiled code shows `-O3` optimization artifacts
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (6/10)** - Simple functions like `param_macro_constants` and `param_macro_recursion` recovered with clear if/else and arithmetic that matches original logic
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments recovered; all original documentation about macro semantics, test expectations, and assembly behavior completely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate constant folding**: When functions are constant-folded, add comments showing original computation (e.g., `// Originally: return param_macro_constants(2048)`)
+2. **Recover semantic struct field names**: Use data flow analysis to infer field purposes from usage patterns instead of generic `field_X` naming
+3. **Eliminate wrapper function proliferation**: Detect trivial wrapper functions and inline them or mark them as compiler artifacts rather than presenting as separate functions

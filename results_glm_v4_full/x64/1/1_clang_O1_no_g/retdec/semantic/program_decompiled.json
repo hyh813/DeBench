@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/x64/1/1_clang_O1_no_g/retdec/syntactic/bin/1_clang_O1_no_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0xa0 in position 4: invalid start byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false
+}

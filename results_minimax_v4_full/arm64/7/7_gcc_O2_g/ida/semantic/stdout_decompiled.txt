@@ -1,0 +1,16 @@
+Opaque Predicate:
+
+Instruction Substitution: 10
+Call Opaque Predicate: 20
+Call Instruction Substitution: 225
+String Encryption: 24
+Tail Call: 500500
+Non Tail Call: 5050
+Vectorized Loop: 547006159
+LTO: 20
+Division by Zero: 2
+Null Pointer: 41
+Buffer Overflow: 30
+Integer Overflow: 2000000000
+Undefined Behavior: 10
+Implementation Defined: 48

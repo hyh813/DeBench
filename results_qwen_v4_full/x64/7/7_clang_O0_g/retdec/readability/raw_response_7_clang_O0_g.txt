@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `v4` through `v8` in `param_vectorized_loop`), losing semantic meaning from original names like `result`, `heap_buffer`, `canary`, `decrypted`. Only parameter names like `x`, `n`, `acc` are preserved.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names are preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `call_vectorized_loop`), matching source intent. However, helper functions use mechanical names (`function_1030`, `function_1040`) for standard library wrappers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x21524111` (should be `0xDEADBEEF` negated), `0x4070` (hardcoded address for encrypted string), `90` instead of `0x5A` for XOR key. String literals stored as hex-encoded globals (`g1`, `g2`) rather than readable text.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant runtime boilerplate included (`_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`). Excessive type casts (`(int64_t)`, `(int32_t)`) and wrapper functions for standard library calls (`function_1050` for `strlen`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Logic transformations obscure intent: `param_fake_branch` inverts condition (`x * x >= 0 ? x : ...` vs original `if (x * x < 0)`). `param_opaque_predicate` uses chained equality `== v1 * v1 == v3 == 1` which is confusing. Loops use manual index management instead of natural `for` constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Core functions maintain reasonable granularity, but 52 detected functions include many runtime artifacts. Standard library wrappers (`function_1030` through `function_10c0`) create unnecessary fragmentation. Main logic functions are cohesive but mixed with initialization code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_opaque_predicate` has nested conditionals disrupting flow. `param_vectorized_loop` uses while loops with manual increment that could be clearer for-loops. No excessive goto usage, which is positive.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from decompilation: `param_vectorized_loop` has duplicate accumulation logic in two separate while loops. Runtime initialization code appears once but adds bulk. No obvious dead code but some expressions could be consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic integer types preserved (`int32_t`, `uint32_t`) but with errors: `param_division_by_zero` changes `int x` to `uint32_t x`. Excessive casts throughout (`(int64_t)`, `(int32_t)`). Pointer arithmetic relies on explicit casts rather than proper typing.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only system structs recovered with generic field names (`__jmp_buf_tag` has `e0[8]`, `e1`, `e2`). Original bitfield struct in `param_implementation_defined` completely lost (function returns constant `47`). Array sizes incorrect (`int32_t a[1]` should be `a[8]` in `call_vectorized_loop`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Critical safety issues: `param_null_pointer_deref` returns uninitialized variable `v2`. `param_buffer_overflow_heap` has incorrect cast `char * heap_buffer = (char *)(int64_t)x` (should use malloc result). Multiple unsafe pointer arithmetic operations without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated line range comments present (`// Line range: 19 - 33`). No algorithm explanations, no decompilation confidence indicators, no API documentation. Comments add no semantic value beyond address ranges.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. Obfuscation patterns (fake branches, opaque predicates, instruction substitution) not identified or documented. GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical anomalies not flagged: uninitialized variable in `param_null_pointer_deref`, incorrect type conversions, semantic changes in `param_fake_branch`. Decompiler presents potentially incorrect code with full confidence, no warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `x != 0` for division). No postcondition inference. Error conditions not documented. Signal handler relationships not explained. Complete absence of contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g1` through `g23`) have no usage context or meaning. Signal handler callback relationships (`div_zero_handler`, `segv_handler`) not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file mixing runtime initialization, standard library wrappers, and application logic. No logical grouping of related functions. No header file structure. Static functions from source not properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims compilation succeeds and includes necessary headers. However, depends on external runtime functions and uses compiler-specific struct layouts. String literals as hex arrays may need conversion for portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4 + 8 + 4 + 5) / 4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):   (5 + 6 + 6 + 6) / 4 = 5.75  × 0.25 = 1.438
+Level 3 (Type):         (5 + 4 + 3) / 3   = 4.00  × 0.20 = 0.800
+Level 4 (Semantic):     (3 + 2 + 2 + 2) / 4 = 2.25  × 0.15 = 0.338
+Level 5 (Contextual):   (5 + 4 + 6) / 3   = 5.00  × 0.10 = 0.500
+------------------------------------------------------------
+Overall Score:                                  = 4.65/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Semantic corruption in `param_fake_branch`**: Condition inverted and magic number `0x21524111` replaces `0xDEADBEEF`, changing program behavior
+- **Uninitialized variable in `param_null_pointer_deref`**: Variable `v2` returned without initialization, introducing undefined behavior not in source
+- **All variables generic (`v1`-`v8`)**: No semantic naming recovered despite `-O0` debug compilation where names should be available
+- **Zero anomaly warnings**: Critical issues (uninitialized vars, type mismatches) presented confidently without flags
+- **String literals hex-encoded**: Readable strings like `"test"` and `"Hello"` stored as global hex arrays (`g1`, `g2`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source (`param_fake_branch`, `param_opaque_predicate`), maintaining semantic intent despite other degradations
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - Complete failure to identify obfuscation patterns (fake branches, opaque predicates, instruction substitution) that were explicitly documented in source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols at -O0**: Variable names and type information should be recoverable from DWARF debug info when compiled with `-g`; current output ignores this entirely
+2. **Add anomaly detection and confidence indicators**: Flag uninitialized variables, type mismatches, and semantic transformations with warnings like `// WARNING: Variable may be uninitialized`
+3. **Recognize and document obfuscation patterns**: Detect common patterns (always-false conditions, opaque predicates, instruction substitution) and add explanatory comments rather than producing transformed logic

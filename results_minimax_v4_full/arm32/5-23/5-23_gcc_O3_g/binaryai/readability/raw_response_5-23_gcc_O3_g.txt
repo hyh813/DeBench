@@ -1,0 +1,122 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `local_10`, `local_14` that completely obscure their semantic purpose. For example, `param_1` in `param_macro_constants` should be named `size` based on the original source, and `local_10` in `call_asm_atomic` should be `counter`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly (e.g., `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). The decompiler preserved meaningful function names, which is excellent for readability.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Multiple magic numbers appear without explanation: `0x401` (1025) for MAX_SIZE comparison, `0x200` (512) for MAX_SIZE/2, `0x1e` (30) for _SC_PAGESIZE, `7` for PROT_READ|PROT_WRITE|PROT_EXEC. These should be named constants like MAX_SIZE, BUFFER_COUNT, or _SC_PAGESIZE.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. The `undefined4` type is Ghidra's standard representation but doesn't impede understanding. No redundant casts or debug instrumentation observed.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural with proper if-else structures and while loops. The loop in `param_asm_clobber` is correctly recovered as a do-while pattern. At -O0, the control flow closely matches the source.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized with clear single responsibilities. No monolithic functions observed. The decomposition matches the original source's function boundaries well.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns in error handling (e.g., `param_dynamic_code`) are appropriately placed. No excessive nesting disrupting flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or obvious redundancy. The atomic operation functions (`__sync_fetch_and_add_4`) are compiler built-ins that can't be eliminated. Loop unrolling in atomic operations is expected at any optimization level.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Uses generic `int` for most integers and `undefined4` (Ghidra's 4-byte type). `size_t` is correctly used for `sysconf` results. However, `int*` parameters like `param_1` in `param_asm_clobber` should be `int* arr` to indicate array semantics.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: No struct definitions recovered. Arrays are accessed via pointer arithmetic (e.g., `param_1 + -4` for array base). For this code, no complex structs were needed, so this is acceptable but could be improved.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Some unsafe patterns exist: pointer arithmetic without bounds checking (e.g., `param_1 + -4`), cast from `void*` to `undefined4*` in `param_memory_protection`. However, no severe type safety violations that would cause undefined behavior.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments explaining macro semantics, assembly behavior, or algorithm intent. The original source has extensive comments about preprocessing and inline assembly that are completely lost. This is a critical readability gap.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns like atomic operations (`__sync_fetch_and_add_4`) are recognized as compiler built-ins. However, no explicit naming of patterns like "macro expansion" or "inline assembly" that would help understand the original code's intent.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No anomaly flags for suspicious code. The indirect function call in atomic operations (`*(code *)&SUB_ffff0fc0`) should be flagged as potentially unresolvable. No indication of hand-written assembly patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No pre/post conditions documented. Error conditions from `mmap` returning MAP_FAILED (-1 or 0xffffffff) are not explained. The original source's error handling semantics are lost.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are clear and resolve correctly. However, no documentation of which functions call which, or global variable usage. The relationship between `call_*` wrapper functions and `param_*` implementations is not explicit.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically (preprocessing functions together, asm functions together). Static functions like `my_func` are properly scoped. Matches source organization reasonably well.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: The metadata states "Compilation Result: Yes", meaning it compiles. External functions (mmap, munmap, sysconf, printf) are properly declared. Minimal patching needed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 4 + 8) / 4 = 5.75
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.00
+L3_avg = (6 + 5 + 6) / 3 = 5.67
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg = (5 + 7 + 8) / 3 = 6.67
+
+Overall = (5.75 × 0.30) + (8.00 × 0.25) + (5.67 × 0.20) + (3.00 × 0.15) + (6.67 × 0.10)
+        = 1.725 + 2.0 + 1.134 + 0.45 + 0.667 = 5.976 ≈ 6.0/10
+```
+
+### Overall Readability Score: 6.0/10
+
+### Critical Defects
+- **Variable naming**: `param_1`, `param_2`, `iVar1`, `local_10` are meaningless; should infer names like `size`, `x`, `y`, `counter` from usage patterns
+- **No comments**: All macro semantics, inline assembly explanations, and algorithm documentation from original source is completely lost
+- **Magic numbers**: `0x401`, `0x200`, `0x1e`, `7`, `0x22` appear without explanation; should be named constants
+- **No anomaly indication**: Indirect calls in atomic operations (`*(code *)&SUB_ffff0fc0`) are not flagged as potentially unresolvable
+- **No contract recovery**: Error handling semantics (MAP_FAILED, mprotect return values) are not documented
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names like `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features` match the original source exactly, making it easy to identify the purpose of each function.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+The decompiled code has zero useful comments. The original source contains extensive documentation about preprocessing behavior, inline assembly constraints, and algorithm explanations that are completely lost in decompilation. This is especially critical for this test file which is specifically designed to test preprocessing and assembly understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `param_1` is compared to `0x401` (1025), infer it should be named `size` based on the original MAX_SIZE macro value. When `local_10` is used with `__sync_fetch_and_add_4`, infer it should be `counter`.
+
+2. **Add semantic comments for preprocessing**: When macro constants are inlined (e.g., `0x40` for `BUFFER_COUNT * 4`), add comments like "/* BUFFER_COUNT * 4 = 64 */" to explain the origin.
+
+3. **Flag anomalies and indirect calls**: Mark unresolved indirect calls (like the atomic operation helper) with comments like "/* ANOMALY: Could not resolve atomic operation helper */" to alert analysts to investigate manually.

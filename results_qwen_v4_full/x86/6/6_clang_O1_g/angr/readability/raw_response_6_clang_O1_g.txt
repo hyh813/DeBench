@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source used descriptive names like `dst`, `src`, `buffer`, `iterations` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strcpy`, `param_signal_handling`), but many helper functions use mechanical names (`sub_401030`, `sub_4013e0`). Good recovery of test function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (unsigned -1), `4294967294` (unsigned -2), `42` (success code). Signal numbers hardcoded as `10` (SIGUSR1) and `14` (SIGALRM) without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.*` functions, `deregister_tm_clones`, `register_tm_clones`. Redundant wrapper functions (`sub_401561` just calls `param_strcpy`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/else/while constructs. However, `param_signal_handling` has deeply nested conditionals (6+ levels) that obscure the signal handling logic flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with redundant wrapper functions (every `param_*` has a `sub_*` wrapper). Original single functions split unnecessarily, increasing cognitive load.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions like `param_pthread_join` have awkward loop structures that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from wrapper functions. `call_*` functions often duplicate logic from `param_*` functions instead of simply calling them.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` consistently becomes `unsigned int`. `param_strcmp` returns `unsigned int` but should return signed comparison result. Pointer types often generic (`void*`, `char*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `padding_0`, `field_5b87`). `ThreadData` struct not recovered—fields accessed via array indexing. `FILE` struct empty.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Critical type safety issues: `param_malloc_free` accesses `ptr[1 + i]` AFTER `free(ptr)` (use-after-free). Multiple unsafe casts. `call_strcpy` reads from uninitialized buffer `v0`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Only one anomaly marker: `[D] Unsupported jumpkind Ijk_SigTRAP`. No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). However, higher-level patterns (producer-consumer, signal handling) not identified or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly flagging. Critical bugs presented confidently: `call_strcmp` returns constant `0` instead of computing comparison. `call_strlen` returns `12` directly without computation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for strcpy). No postconditions inferred. Error return values (`4294967295`) not explained as `-1`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced (`g_404074`, `signal_received`) without explanation of purpose or relationship to other code.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (library, syscall, thread sections visible). All code in single file with no header declarations or API boundaries.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`extern` statements). Platform mismatch noted (original ARM64, decompiled X86).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.58/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **`call_strcpy` reads uninitialized memory**: Uses `strncpy(v1, ...)` but returns `strlen(&v0)` where `v0` is uninitialized
+- **`call_strcmp` and `call_strlen` return constants**: Returns `0` and `12` directly instead of computing, losing all semantic meaning
+- **`param_malloc_free` has use-after-free**: Accesses `ptr[1 + i]` after `free(ptr)` - undefined behavior
+- **Type signature corruption**: `int` return types become `unsigned int`, breaking negative error code handling
+- **No error value documentation**: Magic numbers like `4294967295` should be documented as `-1`
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`param_strcpy`, `param_signal_handling`, `thread_compute`), enabling basic semantic recognition despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero explanatory comments, no decompilation confidence indicators, and critical bugs presented without warnings make the code dangerous to use.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag semantic-preserving constant folding**: When functions return constants instead of computing (e.g., `call_strcmp` → `return 0`), add confidence warnings indicating potential optimization artifacts.
+
+2. **Recover signed/unsigned type distinctions from context**: Analyze comparison patterns and error handling to restore `int` vs `unsigned int` correctly, especially for functions returning negative error codes.
+
+3. **Add automatic anomaly detection for memory safety**: Flag use-after-free patterns, uninitialized variable reads, and buffer overflows with explicit warnings (e.g., `// WARNING: ptr accessed after free()`).

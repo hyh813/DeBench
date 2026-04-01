@@ -1,0 +1,143 @@
+# Decompilation Readability Assessment
+
+## Critical Metadata Discrepancies Noted
+- **Source claims**: ARM64, -O0, gcc 12.0
+- **Decompiled binary**: x86, -O3 (filename shows `5-1_gcc_O3_no_g`)
+- **Impact**: This mismatch significantly affects readability expectations. -O3 optimization explains much of the logic loss.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`local_30`, `local_10`, `iVar1`, `puVar1`, `uStack_8`) with zero semantic meaning. Original variables like `value`, `name`, `capture_by_value` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retained original names (`test_cpp_member_func`, `test_cpp_constructor`), and class methods show partial recovery (`Base::virtual_func`, `Derived::getName`). However, initialization functions use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers without explanation (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`). While some match expected return values, none are documented or named as constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `get_pc_thunk_*` injections, `__stack_chk_fail_local()`, `in_GS_OFFSET` stack canary checks, and repeated "WARNING: Removing unreachable block" comments clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions collapsed to constant returns instead of showing actual computation logic. Exception handling reduced to direct `__cxa_throw()` calls without try/catch structure recovery.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Class methods are appropriately separated, but test functions lost all internal structure. Template instantiations recovered as separate functions (`template_max<int>`, `template_swap<int>`), which is good.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Functions read top-to-bottom but this reflects logic loss rather than good structure. Stack check patterns (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`) disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in character array initialization (26 individual `local_30[n] = '\0'` statements instead of `memset`). No loop recovery for initialization patterns.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int`, `double`, `char*`) but class types degraded to raw pointers. `undefined4`, `undefined1` types appear frequently. `thiscall` convention partially recovered.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No class structures recovered. `SimpleClass`, `LifecycleClass`, `Point`, `Container<T>` all lost. Only vtable-based inheritance partially visible through method signatures.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(undefined4 *)__cxa_allocate_exception(4)`, `(int)&PTR__RTTIDerivedA_00014e48`). Pointer arithmetic throughout without bounds checking. Raw `operator_new`/`operator_delete` without RAII.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated Ghidra warnings present ("WARNING: Function...replaced with injection"). Zero semantic comments explaining algorithm intent. All original source comments lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: RAII patterns, virtual dispatch, template instantiation, lambda captures, exception handling all appear as raw runtime calls without pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra provides some warnings ("Could not recover jumptable", "Unknown calling convention") but these are generic. No specific guidance on what manual analysis is needed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero precondition/postcondition documentation. No invariant recovery for class methods. Exception contracts completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch partially recovered through vtable references (`**(undefined4 **)param_1`). No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address rather than logical relationship. No namespace or class grouping. Static initialization functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Does not compile standalone**. Requires external runtime (`__cxa_allocate_exception`, `operator_new`, `__printf_chk`, `builtin_strncpy`) without declarations. Missing standard library headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):   (3+5+5+3)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System):  (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):     (2+2+5+1)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):   (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.47/10
+```
+
+### Overall Readability Score: **3.5/10**
+
+---
+
+### Critical Defects
+
+- **Complete class structure loss**: `SimpleClass`, `LifecycleClass`, `Point`, `Container<T>` structures not recovered; all member access via raw pointer arithmetic
+- **Logic collapse to constants**: Functions like `test_cpp_virtual_func`, `test_cpp_multiple_inheritance` return pre-computed constants (`0x2a`, `0x47`) instead of showing actual computation
+- **Variable naming completely generic**: `local_30`, `iVar1`, `puVar1` provide zero semantic information about purpose
+- **Redundant initialization patterns**: 26 individual `local_30[n] = '\0'` statements instead of recognized `memset` or loop pattern
+- **Non-compilable output**: Missing declarations for `__cxa_*`, `operator_new`, `builtin_strncpy` runtime functions
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (6/10)** - Test function names were preserved from debug symbols (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`), providing some semantic anchor points for analysis.
+
+---
+
+### Most Needs Improvement
+
+- **Composite Type Recovery (2/10)** - Complete failure to recover any C++ class structures. This is the most critical deficiency as it destroys the object-oriented semantics that are central to the source code's purpose.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement C++ class structure recovery**: Analyze vtable layouts and method signatures to reconstruct class definitions with field names inferred from access patterns (e.g., `this+4` accessed in `Derived::virtual_func` should be `multiplier`).
+
+2. **Recognize and collapse redundant initialization patterns**: Detect sequential memory zeroing patterns and emit `memset()` calls instead of individual byte assignments, reducing 26 lines to 1.
+
+3. **Preserve computation logic over constant folding**: Even at -O3, emit the actual computation path with comments noting compiler optimization rather than replacing entire functions with pre-computed constants. This enables understanding of *how* results are derived.
+
+---
+
+### Additional Observations
+
+| Aspect | Issue |
+|--------|-------|
+| **Optimization Level** | Binary compiled at -O3 despite source metadata claiming -O0; this explains aggressive constant folding |
+| **Architecture Mismatch** | Source claims ARM64, decompiled binary is x86; suggests different build than documented |
+| **Debug Symbols** | Some function names preserved (indicating debug info existed) but variable names completely lost |
+| **C++ Runtime** | Heavy reliance on libstdc++ internals (`__cxa_*`, `operator_new`) without abstraction |
+
+**Assessment Confidence**: High - The decompilation shows systematic patterns of C++ feature loss that are consistent across all test functions, indicating fundamental decompiler limitations with C++ semantics rather than isolated failures.

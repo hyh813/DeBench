@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. Original source had meaningful names like `char c`, `short a, short b`, `int x` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`), but runtime functions use generic names (`sub_3F8`, `sub_1608`) and some test functions lost call semantics.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (65, 32, 0x1Au, 44, 440). Test functions print pre-computed constants instead of showing actual computation logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler runtime bloat (__muldf3, __subdf3, __aeabi_dadd - 7 functions failed to decompile). Register variables (`v4`, `v5`) and redundant casts pollute user code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while patterns (`do { ... } while (a2);`). Test functions optimized to constant printing, losing actual control flow. Some backward jumps could be cleaner.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions collapsed into constant printing (lost actual function call structure). Runtime functions are monolithic (e.g., `__muldf3` is 150+ lines). User functions reasonably sized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but do-while loops disrupt natural flow. Some forward jumps in complex functions like `array_3d` and `graph_traverse`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show extreme redundancy (all values pre-computed). Runtime functions have significant duplicate bit-manipulation patterns. User functions relatively clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded significantly - `char` becomes `int`, `short` becomes `__int16`, pointers become `_DWORD*`. Original `const int *p` becomes `_DWORD *a1` losing const-correctness.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs shown as `_DWORD*` or `int*` with array indexing (`a1[0]`, `a1[1]`, `a1[2]`). No struct field names recovered. `Point3D`, `Rect`, `Widget` all lost. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(_DWORD *)`, `(int *)`). Pointer arithmetic without type safety (`a1 + 4 * a2`). Function pointer types degraded to generic signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations. Only minimal function headers. Original source had extensive comments explaining each test case - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list (`linked_list`), binary tree (`binary_tree_sum`), and graph traversal all shown as raw pointer chasing without data structure identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some "FAILED to decompile" markers for 7 external functions. No warnings about suspicious patterns or potential undefined behavior. `volatile_access` optimization not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). No postconditions inferred. No error condition documentation. Original null checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No call graph. Test functions don't show actual function calls (constants printed instead). Global variable usage unclear.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Runtime functions mixed with user code. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 7 functions marked "FAILED to decompile" requiring external stubs. External dependencies (__libc_start_main, printf, etc.) not properly declared. Would require extensive patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type):        (5+2+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (4+3+3)/3   = 3.33  × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  4.10/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Composite types completely lost** - All structs (`Point3D`, `Rect`, `Widget`, `Node`) shown as `_DWORD*` with array indexing instead of field access
+- **Test functions optimized away** - Actual function calls replaced with pre-computed constant printing, losing semantic meaning
+- **Variable names entirely generic** - `a1`, `a2`, `v1`, `v2` provide no semantic information about purpose
+- **No comments recovered** - Original source had extensive documentation; decompiled code has none
+- **7 functions failed to decompile** - External dependencies require manual stubbing
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved accurately from original source, maintaining semantic identity
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all composite types reduced to raw pointer arithmetic with array indexing
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from memory access patterns** - Detect consistent offset patterns (e.g., `a1[0]`, `a1[1]`, `a1[2]` for Point3D) and suggest named struct definitions
+2. **Preserve function call semantics in test code** - Don't optimize away actual function calls; show the computation flow even if values are constant-folded
+3. **Add semantic comments for common patterns** - Recognize linked list traversal, tree recursion, and array iteration patterns and add explanatory comments

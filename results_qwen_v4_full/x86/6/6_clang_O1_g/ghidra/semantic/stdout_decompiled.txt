@@ -1,0 +1,14 @@
+Testing standard library functions...
+String length: 8
+Strcmp result: 0
+Strlen result: 12
+Memcpy result: 90
+Memcmp result: 0
+Value: 42, Name: TestName
+Printf result: 26
+Scanf result: 579
+Fopen result: 42
+Fread result: 42
+Malloc result: 90
+Memset result: 0
+Strchr result: 15

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. A few exceptions like `ptr`, `idx`, `result` exist but don't compensate for the pervasive use of meaningless names that obscure variable purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Application functions retain original names (`cdecl_func`, `test_calling_conventions`), but runtime helpers use mechanical names (`sub_40040c`, `sub_4004ac`). The function pointer callback `$a.8` is particularly problematic and unreadable.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation (4294967295 for -1, 0x100000, 1374389535 for float representation). String literals are externalized as `g_402180` references with no meaningful content visible.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The `__adddf3` function contains hundreds of lines of ARM condition flag calculations (`armg_calculate_condition`, `armg_calculate_flag_c`). Runtime initialization functions (`_init`, `deregister_tm_clones`) clutter the output unnecessarily.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions have reasonable flow, but complex ones use excessive `goto` with labels (`LABEL_4004d0`, `LABEL_401ce9`). The `__adddf3` function has deeply nested conditionals that are nearly impossible to follow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justuration: Function boundaries are mostly preserved, but `__adddf3` is excessively large (500+ lines) and should be decomposed. Some functions like `call_cdecl` call their target twice unnecessarily, suggesting decomposition issues.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow in many functions. Simple functions read top-to-bottom reasonably, but `__adddf3` and `test_calling_conventions` have jump patterns that make linear reading impossible.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Multiple functions call themselves twice (`call_cdecl` calls `cdecl_func` twice, returns second call). The `__adddf3` function has massive redundancy in repeated `armg_calculate_condition` calls with identical parameters.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to generic `unsigned int` instead of specific types (`int32_t`, `size_t`). Function pointer types incorrectly represented as `unsigned int *a0`. Pointer vs. integer distinction frequently lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions mostly lost—`struct_0` with generic `field_0` instead of `LargeStruct` with `data[16]`. `SmallStruct` not recovered; accessed via pointer arithmetic (`*(a0) * a0[1]`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts present (`*((int *)&v0)`, `(char *)&v2[0]`). Function pointer calls have wrong signatures (`a0(a1, a0)` passes pointer as second argument). Pointer arithmetic often incorrect.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only auto-generated annotations like `/* do not return */` and `// Other Possible Types: unsigned int`. No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs handling present but not identified as such. No design patterns recognized. The `va_list` pattern in `varargs_func` is obscured by pointer manipulation rather than recognized as standard varargs.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite numerous issues. Incorrect function signatures (5-param `arm_aapcs_func` becomes 4-param) not highlighted. Type mismatches silently present without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist (`if (!p) return -1`) but not explained as contracts. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_413008`, `g_402180`) referenced without explanation. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Runtime functions (`_init`, `_start`, `_fini`) mixed with application code. No namespace or package structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies not documented. Many undefined globals referenced (`g_413008`, `g_412f04`). Would require significant stubbing and patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+3)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.50/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects
+- **Variable `v0`, `v1`, `a0`, `a1`** should have semantic names based on usage (e.g., `sum`, `count`, `string_ptr`)
+- **Function `__adddf3`** contains 500+ lines of nested `armg_calculate_condition` calls that obscure the actual floating-point addition logic
+- **Struct types lost** - `LargeStruct` and `SmallStruct` recovered as raw pointer arithmetic instead of proper struct definitions
+- **Function signatures incorrect** - `arm_aapcs_func` takes 4 params instead of 5, `func_mixed_args` takes 6 params instead of 4
+- **No comments or anomaly flags** despite numerous type mismatches and signature errors that should be highlighted
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)** - Application functions retained their original meaningful names (`cdecl_func`, `test_calling_conventions`, `varargs_func`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means analysts must reverse-engineer every algorithm from scratch, even for straightforward operations like varargs handling.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in loop bounds should be named `count`, `limit`, `size`)
+2. **Recover composite types from access patterns** - Detect struct field access patterns (`*(ptr)`, `ptr[1]`) and reconstruct proper struct definitions with meaningful field names
+3. **Add anomaly detection and flagging** - Automatically detect and comment on signature mismatches, type inconsistencies, and unresolved indirect calls with confidence indicators

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Initial Analysis
+
+Looking at this task, I notice a critical issue: **the target function `param_fake_branch` from the original source is completely missing from the decompiled output**. The decompiled code shows different functions entirely (`param_division_by_zero_constprop_0/1`, `call_vectorized_loop`, etc.), suggesting either:
+1. The decompiler failed to capture the target function
+2. There's a mismatch between source and decompiled binary
+
+This severely impacts the evaluation since I cannot directly compare `param_fake_branch` between source and decompiled versions. I'll evaluate what's actually present in the decompiled output.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `str`, `mem`. The decompiler used single-letter generic names with no semantic meaning. For example, `v1` is used for both a divisor in GCD calculation and a signal handler address - completely opaque.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Function names like `param_division_by_zero_constprop_0` are overly mechanical with "constprop" indicating compiler optimization detection. The target function `param_fake_branch` is completely missing. Names lack the action-verb clarity of the original (e.g., `call_fake_branch` should be preserved).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere: `90` (XOR key for decryption), `31` (buffer size), `256` (modulo), `0x1c5fefff` (signal handler address). The string `"\x1a+<M"` is the encrypted "Hello" but completely opaque. No constants like `MAX_BUFFER` recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The `_setjmp` struct construction is extremely verbose with nested anonymous structs. The code includes `__printf_chk`, `__stack_chk_fail`, `__asm_udf` which are compiler/runtime artifacts. However, some dead code was eliminated.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The GCD calculation in `test_obf_opt_edge` uses a while loop correctly. However, the `_setjmp` handling creates awkward nested structures. The control flow is readable but the signal/setjmp pattern is awkwardly expressed.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The original 464-line source with 30+ functions became 184 lines with only 6 functions. Many functions are missing entirely (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, etc.). The `test_obf_opt_edge` function is 198 lines - too large.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. The while loop for GCD is linear. Early returns present. Some forward jumps in the string decryption loop but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some dead code eliminated. The `call_vectorized_loop` was correctly constant-folded to return 72. No obvious redundant expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good for ARM64. However, `jmp_buffer` and `segv_buffer` are declared as `int32_t` instead of `jmp_buf`. The global function pointer `g1` has a cast to `(void (*)(int32_t))-0x1c5fefff` which is bizarre.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The `_setjmp` call uses anonymous struct literals with cryptic field names (`e0`, `e1`, `e2`). The `jmp_buffer` should be `jmp_buf` type. No struct for the bitfield in `param_implementation_defined` (which is missing).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(char *)&str` where `str` is `int32_t`, pointer arithmetic in string decryption loop, casting addresses to function pointers directly (`(void (*)(int32_t))-0x1c5fefff`). The `strncpy` with `int32_t` destination is concerning.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only module/address comments present: "From module: /work/src/7.c", "Address range: 0x105ac - 0x105bc", "Line range: 459 - 462". No functional comments explaining what functions do. No indication that `param_fake_branch` is missing.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The GCD algorithm (Euclidean) is recognizable as a while loop. Signal/setjmp pattern is present but awkwardly expressed. No recognition of the "fake branch" obfuscation pattern or opaque predicates.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that `param_fake_branch` and many other functions are missing. The `__asm_udf(0)` (undefined instruction) in `param_division_by_zero_constprop_0` has no explanation. The weird global initialization `g1` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The signal handlers have no contracts. No documentation of what functions are expected to do.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships partially visible (e.g., `test_obf_opt_edge` calls other functions). But missing: `call_fake_branch` calling `param_fake_branch`, the opaque predicate functions, etc. No caller/callee documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file. Some grouping by functionality visible but disorganized compared to original which had clear sections (OBF-L4, OPT-L4, EDGE-L3).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code includes headers but has issues: `jmp_buffer` and `segv_buffer` should be `jmp_buf` type. The `__printf_chk` and `__stack_chk_fail` are glibc internals. Would require modifications to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- **Target function `param_fake_branch` completely missing** from decompiled output - cannot evaluate the primary function
+- Variables use generic names (`v1`, `v2`, `v3`, `str`, `mem`) with no semantic meaning
+- Magic numbers everywhere: `90` (XOR key), `31` (buffer size), `256` (modulo), `0x1c5fefff` (address)
+- No struct recovery - `_setjmp` uses anonymous struct literals with cryptic field names (`e0`, `e1`, `e2`)
+- `jmp_buffer` and `segv_buffer` declared as `int32_t` instead of proper `jmp_buf` type
+- Encrypted string `"\x1a+<M"` completely opaque - should show decrypted "Hello"
+- 18 functions from original source missing entirely
+
+**Best Quality Aspect:** Redundancy Elimination (scored 7/10)  
+- Some constant propagation worked correctly (e.g., `call_vectorized_loop` → return 72)
+- No obvious dead code remnants
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic single-letter variable names make code practically unusable for analysis
+- Should infer names from usage patterns (e.g., `v1` in GCD is clearly `divisor`)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function names from debug symbols** - the binary was compiled with `-g`, so debug info should yield accurate function names like `param_fake_branch`
+2. **Infer variable names from usage patterns** - `v1` used as divisor in GCD should be named `divisor` or `b`
+3. **Recover standard types** - `jmp_buffer` should be `jmp_buf`, detect encrypted strings and show both encrypted/decrypted forms

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/5-23/5-23_gcc_Os_no_g/angr/syntactic/bin/5-23_gcc_Os_no_g_fixed",
+  "stdout": "Macro constants: 140733741348088\nMacro functions: 64\nConditional compile: 30\nMulti-branch compile: 32\nMacro recursion: 57122\nStringize: 116\nToken paste: 19\nVariadic macro: 60\nLOG: Values: 10, 20, 30\nMacro override: 60\nInclude guard: 16\nBuiltin macros: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:41\nAll tests passed!\nASM basic: 0\nASM clobber: 4269721567\nASM multi-instruction: 4294967295\nASM SIMD: 58\nASM atomic: 35\nASM privileged: 15\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

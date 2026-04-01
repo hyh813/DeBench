@@ -1,0 +1,140 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `ptr`, `idx` throughout. Stack variables appear as cryptic names like `vvar_54{r48|8b}`. Only global variables like `global_counter` retain meaningful names. The decompiler made no effort to infer semantic meaning from usage patterns (e.g., `a0` used as array index should be `n` or `size`).
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most test functions retain their original names: `double_value`, `local_vars`, `heap_basic`, `vla_stack`, `alloca_usage`, `memory_leak`, `dangling_pointer`. However, some CRT startup functions use generic names like `sub_401020`. The primary function names are excellent matches to source.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. Array sizes like `10`, `20` are hardcoded in test output. However, some constants like `50` for expected values are correctly computed. The decompiler doesn't flag or explain the -1 cast to unsigned pattern.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts; no debug symbols leakage. Some redundant type casts present (e.g., `(unsigned int)v1 & 4294967295`). The `__printf_chk` and `__libc_start_main` are legitimate CRT functions, not noise. Overall clean output with minor artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Loops are correctly recovered as `do-while` constructs. The `vla_stack` and `alloca_usage` functions show complex stack allocation logic that is hard to follow but accurate. At -O0, control flow should be nearly identical to source, and it mostly is, though some loop direction logic is inverted.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching source. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is properly separated. Helper functions like `create_tree_node` are correctly extracted. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom. The `vla_stack` function has a confusing while loop for stack alignment that disrupts linear reading. Some computed goto patterns in VLA/alloca handling create non-linear flow. Early returns used appropriately in error checking.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No obvious dead code. Loop unrolling is minimal (appropriate for -O0). Some redundant expressions like `(v1 & 4294967295)` appear multiple times. The decompiler didn't simplify these, but they're not severe enough to impede understanding.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Mix of precise and generic types. `unsigned int` and `unsigned long` used correctly for return types. However, many parameters use `unsigned long` where `int` would be more accurate (e.g., `local_array(unsigned long a0)` should be `int`). Function pointers lose their signature, becoming `unsigned long`.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Struct recovery is partial. The decompiler creates generic struct names (`struct_0`, `struct_1`, etc.) with field names like `field_0`, `field_8`. The `Node` structure in `linked_list_heap` is reasonably reconstructed with `field_0` (data) and `field_8` (next pointer). However, the `Point` struct was completely lost in `heap_struct`.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several unsafe operations present. The `dangling_pointer` function correctly shows the use-after-free pattern but doesn't warn about it. Pointer arithmetic like `ptr + idx * 4` is explicit but not bounds-checked. The `heap_overflow` shows the off-by-one loop but no safety annotations. Multiple `(unsigned int)` casts obscure intent.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No meaningful comments. The decompiler provides only auto-generated function headers with addresses. No explanation of algorithm logic, no recovery of original comments from source. The test functions have hardcoded expected values in printf but no documentation of what they test.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Basic patterns recognized (loops, conditionals, malloc/free pairs). The linked list creation/traversal pattern is visible but not named. Memory leak pattern in `memory_leak` is recognizable but not flagged. No explicit pattern naming or documentation.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly flagging. The `dangling_pointer` function accesses freed memory but no warning is emitted. The `double_free` shows the double-free bug but isn't annotated. Stack aliasing in `stack_alias` isn't flagged as unusual. The decompiler presents all code with equal confidence.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No pre/postcondition recovery. Null checks are present in code but not documented as requirements. The `vla_stack` function has bounds checking (`if (v2 > 999) return -1`) but no documentation of valid input ranges. No contract information recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are visible but relationships unclear. The `test_*` functions call their respective test targets, but the decompiler doesn't document this relationship. Global variable usage is partially visible through `extern` declarations but not fully explained. Callback relationships (e.g., `set_global_callback` → `call_global_callback`) are present but not documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically by category (stack, heap, static, memory ops). CRT startup code is separated. Test functions are properly grouped. However, all functions are in a single file with no header separation. Static functions like `static_local` aren't marked as file-scoped.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Code should compile with standard libc. External declarations are present for CRT functions. However, the code uses `extern` for functions that should be declared in headers. The `fork()` and `waitpid` calls require `<sys/wait.h>`. Some patching needed for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+7)/4 = 5.75
+L2_avg = (7+8+6+7)/4 = 7.00
+L3_avg = (6+5+5)/3 = 5.33
+L4_avg = (2+5+2+2)/4 = 2.75
+L5_avg = (4+7+7)/3 = 6.00
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (5.33 × 0.20) + 
+          (2.75 × 0.15) + (6.00 × 0.10)
+        = 1.725 + 1.75 + 1.066 + 0.4125 + 0.6
+        = 5.5535/10
+```
+
+**Overall Readability Score: 5.55/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming**: All parameters use generic names (`a0`, `a1`, `a2`) losing semantic information about their purpose (e.g., `n` for count, `ptr` for output)
+- **No comments**: Zero semantic comments explaining algorithms, contracts, or anomalies despite -O0 compilation preserving source structure
+- **Struct field loss**: The `Point` struct in `heap_struct` was completely lost; fields accessed as raw memory instead of `p->x`, `p->y`
+- **Anomaly silence**: Dangerous patterns like dangling pointer access (`return *(ptr)` after `free(ptr)`) and double-free are presented without warnings
+- **Magic numbers**: Error return value `4294967295` appears everywhere without explanation that it represents -1 as unsigned
+
+### Best Quality Aspect
+
+**Function Naming (Score: 8/10)** - The decompiler excellently recovered original function names for all test functions (`double_value`, `local_vars`, `heap_basic`, `memory_leak`, etc.), making it easy to identify the purpose of each function at a glance.
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (Score: 2/10)** - At -O0, the decompiler should have near-perfect source recovery. The complete absence of semantic comments, algorithm explanations, or anomaly warnings severely limits usability. Even basic documentation explaining what each test function validates would significantly improve readability.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a parameter is used as array index or loop bound, name it `n` or `size`. When a parameter is dereferenced for output, name it `out` or `result_ptr`. The current `a0`, `v0` pattern provides no semantic value.
+
+2. **Add semantic comments for non-trivial logic**: Explain VLA stack allocation, the purpose of `memop_memory_barrier`, and flag dangerous patterns like use-after-free. At -O0, the decompiler has sufficient information to document these.
+
+3. **Recover struct field names**: Use type information and field access patterns to infer meaningful names. The `Node` struct clearly has `data` and `next` fields based on usage; the decompiler should name them accordingly instead of `field_0` and `field_8`.

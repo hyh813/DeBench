@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Function parameters are recovered perfectly (e.g., `c`, `arr`, `n`), but local variables frequently use generic names like `local_5`, `iVar1`, or `cVar1`, obscuring their specific roles in calculations (e.g., `local_5` in `process_char`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `struct_bitfields`), likely due to the presence of debug symbols (`-g`), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: Most literals are clear, but magic numbers appear in place of named constants, such as `0x2c` (44) in `array_2d_stack` instead of `sizeof(int[10]) + sizeof(int)`, and `0x32` (50) in `enum_switch` instead of the enum value.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from compiler artifacts, including `memcpy` calls for static array initializations (e.g., in `test_array_types`) and Ghidra-specific macros like `CONCAT44` in `process_ll`, which obscure the original logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; `for` loops, `while` loops, and `switch` statements are recovered naturally and match the source structure perfectly, with no spurious `goto` statements or spaghetti code.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion without any artificial outlining or inlining that would disrupt the logical structure.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or complex nesting, making it easy to follow the execution path as intended by the original author.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little redundancy in the logic; however, the explicit expansion of `volatile_access` into `return *p + *p;` (omitting the intermediate variables `a` and `b` from the source) slightly alters the semantic emphasis of the volatile operation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type failures occur: `process_ld` incorrectly returns `longdouble *` instead of `long double`, and `process_ll` decompiles into low-level bit manipulation (`CONCAT44`) rather than a simple multiplication, indicating a failure to recover 64-bit types cleanly on this architecture.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: While standard structs like `Point3D` are recovered with field names, complex types fail significantly; `struct_bitfields` loses all bitfield semantics, treating the struct as a raw `ushort` pointer with manual shifts and masks (`*(ushort *)f >> 1 & 3`).
+
+**11. Type Safety:** Score: 3/10
+Justification: A critical operator precedence bug exists in `ptr_diff`: `(int)p1 - (int)p2 >> 2` evaluates as `((int)p1 - (int)p2) >> 2` due to missing parentheses, which is semantically incorrect for pointer arithmetic. Additionally, `array_2d_stack` uses unsafe pointer casting `*(int *)((int)arr + i * 0x2c)`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to generic warnings like "WARNING: Unknown calling convention" and provide no semantic value, algorithm explanation, or documentation of the decompiler's confidence level.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Standard control flow idioms (loops, switches) are recognized, but higher-level patterns like linked list traversal or recursion are not explicitly labeled or commented, though the code structure remains readable.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the `long double` return type mismatch or the `ptr_diff` precedence error as anomalies; it presents the code confidently despite these significant issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `struct_with_ptr` is present in code but not annotated as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to understand (e.g., `test_data_types_l1` calling `process_char`).
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the exact order of functions as they appear in the source file, preserving the logical grouping of tests (Data Types, Arrays, Pointers, etc.).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is not standalone compilable due to Ghidra-specific macros (`CONCAT44`, `SUB82`) and missing headers for `memcpy` and standard types, requiring significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- **Type Safety Bug**: `ptr_diff` contains a critical operator precedence error `>> 2` without parentheses, changing the logic.
+- **Type Failure**: `process_ld` fails to recover the `long double` return type, returning a pointer instead.
+- **Composite Type Loss**: Bitfields in `struct_bitfields` are completely lost, replaced by raw bit manipulation on a `ushort` cast.
+- **Noise**: Excessive use of `memcpy` for static initialization and Ghidra macros (`CONCAT44`) obscures logic.
+- **Literal Clarity**: Magic number `0x2c` used in `array_2d_stack` instead of semantic size calculation.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Debug symbols allowed perfect recovery of all function names, making the high-level intent immediately obvious.
+
+**Most Needs Improvement:** Type System Fidelity (scored 4.0/10)
+- **Why?** Failures in recovering `long double`, `long long`, and bitfields, combined with a dangerous precedence bug in pointer arithmetic, severely impact the correctness and safety of the types.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix Operator Precedence in Pointer Arithmetic**: Ensure pointer subtraction generates correct C syntax (e.g., `((int)a - (int)b) / 4`) to avoid logic errors.
+2. **Improve Floating Point Type Recovery**: Correctly handle `long double` return values and 64-bit integer multiplication (`long long`) without resorting to low-level macros like `CONCAT44`.
+3. **Preserve Bitfield Semantics**: Detect and reconstruct bitfield structures instead of falling back to raw integer shifts and masks.

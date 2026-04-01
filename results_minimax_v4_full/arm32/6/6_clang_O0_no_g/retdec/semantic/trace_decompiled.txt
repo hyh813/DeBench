@@ -1,0 +1,17 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=1,Arg1=-1094612988,Arg2=0,Arg3=83320|r0=0x1,r1=0xbec18804,r2=0x0,r3=0x14578,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|1|call_strcpy|1|Arg0=3,Arg1=0,Arg2=-438873856,Arg3=-438873856|r0=0x3,r1=0x0,r2=0xe5d75100,r3=0xe5d75100,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|2|param_strcpy|2|Arg0=-1094613472,Arg1=84130,Arg2=84130,Arg3=-438873856|r0=0xbec18620,r1=0x148a2,r2=0x148a2,r3=0xe5d75100,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|2|param_strcpy|2|8
+TRACE_EXT|1|call_strcpy|1|8
+TRACE_ENT|3|call_strcmp|1|Arg0=3,Arg1=0,Arg2=-438873856,Arg3=-438873856|r0=0x3,r1=0x0,r2=0xe5d75100,r3=0xe5d75100,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|4|param_strcmp|2|Arg0=84139,Arg1=84143,Arg2=-438873856,Arg3=-438873856|r0=0x148ab,r1=0x148af,r2=0xe5d75100,r3=0xe5d75100,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|4|param_strcmp|2|-1
+TRACE_ENT|5|param_strcmp|2|Arg0=84147,Arg1=84147,Arg2=97,Arg3=100|r0=0x148b3,r1=0x148b3,r2=0x61,r3=0x64,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|5|param_strcmp|2|0
+TRACE_ENT|6|param_strcmp|2|Arg0=84151,Arg1=84155,Arg2=-1,Arg3=25088|r0=0x148b7,r1=0x148bb,r2=0xffffffff,r3=0x6200,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|6|param_strcmp|2|1
+TRACE_EXT|3|call_strcmp|1|0
+TRACE_ENT|7|call_strlen|1|Arg0=3,Arg1=0,Arg2=-438873856,Arg3=-438873856|r0=0x3,r1=0x0,r2=0xe5d75100,r3=0xe5d75100,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|8|param_strlen|2|Arg0=84159,Arg1=84159,Arg2=-438873856,Arg3=-438873856|r0=0x148bf,r1=0x148bf,r2=0xe5d75100,r3=0xe5d75100,r4=0xbec186c8,r5=0x0,r6=0x0,r7=0x0
+TRACE_EXT|8|param_strlen|2|12
+TRACE_EXT|7|call_strlen|1|12

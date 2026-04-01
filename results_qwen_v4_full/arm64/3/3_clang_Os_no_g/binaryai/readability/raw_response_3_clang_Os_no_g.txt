@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `uVar2`, `lVar6`, `auVar8` with no semantic meaning. Original variables like `arr`, `local`, `p` are completely lost, making it impossible to track variable purpose without deep analysis.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but many are generic (`FUN_001008e0`, `FUN_00100afc`). External library functions correctly identified but wrapped unnecessarily.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0x2a`, `0x14`, `0x3c`, `0xffffffff`) with no explanation. Original constants like `42`, `10`, `2048` converted to hex without context, obscuring their semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe NEON vector operation noise (`NEON_cmhi`, `auVar1[16]`, `CONCAT17`) obscures simple integer loops. Redundant vector operations for basic arithmetic create significant readability pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into complex do-while with NEON comparisons. Original `for (int i = 0; i < 10; i++)` becomes unreadable vector comparison loops with manual counter management.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved correctly. However, `test_stack_memory` and `test_heap_memory` are monolithic (200+ lines) with all test cases inlined rather than maintaining original structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Excessive forward jumps and label references (`LAB_00101384`, `LAB_00101394`) disrupt reading flow. Simple conditionals become multi-level goto patterns.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from vector operation unrolling. Same NEON comparison pattern repeated multiple times within single functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy degradation to `undefined`, `undefined4`, `undefined8`, `undefined [16]`. Original `int`, `char*`, `Point*` types lost. Return types often wrong (`undefined` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `Point` struct completely lost - accessed via pointer arithmetic (`*(undefined4 *)(__ptr + 2)`). `Node` linked list structure not recovered, all field access is raw offset arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(ulong)`). Pointer arithmetic without bounds checking. Function pointer types degraded to `code *` or `undefined8`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only auto-generated function headers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (array initialization, linked list traversal, tree creation) not recognized or documented. NEON operations obscure standard C idioms completely.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about potential issues (dangling pointer in `dangling_pointer`, memory leak in `memory_leak`, double-free in `double_free`). Dangerous patterns presented as normal code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL`). Null checks present but not documented as contracts. Error return values not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. Global variables (`global_counter`, `static_local_counter`) referenced without declaration context. Callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically but test functions mixed with implementation. External function declarations present but not organized into headers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has syntax errors (missing declarations for `global_counter`, `static_local_counter`). External dependencies not documented. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+7+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 3.77/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on semantic usage (e.g., `input_value`, `loop_index`, `array_size`)
+- **NEON vector operations** obscure simple integer loops - should recover standard C for/while constructs
+- **Point struct completely lost** - all accesses are raw pointer arithmetic instead of `p->x`, `p->y`
+- **Zero comments** explaining dangerous patterns (memory leaks, dangling pointers, double-free)
+- **Type degradation** to `undefined`, `undefined4` loses all type safety information
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Function boundaries mostly preserved correctly with original names for most test functions
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level loop constructs** from NEON vector patterns - detect common iteration patterns and emit standard C for/while loops instead of raw vector comparisons
+2. **Implement semantic variable naming** - analyze variable usage patterns to infer meaningful names (e.g., variables used in array indexing should be named `index`, `i`, etc.)
+3. **Add anomaly detection and documentation** - flag dangerous patterns (memory leaks, use-after-free, double-free) with explicit warnings and confidence indicators

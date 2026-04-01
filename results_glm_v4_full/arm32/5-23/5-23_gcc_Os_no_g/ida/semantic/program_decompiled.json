@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_gcc_Os_no_g/ida/syntactic/bin/5-23_gcc_Os_no_g_fixed",
+  "stdout": "=== Testing Preprocessing Features ===\nPpL201: 64\nPpL202: 30\nPpL203: 32\nPpL204: 57122\nPpL301: 116\nPpL302: 19\nPpL303: 60\nLOG: Values: 10, 20, 30\nPpL304: 60\nPpL305: 16\nPpL306: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:11\nPpL307: 382\n=== Testing Assembly Features ===\nAsmL401: 15\nAsmL402: 12\nAsmL403: 42\nAsmL404: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

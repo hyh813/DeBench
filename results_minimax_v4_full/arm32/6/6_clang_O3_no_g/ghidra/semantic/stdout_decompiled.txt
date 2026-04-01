@@ -1,0 +1,20 @@
+Standard Library Function Tests
+
+String length: 12
+strlen result: 0
+memcmp result: 12
+memcpy result: 90
+memcmp final result: -1
+Value: 42, Name: Test
+printf result: 22
+sscanf result: 579
+fopen result: 42
+fread result: 42
+malloc result: 90
+memset result: 0
+strchr result: 15
+System Call Tests
+
+syscall result: 42
+stat result: 42
+Fork result: 42

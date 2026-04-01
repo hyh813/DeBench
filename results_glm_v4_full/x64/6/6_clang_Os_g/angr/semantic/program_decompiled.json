@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x64/6/6_clang_Os_g/angr/syntactic/bin/6_clang_Os_g_fixed",
+  "stdout": "Testing Standard Library:\ncall_strcpy: 14\ncall_strcmp: 0\ncall_strlen: 12\ncall_memcpy: 90\ncall_memcmp: -1\nValue: 42, Name: Test\ncall_printf: 22\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

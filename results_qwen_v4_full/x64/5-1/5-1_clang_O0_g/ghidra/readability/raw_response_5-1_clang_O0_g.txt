@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function/class names preserved well (`test_cpp_member_func`, `SimpleClass::getValue`), but local variables are generic (`iVar1`, `iVar2`, `this_local`, `x_local`). Some meaningful names exist (`capture_by_value`, `capture_by_ref`) but most are decompiler-generated.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names mostly preserved (`test_cpp_virtual_func`, `LifecycleClass::getData`). Compiler-generated functions like `FUN_00102020` and `_GLOBAL__sub_I_5_1_cpp` lack semantic meaning but are identifiable as initialization code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x1234` (class ID), `0x1f` (buffer size), `0x2a` (exception value 42), `0x96` (150), `0xfa` (250). No constants recovered despite -O0 debug build.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant artifacts: `_local` suffixes on all parameters, `/* try { // try from...has its CatchHandler */` comments throughout, `WARNING: Unknown calling convention` warnings, and `WARNING: Struct "DiamondDerived": ignoring overlapping field` messages.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural (if/else, for loops preserved). Exception handling shows try-catch annotations. Complex inheritance cases have awkward pointer arithmetic (`(this->super_MiddleA)._vptr_MiddleA[-3]`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template instantiations create excessive fragmentation (214 functions total vs. ~15 in source). Smart pointer internals exploded into `__uniq_ptr_impl`, `_Tuple_impl`, `_Head_base` chains. Test functions appropriately sized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Exception handling annotations disrupt flow slightly. No excessive goto usage. Destructor calls properly sequenced at function ends.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiations create massive duplication (`template_max<int>` and `template_max<double>` nearly identical). Smart pointer operations repeat across `unique_ptr<int>`, `unique_ptr<int[]>`, and custom deleter variants.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `double`, `size_t`). Template types become verbose (`unique_ptr<int,_(lambda_at_src/5-1.cpp:445:20)>`). Some types degrade to generic `type` and `pointer`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures recovered with member functions. Some fields named (`value`, `name`, `data`, `size`), others generic (`field_0x20`, `field_0x10`). Vtable pointers identified (`_vptr_Base`). Diamond inheritance shows "ignoring overlapping field" warnings.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: vtable access via `(**obj->_vptr_Base)`, pointer arithmetic for virtual inheritance adjustment, generic `type*` returns. No const-correctness on many recovered methods.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings, not semantic documentation. DWARF prototype info present (`/* DWARF original prototype: int getValue(SimpleClass * this) */`) but no algorithm explanations or intent documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns structurally present but not identified. Lambdas become `anon_class_16_2_b9b285fb`. Virtual dispatch visible through vtable but not labeled as polymorphism. Smart pointer RAII pattern not explained.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage: "Unknown calling convention", "Struct ignoring overlapping field", "Removing unreachable block". These help identify decompilation uncertainty areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception handling present but contracts like "requires: idx < size" not documented despite being checkable from source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls traceable. Class inheritance visible through `super_Base`, `super_BaseA` naming. Virtual dispatch through vtable explicit but callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file. No logical grouping by class or feature. Related template instantiations scattered. No header file structure for API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone. Missing standard library definitions (`std::unique_ptr`, `std::type_info`). Compiler-specific constructs (`__thiscall`, `__cxa_throw`). Requires extensive stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (6×0.10 + 8×0.10 + 5×0.05 + 5×0.05) = 1.95
+Level 2 (25%): (7×0.08 + 6×0.07 + 7×0.05 + 5×0.05) = 1.58
+Level 3 (20%): (6×0.08 + 6×0.07 + 5×0.05) = 1.15
+Level 4 (15%): (4×0.05 + 5×0.03 + 7×0.03 + 3×0.04) = 0.68
+Level 5 (10%): (6×0.04 + 5×0.03 + 4×0.03) = 0.51
+
+Overall = 1.95 + 1.58 + 1.15 + 0.68 + 0.51 = 5.87/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable `iVar1`, `iVar2`, `iVar3`** should be named semantically (e.g., `r1`, `r2`, `r3` matching source)
+- **Magic numbers** like `0x1234`, `0x1f`, `0x96` lack constant definitions despite debug build
+- **Lambda expressions** decompiled as `anon_class_16_2_b9b285fb` losing capture semantics clarity
+- **Template instantiations** create 214 functions with massive code duplication
+- **Diamond inheritance** shows "ignoring overlapping field" warnings indicating incomplete recovery
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function and class method names preserved accurately, making navigation straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or invariants documented despite being inferable from source code checks
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and debug symbols (e.g., `iVar1` → `r1` based on return value usage)
+2. **Recognize C++ idioms** and label them explicitly (lambda closures, smart pointer RAII, virtual dispatch patterns)
+3. **Extract magic numbers** to named constants using debug symbol information available at -O0

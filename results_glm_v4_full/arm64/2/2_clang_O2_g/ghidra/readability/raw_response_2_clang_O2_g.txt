@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: While parameters like `arr` and `n` are preserved, local variables are generic (`iVar9`, `piVar4`, `uVar5`). For example, in `array_1d_stack`, the accumulator is named `iVar9` instead of `sum`, obscuring its purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `process_char`, `struct_bitfields`, `linked_list`), likely due to preserved debug symbols, providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are replaced with data references (e.g., `puts(&DAT_001031ef)`), and magic numbers like `0x19` in `process_char` (optimized range check) or `0x61` in `test_data_types_l1` are not explained, significantly hindering understanding.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from optimization artifacts, such as `undefined8` types used for memory blocks and `SUB168` macros in `process_ld`, which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The decompiler failed to recover loop structures from the optimized binary. For instance, `array_3d` is a massive wall of 60+ assignment statements instead of nested loops, and `array_1d_stack` is heavily unrolled, making the flow unnatural and hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct boundaries and granularity matching the source (e.g., `binary_tree_sum` is separate from `binary_tree`), with no monolithic inlining artifacts.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While the unrolled code in `array_3d` is technically linear, it is an overwhelming block of arithmetic operations that disrupts the top-to-bottom reading experience expected of a nested loop.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler presents the loop unrolling and constant propagation (e.g., in `test_data_types_l1`) as literal code rather than abstracting it back into a loop or function call, resulting in massive redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types and structs are precise, but `long double` operations are obscured by software emulation calls (`__multf3`, `__addtf3`) and `undefined1[16]` arrays, losing the high-level semantic type.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Structs and unions are recovered perfectly with correct field names and nesting, such as `w->style.fill.r` in `struct_deep` and `p->x` in `struct_simple`, matching the source exactly.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and struct accesses are type-safe. Bitfields in `struct_bitfields` are correctly handled via masking operations (`(uVar1 >> 1 & 3)`), preserving the logic without unsafe casts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are mostly auto-generated warnings (e.g., "WARNING: Removing unreachable block") or "Unresolved local var" markers, providing no insight into the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like string length calculation in `array_string` are presented as a `do-while` loop with pointer arithmetic rather than a standard `strlen` pattern, and loop idioms are entirely lost to unrolling.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags "Unresolved local var" and "Unknown calling convention," which is helpful, but it fails to indicate that the massive unrolling in `array_3d` is an optimization artifact, presenting it as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., array bounds) or postconditions; the logic is presented purely as operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names (e.g., `binary_tree_sum` calls itself recursively), making the call graph easy to understand.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure, with helper functions like `complex_callback` placed appropriately.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on undefined data references (`DAT_...`) and external soft-float functions (`__multf3`) that would require significant patching or a specific environment to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Loop structures in `array_1d_stack`, `array_3d`, and `ptr_increment` are completely lost to aggressive unrolling, creating massive, unreadable blocks of code.
+- String literals in `test_data_types_l1` are replaced with opaque data references (`DAT_001031ef`), destroying the context of the output.
+- Constant propagation in `test_data_types_l1` replaced function calls (e.g., `process_char('A')`) with hex literals (`0x61`), removing the logic of the test harness.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 10/10)
+- Ghidra perfectly reconstructed complex nested structures like `Widget` and `Rect` with accurate field names and access patterns.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 3/10)
+- The failure to re-roll optimized loops into `for` or `while` constructs makes the core logic of array processing functions extremely difficult to comprehend.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement loop rolling/detection algorithms to convert unrolled arithmetic blocks back into idiomatic `for` loops.
+2. Recover string literals from data sections to replace `DAT_` references in `printf` and `puts` calls.
+3. Detect and flag constant propagation artifacts (e.g., `printf(..., 0x61)`) to indicate that a function call was optimized away.

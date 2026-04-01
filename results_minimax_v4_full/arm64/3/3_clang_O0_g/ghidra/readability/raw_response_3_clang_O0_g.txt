@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `local_14`, `local_24`, `aiStack_2c`, `__ptr`, `abStack_810` throughout. The decompiler fails to infer meaningful names from usage patterns - e.g., `local_30` used as loop counter in `local_array` should be `i`, and `abStack_810` in `large_stack_frame` should be `large_buf`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names almost perfectly match the original source - `local_vars`, `local_array`, `local_struct`, `heap_basic`, `heap_calloc`, `heap_realloc`, `stack_alias`, `vla_stack`, `alloca_usage`, etc. All 67 functions are correctly named, demonstrating excellent symbol recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation - `0x2a` (42) in `address_of_local`, `0x14` (20) and `0x1e` (30) in tree functions, `0x800` (2048) in `large_stack_frame`, `0xb` (11) off-by-one in `heap_overflow`. String literals are preserved correctly, but numeric constants lack named equivalents.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from 18+ "WARNING" comments ("Unknown calling convention", "Removing unreachable block", "Heritage AFTER dead removal") and 50+ "Unresolved local var" annotations. These auto-generated comments clutter every function and obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops correctly identified as `for` loops. However, `local_struct` oversimplifies to `return x * 3` losing the struct semantics entirely. The `stack_alias` function has confusing control flow with the `&stack0x00000000 == (undefined1 *)0x1c` check that doesn't match source logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good function separation matching source - each test function (`test_stack_memory`, `test_heap_memory`, etc.) remains separate. Test helper functions like `create_tree_node` are properly extracted. Minor issue: some test functions are 40+ lines but this is acceptable for test code.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in null-check patterns (e.g., `if (__ptr == (void *)0x0) { local_14 = -1; } else { ... }`). No excessive goto usage. Good flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop constructs are clean. Some minor redundancy in `test_memory_op_functions` where buffer initialization could be more compact, but overall code is manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types - `int`, `undefined4`, `void *`. Function pointers use `_func_int_int *` which is somewhat descriptive but not precise. `size_t` used correctly in memory functions. Integer types lose signedness info (e.g., loop counters should be `size_t` or `unsigned int`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` and `TreeNode` structs are partially recovered with correct field names (`data`, `next`, `left`, `right`). However, `Point` struct is completely lost - `local_struct` returns `x * 3` directly and `heap_struct` uses raw pointer `__ptr[1]` for `y` field instead of `p->y`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Manual pointer arithmetic throughout (e.g., `*(int *)((long)__ptr + (long)local_24 * 4)`). No bounds checking visible. Function pointer types are loose. Some unsafe operations in `memop_unaligned_access` using direct cast `*(int *)(buf + 1)`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost all comments are auto-generated noise - "WARNING: Unknown calling convention", "Unresolved local var", "WARNING: Removing unreachable block". No meaningful algorithm explanations, no pre/postcondition documentation, no intent comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns identified. Basic functionality is clear (malloc/free pairs, linked list traversal, tree operations) but not labeled as patterns. Could benefit from comments like "Implements singly-linked list" or "Binary tree with left/right children".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra's WARNING system flags some issues ("Unknown calling convention", "Subroutine does not return"), but these are generic. The `stack_alias` decompilation is clearly wrong (returns `-1` or uninitialized value) but no anomaly is flagged about the broken logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks are present in code but not explained as contracts. No documentation of error return semantics (e.g., "returns -1 on allocation failure").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. Global variable access is transparent (`global_counter`, `global_array`, etc.). However, callback relationships (e.g., `set_global_callback` + `call_global_callback`) lack documentation about the function pointer pattern.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Related functions grouped together (stack tests, heap tests, static tests, memory ops). Static functions properly marked. No header file structure recovered, but this is expected for decompilation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references many undefined externals (`printf`, `malloc`, `free`, `calloc`, `realloc`, `memset`, `memcpy`, `memmove`, `memcmp`, `bcopy`, `fork`, `waitpid`, `exit`). No dependency documentation. Would require significant stubs to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`local_X`, `aiStack_X`, `__ptr`) - should infer names from usage patterns
+- `local_struct` completely loses struct semantics, returning `x * 3` instead of `p.x + p.y`
+- `Point` struct not recovered in `heap_struct` - uses raw pointer `__ptr[1]` instead of `p->y`
+- Excessive noise from 50+ "Unresolved local var" and 18+ "WARNING" comments
+- `stack_alias` produces incorrect decompilation with confusing control flow
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names almost perfectly match the original source - every test function (`local_vars`, `heap_basic`, `stack_alias`, etc.) is correctly identified, demonstrating excellent symbol table recovery.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The decompiler uses generic patterns everywhere instead of inferring meaningful names from usage. Variables like `local_30` (loop counter), `abStack_810` (buffer), and `__ptr` (heap pointer) should be named `i`, `large_buf`, and `arr` based on their semantic roles.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `local_30` used as array index in loop should be named `i`; `abStack_810` sized 2048 should be `large_buf`
+2. Recover composite types - `Point` struct is lost in `local_struct` and `heap_struct`; should reconstruct `p->x` and `p->y` access patterns
+3. Reduce noise - filter "Unresolved local var" annotations to only show when genuinely needed; consolidate WARNING messages

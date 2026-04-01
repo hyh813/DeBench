@@ -1,0 +1,8 @@
+Testing decompiled code outputs:
+
+Opaque predicate result: 10
+Opaque predicate result: 20
+Instruction substitution result: 225
+String encryption result: 0
+Tail call optimized: 0x7a314
+Non-tail call result: 0x13ba

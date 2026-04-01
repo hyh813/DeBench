@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## Overall Readability Score: 4.1/10
+
+---
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+### 1. Variable Naming Quality
+**Score: 3/10**  
+Justification: All local variables use generic names (`v0`, `v1`, `v2`, `a0`, `a1`) with zero semantic meaning. Even obvious loop counters are named `i` without context, and temporary values like `temp1` from source become `v0` losing all intent.
+
+### 2. Function Naming Quality
+**Score: 7/10**  
+Justification: Core test function names are preserved from source (`sequential_ops`, `single_if`, `nested_if_2`), which is excellent. However, helper/runtime functions use mechanical names (`sub_400944`, `sub_400a30`) and some are mislabeled (`$x`).
+
+### 3. Literal Clarity
+**Score: 2/10**  
+Justification: Code is littered with unexplained magic numbers: `4294967294` (UINT_MAX-1), `4294967295` (UINT_MAX), `1717986919` (division constant). Simple arithmetic like `x * 2` becomes `(v0 * 2 | v0 >> 31) & 4294967294` with no explanation.
+
+### 4. Noise Reduction
+**Score: 4/10**  
+Justification: Every function contains stack canary checks (`v6 = *((long long *)&__stack_chk_guard)`), frame pointer setup (`v0 = &v1`), and redundant variable assignments that obscure the actual logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+### 5. Control Flow Naturalness
+**Score: 5/10**  
+Justification: Basic loops and conditionals are mostly recovered (`loop_for_fixed`, `goto_forward`), but switch statements degrade into deeply nested if-else chains (`switch_large` has 10+ nesting levels). Fall-through switch logic is completely broken (`switch_fallthrough`).
+
+### 6. Function Decomposition
+**Score: 6/10**  
+Justification: Function boundaries match source well with appropriate granularity. However, each function includes unnecessary stack frame variables and some helper functions are fragmented (`indirect_recursion_a` calls `indirect_recursion_b` with mangled parameters).
+
+### 7. Code Linearization
+**Score: 6/10**  
+Justification: Most code reads top-to-bottom with appropriate early returns. However, some functions have unnecessary complexity from compiler artifacts that disrupt flow (e.g., `loop_break` has complex pointer arithmetic for simple array access).
+
+### 8. Redundancy Elimination
+**Score: 5/10**  
+Justification: Repeated bit manipulation patterns appear throughout for simple operations (every multiplication uses shift-or-mask patterns). Redundant variable assignments like `v0 = a0; v0 = ...` appear frequently.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+### 9. Type Precision
+**Score: 4/10**  
+Justification: Original `int` types inconsistently become `unsigned int`, `unsigned long long`, or `long long`. Signed/unsigned mismatches throughout (e.g., `sequential_ops` returns `unsigned int` but source returns `int`). No const-correctness preserved.
+
+### 10. Composite Type Recovery
+**Score: 4/10**  
+Justification: Arrays like `int arr[] = {10, 20, 30, 40, 50}` become complex pointer arithmetic with magic numbers (`v3 = 85899345930`). No struct recovery attempted; all composite types lost to raw memory operations.
+
+### 11. Type Safety
+**Score: 4/10**  
+Justification: Multiple unsafe casts throughout (function pointers cast via `*((long long *)((char *)&v2 + ...))`). Pointer arithmetic obscures type relationships. No bounds checking or safety annotations recovered.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+### 12. Comment Quality & Presence
+**Score: 1/10**  
+Justification: Zero comments in decompiled code. No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. All semantic context from source comments is lost.
+
+### 13. Idiom Recognition
+**Score: 2/10**  
+Justification: Control flow patterns (state machines, switch statements) not identified or labeled. No pattern hints provided. Complex constructs like Duff's device (`duffs_device`) not recognized as optimization idiom.
+
+### 14. Anomaly Indication
+**Score: 2/10**  
+Justification: No warnings for problematic code. Indirect calls, unusual stack layouts, and potential undefined behavior presented confidently without flags. No indication of decompilation uncertainty.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Function contracts completely absent despite being critical for understanding behavior.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**  
+Justification: Function calls are visible but relationships not documented. Global variable usage unclear (`g_413f78`, `g_414018`). Callback relationships obscured by pointer arithmetic.
+
+### 17. Module Organization
+**Score: 6/10**  
+Justification: Functions appear in reasonable order matching source structure. However, runtime/init functions mixed with test functions without logical grouping. No namespace or package structure.
+
+### 18. Build System Compatibility
+**Score: 5/10**  
+Justification: External dependencies present (`__stack_chk_guard`, `__libc_start_main`) requiring stubs. Stack canary checks would need to be removed or stubbed for standalone compilation.
+
+---
+
+## CRITICAL DEFECTS
+
+- **Variable `v0`, `v1`, `v2` should be named based on usage** (e.g., `temp1`, `temp2`, `result` in `sequential_ops`)
+- **Magic numbers `4294967294`, `1717986919` need explanation** (represent UINT_MAX-1 and division constants)
+- **Switch statements converted to deeply nested if-else** (`switch_large` has 10+ nesting levels instead of clean switch)
+- **Simple arithmetic obscured by bit manipulation** (`x * 2` becomes `(v0 * 2 | v0 >> 31) & 4294967294`)
+- **Zero comments despite complex logic** (no explanation of algorithms or non-obvious operations)
+
+---
+
+## BEST QUALITY ASPECT
+
+**Function Naming Quality (7/10)** - Core function names preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), making it possible to identify which decompiled function corresponds to which source function.
+
+---
+
+## MOST NEEDS IMPROVEMENT
+
+**Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding complex bit manipulation patterns and control flow extremely difficult, especially for non-trivial functions like `duffs_device` or `switch_fallthrough`.
+
+---
+
+## TOP 3 RECOMMENDATIONS FOR DECOMPILER IMPROVEMENT
+
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (loop counters, accumulators, temporaries) and assign semantic names (`i`, `sum`, `temp`) instead of `v0`, `v1`, `v2`.
+
+2. **Detect and simplify arithmetic optimization patterns** - Recognize common compiler optimizations like `(x * 2 | x >> 31) & 4294967294` as signed multiplication and recover the original `x * 2` expression.
+
+3. **Add confidence annotations and comments for complex constructs** - Flag uncertain decompilations, explain magic numbers, and document recovered patterns (e.g., "// Recovered: 5-level nested if from source").

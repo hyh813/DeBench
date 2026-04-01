@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `result`, `str`, `len`) with no semantic meaning recovered. For example, in `test_cpp_member_func`, the variable holding the computed result should be named `computed_value` but is just `result`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) with demangled comments. The demangled names are accurate but the actual identifiers remain unreadable without comments.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `42`, `100`, `200`, `0x1234` appear without explanation. String literals are present but UTF-8 encoded (e.g., `g2` contains Chinese characters in hex).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) in every function, redundant type casts, and frame pointer manipulation that obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use explicit `goto` labels (`lab_0x2734`) instead of structured conditionals. At `-O0`, the original source had clean control flow that the decompiler failed to recover.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many test functions are collapsed to constant returns (e.g., `test_cpp_multiple_inheritance` returns `71` directly), losing all original logic. Constructor/destructor functions are fragmented across multiple thunk variants.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `test_cpp_rtti` has complex goto-based branching that disrupts linear reading. Most other functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. Multiple destructor variants (`D0Ev`, `D1Ev`, `D2Ev`, `D4Ev`) for the same class create redundancy without clear differentiation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t`, `int32_t` consistently but loses C++ class types entirely. All objects become `int64_t*` pointers. Template instantiations lose type parameters in variable declarations.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures recovered but with generic field names (`e0`, `e1`, `e2`). Class hierarchies noted in comments but not represented in type system. Struct fields lack semantic names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int64_t *)(int64_t)size`, `(int32_t)(float32_t)(float64_t)(int64_t)`. Pointer arithmetic on typed objects without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Demangled function names provided as comments (e.g., `// Demangled: test_cpp_member_func()`), but no algorithm explanations or logic documentation. Class relationships noted but not explained.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns (vtables, virtual thunks) partially recognized but not explicitly named. Template instantiations identified but not labeled as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings present despite obvious issues. `test_cpp_rtti` has suspicious string comparison logic that should be flagged. No confidence indicators for uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts not recovered. No null pointer checks documented despite being present in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch not clearly indicated. Vtable structures show function pointers but call sites don't indicate indirect dispatch. Global variable usage opaque (`g1`, `g2`, etc.).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with no logical grouping. Related class methods scattered. No header file separation between interface and implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and prototypes but requires C++ runtime libraries (`__cxa_*` functions). Would need significant stubbing to compile standalone. Some assembly intrinsics (`__asm_movsd`) not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+5+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (5+4+3+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.38/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `result`) losing all semantic meaning from original source
+- **Test functions collapsed to constants** (e.g., `test_cpp_multiple_inheritance` returns `71` directly instead of computing)
+- **Mangled function names** in actual code requiring comment lookup to understand
+- **Stack canary noise** in every function obscuring actual logic at `-O0` where it shouldn't exist
+- **No anomaly warnings** despite obvious decompilation errors in `test_cpp_rtti` logic
+
+### Best Quality Aspect: **Code Linearization (6/10)**
+- Most functions read top-to-bottom without excessive jumping, making basic tracing possible despite other issues.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero documentation of preconditions, postconditions, or error handling contracts that were explicit in the original C++ source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and debug symbols (e.g., `value` in `SimpleClass` should not become `v1`)
+2. **Preserve original control flow** at `-O0` optimization level instead of introducing goto-based restructuring
+3. **Add anomaly detection** to flag uncertain decompilations (especially for complex C++ features like RTTI and virtual inheritance)

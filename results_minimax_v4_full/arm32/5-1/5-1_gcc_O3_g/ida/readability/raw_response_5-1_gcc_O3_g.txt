@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `a`, `b`) that completely obscure semantic meaning. The original source had meaningful names like `value`, `name`, `size`, `data`, `multiplier`, `capture_by_value`, `capture_by_ref`. This is a severe degradation - the decompiler provides no semantic inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - member functions like `Base::virtual_func`, `Derived::virtual_func`, `MultiDerived::funcA` are well-named with class prefixes. However, many functions retain mangled C++ names like `_Z20test_cpp_member_funcv`, and thunk functions have cryptic labels like `` `non-virtual thunk to'MultiDerived::funcB ``. The verb choice is good where present but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x1F` (31), `42`, `1000`, `0x1234` (4660), `4u`, `8u`, `0x10u`, `0x18u`. While some values like `4700`, `21`, `42` can be inferred as computed results, most literals lack explanation. The decompiler makes no attempt to identify constants or explain the meaning of these values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise artifacts include: thunk functions (`` `non-virtual thunk to' ``, `` `virtual thunk to' ``), failed decompilation messages for 25 functions, `JUMPOUT(0)` for indirect jumps, and warning about "positive sp value has been detected". These artifacts severely clutter the output and impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and readable - functions have clear entry/exit, conditionals use if-else, loops are recognizable. However, `test_cpp_exception` is completely broken (shows as noreturn throwing 42). At O3 optimization, some restructuring is expected, but the overall flow remains traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate, member functions are properly extracted, and template instantiations appear as distinct functions (`template_max<int>`, `template_max<double>`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in template functions. Some indirect vtable calls add complexity but don't severely disrupt linear reading. The code is mostly sequential.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Template instantiations are properly specialized. Loop unrolling is minimal. The decompiled code is clean without significant redundancy from optimizations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (`int`, `double`, `char`, `void*`) are correctly identified. However, no use of fixed-width types (`int32_t`, `uint64_t`, `size_t`). Pointer types are sometimes shown as generic `void*` when more specific typing would help. Const correctness is partially preserved in function signatures like `const Base *const this`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Classes are recognized and member functions properly reference class members (`obj.name`, `this->multiplier`, `this->data`). However, no explicit struct definitions are recovered - fields are accessed directly on object instances. The layout is inferable but not formally defined.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple type safety concerns: extensive pointer arithmetic in virtual function thunks (e.g., `*((_DWORD *)this->_vptr.MiddleA - 3)`), unsafe casts in RTTI code (`*(_DWORD *)v0`), and raw memory operations. The virtual thunk code in particular uses complex pointer arithmetic that could easily cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated labels like "attributes: thunk" for thunk functions and "BYREF" for reference parameters. No explanation of algorithms, vtable mechanics, or template instantiation. The failed decompilation messages are the only indication of problems.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some C++ idioms are recognizable: virtual function calls through vtable (`(*obj->_vptr.Base)(obj, x)`), template instantiation patterns, RTTI via `dynamic_cast` and `typeid`. However, these are not explicitly labeled or explained as patterns. A knowledgeable reader can identify them, but the decompiler doesn't highlight them.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does flag some anomalies: "FAILED to decompile" messages for 25 functions, warning about "positive sp value has been detected". However, the broken `test_cpp_exception` function is presented without any indication that it's incomplete or incorrect. Anomaly flagging is inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. No recovery of assertions or contracts from the original source. The decompiled code provides no guidance on expected input ranges, return value guarantees, or error conditions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `call_virtual_func(pb, 5)`). Virtual dispatch relationships are partially clear through vtable access. However, there's no documentation of call graphs, caller/callee relationships, or callback patterns. The relationships must be inferred from the code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are somewhat grouped - test functions together, member functions grouped by class, template functions separate. However, the organization is flat with no namespace or module structure. The original source's logical grouping by feature (member functions, constructors, virtual functions, templates) is not reflected.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone. Missing declarations for standard library functions (`std::ios_base::Init`, `operator new`, `operator delete`), no includes, and undefined references to weak symbols (`__gmon_start__`, `__aeabi_atexit`). Requires significant patching to become compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`-`v6`, `a`, `b`) completely losing semantic meaning from original source
+- **Broken exception function**: `test_cpp_exception` is completely broken - shows as noreturn throwing 42 with no recovery of try-catch logic
+- **Thunk noise**: Excessive thunk function artifacts (`` `non-virtual thunk to' ``, `` `virtual thunk to' ``) clutter output
+- **No struct recovery**: Composite types like `SimpleClass`, `LifecycleClass` are not formally defined - fields accessed directly without structure definitions
+- **Failed decompilations**: 25 functions failed to decompile, including critical exception handling infrastructure
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are well-granular with proper separation between test functions, member functions, and template instantiations. Each function has a clear single responsibility matching the original source organization.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The decompiler makes no attempt to infer semantic meaning from usage patterns. Variables like `v0`, `v1` should be named based on their role (e.g., `result`, `instance_count`, `idx`) given the context of the function and how they're used.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantically meaningful names like `result`, `index`, `count` instead of `v0`, `v1`
+2. **Recover exception handling**: Implement proper try-catch recovery from stack unwinding information - the current output showing `test_cpp_exception` as a simple throw is unusable
+3. **Define composite types**: Automatically generate struct/class definitions with field names rather than accessing fields directly on opaque objects - this would significantly improve type fidelity

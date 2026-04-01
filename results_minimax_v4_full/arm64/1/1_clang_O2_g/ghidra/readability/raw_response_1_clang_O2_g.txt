@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters (a, b, c, x) are preserved but nearly all local variables are marked "Unresolved local var" or use generic names like `iVar1`, `uVar1`, `uVar2`. The decompiler honestly marks them as unresolved but provides no semantic names like `temp1`, `sum`, or `i` from the source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names exactly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `goto_backward`, etc. The decompiler correctly recovered all 20+ function names from the binary.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions contain hardcoded results (e.g., `0x15` for 21) without explaining the computation. Main functions have some magic numbers like `0x3e9` (1001) and `0x65` (101) that lack explanation. However, simple comparisons like `0 < x` are reasonably clear.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal code noise - no redundant casts or debug artifacts in the main logic. The "WARNING" comments (unreachable blocks, unknown calling convention) are actually helpful indicators of decompilation uncertainty rather than harmful noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: At -O0, control flow should closely match source, but many transformations occur: `single_if` uses `x << (0 < x)` instead of if-else; `loop_for_fixed` computes a formula instead of showing the loop; `loop_continue` and `goto_backward` have extreme loop unrolling that obscures the original logic. These are inappropriate for a debug build.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler maintains the function granularity from source - each of the 20+ functions is separate. However, some functions (loop_continue: ~50 lines, goto_backward: ~60 lines) became excessively large due to loop unrolling, making them hard to understand.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Minor issues include `loop_break` using switch-on-target instead of loop+break, and `goto_forward` embedding conditional logic in expressions. Generally acceptable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The test functions (`test_control_flow_l1`, etc.) contain hardcoded results instead of actual function calls - they print `0x15` rather than calling `sequential_ops(5,7,3)`. This is a major redundancy issue. Additionally, loop unrolling in several functions creates significant redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally precise - `int` for parameters, `uint`/`ulong` for unsigned operations, `_func_int_int *` for function pointers. Minor issues include some `undefined1` arrays for unanalyzed data. Overall good type fidelity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No structs or arrays are reconstructed. Variables like `int[5] arr` in `loop_break` and `int[3][4] matrix` in `loop_multi_exit` are marked as "Unresolved local var". The decompiler lost all composite type information.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No significant type safety violations observed. Pointer arithmetic in functions like `process_with_callback` and `duffs_device` is correct. Function pointer calls use proper signatures. The code is type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: File header identifies Ghidra version and binary path. Function addresses are documented. "WARNING" comments indicate decompilation uncertainty. However, no comments explain algorithms or recovered intent - the "Unresolved local var" annotations are honest but not helpful for understanding.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: state machines as switch statements, Duff's device partially reconstructed with goto labels. However, patterns are not explicitly named or documented. The extreme loop unrolling in `loop_continue` and `goto_backward` obscures the original idioms.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Good anomaly detection with specific warnings: "Could not recover jumptable" for `call_func_ptr`, "Treating indirect jump as call", "Subroutine does not return" for longjmp. The "Unresolved local var" annotations honestly flag recovered items.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler provides no contract information about what the functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are preserved (e.g., `main` calls the three test functions). Static functions are marked. However, there's no documentation of call relationships - which functions call which, callback relationships, or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The decompiled output is a single file containing all functions, matching the original source which is also a single file. Functions are grouped by type (test functions, helper functions). Organization is reasonable.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with standard libc. External functions (printf, puts, __gmon_start__) are declared or linked. However, the test functions don't actually call the functions they're testing - they print hardcoded values. This would fail any integration test.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+1. Variable naming - all local variables are generic (`iVar1`, `uVar1`) or marked "Unresolved"
+2. Test functions print hardcoded results instead of calling actual functions - breaks semantic connection to source
+3. Composite type recovery completely failed - no structs or arrays reconstructed
+4. Excessive loop unrolling at -O0 obscures original logic in `loop_continue`, `goto_backward`, `recursion_factorial`
+5. No contract/precondition documentation for any function
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+All function names exactly match the original source, demonstrating excellent symbol recovery.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10) and Composite Type Recovery (2/10)  
+The decompiler failed to recover any meaningful variable names for local variables or any composite types (structs, arrays), severely impacting readability.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `temp1` used as `(b + a) * 2 - c` intermediate should be named `temp1`/`temp2`/`temp3`
+2. Recover composite types - the array `int arr[] = {10,20,30,40,50}` in `loop_break` should be reconstructed with field values
+3. Preserve function call semantics in test functions - `test_control_flow_l1` should call `sequential_ops(5,7,3)` rather than printing `0x15`

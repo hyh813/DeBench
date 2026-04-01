@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `v3`, `result` for locals. For example, `sequential_ops(int a1, int a2, int a3)` should have `a`, `b`, `c`. The original source used meaningful names like `temp1`, `temp2` which were also lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. Some infrastructure functions like `sub_880`, `init_proc` are generic but expected for runtime boilerplate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some patterns are clear (e.g., `0xFFFFFFFF` for -1, switch tables as arrays). However, magic numbers like `0x12` (18), `0x100000001`, `0x400000004` in SIMD code are unexplained. The formula `10 * a1 + 10` for if_elseif_chain is computed rather than showing the original `10, 20, 30` array.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some `(unsigned int)` casts and architecture-specific `__fastcall` annotations exist but don't significantly impede readability. No debug instrumentation or register spilling debris observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures are natural - loops use `while`/`for`, switches are properly structured. However, `loop_continue` and `goto_backward` use complex SIMD patterns with goto labels instead of recognizable loop constructs. At -O0 this is unexpected; the decompiler may have misidentified loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each original function is decompiled as a separate function with appropriate granularity. The 20+ test functions from the source are preserved. Parameter counts match original (e.g., `sequential_ops` has 3 params, `loop_nested` has 2).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately. Some forward jumps exist in `loop_multi_exit` with goto labels, but these are manageable. The overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `loop_continue` and `goto_backward` using SIMD intrinsics, which is unexpected at -O0. The decompiler appears to have misidentified these as vectorized code. Dead code is minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types match original - `int` for parameters, `unsigned int` where appropriate. Function pointers use generic `__int64 (__fastcall *)(_QWORD)` signature. The original source used plain `int` throughout, so this is acceptable but could be more precise.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Switch tables recovered as `dword_1950[a1]` with generic names. Arrays like `unk_1980` used for data. Struct recovery is partial - the decompiler uses generic names but the array access patterns are correct.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some function pointer casting present but necessary. No severe type confusion observed. Minor issues with unsigned/signed mixing in return types (e.g., `(unsigned int)(2 * (a2 + a1) - a3)`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only standard decompiler header comment present. No explanatory comments for complex logic like the SIMD loop patterns or the Duff's device implementation. No indication of decompilation confidence or uncertain areas.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like switches and loops are recognizable. However, the SIMD-vectorized code for `loop_continue` and `goto_backward` should be recognized as loop unrolling but isn't. No explicit naming of patterns like "Duff's device" or "state machine".
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The output correctly shows "FAILED to decompile" for 8 functions including `_setjmp`, `longjmp`, `__libc_start_main`. This is good failure reporting. However, the SIMD anomalies in loop functions aren't flagged as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of parameter constraints (e.g., "requires: n > 0" for loops). The original source had no explicit contracts either, but decompilers could infer some.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure (e.g., `main` calls the three test functions). However, no explicit documentation of who calls whom or global variable usage. The test functions call the implementation functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. Runtime initialization functions appear first, then the implementation functions, then test functions, then main. This roughly matches the source organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses `__fastcall` which is architecture-specific. Some non-standard types like `_OWORD` for SIMD. The code would require moderate patching to compile standalone (removing `__fastcall`, adding includes). External dependencies on libc functions are implicit, not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `a3` instead of semantic names like `a`, `b`, `c` from source
+- Complex SIMD patterns in `loop_continue` and `goto_backward` are unrecognizable as loops - should be flagged as anomalies
+- No comments explaining any logic, especially the computed formulas like `10 * a1 + 10` instead of array lookup
+- Type precision uses generic `int` throughout when more specific types could help
+- No contract or precondition recovery despite -O0 debug compilation
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names match the original source exactly for all 20+ test functions, making it easy to locate specific implementations.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (2/10)  
+At -O0 debug level, the decompiler should recover more semantic information like parameter constraints, loop invariants, and preconditions that are preserved in debug symbols.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from debug symbols or usage patterns - `a1`, `a2`, `a3` should be `a`, `b`, `c` matching parameter positions
+2. Recognize loop unrolling patterns and either reconstruct loops or add explanatory comments about the optimization
+3. Add explanatory comments for computed formulas (e.g., "// Returns 10, 20, 30 for inputs 0, 1, 2") instead of showing raw arithmetic

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic stack-based names (`local_28`, `uStack_24`, `iVar1`, `puVar1`) with zero semantic meaning. Original source had meaningful names like `capture_by_value`, `multiplier`, `instance_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_virtual_func`) which is excellent. However, helper functions use cryptic names (`_GLOBAL__sub_I_5_1_cpp`) and external stubs are marked `<EXTERNAL>`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of unexplained magic numbers (`0x125c`, `0x3e9`, `0x28a`, `0x2bf`) that represent constant-folded return values. String literals appear as `&DAT_00011294` instead of readable text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Circular external function stubs (e.g., `operator_new` calls itself) create significant noise. Verbose stack initialization (`local_28 = 0x74736554; uStack_24 = 0;...`) clutters test functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions are constant-folded to single returns (`return 0x2a`), losing original logic structure. Template and container methods retain reasonable control flow, but exception handling lacks proper try-catch structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions are appropriately sized but over-optimized. External function stubs are incorrectly decomposed as separate functions. Class methods (`Container<int>::push`) are properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom linearly due to heavy optimization. No excessive goto statements. Stack initialization code is verbose but follows linear pattern.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in stack zeroing (`uStack_24 = 0; uStack_20 = 0; local_1c = 0;...`). External function stubs are completely redundant (call themselves recursively).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined2` instead of proper C++ types. Some `size_t` preserved, but integer types mostly generic `int` or `undefined4`. Const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class definitions recovered. All object access through pointer arithmetic: `*(int *)(this + 0x28)`, `*(undefined4 *)(this + param_1 * 4)`. Original had clear class definitions with named fields (`value`, `name[32]`, `data`, `size`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(undefined4 *)`, `(int *)`, `(void*)`. `__dynamic_cast` returns `int` instead of proper pointer. Function pointer calls through generic `code**` without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment exists (`// Decompiled by BinaryAI`). No comments explaining logic, uncertainty, or decompilation confidence. Original source had extensive documentation for each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized—no indication of RAII, virtual dispatch, exception handling, or template instantiation. Lambda expressions completely lost (constant-folded to return values).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues: circular external stubs, constant-folded functions, unresolved indirect calls. No uncertainty markers anywhere in code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. Original had clear expected return values documented in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible (`(***(code ***)param_1)()`) but not explained. Global variable usage (`LifecycleClass::instance_count`) not contextualized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order with no logical grouping. External function stubs mixed with application code. No namespace organization despite C++ source.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: `undefined` types are not standard C/C++ and won't compile. External stubs create circular dependencies. Would require extensive modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+7+3+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):     (5+6+7+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type System):    (4+2+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):       (2+2+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):     (5+4+3)/3   = 4.00  × 0.10 = 0.40
+---------------------------------------------------------
+Overall Readability Score:                    3.94/10
+```
+
+### Overall Readability Score: **3.9/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `local_28`, `uStack_24`, `iVar1` provide zero semantic information about purpose
+- **No composite type recovery**: All class/struct access through pointer arithmetic (`*(int *)(this + 0x28)`) instead of field names
+- **Constant folding destroyed logic**: Test functions return pre-computed constants (`return 0x2a`) instead of showing actual computation
+- **Circular external stubs**: Functions like `operator_new` call themselves, creating non-functional code
+- **Zero semantic documentation**: No comments explaining C++ idioms, exception handling, or virtual dispatch mechanisms
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test function names were preserved from original source (`test_cpp_member_func`, `test_cpp_virtual_func`), maintaining clear identification of test purposes.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover class/struct definitions; all object member access reduced to opaque pointer arithmetic, making C++ object-oriented code nearly unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct layouts from vtable and field access patterns** - Analyze `this + offset` patterns to reconstruct field names and types for C++ classes
+2. **Detect and annotate constant-folded functions** - When a function returns only a constant, indicate this is compiler optimization and show original computation if possible from debug symbols
+3. **Eliminate circular external stubs** - External library functions should be declared, not implemented as self-recursive stubs that prevent compilation

@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`). The original source uses meaningful names like `size`, `x`, `y`, `result`, `counter`, `increment` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: All functions use address-based mechanical names like `sub_4012e1`, `sub_401329`, `sub_401370`. The original source has clear names like `param_macro_constants`, `param_conditional_compile`, `param_asm_basic` - completely replaced with meaningless identifiers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some literals preserved (e.g., `64`, `10`, `5`) but macro constants lost - `0x400` instead of `MAX_SIZE` (1024), `0x200` instead of `512`. Magic numbers like `57072` (0xDEF0) and `279` (line number) unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact pollution: `__x86.get_pc_thunk.ax()` calls in every function, `__stack_chk_fail_local()` references, unused stack variables like `char v0; // [bp+0x0]`, and spurious struct definitions with padding fields.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: At -O0, control flow is mostly preserved - if/else and loops are recognizable. Minor goto patterns in some functions. The main issue is that natural flow is obscured by noise from thunk calls and variable declarations.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly from original source. Each test function (`call_macro_constants`, `call_asm_basic`, etc.) remains separate. However, parameter lists expose implementation details (e.g., passing array addresses directly).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns preserved. Some forward jumps exist but minimal, not severely disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions visible (e.g., `param_clobber_importance` computes `a0 + a1` twice). Loop unrolling not excessive at -O0. Dead code minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` for most integers, which is reasonable. Loses precision: `size_t` not recovered, `int` vs `unsigned` sometimes swapped (original uses signed `int` for most params). Function pointers use generic signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct definitions created but with meaningless names (`struct_0`, `struct_1`). Original source has minimal struct usage (mostly in CRT initialization code), so this is less critical. Field names are generic (`field_0`, `field_34`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some unsafe operations: pointer arithmetic visible (`ptr + idx * 4`), but no severe violations like type-confused function pointers. Buffer operations use explicit sizes.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Original source has extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量", "// 测试: 编译时宏替换"). All completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The inline assembly patterns, macro expansions, and conditional compilation logic are not recognized or labeled. Could have identified "atomic operation", "SIMD vector operation", etc.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `__stack_chk_fail_local()` calls and indirect calls through function pointers not annotated. No warnings about potential undefined behavior or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original source has implicit contracts (e.g., "ptr != NULL" for atomic operations, "n > 0" for array functions) completely lost. No documentation of error return meanings.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible in code (`param_macro_constants` calls from `call_macro_constants`), but not documented. Global variable references (`g_402088`, etc.) shown as extern but relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address proximity rather than logical grouping. Original groups: preprocessing tests, asm tests, main - not recovered. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for global variables but missing definitions. Uses standard library functions (`printf`, `strlen`, `mmap`, etc.) without declarations. Would require patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Function names**: All meaningful names replaced with `sub_XXXXX` address-based identifiers
+- **Variable names**: All parameters use `a0`, `a1`, `a2`; locals use `v0`, `v1`, `v2` - completely generic
+- **No comments**: Original source's extensive explanatory comments completely lost
+- **Noise pollution**: `__x86.get_pc_thunk.ax()` calls in every function, stack canary checks, unused stack variables
+- **Macro semantics lost**: Constants like `MAX_SIZE`, `BUFFER_COUNT` replaced with magic numbers
+
+### Best Quality Aspect: Control Flow Naturalness (6/10)
+- At -O0, the decompiler preserved the original if/else and loop structures reasonably well
+- Execution flow is traceable despite other issues
+
+### Most Needs Improvement: Function Naming Quality (1/10)
+- Address-based naming (`sub_4012e1`) provides zero semantic information
+- Should infer names from string constants, called functions, or usage patterns
+
+### Top 3 Recommendations:
+1. **Infer function names from context**: Use string literals in function (e.g., "LOG: " in variadic macro), called function names, or common patterns to generate meaningful names
+2. **Recover macro constants**: Detect repeated literal values (0x400, 0x200) and suggest they may be related constants like MAX_SIZE
+3. **Eliminate thunk noise**: Recognize `__x86.get_pc_thunk.*` as compiler artifacts and either remove or clearly label as such

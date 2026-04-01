@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `idx`) with no semantic meaning. Original source had meaningful names like `large_buf`, `global_counter`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—some original names preserved (`local_vars`, `heap_basic`, `double_value`) but many are generic (`sub_401030`, `sub_401130`). Internal runtime functions correctly identified (`deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (unsigned -1) appears throughout without explanation. String literals are external references (`&g_4014ce`) with no recovery of actual content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts remain: `_init`, `_start`, `__x86.get_pc_thunk.*` stubs, and multiple `sub_401xxx` placeholder functions clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `do-while` with awkward conditions (`i != 1` with decrement) instead of natural `for` loops. Some `goto` statements present (e.g., `LABEL_401798`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable but some are completely wrong (`stack_alias` just returns constant 20). Test functions are monolithic blocks.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Label `LABEL_401798` is one disruption but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Moderate redundancy visible in loop patterns. Some calculations repeated (e.g., `((i >> 31) + i & 4294967294)` appears multiple times).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—everything becomes `unsigned int` or `void*`. Original `int`, `char*`, `Point*`, `Node*` distinctions lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are generic (`struct_0`, `struct_1`, `struct_2`) with meaningless field names (`field_0`, `field_4`, `padding_0`). Original `Node` and `Point` structs not recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts visible. Pointer arithmetic on `void*` throughout. Type-confused operations (e.g., `heap_nested` uses wrong struct types).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation) not recognized or named. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Clearly wrong functions like `stack_alias` return constant without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced without explanation. Callback relationships (`global_func_ptr`) lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Static functions not properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External references need resolution (`extern_global_var`, `extern_function`). Undefined globals require stubs. Would need significant modification to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+4+4)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.675/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Type erosion**: All variables degraded to `unsigned int`, losing original type semantics (`int`, `char*`, `Point*`, `Node*`)
+- **Struct recovery failure**: Original `Node` and `Point` structs replaced with generic `struct_0`, `struct_1` with `field_0`, `field_4` naming
+- **Magic numbers**: `4294967295` (unsigned -1) appears 20+ times without explanation or constant recovery
+- **Function correctness**: `stack_alias()` returns constant `20` instead of implementing pointer aliasing logic
+- **Test function broken**: `printf` calls don't pass actual values (e.g., `printf("MEM-L1-01 (local_vars): %d\n")` without format argument)
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Code generally reads top-to-bottom with minimal forward jumps, making basic execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments exist in the decompiled output, providing no guidance for understanding complex logic, anomalies, or decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size` or `count`, pointer iteration variables should be `ptr` or `node`)
+2. **Detect and name common data structures** - linked list patterns (`data` + `next` fields) and tree patterns (`left`/`right` children) should be recognized and named appropriately
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: indirect call target not resolved`) and explain magic numbers with comments

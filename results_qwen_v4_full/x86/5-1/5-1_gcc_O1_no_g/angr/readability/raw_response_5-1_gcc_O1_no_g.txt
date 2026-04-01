@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `temp`) with no semantic meaning. For example, `test_cpp_member_func` uses `v0[4]`, `v1`, `v2` instead of `obj`, `result`, `name`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some C++ mangled names recovered (`_Z20test_cpp_member_funcv`) but most are `sub_401XXX`. Original function names like `test_cpp_virtual_func` are partially recoverable but not human-readable without demangling.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout (20, 4, 42, 100, 200) with no explanation. No constants recovered from original source (e.g., `0x1234` for `getClassID()` lost).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `padding_0` arrays in structs, frame pointer manipulation, and platform mismatch artifacts (ARM64 source → X86 decompilation).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements instead of loops (e.g., `goto v1->field_5c;`). Many functions use unnatural jump patterns that obscure original control flow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many test functions are empty (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload` return immediately). Wrapper functions like `sub_40103c` just call another function.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearity with forward jumps disrupting flow. Stack check patterns (`if (v3 == *((int *)_ccall(...))) return; __stack_chk_fail_local();`) appear throughout.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in struct definitions (repeated `struct_0` with different `padding_0` sizes). Multiple thunk functions for same virtual methods.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Most types degraded to `unsigned int`, `void*`, `char*`. No C++ type recovery - `SimpleClass`, `Base`, `Derived` all become generic pointers. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: All structs are generic (`struct_0`, `field_0`, `padding_0[92]`). No class structure recovered - `LifecycleClass` with `data`, `size`, `instance_count` becomes `ptr[5]` array.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout (`(char *)a0 + (*(a0))[12]`). Void pointer arithmetic common. No type-safe virtual dispatch recovery.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments. Only decompiler failure annotations `[D] Unsupported jumpkind`. No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no RAII patterns, no virtual dispatch clearly shown, no template instantiation visible. Lambda expressions unrecoverable.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `[D]` annotations for failures (`unsupported_<class 'pyvex.expr.GetI'>`) but inconsistent. Many silent failures where functions just return void.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling logic in `test_cpp_exception` is completely opaque.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch not clear (`thunk to DiamondDerived::func()`). Global variables named `g_404ff4` with no context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output. No logical grouping of related classes. Constructor/destructor pairs scattered throughout file.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - contains `[D]` annotations, `unsupported_` expressions, `nan` literals, and incomplete function bodies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):  (3+4+3+4)/4 = 3.50  × 0.25 = 0.875
+Level 3 (Type):        (2+2+3)/3   = 2.33  × 0.20 = 0.467
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25  × 0.15 = 0.338
+Level 5 (Contextual):  (3+4+2)/3   = 3.00  × 0.10 = 0.30
+
+Overall Score: 2.88/10
+```
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **Platform mismatch**: Original ARM64 compiled code decompiled as X86, causing fundamental structural errors
+- **C++ semantics lost**: Classes, virtual tables, templates, lambdas, and exceptions completely unrecoverable
+- **Generic naming everywhere**: Variables `v0`, `v1`, `v2` and structs `struct_0`, `field_0` provide zero semantic information
+- **Multiple decompilation failures**: `[D]` annotations and `unsupported_` expressions indicate incomplete recovery
+- **Empty function bodies**: Critical test functions (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload`) return immediately without implementation
+
+### Best Quality Aspect:
+- **Anomaly Indication (4/10)** - At least some decompilation failures are marked with `[D]` annotations, alerting analysts to unreliable code sections
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Zero meaningful comments; decompiler provides no guidance on recovered semantics, confidence levels, or suggested manual analysis areas
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ ABI awareness**: Recover class structures, vtable layouts, and mangled name demangling to restore object-oriented semantics
+2. **Add semantic annotation system**: Generate comments indicating decompilation confidence, recovered patterns (e.g., "Likely virtual dispatch"), and suggested variable names based on usage analysis
+3. **Improve control flow reconstruction**: Replace `goto` patterns with proper loop/conditional constructs, especially for stack canary checks and exception handling patterns

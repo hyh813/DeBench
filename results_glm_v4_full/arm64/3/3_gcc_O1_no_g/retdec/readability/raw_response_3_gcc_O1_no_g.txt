@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, and `v4`, providing no semantic context (e.g., in `local_array`, `v4` is the array pointer). Global variables are reduced to `g1`, `g2`, etc., stripping away original names like `global_counter`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered accurately from the source symbols (e.g., `double_value`, `heap_basic`, `linked_list_heap`), perfectly reflecting the original intent and making the high-level structure easy to navigate.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with unexplained magic numbers and masks, such as `& 0xfffffffe` in `double_value` and `local_vars`, and hex constants like `0x10000` in `vla_stack`, which obscure the original logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including ARM64 intrinsics like `__asm_sbfiz` and `__asm_dmb` leaking into the C code, and verbose stack canary checks (`__stack_chk_fail`) that interrupt the logic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is unnatural, relying heavily on `goto` statements (e.g., in `linked_list_heap` and `test_heap_memory`) instead of standard loops, making execution paths difficult to follow despite the `-O0` optimization level.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries and granularity match the source well; functions are not inlined or fragmented inappropriately, maintaining a logical separation of concerns (e.g., `create_tree_node` is separate).
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code reads poorly due to frequent forward jumps and `goto` labels (e.g., `lab_0x12bc`), disrupting the top-to-bottom reading flow expected in high-level C code.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While there is no obvious dead code, the decompiler introduces redundancy through verbose type masking (e.g., `& 0xffffffff`) and pointer arithmetic that could be simplified to array accesses.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded; most variables are generic `int64_t`, and function signatures are incorrect (e.g., `memop_memset` is defined as `void` but uses `v1` for all arguments, losing the `void*`, `int`, `size_t` distinction).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are completely lost; `Point` and `Node` structures are replaced by raw pointer arithmetic and mathematical simplifications (e.g., `local_struct` returns `3 * v1` instead of accessing `p.x + p.y`).
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts, treating integers as pointers (e.g., `*(int32_t *)v1 = 42` in `address_of_local`) and using `int64_t` for all memory accesses, which erases type safety boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or data structures; the output is purely code without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like linked list traversal or VLA allocation are present but obscured by low-level pointer math and intrinsics, making the idioms hard to recognize (e.g., `vla_stack` looks like pointer manipulation rather than array allocation).
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents incorrect code without flagging issues, such as the catastrophic argument recovery failure in `memop_memset` where all three parameters are replaced by a single variable `v1`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null checks in `heap_basic` are present but not explicitly highlighted as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clearly resolved to their correct names (e.g., `malloc`, `free`, `create_tree_node`), making the call graph easy to understand despite the internal variable confusion.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file is well-organized, grouping related functions (stack, heap, static tests) together in a logical order that mirrors the source structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: While the code might syntactically compile, it is functionally broken due to lost parameters (e.g., `memset(v1, v1, v1)`) and incorrect types, requiring significant patching to be usable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.25
+L2_avg: 5.25
+L3_avg: 2.00
+L4_avg: 1.50
+L5_avg: 6.33
+
+Overall = (4.25 × 0.30) + (5.25 × 0.25) + (2.00 × 0.20) + 
+          (1.50 × 0.15) + (6.33 × 0.10)
+Overall = 1.275 + 1.3125 + 0.4 + 0.225 + 0.633
+Overall = 3.8455
+```
+
+### Overall Readability Score: **3.8/10**
+
+### Critical Defects
+- **Parameter Loss**: Function `memop_memset` (and `memop_memcpy`) lost all parameters, incorrectly mapping them to a single local variable `v1`.
+- **Struct Erasure**: Composite types like `Point` and `Node` are completely lost, replaced by raw pointer arithmetic (e.g., `3 * v1` instead of `p.x + p.y`).
+- **Control Flow**: Extensive use of `goto` statements (e.g., in `linked_list_heap`) instead of structured loops degrades readability.
+- **Variable Naming**: Variables are exclusively generic (`v1`, `v2`), providing no semantic context.
+- **Intrinsic Leakage**: ARM64 intrinsics like `__asm_sbfiz` appear in the C code, obscuring high-level logic.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully recovered the original function names from symbols, making the high-level API and module structure immediately recognizable.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**: The complete failure to recover structs (`Point`, `Node`) renders data manipulation logic incomprehensible, reducing complex data structures to raw math.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Parameter Recovery**: Fix the logic that maps function arguments to local variables, specifically for standard library calls like `memset` and `memcpy`, to ensure signatures match the ABI.
+2.  **Implement Struct Recovery**: Analyze access patterns (offsets, field usage) to reconstruct `struct` definitions instead of collapsing them into pointer arithmetic or mathematical expressions.
+3.  **Improve Control Flow Structuring**: Replace `goto` chains with structured `while`/`for` loops where the pattern matches standard iteration, especially for simple loop constructs found at `-O0`.

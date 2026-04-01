@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters often preserved (`size`, `x`, `y`, `arr`, `counter`), but local variables are generic (`v0`, `v1`, `v2`, `v3`, `v5`). Example: `param_asm_clobber` uses `v3` and `v5` for loop index and sum instead of `i` and `sum`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names accurately (`param_macro_constants`, `param_asm_clobber`, `test_preprocessing_features`). Only runtime helpers have generic names (`sub_810`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers from macro expansion without context (`1024`, `64`, `512`, `57072`, `57122`). String literals externalized as `asc_12AE`, `aPpL201D` making them unreadable inline.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Runtime initialization functions present (`register_tm_clones`, `__do_global_dtors_aux`) but not excessive. Architecture-specific details (`_aarch64_ldadd4_acq_rel`) appropriately included.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered correctly (`param_asm_clobber` while loop), conditionals are idiomatic if/else. No excessive goto usage. Constant-folded functions (`call_macro_constants` returns 64) are appropriately simplified.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity with single-responsibility functions. Thunk functions correctly identified (`param_simd_intrinsics` → `param_asm_simd`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. `param_memory_protection` has nested conditionals but remains readable. No forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code visible. Macro expansions properly constant-folded. No duplicate expressions. Thunk detection eliminates redundancy (`param_simd_intrinsics`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type recovery (`int`, `__int64`, `size_t`, `void*`, `atomic_uint`). Pointer types preserved (`int *arr`, `const void *src`). Some architecture-specific types (`__int64`) may confuse portability.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source. Stack arrays annotated with size (`char src[16]`, `int arr[5]`). `atomic_uint` type recovered for atomic operations.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(int *)mmap(...)`, `(func_t)exec_mem`) but appropriate for operations. No obvious buffer overflow patterns in decompiled output.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments beyond auto-generated annotations (`// attributes: thunk`, `// [xsp+10h] [xbp+10h] BYREF`). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Low-level patterns recognized (thunks, atomic operations via `_aarch64_ldadd4_acq_rel`). No higher-level pattern naming (no "constant folding", "macro expansion" documentation).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations clearly marked (`/* FAILED to decompile: memcpy @ 0x12078 */`). No warnings for suspicious patterns or indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error conditions visible in code but not documented (e.g., `mmap` failure returns -1 without explanation).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced (`global_var`, `_aarch64_have_lse_atomics`) without usage context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order with no logical grouping. Runtime functions mixed with user functions. No namespace or package structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 12 external functions failed to decompile (`printf`, `mmap`, `memcpy`, etc.). Would require significant stubs to compile standalone. Architecture-specific intrinsics need special handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5×0.10 + 8×0.10 + 5×0.05 + 7×0.05) / 0.30 = 6.33/10
+Level 2 (25%): (8×0.08 + 8×0.07 + 8×0.05 + 8×0.05) / 0.25 = 8.00/10
+Level 3 (20%): (7×0.08 + 7×0.07 + 6×0.05) / 0.20 = 6.75/10
+Level 4 (15%): (4×0.05 + 5×0.03 + 6×0.03 + 3×0.04) / 0.15 = 4.33/10
+Level 5 (10%): (5×0.04 + 4×0.03 + 3×0.03) / 0.10 = 4.10/10
+
+Overall = (6.33 × 0.30) + (8.00 × 0.25) + (6.75 × 0.20) + (4.33 × 0.15) + (4.10 × 0.10)
+        = 1.90 + 2.00 + 1.35 + 0.65 + 0.41
+        = 6.31/10
+```
+
+**Overall Readability Score:** 6.3/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `return_value`, `loop_index`, `sum`)
+- **String literals externalized** as `asc_12AE`, `aPpL201D` making printf statements unreadable
+- **Magic numbers unexplained** (`57072`, `57122`, `282`) from macro/constant folding without context
+- **No contract documentation** for error conditions (mmap failures, mprotect errors)
+- **12 external functions failed** to decompile without stub generation
+
+### Best Quality Aspect:
+- **Structural Intelligibility (scored 8.0/10)** - Control flow, function decomposition, and code linearization are all excellent; loops recovered correctly and thunk functions properly identified.
+
+### Most Needs Improvement:
+- **Contextual Coherence (scored 4.1/10)** - No logical module organization, functions in address order, and would not compile standalone without significant stubbing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how `v0`, `v1` are used to suggest semantic names (e.g., variables used in size comparisons should be named `size`, `limit`, `threshold`)
+2. **Inline string literals in printf calls** - Instead of `aPpL201D`, show `"PP-L2-01: %d (期望：64)\n"` directly in the decompiled output
+3. **Generate stub declarations for failed external functions** - Auto-generate function prototypes for the 12 failed decompilations with appropriate signatures to improve build compatibility

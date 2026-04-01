@@ -1,0 +1,15 @@
+Testing obfuscation and optimization patterns
+Obf L4.02D: 10
+Obf L4.03D: 20
+Obf L4.04D: 225
+Obf L4.05D: 59
+Opt L4.01: 500500
+Opt L4.01.0: 5050
+Opt L4.02: 72
+Opt L5.01 LtoD: 20
+Edge L3.01D: 1
+Edge L3.02D: 41
+Edge L3.03D: 30
+Edge L3.04D: 2000000000
+Edge L4.01D: 10
+Edge L4.02D: 43

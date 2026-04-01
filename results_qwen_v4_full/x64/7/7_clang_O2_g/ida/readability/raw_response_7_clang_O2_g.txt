@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, result, temp) with zero semantic meaning. For example, `param_opaque_predicate` uses `v1` through `v6` instead of meaningful names like `predicate_result` or `gcd_value`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (param_fake_branch, call_opaque_predicate, decrypt_string) matching original source intent with clear action-oriented naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A` (XOR key), `0x20u` (buffer size), and `0xFFFFFFF8` appear without explanation. Some are inferable from context, but none are named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including register variables (v0-v26), redundant type casts (`(__sighandler_t)`, `(unsigned __int64)`), and stack frame variables (`[rsp+0h] [rbp-28h] BYREF`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `param_vectorized_loop` has extremely complex branching from SIMD operations with goto labels (LABEL_4, LABEL_15, LABEL_17, LABEL_28) instead of structured loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but critical logic is lost—`param_fake_branch` eliminated the fake branches entirely (just returns x), and recursive functions converted to closed-formulas.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom for simple functions, but complex functions like `param_vectorized_loop` have frequent forward jumps disrupting linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Optimization artifacts create redundancy (multiple similar variable assignments), but no obvious dead code. Loop unrolling in vectorized function is excessive but expected at O2.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (int, char*, size_t, __int64), but some generic types used. Signed/unsigned distinctions mostly maintained (e.g., `unsigned int ux` in instruction substitution).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost—function just returns constant 47. No struct definitions recovered in decompiled output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__sighandler_t)`, pointer arithmetic casts). No buffer overflow warnings despite obvious issues in original code being silently eliminated.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, only auto-generated function headers.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition—GCD algorithm in `param_opaque_predicate` not identified, XOR decryption pattern not labeled, tail-call optimization not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only indicates "FAILED to decompile" for library functions. No warnings about eliminated dead code, optimized-away branches, or semantic transformations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note x=0 triggers handler). No postconditions or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible in code, but no call graph documentation. Global variables (jmp_buffer, div_zero_caught) referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping comments. Related functions (param_*/call_*) not explicitly linked.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 10 library functions failed to decompile (printf, strlen, signal, etc.). Would require significant stubbing and external declarations to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+9+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (7+5+6)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (6+5+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.09/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (v0-v26) with zero semantic recovery despite clear usage patterns
+- **Dead code elimination not documented** - `param_fake_branch` lost both fake branch conditions without warning
+- **Zero comments** explaining algorithm intent, optimization artifacts, or decompilation confidence
+- **Recursive functions converted to closed-formulas** without indicating the transformation (tail call optimization)
+- **10 library functions failed** with no stubs or forward declarations provided
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Symbol names were perfectly preserved from debug information, making function identification trivial.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding optimization transformations and semantic intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in XOR operations should be named `key`, loop counters should be `i`, `j`, `index`)
+2. **Add decompilation confidence annotations** - Mark regions where optimization transformed logic (e.g., "// OPTIMIZED: recursive call converted to closed-form formula")
+3. **Document eliminated code paths** - When dead code elimination removes branches, add comments like "// DEAD CODE ELIMINATED: condition always false at this optimization level"

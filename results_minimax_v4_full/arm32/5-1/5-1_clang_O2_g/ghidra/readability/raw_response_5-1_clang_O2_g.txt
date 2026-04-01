@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Every local variable is marked as "Unresolved local var: xxx @[???]" - there is zero meaningful variable naming. Variables like `SimpleClass obj`, `int r1`, `int r2` are completely unresolved, making it impossible to track data flow or understand computation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved: `test_cpp_member_func`, `call_virtual_func`, `template_max<int>`, `Container<int>::push`. Template instantiations are correctly named. Minor deduction for some mangled names but overall excellent recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x47` (71), `0x28a` (650) appear without explanation. While some are easily inferable as return values, the decompiler doesn't annotate what `0x125c` (4704) represents in context. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple WARNING comments about unreachable blocks, unknown calling conventions, and unresolved elements clutter the output. However, these are decompiler diagnostics rather than code artifacts. The actual decompiled logic is relatively clean of compiler noise like register spills.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Most functions return computed constant values directly without showing any control flow. For example, `test_cpp_member_func` just returns `strlen(...) + 0x125c` - the actual object creation, method calls, and computation are completely collapsed. This is the most severe structural issue.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template functions are properly separated (`template_max<int>`, `template_max<double>`). Member functions like `Container<int>::push`, `Container<int>::get` are extracted. However, the internal logic is missing, making decomposition assessment difficult.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code that exists reads linearly (mostly straight-through returns). However, the collapse of all logic into single return statements makes linearization assessment meaningless - there's no real code structure to evaluate.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious redundancy in the decompiled output. Dead code appears to be removed. The collapsed constant-return pattern might be optimization artifacts but they're not redundant in the traditional sense.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Some types recovered: `int`, `double`, `size_t`, `undefined4`. Template types partially shown: `unique_ptr<int,_std::default_delete<int>_>`. However, most local variables are "undefined4" or "undefined" with no meaningful type information.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Zero struct/union recovery visible. All class objects are "Unresolved local var" with no field names. The decompiler shows raw memory layouts (e.g., `local_38 = 0x74736554` for "Test" string) but no struct definitions.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The visible code appears type-safe with proper pointer dereferencing. However, the `call_virtual_func` has a WARNING about indirect jump: `iVar1 = (**obj->_vptr_Base)()` - this is potentially unsafe without proper vtable resolution. Overall assessment limited by collapsed logic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Many WARNING comments ("Unresolved local var", "Unknown calling convention", "Could not recover jumptable") but these are decompiler diagnostics, not helpful explanations. Some DWARF prototypes preserved (e.g., "DWARF original prototype: void push(Container<int> * this, int value)") which is useful.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. C++ idioms like RAII (smart pointers), virtual dispatch, and exception handling are present in the binary but not recognized or named in the decompiled output.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Multiple warnings present: "Unresolved local var", "Unknown calling convention", "Could not recover jumptable". However, these are generic warnings without specific guidance on what the anomaly means or how to resolve it manually.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero preconditions, postconditions, or invariants recovered. No documentation of expected input ranges, return value meanings, or error conditions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible (e.g., `test_cpp_exception()` called from `test_cpp_oo_features()`). Virtual function calls show vtable usage. However, no documentation of call relationships, global variable usage, or callback patterns.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Template functions grouped together. Class member functions grouped. However, no namespace recovery, no header file structure, and arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Multiple undefined references: `operator_new`, `operator_delete`, `__cxa_throw`, `__cxa_allocate_exception`, `__dynamic_cast`, `strlen`, `printf`, `puts`. Would require extensive stubs and library linking to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **All local variables are unresolved** - Every variable shows as "Unresolved local var: xxx @[???]", making data flow analysis impossible
+- **Logic completely collapsed** - Functions like `test_cpp_member_func` return computed constants (`strlen + 0x125c`) instead of showing actual operations
+- **Zero struct/class field recovery** - No composite type reconstruction; all class members are unresolved
+- **No type definitions** - No struct, class, or enum definitions recovered from the binary
+- **Missing preconditions/contracts** - No documentation of expected inputs, return value meanings, or error handling
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+Function names are accurately recovered, including template instantiations and class member functions. This provides a solid foundation for understanding what each function does.
+
+### Most Needs Improvement: Variable Naming & Composite Type Recovery (both 1/10)
+These are fundamentally required for any meaningful code analysis. Without variable names and struct field recovery, the decompiled code is essentially unreadable pseudocode.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Use data flow analysis to determine that `local_28` used in `strlen()` should be named `name` or `string_data`
+2. **Recover struct layouts from stack frame analysis** - The stack contains `SimpleClass obj` with `value` and `name[32]` fields; reconstruct these as struct definitions
+3. **Preserve control flow even when optimized** - Show the actual operations even if they're simple; don't collapse to computed constants at -O0

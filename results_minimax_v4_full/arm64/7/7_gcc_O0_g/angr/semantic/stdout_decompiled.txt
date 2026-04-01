@@ -1,0 +1,5 @@
+=== Testing Obfuscation Techniques ===
+
+Fake branch: 10
+Opaque predicate: 35
+Instruction substitution: 225

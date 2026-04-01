@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v1`, `v2`, `v3` dominate throughout the code, obscuring their actual roles. While `dst` and `src` are preserved in `param_strcpy`, most temporaries use generic names. The variable `buffer[1]` in `call_strcpy` is incorrectly sized (should be 32 bytes).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_strcpy`, `call_strcpy`, `param_strcmp` correctly match source names. However, libc wrapper functions use generic names like `function_1300` (memcpy), `function_13a0` (pipe), `function_13b0` (fork), losing semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants like `AF_INET`, `SOCK_STREAM` are properly recovered, but magic numbers persist: `66` for file open flags, `0x100000000` in TLS code (unclear purpose), `12` for memcmp size without explanation. The value `1026` used for shared memory size is unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe decompiler artifacts include: address range comments (`// Address range: 0x12c8 - 0x12e0`), line range comments, numerous `__asm__` blocks for atomic operations, excessive type casting between `int64_t*` and `char*`, and "UNREACHABLE" annotations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Generally natural loop and conditional structures, but some goto statements in complex functions like `param_pthread_join` and `param_thread_local_storage`. The `while (v1 >= 1)` pattern in signal handling is awkward. At -O0, these patterns should be more idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation of test functions (`call_*` and `param_*` pairs). However, `param_thread_local_storage` is excessively long (~300 lines) with complex nested loops. Some libc wrappers correctly extracted but with poor naming.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_pthread_join` has multiple forward jumps and complex goto patterns. The signal handling function has nested loops that disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `param_malloc_free` (manually expanded loop). Repeated pthread_create patterns could be abstracted. No major dead code, but some redundant calculations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of `int32_t`, `int64_t`, `uint32_t`. However, `char buffer[1]` in `call_strcpy` is wrong (should be 32). Some parameters like `int32_t *p1, *p2` in memcmp lose the `const` qualifier from source.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs like `struct shmid_ds`, `struct sockaddr`, `struct stat` are reasonably reconstructed with field names (though generic: `e0`, `e1`, etc.). The `struct _IO_FILE` is minimal but functional. Nested structures handled adequately.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int64_t *)dst` and `(int64_t *)src` in memcpy, `(int64_t *)&buf` for stat. Pointer arithmetic like `*(int32_t *)(4 * v2 + v1)` is error-prone. Function pointer casts like `(int64_t * (*)(int64_t *))0x2b28` are necessary but verbose.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical comments present (address ranges, line numbers). No algorithm explanation, no semantic documentation. The "// Line range: X - Y" and "// Address range:" comments are auto-generated noise providing no value for understanding the code logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized: fork/exec pattern in `param_fork_exec`, pthread create/join pattern, mutex lock/unlock pattern. However, no explicit naming or documentation of these patterns. The atomic operations use raw `__aarch64_*` intrinsics rather than being recognized as C11 atomics.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "UNREACHABLE" comments appear for dead code after `_exit()`. No flags for indirect calls that couldn't be resolved. The signal handler registration uses hardcoded address `0x2a44` without explanation. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (-1, -2, etc.) are not explained. The contract of "returns length of copied string" for `param_strcpy` is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear through direct calls, but not documented. Global variables like `g6`, `g7` (signal flags) are used without explaining their roles. No indication which functions call which callbacks.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are logically grouped (test_standard_library_functions, test_system_calls, test_thread_concurrency). All in single file, which is acceptable for decompilation output. Static functions properly marked.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes all necessary headers. Code should compile with minor issues. Some function signatures may need adjustment (e.g., thread function return types). No external dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is dominated by generic names (`v1`, `v2`, `v3`, `result`) obscuring semantic purpose
+- `char buffer[1]` in `call_strcpy` is incorrectly sized (should be 32 bytes)
+- Magic numbers like `66` for file flags and `0x100000000` in TLS code lack explanation
+- No comments explaining algorithm intent or semantic contracts
+- Excessive decompiler artifacts (address ranges, line numbers, asm blocks) pollute readability
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Main test functions correctly separated into `call_*` and `param_*` pairs with proper granularity
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+- Generic variable names like `v1`, `v2`, `v3` make it extremely difficult to track data flow and understand function logic
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v1` used as loop counter in `for (v1 = 0; v1 < size; v1++)` should be named `i` or `index`)
+2. Recover struct field names from context and standard library definitions (e.g., `struct stat` fields should be `st_mode`, `st_size`, etc.)
+3. Add semantic comments explaining algorithm intent and contracts (e.g., "// Returns: length of dst after strcpy" for param_strcpy)
+4. Eliminate address/line range comments as they provide no value for code understanding
+5. Detect and explain magic numbers by matching against known constant definitions

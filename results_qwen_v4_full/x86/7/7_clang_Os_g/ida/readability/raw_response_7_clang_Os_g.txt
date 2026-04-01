@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `v2`, `ecx`, `eax`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `buffer`, `key` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retain original names (`param_fake_branch`, `param_opaque_predicate`), but helper functions use mechanical names (`sub_1030`, `sub_10C0`). Main functionality is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers persist without explanation (signal `8` instead of `SIGFPE`, signal `11` instead of `SIGSEGV`). Some constants optimized away (dead branches removed), but hex values like `0x5A`, `0xF` lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: register hints (`// ecx`, `// eax`), stack offsets (`[esp+0h] [ebp-28h] BYREF`), inline assembly blocks, and warning comments ("positive sp value has been detected").
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Dead code eliminated (fake branches removed entirely in `param_fake_branch`). Loops converted to do-while patterns. Tail recursion transformed to mathematical formulas, obscuring original recursive intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Helper functions like `decrypt_string` remain separate. Some functions constant-folded to single returns (`call_fake_branch` returns `10` directly).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has non-linear variable assignments (`v2 = v3` before `v3` is assigned in `_start`). Do-while loops disrupt natural for-loop reading pattern.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code successfully removed (fake branches eliminated). Constant folding applied appropriately. Some redundant calculations remain in `param_opaque_predicate` that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, size_t) but unsigned/signed distinctions sometimes lost. Function signatures mostly accurate. Generic `int` used where `int32_t` would be more precise.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Array handling correct (`v5[43]`, `v13[10]`). No complex structs in tested functions. Stack arrays marked `BYREF` appropriately. Limited composite type exposure in this codebase.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(__sighandler_t)div_zero_handler`). Pointer arithmetic generally safe. Signal handler casts are necessary but type-unsafe. No buffer overflow warnings in decompiled output.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered. Only auto-generated annotations (register hints, stack offsets). Original source's extensive documentation about obfuscation techniques completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. Standard library calls recognized (strlen, strncpy, signal). No design patterns or algorithm naming provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" noted for 9 library functions. Warning about stack pointer issues. No indication that dead code was eliminated or that constant folding changed observable behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Original source's expected values in comments (期望：10) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Global variables referenced (`div_zero_caught`, `jmp_buffer`). No call graph documentation. Function relationships inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order. Related `param_*` and `call_*` pairs grouped together. Static functions properly marked. No formal header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 functions failed to decompile (library functions). Would need stubs for external functions. Register-specific calling conventions (`__usercall`) are compiler-specific. Requires significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.42/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source (`result`, `encrypted`, `buffer`)
+- **No comments recovered** - original source's extensive documentation about obfuscation techniques entirely lost
+- **Dead code silently eliminated** - fake branches in `param_fake_branch` removed without indication, changing observable behavior
+- **Magic numbers unexplained** - signal constants `8` and `11` instead of `SIGFPE`/`SIGSEGV`
+- **9 library functions failed to decompile** - requires external stubs for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from original source, making basic functionality identifiable despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments recovered; all original documentation about obfuscation purpose and expected behavior completely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and original debug symbols when available (e.g., `v2` used in return position → `result`)
+2. **Document optimization transformations** - explicitly note when dead code is eliminated, constant folding occurs, or recursion is transformed
+3. **Preserve source comments** from debug information (`-g` flag) and add confidence indicators for uncertain decompilation regions

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`a1`, `v0`, `v1`, `v2`, `v3[10]`) instead of semantic names like `arr`, `large_buf`, `head`, `current`. Loop counter `i` is preserved but pointer variables like `ptr` lose their original meaning (e.g., `new_node` becomes `v7`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). However, some runtime functions remain as `sub_1030`, `sub_1040` without semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x14u` (stack canary offset), `0x28u` (40 bytes), `0x10u` appear without explanation. Original constants like `sizeof(int)`, `2048` are sometimes preserved but often converted to hex.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`, `v12 - __readgsdword(0x14u)`) appear in nearly every function. Compiler artifacts like `LODWORD(result)`, `HIDWORD(result)` add noise without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops generally recovered as for/while constructs. However, `stack_alias` function loses pointer aliasing logic completely (returns constant 20 instead of proper aliasing behavior). At -O0, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly. Helper functions like `create_tree_node` remain separate. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear early returns. Stack canary checks at function end disrupt flow slightly but don't impede understanding significantly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code is redundant (appears in every function return). Type casts like `(_DWORD *)`, `(int *)` are often unnecessary. No obvious dead code beyond security features.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation to generic `_DWORD`, `_BYTE`, `int`. Original types like `Point`, `Node`, `TreeNode` lost. `size_t` parameters often become `int`. Function pointer types degraded to `int (__cdecl *)(int)`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct definitions recovered. `heap_struct` shows `*ptr` and `ptr[1]` instead of `p->x` and `p->y`. `linked_list_heap` uses `v7[1]` instead of `new_node->next`. All composite types reduced to pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout (`(_DWORD *)`, `(int *)`, `(_BYTE *)`). Pointer arithmetic replaces struct field access. No const-correctness preserved. Dangerous patterns (dangling pointer, double free) not flagged as unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Virtually no comments** in decompiled code. Original had extensive comments explaining each test case (e.g., "MEM-L1-01: 局部变量（基础类型）"). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list creation, tree traversal, memory allocation patterns not labeled. Memory leak pattern in `memory_leak` not flagged.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about potential issues. `stack_alias` function is completely wrong (loses pointer aliasing semantics). Dangerous patterns (dangling pointer, double free, heap overflow) not flagged as undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). NULL checks present but not explained as contracts. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but no call graph documentation. Global variable references present but names sometimes degraded (`global_point + dword_604C` instead of `global_point.x + global_point.y`). Callback relationships not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. Static functions not clearly marked as file-scoped. No file organization information.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: **17 functions failed to decompile** (libc functions like `printf`, `malloc`, `free`). Architecture-specific code (`__readgsdword`, `_InterlockedOr`) requires platform-specific stubs. Would not compile standalone without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+6+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+3+2+3)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.95/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` all reduced to pointer arithmetic (`ptr[1]` instead of `p->y`)
+- **No comments recovered** - Original had extensive documentation explaining each test case; decompiled has zero semantic comments
+- **Stack canary noise** - Every function contains `__readgsdword(0x14u)` checks that obscure actual logic
+- **`stack_alias` function semantically broken** - Returns constant 20 instead of proper pointer aliasing behavior
+- **17 external functions failed to decompile** - libc functions listed as "FAILED" requiring manual stubs
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`), making navigation straightforward.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct/union definitions; all composite types reduced to raw pointer arithmetic losing all semantic field information.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Analyze consistent offset access (e.g., `ptr[0]`, `ptr[1]` always used together) to reconstruct struct layouts with field names.
+2. **Filter stack protection artifacts** - Recognize and optionally hide stack canary code (`__readgsdword`, return value XOR) that adds noise without semantic value.
+3. **Infer variable names from usage context** - Variables used in malloc results should be named `ptr`/`buffer`, loop indices should be `i`/`j`/`idx`, and struct-like access should suggest field names.

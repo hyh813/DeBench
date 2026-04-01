@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Function parameters (`a`, `b`, `count`) are well-recovered, but local variables are overwhelmingly generic (`iVar1`, `local_8`, `aiStack_8c`). While struct fields (`data`, `x`, `y`) are accurate, the lack of semantic names for loop counters and accumulators hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly recovered, likely due to debug symbols. Only a few internal thunks (`FUN_00011030`) lack semantic names.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Aggressive constant propagation (likely from `-O1` compilation) replaced logic with magic numbers; e.g., `call_cdecl` returns `0xf` (15) instead of `cdecl_func(5, 10)`, and `printf` arguments are hardcoded hex values like `0x32` and `0x2a`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is generally clean, but contains compiler artifacts like `__i686.get_pc_thunk.bx` and Ghidra-specific warnings ("Unknown calling convention"). The use of `undefined4` in `_start` adds minor noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is mostly natural, though loops are consistently represented as `do-while` even when `for` might be more idiomatic. Switch statements are flattened into arithmetic (e.g., `op * 10 + 10` in `ret_multi_branch`), which is readable but structurally different from the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. The granularity is appropriate, with no monolithic functions or over-fragmentation. The separation of test functions (`test_calling_conventions`) from implementation is preserved.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps. Early returns are used correctly, and the flow is easy to follow without needing to trace complex goto chains.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removed dead code and redundant assignments. However, the optimization that inlined function results into constants (e.g., in `test_calling_conventions`) removes the *logic* redundancy but replaces it with *data* literals, which is a trade-off.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are highly accurate; `int`, `char *`, `longlong`, and custom structs (`LargeStruct`) are correctly identified. The only degradation is the use of generic `undefined` types in low-level startup code and the `__return_storage_ptr__` artifact for struct returns.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs are recovered with correct field names and types. For example, `LargeStruct` contains `long long data[16]` and `SmallStruct` has `int x, y`, matching the source `typedef`s exactly.
+
+**11. Type Safety:** Score: 6/10
+Justification: While most types are safe, the varargs implementation uses explicit stack pointer casting (`local_8 = (int *)&stack0x00000008;`), which is unsafe and low-level. Pointer arithmetic in `param_complex_cast` (`*(int *)((int)p + 4)`) is also exposed rather than abstracted.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent or are auto-generated warnings (e.g., "WARNING: Unknown calling convention"). There are no comments explaining the logic of algorithms or the purpose of specific code blocks.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Common idioms like varargs are not recognized as high-level concepts; instead, they are decompiled to raw stack walking. The switch-case optimization is recognized as arithmetic but not explicitly labeled as a former switch statement.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra clearly flags "Unknown calling convention" and "Unresolved local var" warnings, which is helpful. However, it does not flag the constant propagation (magic numbers) as a potential readability issue.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the null check in `func_struct_byptr` is present in code but not annotated as a requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct recovered names. The relationship between `main` and the test functions is clear. Function pointer types (`_func_int_int`) are correctly applied to parameters.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output, matching the source file's structure. The separation between calling convention tests, parameter passing tests, and return value tests is implicitly maintained by function ordering.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined4`, `undefined1`, and `stack0x00000008`, and special parameters like `__return_storage_ptr__`. It would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- **Constant Propagation Obscuring Logic:** Functions like `call_cdecl` return `0xf` instead of showing the call `cdecl_func(5, 10)`, making the test logic invisible.
+- **Generic Local Variables:** Loop counters and accumulators are named `iVar1`, `local_8`, etc., instead of semantic names like `i` or `sum`.
+- **Low-level Varargs Implementation:** `va_list` is decompiled to raw stack pointer access (`(int *)&stack0x00000008`), losing the semantic intent of variable arguments.
+- **Ghidra-Specific Artifacts:** Types like `undefined4` and parameters like `__return_storage_ptr__` reduce portability and readability.
+
+**Best Quality Aspect:** Composite Type Recovery (Score: 9/10)
+- Structs like `LargeStruct` and `SmallStruct` are perfectly reconstructed with correct field names and array sizes, providing a solid foundation for understanding data layouts.
+
+**Most Needs Improvement:** Literal Clarity (Score: 3/10)
+- The aggressive use of magic numbers (e.g., `0xf`, `0x32`, `0x2a`) resulting from compiler optimization completely hides the original logic and values used in the source code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Annotate Constant Propagation:** When a function call is optimized away to a constant, insert a comment indicating the original call (e.g., `/* Optimized from: cdecl_func(5, 10) */`).
+2. **Abstract Varargs Stack Access:** Recognize the pattern of accessing stack offsets for variadic functions and represent it using standard `va_list` macros or a higher-level pseudo-variable.
+3. **Heuristic Local Variable Naming:** Infer names for local variables based on usage context (e.g., variables used in loop conditions should be named `i` or `counter`, accumulators `sum` or `total`).

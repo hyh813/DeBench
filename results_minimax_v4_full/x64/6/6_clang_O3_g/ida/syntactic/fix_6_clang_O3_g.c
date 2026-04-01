@@ -1,0 +1,1718 @@
+/* Required headers */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/shm.h>
+#include <sys/mman.h>
+#include <sys/ipc.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <link.h>
+#include <sys/syscall.h>
+
+/* ISO C99 scanf support - alias to standard sscanf */
+#define __isoc99_sscanf sscanf
+
+/* Define __sighandler_t if not available */
+typedef void (*__sighandler_t)(int);
+
+/* Atomic operation wrappers for GCC */
+#define _InterlockedAdd(ptr, val) __sync_fetch_and_add(ptr, val)
+#define _InterlockedCompareExchange(ptr, newval, oldval) __sync_val_compare_and_swap(ptr, oldval, newval)
+#define _InterlockedExchange(ptr, val) __sync_lock_test_and_set(ptr, val)
+
+/* Additional helper macros - fixed for proper compilation */
+#define HIDWORD(x) ((int32_t)((((uint64_t)(x)) >> 32) & 0xFFFFFFFF))
+#define BYTE1(x) (((uint8_t*)&(x))[1])
+#define JUMPOUT(addr) ((void)0)  /* No-op stub, original jumped to external address */
+
+/* Forward declarations */
+void signal_handler(int sig);
+
+/* SSE intrinsics */
+#include <emmintrin.h>
+#include <tmmintrin.h>
+#include <nmmintrin.h>
+#include <smmintrin.h>
+
+/* Thread local storage via pthread */
+static __thread unsigned int tls_value;
+
+/* Global variables for signal handling */
+static volatile int signal_received = 0;
+static volatile int signal_number = 0;
+
+/* Global variables for mutex/condition variables */
+static pthread_mutex_t counter_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+static volatile int ready = 0;
+static volatile int data = 0;
+static volatile int shared_counter = 0;
+static volatile int atomic_counter = 0;
+
+/* Data constants (SSE128 values used in comparisons) */
+static const __m128i xmmword_4020 = { .m128i_i32 = {0, 0, 0, 0} };
+static const __m128i xmmword_4010 = { .m128i_i32 = {0, 0, 0, 0} };
+static const __m128i xmmword_4030 = { .m128i_i32 = {1, 1, 1, 1} };
+static const __m128i xmmword_4040 = { .m128i_i32 = {2, 2, 2, 2} };
+static const __m128i xmmword_4050 = { .m128i_i32 = {3, 3, 3, 3} };
+static const __m128i xmmword_4060 = { .m128i_i32 = {4, 4, 4, 4} };
+static const __m128i xmmword_4070 = { .m128i_i32 = {5, 5, 5, 5} };
+static const __m128i xmmword_4080 = { .m128i_i32 = {6, 6, 6, 6} };
+static const __m128i xmmword_4090 = { .m128i_i32 = {7, 7, 7, 7} };
+
+/* String constants used in printf statements */
+static const char aLibL101D[] = "strlen(\"HelloLib\") = %u\n";
+static const char aLibL102D[] = "strcmp(\"HelloLib\", \"HelloLib\") = %d\n";
+static const char aLibL103D[] = "strcmp(\"HelloLib\", \"World\") = %d\n";
+static const char aLibL104D[] = "call_memcpy() = %d\n";
+static const char aLibL105D[] = "call_memcmp() = %d\n";
+static const char aLibL106D[] = "call_printf() = %d\n";
+static const char aLibL107D[] = "call_scanf() = %lld\n";
+static const char aLibL108D[] = "call_fopen_fclose() = %u\n";
+static const char aLibL109D[] = "param_fread_fwrite() = %d\n";
+static const char aLibL110D[] = "call_malloc_free() = %d\n";
+static const char aLibL111D[] = "call_memset() = %d\n";
+static const char aLibL112D[] = "call_strchr_strstr() = %d\n";
+
+static const char aSysL301D[] = "syscall(open) = %u\n";
+static const char aSysL302D[] = "stat() = %lld\n";
+static const char aSysL303D[] = "fork+exec+wait = %lld\n";
+static const char aSysL304D[] = "pipe communication = %d\n";
+static const char aSysL305D[] = "socket create = %d\n";
+static const char aSysL306D[] = "shmget/shmat = %u\n";
+static const char aSysL307D[] = "signal handling = %d\n";
+
+static const char aThrL301D[] = "thread_compute(7) = %u\n";
+static const char aThrL302D[] = "pthread_join sum = %d\n";
+static const char aThrL303D[] = "mutex lock test = %d\n";
+static const char aThrL304D[] = "condition variable = %d\n";
+static const char aThrL305D[] = "atomic operations = %d\n";
+static const char aThrL306D[] = "thread local storage = %d\n";
+
+static const char asc_4443[] = "=== System Calls Test ===\n";
+static const char asc_445E[] = "=== Thread Concurrency Test ===\n";
+
+/* External references - _gmon_start__ is a weak symbol that may be NULL */
+extern void (*_gmon_start__)(void);
+static char s[] = "=== Standard Library Test ===\n";
+
+/*
+ * Decompiled by IDA Pro 9.1 with Hex-Rays
+ * Binary: build/x64/6/6_clang_O3_g
+ * Processor: pc
+ */
+
+/* Function: .init_proc @ 0x2000 */
+long long (**init_proc())(void)
+{
+ long long (**result)(void); // rax
+
+ result = &_gmon_start__;
+ if ( &_gmon_start__ )
+ return (long long (**)(void))_gmon_start__();
+ return result;
+}
+
+
+/* Function: sub_2020 @ 0x2020 */
+void sub_2020()
+{
+ JUMPOUT(0);
+}
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* CRT stub function frame_dummy removed by preprocessor */
+
+
+
+/* Function: param_strcpy @ 0x24B0 */
+int param_strcpy(char *dst, const char *src)
+{
+ strcpy(dst, src);
+ return strlen(dst);
+}
+
+
+/* Function: call_strcpy @ 0x24D0 */
+int call_strcpy()
+{
+ char v1[40]; // [rsp+0h] [rbp-28h] BYREF
+
+ strcpy(v1, "HelloLib");
+ return strlen(v1);
+}
+
+
+/* Function: param_strcmp @ 0x2500 */
+int param_strcmp(const char *s1, const char *s2)
+{
+ int v2; // eax
+ int v3; // ecx
+ bool v4; // cc
+ int result; // eax
+
+ v2 = strcmp(s1, s2);
+ v3 = -(v2 != 0);
+ v4 = v2 <= 0;
+ result = 1;
+ if ( v4 )
+ return v3;
+ return result;
+}
+
+
+/* Function: call_strcmp @ 0x2520 */
+int call_strcmp()
+{
+ return 0;
+}
+
+
+/* Function: param_strlen @ 0x2530 */
+// attributes: thunk
+int param_strlen(const char *str)
+{
+ return strlen(str);
+}
+
+
+/* Function: call_strlen @ 0x2540 */
+int call_strlen()
+{
+ return 12;
+}
+
+
+/* Function: param_memcpy @ 0x2550 */
+int param_memcpy(void *dst, const void *src, size_t n)
+{
+ int v3; // ebx
+
+ v3 = n;
+ memcpy(dst, src, n);
+ return v3;
+}
+
+
+/* Function: call_memcpy @ 0x2560 */
+int call_memcpy()
+{
+ return 90;
+}
+
+
+/* Function: param_memcmp @ 0x2570 */
+int param_memcmp(const void *p1, const void *p2, size_t n)
+{
+ int v3; // eax
+ int v4; // ecx
+ bool v5; // cc
+ int result; // eax
+
+ v3 = memcmp(p1, p2, n);
+ v4 = -(v3 != 0);
+ v5 = v3 <= 0;
+ result = 1;
+ if ( v5 )
+ return v4;
+ return result;
+}
+
+
+/* Function: call_memcmp @ 0x2590 */
+int call_memcmp()
+{
+ return -1;
+}
+
+
+/* Function: param_printf @ 0x25A0 */
+int param_printf(int x, const char *name)
+{
+ return printf("Value: %d, Name: %s\n", x, name);
+}
+
+
+/* Function: call_printf @ 0x25C0 */
+int call_printf()
+{
+ return printf("Value: %d, Name: %s\n", 42, "Test");
+}
+
+
+/* Function: param_scanf @ 0x25E0 */
+int param_scanf(const char *input_str)
+{
+ bool v2; // zf
+ int result; // eax;
+ int low;
+ int high;
+
+ v2 = (unsigned int)__isoc99_sscanf(input_str, "%d,%d", &high, &low) == 2;
+ result = -1;
+ if ( v2 )
+ return high + low;
+ return result;
+}
+
+
+/* Function: call_scanf @ 0x2610 */
+int call_scanf()
+{
+ bool v1; // zf
+ int result; // eax
+ int low;
+ int high;
+
+ v1 = (unsigned int)__isoc99_sscanf("123,456", "%d,%d", &high, &low) == 2;
+ result = -1;
+ if ( v1 )
+ return high + low;
+ return result;
+}
+
+
+/* Function: param_fopen_fclose @ 0x2650 */
+int param_fopen_fclose(const char *filename)
+{
+ FILE *v1; // rax
+ FILE *v2; // rbx
+ int v3; // ebp
+
+ v1 = fopen(filename, "r");
+ if ( !v1 )
+ return -1;
+ v2 = v1;
+ v3 = fileno(v1);
+ fclose(v2);
+ return v3;
+}
+
+
+/* Function: call_fopen_fclose @ 0x2690 */
+int call_fopen_fclose()
+{
+ FILE *v0; // rax
+ FILE *v1; // r14
+ int v2; // ebx
+
+ v0 = fopen("/etc/passwd", "r");
+ if ( !v0 )
+ return -1;
+ v1 = v0;
+ v2 = fileno(v0);
+ fclose(v1);
+ return (v2 >> 31) | 0x2A;
+}
+
+
+/* Function: param_fread_fwrite @ 0x26E0 */
+int param_fread_fwrite(const char *tmpfile)
+{
+ FILE *v1; // rax
+ FILE *v2; // rbx
+ size_t v3; // r15
+ int result; // eax
+ __m128i v5[3]; // [rsp+0h] [rbp-38h] BYREF
+
+ v1 = fopen(tmpfile, "w+");
+ if ( !v1 )
+ return -1;
+ v2 = v1;
+ if ( fwrite("BinBench Test Data", 1u, 0x12u, v1) == 18 )
+ {
+ rewind(v2);
+ v3 = fread(v5, 1u, 0x12u, v2);
+ ((char*)&v5[0])[v3] = 0;
+ fclose(v2);
+ unlink(tmpfile);
+ result = -3;
+ if ( v3 == 18 )
+ {
+ __m128i tmp;
+ memcpy(&tmp, ((char*)v5) + 3, sizeof(__m128i));
+ result = -3;
+ if ( _mm_movemask_epi8(
+ _mm_and_si128(
+ _mm_cmpeq_epi8(_mm_load_si128(&v5[0]), xmmword_4020),
+ _mm_cmpeq_epi8(tmp, xmmword_4010))) == 0xFFFF )
+ return 42;
+ }
+ }
+ else
+ {
+ fclose(v2);
+ return -2;
+ }
+ return result;
+}
+
+
+/* Function: call_fread_fwrite @ 0x27C0 */
+int call_fread_fwrite()
+{
+ return param_fread_fwrite("/tmp/binbench_test.tmp");
+}
+
+
+/* Function: param_malloc_free @ 0x27D0 */
+int param_malloc_free(size_t size)
+{
+ int v1; // ebp
+ int *v3; // rax
+ size_t v4; // rcx
+ int v5; // ebp
+ size_t v6; // rdx
+ unsigned long long v7; // rdi
+ __m128i v8; // xmm0
+ long long v9; // rsi
+ __m128i v10; // xmm1
+ __m128i v11; // xmm2
+ __m128i v12; // xmm3
+ __m128i v13; // xmm4
+ __m128i v14; // xmm5
+ __m128i v15; // xmm6
+ __m128i si128; // xmm0
+ __m128i v17; // xmm1
+ int v18; // edx
+
+ v3 = (int *)malloc(4 * size);
+ if ( v3 )
+ {
+ if ( !size )
+ goto LABEL_16;
+ if ( size < 8 )
+ {
+ v4 = 0;
+ goto LABEL_13;
+ }
+ v4 = size & 0xFFFFFFFFFFFFFFF8LL;
+ v6 = (((size & 0xFFFFFFFFFFFFFFF8LL) - 8) >> 3) + 1;
+ if ( (size & 0xFFFFFFFFFFFFFFF8LL) == 8 )
+ {
+ si128 = _mm_load_si128((const __m128i *)&xmmword_4030);
+ v9 = 0;
+ if ( (v6 & 1) != 0 )
+ {
+LABEL_11:
+ v17 = _mm_add_epi32(_mm_load_si128((const __m128i *)&xmmword_4060), si128);
+ *(__m128i *)&v3[v9] = si128;
+ *(__m128i *)&v3[v9 + 4] = v17;
+ }
+ }
+ else
+ {
+ v7 = v6 & 0xFFFFFFFFFFFFFFFELL;
+ v8 = _mm_load_si128((const __m128i *)&xmmword_4040);
+ v9 = 0;
+ v10 = _mm_load_si128((const __m128i *)&xmmword_4050);
+ v11 = _mm_load_si128((const __m128i *)&xmmword_4060);
+ v12 = _mm_load_si128((const __m128i *)&xmmword_4070);
+ v13 = _mm_load_si128((const __m128i *)&xmmword_4080);
+ v14 = _mm_load_si128((const __m128i *)&xmmword_4090);
+ do
+ {
+ v15 = _mm_unpacklo_epi32(
+ _mm_shuffle_epi32(_mm_mul_epu32(v8, v10), 232),
+ _mm_shuffle_epi32(_mm_mul_epu32(_mm_shuffle_epi32(v8, 245), v10), 232));
+ *(__m128i *)&v3[v9] = v15;
+ *(__m128i *)&v3[v9 + 4] = _mm_add_epi32(v15, v11);
+ *(__m128i *)&v3[v9 + 8] = _mm_add_epi32(v15, v12);
+ *(__m128i *)&v3[v9 + 12] = _mm_add_epi32(v15, v13);
+ v9 += 16;
+ v8 = _mm_add_epi32(v8, v14);
+ v7 -= 2LL;
+ }
+ while ( v7 );
+ si128 = _mm_unpacklo_epi32(
+ _mm_shuffle_epi32(_mm_mul_epu32(v8, v10), 232),
+ _mm_shuffle_epi32(_mm_mul_epu32(_mm_shuffle_epi32(v8, 245), v10), 232));
+ if ( (v6 & 1) != 0 )
+ goto LABEL_11;
+ }
+ if ( v4 == size )
+ {
+LABEL_15:
+ v1 = *v3;
+LABEL_16:
+ v5 = v3[size - 1] + v1;
+ free(v3);
+ return v5;
+ }
+LABEL_13:
+ v18 = 10 * v4;
+ do
+ {
+ v3[v4++] = v18;
+ v18 += 10;
+ }
+ while ( size != v4 );
+ goto LABEL_15;
+ }
+ return -1;
+}
+
+
+/* Function: call_malloc_free @ 0x2950 */
+int call_malloc_free()
+{
+ return 90;
+}
+
+
+/* Function: param_memset @ 0x2960 */
+int param_memset(void *buffer, size_t size)
+{
+ int v3; // ebp
+ size_t v4; // rax
+ size_t v5; // rcx
+ unsigned long long v6; // rsi
+ long long v7; // rdx
+ __m128i v8; // xmm0
+ __m128i v9; // xmm1
+ __m128i v10; // xmm0
+ __m128i v11; // xmm1
+
+ v3 = 0;
+ memset(buffer, 0, size);
+ if ( size )
+ {
+ if ( size < 8 )
+ {
+ v4 = 0;
+ v3 = 0;
+ do
+LABEL_10:
+ v3 += *((unsigned char *)buffer + v4++);
+ while ( size != v4 );
+ return v3;
+ }
+ v4 = size & 0xFFFFFFFFFFFFFFF8LL;
+ v5 = (((size & 0xFFFFFFFFFFFFFFF8LL) - 8) >> 3) + 1;
+ if ( (size & 0xFFFFFFFFFFFFFFF8LL) == 8 )
+ {
+ v8 = 0;
+ v7 = 0;
+ v9 = 0;
+ if ( (v5 & 1) != 0 )
+ {
+LABEL_8:
+ v8 = _mm_add_epi32(
+ v8,
+ _mm_unpacklo_epi16(
+ _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(unsigned int *)((char *)buffer + v7)), (__m128i)0LL),
+ (__m128i)0LL));
+ v9 = _mm_add_epi32(
+ v9,
+ _mm_unpacklo_epi16(
+ _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(unsigned int *)((char *)buffer + v7 + 4)), (__m128i)0LL),
+ (__m128i)0LL));
+ }
+ }
+ else
+ {
+ v6 = v5 & 0xFFFFFFFFFFFFFFFELL;
+ v7 = 0;
+ v8 = 0;
+ v9 = 0;
+ do
+ {
+ v8 = _mm_add_epi32(
+ _mm_unpacklo_epi16(
+ _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(unsigned int *)((char *)buffer + v7 + 8)), (__m128i)0LL),
+ (__m128i)0LL),
+ _mm_add_epi32(
+ _mm_unpacklo_epi16(
+ _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(unsigned int *)((char *)buffer + v7)), (__m128i)0LL),
+ (__m128i)0LL),
+ v8));
+ v9 = _mm_add_epi32(
+ _mm_unpacklo_epi16(
+ _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(unsigned int *)((char *)buffer + v7 + 12)), (__m128i)0LL),
+ (__m128i)0LL),
+ _mm_add_epi32(
+ _mm_unpacklo_epi16(
+ _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(unsigned int *)((char *)buffer + v7 + 4)), (__m128i)0LL),
+ (__m128i)0LL),
+ v9));
+ v7 += 16;
+ v6 -= 2LL;
+ }
+ while ( v6 );
+ if ( (v5 & 1) != 0 )
+ goto LABEL_8;
+ }
+ v10 = _mm_add_epi32(v8, v9);
+ v11 = _mm_add_epi32(_mm_shuffle_epi32(v10, 238), v10);
+ v3 = _mm_cvtsi128_si32(_mm_add_epi32(_mm_shuffle_epi32(v11, 85), v11));
+ if ( v4 == size )
+ return v3;
+ goto LABEL_10;
+ }
+ return v3;
+}
+
+
+/* Function: call_memset @ 0x2AA0 */
+int call_memset()
+{
+ return 0;
+}
+
+
+/* Function: param_strchr_strstr @ 0x2AB0 */
+int param_strchr_strstr(const char *str, char ch_0, const char *substr)
+{
+ char *v4; // rax
+ int v5; // ebp
+ char *v6; // rax
+
+ v4 = strchr(str, ch_0);
+ v5 = v4 == 0 ? -1 : (unsigned int)v4 - (unsigned int)str;
+ v6 = strstr(str, substr);
+ return v5 + (v6 == 0 ? -1 : (unsigned int)v6 - (unsigned int)str);
+}
+
+
+/* Function: call_strchr_strstr @ 0x2AF0 */
+int call_strchr_strstr()
+{
+ return 15;
+}
+
+
+/* Function: test_standard_library_functions @ 0x2B00 */
+void test_standard_library_functions()
+{
+ unsigned int v0; // eax
+ unsigned int v1; // ebp
+ unsigned int v2; // eax
+ int v3; // eax
+ long long v4; // rsi
+ FILE *v5; // rax
+ FILE *v6; // rbx
+ int v7; // ebp
+ unsigned int v8; // eax
+ int v9; // [rsp+Ch] [rbp-3Ch] BYREF
+ char buf[56]; // [rsp+10h] [rbp-38h] BYREF
+
+ puts(s);  // Print the header string
+ strcpy(s, "HelloLib");
+ v0 = strlen(s);
+ printf(aLibL101D, v0);
+ printf(aLibL102D, 0);
+ printf(aLibL103D, 12);
+ printf(aLibL104D, 90);
+ v1 = -1;
+ printf(aLibL105D, 0xFFFFFFFFLL);
+ v2 = printf("Value: %d, Name: %s\n", 42, "Test");
+ printf(aLibL106D, v2);
+ v3 = __isoc99_sscanf("123,456", "%d,%d", &v9, &v9);
+ v4 = (unsigned int)(v9 + v9);
+ if ( v3 != 2 )
+ v4 = 0xFFFFFFFFLL;
+ printf(aLibL107D, v4);
+ v5 = fopen("/etc/passwd", "r");
+ if ( v5 )
+ {
+ v6 = v5;
+ v7 = fileno(v5);
+ fclose(v6);
+ v1 = (v7 >> 31) | 0x2A;
+ }
+ printf(aLibL108D, v1);
+ v8 = param_fread_fwrite("/tmp/binbench_test.tmp");
+ printf(aLibL109D, v8);
+ printf(aLibL110D, 90);
+ printf(aLibL111D, 0);
+ printf(aLibL112D, 15);
+}
+
+
+/* Function: param_linux_syscall @ 0x2C90 */
+int param_linux_syscall(const char *pathname)
+{
+ long v1; // eax
+ long v2; // ebx
+
+ v1 = syscall(SYS_open, pathname, O_RDONLY);
+ v2 = v1;
+ if ( v1 < 0 )
+ return -*__errno_location();
+ syscall(SYS_close, v1);
+ return (int)v2;
+}
+
+
+/* Function: call_linux_syscall @ 0x2CD0 */
+int call_linux_syscall()
+{
+ long v0; // eax
+ long v1; // ebx
+
+ v0 = syscall(SYS_open, "/etc/passwd", O_RDONLY);
+ v1 = v0;
+ if ( v0 < 0 )
+  v1 = -*__errno_location();
+ else
+  syscall(SYS_close, v0);
+ return (int)((v1 >> 31) | 0x2A);
+}
+
+
+/* Function: param_win32_api @ 0x2D20 */
+int param_win32_api(const char *filename)
+{
+ int v1; // eax
+ int v2; // edx
+ bool v3; // sf
+ int result; // eax
+ struct stat buf; // [rsp+8h] [rbp-90h] BYREF
+
+ v1 = stat(filename, &buf);
+ v2 = -2;
+ if ( buf.st_size > 0 )
+ v2 = 42;
+ v3 = v1 < 0;
+ result = -1;
+ if ( !v3 )
+ return v2;
+ return result;
+}
+
+
+/* Function: call_win32_api @ 0x2D60 */
+int call_win32_api()
+{
+ int v0; // eax
+ int v1; // edx
+ bool v2; // sf
+ int result; // eax
+ struct stat buf; // [rsp+8h] [rbp-90h] BYREF
+
+ v0 = stat("/etc/passwd", &buf);
+ v1 = -2;
+ if ( buf.st_size > 0 )
+ v1 = 42;
+ v2 = v0 < 0;
+ result = -1;
+ if ( !v2 )
+ return v1;
+ return result;
+}
+
+
+/* Function: param_fork_exec @ 0x2DA0 */
+int param_fork_exec(const char *prog, const char *arg)
+{
+ int v3; // eax
+ int result; // eax
+ int stat_loc; // [rsp+0h] [rbp-14h] BYREF
+
+ v3 = fork();
+ if ( v3 < 0 )
+ return -1;
+ if ( !v3 )
+ {
+ execl(prog, prog, arg, (char *)NULL);
+ _exit(127);
+ }
+ if ( waitpid(v3, &stat_loc, 0) < 0 )
+ return -2;
+ result = -3;
+ if ( (stat_loc & 0x7F) == 0 )
+ return BYTE1(stat_loc);
+ return result;
+}
+
+
+/* Function: call_fork_exec @ 0x2E20 */
+int call_fork_exec()
+{
+ int v0; // eax
+ int stat_loc[3]; // [rsp+Ch] [rbp-Ch] BYREF
+
+ v0 = fork();
+ if ( v0 < 0 )
+ return -1;
+ if ( !v0 )
+ {
+ execl("/bin/true", "/bin/true", (char*)NULL);
+ _exit(127);
+ }
+ if ( waitpid(v0, stat_loc, 0) < 0 || (stat_loc[0] & 0x7F) != 0 )
+ return -1;
+ else
+ return (stat_loc[0] & 0xFF00) != 0 ? -1 : 0x2A;
+}
+
+
+/* Function: param_pipe_communication @ 0x2E90 */
+int param_pipe_communication()
+{
+ __pid_t v0; // eax
+ ssize_t v1; // rbx
+ int result; // eax
+ int pipedes[2]; // [rsp+8h] [rbp-30h] BYREF
+ unsigned char buf[40]; // [rsp+10h] [rbp-28h] BYREF
+
+ if ( pipe(pipedes) < 0 )
+ return -1;
+ v0 = fork();
+ if ( v0 < 0 )
+ return -2;
+ if ( !v0 )
+ {
+ close(pipedes[0]);
+ write(pipedes[1], "HelloPipe", 9u);
+ close(pipedes[1]);
+ _exit(0);
+ }
+ close(pipedes[1]);
+ v1 = read(pipedes[0], buf, 0x1Fu);
+ buf[v1] = 0;
+ close(pipedes[0]);
+ waitpid(-1, NULL, 0);
+ result = -3;
+ if ( v1 > 0 )
+ return 42;
+ return result;
+}
+
+
+/* Function: call_pipe_communication @ 0x2F40 */
+// attributes: thunk
+int call_pipe_communication()
+{
+ return param_pipe_communication();
+}
+
+
+/* Function: param_socket_create @ 0x2F50 */
+int param_socket_create()
+{
+ int v0; // eax
+ int v1; // ebx
+ int v2; // ebp
+ int result; // eax
+ int optval; // [rsp+4h] [rbp-24h] BYREF
+ struct sockaddr v5; // [rsp+8h] [rbp-20h] BYREF
+
+ v0 = socket(2, 1, 0);
+ if ( v0 < 0 )
+ return -1;
+ v1 = v0;
+ optval = 1;
+ if ( setsockopt(v0, 1, 2, &optval, 4u) < 0 )
+ {
+ close(v1);
+ return -2;
+ }
+ else
+ {
+ *(unsigned long long *)&v5.sa_data[6] = 0;
+ *(unsigned long long *)&v5.sa_family = 2;
+ if ( bind(v1, &v5, 0x10u) < 0 )
+ {
+ close(v1);
+ return -3;
+ }
+ else
+ {
+ v2 = listen(v1, 5);
+ close(v1);
+ result = 42;
+ if ( v2 < 0 )
+ return -4;
+ }
+ }
+ return result;
+}
+
+
+/* Function: call_socket_create @ 0x3020 */
+// attributes: thunk
+int call_socket_create()
+{
+ return param_socket_create();
+}
+
+
+/* Function: param_shmget_shmat @ 0x3030 */
+int param_shmget_shmat()
+{
+ int v0; // eax
+ int v1; // ebx
+ int v2; // eax
+ int v3; // eax
+ int v4; // r14d
+ char *v5; // rax
+ char *v6; // rbp
+
+ v0 = open("/tmp/binbench_shm", 66, 438);
+ v1 = -1;
+ if ( v0 >= 0 )
+ {
+ close(v0);
+ v2 = ftok("/tmp/binbench_shm", 42);
+ if ( v2 >= 0 )
+ {
+ v3 = shmget(v2, 0x1000u, 950);
+ if ( v3 < 0 )
+ {
+ return -2;
+ }
+ else
+ {
+ v4 = v3;
+ v5 = (char *)shmat(v3, 0, 0);
+ if ( v5 == (char *)-1LL )
+ {
+ return -3;
+ }
+ else
+ {
+ v6 = v5;
+ strcpy(v5, "SharedMemory");
+ v1 = strlen(v5);
+ shmdt(v6);
+ shmctl(v4, 0, 0);
+ }
+ }
+ }
+ }
+ return v1;
+}
+
+
+/* Function: call_shmget_shmat @ 0x3100 */
+int call_shmget_shmat()
+{
+ bool v0; // cc
+ int result; // eax
+
+ v0 = param_shmget_shmat() <= 0;
+ result = -1;
+ if ( !v0 )
+ return 42;
+ return result;
+}
+
+
+/* Function: param_signal_handling @ 0x3120 */
+int param_signal_handling()
+{
+ unsigned int v0; // ebx
+ bool v1; // cc
+ int result; // eax
+ unsigned int v3; // ebx
+
+ if ( signal(10, signal_handler) == (__sighandler_t)-1LL )
+ return -1;
+ if ( signal(14, signal_handler) == (__sighandler_t)-1LL )
+ return -2;
+ signal_received = 0;
+ raise(10);
+ if ( !signal_received )
+ {
+ v0 = 1000;
+ do
+ {
+ usleep(0x3E8u);
+ if ( signal_received )
+ break;
+ v1 = v0-- <= 1;
+ }
+ while ( !v1 );
+ }
+ if ( !signal_received )
+ return -3;
+ result = -4;
+ if ( signal_number == 10 )
+ {
+ signal_received = 0;
+ alarm(1u);
+ if ( !signal_received )
+ {
+ v3 = 2000;
+ do
+ {
+ usleep(0x3E8u);
+ if ( signal_received )
+ break;
+ v1 = v3-- <= 1;
+ }
+ while ( !v1 );
+ }
+ result = -5;
+ if ( signal_received )
+ {
+ if ( signal_number == 14 )
+ {
+ signal(10, 0);
+ signal(14, 0);
+ return 42;
+ }
+ }
+ }
+ return result;
+}
+
+
+/* Function: signal_handler @ 0x3250 */
+void signal_handler(int sig)
+{
+ signal_received = 1;
+ signal_number = sig;
+}
+
+
+/* Function: call_signal_handling @ 0x3270 */
+// attributes: thunk
+int call_signal_handling()
+{
+ return param_signal_handling();
+}
+
+
+/* Function: test_system_calls @ 0x3280 */
+void test_system_calls()
+{
+ long v0; // eax
+ long v1; // ebx
+ int v2; // eax
+ long long v3; // rsi
+ unsigned int v4; // ebx
+ int v5; // eax
+ long long v6; // rsi
+ unsigned int v7; // eax
+ unsigned int v8; // eax
+ unsigned int v9; // eax
+ struct stat buf; // [rsp+8h] [rbp-A0h] BYREF
+ int status; // [rsp+0h] [rbp-A8h] BYREF
+
+ puts(asc_4443);
+ v0 = syscall(SYS_open, "/etc/passwd", O_RDONLY);
+ v1 = v0;
+ if ( v0 < 0 )
+ v1 = -*__errno_location();
+ else
+ syscall(SYS_close, v0);
+ printf(aSysL301D, (int)((v1 >> 31) | 0x2A));
+ v2 = stat("/etc/passwd", &buf);
+ v3 = 4294967294LL;
+ if ( buf.st_size > 0 )
+ v3 = 42;
+ v4 = -1;
+ if ( v2 < 0 )
+ v3 = 0xFFFFFFFFLL;
+ printf(aSysL302D, v3);
+ v5 = fork();
+ v6 = 0xFFFFFFFFLL;
+ if ( v5 >= 0 )
+ {
+ if ( !v5 )
+ {
+ execl("/bin/true", "/bin/true", (char *)0);
+ _exit(127);
+ }
+ if ( waitpid(v5, &status, 0) < 0 || (status & 0x7F) != 0 )
+ v6 = 0xFFFFFFFFLL;
+ else
+ v6 = (status & 0xFF00) != 0 ? -1 : 0x2A;
+ }
+ printf(aSysL303D, v6);
+ v7 = param_pipe_communication();
+ printf(aSysL304D, v7);
+ v8 = param_socket_create();
+ printf(aSysL305D, v8);
+ if ( param_shmget_shmat() > 0 )
+ v4 = 42;
+ printf(aSysL306D, v4);
+ v9 = param_signal_handling();
+ printf(aSysL307D, v9);
+}
+
+
+/* Function: thread_compute @ 0x33F0 */
+void * thread_compute(void *arg)
+{
+ int v1; // ebx
+ void *result; // rax
+
+ v1 = *(unsigned int *)arg * *(unsigned int *)arg;
+ result = malloc(4u);
+ *(unsigned int *)result = v1;
+ return result;
+}
+
+
+/* Function: param_pthread_create @ 0x3410 */
+int param_pthread_create(int x)
+{
+ int v2; // ebx
+ int arg; // [rsp+Ch] [rbp-1Ch] BYREF
+ void *thread_return; // [rsp+10h] [rbp-18h] BYREF
+ pthread_t newthread[2]; // [rsp+18h] [rbp-10h] BYREF
+
+ arg = x;
+ if ( pthread_create(newthread, 0, thread_compute, &arg) )
+ return -1;
+ pthread_join(newthread[0], &thread_return);
+ v2 = *(unsigned int *)thread_return;
+ free(thread_return);
+ return v2;
+}
+
+
+/* Function: call_pthread_create @ 0x3470 */
+int call_pthread_create()
+{
+ int v1; // ebx
+ int arg; // [rsp+Ch] [rbp-1Ch] BYREF
+ void *thread_return; // [rsp+10h] [rbp-18h] BYREF
+ pthread_t newthread[2]; // [rsp+18h] [rbp-10h] BYREF
+
+ arg = 7;
+ if ( pthread_create(newthread, 0, thread_compute, &arg) )
+ return -1;
+ pthread_join(newthread[0], &thread_return);
+ v1 = *(unsigned int *)thread_return;
+ free(thread_return);
+ return v1;
+}
+
+
+/* Function: thread_sum @ 0x34D0 */
+void * thread_sum(void *arg)
+{
+ int v1; // eax
+ bool v2; // cc
+ long long v3; // rax
+
+ *((unsigned int *)arg + 2) = 0;
+ v1 = *((unsigned int *)arg + 1);
+ v2 = v1 < *(unsigned int *)arg;
+ v3 = (unsigned int)(v1 - *(unsigned int *)arg);
+ if ( !v2 )
+ *((unsigned int *)arg + 2) = (((unsigned long long)(unsigned int)(~*(unsigned int *)arg + *((unsigned int *)arg + 1)) * v3) >> 1)
+ + *(unsigned int *)arg
+ + v3 * (*(unsigned int *)arg + 1);
+ return 0;
+}
+
+
+/* Function: param_pthread_join @ 0x3510 */
+int param_pthread_join()
+{
+ int v0; // ebx
+ int v1; // r14d
+ int v2; // ebp
+ long long arg; // [rsp+0h] [rbp-68h] BYREF
+ long long arg_8; // [rsp+8h] [rbp-60h] BYREF
+ long long v6; // [rsp+10h] [rbp-58h]
+ long long v7; // [rsp+18h] [rbp-50h] BYREF
+ int v8; // [rsp+20h] [rbp-48h]
+ pthread_t newthread; // [rsp+30h] [rbp-38h] BYREF
+ pthread_t th; // [rsp+38h] [rbp-30h] BYREF
+ pthread_t v11[5]; // [rsp+40h] [rbp-28h] BYREF
+
+ arg_8 = 0xB00000000LL;
+ v8 = 0;
+ arg = 0xA00000001LL;
+ v6 = 20;
+ v7 = 0x1E00000015LL;
+ v0 = -1;
+ if ( !pthread_create(&newthread, 0, thread_sum, &arg)
+ && !pthread_create(&th, 0, thread_sum, (char *)&arg_8 + 4)
+ && !pthread_create(v11, 0, thread_sum, &v7) )
+ {
+ v0 = -2;
+ if ( !pthread_join(newthread, 0) )
+ {
+ v1 = arg_8;
+ if ( !pthread_join(th, 0) )
+ {
+ v2 = HIDWORD(v6);
+ if ( !pthread_join(v11[0], 0) )
+ return v8 + v1 + v2;
+ }
+ }
+ }
+ return v0;
+}
+
+
+/* Function: call_pthread_join @ 0x3610 */
+// attributes: thunk
+int call_pthread_join()
+{
+ return param_pthread_join();
+}
+
+
+/* Function: thread_increment @ 0x3620 */
+void * thread_increment(void *arg)
+{
+ int v1; // ebp
+
+ v1 = *(unsigned int *)arg;
+ if ( *(int *)arg > 0 )
+ {
+ do
+ {
+ pthread_mutex_lock(&counter_mutex);
+ ++shared_counter;
+ pthread_mutex_unlock(&counter_mutex);
+ usleep(0x3E8u);
+ --v1;
+ }
+ while ( v1 );
+ }
+ return 0;
+}
+
+
+/* Function: param_mutex_lock @ 0x3660 */
+int param_mutex_lock(int thread_count, int iterations_per_thread)
+{
+ int v3; // r14d
+ char *v4; // rax
+ char *v5; // rbx
+ long long v6; // r14
+ long long i; // rbp
+ int result; // eax
+ int v9; // [rsp+0h] [rbp-38h] BYREF
+ int v10; // [rsp+4h] [rbp-34h]
+
+ v10 = 0;
+ v3 = thread_count;
+ v9 = iterations_per_thread;
+ v4 = (char *)malloc(8LL * thread_count);
+ if ( !v4 )
+ return -1;
+ v5 = v4;
+ shared_counter = 0;
+ if ( thread_count > 0 )
+ {
+ v10 = thread_count;
+ v6 = 0;
+ do
+ {
+ if ( pthread_create((pthread_t *)&v5[v6], 0, thread_increment, &v9) )
+ {
+ free(v5);
+ return -2;
+ }
+ v6 += 8;
+ }
+ while ( 8LL * (unsigned int)thread_count != v6 );
+ v3 = v10;
+ if ( v10 > 0 )
+ {
+ for ( i = 0; i != thread_count; pthread_join(*(unsigned long long *)&v5[8 * i++], 0) )
+ ;
+ }
+ }
+ free(v5);
+ result = -3;
+ if ( shared_counter == v9 * v3 )
+ return 42;
+ return result;
+}
+
+
+/* Function: call_mutex_lock @ 0x3750 */
+int call_mutex_lock()
+{
+ return param_mutex_lock(4, 1000);
+}
+
+
+/* Function: consumer_thread @ 0x3760 */
+unsigned int * consumer_thread(void *arg)
+{
+ int v1; // ebx
+ unsigned int *result; // rax
+
+ pthread_mutex_lock(&cond_mutex);
+ if ( !ready )
+ {
+ do
+ pthread_cond_wait(&cond, &cond_mutex);
+ while ( ready != 1 );
+ }
+ v1 = 42;
+ if ( !data )
+ v1 = 0;
+ pthread_mutex_unlock(&cond_mutex);
+ result = malloc(4u);
+ *result = v1;
+ return result;
+}
+
+
+/* Function: producer_thread @ 0x37E0 */
+void * producer_thread(void *arg)
+{
+ sleep(1u);
+ pthread_mutex_lock(&cond_mutex);
+ data = 1;
+ ready = 1;
+ pthread_cond_signal(&cond);
+ pthread_mutex_unlock(&cond_mutex);
+ return 0;
+}
+
+
+/* Function: param_condition_variable @ 0x3820 */
+int param_condition_variable()
+{
+ int v1; // ebx
+ pthread_t newthread; // [rsp+8h] [rbp-20h] BYREF
+ void *thread_return; // [rsp+10h] [rbp-18h] BYREF
+ pthread_t th[2]; // [rsp+18h] [rbp-10h] BYREF
+
+ ready = 0;
+ data = 0;
+ if ( pthread_create(&newthread, 0, (void *(*)(void *))consumer_thread, 0) )
+ return -1;
+ if ( pthread_create(th, 0, producer_thread, 0) )
+ {
+ pthread_cancel(newthread);
+ return -2;
+ }
+ else
+ {
+ pthread_join(newthread, &thread_return);
+ pthread_join(th[0], 0);
+ v1 = *(unsigned int *)thread_return;
+ free(thread_return);
+ return v1;
+ }
+}
+
+
+/* Function: call_condition_variable @ 0x38C0 */
+// attributes: thunk
+int call_condition_variable()
+{
+ return param_condition_variable();
+}
+
+
+/* Function: thread_atomic_increment @ 0x38D0 */
+void * thread_atomic_increment(void *arg)
+{
+ int v1; // esi
+ int v2; // edx
+ signed int v3; // ecx
+ unsigned int v4; // esi
+
+ v1 = *(unsigned int *)arg;
+ if ( *(int *)arg > 0 )
+ {
+ v2 = *(unsigned int *)arg & 3;
+ v3 = 0;
+ if ( (unsigned int)(v1 - 1) >= 3 )
+ {
+ v4 = v1 & 0xFFFFFFFC;
+ v3 = 0;
+ do
+ {
+ _InterlockedAdd(&atomic_counter, 1u);
+ _InterlockedCompareExchange(&atomic_counter, v3 + 1000, v3);
+ _InterlockedAdd(&atomic_counter, 1u);
+ _InterlockedCompareExchange(&atomic_counter, v3 + 1001, v3 + 1);
+ _InterlockedAdd(&atomic_counter, 1u);
+ _InterlockedCompareExchange(&atomic_counter, v3 + 1002, v3 + 2);
+ _InterlockedAdd(&atomic_counter, 1u);
+ _InterlockedCompareExchange(&atomic_counter, v3 + 1003, v3 + 3);
+ v3 += 4;
+ }
+ while ( v3 != v4 );
+ }
+ for ( ; v2; --v2 )
+ {
+ _InterlockedAdd(&atomic_counter, 1u);
+ _InterlockedCompareExchange(&atomic_counter, v3 + 1000, v3);
+ ++v3;
+ }
+ }
+ return 0;
+}
+
+
+/* Function: thread_atomic_load_store @ 0x3990 */
+void * thread_atomic_load_store(void *arg)
+{
+ _InterlockedExchange(&atomic_counter, atomic_counter + 100);
+ return 0;
+}
+
+
+/* Function: param_atomic_ops @ 0x39B0 */
+int param_atomic_ops(int thread_count, int iterations)
+{
+ unsigned long long *v2; // rax
+ unsigned long long *v3; // rbx
+ long long v4; // r14
+ long long i; // rbp
+ int v6; // ebp
+ int result; // eax
+ int arg; // [rsp+Ch] [rbp-3Ch] BYREF
+ pthread_t newthread[7]; // [rsp+10h] [rbp-38h] BYREF
+
+ arg = iterations;
+ v2 = malloc(8LL * thread_count);
+ if ( !v2 )
+ return -1;
+ v3 = v2;
+ _InterlockedExchange(&atomic_counter, 0);
+ if ( thread_count <= 0 )
+ {
+LABEL_6:
+ if ( !pthread_create(newthread, 0, thread_atomic_load_store, 0) )
+ pthread_join(newthread[0], 0);
+ if ( thread_count > 0 )
+ {
+ for ( i = 0; i != thread_count; pthread_join(v3[i++], 0) )
+ ;
+ }
+ v6 = atomic_counter;
+ free(v3);
+ result = -3;
+ if ( v6 > 0 )
+ return 42;
+ }
+ else
+ {
+ v4 = 0;
+ while ( !pthread_create(&v3[v4], 0, thread_atomic_increment, &arg) )
+ {
+ if ( thread_count == ++v4 )
+ goto LABEL_6;
+ }
+ free(v3);
+ return -2;
+ }
+ return result;
+}
+
+
+/* Function: call_atomic_ops @ 0x3AC0 */
+int call_atomic_ops()
+{
+ return param_atomic_ops(4, 500);
+}
+
+
+/* Function: thread_tls_test @ 0x3AD0 */
+void * thread_tls_test(void *arg)
+{
+ unsigned long long v1; // ebx
+ void *result; // rax
+
+ /* On x86-64 Linux, TLS is accessed via FS segment register */
+ /* Use pthread_self() which returns the thread pointer on Linux */
+ v1 = (unsigned long long)pthread_self();
+ /* Simulate TLS access by using the thread pointer offset */
+ strncpy((char *)(v1 - 32), (const char *)arg, 0x1Fu);
+ result = malloc(8u);
+ *(unsigned int *)result = (unsigned int)v1;
+ *((unsigned int *)result + 1) = (unsigned int)(v1 + 50);
+ return result;
+}
+
+
+/* Function: param_thread_local_storage @ 0x3B20 */
+int param_thread_local_storage(int thread_count)
+{
+ void *v1; // r14
+ void *v2; // r13
+ int result; // eax
+ long long i; // rbx
+ char *v5; // rax
+ pthread_t *v6; // rbx
+ long long v7; // r14
+ long long v8; // rbp
+ int v9; // r15d
+ int v10; // ebx
+ long long v11; // rbx
+ int v12; // [rsp+4h] [rbp-44h]
+ pthread_t *ptr; // [rsp+8h] [rbp-40h]
+ void *thread_return; // [rsp+10h] [rbp-38h] BYREF
+
+ v1 = malloc(8LL * thread_count);
+ v2 = malloc(8LL * thread_count);
+ result = -1;
+ if ( v1 && v2 )
+ {
+ if ( thread_count <= 0 )
+ {
+ v12 = thread_count;
+ v10 = 0;
+ v9 = 0;
+LABEL_13:
+ free(v2);
+ free(v1);
+ result = -3;
+ if ( !(v10 ^ (100 * v12) | v9 ^ (150 * v12)) )
+ return 42;
+ }
+ else
+ {
+ for ( i = 0; i != thread_count; snprintf(v5, 0x10u, "Thread-%d", i++) )
+ {
+ v5 = (char *)malloc(0x10u);
+ *((unsigned long long *)v2 + i) = v5;
+ }
+ v6 = (pthread_t *)v1;
+ v7 = 0;
+ ptr = v6;
+ while ( !pthread_create(v6, 0, thread_tls_test, *((void **)v2 + v7)) )
+ {
+ ++v7;
+ ++v6;
+ if ( thread_count == v7 )
+ {
+ v12 = thread_count;
+ v8 = 0;
+ v9 = 0;
+ v10 = 0;
+ v1 = ptr;
+ do
+ {
+ pthread_join(ptr[v8], &thread_return);
+ v10 += *(unsigned int *)thread_return;
+ v9 += *((unsigned int *)thread_return + 1);
+ free(thread_return);
+ free(*((void **)v2 + v8++));
+ }
+ while ( thread_count != v8 );
+ goto LABEL_13;
+ }
+ }
+ v11 = -1;
+ do
+ free(*((void **)v2 + ++v11));
+ while ( v7 != v11 );
+ free(v2);
+ free(ptr);
+ return -2;
+ }
+ }
+ return result;
+}
+
+
+/* Function: call_thread_local_storage @ 0x3CE0 */
+int call_thread_local_storage()
+{
+ return param_thread_local_storage(4);
+}
+
+
+/* Function: test_thread_concurrency @ 0x3CF0 */
+void test_thread_concurrency()
+{
+ unsigned int v0; // ebx
+ unsigned int v1; // eax
+ unsigned int v2; // eax
+ unsigned int v3; // eax
+ unsigned int v4; // eax
+ unsigned int v5; // eax
+ int arg; // [rsp+Ch] [rbp-1Ch] BYREF
+ void *thread_return; // [rsp+10h] [rbp-18h] BYREF
+ pthread_t newthread[2]; // [rsp+18h] [rbp-10h] BYREF
+
+ puts(asc_445E);
+ arg = 7;
+ v0 = -1;
+ if ( !pthread_create(newthread, 0, thread_compute, &arg) )
+ {
+ pthread_join(newthread[0], &thread_return);
+ v0 = *(unsigned int *)thread_return;
+ free(thread_return);
+ }
+ printf(aThrL301D, v0);
+ v1 = param_pthread_join();
+ printf(aThrL302D, v1);
+ v2 = param_mutex_lock(4, 1000);
+ printf(aThrL303D, v2);
+ v3 = param_condition_variable();
+ printf(aThrL304D, v3);
+ v4 = param_atomic_ops(4, 500);
+ printf(aThrL305D, v4);
+ v5 = param_thread_local_storage(4);
+ printf(aThrL306D, v5);
+}
+
+
+/* Function: main @ 0x3DE0 */
+int main(int argc, const char **argv, const char **envp)
+{
+ test_standard_library_functions();
+ test_system_calls();
+ test_thread_concurrency();
+ return 0;
+}
+
+
+/* Function: .term_proc @ 0x3DF4 */
+void term_proc()
+{
+ ;
+}
+
+
+/* FAILED to decompile: raise @ 0x72D8 */
+
+/* FAILED to decompile: free @ 0x72E0 */
+
+/* FAILED to decompile: __libc_start_main @ 0x72E8 */
+
+/* FAILED to decompile: __errno_location @ 0x72F0 */
+
+/* FAILED to decompile: unlink @ 0x72F8 */
+
+/* FAILED to decompile: strncpy @ 0x7300 */
+
+/* FAILED to decompile: _exit @ 0x7308 */
+
+/* FAILED to decompile: strcpy @ 0x7310 */
+
+/* FAILED to decompile: puts @ 0x7318 */
+
+/* FAILED to decompile: fread @ 0x7320 */
+
+/* FAILED to decompile: setsockopt @ 0x7328 */
+
+/* FAILED to decompile: shmdt @ 0x7330 */
+
+/* FAILED to decompile: write @ 0x7338 */
+
+/* FAILED to decompile: pthread_cond_wait @ 0x7340 */
+
+/* FAILED to decompile: fclose @ 0x7348 */
+
+/* FAILED to decompile: strlen @ 0x7350 */
+
+/* FAILED to decompile: strchr @ 0x7358 */
+
+/* FAILED to decompile: printf @ 0x7360 */
+
+/* FAILED to decompile: rewind @ 0x7368 */
+
+/* FAILED to decompile: snprintf @ 0x7370 */
+
+/* FAILED to decompile: memset @ 0x7378 */
+
+/* FAILED to decompile: alarm @ 0x7380 */
+
+/* FAILED to decompile: close @ 0x7388 */
+
+/* FAILED to decompile: pipe @ 0x7390 */
+
+/* FAILED to decompile: read @ 0x7398 */
+
+/* FAILED to decompile: memcmp @ 0x73A0 */
+
+/* FAILED to decompile: pthread_cond_signal @ 0x73A8 */
+
+/* FAILED to decompile: strcmp @ 0x73B0 */
+
+/* FAILED to decompile: signal @ 0x73B8 */
+
+/* FAILED to decompile: syscall @ 0x73C0 */
+
+/* FAILED to decompile: stat_0 @ 0x73C8 */
+
+/* FAILED to decompile: memcpy @ 0x73D0 */
+
+/* FAILED to decompile: fileno @ 0x73D8 */
+
+/* FAILED to decompile: pthread_mutex_unlock @ 0x73E0 */
+
+/* FAILED to decompile: malloc @ 0x73E8 */
+
+/* FAILED to decompile: __isoc99_sscanf @ 0x73F0 */
+
+/* FAILED to decompile: listen @ 0x73F8 */
+
+/* FAILED to decompile: bind @ 0x7400 */
+
+/* FAILED to decompile: pthread_create @ 0x7408 */
+
+/* FAILED to decompile: waitpid @ 0x7410 */
+
+/* FAILED to decompile: open @ 0x7418 */
+
+/* FAILED to decompile: shmctl @ 0x7420 */
+
+/* FAILED to decompile: fopen @ 0x7428 */
+
+/* FAILED to decompile: shmat @ 0x7430 */
+
+/* FAILED to decompile: shmget @ 0x7438 */
+
+/* FAILED to decompile: fwrite @ 0x7440 */
+
+/* FAILED to decompile: ftok @ 0x7448 */
+
+/* FAILED to decompile: pthread_join @ 0x7450 */
+
+/* FAILED to decompile: execl @ 0x7458 */
+
+/* FAILED to decompile: pthread_cancel @ 0x7460 */
+
+/* FAILED to decompile: sleep @ 0x7468 */
+
+/* FAILED to decompile: wait @ 0x7470 */
+
+/* FAILED to decompile: fork @ 0x7478 */
+
+/* FAILED to decompile: strstr @ 0x7480 */
+
+/* FAILED to decompile: pthread_mutex_lock @ 0x7488 */
+
+/* FAILED to decompile: usleep @ 0x7490 */
+
+/* FAILED to decompile: socket @ 0x7498 */
+
+/* FAILED to decompile: __imp___cxa_finalize @ 0x74A0 */
+
+/* FAILED to decompile: __gmon_start__ @ 0x74B0 */
+
+/* Total functions decompiled: 71, failed: 59 */

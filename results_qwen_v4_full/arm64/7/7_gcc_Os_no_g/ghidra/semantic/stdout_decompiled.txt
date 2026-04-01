@@ -1,0 +1,8 @@
+Test started
+
+Value: 10
+After opaque: 10
+After instr sub: 225
+After string enc: 0
+After tail call: 0
+After non tail: 0

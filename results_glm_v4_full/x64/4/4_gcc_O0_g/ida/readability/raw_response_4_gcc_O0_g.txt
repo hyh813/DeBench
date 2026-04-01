@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: While meaningful names like `sum`, `i`, `large`, and `s` are recovered for local variables, the decompiler relies heavily on generic names like `v0` through `v9` for intermediate return values in test functions. Additionally, stack canary variables are confusingly integrated into local arrays (e.g., `ptr[1]` in `call_double_ptr`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `main`) are perfectly recovered from the debug symbols, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: String literals (e.g., `"Hello"`, `"CALL-L1-01: %d\n"`) are preserved intact. However, magic numbers related to implementation details appear without context, such as `0x28u` (stack canary offset) and `0x2F` (va_list register save area limit).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The code is cluttered with stack canary checks (`__readfsqword(0x28u)`) in almost every function with a local array, which obscures the logic. Artifacts like `JUMPOUT(0)` in `sub_1020` and Hex-Rays specific macros like `__PAIR64__` add unnecessary noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Due to the `-O0` optimization level, the control flow is extremely linear and natural. Loops are correctly identified as `for` loops, and `switch` statements are preserved (e.g., in `ret_multi_branch`), making execution paths easy to follow.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The decompilation maintains a perfect 1:1 mapping with the source functions. There is no inlining or outlining, and function boundaries are logical and cohesive.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads naturally from top to bottom with minimal jumps. The structure of the test functions matches the source sequence of operations precisely.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: There is no loop unrolling or dead code elimination artifacts typical of optimized builds. The verbosity comes from the unoptimized source generation rather than decompiler redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Types are recovered with high accuracy, including `int`, `char *`, `double`, and `__int64` (for `long long`). Function signatures correctly match the source definitions, even for complex cases like function pointers.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Structures `LargeStruct`, `SmallStruct`, `SmallPoint`, and `LargeData` are perfectly reconstructed with correct field names (`data`, `x`, `y`) and types, matching the original `typedef` definitions exactly.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Pointer arithmetic and casts are generally safe and accurate. The use of `(__int64 (*)(...))callback` in `param_func_ptr` is verbose but correctly represents the function pointer type required by the ABI.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: None of the original source comments (e.g., "场景: [SCENE-ALL]", "测试: 参数从右到左压栈") are preserved. The only comments present are decompiler warnings like "positive sp value has been detected".
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: The decompiler recognizes the `va_list` structure but fails to abstract the `va_arg` macro, instead exposing the internal `gp_offset` and `reg_save_area` logic in `varargs_func`. Stack canaries are correctly identified but not abstracted away.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The `JUMPOUT(0)` in `sub_1020` indicates an anomaly (likely a stub or thunk) but provides no explanation. The warning about stack pointer positivity in `_start` is useful but generic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if ( !pp || !*pp )` in `param_double_ptr` is not explicitly documented as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10  
+Justification: Function calls are direct and use the recovered names, making the call graph transparent. The relationship between `call_cdecl` and `cdecl_func` is immediately obvious.
+
+**17. Module Organization:** Score: 9/10  
+Justification: Functions are ordered logically, matching the source file's structure. Related test functions are grouped together (e.g., `test_calling_conventions` follows the implementation functions).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies heavily on Hex-Rays/IDA specific macros (`__PAIR64__`, `JUMPOUT`, `__readfsqword`) and non-standard types (`__int64`), making it non-compilable without significant modification or a specific runtime environment.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.5/10
+
+**Critical Defects:**
+- **Variable Naming**: Test functions use generic names `v0`-`v9` instead of preserving the semantic intent of intermediate values.
+- **Noise Pollution**: Stack canary checks (`__readfsqword`) are inlined into almost every function, cluttering the logic.
+- **Idiom Abstraction**: `varargs_func` exposes the internal implementation of `va_list` (checking `gp_offset`) instead of using the standard `va_arg` idiom.
+- **Macro Artifacts**: Use of `__PAIR64__` and `JUMPOUT` makes the code specific to the decompiler rather than standard C.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 10/10)  
+- Structures and their fields are recovered perfectly with correct names and types, providing a solid foundation for understanding data manipulation.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- The complete absence of source comments removes significant context regarding the purpose of the tests (e.g., calling convention scenarios) and specific logic explanations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract `va_list` internals**: Detect the standard `va_list` access pattern (checking `gp_offset` vs `reg_save_area`) and replace it with the standard `va_arg` macro for readability.
+2. **Hide Stack Canaries**: Automatically identify and optionally hide or comment out stack canary checks (`__readfsqword`) to reduce visual noise in security-hardened binaries.
+3. **Preserve Symbolic Variable Names**: Improve heuristic analysis to infer variable names from usage context (e.g., naming a variable `result` if it is immediately returned) rather than defaulting to `v0`, `v1`.

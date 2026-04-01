@@ -1,0 +1,18 @@
+Testing Standard Library Functions
+
+strcpy: 8
+strcmp: 0
+strlen: 12
+memcpy: 90
+memcmp: -1
+Value: 42, Name: Test
+printf: 22
+scanf: 579
+fopen/fclose: 42
+fread/fwrite: 42
+malloc/free: 90
+memset: 0
+strchr/strstr: 15
+Testing System Calls
+
+syscall: 42

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_gcc_O0_g/ida/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "Test: obfuscation and optimization edge cases\n10\nObf/L4/03/D: 20\nObf/L4/04/D: 225\nObf/L4/05/D: 102\nOpt/L4/01: 500500\nOpt/L4/01: 5050\nOpt/L4/02: 72\nOpt/L5/01/Lto: 20\nEdge/L3/01/D: 1\nEdge/L3/02/D: 41\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

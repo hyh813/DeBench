@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_gcc_O3_no_g/binaryai/syntactic/bin/7_gcc_O3_no_g_fixed",
+  "stdout": "%s\n\nResult: 10\nOpaque: 20\nInstr: 225\nString: 84\nTail: 500500\nNon-tail: 5050\nVector: 72\nLTO: 20\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 11\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

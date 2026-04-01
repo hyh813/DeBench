@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v5`, `v6` throughout (e.g., `func_mixed_args(int a1, const char *a2, int a3, double a4)` should be `x`, `s`, `d`, `ll`). No semantic meaning is recovered from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some helper functions use generic names (`sub_1020`, `varargs_func.cold`) but core logic is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many functions return pre-computed constants (e.g., `call_cdecl()` returns `15` directly) due to compiler constant folding. Magic numbers like `0x2F` in varargs loops lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__fastcall` annotations, explicit casts `(unsigned int)`, cold path functions (`.cold`), and `JUMPOUT(0)` statements add noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural flow, but varargs functions use complex loop structures with `JUMPOUT` instead of clean while loops. Cold path separation fragments logic unnecessarily.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Aggressive outlining creates `.cold` and `.constprop` variants (`varargs_func.cold`, `param_varargs.constprop.0`) that fragment related logic across multiple functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom, but cold path calls (`varargs_func_cold(a1, a2, &a8, ...)`) interrupt main function flow and require jumping between functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminates computation but loses semantic information. SIMD operations in `func_struct_byval` show nested `_mm_add_epi64` calls that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`__int64`, `_DWORD`, `_QWORD`) instead of precise C types. `func_struct_byptr(_DWORD *a1)` loses the `SmallStruct *` type information from source.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure—`func_struct_byval` takes 14 individual parameters instead of `LargeStruct s`. Struct types completely lost, replaced by register-level decomposition (`__int128 a7` through `a14`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(unsigned int)(a1 + 10)`, `(_DWORD)result`). Pointer arithmetic in `ret_pointer` returns `a1 + 4` instead of typed `int *` arithmetic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No explanation of varargs handling, struct passing conventions, or why certain functions return constants instead of computing.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not identified (should note `va_list` handling). Struct-by-value passing via registers not documented. SIMD vectorization in struct sum not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed external functions listed at end (`FAILED to decompile: puts`), but internal anomalies like constant-folded returns not flagged as optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions recovered (e.g., `func_struct_byptr` should note `requires: p != NULL`). Null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships unclear. `test_calling_conventions()` calls many functions but no call graph documentation. Callback relationships in `param_func_ptr` not highlighted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order but no logical grouping. Related functions (`cdecl_func`/`call_cdecl`) scattered. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile (`puts`, `strlen`, `__printf_chk`). Cannot compile standalone without stubs. Missing includes and type definitions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+5+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Struct type completely lost**: `func_struct_byval` takes 14 parameters instead of `LargeStruct s`, making the function signature incomprehensible
+- **Variable names entirely generic**: `a1`, `a2`, `v5`, `v6` provide no semantic information about purpose
+- **No comments explaining optimization artifacts**: Constant-folded returns (e.g., `call_cdecl()` returning `15`) appear as magic without explanation
+- **Varargs handling opaque**: Complex register/stack logic in `varargs_func` not documented as va_list processing
+- **7 external functions failed**: `puts`, `strlen`, `__printf_chk` etc. cannot be resolved, blocking standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names largely preserved, making core functionality identifiable despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation explaining logic, optimization artifacts, or recovered patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from parameter patterns**: Detect when multiple consecutive parameters represent struct fields and reconstruct the original struct type with field names
+2. **Add optimization artifact annotations**: Flag constant-folded returns, inlined functions, and cold path extraction with comments explaining these are compiler transformations
+3. **Infer variable semantics from usage**: Analyze how variables are used (e.g., loop counters, size parameters, pointers) to suggest meaningful names like `count`, `buffer_size`, `item_ptr`

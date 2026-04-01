@@ -1,0 +1,19 @@
+Standard Library Functions Test
+Hello World! Length: 12
+strcmp result: 0
+strlen result: 12
+memcmp result: 90
+Combined memcmp: -1
+Value: 42, Name: Test
+printf result: 22
+sscanf result: 579
+fileno result: 42
+fread_fwrite result: 42
+malloc_free result: 90
+memset result: 0
+strchr_strstr result: 15
+System Calls Test
+
+syscall result: 42
+stat result: 42
+fork_exec result: 42

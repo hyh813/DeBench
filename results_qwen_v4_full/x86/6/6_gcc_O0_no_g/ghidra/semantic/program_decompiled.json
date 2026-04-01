@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/6/6_gcc_O0_no_g/ghidra/syntactic/bin/6_gcc_O0_no_g_fixed",
+  "stdout": "Testing standard library functions\ncall_strcpy result: 0\ncall_strcmp result: 0\ncall_strlen result: 12\ncall_memcpy result: -1210269613\ncall_memcmp result: 2\nValue: 42, Name: TestName\ncall_printf result: 26\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

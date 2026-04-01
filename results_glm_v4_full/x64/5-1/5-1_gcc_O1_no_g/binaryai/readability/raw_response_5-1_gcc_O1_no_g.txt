@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic (`local_34`, `local_2c`, `pvVar2`) and lack semantic meaning. For example, `SimpleClass obj` in the source becomes a series of `undefined` stack variables (`local_34`, `local_2c`) instead of a structured object, completely obscuring the member variables `value` and `name`.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names are generally excellent, accurately reflecting the original C++ symbols (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Derived::virtual_func`). Template instantiations are clearly distinguished (e.g., `template_max_int_`), though some stubs like `FUN_00102020` remain generic.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers representing return values (e.g., `0x125c` for 4704, `0x47` for 71) and memory offsets (e.g., `-0x18`, `0x28`). These constants replace the actual logic in many functions, making the original computations opaque.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Standard compiler noise like stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) is present but expected. However, the use of `undefined` types (`undefined8`, `undefined4`) for class objects adds significant noise, forcing the reader to interpret raw bytes.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Where logic exists, the control flow is natural and linear (e.g., `test_cpp_template_func`). However, many functions are reduced to a single `return constant` statement (e.g., `test_cpp_multiple_inheritance`), which, while clean, eliminates the structural complexity of the original source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully decomposes C++ class methods and template instantiations into separate functions (e.g., `Container<int>::push`, `Container<double>::push`). The granularity matches the source well, separating concerns appropriately.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or goto statements. Even complex logic like `test_cpp_rtti` is presented as a sequential series of checks and casts, which is easy to follow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler optimized away logic in several functions (leaving only constants), the decompiler presents this as the code body. This "elimination" of the actual algorithm makes the code functionally unreadable regarding *how* the result was achieved, even if the result is correct.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: While basic types like `int` and `double` are preserved, complex types are often degraded. Class objects on the stack are typed as `undefined8` or `undefined4` arrays rather than their specific class types (e.g., `SimpleClass`), losing type safety and context.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct recovery is poor. Class member access is done via raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`) rather than named field access. The `Container` classes are defined as types, but their fields are not mapped to the stack variables in the test functions.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic. For example, virtual inheritance is accessed via `*(long *)(*(long *)this + -0x18)`, which is type-unsafe and difficult to verify against the original source's `shared_data` access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of complex pointer arithmetic. The reader is left to deduce the semantics of C++ features like RTTI and virtual inheritance entirely from the assembly-level translation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual inheritance is presented as obscure pointer math rather than "access to virtual base class." Smart pointers are reduced to `operator_new` and `operator_delete` calls, losing the RAII semantic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the constant-return functions (e.g., `return 0x47;`) as normal code without flagging that the logic has been optimized away or that the function body is likely incomplete relative to the source.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For instance, the bounds checking in `Container::get` is present as raw logic but not highlighted as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Calls to C++ runtime functions like `__cxa_throw`, `__dynamic_cast`, and `operator_new` are clear and correctly identify the external dependencies. However, the relationship between the vtable symbols and the class methods could be more explicit.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat manner. While related class methods are grouped, the overall organization doesn't reflect the source file's structure or the logical grouping of test cases (e.g., comments separating "CPP-L3-01" from "CPP-L3-02" are gone).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile as-is due to the use of `undefined` types and missing struct definitions. Significant manual intervention would be required to define the `SimpleClass`, `LifecycleClass`, and other structures to make the code buildable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: Class objects on the stack (e.g., `SimpleClass obj`) are represented as raw byte arrays (`undefined8 local_34`), completely losing member variable names and types.
+- **Logic Elimination**: Many functions (e.g., `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`) are reduced to returning a constant value, hiding the implementation logic.
+- **Raw Pointer Arithmetic**: Complex C++ features like virtual inheritance are exposed as low-level pointer math (e.g., `this + *(long *)(*(long *)this + -0x18)`), which is extremely difficult to map back to the source semantics.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully recovered the mangled C++ function names, making the API surface and class hierarchy clear despite the poor variable recovery.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The inability to map stack variables to their class structures results in a loss of semantic context, forcing the reader to interpret raw memory offsets instead of object-oriented logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhanced Stack Variable Typing**: Utilize constructor/destructor calls and member function calls (`this` pointers) to infer the correct class types for stack variables instead of defaulting to `undefined` arrays.
+2.  **Struct Field Mapping**: When accessing class members via offsets, attempt to map these offsets to known field names in the class definition (if available in debug info or recoverable from vtables) to replace `*(int *)(this + 0x28)` with `this->size`.
+3.  **Annotation of Optimized-Away Logic**: For functions that return constants due to compiler optimization, insert a comment or placeholder indicating that the body was likely optimized out, or provide a symbolic representation of the logic if possible.

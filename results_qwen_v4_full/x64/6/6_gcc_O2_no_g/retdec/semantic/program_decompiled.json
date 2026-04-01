@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/6/6_gcc_O2_no_g/retdec/syntactic/bin/6_gcc_O2_no_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0x90 in position 0: invalid start byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

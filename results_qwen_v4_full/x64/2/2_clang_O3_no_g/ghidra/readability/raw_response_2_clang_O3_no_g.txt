@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar8`, `uVar10` with no semantic meaning. Original source had meaningful names like `sum`, `arr`, `n`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`). This is the decompiler's strongest aspect - original intent is recoverable through function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions show constant-folded hex values (`0x61` instead of `'a'`, `0x400c000000000000` for float). Magic numbers like `0x20`, `0xbf` in `process_char` lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler startup code included (`_init`, `deregister_tm_clones`). Unreachable block warnings present. Excessive local variables in test functions (50+ `undefined4` stack variables in `test_array_types`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops transformed into heavily unrolled code with 8+ accumulator variables. `array_1d_stack` uses complex do-while instead of simple for loop from source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly. However, test functions are constant-folded losing actual computation logic. `process_ld` is completely empty (returns void).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom. Loop unrolling creates non-linear accumulation patterns that obscure the simple iteration logic from source.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe loop unrolling creates 20+ redundant accumulator variables (`iVar8`, `iVar14`, `iVar15`...`iVar21`). Original 5-line loop becomes 100+ lines of unrolled code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `process_ll` returns `long` instead of `long long`. Pointer types degraded to `int*` or `long`. `volatile` qualifier lost in `volatile_access`. Function pointers become `code*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types lost. `Point3D`, `Rect`, `Widget` become `int*`. Bitfields shown as bit shifts (`uVar1 >> 6`). Union types become `float*`. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int *)(param_1 + lVar11 * 4)`). Pointer arithmetic on generic types. `ptr_double` uses `undefined8*` then casts to `int*`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only decompiler warnings present ("WARNING: Could not recover jumptable"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal recognizable but not named. Loop unrolling not identified as optimization. No design pattern recognition (state machine, strategy pattern missed).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for indirect calls ("Treating indirect jump as call"). Unreachable block warnings shown. But `process_ld` empty function not flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions. Null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved. No call graph documentation. Callback relationships unclear (`ptr_func_simple` shows `UNRECOVERED_JUMPTABLE`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. No logical grouping by category (data types, arrays, pointers, composites). No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Missing includes (`<stdio.h>`, `<setjmp.h>`). Undefined types (`EVP_PKEY_CTX`). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00   × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25   × 0.25 = 1.31
+Level 3 (Type System): (5+2+4)/3   = 3.67   × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00   × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+3)/3   = 4.00   × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.39/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+### Critical Defects:
+- **All struct/union types lost** - `Point3D`, `Widget`, `UnionData` become `int*` with no field names
+- **Aggressive loop unrolling** - Simple 5-line loops expanded to 100+ lines with 20+ accumulator variables
+- **Test functions constant-folded** - Actual computation logic replaced with pre-computed results (`printf("...%d\n",0xf)` instead of calling functions)
+- **`process_ld` completely empty** - Function returns void with no body, losing `long double` operation entirely
+- **No semantic variable names** - All variables are `param_1`, `iVar8`, `uVar10` with no meaning
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, allowing semantic recovery despite other losses
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete loss of struct/union definitions makes understanding data layouts impossible without source reference
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from memory access patterns** - Analyze consistent offset patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct struct field layouts with inferred names
+2. **Detect and collapse loop unrolling** - Identify repeated accumulation patterns and reconstruct original for/while loops with comments noting optimization level
+3. **Preserve type qualifiers and precision** - Maintain `volatile`, `const`, `long long`, `long double` distinctions rather than degrading to generic `int`/`long`

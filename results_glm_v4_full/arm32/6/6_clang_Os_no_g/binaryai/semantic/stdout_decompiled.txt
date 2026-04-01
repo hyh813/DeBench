@@ -1,0 +1,18 @@
+Standard Library Functions Test
+strlen test: 12
+strcmp test: 0
+memcpy test: c
+memcpy test: 5a
+memcmp test: 0
+Value: 42, Name: TestName
+printf return: 26
+scanf return: -1095071744
+fopen test: 2a
+fread test: 2a
+malloc return: 5a
+memset test: 0
+strchr_strstr: f
+System Calls Test
+syscall test: 2a
+stat test: 2a
+fork test: 2a

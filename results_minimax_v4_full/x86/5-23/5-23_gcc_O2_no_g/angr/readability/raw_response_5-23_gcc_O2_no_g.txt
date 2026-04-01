@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `a0`, `a1`, `a2`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: Every function uses address-based mechanical naming (sub_401030, sub_401040, param_macro_constants at 0x4012d0). Original function names like `param_macro_constants`, `call_asm_basic`, `param_asm_atomic` are completely lost. Even `main` appears as address 0x401130.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Many numeric constants are correctly recovered: `0x400` (1024), `0x200` (512), `64`, `30`, `32`, `57122` (0xDF22), `116`, `500`. However, some magic numbers like `30` in `param_variadic_macro` lack explanation (should indicate parameter count calculation).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present: empty functions like `sub_4011c3`, unusual struct padding definitions (`padding_0[44]`), and some stack protection code (`__stack_chk_fail_local`). However, no debug instrumentation or excessive redundant casts observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for` constructs, conditionals are clear if-else. Some goto in initialization code (sub_401030) but that's typical for crt0 startup code. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are reasonably sized and decomposed. Test functions properly call param functions. The original 709 LOC source is appropriately split into multiple functions. Minor issue: some wrapper functions (sub_4012ea calling call_macro_constants) add slight overhead.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present. Some forward jumps in initialization code (sub_401030's `goto ptr[2]`) but these are manageable. No excessive deep nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions. At -O0, minimal optimization artifacts expected, and the decompiler correctly shows straightforward computation without common subexpression elimination issues.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - uses `unsigned int` and `int` appropriately for return types, but parameter types are all `unsigned int` regardless of actual type. The decompiler uses `uint128_t` for SIMD types which is good. However, pointers are often just `unsigned int` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct reconstruction attempted but with meaningless names: `struct_0`, `struct_1`. Field names are generic: `field_0`, `field_2c`, `padding_0[44]`. The original source had no complex structs but the decompiler invented them for some functions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present but not severe. Pointer arithmetic is explicit (`ptr + idx * 4`). No obviously dangerous casts. Minor issues with function pointer handling (some indirect calls not properly typed).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. The original source had extensive comments explaining each test case (PP-L2-01, PP-L3-04, ASM-L4-01, etc.), macro semantics, and expected values. None of this semantic information was recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like atomic operations (`atomic_exchange_add`) and SIMD (`AddV`) are recognized. However, the original source's macro expansions, conditional compilation branches, and inline assembly patterns are not identified or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies flagged: stack protection (`__stack_chk_fail_local`), unusual startup code. However, the architecture mismatch (source says arm64, binary is x86_64) is not noted. The unusual computed goto in sub_401030 could be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "requires: x > 0" for some functions, postconditions, and invariants are not documented. The original source had clear expectations (e.g., "期望: 64") that are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (test_preprocessing_features calls sub_401110 with various format strings). However, the semantic purpose of these calls (what each test validates) is not documented. Global variable usage is somewhat clear through extern declarations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are organized by address (0x401000, 0x401030, etc.) rather than logically grouped. The original source had clear sections: preprocessing tests, asm tests, test functions. This organization is lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Some external function declarations present (`extern unsigned int g_402041`). The code would require some stubs to compile (printf, sysconf, mmap, etc.). Dependencies not clearly documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- All function names lost (sub_401030, sub_4012d0, etc. instead of param_macro_constants)
+- All variable names generic (v0, v1, a0, a1 instead of size, x, y, counter)
+- No comments explaining macro semantics, test purposes, or expected values
+- Struct field names meaningless (struct_0, field_0, padding_0)
+- Type precision lost - all parameters become unsigned int regardless of original type
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- Loops and conditionals are properly recognized and formatted
+- At -O0, control flow closely matches source structure
+
+**Most Needs Improvement:** Function Naming Quality (scored 1/10)  
+- Every function uses address-based mechanical naming that provides zero semantic value
+- Original meaningful names like `param_macro_constants`, `call_asm_basic`, `param_asm_atomic` are completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer function names from string constants**: Functions containing format strings like "LOG: %d, %d, %d" or "file=%s, func=%s" should be named after their purpose (e.g., param_variadic_macro, param_builtin_macros)
+2. **Recover variable names from usage patterns**: Variables used as loop indices should be named `i`, `idx`, or `index`; variables compared to constants like 1024 should suggest `MAX_SIZE`
+3. **Preserve or reconstruct comments**: The binary contains string tables with test names (PP-L2-01, ASM-L4-01) that could reconstruct section comments explaining macro behavior and test purposes

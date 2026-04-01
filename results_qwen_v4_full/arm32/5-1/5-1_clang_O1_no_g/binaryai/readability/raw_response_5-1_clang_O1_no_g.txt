@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic decompiler names like `local_28`, `uStack_24`, `iVar1`, `pvVar1` with zero semantic meaning. Original variables like `value`, `name`, `capture_by_value` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test function names preserved (`test_cpp_member_func`), but class methods use mangled names (`Base::_Base` instead of `Base::~Base`). External function wrappers show infinite recursion patterns (`operator_new` calls itself).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x14`, `0x32`, `0x2bf`) with no explanation. Original constants like `0x1234` for `getClassID()` are buried in calculations (`0x125c` = 4700, close to expected 4704).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: External function wrappers create infinite recursion patterns (e.g., `printf` calls `printf`). Excessive stack variable declarations (`local_28`, `uStack_24`, `uStack_20`...) that obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some loops recovered (do-while in `test_cpp_constructor`), but many functions reduced to constant returns losing all control flow. Virtual calls use indirect pointer dereferencing (`(**local_14)(&local_14,5)`).
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical functions like `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_lambda` reduced to single `return 0xNN` statements. Original logic completely eliminated through constant folding.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but obscured by stack setup and pointer arithmetic. Forward references to data (`&DAT_00022d4c`) disrupt flow understanding.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor versions for same classes (3-4 versions of `MultiDerived::~MultiDerived`). Redundant function definitions with slight variations in pointer arithmetic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `void*`, generic `int`. C++ type information lost (no `size_t`, `const`, reference types). Function pointers declared as `code**` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures completely lost. No struct definitions for `SimpleClass`, `LifecycleClass`, `Container`. All object access through raw pointer arithmetic (`*(int *)(this + 0x28)`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(code **)&DAT_00022d4c`). Pointer arithmetic on objects without bounds checking. Type confusion between `int*`, `undefined4*`, `code**`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler header with SHA256. No explanation of C++ semantics, virtual dispatch, or inheritance patterns.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (vtable calls, RAII, smart pointers) not recognized. Virtual function calls appear as raw pointer dereferences. No pattern documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainty. Infinite recursion in external wrappers not flagged. Constant-folded functions show no warning about lost logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling logic in `test_cpp_exception` reduced to throw-only without catch recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch partially recovered but vtable structure not explained. Global variables (`LifecycleClass::instance_count`) referenced without context.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Class methods scattered. No namespace or header separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Won't compile standalone. Missing type definitions, class declarations, headers. External function declarations incomplete (infinite recursion wrappers).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+3+5+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.03/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Constant folding eliminated logic**: Functions like `test_cpp_operator_overload` return hardcoded `0x16` instead of showing actual computation
+- **Infinite recursion in external wrappers**: `operator_new` calls itself, `printf` calls itself - decompiler artifact
+- **Complete class structure loss**: No struct definitions recovered; all object access via pointer arithmetic
+- **Zero semantic variable names**: All variables are `local_XX`, `iVarX`, `pvVarX` with no meaning
+- **No C++ idiom recognition**: Virtual dispatch, inheritance, templates appear as raw memory operations
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Test function names were preserved from debug symbols, providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes understanding C++ semantics nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag constant-folded functions** - When a function reduces to `return 0xNN`, indicate original logic was optimized away and show the constant's semantic meaning if inferable
+2. **Recover C++ class structures from vtable patterns** - Analyze vtable layouts to reconstruct class hierarchies with field names based on access patterns
+3. **Eliminate external function wrapper recursion** - Recognize PLT/GOT stubs and import thunks instead of generating infinite recursion patterns

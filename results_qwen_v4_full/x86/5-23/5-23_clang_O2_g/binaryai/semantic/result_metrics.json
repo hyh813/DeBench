@@ -1,0 +1,219 @@
+{
+  "execution_status": "success",
+  "quality_status": "fail",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/5-23.c",
+  "drivers": [
+    "test_preprocessing_features",
+    "test_asm_features"
+  ],
+  "trace_health": {
+    "status": "partial",
+    "usable_for_structural_evidence": false,
+    "original": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 9,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 8,
+      "call_count": 1,
+      "parsed_entry_count": 1,
+      "parsed_exit_count": 0,
+      "parsed_print_count": 8,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "failed",
+      "usable": false,
+      "event_count": 0,
+      "entry_count": 0,
+      "exit_count": 0,
+      "print_count": 0,
+      "call_count": 0,
+      "parsed_entry_count": 0,
+      "parsed_exit_count": 0,
+      "parsed_print_count": 0,
+      "parser_error_count": 0,
+      "run_error": "unable to wait for next stop: No child processes",
+      "issues": [
+        "trace_run_failed",
+        "no_calls_captured"
+      ],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "fail",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": true,
+    "stdout_exact_match": false,
+    "raw_stdout_exact_match": false,
+    "stdout_nonempty_original": true,
+    "stdout_nonempty_decompiled": false,
+    "stdout_case_match_ratio": 0.0,
+    "stable_case_total": 14,
+    "stable_case_matched": 0,
+    "original_stable_case_total": 14,
+    "decompiled_stable_case_total": 0,
+    "stable_case_ids": [
+      "ASM-L4-01",
+      "ASM-L4-02",
+      "ASM-L4-03",
+      "ASM-L4-04",
+      "ASM-L4-05",
+      "ASM-L4-06",
+      "PP-L2-01",
+      "PP-L2-02",
+      "PP-L2-03",
+      "PP-L2-04",
+      "PP-L3-01",
+      "PP-L3-02",
+      "PP-L3-03",
+      "PP-L3-04",
+      "PP-L3-05",
+      "PP-L3-06",
+      "PP-L3-07"
+    ],
+    "unstable_case_ids": [],
+    "original_exit_code": null,
+    "decompiled_exit_code": null,
+    "original_signal": 11,
+    "decompiled_signal": 11,
+    "original_run_issue": "signal_11",
+    "decompiled_run_issue": "signal_11",
+    "comparisons_total": 14,
+    "comparisons": [
+      {
+        "test_id": "PP-L2-01",
+        "occurrence": 1,
+        "original": "PP-L2-01: 64 (期望: 64)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L2-02",
+        "occurrence": 1,
+        "original": "PP-L2-02: 30 (期望: 30)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L2-03",
+        "occurrence": 1,
+        "original": "PP-L2-03: 32 (期望: 32)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L2-04",
+        "occurrence": 1,
+        "original": "PP-L2-04: 57122 (期望: 0xDF22)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-01",
+        "occurrence": 1,
+        "original": "PP-L3-01: 116 (期望: 116)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-02",
+        "occurrence": 1,
+        "original": "PP-L3-02: 19 (期望: 11+5+行号长度)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-03",
+        "occurrence": 1,
+        "original": "PP-L3-03: 60 (期望: 60)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-04",
+        "occurrence": 1,
+        "original": "PP-L3-04: 60 (期望: 60)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-05",
+        "occurrence": 1,
+        "original": "PP-L3-05: 16 (期望: 16)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-06",
+        "occurrence": 1,
+        "original": "PP-L3-06: 500 (期望: 500)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PP-L3-07",
+        "occurrence": 1,
+        "original": "PP-L3-07: 382 (期望: 100+行号+0+1+2)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-01",
+        "occurrence": 1,
+        "original": "ASM-L4-01: 15 (期望: 15)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-02",
+        "occurrence": 1,
+        "original": "ASM-L4-02: 15 (期望: 15)",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ASM-L4-03",
+        "occurrence": 1,
+        "original": "ASM-L4-03: 42 (期望: 42)",
+        "decompiled": null,
+        "matched": false
+      }
+    ]
+  },
+  "function_level": {
+    "status": "unavailable",
+    "segment_count": 2,
+    "segment_callseq_match_ratio": null,
+    "feature_function_match_ratio": null,
+    "call_evidence_segment_count": 0,
+    "call_evidence_unavailable_count": 2,
+    "segment_print_match_ratio": null,
+    "segment_print_evidence_count": 0,
+    "segment_print_unavailable_count": 2,
+    "normalized_io_match_ratio": 0.0,
+    "io_matched_pairs": 0,
+    "io_compared_pairs": 0,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": []
+  },
+  "low_level": {
+    "status": "unavailable",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": null,
+    "token_count_original": 0,
+    "token_count_decompiled": 0
+  }
+}

@@ -1,0 +1,10 @@
+Testing C++ Object-Oriented Features:
+String test result: 4704
+Constructor test result: 21
+Virtual function test result: 42
+Multiple inheritance test result: 71
+Diamond inheritance test result: 650
+Operator overload test result: 22
+Template function test result: 39
+Template class test result: 16
+Lambda test result: 85

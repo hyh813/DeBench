@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Most variables match source (`x`, `result`, `n`, `acc`, `p`) but some use generic names like `v0`, `v1` in `test_obf_opt_edge`, and `i_0` in `param_vectorized_loop`. The `xa` in `param_buffer_overflow_stack` should be `x`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `decrypt_string`, `param_tail_call_optimized`, etc. Excellent recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `559038737` (0xDEADBEEF) in `param_fake_branch` is unexplained. The `90` (0x5A) XOR key in string decryption should be named. However, `65` and `66` are understandable as ASCII 'A' and 'B'.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. The `JUMPOUT(0)` in `sub_1020` and the sp-value warning in `_start` are minor. No excessive casts or debug instrumentation. Clean output overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and matches source exactly. The while loop for gcd in `param_opaque_predicate`, tail recursion in `param_tail_call_optimized`, and for loops in `param_vectorized_loop` are all correctly recovered. At -O0, this is expected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The `lto_target_func` is correctly extracted as a separate static inline function. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in `param_division_by_zero` and `param_null_pointer_deref` are appropriate. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy. The `strlen("test")` call in `param_fake_branch` appears to be a side effect of how the compiler generated code (dead store elimination), but it's correctly shown.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly precise. `int` for integers, `unsigned int` for the right shift in `param_instruction_substitution`, `size_t` for string lengths, `char*` for strings. Minor genericness in `signal` handler types but acceptable.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No complex composite types in this code. Simple arrays like `char buffer[8]` and `char decrypted[32]` are correctly recovered. Bitfields in `param_implementation_defined` are simplified but that's appropriate for decompilation.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts or type violations. The use of `signal(8, ...)` and `signal(11, ...)` uses numeric signal values but these are compiler-specific. Overall type-safe code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm logic. The decompilation header mentions "Decompiled by IDA Pro 9.1" but no function-level documentation. The source had rich comments about obfuscation techniques that are lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns visible (gcd algorithm, setjmp/longjmp for exception handling) but not explicitly named or documented. The obfuscation techniques (fake branch, opaque predicate) aren't flagged as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The unused `strlen("test")` result in `param_fake_branch` isn't noted. The dead store from compiler optimization isn't indicated as such.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had clear expectations (e.g., "期望: 10") that aren't recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit through code but not documented. The caller functions (`call_fake_branch`, etc.) are correctly identified but their relationships to test cases aren't explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in some logical order but no explicit grouping or module structure. The test function `test_obf_opt_edge` is correctly placed last before `main`.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs for external functions (`printf`, `malloc`, etc.). Function signatures look correct. The decompilation notes 12 failed functions (library calls) which is expected.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.0/10
+
+**Calculation:**
+- L1: (7+10+5+8)/4 = 7.5 × 0.30 = 2.25
+- L2: (9+9+9+9)/4 = 9.0 × 0.25 = 2.25
+- L3: (8+10+9)/3 = 9.0 × 0.20 = 1.80
+- L4: (3+5+3+3)/4 = 3.5 × 0.15 = 0.525
+- L5: (4+6+7)/3 = 5.67 × 0.10 = 0.567
+- **Total: 7.37/10**
+
+### Critical Defects:
+- Magic number `559038737` (0xDEADBEEF) in `param_fake_branch` is unexplained
+- No comments explaining obfuscation techniques (fake branch, opaque predicate)
+- Generic variable names (`v0`, `v1`, `i_0`) in some functions
+- No indication of the dead `strlen("test")` result in `param_fake_branch`
+- Cross-references and test expectations not documented
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+- Every function name perfectly matches the original source, demonstrating excellent symbol recovery
+
+### Most Needs Improvement: Semantic Transparency (3.5/10)
+- Complete lack of comments explaining algorithm logic, no pattern recognition for obfuscation techniques, no anomaly indication for suspicious code patterns
+
+### Top 3 Recommendations:
+1. **Add semantic comments**: Document obfuscation techniques (fake branch, opaque predicate) and explain why certain conditions are always false
+2. **Name magic numbers**: Replace `559038737` with `0xDEADBEEF` or a named constant; replace `90` with `XOR_KEY` or similar
+3. **Flag anomalies**: Mark the unused `strlen("test")` result and explain it's a compiler optimization artifact at -O0

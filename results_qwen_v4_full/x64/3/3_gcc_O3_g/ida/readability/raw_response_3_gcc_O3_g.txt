@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all local variables use generic names (`v0`, `v1`, `v2`, `si128`, `v17[1022]`). Original meaningful names like `large_buf`, `head`, `current`, `arr` are completely lost, making semantic tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions preserved original names (`local_vars`, `heap_basic`, `vla_stack`), but some are generic (`sub_1020`, `alloca_usage_0`). Library functions show "FAILED to decompile" which is honest but unhelpful.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x28u`, `0x10u`, `0x18u` for allocations, `0x3E7` for bounds). Original code used clear expressions like `n * sizeof(int)` now obscured.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts: SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi32`), stack canaries (`__readfsqword(0x28u)`), alignment padding. These obscure the original simple logic significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original simple for-loops transformed into complex SIMD vectorized operations with do-while patterns. `large_stack_frame` and `vla_stack` become nearly unreadable due to aggressive optimization artifacts.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved with reasonable granularity, but `test_heap_memory` is excessively long with duplicated patterns. Some functions like `alloca_usage_0` are over-optimized to single return statements.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jump labels (`LABEL_7`, `LABEL_10`, `LABEL_20`, `LABEL_29`) disrupt reading flow. Original sequential logic fragmented by optimization-induced branching.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling and SIMD vectorization create substantial redundancy. Similar patterns repeat across `heap_basic`, `heap_array`, `heap_calloc` without abstraction or comments explaining the transformation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `void*`, `char*`) but cluttered with SIMD types (`__m128i`, `__m128i*`). Signed/unsigned distinctions sometimes lost. Original `size_t` often becomes generic `int`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs `Node` and `TreeNode` recovered with field names (`data`, `next`, `left`, `right`). However, many allocations use raw sizes (`malloc(0x10u)`) instead of `sizeof(Node)`, losing type clarity.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(_DWORD *)`, `(__m128i *)`, `(_QWORD *)`). Pointer arithmetic on typed pointers creates risk. Original type-safe code now has many implicit conversions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers. No explanation of SIMD transformations, algorithm intent, or non-obvious logic. Original comprehensive comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree operations, memory allocation patterns) not identified or documented. Code appears as raw operations without semantic context.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One stack warning present ("positive sp value has been detected"), but dangerous patterns like dangling pointer access and double-free not flagged despite being present in source.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist in code but not documented as preconditions. No postcondition or invariant documentation. Original safety checks lose their semantic meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Callback relationships (`global_func_ptr`) preserved but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in logical groups but original section comments and organizational structure lost. No indication of which functions belong to which test category.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 library functions "FAILED to decompile" preventing standalone compilation. External dependencies (`fork`, `waitpid`, `malloc`) not properly declared with headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00
+Level 2 (Structural):  (4+6+5+4)/4 = 4.75
+Level 3 (Type):        (5+7+4)/3   = 5.33
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00
+Level 5 (Contextual):  (5+5+3)/3   = 4.33
+
+Overall = (4.00 × 0.30) + (4.75 × 0.25) + (5.33 × 0.20) + 
+          (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.19 + 1.07 + 0.45 + 0.43
+        = 4.34/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `arr_ptr`, `loop_counter`, `result`)
+- **SIMD intrinsics** (`_mm_load_si128`, `_mm_add_epi32`) obscure simple arithmetic operations that were `i * 2` in source
+- **No comments** explaining optimization transformations or algorithm intent
+- **Magic numbers** like `0x28u`, `0x10u` should be `sizeof(Node)`, `sizeof(TreeNode)`
+- **18 library functions failed** to decompile, preventing standalone compilation
+
+### Best Quality Aspect: **Type System Fidelity (5.3/10)**
+- Struct definitions (`Node`, `TreeNode`) recovered with accurate field names and types despite aggressive optimization
+
+### Most Needs Improvement: **Semantic Transparency (3.0/10)**
+- Complete absence of comments, no idiom recognition, and no anomaly flagging for dangerous patterns like dangling pointers
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used in loop bounds → `loop_limit`, pointers to malloc results → `heap_ptr`)
+2. **Add optimization awareness comments**: When SIMD/vectorization is detected, add comments like "// Original: for(i=0;i<n;i++) arr[i]=i*2" to explain transformations
+3. **Flag dangerous patterns automatically**: Detect and comment use-after-free, double-free, and buffer overflow patterns with warnings like "// WARNING: Potential use-after-free at line X"

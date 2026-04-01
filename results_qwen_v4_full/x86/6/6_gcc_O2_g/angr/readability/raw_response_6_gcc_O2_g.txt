@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `shared_counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`param_strcpy`, `call_strcpy`, `thread_sum`) but many functions remain as `sub_401030`, `sub_401040` with no semantic meaning. Inconsistent recovery quality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (unsigned -1), `42`, `1000` used without explanation. String literals preserved but numeric constants not converted to named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `__stack_chk_fail_local()` calls, redundant wrapper functions (`sub_401be7` just calls `param_strcpy`), and repeated struct definitions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed patterns; some loops recovered as do-while but others use goto labels (`LABEL_402435`). At -O0 optimization, control flow should be nearly identical to source but shows significant restructuring.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with unnecessary wrapper functions (e.g., `sub_401c1a` → `call_strcpy`). Original function boundaries mostly preserved but many artificial splits created.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Moderate non-linearity with goto labels disrupting flow. Deep nesting in `param_signal_handling` and `param_thread_local_storage` makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary checks repeated in nearly every function. Many wrapper functions add no value. Similar patterns (thread creation loops) not abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - nearly everything is `unsigned int`. Original had `char*`, `const char*`, `size_t`, `FILE*`, `pthread_t`, `atomic_int` - all lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`, `padding_0`). `ThreadData` struct not properly identified. TLS variables not recognized as thread-local.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts visible. Pointer arithmetic on generic `unsigned int` types. Function pointers often just integers. No type safety annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls partially recognized (`strcpy`, `strcmp` via `sub_401510`, `sub_401440`) but not explicitly named. Thread patterns, signal handling not identified as idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4200411`. Stack canary failures noted but no systematic anomaly flagging for unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values (`4294967295`) not explained as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variables (`shared_counter`, `signal_received`) referenced without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single monolithic output. No logical grouping by functionality (library functions, syscalls, threads mixed). No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread, libc) not clearly documented. Some platform-specific code present (x86 vs original ARM64).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+```
+L1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+L2 (Structural):  (5+5+5+4)/4 = 4.75 × 0.25 = 1.19
+L3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+L4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+L5 (Contextual):  (4+3+6)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────
+Total:                                    4.08 ≈ 4.1/10
+```
+
+### Critical Defects:
+- **Type erosion**: All pointer types degraded to `unsigned int`, losing `char*`, `FILE*`, `pthread_t` distinctions
+- **Variable naming**: Generic names (`v0`, `v1`, `ptr`) obscure semantic meaning completely
+- **Missing comments**: Zero documentation for non-trivial logic like signal handling or thread synchronization
+- **Platform mismatch**: Original ARM64 code decompiled as X86, indicating potential binary mismatch
+- **Wrapper function bloat**: Unnecessary functions like `sub_401be7` that just call `param_strcpy` add noise
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - The decompiled code reportedly compiles successfully, indicating basic structural integrity despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of meaningful documentation makes understanding complex concurrency patterns (mutex, condition variables, atomics) extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns** - Detect `char*` from string operations, `FILE*` from fopen/fclose calls, `pthread_t` from thread API usage
+2. **Recover original function names from debug symbols** - The `-g` flag was used during compilation; symbol table should preserve `param_strcpy`, `call_strcpy` etc.
+3. **Add semantic comments for recognized patterns** - Auto-generate comments for standard library calls, thread synchronization primitives, and signal handling patterns

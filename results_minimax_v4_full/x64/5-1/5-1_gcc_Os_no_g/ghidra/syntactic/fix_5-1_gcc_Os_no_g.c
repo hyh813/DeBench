@@ -1,0 +1,1554 @@
+/* Auto-injected type definitions by preprocessor */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef signed char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+typedef unsigned long ptrdiff_t;
+typedef long long intmax_t;
+typedef unsigned long long uintmax_t;
+
+/* Ghidra undefined types */
+typedef unsigned char undefined;
+typedef unsigned char undefined1;
+typedef unsigned short undefined2;
+typedef unsigned int undefined4;
+typedef unsigned long long undefined8;
+
+/*
+ * Decompiled by Ghidra 12.0
+ * Binary: build/x64/5-1/5-1_gcc_Os_no_g
+ * Processor: x86
+ * Compiler Spec: gcc
+ */
+
+
+/* CRT stub function _init removed by preprocessor */
+
+/* Forward declarations for classes */
+class Base;
+class Derived;
+class MultiDerived;
+class VirtualBase;
+class MiddleA;
+class MiddleB;
+class DiamondDerived;
+class RTTIBase;
+class RTTIDerivedA;
+class RTTIDerivedB;
+
+/* Full class definitions */
+class Base {
+public:
+    virtual int virtual_func(int);
+    virtual ~Base();
+    const char* getName() const;
+};
+
+class Derived : public Base {
+public:
+    int value;
+    virtual int virtual_func(int) override;
+    virtual ~Derived() override;
+};
+
+class VirtualBase {
+public:
+    virtual undefined8 func();
+    virtual ~VirtualBase();
+};
+
+class MiddleA {
+public:
+    virtual int func();
+    virtual ~MiddleA();
+};
+
+class MiddleB {
+public:
+    virtual int func();
+    virtual ~MiddleB();
+};
+
+class DiamondDerived : public MiddleA, public MiddleB {
+public:
+    virtual int func() override;
+    virtual ~DiamondDerived();
+};
+
+class MultiDerived : public VirtualBase, public MiddleA, public MiddleB {
+public:
+    virtual ~MultiDerived();
+    virtual undefined8 funcA();
+    virtual undefined8 funcB();
+};
+
+class RTTIBase {
+public:
+    virtual ~RTTIBase();
+    virtual undefined8 getType() const;
+};
+
+class RTTIDerivedA : public RTTIBase {
+public:
+    virtual ~RTTIDerivedA();
+    virtual undefined8 getType() const;
+};
+
+class RTTIDerivedB : public RTTIBase {
+public:
+    virtual ~RTTIDerivedB();
+    virtual undefined8 getType() const;
+};
+
+/* Template class declarations */
+template<typename T>
+class Container;
+
+template<>
+class Container<int> {
+public:
+    int data[10];
+    int size;
+    Container();
+    void push(int);
+    int get(int) const;
+    int getSize() const;
+};
+
+template<>
+class Container<double> {
+public:
+    double data[10];
+    int size;
+    Container();
+    void push(double);
+    double get(int) const;
+    int getSize() const;
+};
+
+/* LifecycleClass for test_cpp_constructor */
+class LifecycleClass {
+public:
+    static int instance_count;
+};
+
+/* Namespace std declarations */
+namespace std {
+    class ios_base {
+    public:
+        class Init {
+        public:
+            Init();
+            ~Init();
+        };
+    };
+}
+
+/* External declarations for runtime functions */
+extern "C" {
+    void* __cxa_allocate_exception(size_t);
+    void __cxa_throw(void*, void*, void*);
+    void __cxa_atexit(void (*)(void*), void*, void*);
+    int __printf_chk(int, const char*, ...);
+    int strcmp(const char*, const char*);
+    size_t strlen(const char*);
+    char* strncpy(char*, const char*, size_t);
+    void __stack_chk_fail(void);
+    void puts(const char*);
+    void* operator_new(size_t);
+    void operator_delete(void*, size_t);
+    void* operator_new__(size_t);
+    void operator_delete__(void*);
+    void __dynamic_cast();
+}
+
+/* Template function declarations */
+template<typename T>
+T template_max(T a, T b);
+
+template<typename T>
+void template_swap(T* a, T* b);
+
+/* Function: FUN_00102020 @ 00102020 */
+
+void FUN_00102020(void)
+
+{
+ (*(code *)0)();
+ return;
+}
+
+
+
+/* Function: test_cpp_exception @ 001022a0 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_exception() */
+
+void test_cpp_exception(void)
+
+{
+ undefined4 *puVar1;
+ 
+ puVar1 = (undefined4 *)__cxa_allocate_exception(4);
+ *puVar1 = 0x2a;
+ /* WARNING: Subroutine does not return */
+ /* try { // try from 001022c4 to 001022c8 has its CatchHandler @ 001022c9 */
+ __cxa_throw(puVar1,int::typeinfo,0);
+}
+
+
+
+/* Function: main @ 00102367 */
+
+int main(void)
+
+{
+ ulonglong in_RAX;
+ 
+ test_cpp_oo_features();
+ return (int)(in_RAX & 0xFFFFFFFF);
+}
+
+
+
+/* Function: _GLOBAL__sub_I_test_cpp_member_func @ 00102375 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_member_func() */
+
+void _GLOBAL__sub_I_test_cpp_member_func(void)
+
+{
+ std::ios_base::Init::Init((Init *)&std::__ioinit);
+ __cxa_atexit(std::ios_base::Init::~Init,&std::__ioinit,&__dso_handle);
+ return;
+}
+
+
+
+
+/* CRT stub function _start removed by preprocessor */
+
+
+
+
+
+/* CRT stub function deregister_tm_clones removed by preprocessor */
+
+
+
+
+
+/* CRT stub function register_tm_clones removed by preprocessor */
+
+
+
+
+
+/* CRT stub function __do_global_dtors_aux removed by preprocessor */
+
+
+
+
+/* Function: test_cpp_member_func @ 00102489 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_member_func() */
+
+int test_cpp_member_func(void)
+
+{
+ char *__s;
+ size_t sVar1;
+ long in_FS_OFFSET;
+ char local_30 [31];
+ undefined1 local_11;
+ long local_10;
+ 
+ local_10 = *(long *)(in_FS_OFFSET + 0x28);
+ __s = strncpy(local_30,"Test",0x1f);
+ local_11 = 0;
+ sVar1 = strlen(__s);
+ if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+ }
+ return (int)sVar1 + 0x125c;
+}
+
+
+
+/* Function: test_cpp_constructor @ 001024e3 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_constructor() */
+
+int test_cpp_constructor(void)
+
+{
+ return LifecycleClass::instance_count * 0x3e9 + 0x15;
+}
+
+
+
+/* Function: call_virtual_func @ 001024f5 */
+
+/* call_virtual_func(Base*, int) */
+
+void call_virtual_func(Base *param_1,int param_2)
+
+{
+ /* WARNING: Could not recover jumptable at 0x001024fc. Too many branches */
+ /* WARNING: Treating indirect jump as call */
+ (*(code *)**(undefined8 **)param_1)();
+ return;
+}
+
+
+
+/* Function: test_cpp_virtual_func @ 001024fe */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_virtual_func() */
+
+int test_cpp_virtual_func(void)
+
+{
+ int iVar1;
+ int iVar2;
+ long in_FS_OFFSET;
+ undefined **local_28;
+ undefined **local_20;
+ undefined4 local_18;
+ long local_10;
+ 
+ local_10 = *(long *)(in_FS_OFFSET + 0x28);
+ local_18 = 3;
+ local_28 = &PTR_virtual_func_001058a8;
+ local_20 = &PTR_virtual_func_001058d8;
+ iVar1 = call_virtual_func((Base *)&local_28,5);
+ iVar2 = call_virtual_func((Base *)&local_20,5);
+ if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+ }
+ return iVar1 + 0x15 + iVar2;
+}
+
+
+
+/* Function: test_cpp_multiple_inheritance @ 00102571 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_multiple_inheritance() */
+
+undefined8 test_cpp_multiple_inheritance(void)
+
+{
+ return 0x47;
+}
+
+
+
+/* Function: test_cpp_operator_overload @ 0010257b */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_operator_overload() */
+
+undefined8 test_cpp_operator_overload(void)
+
+{
+ return 0x16;
+}
+
+
+
+/* Function: test_cpp_template_func @ 00102585 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_template_func() */
+
+int test_cpp_template_func(void)
+
+{
+ int iVar1;
+ long in_FS_OFFSET;
+ double dVar2;
+ int local_18;
+ int local_14;
+ long local_10;
+ 
+ local_10 = *(long *)(in_FS_OFFSET + 0x28);
+ iVar1 = template_max<int>(3,7);
+ dVar2 = template_max<double>(2.5,1.5);
+ local_18 = 10;
+ local_14 = 0x14;
+ template_swap<int>(&local_18,&local_14);
+ if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+ }
+ return (int)dVar2 + iVar1 + local_18 + local_14;
+}
+
+/* Template function definitions */
+template<typename T>
+T template_max(T a, T b) {
+    return (b < a) ? a : b;
+}
+
+template<typename T>
+void template_swap(T* a, T* b) {
+    T temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+
+
+/* Function: test_cpp_template_class @ 00102618 */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_template_class() */
+
+int test_cpp_template_class(void)
+
+{
+ int iVar1;
+ long in_FS_OFFSET;
+ int local_3c [10];
+ int local_14;
+ long local_10;
+ 
+ local_10 = *(long *)(in_FS_OFFSET + 0x28);
+ local_14 = 1;
+ local_3c[0] = 10;
+ Container<int>::push((Container<int> *)local_3c,0x14);
+ Container<int>::push((Container<int> *)local_3c,0x1e);
+ iVar1 = 0;
+ if (0 < local_14) {
+ iVar1 = local_3c[0];
+ }
+ if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+ }
+ return local_14 + 3 + iVar1;
+}
+
+
+
+/* Function: test_cpp_lambda @ 0010268d */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_lambda() */
+
+undefined8 test_cpp_lambda(void)
+
+{
+ return 0x55;
+}
+
+
+
+/* Function: test_cpp_rtti @ 00102697 */
+
+/* WARNING: Removing unreachable block (ram,0x00102723) */
+/* WARNING: Removing unreachable block (ram,0x00102728) */
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_rtti() */
+
+int test_cpp_rtti(void)
+
+{
+ long lVar1;
+ int iVar2;
+ long *plVar3;
+ long *plVar4;
+ long lVar5;
+ size_t sVar6;
+ uint uVar7;
+ char *__s1;
+ 
+ uVar7 = 10;
+ plVar3 = operator_new(8);
+ *plVar3 = (long)&PTR__RTTIDerivedA_00105b98;
+ plVar4 = operator_new(8);
+ lVar1 = *plVar3;
+ *plVar4 = (long)&PTR__RTTIDerivedB_00105bc0;
+ __s1 = *(char **)(*(long *)(lVar1 + -8) + 8);
+ if ((__s1 != "12RTTIDerivedA") && (uVar7 = 0, *__s1 != '*')) {
+ iVar2 = strcmp(__s1,"12RTTIDerivedA");
+ uVar7 = -(uint)(iVar2 == 0) & 10;
+ }
+ iVar2 = uVar7 + 0x14;
+ lVar5 = __dynamic_cast(plVar3,&RTTIBase::typeinfo,&RTTIDerivedA::typeinfo,0);
+ if (lVar5 != 0) {
+ iVar2 = uVar7 + 0x78;
+ }
+ lVar5 = __dynamic_cast(plVar4,&RTTIBase::typeinfo,&RTTIDerivedB::typeinfo,0);
+ if (lVar5 != 0) {
+ iVar2 = iVar2 + 200;
+ }
+ if (*__s1 == '*') {
+ __s1 = __s1 + 1;
+ }
+ sVar6 = strlen(__s1);
+ (**(code **)(lVar1 + 8))(plVar3);
+ (**(code **)(*plVar4 + 8))(plVar4);
+ return iVar2 + (int)sVar6;
+}
+
+
+
+/* Function: test_cpp_smart_ptr @ 001027ac */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_smart_ptr() */
+
+undefined8 test_cpp_smart_ptr(void)
+
+{
+ long in_FS_OFFSET;
+ undefined8 local_38;
+ undefined4 *local_30;
+ undefined8 *local_28;
+ long local_20;
+ 
+ local_20 = *(long *)(in_FS_OFFSET + 0x28);
+ local_30 = operator_new(4);
+ local_38 = 0;
+ *local_30 = 200;
+ /* try { // try from 001027f3 to 001027f7 has its CatchHandler @ 0010284e */
+ local_28 = operator_new__(0x14);
+ *local_28 = 0x200000001;
+ local_28[1] = 0x400000003;
+ *(undefined4 *)(local_28 + 2) = 5;
+ std::unique_ptr<int[],std::default_delete<int[]>>::~unique_ptr
+ ((unique_ptr<int[],std::default_delete<int[]>> *)&local_28);
+ std::unique_ptr<int,std::default_delete<int>>::~unique_ptr
+ ((unique_ptr<int,std::default_delete<int>> *)&local_30);
+ std::unique_ptr<int,std::default_delete<int>>::~unique_ptr
+ ((unique_ptr<int,std::default_delete<int>> *)&local_38);
+ if (local_20 != *(long *)(in_FS_OFFSET + 0x28)) {
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+ }
+ return 0x2bf;
+}
+
+
+
+/* Function: test_cpp_diamond_inheritance @ 0010287c */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_diamond_inheritance() */
+
+int test_cpp_diamond_inheritance(void)
+
+{
+ int iVar1;
+ int iVar2;
+ long in_FS_OFFSET;
+ undefined **local_50 [2];
+ undefined **local_40;
+ undefined **local_30;
+ undefined4 local_28;
+ long local_20;
+ 
+ local_20 = *(long *)(in_FS_OFFSET + 0x28);
+ local_28 = 0x32;
+ local_50[0] = &PTR_func_00105b08;
+ local_30 = &PTR_func_00105b70;
+ local_40 = &PTR_func_00105b38;
+ iVar1 = DiamondDerived::func((DiamondDerived *)&local_30);
+ local_28 = 100;
+ iVar2 = DiamondDerived::func((DiamondDerived *)&local_30);
+ DiamondDerived::~DiamondDerived((DiamondDerived *)local_50);
+ if (local_20 != *(long *)(in_FS_OFFSET + 0x28)) {
+ /* WARNING: Subroutine does not return */
+ __stack_chk_fail();
+ }
+ return iVar1 + iVar2;
+}
+
+
+
+/* Function: test_cpp_oo_features @ 0010290d */
+
+/* WARNING: Unknown calling convention -- yet parameter storage is locked */
+/* test_cpp_oo_features() */
+
+void test_cpp_oo_features(void)
+
+{
+ undefined4 uVar1;
+ undefined8 in_RAX;
+ 
+ puts(&DAT_00103016);
+ uVar1 = test_cpp_member_func();
+ __printf_chk(1,&DAT_0010303a,uVar1);
+ uVar1 = test_cpp_constructor();
+ __printf_chk(1,"%d\n",uVar1);
+ uVar1 = test_cpp_virtual_func();
+ __printf_chk(1,&DAT_00103074,uVar1);
+ uVar1 = test_cpp_multiple_inheritance();
+ __printf_chk(1,"%d\n",uVar1);
+ uVar1 = test_cpp_diamond_inheritance();
+ __printf_chk(1,&DAT_001030ac,uVar1);
+ uVar1 = test_cpp_operator_overload();
+ __printf_chk(1,"%d\n",uVar1);
+ uVar1 = test_cpp_template_func();
+ __printf_chk(1,&DAT_001030e5,uVar1);
+ uVar1 = test_cpp_template_class();
+ __printf_chk(1,&DAT_00103101,uVar1);
+ test_cpp_lambda();
+ __printf_chk(1,"%d\n",0);
+ uVar1 = test_cpp_exception();
+ __printf_chk(1,&DAT_00103139,uVar1);
+ uVar1 = test_cpp_smart_ptr();
+ __printf_chk(1,&DAT_00103156,uVar1);
+ uVar1 = test_cpp_rtti();
+ __printf_chk(1,&DAT_00103173,uVar1,in_RAX);
+ return;
+}
+
+
+
+/* Function: virtual_func @ 00102a58 */
+
+/* Base::virtual_func(int) */
+
+int __thiscall Base::virtual_func(Base *this,int param_1)
+
+{
+ return param_1 + 1;
+}
+
+
+
+/* Function: getName @ 00102a60 */
+
+/* Base::getName() const */
+
+undefined * Base::getName(void)
+
+{
+ return &DAT_00103004;
+}
+
+
+
+/* Function: ~Base @ 00102a6c */
+
+/* Base::~Base() */
+
+void __thiscall Base::~Base(Base *this)
+
+{
+ return;
+}
+
+
+
+/* Function: virtual_func @ 00102a72 */
+
+/* Derived::virtual_func(int) */
+
+int __thiscall Derived::virtual_func(Derived *this,int param_1)
+
+{
+ return *(int *)(this + 8) * param_1;
+}
+
+
+
+/* Function: getName @ 00102a7e */
+
+/* Derived::getName() const */
+
+char * Derived::getName(void)
+
+{
+ return "Derived";
+}
+
+
+
+/* Function: funcA @ 00102a8a */
+
+/* MultiDerived::funcA() */
+
+undefined8 MultiDerived::funcA(void)
+
+{
+ return 0x1e;
+}
+
+
+
+/* Function: funcB @ 00102a94 */
+
+/* MultiDerived::funcB() */
+
+undefined8 MultiDerived::funcB(void)
+
+{
+ return 0x28;
+}
+
+
+
+/* Function: funcB @ 00102a9e */
+
+/* non-virtual thunk to MultiDerived::funcB() */
+
+undefined8 __thiscall MultiDerived::funcB(MultiDerived *this)
+
+{
+ return 0x28;
+}
+
+
+
+/* Function: func @ 00102aa8 */
+
+/* VirtualBase::func() */
+
+undefined8 VirtualBase::func(void)
+
+{
+ return 100;
+}
+
+
+
+/* Function: ~VirtualBase @ 00102ab2 */
+
+/* VirtualBase::~VirtualBase() */
+
+void __thiscall VirtualBase::~VirtualBase(VirtualBase *this)
+
+{
+ return;
+}
+
+
+
+/* Function: virtual_func @ 00102ab8 */
+
+/* MiddleA::func() */
+
+int __thiscall MiddleA::func(MiddleA *param_1)
+
+{
+ return *(int *)(param_1 + *(long *)(*(long *)param_1 + -0x18) + 8) + 0x96;
+}
+
+
+
+/* Function: func_thunk @ 00102acd */
+
+/* virtual thunk to MiddleA::func() */
+
+void __thiscall MiddleA::func_thunk(MiddleA *param_1)
+
+{
+ MiddleA::func(param_1 + *(long *)(*(long *)param_1 + -0x18));
+ return;
+}
+
+
+
+/* Function: func @ 00102ada */
+
+/* MiddleB::func() */
+
+int __thiscall MiddleB::func(MiddleB *param_1)
+
+{
+ return *(int *)(param_1 + *(long *)(*(long *)param_1 + -0x18) + 8) + 200;
+}
+
+
+
+/* Function: func @ 00102aef */
+
+/* virtual thunk to MiddleB::func() */
+
+void __thiscall MiddleB::func_thunk(MiddleB *param_1)
+
+{
+ func(param_1 + *(long *)(*(long *)param_1 + -0x18));
+ return;
+}
+
+
+
+/* Function: func @ 00102afc */
+
+/* DiamondDerived::func() */
+
+int __thiscall DiamondDerived::func(DiamondDerived *param_1)
+
+{
+ return *(int *)(param_1 + *(long *)(*(long *)param_1 + -0x18) + 8) + 0xfa;
+}
+
+
+
+/* Function: func_thunk_nonvirtual @ 00102b11 */
+
+/* virtual thunk to DiamondDerived::func() */
+
+void __thiscall DiamondDerived::func_thunk_nonvirtual(DiamondDerived *param_1)
+
+{
+ func(param_1 + *(long *)(*(long *)param_1 + -0x18));
+ return;
+}
+
+
+
+/* Function: func @ 00102b1e */
+
+/* non-virtual thunk to DiamondDerived::func() */
+
+void __thiscall DiamondDerived::func(DiamondDerived *this)
+
+{
+ func(this + -0x10);
+ return;
+}
+
+
+
+/* Function: ~MiddleA @ 00102b28 */
+
+/* MiddleA::~MiddleA() - non-virtual */
+
+void __thiscall MiddleA::~MiddleA(MiddleA *this)
+
+{
+ *(undefined ***)this = (undefined **)&PTR_func_00105920;
+ *(undefined ***)((intptr_t)this + 0x10) = (undefined **)&PTR_func_00105958;
+ return;
+}
+
+
+
+/* Function: ~MiddleA @ 00102b3f */
+
+/* virtual thunk to MiddleA::~MiddleA() */
+
+void __thiscall MiddleA::~MiddleA_thunk(MiddleA *this)
+
+{
+ long lVar1;
+ 
+ lVar1 = *(long *)(*(long *)this + -0x20);
+ *(undefined ***)(this + lVar1) = &PTR_func_00105920;
+ *(undefined ***)(this + lVar1 + 0x10) = &PTR_func_00105958;
+ return;
+}
+
+
+
+/* Function: ~MiddleB @ 00102b5e */
+
+/* MiddleB::~MiddleB() */
+
+void __thiscall MiddleB::MiddleB_dtor(MiddleB *this)
+
+{
+ *(undefined ***)this = &PTR_func_00105998;
+ *(undefined ***)(this + 0x10) = &PTR_func_001059d0;
+ return;
+}
+
+
+
+/* Function: ~MiddleB @ 00102b75 */
+
+/* virtual thunk to MiddleB::~MiddleB() */
+
+void __thiscall MiddleB::~MiddleB_thunk(MiddleB *this)
+
+{
+ long lVar1;
+ 
+ lVar1 = *(long *)(*(long *)this + -0x20);
+ *(undefined ***)(this + lVar1) = &PTR_func_00105998;
+ *(undefined ***)(this + lVar1 + 0x10) = &PTR_func_001059d0;
+ return;
+}
+
+
+
+/* Function: getType @ 00102b94 */
+
+/* RTTIDerivedA::getType() const */
+
+undefined8 RTTIDerivedA::getType(void)
+
+{
+ return 1;
+}
+
+
+
+/* Function: getType @ 00102b9e */
+
+/* RTTIDerivedB::getType() const */
+
+undefined8 RTTIDerivedB::getType(void)
+
+{
+ return 2;
+}
+
+
+
+/* Function: ~RTTIDerivedB @ 00102ba8 */
+
+/* RTTIDerivedB::~RTTIDerivedB() */
+
+void __thiscall RTTIDerivedB::~RTTIDerivedB(RTTIDerivedB *this)
+
+{
+ return;
+}
+
+
+
+/* Function: ~RTTIDerivedA @ 00102bae */
+
+/* RTTIDerivedA::~RTTIDerivedA() */
+
+void __thiscall RTTIDerivedA::~RTTIDerivedA(RTTIDerivedA *this)
+
+{
+ return;
+}
+
+
+
+/* Function: ~MultiDerived @ 00102bb4 */
+
+/* MultiDerived::~MultiDerived() */
+
+void __thiscall MultiDerived::~MultiDerived(MultiDerived *this)
+
+{
+ return;
+}
+
+
+
+/* Function: ~MultiDerived @ 00102bb9 */
+
+/* non-virtual thunk to MultiDerived::~MultiDerived() */
+
+void __thiscall MultiDerived::~MultiDerived(MultiDerived *this)
+
+{
+ return;
+}
+
+
+
+/* Function: ~Derived @ 00102bbe */
+
+/* Derived::~Derived() */
+
+void __thiscall Derived::~Derived(Derived *this)
+
+{
+ return;
+}
+
+
+
+/* Function: ~Base @ 00102bc4 */
+
+/* Base::~Base() */
+
+void __thiscall Base::~Base(Base *this)
+
+{
+ operator_delete(this,8);
+ return;
+}
+
+
+
+/* Function: ~Derived @ 00102bd2 */
+
+/* Derived::~Derived() */
+
+void __thiscall Derived::~Derived(Derived *this)
+
+{
+ operator_delete(this,0x10);
+ return;
+}
+
+
+
+/* Function: ~MultiDerived @ 00102be0 */
+
+/* MultiDerived::~MultiDerived() */
+
+void __thiscall MultiDerived::~MultiDerived(MultiDerived *this)
+
+{
+ operator_delete(this,0x20);
+ return;
+}
+
+
+
+/* Function: ~MultiDerived @ 00102bee */
+
+/* non-virtual thunk to MultiDerived::~MultiDerived() */
+
+void __thiscall MultiDerived::~MultiDerived(MultiDerived *this)
+
+{
+ ~MultiDerived(this + -0x10);
+ return;
+}
+
+
+
+/* Function: ~VirtualBase @ 00102bf8 */
+
+/* VirtualBase::~VirtualBase() */
+
+void __thiscall VirtualBase::~VirtualBase(VirtualBase *this)
+
+{
+ operator_delete(this,0x10);
+ return;
+}
+
+
+
+/* Function: ~RTTIDerivedB @ 00102c06 */
+
+/* RTTIDerivedB::~RTTIDerivedB() */
+
+void __thiscall RTTIDerivedB::~RTTIDerivedB(RTTIDerivedB *this)
+
+{
+ operator_delete(this,8);
+ return;
+}
+
+
+
+/* Function: ~RTTIDerivedA @ 00102c14 */
+
+/* RTTIDerivedA::~RTTIDerivedA() */
+
+void __thiscall RTTIDerivedA::~RTTIDerivedA(RTTIDerivedA *this)
+
+{
+ operator_delete(this,8);
+ return;
+}
+
+
+
+/* Function: ~MiddleA @ 00102c22 */
+
+/* MiddleA::~MiddleA() */
+
+void __thiscall MiddleA::~MiddleA(MiddleA *this)
+
+{
+ *(undefined ***)this = &PTR_func_00105920;
+ *(undefined ***)(this + 0x10) = &PTR_func_00105958;
+ operator_delete(this,0x20);
+ return;
+}
+
+/* Function: ~MiddleA @ 00102c42 */
+
+/* virtual thunk to MiddleA::~MiddleA() */
+
+void __thiscall MiddleA::~MiddleA_thunk(MiddleA *this)
+
+{
+ MiddleA::~MiddleA(this + *(long *)(*(long *)this + -0x20));
+ return;
+}
+
+
+
+/* Function: ~MiddleB @ 00102c50 */
+
+/* MiddleB::~MiddleB() */
+
+void __thiscall MiddleB::~MiddleB(MiddleB *this)
+
+{
+ *(undefined ***)this = &PTR_func_00105998;
+ *(undefined ***)(this + 0x10) = &PTR_func_001059d0;
+ operator_delete(this,0x20);
+ return;
+}
+
+
+
+/* Function: ~MiddleB @ 00102c70 */
+
+/* virtual thunk to MiddleB::~MiddleB() */
+
+void __thiscall MiddleB::~MiddleB(MiddleB *this)
+
+{
+ ~MiddleB(this + *(long *)(*(long *)this + -0x20));
+ return;
+}
+
+
+
+/* Function: ~MiddleA @ 00102c7e */
+
+/* MiddleA::~MiddleA() */
+
+void __thiscall MiddleA::~MiddleA(MiddleA *this)
+
+{
+ undefined **ppuVar1;
+ undefined *puVar2;
+ undefined8 *in_RDX;
+ int in_ESI;
+ undefined **ppuVar3;
+ 
+ ppuVar1 = &PTR_func_00105920;
+ if (in_ESI == 0) {
+ ppuVar1 = (undefined **)*in_RDX;
+ }
+ *(undefined ***)this = ppuVar1;
+ ppuVar3 = &PTR_func_00105958;
+ puVar2 = (undefined *)0x10;
+ if (in_ESI == 0) {
+ ppuVar3 = (undefined **)in_RDX[1];
+ puVar2 = ppuVar1[-3];
+ }
+ *(undefined ***)(this + (long)puVar2) = ppuVar3;
+ return;
+}
+
+
+
+/* Function: ~MiddleA @ 00102cb0 */
+
+/* MiddleA::~MiddleA() */
+
+void __thiscall MiddleA::~MiddleA(MiddleA *this)
+
+{
+ MiddleA::~MiddleA(this);
+ return;
+}
+
+
+
+/* Function: ~MiddleB @ 00102cbe */
+
+/* MiddleB::~MiddleB() */
+
+void __thiscall MiddleB::~MiddleB(MiddleB *this)
+
+{
+ undefined **ppuVar1;
+ undefined *puVar2;
+ undefined8 *in_RDX;
+ int in_ESI;
+ undefined **ppuVar3;
+ 
+ ppuVar1 = &PTR_func_00105998;
+ if (in_ESI == 0) {
+ ppuVar1 = (undefined **)*in_RDX;
+ }
+ *(undefined ***)this = ppuVar1;
+ ppuVar3 = &PTR_func_001059d0;
+ puVar2 = (undefined *)0x10;
+ if (in_ESI == 0) {
+ ppuVar3 = (undefined **)in_RDX[1];
+ puVar2 = ppuVar1[-3];
+ }
+ *(undefined ***)(this + (long)puVar2) = ppuVar3;
+ return;
+}
+
+
+
+/* Function: ~MiddleB @ 00102cf0 */
+
+/* MiddleB::~MiddleB() */
+
+void __thiscall MiddleB::~MiddleB(MiddleB *this)
+
+{
+ ~MiddleB(this);
+ return;
+}
+
+
+
+/* Function: template_max<int> @ 00102cfe */
+
+/* int template_max<int>(int, int) */
+
+int template_max<int>(int param_1,int param_2)
+
+{
+ if (param_2 <= param_1) {
+ param_2 = param_1;
+ }
+ return param_2;
+}
+
+
+
+/* Function: template_max<double> @ 00102d0a */
+
+/* double template_max<double>(double, double) */
+
+double template_max<double>(double param_1,double param_2)
+
+{
+ if (param_1 <= param_2) {
+ param_1 = param_2;
+ }
+ return param_1;
+}
+
+
+
+/* Function: template_swap<int> @ 00102d13 */
+
+/* void template_swap<int>(int&, int&) */
+
+void template_swap<int>(int *param_1,int *param_2)
+
+{
+ int iVar1;
+ 
+ iVar1 = *param_1;
+ *param_1 = *param_2;
+ *param_2 = iVar1;
+ return;
+}
+
+
+
+/* Function: Container @ 00102d20 */
+
+/* Container<int>::Container() */
+
+void __thiscall Container_int_ctor(Container<int> *this)
+
+{
+ *(undefined4 *)(this + 0x28) = 0;
+ return;
+}
+
+
+
+/* Function: push @ 00102d2c */
+
+/* Container<int>::push(int) */
+
+void __thiscall Container<int>::push(Container<int> *this,int param_1)
+
+{
+ int iVar1;
+ 
+ iVar1 = *(int *)(this + 0x28);
+ if (iVar1 < 10) {
+ *(int *)(this + 0x28) = iVar1 + 1;
+ *(int *)(this + (long)iVar1 * 4) = param_1;
+ }
+ return;
+}
+
+
+
+/* Function: get @ 00102d44 */
+
+/* Container<int>::get(int) const */
+
+undefined4 __thiscall Container<int>::get(Container<int> *this,int param_1)
+
+{
+ undefined4 uVar1;
+ 
+ uVar1 = 0;
+ if ((-1 < param_1) && (param_1 < *(int *)(this + 0x28))) {
+ uVar1 = *(undefined4 *)(this + (long)param_1 * 4);
+ }
+ return uVar1;
+}
+
+
+
+/* Function: getSize @ 00102d5a */
+
+/* Container<int>::getSize() const */
+
+undefined4 __thiscall Container<int>::getSize(Container<int> *this)
+
+{
+ return *(undefined4 *)(this + 0x28);
+}
+
+
+
+/* Function: Container @ 00102d62 */
+
+/* Container<double>::Container() */
+
+void __thiscall Container<double>::Container(Container<double> *this)
+
+{
+ *(undefined4 *)(this + 0x50) = 0;
+ return;
+}
+
+
+
+/* Function: push @ 00102d6e */
+
+/* Container<double>::push(double) */
+
+void __thiscall Container<double>::push(Container<double> *this,double param_1)
+
+{
+ int iVar1;
+ 
+ iVar1 = *(int *)(this + 0x50);
+ if (iVar1 < 10) {
+ *(int *)(this + 0x50) = iVar1 + 1;
+ *(double *)(this + (long)iVar1 * 8) = param_1;
+ }
+ return;
+}
+
+
+
+/* Function: get @ 00102d88 */
+
+/* Container<double>::get(int) const */
+
+undefined8 __thiscall Container<double>::get(Container<double> *this,int param_1)
+
+{
+ undefined8 uVar1;
+ 
+ uVar1 = 0;
+ if ((-1 < param_1) && (param_1 < *(int *)(this + 0x50))) {
+ uVar1 = *(undefined8 *)(this + (long)param_1 * 8);
+ }
+ return uVar1;
+}
+
+
+
+/* Function: getSize @ 00102da2 */
+
+/* Container<double>::getSize() const */
+
+undefined4 __thiscall Container<double>::getSize(Container<double> *this)
+
+{
+ return *(undefined4 *)(this + 0x50);
+}
+
+
+
+/* Function: ~unique_ptr @ 00102daa */
+
+/* std::unique_ptr<int, std::default_delete<int> >::~unique_ptr() */
+
+void __thiscall
+std::unique_ptr<int,std::default_delete<int>>::~unique_ptr
+ (unique_ptr<int,std::default_delete<int>> *this)
+
+{
+ if (*(void **)this != (void *)0x0) {
+ operator_delete(*(void **)this,4);
+ return;
+ }
+ return;
+}
+
+
+
+/* Function: ~unique_ptr @ 00102dc2 */
+
+/* std::unique_ptr<int [], std::default_delete<int []> >::~unique_ptr() */
+
+void __thiscall
+std::unique_ptr<int[],std::default_delete<int[]>>::~unique_ptr
+ (unique_ptr<int[],std::default_delete<int[]>> *this)
+
+{
+ if (*(void **)this != (void *)0x0) {
+ operator_delete__(*(void **)this);
+ return;
+ }
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102dd4 */
+
+/* DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::_dtor(DiamondDerived *this)
+
+{
+ undefined **ppuVar1;
+ undefined **ppuVar2;
+ undefined8 *in_RDX;
+ undefined *puVar3;
+ int in_ESI;
+ 
+ ppuVar1 = &PTR_func_00105b08;
+ if (in_ESI == 0) {
+ ppuVar1 = (undefined **)*in_RDX;
+ }
+ *(undefined ***)this = ppuVar1;
+ ppuVar2 = &PTR_func_00105b70;
+ puVar3 = (undefined *)0x20;
+ if (in_ESI == 0) {
+ ppuVar2 = (undefined **)in_RDX[5];
+ puVar3 = ppuVar1[-3];
+ }
+ *(undefined ***)(this + (long)puVar3) = ppuVar2;
+ ppuVar1 = &PTR_func_00105b38;
+ if (in_ESI == 0) {
+ ppuVar1 = (undefined **)in_RDX[6];
+ }
+ *(undefined ***)(this + 0x10) = ppuVar1;
+ MiddleB::~MiddleB((MiddleB *)(this + 0x10));
+ MiddleA::~MiddleA((MiddleA *)this);
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102e5e */
+
+/* DiamondDerived::~DiamondDerived() - non-virtual */
+
+void __thiscall DiamondDerived::~DiamondDerived_nonvirtual(DiamondDerived *this)
+
+{
+ DiamondDerived::DiamondDerived::~DiamondDerived(this);
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102e6e */
+
+/* non-virtual thunk to DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::~DiamondDerived_thunk(DiamondDerived *this)
+
+{
+ DiamondDerived::~DiamondDerived(this + -0x10);
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102e78 */
+
+/* virtual thunk to DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::~DiamondDerived(DiamondDerived *this)
+
+{
+ ~DiamondDerived(this + *(long *)(*(long *)this + -0x20));
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102e86 */
+
+/* DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::~DiamondDerived(DiamondDerived *this)
+
+{
+ DiamondDerived::~DiamondDerived(this);
+ operator_delete(this,0x30);
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102eab */
+
+/* non-virtual thunk to DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::~DiamondDerived(DiamondDerived *this)
+
+{
+ ~DiamondDerived(this + -0x10);
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102eb5 */
+
+/* virtual thunk to DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::~DiamondDerived(DiamondDerived *this)
+
+{
+ ~DiamondDerived(this + *(long *)(*(long *)this + -0x20));
+ return;
+}
+
+
+
+/* Function: ~DiamondDerived @ 00102ec2 */
+
+/* DiamondDerived::~DiamondDerived() */
+
+void __thiscall DiamondDerived::~DiamondDerived(DiamondDerived *this)
+
+{
+ DiamondDerived::DiamondDerived::~DiamondDerived(this);
+ return;
+}
+
+
+
+
+/* CRT stub function _fini removed by preprocessor */
+
+
+
+
+/* Total functions decompiled: 87 */

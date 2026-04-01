@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_30`, `iVar1`, `uVar2`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`). A few generic names exist (`FUN_001012e0`, `FUN_001017fc`) but core functionality names are intact.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), `0x1000` (4096), `0x38`/`0x39` (syscall numbers). String literals preserved but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs add ~70 functions of boilerplate. Some compiler artifacts visible (`extraout_w8`, `CONCAT44`, `CONCAT53`) but core logic remains readable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else preserved, but signal handling uses awkward `do-while` with complex boolean conditions. Loop unrolling in `param_malloc_free` and `param_memset` creates unnatural branching.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Thread functions properly separated (`thread_compute`, `thread_sum`, `consumer_thread`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_malloc_free` has complex branching with `goto LAB_00101c70`. Some forward references disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_malloc_free` creates 8x code expansion with `iVar6` through `iVar13`. `param_memset` has similar redundancy with `iVar8` through `iVar15`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `size_t`→`ulong`, `int`→`undefined4`/`undefined8`, `atomic_int`→struct with `._0_4_`. Some types preserved (`FILE*`, `pthread_t`, `char*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` partially recovered with generic `sa_data[0-13]`. `ThreadData` struct completely lost (accessed as array indices `param_1[0]`, `param_1[1]`, `param_1[2]`). No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(int *)`, `(volatile int*)&atomic_counter`. Pointer arithmetic on void* in `param_shmget_shmat`. Atomic operations accessed as struct fields.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns visible but not named. No design pattern identification (producer-consumer, mutex protection not labeled).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Atomic operations converted to `__aarch64_ldadd4_acq_rel` without explanation. TLS access via `tpidr_el0` not documented.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Error return values (`0xffffffff`, `0xfffffffe`) not explained. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) visible but usage patterns not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No grouping matching source sections (6.1, 6.2, 6.3). External functions listed separately but not organized by category.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible. ARM64-specific atomics (`__aarch64_cas4_acq_rel`) may require platform-specific support.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3+8+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (25%): (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (20%): (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (15%): (2+5+3+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (10%): (5+5+7)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────
+Overall Score:                              5.00/10
+```
+
+### Overall Readability Score: **5.0/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_30`, `iVar1`) losing all semantic meaning from original source
+- **Zero comments** despite complex logic in signal handling, threading, and atomic operations
+- **Magic numbers pervasive** (`0x2a`, `0xffffffff`, `0x38`, `0x39`) without symbolic constant recovery
+- **Type degradation** (`undefined4`, `undefined8`, `ulong`) obscuring original type intent
+- **Struct field names lost** (`ThreadData` accessed as array indices, `sockaddr.sa_data[0-13]`)
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved from source (`param_strcpy`, `thread_compute`, `signal_handler`) enabling basic navigation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments makes complex concurrency and signal handling logic extremely difficult to understand without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables used in size checks should be `buffer_size`, file descriptors should be `fd`)
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (atomic operations, TLS access, syscall numbers) with comments explaining limitations
+3. **Recover symbolic constants** - Detect repeated magic numbers and suggest named constants (0x2a→SUCCESS_CODE, 0xffffffff→ERROR_CODE)

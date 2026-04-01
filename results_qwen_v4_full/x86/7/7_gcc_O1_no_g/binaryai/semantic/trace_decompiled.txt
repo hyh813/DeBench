@@ -1,0 +1,3 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=-1208264336,Arg1=-1074370688,Arg2=0,Arg3=-1210310751|eax=0xb7f82dd8,ebx=0x0,ecx=0xbff66780,edx=0xbff667a4,esi=0xb7f81000,edi=0x0
+TRACE_ENT|1|call_opaque_predicate|1|Arg0=-1208472104,Arg1=646,Arg2=-1208448998,Arg3=-1208449009|eax=0xb7f82dd8,ebx=0x0,ecx=0xbff66780,edx=0xbff667a4,esi=0xb7f81000,edi=0x0
+TRACE_ENT|2|param_opaque_predicate|2|Arg0=5,Arg1=-1208456433,Arg2=-1208472104,Arg3=646|eax=0xb7f82dd8,ebx=0x0,ecx=0xbff66780,edx=0xbff667a4,esi=0xb7f81000,edi=0x0

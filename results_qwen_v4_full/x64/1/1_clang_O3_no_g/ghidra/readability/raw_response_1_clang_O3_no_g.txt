@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `auVar5`) with zero semantic meaning. For example, `sequential_ops` parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`. Complex functions like `goto_backward` have 30+ variables (`auVar1` through `auVar38`) that are completely untrackable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved (`sequential_ops`, `single_if`, `nested_if_deep`, `recursion_factorial`), which is excellent. However, some helper functions are generic (`FUN_00101020`, `double_value`, `triple_value` are fine but `op_add`, `op_sub` could be more descriptive).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0xfffffff8`, `0x103140`, `0x12 < uVar2`). The decompiler didn't recover any constants from the original source. However, some arithmetic patterns are recognizable (e.g., `param_1 * 10 + 10` in `if_elseif_chain`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Severe noise from optimization artifacts. Functions like `goto_backward` and `recursion_factorial` have 30+ `auVar` array variables from SIMD vectorization that obscure the simple factorial logic. Warnings like "WARNING: Globals starting with '_' overlap smaller symbols" add confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) recover well as expressions. However, loops are heavily unrolled into complex vector operations (e.g., `loop_continue` becomes 100+ lines of bit manipulation instead of a simple odd-number sum). The `switch_fallthrough` case is recovered but with nested ifs instead of fall-through semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved correctly, but optimization caused massive code bloat. `recursion_factorial` (originally 5 lines) becomes 200+ lines with vector unrolling. Helper functions like `double_value` and `triple_value` are correctly extracted as separate functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Heavy use of `goto` labels in switch cases (`switchD_00101a96_caseD_1`). Complex functions have deeply nested structures with forward jumps. The `duffs_device` function uses explicit goto labels for each case, which is acceptable but verbose.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling. The same multiplication pattern appears dozens of times in `recursion_factorial` and `goto_backward`. Vector operations create duplicate code blocks (e.g., `auVar5`, `auVar7`, `auVar18` all perform similar operations).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. `if_else` returns `bool` instead of `int`. `nested_if_deep` returns `byte` instead of `int`. `goto_backward` returns `ulong` instead of `int`. Many functions use `undefined4`, `undefined8`, `undefined1 [16]` which are decompiler artifacts, not real types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery needed for this code (mostly primitive types). However, array handling is poor - `loop_break`'s static array becomes a switch statement instead of array access. Function pointer arrays are partially recovered but with generic types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(ulong)(param_1 - 2)`, `(int)((ulong)uVar2 * uVar3)`). Function pointer calls use `code *` generic type instead of proper signatures. `call_func_ptr` shows "UNRECOVERED_JUMPTABLE" warning indicating type uncertainty.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments recovered. Only compiler warnings exist ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable"). No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns recognized (switch-case, if-else chains) but not named. Loop unrolling is not identified as such. The factorial recursion pattern is completely obscured by vectorization. State machine patterns in `state_machine` are recovered but not labeled.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for uncertain code ("WARNING: Could not recover jumptable at 0x001020f5. Too many branches", "WARNING: Treating indirect jump as call"). However, these warnings don't explain how to resolve the issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n > 0` but this isn't indicated. Error conditions (return -1) aren't explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are preserved but test functions don't actually call the tested functions - they print hardcoded values! `test_control_flow_l1` prints `0x15` instead of calling `sequential_ops(5, 7, 3)`. This is a critical decompilation failure.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (test functions together, helper functions together). Static functions are properly scoped. However, all code is in one file without header separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues - `undefined` types, `__jmp_buf_tag` undeclared, `_DAT_` references need resolution. The `call_func_ptr` function has unrecoverable jumptable that won't compile cleanly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+4+3)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+7+4)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.58/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **Test functions print hardcoded values instead of calling actual functions** - `test_control_flow_l1` doesn't invoke `sequential_ops()`, completely breaking verification capability
+- **Variable names are entirely generic** (`param_1`, `iVar1`, `auVar5`) with zero semantic recovery across 72 functions
+- **Loop unrolling creates unreadable code** - `recursion_factorial` and `goto_backward` expand from 5-10 lines to 200+ lines of vector operations
+- **Type degradation** - Functions return wrong types (`bool` vs `int`, `byte` vs `int`, `ulong` vs `int`)
+- **Zero documentation** - No comments explaining algorithm intent, only compiler warnings
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names are preserved accurately (`sequential_ops`, `nested_if_deep`, `recursion_factorial`), providing immediate semantic context for what each function does.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of meaningful comments means analysts must reverse-engineer intent from optimized assembly patterns with no guidance on algorithm purpose or edge cases.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function call semantics** - Detect printf patterns with function name strings and reconstruct actual function calls instead of hardcoded values
+2. **Implement loop unrolling detection** - Recognize vectorized patterns and add comments like "/* Loop unrolled: original was for(i=0; i<n; i++) */" to explain the transformation
+3. **Infer variable names from usage context** - Analyze parameter usage patterns (e.g., `param_1` used in comparison with 0 suggests `value` or `input`, `param_2` used as multiplier suggests `count` or `factor`)

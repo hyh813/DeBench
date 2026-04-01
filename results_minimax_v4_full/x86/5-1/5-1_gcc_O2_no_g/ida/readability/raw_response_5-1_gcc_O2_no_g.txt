@@ -1,0 +1,163 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are almost exclusively generic: `v0`-`v14`, `a1`, `a2`, `s`, `result`. The decompiler makes no attempt to infer semantic meaning from usage patterns. For example, in `test_cpp_member_func`, the variable `s` holds the string "Test" but is never named `name` or `object_name`. This is particularly problematic at -O0 where near-perfect readability is expected.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Mixed results - C++ functions have proper demangled names like `Base::virtual_func`, `Derived::virtual_func`, `template_max<int>` which correctly reflect the original. However, many utility functions remain as `sub_XXXX` (e.g., `sub_1030`, `sub_1150`) with no semantic meaning. The mangled names like `_Z20test_cpp_member_funcv` are technically accurate but not human-readable without demangling.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple unexplained magic numbers throughout: `84` (vtable offset), `0x14u` (stack canary), `4u`, `8u` (allocation sizes), `12`, `16` (virtual base offsets). String literals like "Test", "Base", "Derived" are correctly preserved but not associated with their semantic purpose. The decompiler fails to recognize these as meaningful constants that should be named.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Severe noise pollution includes: 20 functions marked "FAILED to decompile", multiple thunk functions (`_ZThn8_N...`, `_ZTv0_n12_N...`) for virtual inheritance, stack canary checks (`__readgsdword(0x14u)`), and raw vtable pointer manipulations. The decompiled output includes 95 functions total with 20 failures, making it difficult to distinguish actual business logic from compiler artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Basic control structures (if/else, loops) are correctly recovered. However, the exception handling in `test_cpp_exception` is completely broken - it shows only the throw site without catch blocks, and the function appears to noreturn. At -O0, exception handling should be more clearly recoverable. The virtual function call through `call_virtual_func` uses triple-indirection `(**a1)()` which obscures the polymorphic call.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are reasonably decomposed. Template functions are properly separated into `template_max<int>`, `template_max<double>`, `template_swap<int>`. Class methods are extracted individually. The main test function `test_cpp_oo_features` is 50+ lines but contains sequential test calls which is acceptable. Minor issue: some thunk functions could be better integrated.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are minimal (appropriate for -O0). The main disruption is in virtual inheritance functions like `MiddleA::func` which have complex pointer arithmetic that interrupts flow, but this is unavoidable given the complexity of virtual inheritance.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy observed. Dead code is minimal. Loop unrolling is not excessive. The decompiled code is relatively clean in this regard - the original -O0 compilation means less optimization-related redundancy than would appear at higher optimization levels.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+
+Justification: Generally good type recovery - `int`, `size_t`, `long double` are correctly identified. Function parameters show proper types like `int a2`. However, function pointer types are overly complex: `int (***a1)(void)` for virtual function calls, when a cleaner `Base*` would suffice. Some `char*` vs `const char*` confusion exists.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: Class structures are partially recovered with vtable pointers visible. For `Derived::virtual_func`, the code accesses `*((_DWORD *)this + 1)` for the `multiplier` field - the structure is inferred but field names are lost. Virtual inheritance offset calculations are correctly handled but expressed as raw pointer arithmetic rather than named field access.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Multiple unsafe operations: raw pointer arithmetic in virtual inheritance functions (`*(_DWORD *)((char *)this + *(_DWORD *)(*(_DWORD *)this - 12) + 4)`), unsafe casts throughout. The RTTI code has complex pointer manipulations that could cause undefined behavior. No use of `restrict`, `_Atomic`, or safety annotations. Each unsafe cast and pointer arithmetic operation represents a type safety violation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Almost no useful comments. The only comments are the header indicating "Decompiled by IDA Pro 9.1" and occasional register annotations like `@<eax>`, `@<ebx>`. No explanation of algorithms, no recovery of original comments from debug info, no indication of decompilation confidence. The 20 failed functions have no explanation of why they failed.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some C++ idioms are implicitly present - virtual function calls through vtables, exception throw/catch patterns, RTTI dynamic_cast - but none are explicitly labeled or explained. A reader wouldn't know they're looking at a virtual dispatch mechanism without prior knowledge. Template instantiation is recognized but not documented as such.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: The 20 failed functions are listed at the end with "FAILED to decompile" but no explanation of what couldn't be resolved or why. No warnings about uncertain indirect calls, potential undefined behavior, or unusual patterns. The noreturn function `test_cpp_exception` is marked but the exception handling logic is incomplete without explanation.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. No recovery of assert statements from debug info. No documentation of error handling expectations. The complex virtual inheritance pointer calculations have no explanation of what invariants they maintain.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are visible in the code (e.g., `test_cpp_constructor()` called from `test_cpp_oo_features()`), but there's no explicit documentation of call relationships, caller/callee graphs, or callback relationships. Virtual dispatch through vtables is visible but not labeled as such.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are reasonably grouped by class (all `Base`, `Derived`, `MultiDerived` functions together). However, there's no file/module structure recovery - all 95 functions appear in a single flat listing. Static functions aren't distinguished from exported ones. No namespace recovery.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code will not compile as-is. 20 functions are completely missing (marked "FAILED to decompile"). Many external dependencies aren't resolved (standard library functions like `strlen`, `strcmp`, `operator new`, `operator delete`). The code requires significant patching to become compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 3) / 4 = 3.50
+L2_avg = (6 + 7 + 7 + 8) / 4 = 7.00
+L3_avg = (7 + 6 + 5) / 3 = 6.00
+L4_avg = (3 + 5 + 2 + 2) / 4 = 3.00
+L5_avg = (5 + 6 + 3) / 3 = 4.67
+
+Overall = (3.50 × 0.30) + (7.00 × 0.25) + (6.00 × 0.20) + (3.00 × 0.15) + (4.67 × 0.10)
+        = 1.050 + 1.750 + 1.200 + 0.450 + 0.467
+        = 4.92/10
+```
+
+**Overall Readability Score: 4.92/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is unusable** - All variables are generic (`v0`-`v14`, `a1`, `a2`) with no semantic inference from usage patterns. At -O0, the decompiler should be able to infer meaningful names.
+
+2. **Exception handling completely broken** - `test_cpp_exception` shows only the throw site with noreturn, losing all catch block logic. This is a fundamental semantic loss.
+
+3. **20 functions failed to decompile** - Major functionality gaps with no explanation of what couldn't be resolved or why.
+
+4. **No comments or documentation** - Zero recovery of algorithm explanations, original source comments, or decompilation confidence indicators.
+
+5. **Virtual inheritance expressed as unreadable pointer arithmetic** - Complex vtable offset calculations like `*(_DWORD *)((char *)this + *(_DWORD *)(*(_DWORD *)this - 12) + 4)` instead of named field access.
+
+---
+
+### Best Quality Aspect
+**Function Decomposition (Score: 7/10)** - Template functions are properly separated into individual instantiations, class methods are extracted correctly, and function granularity is reasonable. This is the highest-scoring dimension.
+
+---
+
+### Most Needs Improvement
+**Variable Naming Quality (Score: 2/10)** - The complete lack of semantic variable names is the most severe readability issue. Generic single-letter variables make it nearly impossible to understand code logic without constant cross-referencing.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: At -O0, variables retain their semantic purpose. The decompiler should analyze how variables are used (e.g., `if (idx < size)` suggests `idx` and `size`; `strlen(name)` suggests `name` is a string) to generate meaningful names like `index`, `buffer_size`, `object_name`.
+
+2. **Recover exception handling logic**: The current output loses all catch block information. The decompiler should reconstruct try-catch blocks, exception types, and rethrow patterns even if it requires following exception runtime metadata.
+
+3. **Add explanatory comments for complex patterns**: When encountering vtable dispatch, virtual inheritance offsets, or RTTI operations, add comments explaining what the code does (e.g., "// Virtual function call through vtable" or "// Virtual base offset calculation"). This costs little but greatly improves readability.

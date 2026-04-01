@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+I need to carefully analyze the mismatch between the source code (compiled with `-O0 -g`) and the decompiled output. Looking at the binary path `build/arm32/7/7_clang_Os_g`, the binary appears to have been compiled with `-Os` (optimize for size), not `-O0` as stated. This creates a fundamental evaluation challenge: the decompiler is accurately representing an optimized binary, but the evaluation expects debug-build fidelity.
+
+Let me proceed with the evaluation based on what the decompiled code actually shows.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 9/10  
+Justification: The parameter `x` is correctly named and preserved. For `param_opaque_predicate`, variables `v1`, `v2`, `v3`, `v4`, `v5` are generic but their usage patterns (gcd computation, predicate evaluation) can be inferred. The naming is clean and minimal since the code is highly optimized.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` exactly match the source. The naming is semantically accurate and action-oriented, clearly reflecting the obfuscation techniques being tested.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Magic numbers like `0xDEADBEEF` and `0x5A` (decryption key) are not present in decompiled form because the branches were optimized away. The literal `0xF` in `x & 0xF` for modulo 16 is clear. Some constants like the encrypted string array are represented as `param_string_encryption_encrypted` with a generic name.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The code is remarkably clean with no compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation. The decompiled output reads like hand-written optimized C.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For `param_fake_branch`, the control flow is trivial (just return). For `param_opaque_predicate`, the gcd loop is correctly recovered as a do-while loop. However, the complex predicate expression `!(((v3 | 1) + v1 * v1) ^ (v2 * v2) | v4 ^ 1)` is a single convoluted expression that obscures the original three separate opaque predicates.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - each has a single responsibility. The caller functions (`call_fake_branch`, etc.) are properly separated from the core logic. The decompiler correctly maintains the function boundary between `param_*` and `call_*` functions.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal jumps. The gcd loop in `param_opaque_predicate` is linear. Early returns are used appropriately in functions like `param_division_by_zero`. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: Dead code from the fake branches is eliminated (this is actually correct for the binary's optimization level). No obvious redundant expressions. The loop unrolling in `call_vectorized_loop` is appropriately represented as a do-while.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Integer types are correctly `int` for parameters and return values. The `unsigned int` cast in `(unsigned int)x >> 1` for division by 2 is properly represented. Pointers are correctly typed (e.g., `int *p` in `param_null_pointer_deref`). Minor genericness in some loop counters but acceptable.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs were used in this source, so there's nothing to recover. The decompiled code correctly handles the simple types. For `param_implementation_defined`, the bitfield structure was optimized away to a constant return value.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `v6 = c; *v6++ = v10 + v8;`). The signal handler casts are appropriate for the context. No buffer-overflow-prone patterns in the decompiled code itself.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: The decompiled output includes function location comments (`/* Function: param_fake_branch @ 0x6D0 */`) but no explanatory comments about the obfuscation techniques. The comment "// attributes: thunk" appears for some functions. No indication that the fake branches were intentionally obfuscated and should be preserved.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: The gcd algorithm in `param_opaque_predicate` is correctly recognized as a loop but not explicitly named as "gcd" or "Euclidean algorithm". The signal/setjmp/longjmp pattern for exception handling is correctly recovered but not documented as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler silently eliminates the fake branches without any indication that this was intentional obfuscation code. The output shows `return x;` with no comment that branches were optimized away. The "FAILED to decompile" messages for import functions are appropriately flagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions or postconditions are documented. For `param_division_by_zero`, there's no indication that `x != 0` is required (though this is implicit in the division operation). The signal handler setup is correctly shown but its purpose isn't explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `call_fake_branch` calls `param_fake_branch`. The test function `test_obf_opt_edge` shows the call graph. Global variables like `jmp_buffer`, `segv_buffer` are correctly referenced across functions.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically - initialization functions, test functions, helper functions. Static functions like `div_zero_handler` are properly scoped. The organization reflects the original source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code would compile as C code with minimal modifications. External dependencies (libc functions like `signal`, `printf`, `longjmp`) are referenced but not declared. Would need standard library headers to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.4/10
+
+**Critical Defects:**
+- The fake branches in `param_fake_branch` are completely eliminated without any indication this was intentional obfuscation code - the semantic purpose of testing "always-false conditions" is lost
+- The complex opaque predicate in `param_opaque_predicate` is collapsed into a single unreadable expression `!(((v3 | 1) + v1 * v1) ^ (v2 * v2) | v4 ^ 1)` losing the three separate predicate computations
+- No comments explain that the binary was compiled with optimization (likely -Os), causing the loss of obfuscation techniques that would be visible at -O0
+
+**Best Quality Aspect:** Noise Reduction (scored 10/10)  
+The decompiled code is exceptionally clean with no compiler artifacts, redundant casts, or debug instrumentation - it reads like optimized hand-written C.
+
+**Most Needs Improvement:** Anomaly Indication (scored 3/10)  
+The decompiler fails to flag that intentional obfuscation code (fake branches, opaque predicates) was optimized away, leaving the user without critical context about what was lost during compilation.
+
+**Top 3 Recommendations:**
+1. Add comments when code paths are optimized away (e.g., "// NOTE: Fake branch at source line 18 was eliminated by compiler optimization")
+2. Break complex predicate expressions into separate named variables to improve readability of obfuscated logic
+3. Detect and document signal/setjmp/longjmp patterns as "exception handling mechanism" rather than showing low-level implementation

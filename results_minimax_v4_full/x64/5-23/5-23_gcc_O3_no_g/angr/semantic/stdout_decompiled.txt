@@ -1,0 +1,16 @@
+Test 1: -1177635464
+Test 4: 64
+Test 2: 30
+Test 3: 32
+Test 3: 57122
+Test 4: 116
+Test 5: 19
+Test 5: 60
+LOG: Values: 10, 20, 30
+Test 9: 60
+Test 7: 16
+Test 10: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:37
+Test 11: 382
+Test 6: 0
+Test 2: 15

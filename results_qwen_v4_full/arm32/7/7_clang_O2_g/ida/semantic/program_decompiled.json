@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/7/7_clang_O2_g/ida/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "Test Output\nObfL402: 10\nObfL403: 20\nObfL404: 225\nObfL405: 79\nOptL401: 500500\nOptL401_0: 5050\nOptL402: 72\nOptL501: 20\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

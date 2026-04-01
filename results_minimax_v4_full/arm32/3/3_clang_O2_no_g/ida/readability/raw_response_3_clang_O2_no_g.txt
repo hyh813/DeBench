@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic register-derived names (a1, a2, v0, v1, v2, v3, v4, v5, v6) that obscure semantic meaning. For example, in `local_vars`, parameter `a1` should be named `x`, and the computation `2 * a1 + 10` loses the intermediate variables `a`, `b`, `c` from the source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (local_vars, heap_basic, global_var_access, memop_memset). The decompiler correctly preserved function names like `double_value`, `stack_alias`, and `linked_list_heap`. Minor issue: some internal functions have generic names.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literal values are preserved correctly (42 in address_of_local, 10 in heap_calloc, 20 in stack_alias). However, some constants like array indices (e.g., accessing arr[5] via complex pointer arithmetic) lack explanatory comments about their purpose.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: At -O0, there should be minimal compiler artifacts. However, the decompiled code contains some noise like explicit type casts (_DWORD, _BYTE), unusual pointer arithmetic for array indexing, and some redundant variable declarations. The MEMORY[0xFFFF0FC0] pseudo-function for atomic operations adds noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops are properly reconstructed (for loops in heap_basic, while loops in linked_list_heap). However, some functions like `stack_alias` are reduced to trivial returns (return 20) losing the original control flow logic entirely. The VLA and alloca functions show complex pointer arithmetic instead of clear array semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated and match the source decomposition. Each test function (test_stack_memory, test_heap_memory, etc.) is correctly isolated. However, some complex functions like `linked_list_heap` could benefit from extracting the node creation logic into a helper function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but the linked_list_heap function has complex nested cleanup code with multiple do-while loops that make the flow harder to follow. The VLA and alloca functions have convoluted pointer arithmetic that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal at -O0. Some redundant checks exist (e.g., null pointer checks before operations) but these are legitimate safety checks. The test functions inline constant values rather than calling the actual functions, which is a form of redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like _DWORD (32-bit), _BYTE, void* instead of precise types. The decompiler uses _DWORD for int, losing the distinction between signed/unsigned. Function pointers are often treated as void*. The parameter `int a1` is correctly typed in most cases, but return types and casts are imprecise.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The Point struct is completely lost - in heap_struct it returns `3 * a1` instead of showing struct allocation and field access. The Node struct for linked lists is partially recovered but fields are accessed via raw pointer arithmetic (*v2 = 10 instead of v2->data = 10). The TreeNode struct is similarly lost in tree_heap_traversal.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - the dangling_pointer function returns `*(_DWORD *)v2` after free, which is correctly shown as dangerous but not flagged. Pointer arithmetic like `*(_DWORD *)&v2[4 * i]` is error-prone. No restrict keywords or alignment annotations. The memop functions have some unsafe casts.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments in the decompiled code. The only comments are auto-generated (e.g., "// attributes: thunk"). No explanation of algorithm logic, no @param/@return documentation, no indication of decompilation confidence. The source had rich comments (MEM-L1-01, HEAP-L2-01, etc.) that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (malloc/free pairs, linked list traversal with while(temp != NULL)). However, the decompiler doesn't explicitly name these patterns. The memory barrier idiom uses _sync_synchronize() which is good, but no explanation of why it's needed.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The "FAILED to decompile" messages for import functions are good indicators. However, the dangling_pointer function shows the dangerous operation without any warning comment. The double_free function is simplified to just return -2, hiding the actual vulnerability. No flags for potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. The source had explicit checks (if (arr == NULL) return -1) that are preserved but not documented as contracts. No indication of what the functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (printf, malloc, free are recognized). The callback mechanism in set_global_callback/call_global_callback is partially visible but the relationship to double_value isn't explicitly documented. Global variable usage (global_counter, global_array) is visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output (stack functions, heap functions, static functions, memory operations). However, the order doesn't match the source file exactly, and there's no indication of the original file structure or headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is. Missing declarations for external functions (printf, malloc, etc. would need headers). The test functions inline constant values instead of calling the actual functions. Some pseudo-functions (MEMORY[0xFFFF0FC0]) are not real C code.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable naming**: Generic names (a1, v0, v2) throughout; cannot track purpose without analyzing usage
+- **Composite type loss**: Point, Node, TreeNode structs completely lost; accessed via raw pointer arithmetic
+- **Function simplification**: stack_alias returns constant 20 instead of showing pointer aliasing logic
+- **No comments**: Zero useful comments explaining algorithm intent or decompilation confidence
+- **Type precision**: Uses _DWORD, _BYTE instead of int, char; loses signed/unsigned distinction
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names match the original source almost perfectly (local_vars, heap_basic, global_var_access, memop_memset). This is the strongest area where the decompiler performed well.
+
+### Most Needs Improvement: Comment Quality & Presence (3/10)
+The decompiled code has virtually no useful comments. At -O0 with debug symbols, the decompiler should be able to recover more context and provide meaningful documentation about function purpose, parameter expectations, and algorithm explanation.
+
+### Top 3 Recommendations:
+1. **Recover struct types**: Use debug symbols (-g) to reconstruct Point, Node, TreeNode with proper field names instead of raw pointer arithmetic
+2. **Add semantic comments**: Document what each function does, parameter purposes, and any decompilation uncertainties
+3. **Preserve intermediate variables**: Instead of simplifying `int a = x; int b = a * 2;` to `2 * x + 10`, maintain the variable steps for clarity at -O0

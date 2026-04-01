@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled function uses generic register-derived names (`v0`) with no semantic meaning. The variable should be named `x` or `result` based on the original source. The name `v0` provides no indication it's the input parameter.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The function name `param_fake_branch` correctly matches the source, but the function signature is completely broken - it has no parameters when it should have `int x`. The name alone cannot compensate for the lost parameter information.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this trivial function. Not applicable to this case.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The function is extremely minimal with no compiler artifacts, register spills, or redundant operations. Clean output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The decompiled code is just `return v0;` which completely eliminates all original control flow. The source had two fake branch conditions (`if (x*x < 0)` and `if (strlen(str) < 0)`) that are entirely lost. This is a critical structural failure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The function is appropriately sized (1 line). No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Trivial linear code - just a return statement. No jumps or complexity.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code present. The function is minimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: The decompiled function has no parameter at all - it should have `int x`. The return type is `int` in source but `unsigned int` in decompiled. The original `int` type is lost, and the parameter is completely missing.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types used in this function. Not applicable.
+
+**11. Type Safety:** Score: 1/10  
+Justification: The function returns an uninitialized register `v0` which contains garbage. This is severely unsafe - it should return the parameter `x`. The decompilation failed to recover the parameter, making the return value undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments explaining the function's purpose or the fake branch logic. The decompiler provides no indication that this function contains obfuscation techniques from the original source.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler completely failed to recognize the "fake branch" (always-false condition) obfuscation pattern. The source explicitly uses `x*x < 0` and `strlen(str) < 0` as never-taken branches, but this is entirely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler shows no indication that the function is broken. It returns an uninitialized variable without any warning about potential decompilation failure or missing parameters. This is a silent failure.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No contract information recovered. The implicit contract "returns input x" is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: The function is called by `call_fake_branch()` which correctly passes 10, but the decompiled `param_fake_branch` ignores this entirely. The relationship exists but is non-functional.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Part of a larger binary with multiple functions. No specific issues for this function.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The decompiled function will not compile correctly - it returns an uninitialized local variable `v0` which is undefined behavior. The function needs the parameter `x` to be recovered for correct compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Parameter loss**: The function `param_fake_branch` has no parameters but should have `int x`
+- **Uninitialized return**: Returns uninitialized register `v0` instead of the parameter `x`
+- **Logic elimination**: Both fake branch conditions (`x*x < 0` and `strlen(str) < 0`) are completely eliminated
+- **Type mismatch**: Uses `unsigned int` instead of source's `int`
+- **No anomaly warning**: Decompiler silently produces broken code without indicating failure
+
+**Best Quality Aspect:** Noise Reduction (scored 9/10)  
+The minimal code has no compiler artifacts or register spill noise.
+
+**Most Needs Improvement:** Type Safety (scored 1/10)  
+The function returns an uninitialized variable, making it completely non-functional and potentially dangerous to use. Combined with the lost parameter, this is a severe decompilation failure.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function parameters**: The decompiler must properly recover function parameters from ARM64 calling conventions (e.g., x0-x7 for integers). The parameter `x` was lost entirely.
+2. **Detect uninitialized variables**: Flag when a function returns a register that wasn't written to, indicating decompilation failure.
+3. **Preserve dead code branches**: The fake branch conditions were optimized away by the compiler but should be reconstructed to match source semantics, as they represent intentional obfuscation patterns.

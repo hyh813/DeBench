@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The original source contains the function `param_strcpy`:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows:
+```c
+void param_strcpy(char *param_1,char *param_2)
+{
+  strcpy(param_1,param_2);
+  strlen(param_1);
+  return;
+}
+```
+
+This is a critical defect - the return value is completely lost.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) that provide no semantic meaning. Local variables like `local_28`, `local_38` are equally uninformative. The original `dst` and `src` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `param_strcpy`, `call_strcpy` correctly match source names. However, internal helper functions use auto-generated names (e.g., `FUN_00102020`), and external library stubs have generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` are correctly preserved. However, magic numbers like `0x2a` (42), `0xffffffff` (-1) appear without explanation. The value `42` used for success returns is unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No obvious register spills, debug instrumentation, or redundant casts. The code is relatively clean from low-level artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At `-O0`, control flow closely matches source. Loops use `do-while` constructs correctly. The `param_strcpy` function has straightforward sequential flow. Minor issues in complex functions like `param_fread_fwrite` with nested conditionals.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity. The decompilation correctly separates `param_strcpy` from `call_strcpy`. Some functions like `param_pthread_join` are complex but that's consistent with source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in error handling (e.g., `param_fopen_fclose`). Some forward jumps exist in `param_fread_fwrite` but are manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling present in `param_malloc_free` but it's minimal. The code is generally clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` instead of `int`. The return value `strlen(dst)` is computed but discarded. Many functions use `undefined8` or `undefined4` instead of proper types. Parameter types like `char *` are correct but return types often wrong.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Simple types handled adequately. For complex structures like `ThreadData` in pthread functions, the decompilation uses raw struct offsets (`param_1[2]`, `param_1[1]`) rather than named fields, losing semantic clarity.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. In `param_scanf`, the code uses `undefined8` and manual pointer arithmetic. The `param_strcpy` missing return value could cause undefined behavior in callers. Minor issues with signed/unsigned mixing.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source has extensive comments explaining each function's purpose, but none are recovered. This is a severe deficiency for a `-O0` debug build.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (`strcpy`, `strlen`, `strcmp`) are correctly identified. pthread patterns recognized. However, no explicit naming of patterns like "string copy with length return" or "normalized comparison result".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The critical bug where `param_strcpy` doesn't return the computed `strlen` value is not flagged. Indirect calls and unresolved references are not marked.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has no explicit assertions, but the decompiler could infer that `param_strcpy` "ensures: returns length of copied string".
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`strcpy`, `strlen`). Global variables like `signal_received`, `signal_number` are properly shared across functions. However, no documentation of call relationships or usage patterns.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped - standard library wrappers, system calls, pthread functions. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with libc headers. External functions declared. However, missing return values mean callers would receive garbage, causing potential undefined behavior at runtime.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **CRITICAL**: `param_strcpy` returns `void` instead of `int` - the return value `strlen(dst)` is computed but discarded
+- All parameters use generic names (`param_1`, `param_2`) losing semantic meaning of `dst`/`src`
+- No comments whatsoever, even for debug-build `-O0` code
+- No anomaly indication for the missing return value
+- Type precision issues: `undefined8`, `undefined4` used where specific types expected
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At `-O0`, the decompiled control flow closely matches the original source code structure
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments in output despite `-O0 -g` debug build with extensive source comments
+
+**Top 3 Recommendations:**
+1. **Fix return value recovery**: The `strlen(param_1)` result in `param_strcpy` must be returned as `int`, not discarded
+2. **Add parameter naming inference**: Use data flow analysis to infer parameter roles (e.g., `dst` = destination buffer, `src` = source string)
+3. **Generate meaningful comments**: For `-O0` builds, recover source comments or add decompilation notes explaining non-obvious constructs

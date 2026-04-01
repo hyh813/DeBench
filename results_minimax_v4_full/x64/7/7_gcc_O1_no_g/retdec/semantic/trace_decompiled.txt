@@ -1,0 +1,2 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=-2016408872,Arg2=-2016408856,Arg3=869330288|rax=0x5d8a33d0cae0,rbx=0x7ffd87d00ad8,rcx=0x5d8a33d0ed70,rdx=0x7ffd87d00ae8,rsi=0x7ffd87d00ad8,rdi=0x1,r8=0x0,r9=0x73167c96c380
+TRACE_PRINT|0|%E8%D1%D0%33%8A%5D

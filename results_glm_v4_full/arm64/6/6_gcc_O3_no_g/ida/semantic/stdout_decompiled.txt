@@ -1,0 +1,10 @@
+Testing Standard Library Functions:
+  strlen: 8
+  strcmp: 0
+  strcpy: 12
+  memcpy: 90
+  memcmp: 1
+Value: 42, Name: Test
+  printf: 22
+  scanf: 579
+  fopen: 42

@@ -1,0 +1,164 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables are almost exclusively named with generic patterns like `v1`, `v2`, `v3`, `v4` with register annotations (e.g., `int v1; // w8`). The original source used semantically meaningful names like `temp1`, `temp2`, `temp3` in `sequential_ops`, but these were reduced to meaningless single letters. Only parameter names like `a`, `b`, `c` and `result` are preserved.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+Justification: Every function name perfectly matches the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `switch_small`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`, etc. The decompiler recovered all 20+ function names accurately with appropriate action verbs.
+
+### 3. Literal Clarity
+**Score: 7/10**
+
+Justification: Most literals are clear (e.g., `return 2 * (b + a) - c` correctly expresses the math). However, some magic numbers appear without explanation: `0xFFFFFFF8` (mask for loop unrolling), `0x65` (=101) in `multi_return`, and `1001` in loop bounds. The test functions correctly hardcode expected values like `21`, `20`, `-5`.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: Significant compiler artifacts present: register annotations (`// w8`, `// w9`, `// x22`), NEON/SIMD type declarations (`int32x4_t v4; // q0`, `int8x16_t v6; // q2`) in `loop_continue` and `goto_backward`, and frame pointer comments. These artifacts clutter the code significantly, though the core logic remains readable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most control flow is natural - switches are used for jump tables, loops preserved as while/do-while. However, some expressions are overly clever: `return x << (x > 0)` in `single_if` (shifts by 1 when positive) and `goto_forward` transformed to nested conditionals instead of preserving the goto structure. At -O0, these transformations are unnecessary.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Excellent decomposition matching the original. Each function is small and focused (typically 5-20 lines). The test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are properly separated from the logic functions. No monolithic functions observed.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom with minimal disruption. Switch statements create branches but are handled cleanly. Early returns in `multi_return` and `conditional_return` are appropriate. No excessive forward jumps or goto spaghetti.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No dead code or obvious redundancy in logic functions. Loop unrolling in `loop_continue` and `goto_backward` is present (using NEON vectors) but represents legitimate compiler optimization at any level. The test functions have hardcoded expected values which is correct behavior.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 8/10**
+
+Justification: Good type precision - uses `int` for 32-bit integers, `unsigned int` appropriately, `volatile int *` for external flags. Function pointer types are correctly preserved: `int (*f)(int)` in `call_func_ptr`, `int (*cb)(int)` in `process_with_callback`. Minor genericness in some loop counters.
+
+### 10. Composite Type Recovery
+**Score: 10/10**
+
+Justification: Not applicable - the original source uses only primitive types (int, char arrays). No struct/union recovery needed. The code correctly works with primitive types throughout.
+
+### 11. Type Safety
+**Score: 9/10**
+
+Justification: No unsafe casts observed. Pointer arithmetic in array traversals (`*arr++`) is correct. Function pointers are invoked properly (`f(x)`, `cb(arr[i])`). The only minor concern is some bit manipulation that could overflow, but these are intentional for the algorithms.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. Only a header comment identifying the decompiler: "Decompiled by IDA Pro 9.1 with Hex-Rays". No explanations of algorithm logic, no documentation of non-obvious transformations, no @param/@return annotations. The original source had extensive comments explaining each function's purpose and test cases.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns recognized - switch statements for jump tables, ternary in `ternary_op`. However, the decompiler didn't recognize `goto_forward` and `goto_backward` as goto-based constructs (converted to conditionals), didn't identify the Duff's device pattern in `duffs_device` (uses computed jump via `byte_198D`), and missed the state machine patterns in `state_machine` vs `fsm_func_table`.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+
+Justification: The output correctly reports "FAILED to decompile" for 8 functions including `_setjmp`, `__libc_start_main`, `__cxa_finalize`, `abort`, `puts`, `longjmp`, `printf`, `__gmon_start__`. This is honest about limitations. However, no warnings about suspicious code patterns or indirect call resolution failures within successfully decompiled functions.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No explicit preconditions, postconditions, or invariants recovered. The original source had no formal assertions, but semantic contracts like "x must be positive" in `single_if` or "n > 0" in `duffs_device` could have been inferred and documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships are implicit in the test functions (e.g., `test_control_flow_l1` calls `sequential_ops`, `single_if`, etc.). However, no explicit documentation of "called by" or "calls" relationships. Global variables like `jump_buffer` are used across functions but not documented.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions appear in binary order rather than logical grouping. The test functions are separated from the functions they test (test_control_flow_l1 at 0xE08, but its called functions are at 0xA54-0xB98). Static helper functions like `double_value`, `triple_value` are not shown in the decompiled output (referenced but not defined).
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: The code would require linking against libc (printf, puts). The test functions have hardcoded expected values which would need regeneration if logic changes. External function declarations are implicit. Some stubs needed for the failed-to-decompile functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 7 + 5) / 4 = 6.25
+L2_avg = (7 + 9 + 8 + 8) / 4 = 8.00
+L3_avg = (8 + 10 + 9) / 3 = 9.00
+L4_avg = (2 + 5 + 7 + 3) / 4 = 4.25
+L5_avg = (5 + 6 + 7) / 3 = 6.00
+
+Overall = (6.25 × 0.30) + (8.00 × 0.25) + (9.00 × 0.20) + (4.25 × 0.15) + (6.00 × 0.10)
+        = 1.875 + 2.0 + 1.8 + 0.6375 + 0.6 = 6.9125 ≈ 6.9/10
+```
+
+### Overall Readability Score: 6.9/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is meaningless**: All locals are `v1`, `v2`, `v3` with register annotations instead of semantic names like `temp1`, `sum`, `count` from the original source.
+
+2. **No comments whatsoever**: Despite -O0 (debug) compilation with extensive original comments, the decompiled output has zero explanatory comments for algorithm logic.
+
+3. **Excessive compiler noise**: Register annotations (`// w8`, `// x22`) and NEON vector types (`int32x4_t`, `int8x16_t`) clutter the code even at -O0.
+
+4. **Pattern recognition failures**: `goto_forward`/`goto_backward` converted to conditionals losing the original goto semantics; Duff's device not recognized.
+
+5. **Missing cross-reference documentation**: No indication of which functions call which, or the relationship between test functions and tested functions.
+
+---
+
+### Best Quality Aspect: Type System Fidelity (9.0/10)
+
+Types are precise - int/unsigned int used correctly, function pointer signatures preserved, volatile qualifiers maintained. No unsafe casts or type confusion. The decompiler handled the type system well.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (4.25/10)
+
+The combination of no comments (2/10), poor idiom recognition (5/10), and missing contract recovery (3/10) severely impacts understandability. A human reader cannot understand the algorithm intent without the original source context.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as a loop counter (`i++`, `i < n`), name it `i` or `index`. When accumulating sum, use `sum`. The original source had these names - they should be recoverable.
+
+2. **Add algorithm explanation comments**: At minimum, document what each function computes. For `loop_continue`, note "calculates sum of odd numbers 1 to n". For `duffs_device`, note "optimized memory copy using Duff's device".
+
+3. **Reduce register annotation noise**: At -O0, these annotations add no value. Either hide them by default or provide an option to suppress. The NEON vector types in unoptimized code are particularly confusing.

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/7/7_gcc_O0_g/ida/syntactic/bin/7_gcc_O0_g_fixed",
+  "stdout": "Starting tests...\n\nFake branch result: 10\nOpaque predicate result: 20\nInstruction substitution result: 225\nString encryption result: 0\nTail call optimized result: 500500\nNon-tail call result: 5050\nVectorized loop result: 72\nLTO result: 20\nDivision by zero result: 1\nNull pointer deref result: 41\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of original names like `a`, `b`, `c`. Local variables are `v1`, `v2`, `v3` etc. The original had meaningful names like `temp1`, `temp2`, `sum`, `count` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some test functions correctly recovered (`sequential_ops`, `single_if`, `if_else`), but many wrapper functions use address-based names like `sub_4010a5`, `sub_4010b0`. The original had 40+ functions with clear names; only about half were recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears constantly without explanation. No named constants recovered. The original had clear values like `10`, `5`, `100` for specific purposes - all now appear as unexplained magic numbers.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Massive compiler artifacts present. Functions like `loop_continue` and `goto_backward` contain hundreds of lines of SIMD intrinsics (`AddV`, `CmpEQV`, `InterleaveLOV`) that are completely unreadable. The decompilation failed to simplify these optimization artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/else, loops) is somewhat recognizable, but goto statements appear where simple loops should be. At -O0, this transformation is unacceptable. The `loop_while` function has completely broken control flow with meaningless conditions.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions were extracted but with severe issues: `duffs_device` failed to decompile entirely, `loop_continue` is 100+ lines of unreadable SIMD code, and many small wrapper functions just call other functions without purpose.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most simple functions read reasonably top-to-bottom, but complex functions like `loop_continue` and `goto_backward` have goto-based jumps that make linear reading impossible. Forward jumps interrupt flow in several places.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Severe redundancy in `loop_continue` and `goto_backward` with duplicated computation patterns. The decompiler produced ~100+ line expressions for what should be simple loop logic. Loop unrolling was not recognized or commented.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types like `unsigned long long`, `unsigned int` inconsistently. Original `int` parameters became `unsigned int` in many places. No `const` correctness. Function pointer types are wrong (`goto a0` instead of proper function pointer call).
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct or union types were recovered. The original had `int matrix[3][4]` in `loop_multi_exit` but decompilation shows raw array access without struct recovery. All composite types lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations present. The `goto a0` in `call_func_ptr` is completely wrong - it's a computed goto that doesn't actually call the function. Many implicit casts between signed/unsigned. No bounds checking on array accesses.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Original had extensive Chinese comments explaining each function's purpose and test cases. All lost. Only auto-generated function signatures remain.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithms identified. The original had clear patterns: state machines, Duff's device, factorial recursion, jump tables - none were recognized or labeled.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler did mark `duffs_device` as "Failed to decompile" which is good. However, many functions with completely broken logic (like `loop_while` with meaningless conditions) weren't flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original had clear semantics (e.g., "requires: n > 0", "returns: sum of 0 to n-1") - all completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No function call relationships documented. The original had clear call graphs (test functions calling implementation functions). The decompiled code shows calls but doesn't explain relationships.
+
+**17. Module Organization:** Score: 2/10  
+Justification: All functions dumped in single file with no logical grouping. Original had clear sections: CF-L1 (basic), CF-L2 (advanced), CF-L3 (extreme). No organization preserved.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Missing declarations (`puts`, `printf`, `uint128_t`, `uint256_t`). The test functions have hardcoded values instead of actual function calls, making compilation impossible.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.8/10
+
+**Critical Defects:**
+- Variable names completely generic (`a0`, `v1`, `v2`) - original meaningful names lost
+- Functions `loop_continue` and `goto_backward` decompiled as 100+ lines of unreadable SIMD intrinsics
+- `call_func_ptr` uses `goto a0` which is completely wrong - should be function pointer invocation
+- `loop_while` has broken control flow with meaningless condition `(unsigned int)v3 + 9 > 18`
+- `duffs_device` failed to decompile entirely
+- No struct/union recovery despite clear composite types in source
+- Magic number `4294967295` used everywhere without explanation
+
+**Best Quality Aspect:** Control Flow Naturalness (5/10)  
+- Basic if/else structures are somewhat recognizable, though goto is overused
+
+**Most Needs Improvement:** Semantic Transparency (1.75/10)  
+- Zero pattern recognition, no comments, no contracts, no algorithm identification
+
+**Top 3 Recommendations:**
+1. **Variable Name Inference**: Analyze usage patterns to infer semantic names (e.g., `a0 + a1` suggests addition operand, `a0 > 0` suggests positive check)
+2. **SIMD Intrinsic Simplification**: Recognize vector operations like `AddV`, `CmpEQV` as loop unrolling artifacts and simplify back to scalar loops
+3. **Function Pointer Resolution**: Fix `goto a0` to proper function pointer invocation syntax `a0(a1)` - this is a fundamental decompilation error

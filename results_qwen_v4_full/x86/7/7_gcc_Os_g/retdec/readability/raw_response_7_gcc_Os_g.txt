@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) obscuring semantic purpose. For example, `param_fake_branch(int32_t result)` uses `result` for input parameter `x`, and loop counters like `v2`, `v5` in `param_vectorized_loop` should be `i` or `index`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), but many wrapper functions have mechanical names (`function_10f0`, `function_1150` for malloc).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2b66`, `0x2dae` (global offsets) lack explanation. Constants like `SIGFPE`, `SIGSEGV`, `32` (buffer size) are preserved but string encryption key `90` (0x5A) is not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_bx(v1)` calls in every function, `__readgsdword(20)` stack canary checks, redundant type casts like `(int32_t)buffer`, `(int64_t)v3`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed patterns—`param_fake_branch` collapsed to single return (lost dead branches), `param_opaque_predicate` has awkward conditionals that don't match source's clear predicate structure. Loop in `param_vectorized_loop` uses manual index increment instead of for-loop.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Standard library calls wrapped in separate functions (`function_1150` for malloc, `function_1170` for strlen) creating fragmentation. Core functions appropriately sized but helper functions add noise.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_opaque_predicate` has multiple return paths that disrupt flow. While loops present but structured awkwardly with manual variable updates.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant patterns in `param_vectorized_loop` (`v5 = 0` repeated), stack canary checks in every function with local variables, duplicate type casts throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but some mismatches—`param_fake_branch(int32_t result)` should be `int x`, `param_division_by_zero(uint32_t x)` changed from signed `int`. Pointer types generally correct.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` reconstructed but with generic field names (`e0[8]`, `e1`, `e2`) instead of semantic names. No bit-field recovery (source had bitfield struct in `param_implementation_defined`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int32_t)buffer`, `(char *)v4`, `(int64_t)v3`. Pointer arithmetic explicit but not always safe. No buffer overflow warnings despite source having overflow tests.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments—only address ranges and line numbers from metadata. No algorithm explanations (GCD in opaque predicate not identified), no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern in `decrypt_string` not labeled. Tail-call optimization transformation not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies flagged despite suspicious code (division by zero handling, null pointer deref with signal handlers). Stack canary checks present but not explained as security features.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `p != NULL` for `param_null_pointer_deref`). No postconditions inferred. Error conditions (-1 returns) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear through direct calls, but global variables (`g1`, `g2`, `g3`) have no semantic names. No callback relationships documented despite signal handlers.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Static functions from source not properly scoped. Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers but references external symbols (`__libc_start_main`, `__cxa_finalize`). Would require stubs and linker scripts to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50
+Level 3 (Type):        (6+5+5)/3   = 5.33
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00
+Level 5 (Contextual):  (5+5+6)/3   = 5.33
+
+Overall = (5.00×0.30) + (5.50×0.25) + (5.33×0.20) + (3.00×0.15) + (5.33×0.10)
+        = 1.50 + 1.375 + 1.066 + 0.45 + 0.533
+        = 4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named semantically (e.g., `index`, `sum`, `temp`) based on usage patterns
+- **`param_fake_branch`** completely lost dead code branches—decompiler optimized away the obfuscation instead of preserving it
+- **No comments** explaining algorithm intent (GCD, string decryption, opaque predicates)
+- **Generic struct fields** (`e0`, `e1`, `e2`) lose semantic meaning of jmp_buf components
+- **Compiler artifacts** (`__x86_get_pc_thunk_bx`, `__readgsdword`) pollute every function
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; only metadata addresses provided, no algorithm explanations or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve obfuscation patterns** - Do not optimize away dead code branches; flag them as "potential dead code" instead of eliminating
+2. **Infer variable names from usage** - Analyze variable roles (loop counter, accumulator, pointer) and assign semantic names automatically
+3. **Add decompilation confidence annotations** - Mark transformed code with comments like "// OPTIMIZED: tail-call converted to iteration" or "// UNCERTAIN: indirect call resolution"

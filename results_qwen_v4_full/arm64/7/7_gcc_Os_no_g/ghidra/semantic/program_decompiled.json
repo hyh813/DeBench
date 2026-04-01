@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_gcc_Os_no_g/ghidra/syntactic/bin/7_gcc_Os_no_g_fixed",
+  "stdout": "Test started\n\nValue: 10\nAfter opaque: 10\nAfter instr sub: 225\nAfter string enc: 0\nAfter tail call: 0\nAfter non tail: 0\n",
+  "stderr": "*** stack smashing detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

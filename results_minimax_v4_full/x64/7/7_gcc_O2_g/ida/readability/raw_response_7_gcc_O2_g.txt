@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original source contains two "always false" (fake) branches designed for obfuscation testing:
+1. `if (x * x < 0)` - mathematically impossible for real numbers
+2. `if (strlen(str) < 0)` - strlen returns unsigned, never negative
+
+The decompiled version shows: `return x;` - the fake branches are completely eliminated.
+
+**Critical Issue**: The metadata states `-O0` but the binary appears compiled with `-O2` (fake branches eliminated). This is a fundamental mismatch affecting all assessments.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 10/10  
+Justification: The parameter `x` is correctly named and matches the source. No local variables exist in the simplified version, so there's nothing to criticize.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function is correctly named `param_fake_branch`, exactly matching the source function name. This is excellent.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this function - it's a simple return statement. No magic numbers to decode.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The decompiled function is clean with no compiler artifacts, redundant casts, or debug instrumentation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is a simple return statement - completely natural and idiomatic.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function has a single responsibility (returning the input), which is appropriate decomposition.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly top-to-bottom with no jumps, forward references, or disruption to flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code exists - the function is minimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10  
+Justification: The parameter type `int` matches the original source exactly. The return type is also correct.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so none need recovery.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No unsafe casts, pointer arithmetic, or type-confused operations. The code is type-safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explain the function's purpose or the critical fact that the fake branches were optimized away. The decompiler should note: "Note: fake branches from source were eliminated by compiler optimization."
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" obfuscation idiom is completely lost. The original source had deliberate always-false conditions that are now invisible. This is a severe semantic loss.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the binary behavior differs from source intent. The decompiler should flag: "ANOMALY: Two fake branches in source have been eliminated by optimization."
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No contracts or preconditions documented. Could have: "requires: x is any int value" but nothing is present.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch()` which is clear. The relationship to other obfuscation test functions is inferable from context.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function appears in a logical grouping with other obfuscation-related functions in the decompiled output.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function would compile cleanly as standalone code with minimal dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 8.1/10
+
+**Critical Defects:**
+- **Semantic Loss**: The fake branch obfuscation idiom is completely eliminated and unindicated - the decompiler should flag this as an anomaly
+- **No Documentation**: No comments explain that the original source contained fake branches that were optimized away
+- **Optimization Mismatch**: The binary appears compiled with -O2 despite metadata indicating -O0, causing the fake branches to be eliminated
+
+**Best Quality Aspect:** Type System Fidelity (scored 10/10)  
+- Types are precise and match the original source exactly
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- The decompiler fails to recognize or indicate the loss of the fake branch obfuscation pattern, which is the entire semantic point of this function
+
+**Top 3 Recommendations:**
+1. **Detect and flag eliminated fake branches**: Add anomaly detection for always-false conditions that were optimized away, with comment: "Fake branch eliminated by compiler"
+2. **Recover obfuscation idioms**: Recognize patterns like `x*x < 0` and `strlen(str) < 0` as fake branch obfuscation and document them
+3. **Add semantic context comments**: When control flow significantly differs from naive -O0 expectation, add explanatory comments about what was optimized

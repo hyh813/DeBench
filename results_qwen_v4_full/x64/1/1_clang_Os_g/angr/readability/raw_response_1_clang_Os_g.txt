@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `a0`, `a1`, `a2`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `target` that are completely lost. Complex functions like `loop_continue` have 7+ variables (`v1` through `v7`) that are impossible to track.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`). However, some functions have mechanical names (`sub_401020`, `sub_4010a5`) and the decompiler failed to name `duffs_device` entirely.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere: `4294967295` (0xFFFFFFFF), `1717986919` (division by 10 optimization), `316912650112397582603894390785` (unrecognizable constant). Original clear literals like `10`, `100`, `1000` are replaced with compiler optimization artifacts that are not reversed.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with redundant casts (`(unsigned int)`, `(unsigned long long)`), vector operations (`uint128_t`, `uint256_t`, `AddV`, `InterleaveLOV`), and compiler optimization artifacts (magic number multiplication for division) that should be simplified back to original operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions like `sequential_ops` recovered well, but complex functions show severe degradation. `loop_continue` and `goto_backward` use vector operations instead of loops. Some gotos are spurious (`call_func_ptr`: `goto a0;`). Switch statements partially recovered but incomplete (`call_func_ptr_array` only shows case 0).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized but `duffs_device` failed to decompile entirely. Test functions became massive with goto labels (`test_control_flow_l2`). Helper functions preserved separately which is good, but overall decomposition is inconsistent.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Many forward jumps and goto labels (`LABEL_401a82`, `LABEL_401aba`, `LABEL_401bc1`) disrupt flow. Test functions particularly bad with goto-based control flow. Simple functions like `sequential_ops` and `ternary_op` read naturally.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Vector operations repeated excessively in complex functions. Test functions have hardcoded return values instead of actual function calls (e.g., `printf("CF-L1-01 (sequential_ops): %d\n", 21)` instead of calling the function). Same magic number calculations repeated throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int`, `unsigned long`, `unsigned long long` - no signed types recovered despite original using `int`. Function pointer types completely degraded (`call_func_ptr` takes `unsigned long` instead of function pointer). Return types often wrong (`if_else` returns `long long` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only one generic struct defined (`struct_0` with `field_0`). Arrays mostly lost (`loop_break` shows `v1 = "\n"` instead of actual array `{10, 20, 30, 40, 50}`). No proper struct recovery for any data structures. Function pointer arrays not recovered.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Many unsafe casts throughout. Function pointer calls degraded to `goto` (`call_func_ptr`, `conditional_func_ptr`). Pointer arithmetic issues (`loop_break` treats string as integer array). Vector type operations (`uint128_t`, `CONCAT`) are not valid C and would not compile.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Only two notes: `/* do not return */` for `__libc_start_main` and `longjmp`. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Loop idioms not recognized (converted to vector operations). Switch fallthrough not properly handled (`switch_fallthrough` shows nested if instead of fallthrough). Recursion patterns completely broken.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Two anomalies noted: `[D] Unsupported jumpkind Ijk_SigTRAP` and `Failed to decompile function duffs_device`. However, most other severe issues (vector operations, type mismatches) are not flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No error condition documentation. Original test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables referenced with generic names (`g_404fe0`, `g_405008`, `g_402090`). No call graph documentation. Callback relationships lost (`process_with_callback` parameter `a2` type unclear).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. No header file structure. Functions appear in arbitrary order based on address. No namespace or package structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would NOT compile - uses undefined operations (`AddV`, `InterleaveLOV`, `CmpGTV`, `SarNV`, `ShlNV`, `CONCAT`). Vector types (`uint128_t`, `uint256_t`) are not standard C. Requires extensive modification to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 7 + 2 + 2) / 4 = 3.50
+Level 2 Average: (4 + 5 + 4 + 3) / 4 = 4.00
+Level 3 Average: (3 + 2 + 2) / 3 = 2.33
+Level 4 Average: (2 + 2 + 4 + 2) / 4 = 2.50
+Level 5 Average: (4 + 4 + 2) / 3 = 3.33
+
+Overall = (3.50 × 0.30) + (4.00 × 0.25) + (2.33 × 0.20) + (2.50 × 0.15) + (3.33 × 0.10)
+Overall = 1.05 + 1.00 + 0.47 + 0.38 + 0.33
+Overall = 3.23/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Vector operations replacing simple loops**: Functions like `loop_continue`, `goto_backward`, `recursion_factorial` use `uint128_t`, `AddV`, `InterleaveLOV` instead of recognizable loop constructs
+- **Magic number optimization artifacts not reversed**: Division by 10 shown as `a0 * 1717986919 >> 34` instead of `a0 / 10`
+- **Function pointer calls degraded to goto**: `call_func_ptr` shows `goto a0;` instead of proper function call
+- **Complete type system degradation**: All signed `int` types lost, replaced with unsigned variants
+- **One function completely failed**: `duffs_device` marked as "Failed to decompile"
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved correctly, allowing identification of intended functionality despite code degradation
+
+### Most Needs Improvement:
+- **Type System Fidelity (2.33/10 average)** - Complete loss of signed types, function pointer types degraded, composite types not recovered, and invalid C constructs introduced
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Reverse compiler optimization patterns**: Detect and reverse magic-number multiplication for division, strength reduction, and loop unrolling back to original source patterns
+2. **Recover proper C types**: Distinguish signed vs unsigned integers, recover function pointer types properly instead of converting to `goto`, and use standard C types instead of vector operations
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (like vector operations that may be incorrect) and provide comments explaining what the decompiler attempted to recover

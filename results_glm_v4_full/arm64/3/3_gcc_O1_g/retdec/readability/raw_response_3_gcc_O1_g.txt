@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Most local variables are generic (`v1`, `v2`, `v3`) even with debug symbols available (e.g., `local_vars` uses `v1` instead of `x`, `a`, `b`, `c`). While some stack arrays like `large_buf` retain names, pointer arithmetic variables (`v4`, `v5`) obscure the logic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from debug symbols (e.g., `double_value`, `linked_list_heap`, `test_stack_memory`), matching the source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are recovered correctly (e.g., "=== 测试栈内存操作 ==="), but numeric logic is obscured by ARM64 intrinsics like `__asm_sbfiz` and `__asm_ubfx` which act as magic numbers for bit manipulation rather than clear shifts or multiplies.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with compiler artifacts and low-level intrinsics; `__asm_sbfiz`, `__asm_dmb`, and verbose stack canary checks (`__stack_chk_fail`) appear frequently, significantly hindering readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural; `linked_list_heap` is decompiled into spaghetti code using `goto` labels (`lab_0x12bc`) instead of a loop, and `vla_stack` relies on complex pointer arithmetic rather than array indexing.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; there is no arbitrary splitting of functions, and the granularity is appropriate, maintaining the original structure of the test suite.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code flow is frequently disrupted by forward jumps for stack checks and backward jumps for loops that weren't reconstructed as `while`/`for` loops (e.g., in `local_array`), making top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some redundancy exists, such as the repeated masking operations (`& 0xffffffff`) and explicit casts that are likely unnecessary for the logic, though no significant dead code blocks were found.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int32_t` and `char*` are used correctly, but composite types are lost; structs are treated as raw memory blocks (e.g., `int64_t *` used for `Node*`), and signedness is sometimes inconsistent.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed completely; `Point` and `Node` structures are not reconstructed. Accesses like `(*head)->next` are decompiled to raw pointer offsets like `*(int64_t *)(v1 + 8)`, destroying semantic meaning.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on `int64_t` casts for pointer arithmetic (e.g., `(int64_t)mem + 8`), which is type-unsafe and obscures the actual data types being manipulated (structs vs. integers).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are essentially non-existent; only address ranges and source file names are provided, with no explanation of complex logic like the bitfield intrinsics or the stack layout manipulation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns are missed; the linked list creation in `linked_list_heap` is not recognized as such, and Variable Length Arrays (VLA) in `vla_stack` are represented as raw stack pointer adjustments rather than a C array idiom.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Intrinsics like `__asm_sbfiz` are flagged but not explained (e.g., "bitfield insert"), leaving the user to guess that `__asm_sbfiz(v1, 2, 32)` likely means a multiplication or shift.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented; for example, `heap_basic` does not indicate that the returned value depends on the validity of the `malloc` call, despite the check being present in the code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow, but global variable access is sometimes obscured through pointer indirection (e.g., `g3` for `extern_global_var`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically according to the source file structure (stack, heap, static tests), and the order of functions is preserved well.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to the use of non-standard intrinsics (`__asm_sbfiz`, `__asm_dmb`) and missing definitions for these functions, requiring significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Struct types (`Point`, `Node`) are completely lost, replaced by raw pointer arithmetic (e.g., `*(int64_t *)(v1 + 8)`).
+- Control flow in `linked_list_heap` is destroyed, using `goto` labels instead of a recognizable loop structure.
+- ARM64 intrinsics (`__asm_sbfiz`, `__asm_ubfx`) are used instead of standard C operators (`<<`, `*`), obscuring simple math.
+- Local variable names are generic (`v1`, `v2`) despite debug symbols being available, losing semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Debug symbols were successfully leveraged to recover exact function names, making the high-level purpose of each block immediately clear.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `struct` definitions turns high-level data manipulation into low-level memory offsetting, which is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Map ARM64 bit-manipulation instructions (SBFIZ, UBFX) to standard C bit-shifts or multiplications to improve literal clarity.
+2. Implement aggressive struct type recovery using debug information or pattern matching to replace raw pointer offsets with field access (e.g., `node->next`).
+3. Improve loop pattern recognition for `-O0` code to reconstruct `for`/`while` loops instead of falling back to `goto`-heavy control flow.

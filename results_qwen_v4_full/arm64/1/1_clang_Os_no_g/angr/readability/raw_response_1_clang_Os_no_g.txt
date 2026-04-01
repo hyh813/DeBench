@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `i`) with zero semantic meaning. Original source had descriptive names like `temp1`, `temp2`, `sum`, `count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`). However, helper functions like `sub_400894` and `$x` are cryptic auto-generated names.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers without explanation: `4294967295` (UINT_MAX), `1717986919` (magic divisor for /10), `4200812` (hardcoded array address in `loop_break`), `0xc0000000`. No constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: `__ROL__` macros, `arm64g_calculate_condition()` calls, `[D] unsupported_Iop_ZeroHI96ofV128()` errors, redundant casts throughout, frame pointer manipulation (`v0 = &v1`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple arithmetic replaced with bit manipulation (`sequential_ops`), division by 10 becomes magic multiplication, `duffs_device` has broken LABEL jumps, `call_func_ptr` uses `goto a0` instead of function call.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: **Critical failure**: Test functions (`test_control_flow_l1/2/3`) print hardcoded expected values instead of calling actual functions. This completely breaks verification capability.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` has 8+ LABEL jumps, `indirect_recursion_a` has `while(true)` with complex conditions, disrupting natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundancy: `loop_while` and `loop_dowhile` have identical complex division logic, multiple functions repeat `__ROL__(x, 1) & 4294967294` pattern for `x * 2`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Systematic type degradation: `int` becomes `unsigned long long`, `unsigned int` used where `int` expected. `sequential_ops` parameters are `unsigned int` but source used signed `int`. Signedness semantics lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Array handling broken: `loop_break` uses hardcoded address `4200812 + 4 * v0` instead of proper array. `loop_multi_exit` uses `&g_401980` pointer arithmetic instead of `matrix[3][4]`.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Critical safety issues: `call_func_ptr` does `goto a0` on function pointer (undefined behavior), `conditional_func_ptr` does `goto v4` on function pointer, multiple implicit casts between 32/64-bit.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and expected behavior. Nothing recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition: loops shown as do-while with magic numbers instead of `for(i=0;i<n;i++)`, switch-case fallthrough not identified, recursion converted to broken loops (`recursion_factorial`).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies marked (`[D] unsupported_Iop_...`) but critical issues unflagged: test functions printing hardcoded values, broken function pointer calls, incomplete switch statements (`call_func_ptr_array` only handles case 0).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error handling documentation. Original source had clear test validation comments (e.g., "输入5,7,3应返回21") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships broken: test functions don't call actual functions, `call_func_ptr_array` and `large_jump_table` only handle case 0, callback relationships in `process_with_callback` unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original source had clear sections (L1/L2/L3 control flow features) with headers. External globals (`g_412ff8`, `g_401980`) undocumented.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: **Will not compile**: Contains `[D] unsupported_Iop_ZeroHI96ofV128()`, `arm64g_calculate_condition()` (Ghidra-specific), undefined globals, `goto` to function pointers. Requires extensive manual修复.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+2+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+4+5+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+2)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (3+5+2)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.45/10
+```
+
+**Overall Readability Score: 3.4/10**
+
+### Critical Defects:
+- **Test functions print hardcoded values** instead of calling actual functions - completely breaks verification
+- **Function pointer calls broken**: `call_func_ptr` uses `goto a0`, `conditional_func_ptr` uses `goto v4`
+- **Unsupported operations**: `[D] unsupported_Iop_ZeroHI96ofV128()` in `loop_continue`, `goto_backward`, `recursion_factorial`, `tail_recursion`
+- **Zero variable naming**: All variables are `v0`, `v1`, `a0`, `a1` with no semantic meaning
+- **Magic numbers everywhere**: `1717986919`, `4200812`, `4294967295` without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved correctly, making it possible to identify which function is which despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, when original source had extensive comments explaining purpose, test cases, and expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function semantics**: Detect printf calls with function name patterns and restore actual function calls instead of hardcoded expected values
+2. **Improve function pointer handling**: Recognize function pointer call patterns and generate proper `(*func_ptr)(args)` syntax instead of `goto` statements
+3. **Add confidence annotations**: Flag unsupported operations, magic numbers, and low-confidence recoveries with comments explaining uncertainty and suggesting manual review

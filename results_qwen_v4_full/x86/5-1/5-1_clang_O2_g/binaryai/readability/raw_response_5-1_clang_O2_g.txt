@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_28`, `uVar1`, `iVar1`, `puVar1`, `piVar2`) with no semantic meaning. Original source had meaningful names like `value`, `name`, `data`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`) but helper functions are generic (`FUN_00011030`, `FUN_00011385`). External functions marked `<EXTERNAL>::` lose original library names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`. String literals referenced as `DAT_000121d8` instead of actual content. Original had clear expected values documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*`, `deregister_tm_clones`, `register_tm_clones`. Multiple stub functions that do nothing. Frame manipulation visible in `_start` function.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow recovered but C++ semantics lost. Exception handling reduced to `__cxa_throw`/`__cxa_allocate_exception` calls. Virtual calls shown as `(***(code ***)param_1)` indirect calls without vtable explanation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized. Template instantiations recovered as separate functions (`template_max_int_`, `template_swap_int_`). Class methods use `__thiscall` convention correctly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads mostly top-to-bottom. Some forward jumps in `__do_global_dtors_aux` loop. Exception handling creates non-linear flow but generally traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `test_cpp_oo_features` repeats RTTI code from `test_cpp_rtti`. Otherwise clean without excessive duplication. No obvious dead code in main test functions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined`, `longdouble`. Pointer types often generic (`void*`, `int*`). Original `int`, `size_t`, `double` partially recovered but const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures NOT recovered as structs. Object layout shown as pointer arithmetic (`this + 0x28`, `this + 0x50`). No field names (`value`, `name`, `data` all lost). Vtable structure not recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts: `(undefined4 *)`, `(int *)`, `(char *)`. Pointer arithmetic without bounds checking. Type-confused operations common (treating objects as raw memory).
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only one comment: "// Decompiled by BinaryAI". No comments explaining logic, algorithms, or C++ feature recovery. Original had extensive documentation of expected values and test purposes.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns NOT recognized (RAII, virtual dispatch, templates, lambdas). Exception handling shown as raw `__cxa_*` function calls. No pattern identification or naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Indirect calls not flagged as potentially unreliable. No indication of C++ feature recovery limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Original had clear expected return values for each test.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch shown but not explained as such. Global variable usage (`LifecycleClass::instance_count`) partially recovered.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by C++ feature category. External dependencies marked but not organized by library.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has syntax requiring significant work to compile. External function declarations incomplete. Would require extensive stubbing for `__cxa_*`, `operator_new`, vtable structures.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+3+5)/4 = 4.25
+Level 2 Average: (5+7+6+7)/4 = 6.25
+Level 3 Average: (4+3+3)/3 = 3.33
+Level 4 Average: (2+2+2+2)/4 = 2.00
+Level 5 Average: (5+5+4)/3 = 4.67
+
+Overall = (4.25 × 0.30) + (6.25 × 0.25) + (3.33 × 0.20) + 
+          (2.00 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.5625 + 0.666 + 0.30 + 0.467
+        = 4.27/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **Variable `local_28`** should be named `name` based on string initialization pattern (`0x74736554` = "Test" in little-endian)
+- **Class structures completely lost** - `SimpleClass`, `LifecycleClass`, `Base`, `Derived` all reduced to pointer arithmetic
+- **Magic numbers unexplained** - `0x125c`, `0x3e9`, `0x2a` correspond to test expected values but not documented
+- **C++ semantics degraded** - exceptions, virtual dispatch, templates shown as raw function calls without context
+- **No recovery of field names** - `value`, `name`, `data`, `size`, `multiplier` all lost to `this + offset` patterns
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Template instantiations correctly separated into distinct functions with type suffixes (`template_max_int_`, `Container<int>::push`)
+
+### Most Needs Improvement: **Semantic Transparency (2.0/10 average)**
+- Zero comments explaining C++ feature recovery, no anomaly warnings, no contract documentation despite complex semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct layouts** - Analyze vtable patterns and object memory layouts to reconstruct field names from usage patterns
+2. **Add semantic annotations** - Flag C++-specific constructs (virtual calls, exceptions, RTTI) with explanatory comments
+3. **Infer variable names from context** - String initialization patterns (`0x74736554` = "Test") should suggest `name` variable; constant return values should reference expected test results

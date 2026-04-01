@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`. For example, in `array_1d_stack`, parameters are `int64_t *a1, uint64_t a2` instead of descriptive names like `arr` and `n`. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match the original source (e.g., `double_value`, `process_int`, `array_1d_stack`). However, some internal functions like `function_1060`, `function_1070` are not meaningful, and several functions have incorrect signatures (e.g., `ptr_single` takes no parameters but should take `int*`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers and bit manipulation. Original `x * 2` becomes `2 * a1 & 0xfffffffe`, and `c + 32` becomes obscured. Float constants like `0x3fc00000` appear without explanation. The original clear arithmetic is buried under bitwise operations.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler/decompiler artifacts include: inline assembly (`__asm_addss`, `__asm_mulss`, `__asm_cvttss2si`), stack canary checks (`__readfsqword(40)`), redundant casts, and spurious functions like `__asm_rep_stosd_memset`. These make the code nearly unreadable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (loops, conditionals), but patterns are awkward. The `array_3d` function has deeply nested while loops that are hard to follow. At -O0, the control flow should be more straightforward and match source patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is mostly preserved from source. However, parameter lists expose implementation details (e.g., `array_1d_stack` has 5 parameters instead of 2), and some test functions are excessively large (100+ lines).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but `array_3d` has complex nested loops with multiple while statements that disrupt linear flow. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in `array_3d` where similar pointer arithmetic is repeated. Loop constructs are present but not optimally simplified. Dead code is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation. Original `char` becomes `int64_t`, `short` becomes `int64_t`, and all pointers are treated as `int64_t`. The original `int` should be `int32_t` on arm64, not `int64_t`. Const correctness is completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types were recovered. Instead of `Point3D p; return p->x + p->y + p->z;`, we get `*(int32_t *)(a1 + 8)` with raw pointer arithmetic. All composite types are lost, making the code extremely hard to understand.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe operations: incorrect pointer arithmetic (treating integers as pointers), numerous incompatible casts, and no type safety. The code `*(int32_t *)(4 * v1 + (int64_t)a1)` is error-prone and hard to verify.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. No explanation of algorithm intent, no documentation of what functions do, no indication of uncertainty. The code is completely devoid of explanatory text.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are recognized or named. The decompiler doesn't identify common patterns like linked list traversal, tree recursion, or state machines. It just produces raw decompiled code.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code, potential undefined behavior, or decompilation uncertainties. The code confidently presents potentially incorrect interpretations without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. No indication of what parameters require or what functions guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls exist but relationships aren't documented. No indication of which functions call which, no callback relationships explained, no global variable usage transparency.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in a single file with arbitrary ordering. No logical grouping of related functions, no separation between public API and internal helpers, no namespace or module structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would require significant patching to compile. Missing definitions for external functions (`__printf_chk`, `__libc_start_main`), incorrect function signatures, and type mismatches throughout.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- All variables use generic names (`a1`, `v1`, `v2`) making code comprehension extremely difficult
+- No struct/union recovery—all composite types replaced with raw pointer arithmetic (`*(int32_t *)(a1 + 8)`)
+- Type precision severely degraded—all types are `int64_t` regardless of original type
+- No comments or documentation explaining any function logic
+- Excessive noise from inline assembly and compiler artifacts (`__asm_*`, `__readfsqword`)
+- Magic numbers everywhere without explanation (e.g., `& 0xfffffffe`, `0x3fc00000`)
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Most function names match the original source, providing a stable foundation for understanding what each function is supposed to do.
+
+**Most Needs Improvement:** Semantic Transparency (1.5/10 avg)  
+The complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code opaque and difficult to trust or understand at a semantic level.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `a1` used as array index → `arr`, `n` used as count → `count` or `length`)
+2. Recover struct/union types from field access patterns and provide named field access instead of raw pointer arithmetic
+3. Add explanatory comments for non-trivial logic, magic numbers, and decompilation confidence levels

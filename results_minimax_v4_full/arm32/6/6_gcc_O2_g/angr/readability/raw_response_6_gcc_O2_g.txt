@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Focus Function: `param_strcpy`
+
+Based on my analysis comparing the original source and the decompiled code, I'll provide a comprehensive evaluation across all 18 dimensions.
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `a0`, `a1` instead of descriptive `dst`, `src`. In the broader codebase, variables like `v0`, `v1`, `v2`, `ptr`, `i` dominate. Compare source's meaningful names (buffer, len, pid, sock) to decompiled's generic names - the semantic intent is completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The function `param_strcpy` was correctly recovered with its exact original name. However, helper functions use generic prefixes like `sub_10ca8`, `call_weak_fn`, though test wrapper functions maintain descriptive naming. The core function naming is adequate but inconsistent with helper functions.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive magic numbers throughout (0x24120, 0x2418c for mutex/atomic addresses, numeric constants like 42, 1000 for iterations). The decompiled code uses hardcoded values like `4294967295` (-1 as unsigned) without explanations. String literals are referenced as hex addresses (0x13a54) rather than actual content.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from: (1) stack protector checks (`GLIBC_2.4::__stack_chk_guard`), (2) atomic operation stubs with infinite loops (`do { } while (4294905792())`), (3) redundant calls (`__printf_chk` called twice in succession), (4) `armg_calculate_condition` wrapper functions cluttering logic. The code is buried under compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Core functions like `param_strcpy` have natural linear flow. However, complex functions (pthread operations, signal handling) suffer from confusing conditionals using `armg_calculate_condition` instead of idiomatic if/else. At -O2 optimization, some loop unrolling is expected but the decompiler could better abstract this.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable (not 500-line monoliths), but parameter lists expose too many implementation details. For example, `param_signal_handling` has 8 dummy parameters `a0-a7` that aren't used meaningfully. The decomposition exists but isn't clean.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom for simple functions, but complex functions like `param_thread_local_storage` have extensive forward jumps and deep nesting (8+ levels of do-while loops). The linear reading is significantly disrupted in concurrency code.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple redundant patterns: (1) `param_strlen` calls `strlen` twice redundantly, (2) `call_printf` and `call_strlen` invoke the same function twice, (3) `test_system_calls` has duplicate syscall(5) calls. These appear to be compiler optimization artifacts not cleaned up.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: For string functions, `char*` is correctly used. Integer types are generic `unsigned int` rather than specific `size_t` or `uint32_t`. The return type of `param_strcpy` should be `size_t` not `int`. Const correctness is lost (`const char*` becomes `char*`). Overall acceptable but not precise.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are either missing or generic. The `FILE` struct is completely empty. Thread data structures like `ThreadData` are not reconstructed - instead raw pointer arithmetic with offsets is used (e.g., `ptr[1]`, `ptr[2]` instead of `data->result`). No union recovery observed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: (1) casting through void* without type checking, (2) pointer arithmetic in `param_malloc_free` uses raw offsets like `-4 + (char *)ptr + v0`, (3) pthread parameter passing uses raw addresses without proper struct typing. Some safety issues but not dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled output. The original source has extensive Chinese comments explaining each function's purpose. None were recovered. Auto-generated comments like `/* do not return */` and `/* UNCLEAR */` are sparse and unhelpful.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions (strcpy, strlen, memcpy, pthread_create) are correctly identified by name. However, design patterns like producer-consumer (condition variables), thread pool, and TLS are not explicitly labeled. The code works but doesn't explain the idioms being used.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainties. The `armg_calculate_condition` function appears to be a decompiler artifact but isn't flagged as such. Indirect calls that couldn't be resolved aren't documented. The code presents everything as certain when many parts are ambiguous.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has error handling expectations (returns -1 on error, 42 on success) that aren't captured. Error conditions are present in code but not explained semantically.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are present in the code but not documented. There's no indication of who calls `param_strcpy` (it's called by `call_strcpy`). Global variables like `shared_counter` are declared as extern but their usage across functions isn't mapped. The call graph is inferable but not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are roughly grouped by category (string, file, thread, syscall) but in arbitrary address order. Static functions like `signal_handler` aren't marked as static. Related functions aren't grouped logically. The organization exists but doesn't match source file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code requires significant external declarations (stdlib, pthread, sys headers). Many functions have incorrect or missing prototypes. The `stpcpy` usage in `param_strcpy` is correct but different from source's strcpy+strlen pattern. Compilation would require significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic `dst`, `src`, `len`, `pid`
+- No comments whatsoever - original Chinese documentation completely lost
+- Extensive compiler artifacts (stack guards, atomic stubs, condition wrappers) buried the actual logic
+- Composite types not recovered - ThreadData struct becomes raw pointer offsets
+- All literals are magic numbers without explanation (addresses, iteration counts, return codes)
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The core function names like `param_strcpy`, `param_memcpy`, `pthread_create` were correctly preserved from the original, allowing identification of what each function does even when internal details are obscured.
+
+**Most Needs Improvement:** Lexical Clarity (3.75/10 average)  
+The combination of generic variable names, magic number literals, and heavy noise makes the code nearly incomprehensible at first read. The decompiler should infer names from usage patterns (e.g., `a0` used as destination in string operations should be named `dst`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `a0` is used as destination in strcpy/stpcpy, infer `dst`; when `a1` is used in strlen, infer `src` or `str`
+2. **Clean compiler artifacts**: Stack protector checks, atomic operation stubs, and armg_calculate_condition wrappers should be abstracted or eliminated
+3. **Recover struct types**: Thread data (start, end, result), TLS context, and condition variables should be reconstructed with field names, not raw pointer arithmetic

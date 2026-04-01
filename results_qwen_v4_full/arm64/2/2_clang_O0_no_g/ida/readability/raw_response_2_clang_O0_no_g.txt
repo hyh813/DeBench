@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `v2`) with no semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `p` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only runtime functions like `sub_680` use generic naming.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Character constants shown as hex (`0x41u`, `0x5Au`) instead of `'A'`, `'Z'`. Magic numbers like `40LL`, `100LL` for array offsets lack explanation but are inferable from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Excessive type casts (`(unsigned int)`, `(unsigned __int8)`) and stack variable markers (`[xsp+8h] [xbp-8h] BYREF`) present but don't severely impede reading.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions recover natural if/else and for loops. Complex functions (`__addtf3`, `__multf3`) have excessive branching from long double operations, but this is expected at -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity with single responsibility. No excessive inlining or fragmentation observed; test functions remain separate from processing functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom for simple functions. Complex floating-point functions have forward jumps but this reflects algorithmic complexity rather than decompilation failure.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casts from promotions present. No significant dead code observed; loop structures recovered without unnecessary unrolling artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original types degraded to generics (`__int64`, `_DWORD`, `unsigned __int8`). `char` becomes `unsigned __int8`, `int*` becomes `_DWORD*`, losing signed/unsigned and size semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct definitions lost. Access via pointer arithmetic (`a1[0]`, `a1[1]`, `a1[2]`) instead of field names (`p->x`, `p->y`, `p->z`). No union/enum recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(unsigned int)`, `(__int64)`). Pointer arithmetic without type safety (`*(_DWORD *)(a1 + 4LL * i)`). void* conversions common without documentation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only function headers with basic metadata. Original source had extensive comments explaining test scenarios and expected behavior.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common C idioms not recognized (linked list traversal appears as raw pointer chasing). No pattern identification for state machines, tree traversal, or array operations.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked as "FAILED to decompile" (printf, memcpy, etc.). However, no warnings about potential issues in recovered code or uncertain type reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions inferred. Original source had clear test expectations that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage (`xmmword_3620`, `unk_3704`) not clearly explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped together but no explicit module boundaries or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions marked "FAILED to decompile" requiring stubs. Architecture-specific types (`__int64`, `_DWORD`, `__fastcall`) need porting for cross-compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+6+7)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25  × 0.25 = 1.81
+Level 3 (Type System): (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.23/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+---
+
+### Critical Defects
+
+- **Struct definitions completely lost** - All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`) accessed via raw pointer arithmetic (`a1[0]`, `a1+8`, `a1+20`) instead of field names
+- **Variable names entirely generic** - Parameters `a1`, `a2` and locals `v0`, `v1` provide zero semantic information about purpose
+- **Type precision severely degraded** - Original `char`, `short`, `int`, `long` all collapse to `__int64`/`_DWORD`/`unsigned __int8`
+- **No comments or documentation** - Original source had extensive test scenario comments; decompiled code has none
+- **Union/enum types not recovered** - `UnionData`, `State` enum accessed as raw integers without type distinction
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Function names like `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple` are preserved from source, providing clear semantic anchors for understanding code purpose.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions forces readers to reverse-engineer field layouts from pointer arithmetic offsets, making complex data structure code nearly unreadable.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct definitions from access patterns** - Analyze consistent offset patterns (`+0`, `+4`, `+8` for 3-int structs) to reconstruct `Point3D { int x, y, z; }` instead of `a1[0], a1[1], a1[2]`
+
+2. **Infer variable names from usage context** - Variables used in size checks should be named `count`/`length`; pointer parameters should be named `ptr`/`arr` based on dereference patterns
+
+3. **Preserve original type semantics** - Distinguish `char` (1-byte) from `int` (4-byte), maintain signed/unsigned distinctions, and recover enum types from switch case values matching sequential integers

@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `p`, `idx`, `index`. Only `result` and `flag1` are semantically meaningful. At -O0, we should expect meaningful names like `value`, `name`, `size` from the original source.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Mixed results - some functions correctly recovered (`test_cpp_member_func`, `call_virtual_func`, `template_max<int>`), but many use mechanical address-based names (`sub_400d74`, `sub_400efc`) or cryptic generated names (`$x`, `$x.18`). Mangled C++ names like `_Z20test_cpp_member_funcv` are not demangled to `test_cpp_member_func`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4`, `8`, `40`, `80` (array offsets) appear without explanation. The `9` in array bounds checks (`9 >= (unsigned int)index`) is a magic number for MAX_SIZE=10. String literal "Test" is embedded but not clearly associated with the `name` member.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present - redundant function calls (`return frame_dummy();` called twice in `sub_401008`), unnecessary goto statements, dead code patterns. The decompilation includes many spurious intermediate variables that add clutter without semantic value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Contains confusing patterns like `goto *((long long *)*((long long *)&arg_0));` for vtable dispatch - this should be `return arg_0->virtual_func(arg_1);`. Several functions have empty returns (`return;`) where actual logic exists in source. Some goto usage disrupts readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized and focused. Template functions are properly separated. However, some member functions like `Container<int>::get` return void instead of `T`, indicating decomposition issues. The `test_cpp_oo_features` function is appropriately large as a test aggregator.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, the computed goto for virtual dispatch and some empty return statements create discontinuities. The code flow is occasionally interrupted by indirect jumps that are hard to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns observed - duplicate function calls in `_start` and `frame_dummy`, redundant returns. Loop unrolling in template functions isn't commented. However, no severe redundancy that makes code unmaintainable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `unsigned long long` used where `int` or `size_t` would be appropriate, `void*` extensively used instead of proper types. Template functions show some type specialization but member functions use `void* this` instead of proper class pointers. `char` used for boolean `result`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery - `struct_0` and `struct_1` defined with generic field names (`field_0`, `field_8`). The `class Base` is declared but member functions aren't properly recovered. Class members like `value`, `name`, `size`, `data` are not reconstructed - instead we see raw pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations - pointer arithmetic like `ptr[40]`, `ptr + 4 * index` without proper type safety. Casts from `int` to `unsigned int` throughout. The vtable dispatch uses dangerous pointer manipulation. No bounds checking annotations. Function pointers handled unsafely.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like "do not return" present. No explanation of algorithms, vtable mechanism, or exception handling. No indication of decompilation confidence or uncertain areas.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ idioms partially visible but not named or explained - vtable dispatch appears as cryptic goto, exception handling shows `__cxa_throw` but not explained as try-catch, RAII patterns not recognized. Template instantiation is visible but not labeled as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication whatsoever. The decompilation confidently presents incorrect code (empty functions where logic exists, wrong return types, missing class members) without any warnings about uncertainty or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges. The decompilation provides no guidance about what the functions expect or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Poor relationship documentation. Function call graph not clear - we see `call_virtual_func` but don't know it's called from `test_cpp_virtual_func`. Virtual dispatch relationships not documented. Global variable usage (`instance_count`) not explained.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions organized by address rather than logically. Related test functions scattered. Template instantiations not grouped with their test functions. No namespace or class structure recovery - all functions at global scope.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code does not compile standalone. Many `extern` declarations for undefined symbols (`g_411ff8`, `$d.19`, etc.). Incomplete type definitions. Missing standard library includes. The "Compilation Result: Yes" in metadata is questionable given the code quality.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+4+3)/4 = 3.0
+L2_avg = (4+6+5+5)/4 = 5.0
+L3_avg = (4+3+3)/3 = 3.3
+L4_avg = (2+3+1+1)/4 = 1.75
+L5_avg = (3+2+2)/3 = 2.33
+
+Overall = (3.0 × 0.30) + (5.0 × 0.25) + (3.3 × 0.20) + (1.75 × 0.15) + (2.33 × 0.10)
+        = 0.90 + 1.25 + 0.66 + 0.26 + 0.23
+        = 3.30/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects (Bullet List)
+- Variable names are universally generic (`v0`, `v1`, `v2`, `ptr`, `p`) - original names like `value`, `name`, `size`, `data` completely lost
+- Function `call_virtual_func` uses dangerous computed goto instead of proper virtual method call - should be `return arg_0->virtual_func(arg_1);`
+- Many functions return empty/void when they should return values (e.g., `test_cpp_member_func` should return `int`, not `void`)
+- Class member functions like `Container<int>::get` return `void` instead of `T`, losing all type information
+- No comments explaining vtable mechanism, exception handling, or any C++ idioms
+- Struct field names are generic (`field_0`, `field_8`) instead of meaningful names from source
+- No anomaly indication for clearly incorrect decompilations
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (6/10)** - Functions are reasonably sized and template functions are properly separated. This is the highest-scoring area but still only marginally acceptable.
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (1/10)** - The decompilation presents incorrect code (empty functions, wrong return types, unsafe pointer operations) without any warnings. This misleads analysts about code correctness.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns**: At -O0, local variables retain their semantic purpose. `v0 = 10; strncpy(&v1, "Test", 4);` should infer `value = 10; strncpy(name, "Test", 4);`
+2. **Demangle C++ names and recover class structure**: Transform `_Z20test_cpp_member_funcv` to `test_cpp_member_func`, recover class members from vtable analysis
+3. **Add confidence indicators for uncertain decompilations**: Flag functions that return void when they should return values, mark indirect calls that couldn't be resolved, indicate where decompilation may be incorrect

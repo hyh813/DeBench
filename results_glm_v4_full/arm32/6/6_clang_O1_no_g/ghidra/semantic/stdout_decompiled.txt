@@ -1,0 +1,15 @@
+=== Standard Library Functions Test ===
+
+STRCMP result: 15
+STRCPY result: 0
+STRLEN result: 12
+MEMCMP result: 90
+MEMCMP2 result: -1
+Value: 42, Name: test
+PRINTF result: 22
+SSCANF result: 579
+FOPEN result: 42
+FREAD_FWRITE result: 42
+MALLOC result: 90
+MEMSET result: 0
+STRCHR/STRSTR result: 15

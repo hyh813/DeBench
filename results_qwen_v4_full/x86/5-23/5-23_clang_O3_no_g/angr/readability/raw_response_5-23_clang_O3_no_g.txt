@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning; original source had meaningful names like `size`, `counter`, `exec_mem`, `page_size` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_macro_constants`, `param_asm_clobber`); only runtime helpers use generic names (`sub_401030`, `sub_4010b0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout (`1025`, `0x200`, `57072`, `57122`) without explanation; original constants like `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) lost during constant folding.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive wrapper functions (`sub_401231`, `sub_401256`, `sub_401266`) that don't exist in source; runtime initialization code (`_init`, `__do_global_ctors_aux`) mixed with application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered well (e.g., `param_asm_clobber` shows clean `for` loop); however, some logic inverted (`if (a0 < 1025)` vs original `if (size > MAX_SIZE)`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with unnecessary wrapper functions that just call the real function; original had clean separation without this extra layer of indirection.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with natural loop structures; some forward declarations and strange ordering but no excessive goto usage in main logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Wrapper functions create redundancy; constant folding removes some redundancy but loses semantic meaning (e.g., `call_macro_constants` just returns `64` instead of computing `16*4`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation—pointers become `unsigned int` (`param_asm_clobber` takes `unsigned int ptr` instead of `int *arr`); `const` correctness lost entirely; generic `unsigned int` instead of `int32_t`, `size_t`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic struct recovery present but mostly generic (`struct_0`, `struct_1` with `field_0`, `padding_0`); source didn't have many complex types so impact is limited.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(char *)&v0`, `(unsigned int *)`); pointer arithmetic on generic types; `param_asm_clobber` uses `unsigned int ptr` with pointer arithmetic which is type-unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code; original source had extensive section headers and explanations for each test; no decompiler confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some low-level patterns recognized (`AddV` for SIMD, `atomic_exchange_add` for atomics); macro expansions not indicated (constant folding hides them); no higher-level pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`); no warnings about indirect calls, type uncertainty, or potentially incorrect recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented; error conditions handled but not explained; original source had expected values in comments that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables referenced (`g_4020cb`, `g_4022c9`) with meaningless names; no call graph or callback documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Some logical grouping (preprocessing functions together, asm functions together); runtime initialization code mixed with application code; no header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant stubbing to compile standalone; external dependencies not documented; platform mismatch (metadata says arm64, decompilation shows x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+5+7+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (5+6+4)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+
+Overall Score: 5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled code has none
+- **Generic variable names** - `v0`, `v1`, `a0`, `a1` obscure semantic purpose throughout
+- **Type degradation** - Pointers become `unsigned int` (e.g., `param_asm_clobber` parameter)
+- **Magic numbers** - `57072`, `57122`, `0x200` without explanation of original constants
+- **Wrapper function bloat** - Unnecessary `sub_401XXX` functions that just call the real function
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names were successfully preserved (`param_macro_constants`, `param_asm_clobber`, `test_preprocessing_features`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (size checks, pointer arithmetic, loop counters) to suggest semantic names like `packet_size`, `array_ptr`, `loop_index`
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments into decompiled output
+3. **Replace magic numbers with named constants** - Detect constant-folded values and suggest original constant names based on usage context (e.g., `1024` → `MAX_SIZE` when used in size comparisons)

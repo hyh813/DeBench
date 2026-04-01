@@ -1,0 +1,8 @@
+Antigravity Compiler Test Suite
+
+param_opaque_predicate: 10
+call_opaque_predicate: 20
+instruction_substitution: 225
+string_encryption: 94
+Tail call optimized: 500500
+Non-tail call: 5050

@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompiled Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Original had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) instead of readable names. Demangled comments help but the actual identifiers remain opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x115e4`, `21`, `1000`) with no named constants. String literals are hex-encoded globals (`g1`, `g2`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some unnecessary casts like `(int32_t)(float32_t)v2` and redundant pointer conversions. No severe compiler artifacts but moderate noise present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many functions are constant returns (e.g., `test_cpp_multiple_inheritance` just returns 71). Exception handling logic is completely broken and unreadable with confusing conditional chains.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are stubs or incorrect. Virtual methods exist but have empty/incorrect bodies. Template instantiations are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom without excessive gotos. Exception handling has confusing flow but most functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some constant folding occurred (functions returning pre-computed values). No obvious dead code, though some redundant casts remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All C++ class types degraded to `int32_t` and `int32_t*`. Original had `SimpleClass`, `Base*`, `std::unique_ptr<int>` - all lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: vtable structures recovered (`vtable_1187c_type`) but NO class structures exist. Original had full class definitions with members (`int value`, `char name[32]`) - completely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts: `(int32_t)a1`, `(int32_t)&g17`, `(int32_t *)v4`. Pointer arithmetic on class objects treated as raw integers. Severe type safety violations throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated metadata comments exist ("From module:", "Line range:", "Demangled:") but no semantic explanations. No algorithm documentation or uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Virtual function mechanism, exception handling, and template instantiation not explained. C++ idioms completely unrecognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Virtual calls appear confident but are wrong. Broken exception handling not flagged. Zero uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expected values in comments (e.g., "期望: 4704") - all lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, global variable usage clear (`g1`, `g2`). Virtual dispatch opaque despite vtable structures. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions grouped somewhat logically but no header separation. Original had clear section organization with comments - lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has basic includes but would need significant work to compile (missing C++ runtime, vtable setup, exception handling support). Metadata claims "Compilation Result: Yes" but questionable for C++.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (3+2+2)/3   = 2.33  × 0.20 = 0.466
+Level 4 (Semantic):    (4+3+2+2)/4 = 2.75  × 0.15 = 0.4125
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **All C++ class types lost** - `SimpleClass`, `Base`, `Derived` became `int32_t` with no structure recovery
+- **Virtual function implementations are stubs** - `Base::virtual_func` and `Derived::virtual_func` just return without logic
+- **Exception handling completely broken** - `test_cpp_exception` has nonsensical control flow that doesn't match source
+- **Variable names are all generic** - `v1`, `v2`, `v3` throughout with no semantic meaning
+- **Magic numbers everywhere** - `0x125c`, `0x115e4`, `71`, `703` with no named constants
+
+### Best Quality Aspect:
+- **Redundancy Elimination (7/10)** - Some constant folding occurred and no obvious dead code, showing the decompiler can recognize optimized patterns.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover C++ class structures; vtables exist but class members, inheritance relationships, and object layouts are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable function signatures to infer class member layouts and inheritance relationships
+2. **Add uncertainty annotations for C++ features** - Flag virtual calls, exception handling, and RTTI operations with confidence indicators when recovery is incomplete
+3. **Preserve demangled names as actual identifiers** - Use demangled C++ names (`test_cpp_member_func`) instead of mangled names (`_Z20test_cpp_member_funcv`) for function identifiers

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_30`, `iVar1`, `param_1`, `pvVar1`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` - all lost in decompilation. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions preserve original names (`test_cpp_member_func`, `test_cpp_virtual_func`), and member functions are properly scoped (`SimpleClass::getValue`). However, operator overloads are mangled (`Point::operator_`, `Point::operator__`) and many internal functions use cryptic addresses (`FUN_00102020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation: `0x1234` (class ID), `0x1f` (31, string limit), `0x32` (50), `0x96` (150), `0xfa` (250). Template instantiations are labeled (`template_max_int_`) but computed values lack semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from template/STL expansion (2000+ LOC vs 540 original). Multiple destructor variants exposed (`_Derived`, `_Derived`, `_Derived` three times). STL internals (`std::_Tuple_impl`, `std::__uniq_ptr_data`) clutter output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (loops, conditionals) is natural. However, virtual function calls use complex indirect patterns: `(***(code ***)param_1)(param_1,param_2)` instead of clean virtual dispatch. Multiple inheritance requires confusing pointer adjustments.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions properly separated; member functions extracted. However, `test_cpp_smart_ptr` is ~200 lines with excessive STL internal functions exposed. Template instantiations create unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Exception handling appears as special case with `__cxa_throw`. Minor forward jumps for error paths but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code. Loop constructs preserved. Template expansion is necessary but could be consolidated with comments.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`). Template types explicit (`Container_int_`, `Container_double_`). However, many uses of `undefined4`, `undefined8`, `void*` lose precision. Function pointer types are generic `code *`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class layouts partially recovered - `SimpleClass` has proper field offsets. `LifecycleClass` shows `data` and `size` fields. However, many fields accessed via raw pointer arithmetic: `*(int *)(*(long *)this + local_20 * 4)` instead of `data[i]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int *)`, `(void **)`, `(code **)`. Indirect virtual calls without type guarantees: `(***(code ***)param_1)`. Pointer arithmetic without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in decompiled output. Original source had extensive documentation explaining each feature. Zero recovery of algorithm explanations, parameter contracts, or intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns recognized: vtable setup (`PTR_virtual_func_00108878`), RAII through paired constructors/destructors. However, no explicit naming of patterns (virtual function dispatch, smart pointer ownership, lambda closures).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indicators. Complex indirect calls like `(***(code ***)param_1)` are presented as confident code without flagging resolution uncertainty. Multiple inheritance pointer adjustments not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information. Preconditions (e.g., non-null pointers), postconditions (e.g., return value ranges), and invariants (e.g., container size limits) not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit (`SimpleClass::getValue(local_30)`). Virtual dispatch relationships partially visible through vtable pointers. However, no documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by class logically. However, output is single monolithic 2180-line file. No namespace structure recovery (`std::` prefixes lost in mangling). No header/API separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile standalone. Heavy reliance on undefined external functions. Template instantiations require STL headers. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful names lost (`value`, `size`, `data` → `local_30`, `iVar1`, `param_1`)
+- **No comments**: Zero documentation of algorithms, contracts, or intent
+- **Operator overloading mangled**: `Point::operator+` → `Point::operator_`, losing semantic meaning
+- **Excessive STL exposure**: Template internals create 4x code bloat, obscuring logic
+- **No anomaly indication**: Complex indirect calls presented without uncertainty flags
+
+### Best Quality Aspect: Control Flow Naturalness (6/10)
+- Basic loops and conditionals preserved
+- Exception handling partially reconstructed
+- Function decomposition mostly appropriate
+
+### Most Needs Improvement: Semantic Transparency (2/10)
+- Zero comments recovered
+- No pattern recognition documentation
+- No anomaly indication
+- No contract recovery
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `local_30` used as `SimpleClass*` should be named `obj` or `instance`
+2. **Recover operator overload names**: Map `operator_`, `operator__` back to `operator+`, `operator==` based on signature
+3. **Add semantic comments**: Document virtual dispatch patterns, this-pointer adjustments, and template instantiations
+4. **Flag unresolved calls**: Mark indirect virtual calls with confidence indicators
+5. **Consolidate STL internals**: Option to hide template implementation details behind cleaner abstractions

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of source names (`a`, `b`, `c`, `x`). Local variables are `v1`, `v2`, `v3` etc. Only a few like `result`, `i`, `cur`, `ptr` are semantically meaningful. The source had clear names like `temp1`, `temp2`, `sum`, `count` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellent - they match source names almost perfectly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `switch_small`, `switch_large`, etc. The decompiler correctly recovered the original function names from debug symbols or pattern matching.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF, -1 as unsigned) appears extensively without explanation. However, small constants like `10`, `20`, `100`, `200` are clear from context. The source's test values are sometimes hardcoded in test functions rather than computed.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minor noise from frequent `& 4294967295` masking operations (32-bit truncation). Otherwise clean without obvious debug artifacts or redundant casts. The code is relatively free of compiler-generated noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Several control flow transformations deviate from source: `loop_for_fixed` uses do-while instead of for loop; `loop_while` uses do-while which changes semantics (executes at least once); `switch_small` is if-else chain rather than switch; `switch_fallthrough` has complex goto-based structure. At -O0, these transformations are unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated with appropriate granularity. Each function handles a single responsibility. No monolithic functions or over-fragmentation observed. The decomposition matches the source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. `switch_fallthrough` has goto labels (`LABEL_401469`) that disrupt linear flow. `duffs_device` has multiple labels. Otherwise, code is mostly linear without excessive forward/backward jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy from optimization: repeated `& 4294967295` masking, similar patterns in `loop_while` and `loop_dowhile`. No severe redundancy. Loop unrolling in `duffs_device` is present but structurally preserved.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type precision is inconsistent. Parameters use `unsigned int`/`unsigned long` when source used signed `int`. Return types vary: `int`, `unsigned int`, `unsigned long long`, `long long`. The source consistently used `int`. This unsigned/signed mismatch could cause subtle bugs.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays are not properly recovered. In `loop_break`, the source's `int arr[] = {10, 20, 30, 40, 50}` is spread into individual stack variables `v0`, `v1`, `v2`, `v3`, `v4`. The `matrix[3][4]` in `loop_multi_exit` is similarly decomposed. No struct/union recovery visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer types have issues - `call_func_ptr` takes `unsigned long long *a0` instead of proper function pointer type. Some unsigned/signed mixing. No major undefined behavior risks, but the function pointer handling is questionable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled output whatsoever. The source had extensive comments explaining each function's purpose, test scenarios, and expected outputs. This complete absence of documentation severely impacts understandability.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements (though sometimes as if-else), loops. But no explicit naming or documentation of patterns like "Duff's device", "state machine", "function pointer dispatch". The source's comments identified these patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One instance of "Unsupported jumpkind Ijk_SigTRAP" noted. Otherwise, anomalies are silently handled. The decompiler doesn't flag suspicious patterns or uncertain reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. The source had test cases with expected values that could inform contracts. No invariant or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: `extern` declarations show external dependencies. Function call relationships are visible in code but not documented. No indication of who calls whom or global variable usage patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in a single file but grouped reasonably. Initialization functions (`_init`, `_start`, `_fini`) at top, test functions in middle, main at end. Could be better organized by feature.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations needed for undefined references (`g_405fe8`, `g_405fa0`, etc.). Type mismatches (unsigned vs signed) would cause warnings. Would require patching to compile cleanly.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: `a0`, `a1`, `v1`, `v2` instead of semantic names like `a`, `b`, `temp1`, `sum`
+- Arrays completely lost: `int arr[] = {10,20,30,40,50}` decomposed into separate variables `v0`-`v4`
+- No comments at all - source had extensive documentation explaining each function
+- Type precision issues: unsigned types when source used signed, causing potential semantic mismatch
+- Control flow transformations at -O0: for loops become do-while, switch becomes if-else chain
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler recovered almost all original function names perfectly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The complete absence of comments severely impacts readability. The source had valuable documentation explaining test scenarios, expected outputs, and algorithm purposes that was completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `i`, `j`, `k`; accumulators should be `sum`, `result`, `count`; parameters should retain source names when debug symbols available
+2. **Recover array types**: Instead of spreading `int arr[] = {10,20,30,40,50}` into `v0`, `v1`, `v2`, `v3`, `v4`, reconstruct as `int arr[5] = {10, 20, 30, 40, 50}`
+3. **Add decompilation comments**: Include hints about control flow transformations ("loop converted from for to do-while"), pattern recognition ("Duff's device detected"), and confidence levels for uncertain reconstructions

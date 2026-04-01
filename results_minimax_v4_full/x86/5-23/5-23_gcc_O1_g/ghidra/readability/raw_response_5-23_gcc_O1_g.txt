@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables use generic names like `iVar1`, `iVar2`, `param_1`, `auStack_4`. The source had meaningful names like `size`, `x`, `y`, `result` but these are lost. For example, in `param_macro_constants`, the parameter should be named `size` but is generic.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most function names match the source (e.g., `param_macro_constants`, `call_macro_constants`, `param_asm_basic`). However, some internal functions have cryptic names like `FUN_00011030`. The main test functions are well-preserved.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers abound without explanation: `0x200` (should be 512), `0x40` (should be 64 from BUFFER_COUNT*4), `0xdef0`, `0xdf22`. The source's MAX_SIZE=1024 and BUFFER_COUNT=16 are completely lost. Constants like `0x1e` for page size are unexplained.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Heavy compiler artifacts include "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", stack canary checks (`__stack_chk_fail_local`), and injected get_pc_thunk functions. These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic if-else and loops are preserved naturally. However, inline assembly in `param_asm_clobber` was replaced with a C loop, losing the original assembly semantics. At -O0, more faithful representation of the original logic was expected.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and maintain single responsibility. Each test case (param_*, call_*) is properly decomposed. The original function boundaries are mostly preserved.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `param_dynamic_code`.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some redundancy in array initialization (e.g., `dst[0] = '\0'` through `dst[0x1f] = '\0'` in call_asm_multi_insn). Loop unrolling in the decompiled output adds noise but is manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types preserved (int, char, void*). However, `size_t` is used correctly in some places (good), but many pointer types are generic. The original's specific types (like `int *counter` for atomic operations) are maintained but without semantic meaning.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: No struct recovery. Arrays like `int arr[5]` are recognized but not as meaningful collections. The source's `int a[] = {1,2,3,4}` becomes separate assignments in decompiled code.
+
+**11. Type Safety:** Score: 6/10
+Justification: Some unsafe casts present. The `param_asm_multi_insn` uses `(int)dst + 1` which is questionable. Function pointers in `param_dynamic_code` use typedef but could be safer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Only warnings are present (e.g., "WARNING: Unknown calling convention"). No explanatory comments about what the functions do or how they relate to the original source. The decompiler provides no semantic context.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: No design patterns or algorithms are identified. The inline assembly patterns, atomic operations, and SIMD code are not labeled as such. The source's macro expansions are not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Some warnings present (unknown calling conventions, inlined functions), but these are generic. The indirect call resolution failures and assembly-related anomalies are not clearly communicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. The source's assumptions (e.g., "requires: ptr != NULL" for mmap) are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function call relationships are traceable (e.g., `test_preprocessing_features` calls various `call_*` functions). However, no explicit documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are logically grouped - preprocessing tests together, asm tests together. Static functions like `my_func` are properly scoped. However, the file is a single monolithic output.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: Code requires many external declarations (`__printf_chk`, `__stack_chk_fail_local`, `mprotect`, `mmap`, `munmap`, `sysconf`). The binary metadata shows it's linked against standard libraries but these dependencies aren't clearly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`iVar1`, `iVar2`, `param_1`) losing all semantic meaning from source
+- Magic numbers everywhere (`0x200`, `0x40`, `0xdef0`) without explanation; original constants MAX_SIZE, BUFFER_COUNT completely lost
+- Inline assembly code replaced with generic C implementations, losing the original low-level semantics
+- No comments explaining what functions do or how they relate to source
+- Heavy compiler warnings and artifacts (stack canaries, get_pc_thunk) obscure actual logic
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)
+- Functions maintain proper boundaries and single responsibility; each test case is properly isolated
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- Generic variable names like `iVar1`, `iVar2`, `auStack_4` make it nearly impossible to understand what each variable represents without significant reverse engineering effort
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `iVar1` used in comparison with `0x400` should be named `size` based on the source parameter
+2. Detect magic numbers and suggest named constants - `0x40` should be flagged as possibly related to BUFFER_COUNT*4
+3. Preserve inline assembly semantics rather than replacing with generic C implementations; at -O0, the assembly should be more faithfully represented
+4. Add semantic comments explaining what each function does and how it relates to source-level constructs like macros
+5. Recover preconditions/postconditions from function behavior (e.g., mmap result checking implies "requires: returns valid pointer or MAP_FAILED")

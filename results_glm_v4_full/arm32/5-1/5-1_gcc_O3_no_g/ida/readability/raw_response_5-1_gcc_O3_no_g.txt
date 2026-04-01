@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a1`, `a2`), obscuring the semantic meaning of objects like `RTTIBase*` or `Derived*`. While `dest` is used for the string buffer, most logic-carrying variables lack descriptive names.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; function names like `test_cpp_virtual_func`, `Base::virtual_func`, and `Container<int>::push` perfectly match the original source and clearly express intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers resulting from constant propagation (e.g., `4700`, `42`, `71`) replace complex logic, and floating-point values are exposed as raw integer representations (e.g., `1074003968` for `2.5`), significantly hindering understanding.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling, but artifacts like `COERCE_DOUBLE` macros and `__fastcall` annotations remain, which are low-level implementation details rather than semantic noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is linear and readable where logic remains (e.g., `test_cpp_rtti`), but high-level logic is often missing due to compiler optimization (e.g., `test_cpp_virtual_func` reduced to a single return).
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Class methods, constructors, and destructors are correctly separated into individual functions. Complex C++ features like thunks (e.g., `non-virtual thunk to`) are explicitly identified and isolated.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The decompiled code reads top-to-bottom with minimal jumps or goto statements, making execution paths easy to trace despite the underlying complexity of the binary.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's optimizations, presenting simplified code (e.g., `return 42;`) without redundant intermediate steps that would clutter the view.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While basic types are correct, complex types are often degraded; for example, `Base*` in `call_virtual_func` is represented as `int (__fastcall ***)(_DWORD)`, and `this` pointers are often typed as generic `int`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct/class layouts are not applied to variables; member access is done via raw pointer arithmetic (e.g., `*((_DWORD *)this + 1)` for `multiplier` and `result + 40` for `size`), completely losing the high-level structure of classes like `Container` or `Derived`.
+
+**11. Type Safety:** Score: 4/10
+Justification: Extensive use of unsafe casts (e.g., `(_DWORD *)this`, `(char *)this + ...`) and bit-casting macros (`COERCE_DOUBLE`) is present, reflecting the low-level ABI rather than type-safe C++ semantics.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic, algorithms, or the reason for magic numbers. The only comments are decompiler warnings (e.g., "positive sp value has been detected").
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms like virtual thunks, RTTI checks (`type_info::operator==`), and template instantiations are clearly visible in the function signatures and calls, even if the implementation details are low-level.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler flags potential stack issues and lists failed decompilations at the end, but it does not explicitly warn about the aggressive optimization that has removed the source logic (e.g., constant propagation).
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds checking logic in `Container::get` is present but not explicitly documented as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (e.g., `_cxa_throw`, `operator new`) and other module functions are clear, but the loss of class types makes understanding object relationships (like inheritance) harder.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in address order rather than logical grouping (e.g., all class methods together), though the naming scheme helps mitigate this disorganization.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on implicit standard library types and structures (e.g., `type_info`, `ios_base::Init`) and would require significant patching and headers to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.0
+L2_avg: 8.25
+L3_avg: 4.33
+L4_avg: 4.25
+L5_avg: 6.0
+
+Overall = (6.0 × 0.30) + (8.25 × 0.25) + (4.33 × 0.20) + 
+          (4.25 × 0.15) + (6.0 × 0.10)
+Overall = 1.8 + 2.0625 + 0.866 + 0.6375 + 0.6
+Overall = 5.966 ≈ 6.0/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.0/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: Class member access is performed via raw pointer arithmetic (e.g., `*((_DWORD *)this + 1)`) instead of field names, destroying the object-oriented structure.
+- **Optimization Obfuscation**: Aggressive constant propagation (e.g., `return 42;`) hides the actual algorithmic logic of the original source code.
+- **Generic Variable Naming**: Critical variables like object instances are named `v0`, `v1`, etc., making it difficult to track data flow across the function.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly demangles complex C++ symbols, preserving the original names for overloaded functions, templates, and class methods, which is essential for navigating the code.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (3/10)**
+- **Why?** The failure to apply recovered struct/class definitions to `this` pointers and local variables reduces high-level C++ code to low-level pointer math, severely impacting readability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Aggressive Type Propagation**: Automatically apply recovered structure definitions to `this` pointers and function parameters to replace raw offsets with member field names.
+2. **Optimization Annotation**: When functions are reduced to constants due to compiler optimization, insert comments indicating that logic was constant-folded (e.g., `// Logic optimized to constant`).
+3. **Variable Renaming Heuristics**: Infer variable names from usage context or constructor calls (e.g., naming a variable `obj` if it is passed to a constructor immediately) rather than defaulting to `v0`.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names (`v0`, `v1`, `v2`, `result`) obscuring their purpose. Parameter names are sometimes preserved (`int a, int b` in `cdecl_func`) but locals like `varg_r1` for va_list and `p_large` for struct pointers lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`). Some helper functions have generic names (`sub_103E8`) but core test functions maintain semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Heavy constant folding replaced computations with magic numbers (15, 50, 6, 33, etc.) without explanation. While values match expected results, the actual computation logic is lost (e.g., `call_cdecl()` returns 15 directly instead of `cdecl_func(5, 10)`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime functions mixed in (`_aeabi_drsub`, `__floatunsidf`, `__fixdfsi`). Register annotations clutter output (`// r0`, `// r12`). Eight functions failed to decompile entirely. Warnings like "local variable allocation has failed" present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural control flow, but some use awkward do-while loops where for-loops would be clearer (e.g., `func_struct_byval` loop with `v2 = 16; do {... --v2; } while(v2)`). Floating-point helper functions have extremely complex branching.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Constant folding collapsed call chains—`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`. This loses actual call relationships. Function sizes are appropriate but semantic decomposition is lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but register manipulation disrupts flow. `ret_large_struct` has verbose field-by-field copying that obscures the simple loop from source. Some functions have forward references that break linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in `ret_large_struct`—16 individual field assignments instead of a loop. `test_calling_conventions` has redundant printf calls with pre-computed values. Register spilling creates duplicate variable assignments.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double). Some degradation to `__int64` and `__fastcall` calling convention annotations. Function pointer types maintained in `param_func_ptr`. Va_list handling shows type confusion (`*((int *)&varg_r1 + v1++)`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`). Field access preserved (`s.data[0]`, `p->x * p->y`). Struct passing by value shows hidden pointer (`__return_ptr retstr` for large struct returns).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present (`(char *)p_large`, `(LargeStruct *)((char *)p_large + 8)`). Pointer arithmetic visible in struct iteration. Va_list access uses raw pointer arithmetic (`*((int *)&varg_r1 + v1++)`) which is platform-dependent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments—only decompiler warnings ("local variable allocation has failed", "positive sp value has been detected"). No semantic comments explaining function purpose or algorithm. No API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C idioms present but not identified. Va_list pattern visible but not labeled. Struct passing conventions not explained. No recognition of test harness pattern or calling convention testing purpose.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging—8 functions marked "FAILED to decompile". Warnings for stack issues and variable allocation failures. However, silent constant folding (replacing function calls with results) is not flagged as potentially misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Null checks present (`if (!p) return -1`) but not documented as contracts. No indication of expected input ranges or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but call relationships obscured by constant folding. `call_cdecl()` doesn't show it calls `cdecl_func`. Global variable references present (`handle1_1`, `handle2_0`) but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime helper functions mixed with user code. No separation between test functions and implementation functions. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 8 functions failed to decompile (external imports). Dependencies on compiler runtime (`_aeabi_*`, `__float*`) not documented. Would require significant stubbing to compile standalone. Missing standard library declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+5+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (3+4+7+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 5.43/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Constant folding obscures call relationships**: `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` call
+- **Generic variable naming**: Locals named `v0`, `v1`, `v2` instead of semantic names like `sum`, `count`, `index`
+- **8 functions failed to decompile**: External imports (`__imp_puts`, `__imp_strlen`, etc.) not recovered
+- **Verbose struct field copying**: `ret_large_struct` unrolls 16 field assignments instead of showing original loop
+- **No semantic comments**: Zero documentation of function purpose, test intent, or calling convention being tested
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Struct types (`LargeStruct`, `SmallStruct`, `BigStruct`) accurately recovered with field access preserved
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No precondition/postcondition documentation despite many functions having implicit contracts (null checks, valid ranges)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call relationships over constant folding**: Show actual function calls even when compiler optimized them away, with optional annotation showing computed result
+2. **Infer variable names from usage patterns**: Variables used in loop counters should be named `i`, `count`, `index`; accumulators should be `sum`, `total`
+3. **Add semantic comments for test functions**: Identify testing patterns and document what calling convention or parameter pattern each function validates

@@ -1,0 +1,15 @@
+Testing obfuscation and optimization techniques:
+
+  param_opaque_predicate: 10
+  param_string_encryption: 20
+  param_instruction_substitution: 225
+  param_string_encryption result: 31
+  param_tail_call_optimized: 500500
+  param_non_tail_call: 5050
+  param_vectorized_loop: 72
+Testing exception handling:
+  param_division_by_zero:   param_null_pointer_deref: 41
+  param_buffer_overflow: 30
+  param_integer_overflow: 2000000000
+  param_undefined_behavior: 10
+  param_implementation_defined: 47

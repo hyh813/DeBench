@@ -1,0 +1,7 @@
+Test 1: 1
+Test 2: 10
+Test 3: 35
+Test 4: 225
+Test 5: 0
+Test 6: 500500
+Test 7: 5050

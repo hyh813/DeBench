@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Simple functions preserve meaningful names (`arr`, `n`, `p`, `f`), but complex functions like `binary_tree_sum` use 40+ generic temporaries (`v1`-`v44`, `v1`-`v30` on stack) that obscure the recursive tree traversal logic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), making purpose immediately clear. Only runtime functions use generic names (`sub_6D0`).
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Numeric literals are mostly meaningful (32 for ASCII conversion, 10 for additions), but magic numbers appear in bitfield operations (`& 1`, `>> 1`, `& 3`) and `long double` references external data (`xmmword_3420`) without explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Excessive type casts (`(unsigned __int8)`, `(__int64)`, `(_DWORD *)`) clutter simple expressions. Register spilling artifacts create unnecessary temporaries in complex functions like `binary_tree_sum`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions maintain clean if/while structures, but `binary_tree_sum` transforms elegant recursion into 200+ lines of nested loops with 20+ labels (`LABEL_24`, `LABEL_27`). `enum_switch` uses lookup table instead of switch statement.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved with appropriate granularity. However, test functions show constant folding where actual function calls replaced with precomputed results (e.g., `__printf_chk(..., 15)` instead of calling `ptr_single`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom cleanly. Complex functions like `binary_tree_sum` have excessive forward jumps disrupting flow, with variables saved/restored across jump points (`v30 = data; v31 = left; ...`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `binary_tree_sum` shows severe redundancy with repeated variable saves/restores across nested loops. Test functions compute identical constants multiple times instead of using single definitions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types mostly preserved (char, short, int, long, float, double). Some degradation: `ptr_single` uses `_DWORD *` instead of `int *`, `long double` references external memory instead of inline constants.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions preserved with field names (`Point3D`, `Rect`, `Widget`, `Node`). Critical loss: `struct_bitfields` converted to manual bit manipulation (`(*(_DWORD *)f & 1) + ((*(_DWORD *)f >> 1) & 3)`) instead of bitfield access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts throughout (`(unsigned __int8)`, `(_DWORD *)`, `(int)(long)handle`). Critical: `volatile_access` loses volatile semantics (`2 * *p` instead of two separate reads), potentially changing program behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers. No algorithm explanations, no decompilation confidence indicators. Only warning is "local variable allocation has failed" for `opaque_handle_create`.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not identified: linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), enum-to-value mapping (`enum_switch` lookup table). No pattern names or explanations provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations marked ("FAILED to decompile: __libc_start_main"). Variable allocation failures noted. Critical: lost volatile semantics NOT flagged despite behavior change.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code (`if (next)`, `if (head)`) but no documentation of expected constraints.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible throughout code. Test functions show expected output values in printf calls. No explicit call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation. Static functions not properly scoped (e.g., `double_value` missing from decompiled output entirely).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions marked "FAILED to decompile" requiring stubs. Architecture-specific code (arm64 registers `x0`, `w0`). Would need significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+7+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (5+7+5+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.72/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects:
+- **`binary_tree_sum`**: Elegant 5-line recursion transformed into 200+ lines of nested loops with 40+ temporary variables, making the algorithm unrecognizable
+- **`volatile_access`**: Lost volatile semantics (`2 * *p` instead of two separate reads) - this is a **semantic bug**, not just readability issue
+- **`struct_bitfields`**: Bitfield struct converted to manual bit manipulation, losing type information and making field access unclear
+- **Test functions**: Constant-folded to show precomputed results instead of actual function calls, hiding the test structure
+- **No comments**: Zero documentation for complex transformations, leaving users to reverse-engineer the decompiler's decisions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original semantic function names preserved accurately, allowing immediate understanding of purpose without analyzing implementation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments for complex transformations makes understanding decompiler decisions impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Pattern Recognition for Recursion**: Detect recursive call patterns and preserve them as recursive functions rather than unrolling into iterative loops with excessive state variables
+2. **Semantic Change Detection**: Flag when decompilation changes program semantics (e.g., volatile elimination, optimization-induced behavior changes) with explicit warnings
+3. **Transformation Documentation**: Add comments explaining non-trivial transformations (e.g., "// Original: recursive tree traversal, converted to iterative due to stack analysis")

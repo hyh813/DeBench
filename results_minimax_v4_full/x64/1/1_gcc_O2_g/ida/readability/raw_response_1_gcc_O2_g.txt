@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `result`, `v2`, `v3` throughout. For example, in `sequential_ops`, the decompiled code uses no local variables at all (just computes `2 * (a + b) - c` directly), while the source had named variables `temp1`, `temp2`, `temp3`. This pattern repeats across all functions, making it difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `recursion_factorial`, etc. These match the original source exactly and use appropriate action verbs.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x28u` for stack canary offset and `1001` appear without explanation. Switch tables use auto-generated names like `CSWTCH_55`. However, most arithmetic constants (like `2 * x`, `100 * op`) are semantically clear from context. The `__readfsqword(0x28u)` is a compiler artifact that should be abstracted.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The main noise is `__readfsqword(0x28u)` for stack canary checks and some auto-generated switch table names (`CSWTCH_55`). No redundant casts or debug instrumentation observed. The code is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while`/`do-while`, conditionals use `if`. However, `duffs_device` uses complex goto-based control flow with labels (`LABEL_4`, `LABEL_6`, etc.) that obscures the original switch-do pattern. The `loop_break` function has an unusual goto pattern. At -O0, this should be closer to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each), with clear single responsibility. No monolithic functions. Helper functions like `double_value`, `triple_value`, `op_add`, `op_sub` are properly extracted. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `duffs_device` has multiple forward jumps (LABEL_4 through LABEL_11) that disrupt flow significantly. The `loop_break` function uses a goto pattern that could be cleaner. Some nesting depth in `nested_if_deep` reaches 3-4 levels.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. At -O0, loop unrolling is minimal. Dead code is properly eliminated. Common subexpression elimination artifacts are minimal. The code is clean in this regard.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most parameters use `int` which is appropriate for 32-bit values. Function pointers have proper signatures (e.g., `int (*f)(int)`). However, some type precision is lost - the original used `int` consistently but the decompiler sometimes uses `unsigned int` for comparisons. The volatile qualifier is preserved for pointer parameters.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays are properly recovered: `int arr[6]`, `int matrix[3][4]`, `int src[8]`, `int dst[10]`. The 2D matrix layout is correctly reconstructed. No complex struct recovery was needed for this codebase, but what was needed is handled well.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues include some pointer arithmetic in `duffs_device` and `loop_multi_exit` where array indexing could be clearer. No major unsafe casts observed. The function pointer calls are type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are sparse and mostly auto-generated. The header comment indicates it was decompiled by IDA Pro but provides no algorithm explanations or semantic context. No documentation of non-obvious logic, preconditions, or postconditions. The comment at `_start` ("positive sp value has been detected, the output may be wrong!") is useful but rare.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognized - switch tables are identified (though with auto-generated names), function pointers arrays are properly reconstructed. However, `duffs_device` is not identified as such; it's shown as complex goto logic. State machines are recognized but not explicitly named as "state machine pattern."
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags in most functions. The only warning is at `_start` about stack pointer. Indirect calls that couldn't be resolved are not flagged. No indication of decompilation confidence levels. The code presents everything as definitive when some things are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. Preconditions (like `n > 0` for `duffs_device`), postconditions, and invariants are not documented. Error conditions from `setjmp`/`longjmp` are handled but not explained as non-local jump semantics.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear - you can see `test_control_flow_l1()` calling `sequential_ops`, etc. However, callback relationships (like `process_with_callback` using function pointer `cb`) are not documented. Global variable usage (`jump_buffer`) is present but not explained. Some relationships are inferable from structure but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, helper functions (op_add, op_sub, etc.) grouped, state handlers grouped. Static functions are properly scoped. However, it's a single monolithic file with no clear separation matching the original source's section comments.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata states "Compilation Result: Yes", indicating the code compiles. External dependencies (puts, printf, setjmp, longjmp) are properly declared or linked. No compiler-specific hacks observed. The code is relatively portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 6 + 7) / 4 = 6.25
+L2_avg = (7 + 8 + 6 + 8) / 4 = 7.25
+L3_avg = (7 + 8 + 7) / 3 = 7.33
+L4_avg = (4 + 6 + 3 + 3) / 4 = 4.00
+L5_avg = (6 + 7 + 8) / 3 = 7.00
+
+Overall = (6.25 × 0.30) + (7.25 × 0.25) + (7.33 × 0.20) + 
+          (4.00 × 0.15) + (7.00 × 0.10)
+Overall = 1.875 + 1.8125 + 1.466 + 0.6 + 0.7 = 6.45/10
+```
+
+**Overall Readability Score:** 6.5/10
+
+### Critical Defects (Bullet List)
+- Variable naming is uniformly generic (`v1`, `v2`, `v3`, `result`) - the original had meaningful names like `temp1`, `temp2`, `sum`, `count` that are completely lost
+- `duffs_device` shows as complex goto spaghetti with labels LABEL_4-11 instead of being recognized as the classic Duff's device pattern
+- No comments explaining algorithm semantics, preconditions, or non-obvious logic
+- Anomaly indication is absent - indirect calls and uncertain decompilations are not flagged
+- Cross-reference relationships (callbacks, global state) are not documented
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are almost perfectly preserved from the original source, making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement: Semantic Transparency (4.0/10)
+The decompiled code lacks comments, pattern recognition, anomaly indication, and contract recovery. This dimension scored lowest because the code provides no semantic context about what it's doing or confidence levels about uncertain decompilations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Variables used as loop counters should be named `i`, `j`, `n`; accumulators should be `sum`, `result`; size variables should be `size`, `count`. The decompiler should analyze data flow to recover meaningful names.
+2. **Recognize and label classic patterns**: Duff's device, state machines, switch tables should be explicitly identified with comments explaining the pattern. The current goto-based output obscures the well-known Duff's device idiom.
+3. **Add semantic comments and confidence indicators**: Include preconditions ("requires: n > 0"), postconditions, and flag uncertain decompilations (indirect calls, computed jumps). This helps analysts understand what the decompiler is confident about vs. what needs manual verification.

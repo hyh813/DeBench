@@ -1,0 +1,21 @@
+Testing preprocessing features
+Result: 64
+Result: 30
+Result: 32
+Result: 57122
+Result: 116
+Result: 19
+Result: 60
+LOG: Values: 10, 20, 30
+Result: 60
+Result: 16
+Result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:58
+Result: 382
+Testing ASM features
+Result: 15
+Result: 1855346888
+Result: 42
+Result: 36
+Result: 30
+Result: 77

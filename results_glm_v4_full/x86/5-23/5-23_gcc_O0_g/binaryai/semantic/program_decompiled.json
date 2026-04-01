@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/5-23/5-23_gcc_O0_g/binaryai/syntactic/bin/5-23_gcc_O0_g_fixed",
+  "stdout": "call_macro_constants: 64\ncall_macro_functions: 30\ncall_conditional_compile: 32\ncall_multi_branch_compile: 57122\ncall_macro_recursion: 116",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

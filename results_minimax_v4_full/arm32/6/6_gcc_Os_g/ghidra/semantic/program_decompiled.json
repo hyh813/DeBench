@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/6/6_gcc_Os_g/ghidra/syntactic/bin/6_gcc_Os_g_fixed",
+  "stdout": "Testing Standard Library Functions:\n\nstrcpy test: len=8\nstrcmp test: result=0\nstrlen test: len=12\nmemcpy test: sum=90\nmemcmp test: result=-1\nValue: 42, Name: Test\nprintf test: chars=22\nscanf test: result=579\nfopen/fclose test: fd=42\nfread/fwrite test: result=42\nmalloc/free test: sum=90\nmemset test: sum=0\nstrchr/strstr test: result=15\nTesting System Calls:\n\nlinux syscall test: result=42\nwin32 api test: result=42\nfork/exec test: result=42\npipe comm test: result=42\nsocket create test: result=42\nshmget/shmat test: result=42\nsignal handling test: result=42\nTesting Thread Concurrency:\n\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

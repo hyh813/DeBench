@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`iVar1`, `uVar2`, `lVar1`) obscuring purpose; function parameters preserve original names (`size`, `x`, `y`, `counter`) which helps, but locals like `__addr` and `__len` in `param_dynamic_code` should be `exec_mem` and `page_size`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined functions preserve original names (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`); only runtime functions use generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x200` (MAX_SIZE=1024), `0x40` (64), `0x400` (1024), `0xdef0`, `0x117` (line number); original macro constants completely lost during preprocessing.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) add noise to every function; repeated "WARNING: Unknown calling convention" comments; frame offset references (`in_FS_OFFSET`) clutter simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recovered as `for` constructs in `param_asm_clobber` and `param_asm_multi_insn`; conditionals are clear; `_start` function shows infinite loop artifact from entry point handling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well; each function maintains single responsibility; no monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom; stack check epilogues at function ends disrupt flow slightly; test functions have sequential printf calls that are easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `call_asm_multi_insn` has verbose explicit array initialization (32 individual `dst[n] = '\0'` statements); no dead code in main logic paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`); some degradation with `long` instead of `int64_t`; `ulong` used inconsistently; array types sometimes lost to pointer decay.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source; arrays preserved where visible (`int arr[5]`, `char src[10]`); no struct/union recovery needed for this code sample.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(undefined1 *)`, `(code *)`, `(long)dst`; function pointer cast `(*__addr)(x)` in `param_dynamic_code`; no buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments; only auto-generated warnings ("WARNING: Removing unreachable block"); no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly loops recognized and converted to C `for` loops; atomic operations shown as `LOCK()/UNLOCK()` pseudofunctions; no explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("Unknown calling convention", "Unresolved local var" in `call_asm_atomic`); stack check warnings present; but no detailed explanation of why anomalies occur.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `arr != NULL`); no postcondition inference; error return values (-1, -2, -3) not documented with meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable; global variables visible (`global_var`, `completed_0`); no call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source; test functions grouped together; no header file organization or explicit module boundaries.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions needing stubs (`__printf_chk`, `LOCK`, `UNLOCK`, `__gmon_start__`); `mmap` constants as magic numbers (7, 0x22, 3, 1); would require moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):    (3+5+6+3)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.01/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects
+- **Magic numbers everywhere**: `0x200`, `0x40`, `0x400`, `0xdef0` should be recovered as `MAX_SIZE`, `BUFFER_COUNT*4`, etc.
+- **Generic local variables**: `iVar1`, `iVar2`, `lVar1` obscure semantic meaning (e.g., should be `result`, `page_size`, `exec_mem`)
+- **No comment recovery**: Original source had extensive documentation; decompiled code has zero semantic comments
+- **Stack canary noise**: Every function has `__stack_chk_fail()` epilogue cluttering simple return statements
+- **Lost macro semantics**: Preprocessor macros completely disappeared; no indication that `0x40` came from `BUFFER_COUNT * 4`
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately from source, making navigation and identification straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Complete absence of semantic comments means readers cannot understand intent, only mechanics.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro constants from usage patterns**: Detect repeated literals (0x400, 0x200) and suggest named constant recovery based on comparison patterns.
+2. **Infer variable names from context**: Use data flow analysis to name `iVar1` as `result` when it's a return value, or `page_size` when derived from `sysconf(_SC_PAGESIZE)`.
+3. **Add semantic comment generation**: Generate comments explaining recovered patterns (e.g., "// Recovered: atomic fetch-add operation" for LOCK/UNLOCK sequences).

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `exec_mem`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User functions preserved original names (`param_macro_constants`, `call_asm_basic`), but runtime functions use cryptic names (`sub_401030`, `__x86.get_pc_thunk.bx`). Mixed quality overall.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1025`, `0x200`, `57072` appear without explanation. Original constants (`MAX_SIZE`, `BUFFER_COUNT`) were lost during preprocessing and not recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler runtime artifacts included (`_init`, `__do_global_ctors_aux`, `deregister_tm_clones`, duplicate struct definitions) that weren't in original source code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else and for loops, but some have problematic gotos (`sub_401030`: `goto ptr[2]`). At `-O0`, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved well, but many runtime initialization functions added. Some functions completely constant-folded (`call_macro_constants` returns literal 64).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally with appropriate loop constructs. Test functions have excessive variable declarations at top but otherwise linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Duplicate struct definitions (`struct_0` defined multiple times with different layouts). Test functions repeat similar variable declaration patterns unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `unsigned int` used throughout instead of specific types (`size_t`, `int32_t`). SIMD operations use `uint128_t` which is reasonable but not original `_m128i`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct fields are generic (`field_0`, `padding_0[11959]`). Multiple conflicting struct_0 definitions. Original source had minimal structs but recovery is poor.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(char *)&v0`, `(int)v1[16]`). Atomic operations recovered as `atomic_exchange_add` which is good, but pointer arithmetic lacks bounds context.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. Original source had extensive documentation that is completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations recognized (`atomic_exchange_add`), SIMD as `AddV`, but no pattern documentation. Common idioms not identified or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Broken printf calls, constant-folded functions, and type issues not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Original source's expected values in comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables referenced (`g_4020cb`, `global_var`) without context or purpose explanation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file matching original, but runtime functions mixed with user code. No logical grouping or separation of concerns.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - undefined externals (`g_403ff4`, `g_4020cb`), broken printf calls (missing arguments), duplicate struct definitions cause conflicts.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+5+4)/4 = 4.50
+Level 2 Average: (6+6+7+6)/4 = 6.25
+Level 3 Average: (5+4+5)/3 = 4.67
+Level 4 Average: (2+4+3+2)/4 = 2.75
+Level 5 Average: (5+5+3)/3 = 4.33
+
+Overall = (4.50 × 0.30) + (6.25 × 0.25) + (4.67 × 0.20) + (2.75 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.56 + 0.93 + 0.41 + 0.43
+        = 4.68/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) - should infer semantic names from usage patterns (e.g., `size` in `param_macro_constants`)
+- **Zero documentation** - original source had extensive comments explaining macro behavior, expected values, and test purposes; all lost
+- **Printf calls broken** - format strings present but arguments missing (e.g., `printf("LOG: Values: %d, %d, %d\n");` with no arguments)
+- **Constant folding obscures logic** - functions like `call_macro_constants` return literal `64` instead of showing `param_macro_constants(2048)` call
+- **Runtime artifacts pollute output** - 20+ compiler initialization functions (`_init`, `__do_global_ctors_aux`, etc.) not in original source
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Most functions read top-to-bottom naturally with proper loop constructs instead of gotos, making basic execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation means readers cannot understand the purpose of preprocessing tests, expected values, or why certain patterns exist.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., compared to 1024, multiplied by 4) to suggest names like `size`, `buffer_count`, `result`
+2. **Preserve or reconstruct function call relationships** - Instead of constant-folding `call_macro_constants()` to return 64, show the actual call `param_macro_constants(2048)` to maintain traceability
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (broken printf arguments, constant-folded functions, type ambiguities) so analysts know where manual review is needed

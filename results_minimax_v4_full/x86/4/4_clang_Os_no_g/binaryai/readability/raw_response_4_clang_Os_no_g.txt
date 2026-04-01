@@ -1,0 +1,150 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are named generically as `param_1`, `param_2`, `iVar1`, `iVar2`, `piVar1`, `aiStack_94`, `local_44`. These auto-generated names provide no semantic meaning - for example, `param_1` in `cdecl_func` should be `a` and `param_2` should be `b` based on the source. Stack-allocated variables like `aiStack_94` are particularly opaque.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Justification: Most test functions correctly recovered: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`. However, some functions have cryptic names like `FUN_00011030`, `FUN_00011080`, `FUN_0001183b` which should be `callback_func`, `func_a`, `func_b` respectively.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers everywhere: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0xad` (173). No named constants recovered. The literal `0x12345678` in `call_complex_cast` is unexplained. Only printf format strings provide minimal context.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Relatively clean output with minimal compiler artifacts. Some noise from stack references like `&stack0x00000008` in varargs handling, and `undefined4` type usage. No excessive register spilling artifacts or debug instrumentation visible.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: At -O0, control flow is well-preserved. Loops use proper do-while constructs (e.g., `varargs_func`), conditionals are clear. Minor issue: `param_complex_cast` uses chained if-else instead of switch, but this is acceptable for small case counts.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions are appropriately sized (20-50 LOC typical). Good separation between test harness functions and core logic. Minor issue: `test_calling_conventions` is 40+ lines but handles 11 test cases reasonably.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately (e.g., `func_struct_byptr` returns -1 for NULL). No excessive nesting observed.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy. Dead code is minimal. Loop unrolling not present at -O0. Code is clean.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Mixed results. Function parameters correctly typed as `int` or `char*`, but return types use `undefined4` instead of `int`. The `code*` type in `param_func_ptr` is imprecise - should be `int (*callback)(int)`. Stack references use generic types.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: Struct recovery is partial. `SmallStruct` and `LargeStruct` not recovered by name, but `func_struct_byptr` correctly uses pointer arithmetic (`param_1[1] * *param_1`). However, `func_struct_byval` loses the struct parameter entirely, using raw stack offsets.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe operations. In `param_ptr_array`, pointer arithmetic `param_1 + iVar2 * 4` assumes int* but is passed as int. The `param_double_ptr` has correct NULL checks. No severe violations but some implicit assumptions.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No meaningful comments. Only auto-generated function headers like "// Function: cdecl_func @ 0x11204". No explanation of algorithm, no @param/@return documentation, no decompilation confidence indicators.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No design patterns or algorithms explicitly identified. Varargs handling is recognized as loop but not commented. No recognition of calling convention patterns (cdecl, stdcall, etc.).
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly flags. Functions like `FUN_0001183b` with suspicious stack manipulation (`unaff_retaddr`) are not flagged. Indirect calls not resolved are presented without warning.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. NULL checks in `func_struct_byptr` and `param_double_ptr` are not annotated as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships are implicit in the code (e.g., `test_calling_conventions` calls `cdecl_func` via `call_cdecl`). However, no explicit documentation of call graph or callback relationships. Static function scope not indicated.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are in address order, not logical grouping. Related functions (calling convention tests) are scattered. No header file structure recovered. Static functions not explicitly marked as file-local.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: Code uses non-standard types (`undefined4`, `code*`) that won't compile with standard compilers. External dependencies (printf, puts, strlen) declared but with imprecise signatures. Would require patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 7) / 4 = 5.0
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.0
+L3_avg = (5 + 6 + 6) / 3 = 5.67
+L4_avg = (2 + 3 + 1 + 2) / 4 = 2.0
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (5.0 × 0.30) + (8.0 × 0.25) + (5.67 × 0.20) + 
+          (2.0 × 0.15) + (5.33 × 0.10)
+        = 1.5 + 2.0 + 1.134 + 0.3 + 0.533
+        = 5.467 ≈ 5.5/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_44`) providing no semantic meaning
+- No comments explaining algorithms, calling conventions, or decompilation confidence
+- Type precision issues: `undefined4` instead of `int`, `code*` instead of function pointer types
+- Magic numbers everywhere without named constants (e.g., `0xf` should be explained as 15)
+- Anomalies not flagged - functions like `FUN_0001183b` with suspicious stack manipulation have no warnings
+
+### Best Quality Aspect
+**Control Flow Naturalness (8/10)** - At -O0, loops, conditionals, and function structure are well-preserved and readable
+
+### Most Needs Improvement
+**Semantic Transparency (2/10)** - Complete absence of comments, pattern recognition, anomaly flags, and contract recovery makes the code difficult to understand semantically
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: `param_1` used in arithmetic with `param_2` in `cdecl_func` should suggest `a` and `b`. Stack variables initialized in loops should be named based on their initialization values.
+
+2. **Add meaningful comments**: Explain calling convention handling, varargs processing, and flag uncertain decompilations. At minimum, document what each test function verifies.
+
+3. **Recover type information more precisely**: Replace `undefined4` with `int`, `code*` with proper function pointer signatures, and add const qualifiers where appropriate. Use struct field names when recoverable.

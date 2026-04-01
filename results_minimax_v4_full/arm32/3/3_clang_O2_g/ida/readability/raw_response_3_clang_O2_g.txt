@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses completely generic variable names (v0, v1, v2, v3, v4, v5) throughout all functions. For example, in `heap_basic`: `char *v2`, `int v3`, `int v4`, `int v5`. This is a severe degradation from the original where variables had meaningful names like `arr`, `n`, `result`, `i`. The generic names make it nearly impossible to track variable purpose without extensive analysis.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from the source: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `test_stack_memory`, `main`. The decompiler correctly identified the function purposes. Minor扣分 for some static functions losing their file-scope visibility indication.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: The decompiler has inlined some constant results in printf statements (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)`), which is actually helpful. However, some magic numbers remain unexplained, such as array size calculations like `4 * n` and complex indexing expressions. The literal clarity is moderate - some values are clear, others require computation to understand.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Register annotations like `// r0`, `// r1` are present but don't significantly impede reading. No excessive debug instrumentation or spurious code segments observed. The decompiled output is readable without major noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are mostly natural and readable. Loops are properly recognized (for/while constructs), conditionals are clear, and early returns are used appropriately. At -O0 optimization, the control flow should closely match source, and the decompiler delivers this. Some complex index calculations in loop bounds create minor awkwardness but don't impede understanding.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. The test functions properly call sub-functions, and each function has a single clear responsibility. No monolithic functions observed - all functions remain reasonably sized and cohesive. The decomposition matches the original source structure well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Early returns for error conditions (e.g., `if (!v2) return -1;`) are used appropriately and don't disrupt flow. No deep nesting (>4 levels) observed. The code has good linearization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions observed. The decompiler has not introduced obvious duplication. Loop unrolling is minimal at -O0, so none to eliminate. The code is clean in terms of redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The decompiler uses generic types throughout: `_DWORD` instead of `int`, `_BYTE` instead of `char`, `char*` instead of `int*`. For example, in `heap_basic`: `char *v2` should be `int *arr`. Pointer types are often wrong (e.g., `int *` vs `int **` for Node**). The type precision is significantly degraded from the original source where types were explicit.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types like `Node` and `TreeNode` are correctly recovered and named. However, field access sometimes uses pointer arithmetic instead of proper struct member notation. The typedef `Point` from source is not recovered in `heap_struct` - it just returns `3 * x` directly. Mixed results: some structs recovered, others lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The code is generally type-safe without obvious undefined behavior. No severe type safety violations like incorrect pointer arithmetic or buffer overflows. Minor issues include some unnecessary casts and the occasional type mismatch, but the code is usable without dangerous patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments present. The only comments are register annotations (e.g., `// r0`, `// r4`) which add no semantic value. No explanation of algorithm logic, no documentation of preconditions/postconditions, no indication of what the code does. The decompiler provides a bare translation without semantic enrichment.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some common patterns are implicitly present (malloc/free pairs, loops, conditionals) but not explicitly named or documented. The decompiler doesn't identify design patterns (e.g., "this is a linked list traversal") or algorithm patterns. The code shows the patterns but doesn't recognize or name them.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication present. The decompiler doesn't flag suspicious patterns like the intentional bugs in the source (memory_leak, dangling_pointer, double_free, heap_overflow). For example, `memory_leak` correctly shows the malloc without free, but there's no comment flagging this as intentional. The `dangling_pointer` function accesses freed memory but no warning is given.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. The decompiler doesn't document preconditions (e.g., "requires: n > 0"), postconditions, or invariants. Error handling is present (null checks) but not explained or documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. However, the relationships between functions (who calls whom, global variable usage) are not documented. For example, `test_stack_memory` calls many sub-functions but there's no comment listing them. External dependencies like `extern_global_var` and `extern_function` are referenced but their origin isn't explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: test functions together (`test_stack_memory`, `test_heap_memory`, etc.), memory operation functions together, static/global functions together. The organization matches the original source reasonably well. Some minor misplacements but overall good structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code has compilation issues: it references undefined external symbols (`extern_global_var`, `extern_function`) that exist in the original but aren't defined in the decompiled output. Some type mismatches exist. The code would require significant patching to compile (defining extern variables, fixing type issues). Not standalone-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (v0, v1, v2...) making code nearly impossible to follow without extensive analysis
+- **No comments**: Zero semantic explanation of algorithms, contracts, or intent
+- **Type precision loss**: Generic types (_DWORD, _BYTE, char*) instead of specific types (int, char, int*)
+- **Anomaly flagging missing**: Intentional bugs (memory_leak, dangling_pointer, double_free, heap_overflow) not flagged
+- **Build incompatibility**: References undefined extern symbols, won't compile standalone
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+- Control flow structures (loops, conditionals, early returns) are correctly recognized and readable
+- At -O0, the decompiler preserved the natural structure matching the source
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Generic variable names (v0-v5) completely obscure variable purpose
+- Should infer names from usage patterns (e.g., "arr" for malloc'd pointer, "i" for loop counter)
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Use data flow analysis to name variables based on how they're used (e.g., `arr` for malloc'd pointers, `n` for size parameters, `i` for loop counters)
+2. **Add semantic comments**: Document function purpose, algorithm explanation, and flag intentional anomalies (e.g., "// INTENTIONAL: memory leak for testing")
+3. **Recover precise types**: Distinguish int* from char*, recover struct field names, preserve const-correctness instead of using generic _DWORD/_BYTE

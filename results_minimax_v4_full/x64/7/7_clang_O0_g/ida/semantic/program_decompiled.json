@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O0_g/ida/syntactic/bin/7_clang_O0_g_fixed",
+  "stdout": "Testing obfuscation, optimization, and edge cases:\nObf/L4/02/Decoy branch: 10\nObf/L4/03/Opaque predicate: 20\nObf/L4/04/Instruction substitution: 225\nObf/L4_05/String encryption: 110\nOpt/L4/01/Tail call: 500500\nOpt/L4/01/Non-tail call: 5050\nOpt/L4/02/Vectorized loop: 72\nOpt/L5/01/LTO: 20\nEdge/L3/01/Division by zero: 1\nEdge/L3/02/Null pointer deref: 41\nEdge/L3/03/Buffer overflow: 30\nEdge/L3/04/Integer overflow: 2000000000\nEdge/L4/01/Undefined behavior: 10\nEdge/L4/02/Implementation-defined: 47\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

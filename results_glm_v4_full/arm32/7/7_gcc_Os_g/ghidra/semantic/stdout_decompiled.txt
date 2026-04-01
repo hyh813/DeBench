@@ -1,0 +1,11 @@
+Testing obfuscation and optimization:
+
+  call_opaque_predicate() = 10
+  param_opaque_predicate(5) = 35
+  call_instruction_substitution() = 225
+  param_string_encryption() = 100
+  call_tail_call_optimized() = 500500
+  call_non_tail_call() = 5050
+  call_vectorized_loop() = 72
+  call_link_time_optimization() = 20
+  call_division_by_zero() = 1

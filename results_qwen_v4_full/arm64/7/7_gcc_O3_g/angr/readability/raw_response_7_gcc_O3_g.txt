@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2` with no semantic meaning. A few exceptions exist (`flag1`, `idx`, `ptr`, `len`, `result`) but most variables like `v6`, `v14`, `v16` in `param_string_encryption` are completely opaque.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved (`param_fake_branch`, `call_opaque_predicate`) but many compiler-generated names exist (`sub_400874`, `param_division_by_zero.constprop.0`). Some functions like `$x` have meaningless names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `0x40000000`, `1073741823`, `90` (XOR key). The XOR key `90` should be `0x5A` with comment explaining it decrypts "Hello".
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime artifacts present: `_init`, `_start`, `register_tm_clones`, `deregister_tm_clones`, `__do_global_dtors_aux`. Frame pointer setup (`v0 = &v1`) appears in nearly every function unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of `goto` and labels (`LABEL_400ff5`, `LABEL_400ffc`) instead of structured loops. `arm64g_calculate_condition` calls obscure simple comparisons. The tail recursion in `param_tail_call_optimized` became an unreadable cascade of if-else branches.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive wrapper functions (`sub_400b9c`, `sub_400bac`, `sub_400c0c`) that just call other functions. Some functions constant-folded entirely (`call_fake_branch` returns literal `10`). `param_fake_branch` is broken—returns uninitialized `v0`.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps disrupt reading flow. `param_vectorized_loop` has 6+ labels with complex branching. Deep nesting in condition chains makes execution paths hard to trace.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated `arm64g_calculate_condition` calls with identical parameters. `param_opaque_predicate` recalculates the same condition multiple times. Dead code from optimization artifacts not removed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned long long` or `unsigned int`. Original `int`, `char*`, `size_t` distinctions lost. `param_instruction_substitution` takes `unsigned int a0` but original used `int x`. Pointer types often just `char *` or `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery despite `bitfield` struct in original. Arrays declared as `char[2]` instead of proper sizes (`char buffer[8]`, `char decrypted[32]`). `jmp_buf` treated as `unsigned long long`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char)v6`, `(unsigned int)v0`. Pointer arithmetic on `char[2]` arrays is dangerous. `__longjmp_chk` called with incorrect parameter count. Stack canary checks present but types mismatched.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero explanatory comments. Only auto-generated markers like `/* do not return */` and `[D] Unsupported`. No documentation of algorithm purpose, parameter meaning, or return values.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. GCD algorithm in `param_opaque_predicate` not identified. String decryption loop not recognized as XOR cipher. Tail call optimization pattern completely lost.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some `[D] Unsupported` markers present (`Ijk_SigTRAP`, `Iop_ZeroHI96ofV128`). However, critical issues like `param_fake_branch` returning uninitialized value not flagged. Signal handler anomalies not documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires `a0 != 0` for normal path). No postconditions. Error return values (`4294967295` = -1) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function relationships obscured by wrapper functions. Global variables (`jmp_buffer`, `segv_buffer`, `encrypted.0`) declared but usage unclear. Signal handler connections not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. Related functions not grouped (e.g., `param_division_by_zero` and its `.constprop` variants scattered). No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple undefined extern symbols (`g_412f50`, `__TMC_END__`, `encrypted.0`). Unsupported operations would prevent compilation. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+5+4+4)/4 = 4.00
+Level 2 Average: (4+4+4+4)/4 = 4.00
+Level 3 Average: (4+3+4)/3 = 3.67
+Level 4 Average: (2+3+5+2)/4 = 3.00
+Level 5 Average: (4+5+4)/3 = 4.33
+
+Overall = (4.00 × 0.30) + (4.00 × 0.25) + (3.67 × 0.20) + (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.00 + 0.73 + 0.45 + 0.43
+        = 3.81/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken**: Returns uninitialized `v0` instead of implementing the fake branch logic with `x*x < 0` conditions
+- **Variable names universally generic**: `v0` through `v19` provide zero semantic information about purpose
+- **Control flow obscured by `arm64g_calculate_condition`**: Simple comparisons like `x < 0` become multi-line architecture-specific calls
+- **Constant folding hides actual logic**: `call_fake_branch()` returns literal `10` instead of showing the function call
+- **No struct/type recovery**: Original `jmp_buf`, bitfield structs, and array sizes all degraded to generic pointers
+- **Zero documentation**: No comments explaining algorithm purpose, parameter meanings, or return value semantics
+
+### Best Quality Aspect:
+- **Module Organization (5/10)**: Functions are at least separated individually rather than monolithic, and original function names are preserved where possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**: Complete absence of explanatory comments makes understanding the decompiled logic extremely difficult, especially for obfuscated patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns**: Analyze how variables are used (e.g., `v6` used as loop counter should be `i`, `ptr` used for string should be `buffer`)
+2. **Replace architecture-specific condition calls with standard C comparisons**: `arm64g_calculate_condition(19, v3, v4, 0)` should become `v3 == v4`
+3. **Add confidence annotations for uncertain decompilation**: Mark functions like `param_fake_branch` with warnings when logic cannot be confidently recovered, rather than outputting broken code

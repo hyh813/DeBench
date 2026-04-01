@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables are generic (`v1`, `v2`, `v3`, `result`) with zero semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `total` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions degraded to `function_960`, `function_970`. Core test functions remain identifiable.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0xffffffff`, `0x66666667`, `0x100000000`) with no explanation. Original test values (5, 7, 3 → 21) replaced with hardcoded results in test functions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type masking (`& 0xffffffff`), redundant casts (`(int32_t)v1`), and compiler artifacts (`__stack_chk_fail()`, `__printf_chk`) throughout all functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recovered as `while` but with complex conditions. `switch_fallthrough` uses goto labels (`lab_0x14e0`). Original clean for/while loops often converted to manual iteration.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separate but signatures broken (all parameters lost, showing `void` or single `int64_t`). `recursion_factorial` incorrectly converted to iterative form.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent goto labels (`lab_0x1498`, `lab_0x14a0`, `lab_0x14b8`) in `duffs_device`. Forward jumps disrupt top-to-bottom reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive masking operations on nearly every arithmetic operation. Type conversions duplicated throughout expressions without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` with manual masking. Original `int` parameters lost entirely. No distinction between signed/unsigned, no size_t or specific integer types recovered.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct `__jmp_buf_tag` has generic fields (`e0[8]`, `e1`, `e2`). No field names recovered. Array types often shown as raw pointers.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous implicit casts between int64_t and int32_t. Pointer arithmetic obscured by masking. No const-correctness preserved from original.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments recovered from original source. All Chinese documentation, test case explanations, and algorithm descriptions completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Duff's device, state machines, and recursion patterns not identified or documented. Algorithms appear as raw operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Broken function signatures presented confidently. No flags for potential issues with parameter recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). Error conditions not explained. Test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but with wrong signatures. Global variables named `g1`, `g2`, `g8` with no semantic meaning. Callback relationships obscured.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No logical grouping by control flow level (L1/L2/L3). Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains non-standard assembly (`__asm_ld1`, `__asm_st1`). Some functions may not compile without additional stubs. Dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+5+4+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):        (3+4+5)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.26
+Level 5 (Contextual):  (4+5+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **All function parameters lost** - Functions like `sequential_ops(int a, int b, int c)` decompiled as `sequential_ops(void)` with generic `v1` access
+- **Zero comment recovery** - All original documentation, test cases, and algorithm explanations completely absent
+- **Excessive type masking** - Every arithmetic operation followed by `& 0xffffffff` obscuring actual computation
+- **Control flow degradation** - Clean for/while loops converted to complex while loops with manual iteration variables
+- **Generic variable naming** - All variables named `v1`, `v2`, `v3` with no semantic meaning recoverable
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `sequential_ops`, `nested_if_deep`, `switch_fallthrough` were preserved, allowing identification of test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all original documentation makes understanding function intent nearly impossible without source comparison
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter signatures** - Analyze calling conventions and stack usage to restore parameter names and types (critical for usability)
+2. **Preserve or infer comments** - Extract debug symbols (-g flag was used) to recover original comments and documentation
+3. **Eliminate redundant type masking** - Recognize when `& 0xffffffff` is compiler artifact vs. intentional operation and remove unnecessary noise

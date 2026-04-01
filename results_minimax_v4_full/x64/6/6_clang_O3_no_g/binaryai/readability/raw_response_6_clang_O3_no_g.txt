@@ -1,0 +1,92 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3` instead of meaningful names like `dst`, `src` from the original. Local variables are named `local_28`, `local_38`, `local_8` - purely address-based with no semantic meaning. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names like `param_strcpy`, `call_strcmp`, `param_malloc_free` are preserved and indicate purpose. However, external library stubs use cryptic auto-generated names like `FUN_00102020` and many lack semantic richness. The basic naming is functional but not optimal.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0xffffffff`, `0x7f` appear without explanation. String literals are replaced with addresses like `&DAT_001040d9` instead of actual strings. Constants like "HelloLib" are encoded as raw bytes but not named, making the code very difficult to understand.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs create massive noise - each shows recursive patterns like `int raise(int __sig) { return raise(__sig); }`. These ~60 external declarations clutter the output significantly. Some stack manipulation artifacts present, but overall manageable aside from external stubs.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0 optimization, control flow closely matches source. Loops are proper for/while constructs. Some functions like `param_fread_fwrite` have complex nested conditionals, but overall flow is traceable. Early returns used appropriately.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions like `param_malloc_free` (over 200 decompiled lines) are excessively large due to loop unrolling. Function granularity is inconsistent - some test wrappers are single lines while complex functions are bloated. Could benefit from extracting loop bodies.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Forward jumps present but manageable. Early returns and breaks used appropriately in conditionals. Some deep nesting in param_fread_fwrite (~4-5 levels) but generally linear within reasonable bounds.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Visible loop unrolling in `param_malloc_free` creates redundant code blocks. The memset verification in `param_memset` has significant redundancy with byte-by-byte checking. Dead code not aggressively eliminated - some unreachable paths might remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - parameters often correctly typed (`char *param_1`), but return types use generic `undefined8`, `undefined4` frequently. Integer types not precise (generic `int` vs. specific `int32_t`). `size_t` correctly used in some places but not consistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: ThreadData struct used implicitly in `param_pthread_join` but expressed as raw arrays (`local_68`, `auStack_54`). No meaningful field names recovered. Buffer structures like `local_38[32]` in pipe functions lack semantic structure. Very limited struct reconstruction.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations - many pointer casts between incompatible types. Access to `local_8._4_4_` for splitting values is error-prone. No bounds checking visible. However, basic type compatibility maintained in most function calls. No restrict or _Atomic annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments present in decompiled output. No explanation of algorithm logic, no documentation of what functions do, no recovery of original comments from source. The code is completely bare of explanatory text.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions (strcpy, strlen, pthread_create) are recognized and named correctly. The test pattern (call_* functions invoking param_* functions) is somewhat visible. However, no explicit pattern naming or documentation of common idioms like "test harness pattern" or "parameterized test wrapper."
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertainty or anomalies. Indirect calls not flagged. The `param_scanf` using `__isoc99_sscanf` isn't flagged as potentially different from scanf. No warnings about potential issues in the code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No recovery of assert statements from source. Error return values (-1, -2, etc.) are present but no documentation of what conditions they represent. No invariants documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible within test functions (call_strcpy calls param_strcpy). However, no documentation of who calls each function. Global variables like `signal_received`, `shared_counter` are used across functions but relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single massive file (~2000 lines). Related functions (param_*, call_*) grouped together. External stubs separated but take huge space. No logical grouping into sections matching source structure (standard library, system calls, threads).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata indicates "Compilation Result: Yes" - code compiles. However, extensive external function stubs required as placeholders. No dependency documentation. No headers or separate interface definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `param_2`, `local_28`, `local_38`) - no semantic meaning recovered
+- Zero comments or documentation in entire decompiled output
+- Literal values shown as raw hex or addresses without explanation (e.g., `&DAT_001040d9`, `0x62694c6f6c6c6548`)
+- External function stubs (~60 functions) create massive noise cluttering analysis
+- No struct/union reconstruction - all composite types lost
+- Type precision very poor - heavy use of `undefined4`, `undefined8`, `undefined` types
+
+**Best Quality Aspect:** Function Naming Quality (7/10)
+- Core test function names preserved (`param_strcpy`, `call_strcpy`, etc.)
+- External library functions correctly identified and named
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)
+- Completely devoid of any explanatory comments
+- Zero documentation of algorithm logic, parameter meanings, or return value semantics
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: `param_1` used as destination in strcpy should be named `dst`, `param_2` as `src` - analyze function body semantics to recover meaningful names
+2. **Recover string literals**: Instead of `&DAT_001040d9` and `0x62694c6f6c6c6548`, decode and display actual strings like `"HelloLib"` for readability
+3. **Add basic comments**: At minimum, document what each function does (e.g., `// Wrapper function that copies string and returns length`) - even auto-generated comments would help significantly

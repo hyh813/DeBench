@@ -1,0 +1,563 @@
+{
+  "execution_status": "success",
+  "quality_status": "fail",
+  "analysis_version": 5,
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "source_path": "src/2.c",
+  "drivers": [
+    "test_data_types_l1",
+    "test_array_types",
+    "test_pointer_types",
+    "test_composite_types"
+  ],
+  "trace_health": {
+    "status": "available",
+    "usable_for_structural_evidence": true,
+    "original": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 69,
+      "entry_count": 5,
+      "exit_count": 5,
+      "print_count": 59,
+      "call_count": 5,
+      "parsed_entry_count": 5,
+      "parsed_exit_count": 5,
+      "parsed_print_count": 59,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    },
+    "decompiled": {
+      "run_status": "success",
+      "usable": true,
+      "event_count": 23,
+      "entry_count": 2,
+      "exit_count": 1,
+      "print_count": 20,
+      "call_count": 2,
+      "parsed_entry_count": 2,
+      "parsed_exit_count": 1,
+      "parsed_print_count": 20,
+      "parser_error_count": 0,
+      "run_error": null,
+      "issues": [],
+      "warnings": []
+    }
+  },
+  "program_level": {
+    "status": "fail",
+    "comparison_key": "test_id+occurrence",
+    "comparison_denominator_policy": "stable_case_union",
+    "process_status_match": false,
+    "stdout_exact_match": false,
+    "stdout_case_match_ratio": 0.0,
+    "stable_case_total": 51,
+    "stable_case_matched": 0,
+    "stable_case_ids": [
+      "ARR-L1-01",
+      "ARR-L1-02",
+      "ARR-L1-03",
+      "ARR-L1-04",
+      "ARR-L2-01",
+      "ARR-L2-02",
+      "ARR-L2-03",
+      "ARR-L2-04",
+      "CMP-L2-01",
+      "CMP-L2-02",
+      "CMP-L2-03",
+      "CMP-L2-04",
+      "CMP-L2-05",
+      "CMP-L2-06",
+      "CMP-L2-07",
+      "CMP-L2-08",
+      "CMP-L2-09",
+      "CMP-L2-10",
+      "CMP-L2-11",
+      "CMP-L2-12",
+      "CMP-L2-13",
+      "CMP-L2-14",
+      "CMP-L2-15",
+      "DT-L1-01",
+      "DT-L1-02",
+      "DT-L1-03",
+      "DT-L1-04",
+      "DT-L1-05",
+      "DT-L1-06",
+      "DT-L1-07",
+      "DT-L1-08",
+      "DT-L1-09",
+      "DT-L1-10",
+      "DT-L1-11",
+      "PTR-L2-01",
+      "PTR-L2-02",
+      "PTR-L2-03",
+      "PTR-L2-04",
+      "PTR-L2-05",
+      "PTR-L2-06",
+      "PTR-L2-07",
+      "PTR-L2-08",
+      "PTR-L2-09",
+      "PTR-L2-10",
+      "PTR-L2-11",
+      "PTR-L2-12",
+      "PTR-L2-13"
+    ],
+    "unstable_case_ids": [
+      "ARR-L2-05"
+    ],
+    "original_exit_code": 0,
+    "decompiled_exit_code": null,
+    "original_signal": null,
+    "decompiled_signal": null,
+    "comparisons_total": 51,
+    "comparisons": [
+      {
+        "test_id": "DT-L1-01",
+        "occurrence": 1,
+        "original": "DT-L1-01 (process_char): a",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-01",
+        "occurrence": 2,
+        "original": "DT-L1-01 (process_char): b",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-02",
+        "occurrence": 1,
+        "original": "DT-L1-02 (process_short): 300",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-03",
+        "occurrence": 1,
+        "original": "DT-L1-03 (process_int): 11",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-04",
+        "occurrence": 1,
+        "original": "DT-L1-04 (process_long): 200",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-05",
+        "occurrence": 1,
+        "original": "DT-L1-05 (process_ll): 10000",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-06",
+        "occurrence": 1,
+        "original": "DT-L1-06 (process_float): 3.50",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-07",
+        "occurrence": 1,
+        "original": "DT-L1-07 (process_double): 2.10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-08",
+        "occurrence": 1,
+        "original": "DT-L1-08 (process_ld): 10.00",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-09",
+        "occurrence": 1,
+        "original": "DT-L1-09 (process_bool): 1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-09",
+        "occurrence": 2,
+        "original": "DT-L1-09 (process_bool): 0",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-09",
+        "occurrence": 3,
+        "original": "DT-L1-09 (process_bool): 0",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-10",
+        "occurrence": 1,
+        "original": "DT-L1-10 (const_param): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "DT-L1-11",
+        "occurrence": 1,
+        "original": "DT-L1-11 (volatile_access): 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L1-01",
+        "occurrence": 1,
+        "original": "ARR-L1-01 (array_1d_stack): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L1-02",
+        "occurrence": 1,
+        "original": "ARR-L1-02 (array_string): 5",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L1-03",
+        "occurrence": 1,
+        "original": "ARR-L1-03 (array_2d_stack): 45",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L1-04",
+        "occurrence": 1,
+        "original": "ARR-L1-04 (array_3d): 125",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L2-01",
+        "occurrence": 1,
+        "original": "ARR-L2-01 (array_vla): 60",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L2-02",
+        "occurrence": 1,
+        "original": "ARR-L2-02 (array_pointer): 100",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L2-03",
+        "occurrence": 1,
+        "original": "ARR-L2-03 (pointer_array): 60",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "ARR-L2-04",
+        "occurrence": 1,
+        "original": "ARR-L2-04 (array_complex_index): 17",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-01",
+        "occurrence": 1,
+        "original": "PTR-L2-01 (ptr_single): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-02",
+        "occurrence": 1,
+        "original": "PTR-L2-02 (ptr_double): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-03",
+        "occurrence": 1,
+        "original": "PTR-L2-03 (ptr_triple): 6",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-04",
+        "occurrence": 1,
+        "original": "PTR-L2-04 (ptr_increment): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-05",
+        "occurrence": 1,
+        "original": "PTR-L2-05 (ptr_offset): 30",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-06",
+        "occurrence": 1,
+        "original": "PTR-L2-06 (ptr_diff): 4",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-07",
+        "occurrence": 1,
+        "original": "PTR-L2-07 (ptr_void): 42",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-07",
+        "occurrence": 2,
+        "original": "PTR-L2-07 (ptr_void): 65",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-08",
+        "occurrence": 1,
+        "original": "PTR-L2-08 (ptr_const): 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-09",
+        "occurrence": 1,
+        "original": "PTR-L2-09 (ptr_const_ptr): 15",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-10",
+        "occurrence": 1,
+        "original": "PTR-L2-10 (ptr_func_simple): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-11",
+        "occurrence": 1,
+        "original": "PTR-L2-11 (ptr_func_complex): 1",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-12",
+        "occurrence": 1,
+        "original": "PTR-L2-12 (ptr_cast): 0x12345678",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "PTR-L2-13",
+        "occurrence": 1,
+        "original": "PTR-L2-13 (opaque_handle_op): 20",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-01",
+        "occurrence": 1,
+        "original": "CMP-L2-01 (struct_simple): 6",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-02",
+        "occurrence": 1,
+        "original": "CMP-L2-02 (struct_array): 9",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-03",
+        "occurrence": 1,
+        "original": "CMP-L2-03 (struct_nested): 105",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-04",
+        "occurrence": 1,
+        "original": "CMP-L2-04 (struct_deep): 258",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-05",
+        "occurrence": 1,
+        "original": "CMP-L2-05 (struct_with_ptr): 30",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-06",
+        "occurrence": 1,
+        "original": "CMP-L2-06 (struct_bitfields): 106",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-07",
+        "occurrence": 1,
+        "original": "CMP-L2-07 (union_type): 305419896",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-08",
+        "occurrence": 1,
+        "original": "CMP-L2-08 (union_array): 60",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-09",
+        "occurrence": 1,
+        "original": "CMP-L2-09 (enum_type): 10",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-10",
+        "occurrence": 1,
+        "original": "CMP-L2-10 (enum_switch): 50",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-11",
+        "occurrence": 1,
+        "original": "CMP-L2-11 (struct_func_ptr): 21",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-12",
+        "occurrence": 1,
+        "original": "CMP-L2-12 (linked_list): 60",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-13",
+        "occurrence": 1,
+        "original": "CMP-L2-13 (doubly_linked_list): 30",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-14",
+        "occurrence": 1,
+        "original": "CMP-L2-14 (binary_tree): 100",
+        "decompiled": null,
+        "matched": false
+      },
+      {
+        "test_id": "CMP-L2-15",
+        "occurrence": 1,
+        "original": "CMP-L2-15 (graph_traverse): 1",
+        "decompiled": null,
+        "matched": false
+      }
+    ]
+  },
+  "function_level": {
+    "status": "partial",
+    "segment_count": 4,
+    "segment_callseq_match_ratio": 0.0,
+    "feature_function_match_ratio": 0.0,
+    "call_evidence_segment_count": 1,
+    "call_evidence_unavailable_count": 3,
+    "segment_print_match_ratio": 0.2976,
+    "segment_print_evidence_count": 4,
+    "segment_print_unavailable_count": 0,
+    "normalized_io_match_ratio": 0.0,
+    "io_matched_pairs": 0,
+    "io_compared_pairs": 0,
+    "trace_errors": {
+      "original": 0,
+      "decompiled": 0
+    },
+    "segments": [
+      {
+        "segment": "test_data_types_l1",
+        "status": "partial",
+        "call_evidence_available": false,
+        "original_call_count": 0,
+        "decompiled_call_count": 0,
+        "original_print_count": 14,
+        "decompiled_print_count": 14,
+        "sequence_match_ratio": null,
+        "feature_match_ratio": null,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.8571,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      },
+      {
+        "segment": "test_array_types",
+        "status": "partial",
+        "call_evidence_available": false,
+        "original_call_count": 0,
+        "decompiled_call_count": 0,
+        "original_print_count": 9,
+        "decompiled_print_count": 3,
+        "sequence_match_ratio": null,
+        "feature_match_ratio": null,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.3333,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      },
+      {
+        "segment": "test_pointer_types",
+        "status": "fail",
+        "call_evidence_available": false,
+        "original_call_count": 0,
+        "decompiled_call_count": 0,
+        "original_print_count": 15,
+        "decompiled_print_count": 0,
+        "sequence_match_ratio": null,
+        "feature_match_ratio": null,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      },
+      {
+        "segment": "test_composite_types",
+        "status": "fail",
+        "call_evidence_available": true,
+        "original_call_count": 1,
+        "decompiled_call_count": 0,
+        "original_print_count": 16,
+        "decompiled_print_count": 0,
+        "sequence_match_ratio": 0.0,
+        "feature_match_ratio": 0.0,
+        "print_evidence_available": true,
+        "driver_print_match_ratio": 0.0,
+        "matched_io_pairs": 0,
+        "matched_name_pairs": 0
+      }
+    ]
+  },
+  "low_level": {
+    "status": "unavailable",
+    "method": "normalized_register_signature_sequence",
+    "similarity_score": null,
+    "token_count_original": 1,
+    "token_count_decompiled": 0
+  }
+}

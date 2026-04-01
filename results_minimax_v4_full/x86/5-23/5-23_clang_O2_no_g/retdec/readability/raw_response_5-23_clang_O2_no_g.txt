@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use (`v1`, `v2`, `v3`). Compare to original source where `size`, `x`, `y`, `arr`, `n` clearly indicate purpose. The decompiled code provides no semantic hints about variable roles.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions retain original names (e.g., `param_macro_constants`, `call_asm_basic`, `my_func`), but many are mechanical (`function_1040`, `function_1050`). The naming is inconsistent - some meaningful, others purely address-based.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout lack explanation. Example: `param_multi_branch_compile` returns `5 * a1 + 0xdef0` without explaining this is the default branch of a `#if-#elif-#else` chain. The original source had clear constants like `MAX_SIZE=1024`, `BUFFER_COUNT=16`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: artificial `int128_t` typedef, fabricated assembly intrinsics (`__asm_movaps`, `__asm_xorps`, `__asm_paddd`), spurious `__x86_get_pc_thunk_*` functions, and meaningless address range comments. These artifacts severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is mostly natural. Loops and conditionals are recognizable. Minor issues like complex ternary expressions in `param_macro_constants` (`v1 < 0 == ((v1 ^ a1) & (a2 ^ a1)) < 0`) could be cleaner, but overall flow is traceable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable granularity (20-80 lines). However, parameter lists expose implementation details (e.g., `param_builtin_macros` takes two unused parameters). Some test functions are lengthy but cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No spaghetti code or computed goto patterns disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in `call_asm_clobber` but it's manageable. The code is reasonably clean without obvious duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` universally, losing distinctions like `size_t`, `uint32_t`, `int *`. Pointers are cast to `int32_t` throughout (e.g., `int32_t * v5 = mmap(...)`). Original source used proper types like `size_t`, `int *`, `unsigned char`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/union recovery. All composite types lost. The original source had no complex structs either, but the decompiler should handle arrays better - e.g., `arr[i]` becomes `*(int32_t *)(4 * i + a1)` losing the array semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without casts (`4 * v1 + a1`), casting `mmap` return to `int32_t *`, mixing `int128_t` with `int32_t`. The original used safe patterns like `arr[i]` which the decompiler broke.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x1240 - 0x1256`). No explanation of algorithm, macro semantics, or conditional compilation branches. Original source had extensive comments explaining preprocessing behavior.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. The decompiler doesn't identify: macro constant replacement, conditional compilation branches, inline assembly blocks, or atomic operations. These are core to the original source's purpose.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Critical architecture mismatch not flagged. Original source specifies arm64, but decompiled code shows x86_64 patterns (`__x86_get_pc_thunk_bx`, x86 assembly). No warnings about this fundamental discrepancy.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear semantics (e.g., "returns 64 if size > MAX_SIZE") that are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships unclear. No documentation of which functions call which, or global variable usage. The original had clear call chains (e.g., `test_preprocessing_features` calls all test functions).
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file with arbitrary ordering. Functions loosely grouped but no clear organization matching the original's logical sections (preprocessing, assembly, tests).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<sys/mman.h>`). Code appears compilable with minor issues. However, the artificial `int128_t` typedef and fake assembly intrinsics would cause compilation problems.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming entirely generic (`a1`, `a2`, `v1`, `v2`) - no semantic meaning recovered
+- Architecture mismatch (arm64 source → x86_64 output) not flagged as anomaly
+- No macro semantics recovered - constants like `MAX_SIZE`, `BUFFER_COUNT` lost
+- Artificial noise: `int128_t` typedef, fabricated `__asm_*` intrinsics, spurious `__x86_get_pc_thunk_*` functions
+- Type precision lost - everything becomes `int32_t`, pointers mishandled
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- At -O0, loops and conditionals are recognizable and readable
+
+**Most Needs Improvement:** Lexical Clarity (3.3/10)  
+- Variable and function naming is the primary interface to code; current state is nearly unusable
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, size comparisons, function calls) to suggest semantic names like `packet_size`, `buffer_ptr`, `element_count`
+2. **Flag architecture mismatches**: When decompiled output doesn't match stated architecture, emit a clear warning with evidence
+3. **Recover macro semantics**: Detect constant expressions that likely originated from macro expansion and suggest original macro names based on common patterns (e.g., `MAX_*`, `BUFFER_*`, `ENABLE_*`)

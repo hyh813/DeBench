@@ -1,0 +1,13 @@
+Testing Preprocessing Features
+param_1 = 64
+Result: 30
+Result: 32
+Result: 57122
+Result: 116
+Result: 19
+Result: 60
+LOG: Values: 10, 20, 30
+variadic_macro result: 60
+Testing ASM Features
+asm_basic result: 0
+asm_clobber result: 5

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `iVar1`, `local_14`, `local_68`, and `param_1` are generic and obscure semantic meaning. Stack arrays like `aSStack_34` and `aLStack_28` hint at type but not purpose (should be `obj`, `lifecycle_obj`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions preserved well (`test_cpp_member_func`, `test_cpp_constructor`), and class methods retain names (`SimpleClass::getValue`). However, internal functions use generic names (`FUN_001019a0`) and lambda functors are cryptic (`test_cpp_lambda()::$_1::operator__`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234`, `0x1f`, `0x96`, `0xfa` appear without explanation. String literals referenced as `&DAT_00104bd5` instead of actual content. Some values recoverable (0x1234 = getClassID return).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs create infinite recursion patterns (e.g., `operator_new` calls itself). Template internals excessively exposed (20+ unique_ptr helper functions). Multiple destructor variants per class without explanation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and loops recovered, but exception handling incomplete (`test_cpp_exception` shows throw without catch blocks). Virtual dispatch uses opaque vtable pattern: `(***(code ***)param_1)(param_1,param_2)`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions properly separated, but template instantiation creates excessive fragmentation. `unique_ptr` has 20+ helper functions that should be inlined or abstracted. Lambda closures correctly extracted as functor classes.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. Virtual dispatch and diamond inheritance code disrupts flow with pointer arithmetic. Exception handling code path incomplete.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor variants per class (vtable, complete object, deleting variants). Template instantiations create near-duplicate functions. External stubs are completely redundant (call themselves infinitely).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered (`int`, `long`, `double`), but many `undefined`, `undefined4`, `undefined8` where precision lost. Pointer types often generic (`void*`, `code**`). Template types partially recovered (`Container<int>`, `unique_ptr<int>`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class field access visible via offsets (`*(int *)this`, `(char *)(this + 4)`, `this[0x23]`), but no struct definitions with field names. Inheritance visible through constructor calls. Virtual table pointers exposed: `*(undefined ***)this = &PTR_virtual_func_00117858`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(code ***)`, `(long *)`. Pointer arithmetic on class objects: `(this + 0x10)`, `(this + 0x20)`. No const-correctness preserved. Type-confused virtual dispatch patterns throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment exists (`// Decompiled by BinaryAI`). No function-level documentation, no algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized (constructors, destructors, virtual functions). RAII visible in unique_ptr but not named. Lambda closures recognized as functor classes. No design pattern identification or explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings present. Indirect calls not flagged. Incomplete exception handling not noted. Multiple destructor variants unexplained. External function stubs (infinite recursion) not flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions inferred. No invariants recognized. Exception safety not noted. Null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Class relationships visible through inheritance in constructors. Virtual dispatch visible but not explicitly documented. No call graph documentation. Global variables visible (`instance_count`, `std::__ioinit`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. External functions listed at top. Test functions grouped together. Class methods scattered throughout file. No logical grouping comments or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions declared but many are stubs that call themselves (won't compile). C++ standard library internals exposed. Would require extensive patching to compile. Dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (6+5+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.73/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Variable names are generic** (`iVar1`, `local_14`, `param_1`) obscuring semantic purpose throughout all functions
+- **No comments** except decompiler header; no explanation of complex C++ ABI patterns
+- **External function stubs create infinite recursion** (e.g., `operator_new` calls itself) making code non-compilable
+- **Exception handling incomplete** - `test_cpp_exception` shows throw but catch blocks not recovered
+- **Excessive template instantiation exposure** - 20+ unique_ptr helper functions should be consolidated
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved accurately from source (`test_cpp_member_func`, `test_cpp_virtual_func`), and class method names retained with proper scope resolution.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation exists; complex C++ patterns (vtables, virtual inheritance, lambda closures) need explanation for human understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`count`, pointer arithmetic on objects should indicate field purpose
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (indirect calls, incomplete exception handling) with comments like `// UNCERTAIN: vtable call`
+3. **Consolidate template instantiation artifacts** - Merge redundant helper functions and add comments explaining C++ ABI patterns (vtable layout, this-pointer adjustments)

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` instead of original names (`a`, `b`, `c`). Local variables are `v2`, `v3`, `i`, `j` - completely generic. For example, `sequential_ops(int a1, int a2, int a3)` should be `sequential_ops(int a, int b, int c)`, and `loop_for_fixed` uses `v2` for sum instead of `sum`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions correctly named (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`), matching source. However, infrastructure functions use cryptic names like `sub_1020`, `sub_1030`, and internal helpers like `op_add`, `op_sub` lack descriptive context. Mixed results between user-facing and internal functions.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0xFFFFFFFFLL` used consistently for error returns (-1), which is understandable. However, constants like `1000` in `infinite_loop` and loop bounds like `5` in `loop_break` lack explanation. Some literals like case values in switches are clear, but others are unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__readfsqword(0x28u)`) appear but are expected at `-O0` with stack protection. No excessive casts or debug instrumentation. Clean overall with expected minimal artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recognized as `for` and `while` constructs. Switch statements properly recovered. The `duffs_device` uses goto labels which is appropriate for that pattern. At `-O0`, control flow closely matches source. Minor awkwardness in `switch_small` where case 3 is handled separately.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with clear single responsibility. No 500-line monoliths. Parameter lists reasonable - core functions like `sequential_ops` have 3 params as expected. Good separation between test functions and implementation functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `multi_return`. Switch statements have forward jumps but are structurally clear. No excessive nesting disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpression elimination minimal at `-O0`. Loop unrolling not present (as expected). Code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most parameters use `int` which is correct. However, function pointers use imprecise `__int64 (__fastcall *)(_QWORD)` instead of proper signatures like `int (*)(int)`. Return types often `__int64` when `int` would be correct. Mixed signed/unsigned handling visible (e.g., `unsigned int` for loop counters).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. Arrays like `v4[14]` in `loop_multi_exit` are raw arrays without element type clarity. The 2D matrix in `loop_multi_exit` is flattened to 1D with manual index calculation (`4 * i + j`). No struct field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointer calls use unsafe casts: `((__int64 (__fastcall *)(_QWORD))v3[a1])(a2)`. Pointer arithmetic visible: `*(unsigned int *)(4LL * i + a1)`. Some unsigned/signed mixing. No `restrict` or alignment annotations. Moderate risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Decompiled code has minimal comments - only file header indicating IDA Pro decompilation. No algorithm explanations, no parameter documentation, no recovery confidence indicators. Original source comments about test scenarios completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns partially recognized - `duffs_device` has goto labels but not named as such. State machine patterns visible in `state_machine` but not explicitly identified. No explicit naming of patterns like "Duff's device" or "state machine".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations noted at end: `__libc_start_main`, `puts`, `printf`, etc. However, indirect calls in function pointer arrays not flagged with uncertainty indicators. Some stack canary checks present but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No `requires:` or `ensures:` documentation. Error conditions like negative returns not documented as contracts. Zero contract information recovered from source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear. However, no documentation of which functions call `sequential_ops` or its dependencies. Callback relationships in `process_with_callback` not explicitly documented. Relationships inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, implementation functions grouped by control flow type. Static helper functions (`op_add`, `op_sub`, etc.) properly scoped. Overall organization matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically correct and should compile. External dependencies (libc functions) not explicitly documented. No header declarations provided. Moderate patching would be needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`a1`, `a2`, `v2`, `v3`) - should infer names from usage patterns like `temp1` → `sum`, `a1` → `a`
+- No struct/union recovery - 2D matrix flattened to 1D array losing semantic meaning
+- Function pointer types imprecise - `__int64 (__fastcall *)(_QWORD)` obscures actual signature
+- Zero comments explaining algorithms, parameters, or test scenarios from original source
+- No contract/precondition recovery despite clear validation patterns in source
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- Loops, switches, and conditionals correctly recovered. At `-O0`, control flow closely mirrors source structure.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every parameter and local variable uses generic names. This single dimension severely impacts readability across all 79 functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1 + a2` in arithmetic context suggests `a` and `b`. `v2 += i` in loop suggests `sum`. Use data flow analysis to suggest semantic names.
+2. **Recover composite types**: Detect 2D array access patterns (`matrix[i][j]`) and reconstruct struct layouts with field names instead of flattening to pointer arithmetic.
+3. **Add semantic comments**: Include original function purpose, parameter descriptions, and test scenario context from debug symbols (`-g` flag was used).

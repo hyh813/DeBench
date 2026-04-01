@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `vars0`, `vars8`, `v3`, `v4`) obscuring semantic purpose. Original source had meaningful names like `count`, `sum`, `args`, `val` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). A few generic names exist (`sub_750`, `init_proc`) but core functionality is clearly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`15`, `50`, `6`, `33`, `305419896`) without explanation—these are constant-folded results. String literals referenced opaquely as `asc_145C`, `aCallL206` instead of actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Varargs functions contain excessive stack variable noise (`vars0` through `vars28`). Redundant type casts (`(unsigned int)`, `(unsigned __int64)`) clutter simple arithmetic operations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural flow, but varargs handling uses awkward while loops with manual stack pointer arithmetic. Switch statements converted to if-else chains (`ret_multi_branch`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate, but many test functions were constant-folded to single returns (e.g., `call_cdecl()` returns `15` directly), losing call relationship visibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but varargs functions have complex stack management with forward references that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminated redundant computations effectively. Some type cast redundancy present but no obvious dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision with `__int64`, `int`, `char *` used appropriately, but varargs types degraded to `gcc_va_list`. Calling convention annotations (`__fastcall`, `__cdecl`) added but not always accurate for ARM64.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered well (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`) with field names preserved. `ret_small_struct` shows warning: "local variable allocation has failed, the output may be wrong!"
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(_DWORD *)`, `(_OWORD *)`, `(unsigned int)`, function pointer casts. `func_struct_byval` takes `LargeStruct *` instead of by-value, changing semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments except one warning ("local variable allocation has failed"). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern present but not explicitly identified. No design pattern recognition. Standard C idioms (strlen, printf) not annotated as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked `FAILED to decompile` (8 functions). One allocation failure warning present. No indication of potential undefined behavior in `call_order_dep`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not annotated). No postconditions or invariants recovered. Null checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names. Global variables shown (`handle1_1`, `handle2_0`) but no call graph documentation. Callback relationships visible but not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source, but all in single file with no logical grouping. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed decompilation (`strlen`, `printf_chk`, `puts`, etc.). Would require stubs and type definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+7+6+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.57/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `vars0-28`) losing all semantic meaning from original source (`count`, `sum`, `args`)
+- **String literals replaced with opaque references** (`asc_145C`, `aCallL206`) instead of actual content
+- **Varargs handling excessively complex** with manual stack pointer arithmetic obscuring simple `va_arg` pattern
+- **No comments or documentation** despite complex calling convention test scenarios
+- **Type safety violations** with numerous unsafe casts (`_DWORD *`, `_OWORD *`) without justification
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names were preserved almost entirely, maintaining semantic clarity about purpose despite other degradation.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - Zero precondition/postcondition documentation, making it impossible to understand function contracts without examining implementation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., loop counter variables should be `i`, `j`, `k`; accumulator variables should be `sum`, `count`)
+2. **Recover string literal content** instead of opaque references (`aCallL206` → `"CALL-L2-06: varargs_func(5, 1-5) = %d\n"`)
+3. **Add decompilation confidence annotations** for complex patterns (varargs, struct passing) indicating where manual verification is recommended

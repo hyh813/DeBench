@@ -1,0 +1,157 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use extremely generic names like `local_24`, `sVar1`, `iVar1`, `puVar1`, `param_1`, `param_2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost. These cryptic names make it nearly impossible to track variable purposes without extensive cross-referencing.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func` exactly match source names. Template functions like `template_max<int>` and `Container<int>::push` are correctly identified. Minor deduction for internal functions like `FUN_00101020` which are unnamed, but the main API is well-recovered.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Magic numbers dominate output: `0x125c` (4704), `0x3e9` (1000), `0x2a` (42), `0x47` (71), `0x28a` (650), etc. These are the expected return values from test functions but have no explanatory comments. The decompiler makes no attempt to identify these as result constants or explain their semantic meaning.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant decompiler artifacts include repeated "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", and "try { // try from 00101335 to 00101348 has its CatchHandler @ 0010134b". These clutter the output and make it difficult to distinguish actual code from metadata.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most functions have natural control flow - simple returns, basic conditionals. The `call_virtual_func` has a warning about indirect jump recovery, but overall the code is readable. At O2 optimization, some restructuring is expected and present (e.g., constant folding returning literal values).
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function boundaries are well-preserved. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Class methods are correctly extracted (`Container<int>::push`, `Container<int>::get`). The granularity matches the original source reasonably well.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom without excessive jumps. Most functions are simple with single return points. The exception handling code has some complexity but is still traceable. No goto abuse or spaghetti code patterns observed.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No obvious dead code or duplicate expressions. The compiler has performed constant folding (returning computed values directly), which is appropriate for O2. Functions like `test_cpp_member_func` that do work show no redundant operations.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Heavy use of undefined types: `undefined8`, `undefined4`, `undefined1`. Function parameters often generic `int` when they should be specific types (e.g., `size_t` for size parameters). Return types inconsistent - some functions return `int`, others `undefined8`. The original `int`, `char`, `size_t` types are not precisely recovered.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No class/struct recovery. Original classes like `SimpleClass`, `LifecycleClass`, `Container<T>`, `Base`, `Derived` are completely lost. Instead, raw pointer arithmetic is used: `*(int *)(this + 0x28)` for what should be `this->size`. The decompiler treats everything as raw memory accesses without reconstructing the original type system.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Justification: Severe type safety issues throughout. Raw pointer arithmetic without bounds checking: `*(int *)(this + (long)iVar1 * 4)`. Unsafe casts between `undefined8*` and `long*`. No const-correctness. Function pointers treated as `code*` without proper signatures. The code would be dangerous to compile and use as-is.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Some useful comments present: "WARNING: Unknown calling convention", exception handling annotations with try/catch block info. However, most comments are decompiler warnings rather than code explanations. No algorithm documentation, no explanation of C++ idioms like vtable dispatch or RAII patterns.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Limited C++ idiom recognition. The vtable mechanism is partially visible through indirect calls like `(**(code **)(*plVar2 + 8))(plVar2)` but not explicitly named as virtual dispatch. Template instantiation is recognized but not explained. RAII patterns (smart pointers, destructors) not identified. Design patterns completely unmentioned.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+
+Justification: Decompiler does flag anomalies: "Could not recover jumptable", "Unknown calling convention", "Treating indirect jump as call", "Subroutine does not return". These warnings help identify uncertain areas. However, some potentially problematic code (like the broken `call_virtual_func`) is presented without sufficient caution.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. No recovery of assert statements or validation logic. The original source had bounds checking in `getData()` and `Container::get()` but these are reduced to raw conditional logic without contract documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function calls are visible in the code but relationships aren't explicitly documented. No indication of which functions call `call_virtual_func`, no documentation of virtual method relationships, no callback or observer pattern identification. The call graph must be inferred by reading the code.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are organized roughly by address, which partially groups related items (template instantiations together, Container methods together). However, this doesn't match the original source organization with classes grouped by feature. Static functions not explicitly marked as such.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Code uses non-standard function names: `operator_new`, `operator_delete`, `builtin_strncpy`, `__dynamic_cast`. Uses undefined types (`undefined8`). Would require significant patching to compile. No dependency documentation (e.g., requires libstdc++). The compilation result stated as "Yes" in metadata seems questionable given these issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 4) / 4 = 4.25
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (4 + 2 + 3) / 3 = 3.00
+L4_avg = (5 + 4 + 7 + 2) / 4 = 4.50
+L5_avg = (4 + 6 + 4) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (7.50 × 0.25) + (3.00 × 0.20) + (4.50 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.875 + 0.600 + 0.675 + 0.467
+        = 4.89/10
+```
+
+### Overall Readability Score: 4.9/10
+
+### Critical Defects
+
+1. **Variable naming is unusable**: Generic names like `local_24`, `sVar1`, `iVar1`, `param_1` completely obscure variable purposes that were clear in source (`value`, `name`, `data`, `size`)
+
+2. **No composite type recovery**: Original classes (`SimpleClass`, `LifecycleClass`, `Container<T>`) are completely lost; all access is raw pointer arithmetic like `*(int *)(this + 0x28)`
+
+3. **Severe type degradation**: Uses `undefined8`, `undefined4` instead of precise types; original `int`, `size_t`, `char` types not recovered
+
+4. **Magic numbers everywhere**: Return values like `0x125c`, `0x3e9`, `0x2a` have no explanatory comments; should be named constants
+
+5. **Broken virtual function call**: `call_virtual_func` has "Could not recover jumptable" warning and uses `(*(code *)**(undefined8 **)param_1)()` which is incomplete/incorrect
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Function boundaries match the original source well. Template instantiations are properly separated, class methods are correctly extracted, and the overall granularity is appropriate.
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - The decompiler completely failed to reconstruct any C++ classes or structs. All class members are accessed via raw pointer arithmetic with offsets, losing all semantic meaning of the original type system.
+
+### Top 3 Recommendations
+
+1. **Recover class/struct types**: Instead of `*(int *)(this + 0x28)`, generate `this->size` with the struct definition reconstructed from vtable layouts and member access patterns
+
+2. **Infer variable names from usage**: Analyze how variables are used (e.g., `param_1 < 10` suggests it's a size/count; `*param_1` suggests pointer) to generate semantically meaningful names
+
+3. **Identify and document magic numbers**: Detect when functions return constant values and annotate them with the expected result (e.g., `// Expected: 4704`) or suggest named constants

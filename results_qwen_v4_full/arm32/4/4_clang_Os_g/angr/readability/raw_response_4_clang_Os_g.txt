@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. In `varargs_func`, variables like `v5`, `v6`, `v7` don't indicate their purpose as loop counters or accumulators.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `varargs_func`, `func_struct_byval`), but runtime helpers use mechanical names (`sub_4003f0`, `sub_400490`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test result constants (15, 50, 6) are clear as expected outputs, but magic numbers like `4294967295` in `func_struct_byptr` lack explanation as `-1` (error code).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe ARM artifacts throughout: `armg_calculate_condition()` calls, register annotations (`// r0`, `// [bp-0x4]`), and `cc_dep1`, `cc_ndep` variables pollute the code, especially in `__adddf3`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of loops (e.g., `varargs_func`), and `func_struct_byptr` has bizarre conditional blocks with `Goto None` artifacts that obscure simple null-check logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions like `test_calling_conventions` lost actual call logic—just return constants instead of demonstrating the calling convention behavior.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `__adddf3` function has extreme non-linearity with deeply nested conditionals and forward jumps that make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in `__adddf3` with repeated `armg_calculate_condition` patterns (100+ lines of near-identical code), and `test_calling_conventions` calls `printf` twice with same arguments at end.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—`func_mixed_args` shows `double d` as `unsigned int a2`, `char *s` as `char *a1`, and `long long ll` split into `a4, a5`. Everything defaults to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` completely lost—`func_struct_byval` takes 4 `unsigned int` params instead of struct. `SmallStruct` becomes anonymous `struct_0` with `field_0`. No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `param_func_ptr` treats `unsigned int *a0` as callable function pointer, `func_mixed_args` performs float operations on integer-typed parameters via `__adddf3`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments exist (`/* do not return */`). No algorithm explanations, no parameter documentation, no decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern in `varargs_func` not identified, struct-by-value passing not recognized, floating-point conversion idioms completely obscured by raw ARM helper calls.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `func_struct_byptr` has clearly broken decompilation (`Goto None`, `vvar_0` undefined) but no warning flags. `__adddf3` complexity not flagged as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL pointer). No postconditions or error condition documentation anywhere.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables use opaque names (`g_4014dc`, `g_412008`) with no indication of purpose (likely string constants).
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping. No header file structure, no static function scoping hints, no namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`__libc_start_main`, `puts`, `printf`) but many ARM helper functions (`__adddf3`, `__floatsidf`) would need stubs. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+4+3)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+5)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              3.67/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0`, `v1`** should be named semantically (e.g., `count`, `value`, `sum`, `index`) based on usage patterns
+- **`func_struct_byptr`** has broken decompilation with `Goto None` and undefined `vvar_0` variables
+- **`__adddf3`** is 400+ lines of unreadable ARM condition calculations instead of simple float addition
+- **Struct types completely lost** - `LargeStruct` passed as 4 separate integers, `SmallStruct` becomes anonymous `struct_0`
+- **Test functions constant-folded** - `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` call
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names from source were preserved accurately (`cdecl_func`, `varargs_func`, `func_struct_byval`), making basic identification possible.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions with field names; `LargeStruct` (128 bytes) lost entirely, forcing parameter explosion.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement ARM condition flag analysis** - Replace `armg_calculate_condition()` chains with natural C conditionals by tracking CPSR flag semantics across basic blocks.
+2. **Add struct type inference from stack access patterns** - Detect repeated offset-based accesses (`[bp+0]`, `[bp+4]`, `[bp+8]`) and propose struct definitions with field names based on usage context.
+3. **Preserve call site information in test functions** - Avoid aggressive constant folding that eliminates demonstration of calling convention behavior; keep actual function calls visible for educational/reverse engineering purposes.

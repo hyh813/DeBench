@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `lVar3` with no semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names recovered accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Some runtime functions remain generic (`FUN_00100620`, `FUN_0010077c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x20`, `0x41`, `0x19` in process_char). Test functions show hardcoded hex values (`0x400c000000000000`) instead of computed results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime boilerplate present (`_init`, `deregister_tm_clones`, `__do_global_dtors_aux`). Floating-point emulation functions (`__addtf3`, `__multf3`) add 400+ lines of noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while patterns which is acceptable. `enum_switch` uses if-else chain instead of switch statement. Some functions use backward jumps that could be cleaner.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity reasonable, but `binary_tree` incorrectly shows no parameters. Test functions expanded with inlined setup code instead of calling original functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Loop structures use standard do-while patterns. Some complex functions (`__addtf3`) have excessive forward references.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions contain redundant setup code inlined. Floating-point emulation shows significant redundancy. Main logic functions are reasonably clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `process_int` returns `uint` instead of `int`, `process_double` returns `undefined1 [16]` instead of `double`, `process_ld` returns `void` instead of `long double`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs shown as `int *` or `long`. `struct_simple` takes `int *` instead of `Point3D *`. No struct/union definitions recovered. Field access via array indexing (`param_1[1]`, `param_1[2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)*param_1`, `(undefined4 *)`, `(undefined8 *)`. Pointer arithmetic without type safety. Function pointers shown as `code *` losing signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only Ghidra header comments present. No function-level documentation. Some warnings about unreachable blocks but no algorithm explanations or purpose comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Loop idioms recovered but not named. Linked list traversal not recognized as such. No algorithm naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return", "Removing unreachable block"). No indication of type uncertainty or decompilation confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. No error condition documentation. Array bounds checks lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables shown as `DAT_` addresses. No call graph information. Callback relationships unclear (`ptr_func_simple` shows `code *`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping comments. Test functions and implementation mixed without section markers from original source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__libc_start_main`, `printf`, `puts`). Floating-point helpers need linking. Would require significant stubs and type definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+4+6)/4 = 5.25
+L2 Average: (6+6+7+6)/4 = 6.25
+L3 Average: (4+2+4)/3 = 3.33
+L4 Average: (3+3+5+2)/4 = 3.25
+L5 Average: (5+5+4)/3 = 4.67
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (3.33 × 0.20) + (3.25 × 0.15) + (4.67 × 0.10)
+        = 1.575 + 1.5625 + 0.666 + 0.4875 + 0.467
+        = 4.76/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Complete struct/union type loss** - All composite types degraded to `int *` or `long`, losing field names and structure
+- **Variable names entirely generic** - `param_1`, `iVar1`, `uVar2` provide no semantic information about purpose
+- **Floating-point type corruption** - `process_double` returns `undefined1 [16]`, `process_ld` returns `void`
+- **Test functions show hardcoded values** - Expected results hardcoded instead of actual function calls, losing test semantics
+- **Function pointer signatures lost** - All shown as `code *` without parameter/return type information
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most user function names recovered accurately from debug symbols, preserving semantic intent
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from field access patterns** - Analyze consistent offset patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct struct layouts with field names
+2. **Preserve floating-point type information** - Don't degrade `double`/`long double` to `undefined1 [16]`; use proper type recovery from FPU instructions
+3. **Infer variable semantics from usage context** - Variables used in loop bounds should be named `count`/`n`, accumulators should be `sum`, pointers should indicate target type

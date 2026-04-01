@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are entirely generic (`param_1`, `iVar1`, `uVar2`, `lVar3`, `puVar4`) with no semantic meaning. Original source had meaningful names like `arr`, `local`, `head`, `current`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test function names preserved well (`local_vars`, `heap_basic`, `test_stack_memory`). However, runtime functions use generic names (`FUN_001008e0`, `FUN_00100afc`) and some helpers lost clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers throughout (`0x2a`, `0x14`, `0xf`, `0x3c`, `0x100000000`) without explanation. Original source used clear decimal values (42, 20, 15, 60) that are now obscured.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts in optimized functions (`CONCAT44`, bit shifts, `undefined8` types). Simple functions are clean, but `large_stack_frame` and `vla_stack` show extensive optimization noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but complex functions show loop unrolling artifacts with repetitive `do-while` blocks. Some functions constant-folded entirely (`stack_alias` returns `0x14` directly).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some collapsed due to optimization (`tree_heap_traversal` just returns `0x3c`). Helper `create_tree_node` preserved but return type changed to `void`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Complex functions have forward jumps in loop unrolling sections that disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling in `vla_stack`, `alloca_usage`, `heap_basic` - same 8-iteration pattern repeated without abstraction. No dead code removal comments.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined8`, `ulong`) instead of precise types (`int32_t`, `size_t`). Pointer types often degraded to `void*` or generic pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost - `Point` struct accessed via pointer arithmetic, `Node` struct fields accessed as `*(undefined4 **)(__ptr + 2)`. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(undefined4 *)`, `(undefined8 *)`). Pointer arithmetic without bounds checking. Some functions have wrong return types (`global_var_access` returns `void` instead of `int`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Treating indirect jump as call"). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Memory allocation patterns visible but not named. Linked list and tree traversal idioms completely obscured.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for indirect calls and unreachable blocks, but inconsistent. `call_global_callback` has "Could not recover jumptable" warning which is helpful.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. NULL checks present in code but not documented as contracts. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not clearly indicated. Callback relationship (`global_func_ptr = double_value`) visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Static functions not properly scoped. Original source's section organization (stack/heap/static) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant stubs to compile. External dependencies (`extern_global_var`, `extern_function`) not documented. Some undefined symbols referenced.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Calculation:**
+```
+L1 Avg: (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+L2 Avg: (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+L3 Avg: (4+3+4)/3 = 3.67 × 0.20 = 0.734
+L4 Avg: (3+3+5+3)/4 = 3.50 × 0.15 = 0.525
+L5 Avg: (5+4+4)/3 = 4.33 × 0.10 = 0.433
+Total: 4.43 ≈ 4.5/10
+```
+
+**Critical Defects:**
+- Variable names entirely generic (`param_1`, `iVar1`) losing all semantic meaning from original (`arr`, `local`, `head`)
+- Struct types completely lost - `Point` and `Node` accessed via raw pointer arithmetic instead of field names
+- Loop unrolling artifacts create massive redundancy without abstraction or comments
+- Many functions constant-folded (`stack_alias`, `tree_heap_traversal`) losing original logic entirely
+- Magic hex numbers (`0x2a`, `0x14`, `0x3c`) without explanation of their semantic meaning
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Most test function names preserved accurately from source, maintaining semantic identity
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+- Complete loss of struct/union information forces pointer arithmetic instead of field access
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct layouts from access patterns** - Analyze consistent offset patterns (`+0`, `+8`, `+12`) to reconstruct struct definitions with field names
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, loop indices should be `i`/`idx`
+3. **Add optimization-level awareness comments** - When loop unrolling detected, add comment explaining original loop structure and iteration count

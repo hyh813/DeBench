@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_strcpy`, `thread_compute`) but many functions named `sub_XXXXX` (e.g., `sub_10ca8`, `sub_112b4`). Helper functions like `signal_handler` are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1), `4294905792` (unexplained), `42` (test constant). String literals preserved but numeric constants lack explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from `armg_calculate_condition` calls, stack canary checks (`GLIBC_2.4::__stack_chk_guard`), and redundant variable assignments (`v3 = v4; v2 = v5;`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`LABEL_11004`, `LABEL_11419`) instead of structured conditionals. `armg_calculate_condition` calls obscure simple boolean logic that should be `if/else`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions constant-folded incorrectly (`call_strcpy` returns `8` directly, losing actual computation). Thread functions separated but `param_atomic_ops` is incomplete/truncated.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Complex functions like `param_thread_local_storage` have scattered logic with many labels.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls (`call_printf` calls `__printf_chk` twice with same arguments). Stack canary checks repeated in nearly every function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Nearly everything is `unsigned int` instead of specific types (`size_t`, `int32_t`, `char*`). Lost const-correctness (`const char*` becomes `char*`). Function signatures often wrong (e.g., `param_strlen()` has no parameters).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined with generic names (`struct_0`) and fields (`field_0`, `field_74`, `padding_0`). `ThreadData` struct not recovered; accessed via pointer arithmetic instead.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`ptr + 1`, `&ptr[1]`). Missing null checks in several places. `param_strlen` uses uninitialized pointer `v0`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`) but no pattern identification. Thread synchronization patterns not labeled as producer-consumer or mutex-protected.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `armg_calculate_condition` calls not explained as decompilation uncertainty. No warnings about incorrect function signatures or missing parameters.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). Error return values (`4294967295` = -1) not explained. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) referenced without context. No call graph.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies declared but many function signatures incorrect. `param_atomic_ops` is incomplete. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.333
+
+Overall Score: 3.46/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **`param_strlen()` has no parameters** - original takes `const char *str`, decompiled version uses uninitialized `v0`
+- **`armg_calculate_condition` calls** obscure simple boolean logic throughout (appears 50+ times)
+- **Constant folding lost semantics** - `call_strcpy` returns `8` directly instead of computing length
+- **All variables generic** (`v0`, `v1`, `ptr`) with no semantic meaning recoverable from context
+- **`param_atomic_ops` is incomplete/truncated** - missing thread creation and join logic
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Some original function names preserved (`param_strcpy`, `thread_compute`, `signal_handler`) providing minimal semantic anchors
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero comments means no guidance for understanding decompilation uncertainty, algorithm intent, or API contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter names from debug symbols** - `-g` flag was used but parameter names like `dst`, `src`, `thread_count` are completely lost
+2. **Replace `armg_calculate_condition` with readable conditionals** - These obscure simple `if (x > 0)` patterns that should be recovered
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `param_strlen` missing parameters) with warnings for manual review

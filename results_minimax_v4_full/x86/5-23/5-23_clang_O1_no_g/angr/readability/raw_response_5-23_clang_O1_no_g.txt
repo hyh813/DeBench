@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5` throughout most functions. While some like `ptr`, `idx`, `result`, `iter`, `cur` are descriptive, the majority obscure semantic purpose. For example, in `param_macro_functions`, `v0` and `v1` should be named `x` and `y` or `max_val`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions like `param_macro_constants`, `param_asm_basic`, `param_conditional_compile` correctly match source names. However, many wrapper functions use cryptic addresses (e.g., `sub_401030`, `sub_4010b0`, `sub_401256`) instead of meaningful names like `call_macro_constants`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are meaningful (64, 1025, 30, 32) but appear as magic numbers without explanation. The decompiler correctly identifies `0x200` as 512 but doesn't explain it's `MAX_SIZE / 2`. The value 57122 (0xDF22) in `call_multi_branch_compile` lacks context about being the default platform branch result.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, frame pointer manipulations, or debug instrumentation clutter the code. The decompilation is relatively clean despite some unusual struct definitions in initialization code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if-else and loop constructs. The `param_asm_clobber` function correctly recovers a for-loop from the assembly. Minor issues include some complex expressions in struct initialization code that are optimization artifacts.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity. Each test function (e.g., `param_macro_constants`, `param_asm_basic`) is separate and cohesive. The decompiler correctly separates wrapper functions from core logic, though some could be combined.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `param_dynamic_code` and `param_memory_protection`. No excessive nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. Loop unrolling is minimal (the `call_asm_clobber` shows some but it's manageable). Dead code is not present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `unsigned int` and `int` throughout. The original source used `int` for most parameters which is preserved, but the decompiler doesn't recover `size_t` from `sysconf()` calls or `uint128_t` properly (shows as weird composite). Some pointer types are imprecise.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler creates synthetic struct types (`struct_0`, `struct_1`) with generic field names like `field_0`, `padding_0` in initialization code, but these don't correspond to actual source structures. For the test functions themselves, no struct recovery was needed since none were used.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate pointer usage. Minor issues include some implicit casts in `param_asm_multi_insn` where `char*` is used for void* operations. No severe type safety violations observed.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining macro behavior, assembly constraints, and test expectations. None of this semantic information was recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (atomic operations via `atomic_exchange_add`, SIMD via `AddV`), but the decompiler doesn't explicitly name them. The macro expansion patterns (SQUARE, MAX) are correctly computed but not identified as macro expansions.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags or warnings. The decompiler silently produces potentially incorrect code in some places (e.g., the weird struct definitions in initialization code) without flagging them as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., `param_asm_atomic` requires valid pointer) that are not communicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within test functions (e.g., `test_preprocessing_features` calls all test functions). However, no documentation of which functions call which, or global variable usage (e.g., `global_var` in `param_memory_clobber_demo`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output, with preprocessing tests first, then assembly tests. However, the file is a single monolithic output without any indication of the original section organization (5.2 vs 5.3).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code appears compilable with minimal stubs. External functions like `printf`, `mmap`, `munmap`, `mprotect`, `sysconf` are declared or referenced appropriately. Some typedefs (`uint128_t`) may need definition.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 5 + 6 + 8) / 4 = 5.75
+L2_avg = (7 + 7 + 8 + 8) / 4 = 7.50
+L3_avg = (5 + 4 + 7) / 3 = 5.33
+L4_avg = (1 + 4 + 2 + 2) / 4 = 2.25
+L5_avg = (6 + 6 + 7) / 3 = 6.33
+
+Overall = (5.75 × 0.30) + (7.50 × 0.25) + (5.33 × 0.20) + 
+          (2.25 × 0.15) + (6.33 × 0.10)
+        = 1.725 + 1.875 + 1.066 + 0.338 + 0.633
+        = 5.64/10
+```
+
+**Overall Readability Score:** 5.64/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `v0`, `v1`, `v2` dominate, making it difficult to track which variable represents which semantic value
+- **No comments**: Complete absence of comments means all macro semantics, assembly constraints, and test expectations are lost
+- **Function naming inconsistency**: Core functions correctly named but wrapper functions use cryptic address-based names (e.g., `sub_401030`)
+- **No anomaly indication**: Suspicious code patterns (weird struct definitions, uncertain indirect calls) are presented without flags
+- **Missing semantic context**: The decompiler computes correct values (e.g., 57122 for default platform branch) but doesn't explain the macro expansion semantics
+
+### Best Quality Aspect: Structural Intelligibility (Level 2)
+- **Why?** Control flow is natural with proper loop/conditional constructs recovered. Functions are well-decomposed with appropriate granularity. Code reads linearly without excessive jumps or redundancy.
+
+### Most Needs Improvement: Semantic Transparency (Level 4)
+- **Why?** Score of 2.25/10 is severely lacking. No comments, no pattern naming, no anomaly flags, and no contract recovery. The decompiler provides correct code but zero semantic context about what the code does or confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used in comparisons against constants like 1024 or 16, infer names like `MAX_SIZE` or `BUFFER_COUNT`. Track variable lifecycles to assign meaningful names.
+2. **Add semantic comments for preprocessor/assembly**: When recovering macro expansions, add comments like "// Expanded from SQUARE(x) + MAX(x, y)" and for assembly "// Clobbers: eax, ecx, cc"
+3. **Flag uncertain decompilations**: Mark suspicious patterns (unusual struct layouts, indirect calls, computed jumps) with comments like "// UNCLEAR: could not resolve indirect call" to help analysts focus manual analysis.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar3`, `lVar2` instead of semantic names like `count`, `sum`, `packet_size`. Original source had meaningful names (`args`, `sum`, `x`, `y`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but some internal functions use generic names (`FUN_00100710`, `FUN_001008bc`). Core test functions match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex values (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal or named constants. Original used clear values (5, 10, 42) that are now obscured by hex notation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) appear throughout test functions as compiler security artifacts. These add ~10 lines of noise per function that weren't in original source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use do-while patterns instead of original for-loops (e.g., `varargs_func` uses `do { } while` instead of `for (int i = 0; i < count; i++)`). Constant folding replaced actual function calls with return values in `call_*` functions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly, but many `call_*` functions are constant-folded to single return statements (e.g., `call_cdecl` returns `0xf` instead of calling `cdecl_func(5, 10)`). Core logic functions maintain proper granularity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Stack canary checks at function ends create minor disruption but don't significantly impact flow comprehension.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary initialization and verification code duplicated across ~15 functions. Loop patterns in `test_calling_conventions` show redundant stack variable assignments that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`undefined8`, `int`, `long`) instead of precise types (`int32_t`, `size_t`). Varargs function `varargs_func(int param_1)` lost `...` signature entirely. Return types often `undefined8` instead of `int` or `void`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost - `LargeStruct` passed as `long *param_1`, `SmallStruct` as `int *param_1`. Field access uses array indexing (`param_1[0xf]`) instead of named fields (`s.data[15]`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe pointer casts present (`(char *)0x0`, `(undefined4 *)*param_1`). Varargs handling lost type information. Function pointer typed as `code *` instead of proper signature. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, calling convention details, and expected values. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not recognized (shows manual stack iteration instead of `va_start/va_arg/va_end`). Struct access patterns not identified. No algorithm or design pattern annotations present.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Varargs function signature mismatch not flagged. Stack canary operations unexplained. No warnings about constant-folded functions or lost type information. Decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null pointer checks present (`if (param_1 != (int *)0x0)`) but not documented as preconditions. No postcondition inference. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. External functions (`__printf_chk`, `strlen`) appear without context. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order mixed with runtime initialization code (`_init`, `_start`, `__do_global_dtors_aux`). No logical grouping matching source organization (calling conventions, parameter passing, return values sections lost).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`__printf_chk`, `___stack_chk_guard`, `strlen`) not properly declared. Would require significant stubbing to compile. Some functions reference undefined globals (`handle1_1`, `handle2_0`, `completed_0`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.05/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named based on semantic usage (e.g., `count`, `sum` in `varargs_func`)
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` passed as raw pointers with array indexing
+- **Varargs signature destroyed** - `varargs_func(int param_1)` lost `...` parameter, making function unusable
+- **Zero comments** - No documentation explaining test purposes, calling conventions, or expected values
+- **Constant folding obscures logic** - `call_*` functions return constants instead of showing actual function calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source, making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding test purposes and calling convention details nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover varargs function signatures** - Detect `va_start`/`va_arg`/`va_end` patterns and restore `...` parameter notation
+2. **Reconstruct struct types from access patterns** - Analyze pointer arithmetic to recover field names and struct layouts (e.g., `param_1[0xf]` → `s.data[15]`)
+3. **Add decompilation confidence annotations** - Flag constant-folded functions, lost type information, and security artifacts (stack canaries) with explanatory comments

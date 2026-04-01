@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic (e.g., `iVar1`, `piVar2`, `__ptr`), failing to convey semantic meaning like `counter` or `node`. While parameters like `x` and `n` are preserved, intermediate local variables from the source (e.g., `a`, `b`, `c` in `local_vars`) are lost or unresolved.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from debug symbols, matching the source exactly (e.g., `double_value`, `heap_basic`, `linked_list_heap`). This provides excellent high-level context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent due to compiler optimization, obscuring original logic. For example, `0x14` (20) is used directly in `test_stack_memory` instead of calling `local_vars(5)`, and `0x32` (50) appears as a loop limit in `linked_list_heap` instead of the original `i < 5` condition.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling artifacts, but it contains Ghidra-specific comments like `/* Unresolved local var: ... */` and `/* WARNING: Unknown calling convention */` which clutter the output. The use of `__printf_chk` instead of `printf` is a minor compiler artifact.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Loop structures are frequently transformed into less readable `do-while` loops with pointer arithmetic. For instance, `local_array` uses a pointer increment loop (`piVar2 = piVar2 + 1`) with a complex termination condition (`piVar2 != arr + 9`) instead of the original `for` loop.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are generally well-separated and cohesive. However, aggressive compiler optimization (likely -O2 based on the binary filename) inlined simple functions like `local_vars` inside `test_stack_memory`, flattening the call structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads mostly top-to-bottom, but control flow is disrupted by the pointer-heavy loop constructs. The use of pointer arithmetic to traverse arrays makes the execution path harder to trace mentally compared to array indexing.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removes dead stores and variables that were optimized out by the compiler (e.g., the intermediate variables in `local_vars`). This keeps the code concise, though sometimes at the cost of losing intermediate variable names.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are mostly correct, but standard types are often demoted (e.g., `size_t` becomes `undefined4` or `int`). The use of Ghidra-specific types like `undefined4` and `code` reduces precision and portability.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct recovery is poor. In `linked_list_heap`, the `Node` struct is accessed via raw pointer arithmetic and array indexing (`piVar2[1]` for `next`) rather than field names (`->next`). In `heap_struct`, the struct is completely lost, replaced by a `void*` and immediate arithmetic.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains numerous unsafe casts, particularly pointers cast to integers for arithmetic and back (e.g., `(int *)((int)aiStack_14 + iVar1)`). This obscures the memory access patterns and introduces potential safety confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are primarily limited to debug warnings (e.g., "Unresolved local var") and decompiler errors. There are no high-level comments explaining the logic of complex functions like VLA allocation or linked list traversal.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls like `malloc` are recognized, but higher-level idioms are missed. The Variable Length Array (VLA) in `vla_stack` is not identified as such; instead, it is represented as obscure stack pointer manipulation and alignment logic.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags "Unresolved local variable" warnings where debug information existed but couldn't be mapped to registers. However, it does not explicitly flag the inlining of function calls in `test_stack_memory` as a potential readability issue.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions (like `n > 0` checks) are present in the code but not explicitly documented as contracts. There is no indication of function requirements or guarantees in the comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and direct. The relationships between functions are easy to trace despite the inlining.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order that roughly follows the source file structure. Related test functions are grouped together, aiding navigation.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on Ghidra-specific types (`undefined4`, `code`) and would require significant modification to compile. Standard headers are missing or implied, and types like `size_t` are not used correctly.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Struct fields are accessed via raw pointer arithmetic/indexing (e.g., `piVar2[1]`) instead of semantic field names (`->next`), completely losing the context of data structures.
+- Loop structures are frequently converted to `do-while` loops with pointer increments, making the logic significantly harder to follow than the original `for` loops.
+- Intermediate local variables are often lost or unresolved, replaced by generic names or optimized away entirely (e.g., `local_vars`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Why? Debug symbols were preserved effectively, allowing the exact recovery of original function names like `double_value` and `heap_basic`, which provides immediate high-level understanding.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- Why? Structs are almost entirely unrecovered; usage of `Point` or `Node` is replaced by generic `void*` or `int*` manipulation with magic offsets, forcing the reader to reverse-engineer the data layout manually.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve struct field recovery to utilize type information and replace pointer offsets/array indices with named member accesses (e.g., convert `ptr[1]` to `ptr->next`).
+2. Enhance loop pattern recognition to reconstruct `for` loops from `do-while` patterns with pointer arithmetic, restoring the original iteration logic.
+3. Leverage debug information more aggressively to recover optimized-away local variables or at least insert comments indicating their original presence and role.

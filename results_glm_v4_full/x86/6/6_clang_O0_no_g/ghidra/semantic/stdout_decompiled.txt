@@ -1,0 +1,4 @@
+Testing strcpy...
+strcpy result: -1074411852
+strcmp result: -2
+strlen result: 0

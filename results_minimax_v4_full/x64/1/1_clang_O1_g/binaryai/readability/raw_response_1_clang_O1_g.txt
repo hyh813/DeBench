@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `bVar3`, `lVar5`. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`). External library functions properly marked with `<EXTERNAL>` prefix. Minor deduction for some internal helpers with generic addresses.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` (18) appear without explanation. Some computed values shown as hex (0x15=21, 0x14=20). The test functions print pre-computed constants rather than expressions, losing the algorithmic clarity.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation output with minimal compiler artifacts. No obvious register spill code, redundant casts, or debug instrumentation. Some type conversions present but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recognized as `while`/`do-while` constructs. Switch statements use proper `switch`/`case` syntax. Duff's device correctly uses goto labels. Some complex nested conditions could be cleaner, but overall natural flow preserved.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: At -O0, function boundaries are correctly preserved. Each function stands independently with proper parameter lists. No inlining artifacts or function outlining issues. Excellent decomposition matching source granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto abuse. Forward jumps minimal. The `goto_forward` and `goto_backward` functions correctly preserve goto semantics.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal. Common subexpression elimination artifacts are not severe. Clean code without obvious redundancy from optimizations (expected at -O0).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `uint`, `bool`). However, no precise types like `int32_t`, `size_t`, or `uint64_t`. Signed/unsigned distinctions sometimes unclear. Function pointers use generic `code*` type rather than proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. Arrays like `matrix[3][4]` and `arr[]` are accessed via pointer arithmetic without struct reconstruction. The `loop_break` function accesses `&DAT_00103040` as raw pointer, losing array semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer arithmetic present (e.g., `puVar1 = puVar1 + 4`). Casts between integer types without explicit annotations. Function pointer calls use generic `code*` type. No bounds checking visible in array operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Absolutely no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. The original source had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, switches, conditionals). However, no explicit naming of design patterns like "state machine", "Duff's device", or "callback pattern". The `duffs_device` function uses goto labels but isn't identified as a known idiom.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: External functions marked with `<EXTERNAL>` which is helpful. However, no flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Silent on anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Original source had clear return value expectations (e.g., "期望: 21") - completely absent. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions marked. Function call relationships visible within code. However, no documentation of "called by" or "calls" relationships. The callback functions (`double_value`, `triple_value`) used by `call_func_ptr_array` not clearly linked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address in memory, not by logical purpose. The original grouped functions by test category (L1, L2, L3) - completely lost. Arbitrary organization based on binary layout.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears structurally compilable. External dependencies (`puts`, `printf`, `_setjmp`, `longjmp`) properly declared. However, some functions have incorrect signatures (e.g., `tail_recursion` returns void instead of int).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 8) / 4 = 5.75
+L2_avg = (7 + 9 + 8 + 8) / 4 = 8.00
+L3_avg = (6 + 3 + 5) / 3 = 4.67
+L4_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L5_avg = (5 + 4 + 6) / 3 = 5.00
+
+Overall = (5.75 × 0.30) + (8.00 × 0.25) + (4.67 × 0.20) + (3.25 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 2.0 + 0.934 + 0.4875 + 0.5
+        = 5.65/10
+```
+
+**Overall Readability Score:** 5.65/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: All variables use `param_1`, `iVar1`, `uVar1` style names instead of semantic names like `a`, `b`, `sum`, `count` from source
+- **No comments whatsoever**: Original source had extensive test case comments (e.g., "期望: 21") completely lost
+- **No type precision**: Uses generic `int` instead of `int32_t`/`uint32_t`, loses signed/unsigned distinctions
+- **No struct/union recovery**: Arrays accessed via pointer arithmetic, losing original data structure semantics
+- **No contract/precondition recovery**: Original function contracts and return value expectations not documented
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Decomposition (L2-6)** scored highest at 9/10  
+At -O0 optimization, function boundaries are perfectly preserved with correct parameter lists and no inlining artifacts. Each function maintains its original granularity.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Variable Naming Quality (L1-1)** scored lowest at 2/10  
+Every variable uses cryptic generic names (`param_1`, `iVar1`, `bVar3`) that completely obscure semantic meaning. This is the most impactful readability issue as it affects every function.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, comparison, array indexing) to suggest semantic names. For example, `param_1` used in `param_1 + param_2` suggests it's an operand, not just "param_1".
+
+2. **Add minimal useful comments**: Include test case expectations (e.g., "// Expected: 21 for input 5,7,3"), flag indirect calls, and document switch jump tables. Even auto-generated comments help readability.
+
+3. **Recover composite types**: Detect array access patterns (e.g., `*(ptr + i * 4)`) and suggest array notation. Identify struct layouts from multiple field accesses at known offsets.

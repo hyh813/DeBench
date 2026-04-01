@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_gcc_Os_g/ghidra/syntactic/bin/5-23_gcc_Os_g_fixed",
+  "stdout": "param_macro_constants: -1097832628\nparam_macro_functions: 64\nparam_conditional_compile: 30\nparam_multi_branch_compile: 32\nparam_macro_recursion: 57122\nparam_stringize: 116\nparam_token_paste: 19\nparam_variadic_macro: 60\nLOG: Values: 10, 20, 30\nparam_macro_override: 60\nparam_include_guard: 16\ncall_include_guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:10\nparam_builtin_macros: 382\nTesting ASM features...\nparam_asm_basic: 15\nparam_asm_clobber: 15\nparam_asm_multi_insn: 42\nparam_asm_simd: 36\nparam_asm_atomic: 30\ncall_asm_privileged: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use cryptic names like `local_38`, `uStack_2c`, `uStack_25`, `auStack_58` instead of semantic names. The original `value`, `name`, `size`, `data` are completely lost. Even stack frame variables retain meaningless designations like `undefined4`, `undefined8`.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most functions retain their source names (e.g., `test_cpp_member_func`, `Base::virtual_func`, `template_max<int>`). However, some utility functions remain cryptic (e.g., `FUN_00101630`, `call_weak_fn`). The class member functions are correctly identified with `::` notation.
+
+### 3. Literal Clarity
+**Score: 8/10**
+Justification: Most literals are computed constants that match expected values (e.g., `0x125c` = 4704, `0x16` = 22). The decompiler correctly identifies these as return values. Minor magic numbers like `0x14` (20 for array size) could be named but are inferable from context.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts. The `__thiscall` annotations are appropriate for arm64. Warning comments about "Unknown calling convention" are present but don't impede reading. No redundant casts or debug instrumentation clutter the code.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Control flow is generally natural with proper loops and conditionals. The `test_cpp_constructor` uses a do-while loop correctly. Some functions are completely inlined to constants (operator_overload, template_func, lambda), which is appropriate for -O0 but shows aggressive inlining.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Functions are appropriately sized. However, several test functions are completely collapsed to return constants (test_cpp_operator_overload returns 0x16 directly), losing all structural fidelity. The template and lambda functions are not decomposed at all - just constant returns.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom without excessive jumps. The `test_cpp_constructor` loop is straightforward. Early returns are used appropriately in functions like `Container<int>::get`. No goto abuse or spaghetti code observed.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (the constructor loop is preserved). Common subexpression elimination is not excessive. The code is clean in this regard.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Heavy use of `undefined4`, `undefined8`, `undefined7`, `undefined1` types throughout. Stack variables lack proper typing. The original `int`, `size_t`, `char*` are not recovered. Even return types are often `undefined8` instead of proper integer types.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: No struct recovery. The original `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are completely lost. Memory is accessed via raw pointer arithmetic (e.g., `*(int *)((long)pvVar1 + lVar3)`). The 32-byte `name` array becomes untyped stack space.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Moderate type safety issues. Raw pointer arithmetic in `test_cpp_constructor` (`*(int *)((long)pvVar1 + 8)`). Virtual function calls use `*(code *)*local_30` which loses type safety. However, no obviously dangerous buffer operations or incorrect pointer arithmetic observed.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Only auto-generated header comments present (decompiled by Ghidra, binary path). No useful comments explaining algorithm intent, non-obvious logic, or decompilation confidence. The "WARNING: Unknown calling convention" comments are helpful but generic.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms identified. The virtual function mechanism is not explained. The RTTI/dynamic_cast code is not identified as such. Template instantiation is not recognized as a pattern - just constant returns.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some indirect calls are flagged with "WARNING: Unknown calling convention". However, the virtual function calls in `test_cpp_virtual_func` are not flagged as uncertain - they just show raw function pointer dereferencing without explanation of vtable mechanism.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. The original source had no assertions, but the decompiler could note implicit contracts (e.g., "requires: idx < size" for Container::get). None are present.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are somewhat clear through naming. Virtual dispatch is shown but not explained. The relationship between `call_virtual_func` and the Base/Derived classes is visible but requires manual tracing.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - test functions first, then class methods. The original source's class organization is partially preserved (Base methods near Derived methods). However, all functions are in a single flat listing.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+Justification: The code compiles (marked as "Compilation Result: Yes" in metadata). External dependencies are minimal - standard C++ runtime functions. No compiler-specific hacks or portability issues observed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+8+8)/4 = 6.5
+L2_avg = (7+6+8+8)/4 = 7.25
+L3_avg = (4+3+5)/3 = 4.0
+L4_avg = (4+3+5+2)/4 = 3.5
+L5_avg = (5+7+9)/3 = 7.0
+
+Overall = (6.5 × 0.30) + (7.25 × 0.25) + (4.0 × 0.20) + 
+          (3.5 × 0.15) + (7.0 × 0.10)
+        = 1.95 + 1.8125 + 0.8 + 0.525 + 0.7
+        = 5.7875 ≈ 5.8/10
+```
+
+### Overall Readability Score: 5.8/10
+
+### Critical Defects
+- **Variable naming**: All stack variables use cryptic names (`local_38`, `uStack_2c`, `undefined4`) instead of semantic names from source (`value`, `name`, `size`, `data`)
+- **Type precision**: Heavy use of `undefined4`/`undefined8` types instead of recovering `int`, `size_t`, `char*` from the -O0 debug build
+- **Composite type loss**: No struct/class recovery - all accessed via raw pointer arithmetic (e.g., `*(int *)((long)pvVar1 + 8)`)
+- **Comment absence**: No useful comments explaining virtual function mechanism, RTTI, or non-obvious logic
+- **Function inlining**: Multiple test functions completely collapsed to constants, losing all structural fidelity
+
+### Best Quality Aspect: Build System Compatibility (Score: 9/10)
+The decompiled code compiles successfully with minimal dependencies. External function calls are properly identified (operator_new, operator_delete, __cxa_throw).
+
+### Most Needs Improvement: Type System Fidelity (Score: 4.0/10)
+The decompiler fails to recover any meaningful types from this -O0 debug build. Even with debug symbols, types remain `undefined4`/`undefined8` and no struct layouts are reconstructed.
+
+### Top 3 Recommendations
+1. **Recover types from debug info**: With -O0 -g, Ghidra should recover `int`, `size_t`, `char[32]` types instead of `undefined4`/`undefined8`
+2. **Reconstruct class layouts**: Identify vtable pointers and recover SimpleClass, LifecycleClass, Base, Derived struct layouts with field names
+3. **Add semantic comments**: Explain virtual function dispatch mechanism, RTTI/dynamic_cast patterns, and virtual inheritance pointer adjustments

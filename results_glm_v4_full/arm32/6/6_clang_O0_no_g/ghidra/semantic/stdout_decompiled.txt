@@ -1,0 +1,18 @@
+Testing strcpy: -1097476284
+Testing strcmp: -1097476788
+Testing strlen: 3
+Testing memcpy: 0
+Testing memcmp: -1224721650
+Testing printf: 1
+Value: 42, Name: Test
+Testing scanf: 22
+Testing fopen/fclose: 0
+Testing fread/fwrite: 42
+Testing malloc/free: 0
+Testing memset: 0
+Testing strchr/strstr: 0
+Standard library tests complete: 15
+Testing Linux syscall: 0
+Testing file API: 42
+Testing fork/exec: 0
+Testing pipe: -1

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `ptr`, `i` throughout (e.g., `varargs_func` uses `v0`, `v2`, `idx` instead of `args`, `sum`, `index`), making semantic tracking nearly impossible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `cdecl_func`, `varargs_func`, `func_no_args` retained names, but numerous wrapper functions use meaningless `sub_401XXX` pattern (e.g., `sub_4012cb` just calls `cdecl_func`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX for -1) appear without explanation; computed return values (15, 50, 6) are visible but their derivation is lost due to constant folding.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including wrapper functions, padding structures (`padding_0[32]`), and `[D] Unsupported` markers pollute the output, obscuring actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple functions use `goto` statements (e.g., `sub_401030`: `goto ptr[2]`; `sub_401080`: `goto v1->field_20`) instead of proper call/return constructs; `[D] Unsupported jumpkind` markers indicate broken control flow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive wrapper functions fragment code (e.g., `sub_4012cb` → `cdecl_func`); constant folding eliminates actual logic (e.g., `call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but goto statements and unsupported markers create non-linear jumps that disrupt flow comprehension.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate struct definitions appear across functions (multiple `struct_0` with different layouts); wrapper functions create unnecessary call chains without adding value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` or `unsigned int *`; original distinctions like `int`, `char*`, `double`, `long long` lost (e.g., `func_mixed_args` parameters all `unsigned int` instead of mixed types).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `padding_0`, `field_20`); `LargeStruct` with 16 `long long` elements becomes 31 `unsigned int` parameters in `func_struct_byval`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (e.g., `*((int *)&(&v0)[4 * idx])` in `varargs_func`); `[D] unsupported_<class 'pyvex.expr.GetI'>` markers indicate type resolution failures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments; only decompiler artifacts like `[D] Unsupported` markers present; no algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified; varargs handling, struct passing, and calling convention patterns completely obscured by generic code.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D] Unsupported` markers indicate problems but provide no actionable information; `func_mixed_args` contains multiple unsupported operations without explanation of impact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions (e.g., null checks documented), postconditions, or invariants recovered; null checks exist in code but aren't documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear; global variables (`g_402008`, `g_40202c`) referenced without context; callback relationships lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping; test functions mixed with implementation; no namespace or module structure preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will NOT compile due to `[D] Unsupported` markers; external dependencies (`g_403ff4`, `g_402008`) declared but not defined; requires extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+5+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+4+5+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.02/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **`[D] Unsupported` markers** in `func_mixed_args` and `_start` prevent compilation and indicate unresolved decompilation
+- **Variable names** like `v0`, `v1`, `ptr` provide zero semantic information about purpose
+- **Constant folding** eliminated actual logic (e.g., `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)`)
+- **Architecture mismatch**: Original ARM64 source decompiled as x86, causing calling convention recovery issues
+- **Excessive wrapper functions** (e.g., `sub_4012cb` → `cdecl_func`) add noise without value
+
+### Best Quality Aspect:
+- **Composite Type Recovery (5/10)** - Structs were at least partially identified with field offsets, though field names are generic
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful documentation; decompiler provides no semantic guidance for understanding recovered code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, `index`; accumulators should be `sum`, `total`)
+2. **Eliminate wrapper function artifacts** by inlining trivial call-through functions and recovering original call sites
+3. **Add confidence annotations** for uncertain decompilation (e.g., "// DECOMPILER UNCERTAINTY: varargs handling may be incorrect") instead of raw `[D] Unsupported` markers

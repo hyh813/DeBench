@@ -1,0 +1,20 @@
+=== Standard Library Functions Test ===
+
+strlen test: 8
+strcmp test: 0
+strlen test: 12
+memcpy test: 90
+memcmp test: 4294967295
+Value: 42, Name: X
+printf test: 19
+scanf test: 579
+fopen/fclose test: 42
+fread/fwrite test: 42
+malloc/free test: 90
+memset test: 0
+strchr/strstr test: 15
+=== System Calls Test ===
+
+syscall test: 42
+stat test: 42
+fork/exec test: 42

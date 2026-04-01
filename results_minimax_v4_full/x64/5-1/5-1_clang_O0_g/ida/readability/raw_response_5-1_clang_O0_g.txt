@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic IDA-style names like `v0`, `v1`, `v2`, `v3`, `v4` throughout (e.g., `test_cpp_virtual_func` has `v1`, `r3`, `r2`, `r1`). While some like `result`, `Data`, `obj` are somewhat descriptive, the majority obscure semantic purpose. At -O0, we should expect better name recovery from debug symbols.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions are well-demangled (`test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func`). However, C++ standard library functions have severely degraded mangled names like `_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvE3$_2EC2IS0_vEEPiRKS0_` that are practically unreadable. Template instantiations and STL functions are particularly affected.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Most literals are clear (e.g., `5`, `10`, `3` as parameters). Magic number `0x1Fu` (31) in strncpy is used correctly for buffer size. However, `4660` (0x1234) in `getClassID` appears without explanation. Some template parameters like `default_delete<int>` are verbose but accurate.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some unusual constructs like `HIDWORD(v8._M_t._M_t._M_head_impl)` for accessing unique_ptr internals, but overall code is relatively clean without excessive register spilling or debug instrumentation that would obscure logic at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source closely. Loops use `for` constructs, conditionals are clear. The exception handling shows `__cxa_throw` directly which is expected. At -O0, the decompiler correctly recovers the original control flow structure without spurious goto statements.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear boundaries. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate. Member functions like `SimpleClass::getValue`, `SimpleClass::compute` are properly extracted. Some template instantiation functions are fragmented but this is expected from compilation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without significant disruption. Early returns and breaks used appropriately. The exception function `test_cpp_exception` shows direct throw which is linear. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. Dead code is minimal. Loop unrolling is not excessive. The code is clean without duplicate expressions that would obscure logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int`, `bool`, `size_t` are correctly identified. Const correctness is preserved in some places (`const SimpleClass *this`). However, some template types become verbose like `std::unique_ptr<int,(lambda at src_5-1_cpp:445:20)>::pointer`. Integer types could be more specific (int32_t vs int).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Classes are well-reconstructed with their members visible (e.g., `SimpleClass` has `value`, `name[32]`). Virtual table pointers (`_vptr$Base`) are correctly identified. However, some nested template structures like `std::__uniq_ptr_data` are complex. The diamond inheritance layout is partially recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate pointer handling. Some unsafe patterns exist like `*(_DWORD *)((char *)&v4[1] + *(_QWORD *)(v4[0] - 24LL))` in diamond inheritance. Virtual function calls use proper vtable dispatch. No major buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source has extensive comments explaining each feature, but none are recovered. This is a critical missing element for understanding complex C++ features like virtual inheritance and RTTI.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly recognized (virtual function calls via vtable, unique_ptr operations) but not explicitly named or documented. The thunk functions for multiple inheritance are identified but not explained. Template instantiation pattern is visible but not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags or warnings about uncertain code. The decompiler silently produces complex pointer arithmetic (e.g., in diamond inheritance) without indicating this required significant inference. Failed functions are listed but not explained why they failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The complex virtual inheritance pointer adjustments have no explanation of what they're computing or why. Error handling (exception paths) has no documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Virtual dispatch relationships are visible through vtable. However, relationships with external code (standard library) aren't documented. The call graph between test functions and their dependencies isn't explicitly shown.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically by class. Test functions are together, member functions are grouped with their classes. However, the massive amount of STL template instantiation code is interleaved, making it hard to see the forest for the trees.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone - it has many undefined symbols (printf, operator new, std::ios_base::Init, etc.). The decompiled output includes 25 "FAILED to decompile" functions. Significant stubs and headers would be needed to make this compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic IDA-style names (`v0`, `v1`, `r1`, `r2`) obscuring semantic purpose
+- No comments whatsoever - critical for understanding complex C++ features like virtual inheritance and RTTI
+- No anomaly indication for complex pointer arithmetic in diamond inheritance
+- No contract/precondition/postcondition recovery
+- 25 functions failed to decompile, including critical library functions
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+The decompiler correctly recovers the original control flow structure at -O0, with natural loops, conditionals, and exception handling that closely matches the source.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The complete absence of comments severely impacts readability, especially for complex C++ features. At -O0 with debug symbols, the decompiler should be able to recover significantly more context.
+
+**Top 3 Recommendations:**
+1. **Add comments explaining virtual inheritance pointer adjustments** - The complex `*(_DWORD *)((char *)&v4[1] + *(_QWORD *)(v4[0] - 24LL))` patterns need explanation of what they're computing
+2. **Recover variable names from debug symbols** - At -O0 -g, variable names should be extractable; currently using generic `v0`, `v1` is unacceptable
+3. **Flag uncertain/decompiled code paths** - Add markers for code that required significant inference, especially in multiple inheritance and virtual function scenarios

@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use completely generic names (param_1, param_2, iVar1, uVar1, uVar2, puVar1, puVar2). The original source used meaningful names like a, b, c, temp1, temp2, sum, count. The decompiled code provides no semantic hints about variable purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like sequential_ops, single_if, if_else, nested_if_2 retain original names. However, many auxiliary functions have cryptic names (FUN_00100880, FUN_001009fc). Test functions correctly preserve names like test_control_flow_l1. Mixed result - main logic functions are good but infrastructure is poor.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are reasonably clear (0 for false, 1 for true). Magic numbers like 0x3e9 (1001), 0x65 (101) appear without explanation but are inferable from context. Some constants like 0xfffffffc are opaque. Overall acceptable for -O0.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Warnings about unreachable blocks and unrecovered jumptables are appropriate. No excessive register spilling or debug instrumentation visible. Clean output overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if-else, switch) recovers well. However, loop_for_fixed is transformed to an arithmetic formula instead of loop structure. loop_continue shows massive unrolling with NEON intrinsics that obscures the simple "sum odd numbers" logic. goto patterns in goto_forward and goto_backward are reasonably handled.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are monolithic. Each function has single responsibility. Parameter counts match original. No over-fragmentation observed. Good decomposition quality.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. goto_forward uses conditional that disrupts linear flow slightly. loop_continue and goto_backward have complex nested structures due to unrolling. Generally acceptable but some disruption.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: loop_continue shows severe loop unrolling with 8-way parallel NEON operations creating massive redundancy (CONCAT13, CONCAT12 patterns). goto_backward similarly unrolled. These obscure the simple original logic. Common subexpression elimination artifacts present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are precise (int, uint, bool). However, some use generic types: undefined4, undefined8, undefined1. Function pointers use "code *" which is non-standard. Signed/unsigned handling is mostly correct. Some degradation from original int types.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Source uses only primitive types and simple arrays, so minimal composite type recovery needed. Arrays like int arr[] are handled as undefined4*. No struct reconstruction needed. Acceptable for this source.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Few unsafe casts observed. Pointer arithmetic is generally correct. No obvious buffer overflow patterns. Function pointer types have some issues (UNRECOVERED_JUMPTABLE). Overall reasonably type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated warnings like "WARNING: Subroutine does not return" or "WARNING: Removing unreachable block". No explanation of algorithm logic, no recovered documentation. Very sparse.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns partially recognized - switch statements identified, state machines in state_machine/fsm_func_table use switch. However, no explicit naming of patterns (e.g., "State machine pattern"). Duff's device partially recognized with switch labels. Mixed recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present: "WARNING: Could not recover jumptable at 0x00101350. Too many branches" for call_func_ptr. "WARNING: Treating indirect jump as call" appears. However, inconsistent - some indirect calls flagged, others not. Some anomalies silently handled.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. No invariant detection. The source had no explicit assertions but implicit contracts (e.g., "n > 0" for loops) are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in code but relationships not documented. No indication of who calls whom. Callback relationships (process_with_callback) partially visible but not explicitly documented. External dependencies (EVP_PKEY_CTX) not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, control flow L1/L2/L3 grouped. Static helper functions (double_value, triple_value) near their usage. Overall reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references external symbols (EVP_PKEY_CTX, __gmon_start__, weak functions) without declarations. Would require header stubs to compile. Some functions use non-standard types (undefined4, code*). Moderate patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+7+8)/4 = 5.75
+L2_avg = (5+8+6+4)/4 = 5.75
+L3_avg = (7+8+8)/3 = 7.67
+L4_avg = (3+5+6+2)/4 = 4.00
+L5_avg = (4+7+5)/3 = 5.33
+
+Overall = (5.75 × 0.30) + (5.75 × 0.25) + (7.67 × 0.20) + 
+          (4.00 × 0.15) + (5.33 × 0.10)
+        = 1.725 + 1.4375 + 1.534 + 0.6 + 0.533
+        = 5.83/10
+```
+
+**Overall Readability Score:** 5.83/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (param_1, iVar1, uVar1) with zero semantic meaning - should infer names from usage like "temp1" → "sum" based on accumulation patterns
+- **Loop unrolling**: loop_continue shows massive NEON vectorization (CONCAT13, CONCAT12 patterns) that completely obscures the simple "sum odd numbers" logic
+- **No comments**: Zero useful comments explaining algorithm logic or recovered intent
+- **Type degradation**: Uses undefined4, undefined8, undefined1 instead of int, unsigned int, char
+- **No contract recovery**: Preconditions, postconditions, and invariants not documented despite being recoverable from -O0 debug info
+
+### Best Quality Aspect: Type System Fidelity (L3_avg = 7.67)
+- Types are mostly precise (int, uint, bool)
+- Type safety is good with few unsafe casts
+- Composite type recovery acceptable given source simplicity
+
+### Most Needs Improvement: Semantic Transparency (L4_avg = 4.00)
+- No useful comments whatsoever
+- No assertion/contract recovery
+- Idiom recognition is partial but not named
+- Anomaly indication is inconsistent
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (accumulated, indexed, compared) to suggest semantic names. param_1 used as "sum" in loop should be named sum, not iVar2.
+2. **Comment loop unrolling**: When detecting heavy unrolling (NEON operations), add a comment like "// Loop unrolled 8x for performance" to preserve readability
+3. **Recover preconditions from debug info**: At -O0, debug symbols contain variable ranges and initial values - use this to document contracts like "// requires: n > 0"

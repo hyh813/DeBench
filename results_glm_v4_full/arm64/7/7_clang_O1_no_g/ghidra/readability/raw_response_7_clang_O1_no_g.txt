@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `iVar2`, `param_1`, `bVar1`), obscuring the semantic meaning of variables like `gcd_a`, `xor_key`, or `decrypted_char`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `param_fake_branch`, `param_opaque_predicate`), likely due to preserved symbols, providing perfect context for the code's purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers (e.g., `0x5a` for XOR key, `0x14` for 20, `0x23` for 35) without named constants, forcing the reader to reverse-engineer their meaning.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean of register spilling, but artifacts like `undefined8 in_stack_00000000` in `_start` and `undefined` casts in signal handling remain as minor noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable with standard `do-while` loops, but the pointer arithmetic in `param_string_encryption` (e.g., `pbVar4[-1]` and `| 1`) is confusing and non-idiomatic.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The function `test_obf_opt_edge` is a monolithic 100+ line function where the compiler aggressively inlined calls (e.g., `call_opaque_predicate` logic is pasted directly), destroying the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with clear block structures; however, the `do-while` loops used for `for` loops are a standard decompiler pattern that slightly reduces naturalness.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's removal of dead code (e.g., empty `param_fake_branch`), resulting in clean output without redundant checks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often imprecise, using generic `undefined8` and `undefined4` for return values (e.g., `call_fake_branch` returns `undefined8` instead of `int`) and parameters.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Composite types are largely lost; the bitfield struct in `param_implementation_defined` is completely optimized out, and `__jmp_buf_tag` is used but not defined in the snippet.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are unsafe casts present, such as `(*(code *)(undefined *)0x0)();` and passing integers to `signal` (e.g., `signal(8, ...)`) instead of using enum constants.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to compiler warnings (e.g., "Removing unreachable block") and lack semantic explanations of the algorithms (e.g., GCD, string decryption).
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common algorithms like GCD or string decryption are present but not explicitly recognized or named; they appear as generic loops and arithmetic.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags anomalies like "Removing unreachable block" and "Subroutine does not return," which helps identify optimized-out code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the non-null requirement for pointers is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but global data references are opaque (e.g., `DAT_001010d8`), making it hard to understand data dependencies without looking at the binary.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are presented in address order, which is standard, but logical grouping of related test functions is not explicitly enforced (though names help).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to `undefined` types, missing global data definitions (`DAT_...`), and missing header includes.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is generic (`iVar1`, `param_1`), obscuring algorithmic intent (e.g., GCD variables).
+- Aggressive inlining in `test_obf_opt_edge` creates a monolithic function, destroying modularity.
+- Types are imprecise (`undefined8`, `undefined4`), reducing type safety and compilation readiness.
+- Magic numbers (`0x5a`, `0x14`) are not replaced with named constants.
+- Complex pointer arithmetic in `param_string_encryption` (`pbVar4[-1]`, `| 1`) is confusing and non-idiomatic.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- The function names match the original source perfectly, providing immediate context for what the code is doing.
+
+**Most Needs Improvement:** Variable Naming (scored 3/10)
+- Generic variable names make it extremely difficult to follow the logic of algorithms like GCD or string decryption without manual tracing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., identify GCD loop variables and name them `a` and `b`).
+2. Attempt to outline inlined code to restore function boundaries when stack frames or call patterns suggest it.
+3. Detect magic numbers used in loops or cryptographic operations and suggest named constants (e.g., define `XOR_KEY = 0x5a`).

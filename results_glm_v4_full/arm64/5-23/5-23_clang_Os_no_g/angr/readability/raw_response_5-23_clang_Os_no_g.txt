@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `v1`, `v2`), providing no semantic context about their purpose (e.g., `size`, `result`, `counter`). While `cur` and `ptr` appear occasionally, the majority of names are auto-generated.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the original source (e.g., `param_macro_constants`, `param_asm_basic`), likely due to the presence of debug symbols (`-g`). This makes the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Macro constants have been expanded into magic numbers (e.g., `0x400` for `MAX_SIZE`, `57072` for `0xDEF0`, `4294967294` for `0xFFFFFFFE`) without comments or constant recovery, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including redundant stack pointer setup (`v0 = &v1`) in almost every function and non-standard helper calls like `arm64g_calculate_condition` which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While basic loops and conditionals are present, the control flow is frequently obfuscated by `arm64g_calculate_condition` calls inside `if` statements (e.g., in `call_asm_privileged`), making it difficult to discern the actual boolean logic being evaluated.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining of code blocks, maintaining the original structure perfectly, which is excellent for an `-O0` build.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, some functions like `param_asm_clobber` contain loop structures that are slightly awkward to trace due to pointer arithmetic placement (`cur += 1` before read).
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Redundant operations exist, such as `dst = memcpy(...); return memcpy(...);` in `param_asm_multi_insn`. The repetitive stack variable initialization (`v0 = &v1`) also adds unnecessary bulk.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct (`unsigned int`, `unsigned long long`, `void*`). However, the decompiler defaults to generic types for pointers where specific semantics (like `int*` vs `unsigned int*`) might have been inferred.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: The source code primarily uses primitives and arrays, which are handled correctly as pointers. No complex structs were present to test recovery, but the decompiler did not invent incorrect structures.
+
+**11. Type Safety:** Score: 4/10
+Justification: Several instances of suspicious arithmetic appear, such as `return ((a1 + a0) * 2 | a1 + a0 >> 31) & 4294967294;` in `param_clobber_importance`. This looks like a failed attempt to represent a simple multiplication or flag-check, introducing potential confusion about safety/overflow.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. The loss of macro definitions and the intent behind magic numbers (e.g., `57072`) is not documented in any way.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard library calls like `printf`, `memcpy`, and `mmap` are recognized. Notably, the atomic intrinsic `__aarch64_ldadd4_acq_rel` is correctly identified, which is a high-quality semantic recovery.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag anomalies. For example, the `arm64g_calculate_condition` calls and the weird bit-masking arithmetic are presented as standard code without warnings that they might be lifter artifacts or low-level details.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, the requirement for `mmap` success or valid pointers in `param_asm_clobber` is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct names. Global variables like `global_var` are referenced correctly. The relationships between the test functions and their `call_*` wrappers are clear.
+
+**17. Module Organization:** Score: 9/10
+Justification: The functions are ordered logically, matching the source file's structure. Related preprocessing and assembly tests are grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard functions like `arm64g_calculate_condition`, `__ROL`, and `__aarch64_ldadd4_acq_rel` without headers. It would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Macro constants expanded to magic numbers (e.g., `0x400`, `57072`) without comments.
+- Control flow obfuscated by `arm64g_calculate_condition` helper calls.
+- Redundant stack variable initialization (`v0 = &v1`) in every function.
+- Suspicious arithmetic expressions (e.g., `& 4294967294`) likely resulting from lifting errors.
+- Missing function arguments in `mprotect` call within `param_memory_protection`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The preservation of original function names makes navigating the code trivial despite other readability issues.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The complete absence of comments, especially regarding the expanded macro constants and non-standard helper functions, severely hinders understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Detect and annotate magic numbers that likely originated from preprocessor macros (e.g., comment `/* MAX_SIZE */` next to `1024`).
+2. Abstract or hide architecture-specific lifter helpers like `arm64g_calculate_condition` to present cleaner boolean logic.
+3. Simplify arithmetic expressions that emulate CPU flags (e.g., `& 0xFFFFFFFE`) back into standard C operations where safe.

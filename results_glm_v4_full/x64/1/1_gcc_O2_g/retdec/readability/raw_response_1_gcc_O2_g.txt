@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `a2`), providing no semantic hint about their role (e.g., `v1` used for loop counters, temporary calculations, and state variables interchangeably).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `sequential_ops`, `duffs_device`, `nested_if_deep`), matching the original source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and compiler artifacts, such as `0x66666667` (division by 10 constant), `0x5fe8` (global address), and `0x3fffffffc` (alignment mask), without explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including redundant `& 0xffffffff` masks on almost every operation and intrusive stack canary checks (`__readfsqword(40)`) cluttering the logic of simple functions.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often obfuscated; `switch` statements are converted to arithmetic (e.g., `switch_large` becomes `10 * a1`), recursion is flattened into loops (`recursion_factorial`), and complex patterns like Duff's Device are completely lost.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial outlining or inlining.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While some `goto` loops are recovered as `while` loops, others (like `loop_break`) retain explicit `goto` labels (e.g., `lab_0x1640_2`), disrupting the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: Redundant operations are frequent, such as repeated masking (`v2 = v3 & 0xffffffff`) and unnecessary intermediate variable assignments that add no clarity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct for the ARM64 architecture (using `int64_t` for `int`), though the verbose use of fixed-width types everywhere makes the code heavier than the original.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Standard library structures like `jmp_buf` and `sigset_t` are recovered, but local composite types (like the `matrix` array in `loop_multi_exit`) are flattened into pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains frequent unsafe casts, such as casting pointers to `int64_t` for arithmetic (e.g., `(int64_t)&v2`) and casting function pointers to generic types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata (address ranges, line numbers) and provide no semantic explanation of the algorithm or logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Major idioms are missed; `recursion_factorial` is decompiled as a loop, `switch` fallthrough logic is folded into arithmetic returns, and `duffs_device` is reduced to a stub returning the destination pointer.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication of anomalies; the catastrophic failure of `duffs_device` (returning `dst` instead of copying memory) is presented as normal code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and clear, but relationships are not explicitly documented (e.g., no "Called by" comments), and global variable usage is implicit.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered logically, roughly matching the source file structure, and helper functions are grouped reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard intrinsics like `__readfsqword`, `__asm_hlt`, and `__asm_pxor`, which would require significant patching to compile with a standard toolchain.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 9 + 3 + 3) / 4 = 4.75
+L2_avg: (3 + 8 + 4 + 4) / 4 = 4.75
+L3_avg: (7 + 6 + 5) / 3 = 6.00
+L4_avg: (2 + 2 + 1 + 1) / 4 = 1.50
+L5_avg: (6 + 7 + 4) / 3 = 5.67
+
+Overall = (4.75 × 0.30) + (4.75 × 0.25) + (6.00 × 0.20) + 
+          (1.50 × 0.15) + (5.67 × 0.10)
+Overall = 1.425 + 1.1875 + 1.2 + 0.225 + 0.567 = 4.60
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects
+- **Catastrophic Logic Failure**: `duffs_device` is decompiled as a stub that simply returns the `dst` pointer, completely omitting the memory copy loop.
+- **Idiom Loss**: `recursion_factorial` is transformed into a `while` loop, obscuring the original recursive algorithm.
+- **Control Flow Obfuscation**: `switch` statements are frequently converted into arithmetic expressions (e.g., `10 * a1`), hiding the branching logic.
+- **Excessive Noise**: Stack canary checks (`__readfsqword`) and redundant masking (`& 0xffffffff`) clutter almost every function.
+- **Semantic Error in Logic**: The `if_else` function logic is represented as `v1 >= 0 == (v1 != 0)`, which, while functionally equivalent, is significantly harder to read than the original `if (x > 0)`.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully recovered all original function names from the binary symbols, making high-level navigation trivial.
+
+### Most Needs Improvement
+- **Semantic Transparency (1.5/10)**: The decompiler fails to recognize or preserve standard programming idioms (recursion, switch fallthrough, Duff's device) and provides no comments or warnings about these transformations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Preserve High-Level Control Flow**: Improve pattern matching to preserve `switch` statements and recursive structures instead of flattening them into arithmetic or loops.
+2.  **Filter Compiler Artifacts**: Implement a post-processing pass to hide or abstract stack canary checks and redundant integer masking operations to clean up the output.
+3.  **Anomaly Detection**: Add warnings or comments when complex control flow patterns (like Duff's Device) fail to decompile or are reduced to stubs, rather than presenting incorrect code silently.

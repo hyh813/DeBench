@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `local_14`, `local_28`, `iVar1`, `iVar2`, `param_1`, `param_2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`. These cryptic names make it nearly impossible to track variable purpose without extensive cross-referencing.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, etc.). Class member functions are properly identified with their source names (`SimpleClass::getValue`, `SimpleClass::setValue`, `Base::virtual_func`). Minor issues with some internal functions having generic names like `FUN_001019a0`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "Test", "Base", "Derived" are preserved correctly. However, magic numbers like `0x1234` (class ID), `0x32` (50), `0x14` (20), `0x1f` (31 for buffer size) lack explanatory comments. The value `5` used for array size is also unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", and placeholder text like "TEMPNAMEPLACEHOLDERVALUE" and "__1". These artifacts clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0 optimization, control flow closely matches source. Loops, conditionals, and function calls are properly structured. The code reads naturally top-to-bottom with appropriate use of if-else and return statements. Minor issues with some complex inheritance scenarios.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and well-separated. Each test function is distinct. Class methods are properly extracted. Template instantiations generate separate functions as expected. Good granularity overall.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately. Some forward jumps in complex inheritance scenarios but manageable. Good linear flow for most functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. At -O0, loop unrolling is minimal. The decompilation properly avoids duplicating code blocks. Clean output without redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types: `undefined4`, `undefined8`, `undefined1`, `byte`, `bool`. Original had `int`, `char`, `size_t`, `double`. The decompiler uses `int` for some returns but `undefined4` for many local variables. Const correctness is partially preserved in function signatures but lost in many variable declarations.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/class recovery. Classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Point`, `Container<int>`, `Container<double>`, `DiamondDerived` are all properly reconstructed with correct names. Virtual inheritance handling is present. Minor issues with some internal STL template structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns present: extensive use of void pointer arithmetic, raw memory access without type safety, `operator new` returns `int*` instead of properly typed pointer. However, no buffer overflows or obvious undefined behavior in the main test functions. The code is functional but not type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some auto-generated comments present (e.g., "WARNING: Subroutine does not return", try-catch block annotations). However, no meaningful comments explaining algorithm intent, variable purposes, or non-obvious logic. The comments are mostly decompiler warnings rather than helpful documentation.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: C++ idioms well recognized: constructors/destructors properly identified, virtual function table setup (`*(undefined ***)this = &PTR_...`), operator overloading (`operator+`, `operator==`, `operator++`), template instantiation, lambda closure objects, exception throwing/catching, smart pointer operations. Good pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block". However, indirect virtual calls could be better flagged. Some complex inheritance scenarios (diamond, multiple) have confusing pointer adjustments without clear explanation.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The decompiler does not infer or recover contracts from the binary. This is a common limitation but significantly impacts understandability of complex functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through the code (e.g., `SimpleClass::getValue(aSStack_34)`). However, no explicit documentation of who calls whom, global variable usage, or callback relationships. Reader must infer relationships from code.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions dumped into single monolithic output. No logical grouping or separation by class. Original source had clear class definitions; decompiled output mixes all functions together. No namespace or class structure organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would not compile as-is due to: undefined types (`undefined4`, `undefined8`), missing includes, placeholder names like `type*`, `tuple*`, `unique_ptr*` without proper definitions. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: `local_14`, `iVar1`, `param_1` instead of semantic names like `result`, `instance_count`, `x`
+- Type precision severely degraded: uses `undefined4`, `undefined8` instead of `int`, `size_t`
+- No comments explaining algorithm intent or non-obvious logic
+- All code in single monolithic file with no logical grouping
+- Extensive noise from decompiler warnings and placeholder text
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Class and struct names are accurately recovered from the binary, including template instantiations and inheritance relationships.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic variable names like `local_X` and `iVarX` make the code nearly impossible to understand without constant cross-referencing to usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `local_14` used as counter in loop → name it `counter` or `index`)
+2. **Replace generic types with precise types**: Map `undefined4` → `int`, `undefined8` → `long` or `void*`, `byte` → `char`
+3. **Add meaningful comments**: Document algorithm intent, explain complex inheritance pointer adjustments, flag uncertain indirect calls with confidence levels

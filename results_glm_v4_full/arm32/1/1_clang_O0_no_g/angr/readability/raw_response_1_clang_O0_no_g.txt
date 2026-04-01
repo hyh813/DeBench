@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `a2`, completely stripping semantic meaning found in the source (e.g., `temp1`, `sum`, `count`, `i`, `j`). This makes tracking data flow difficult without cross-referencing the original source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered symbol names for the test functions (e.g., `sequential_ops`, `loop_for_fixed`, `duffs_device`), matching the source exactly. Only runtime support functions (like `_init`, `frame_dummy`) have generic names, which is expected.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with "magic numbers" that obscure the original logic, such as `1717986919` (representing division by 10), `4294967295` (representing -1), and `4294967294`. These raw constants make understanding the mathematical intent significantly harder than the source's simple operators.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While there is no obvious register spilling or dead code, the code contains artifacts like `armg_calculate_condition` calls and verbose pointer casts (e.g., `(unsigned int *)((char *)&$d.1[0] + $d.1[a0])`) which act as noise, distracting from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While basic loops are preserved, complex control flow is often lowered. For example, `switch` statements are represented as computed gotos via jump tables, and `if-else` chains are frequently flattened into nested ternary operators (e.g., in `if_elseif_chain`), which is syntactically valid but harder to read than structured blocks.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions; there is no unwanted inlining or outlining. The granularity matches the source perfectly, with each test case remaining a distinct, cohesive unit.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but the heavy use of nested ternary operators (e.g., in `nested_if_deep`) creates dense, horizontal logic that disrupts the vertical flow and makes tracing execution paths more mentally taxing than standard `if/else` blocks.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious dead code or loop unrolling artifacts. However, the decompiler introduces redundancy in expressions, such as the complex bit-twiddling for modulo operations (`i - (i + (i >> 31) & 4294967294)`), which is less readable than the source's `i % 2`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: There is a significant loss of type information. Signed integers (`int`) in the source are consistently decompiled as `unsigned int`, causing negative values to appear as large positive integers (e.g., `-1` becomes `4294967295`). Pointer types are often generic (`unsigned int *`) rather than specific types.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Arrays are often accessed via pointer arithmetic on flattened stack variables rather than array indexing. For instance, in `loop_break`, the array access `arr[i]` is decompiled as `(&v2)[i]`, which obscures the fact that `v2` is the base of an array.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code contains several unsafe casts, particularly in jump table implementations (e.g., `goto (unsigned int *)...`). While these reflect the underlying binary, they result in C code that would be considered dangerous or non-compilable in a strict environment without compiler extensions.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The rich documentation in the source (explaining difficulty, test cases, and logic) is entirely absent, leaving the user to infer the purpose of complex algorithms like Duff's device solely from the code.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms are often missed. Duff's device is presented as a raw computed goto into a switch structure rather than being recognized as the specific loop-unrolling idiom. Recursion is preserved, but standard loop patterns are sometimes obfuscated by math optimizations.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the magic number multiplication for division (`* 1717986919`) as standard code without any indication that this is a compiler optimization for division. It does not flag this as a potential readability issue or an artifact to be aware of.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the source comments specifying input ranges (e.g., "Input 5,7,3 should return 21") are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but the relationships are not explicitly documented (e.g., no "Called by" comments). Indirect calls via function pointers are shown as raw calls through pointers without clarifying the potential targets.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in a logical order that roughly follows the source, grouping related test functions together. The separation between Level 1, Level 2, and Level 3 tests is preserved in the sequence of functions.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on undefined symbols like `armg_calculate_condition` and uses GCC-specific computed goto syntax which may not be portable. The type mismatches (unsigned vs signed) would also cause warnings or errors if compiled against the original headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.5
+L2_avg: 7.0
+L3_avg: 5.0
+L4_avg: 2.0
+L5_avg: 5.3
+
+Overall = (5.5 × 0.30) + (7.0 × 0.25) + (5.0 × 0.20) + 
+          (2.0 × 0.15) + (5.3 × 0.10) = 5.23
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet Points)
+- **Variable Naming**: Variables are reduced to generic names (`v0`, `v1`), losing all semantic context (e.g., `sum`, `count`).
+- **Signedness Loss**: Integers are treated as unsigned, causing `-1` to display as `4294967295`, which fundamentally changes the logic's appearance.
+- **Magic Number Obfuscation**: Division by constants is replaced by magic multiplication and bit shifts (e.g., `* 1717986919`), obscuring the original arithmetic.
+- **Switch Lowering**: `switch` statements are decompiled into raw jump tables and computed gotos, losing the high-level case structure.
+- **Lack of Comments**: Zero comments or annotations are provided to explain complex logic or algorithms.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function names for all test cases, making it easy to locate specific logic blocks.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**
+- **Why?** The complete absence of comments, combined with the obfuscation of logic via magic numbers, makes understanding the *intent* of the code nearly impossible without the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover High-Level Arithmetic**: Detect compiler strength-reduction patterns (like division by constant via magic multiplication) and emit the standard division operator (`/`) instead.
+2.  **Signedness Analysis**: Improve type inference to distinguish between `signed int` and `unsigned int` so that negative literals are displayed correctly (e.g., `-1` instead of `4294967295`).
+3.  **Variable Name Recovery**: Implement heuristic-based naming (e.g., naming a variable `sum` if it is the result of repeated `+=` operations) to replace generic `v0`/`v1` names.

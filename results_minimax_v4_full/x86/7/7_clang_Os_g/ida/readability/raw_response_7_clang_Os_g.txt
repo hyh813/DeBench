@@ -1,0 +1,116 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_fake_branch` demonstrates a critical decompilation failure. The original source contains intentional "fake branches" (永假条件 - always-false conditions) as an obfuscation technique:
+
+```c
+// Original: Two always-false conditions that should be preserved
+if (x * x < 0) { result = result * 2 + 0xDEADBEEF; }
+if (strlen(str) < 0) { result += 1000; }
+```
+
+The decompiled version is:
+```c
+int param_fake_branch(int x) { return x; }
+```
+
+This is a **complete semantic loss** - the obfuscation logic is entirely eliminated.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Functions use generic names like `sub_1030`, `sub_10C0`, `v1`, `v2`, `v3`. The target function `param_fake_branch` is correctly named, but internal variables in other functions (e.g., `param_opaque_predicate` uses `v1` through `v6`) are completely uninformative. Compare to source: original uses meaningful names like `result`, `str`, but decompiled uses generic single-letter variables.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - target function `param_fake_branch` correctly matches source, but many utility functions use auto-generated names like `sub_1030`, `frame_dummy`, `deregister_tm_clones`. The naming doesn't indicate purpose (e.g., should be `init_process` or similar).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout. For example, in `param_opaque_predicate`: `(v1 | 1)` where `v1 = 2*x` - the `| 1` operation is unexplained. The constant `0x5A` in string decryption appears but isn't connected to the original `ENCRYPT_STR` macro. Many literals like `35`, `6`, `8` appear without context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise present. The decompiled code includes some compiler artifacts like `__usercall`, `__noreturn` annotations. However, the main issue is not noise but semantic loss - the fake branch elimination is a critical defect, not just noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The decompiled `param_fake_branch` shows trivial control flow (just `return x`), but this is WRONG - it should show the fake branches. Other functions like `param_opaque_predicate` have convoluted control flow with complex boolean expressions that don't match the source's clear `if (p1 && p2 && p3)` structure. The decompiled version uses bitwise operations where the source uses logical operations.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated. The target function and its caller are correctly decomposed. However, some functions like `param_tail_call_optimized` have been transformed with complex arithmetic that should be simpler recursive calls - this is decomposition mixed with optimization artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable linearity. The `param_opaque_predicate` function has some backward jumps (do-while loops) that are appropriate for the GCD algorithm. Minor issues with early returns in signal handlers.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: The most critical issue: the decompiler has eliminated the fake branches entirely - this is NOT legitimate optimization since the source was compiled at -O0. Additionally, `param_instruction_substitution` shows incorrect arithmetic: source computes `((x << 3) - (x << 1)) + (x >> 1) + (x & 0xF) + ((x << 4) - x)` but decompiled shows `((unsigned int)x >> 1) + (x & 0xF) + 21 * x` which is mathematically different (21*x vs 60*x).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (int, char, unsigned int). However, `size_t` is used in `decrypt_string` which is correct, but many pointer types are generic `char*` or `int*` without more specific typing. The `unsigned int` cast in shift operations is present but could be more precise about the intent.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct recovery needed for target function. However, in `call_vectorized_loop`, the decompiler uses `_DWORD *v1`, `_DWORD *v2` with `unk_2028`, `unk_2008` which are generic global symbols. The original source uses `int a[]`, `int b[]`, `int c[]` with clear semantics.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues: in `decrypt_string`, the XOR operation `*(v5 - 1) = v0 ^ 0x5A` uses `v0` which is a `char` but the result is assigned to `char*`. No severe type safety violations that would cause undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled output. The only comments are the header indicating IDA Pro decompilation and occasional notes like "positive sp value has been detected". No explanation of the fake branch obfuscation technique, no documentation of what the functions do, no indication of the intentional always-false conditions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The obfuscation patterns (fake branches, opaque predicates, instruction substitution) are NOT recognized. The decompiler presents the simplified `return x` for `param_fake_branch` without indicating that this represents eliminated fake branches. The GCD algorithm in `param_opaque_predicate` is present but not identified as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the fake branches were eliminated. No warnings about semantic differences between what the binary shows and what would be expected. The decompiler silently presents incorrect code. The "FAILED to decompile" messages for library functions are noted but don't explain the core issues with the user functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. The function `param_fake_branch` should have a comment indicating it always returns the input unchanged (if that's the intent), but there's no contract information. The signal handlers have no documentation of their side effects.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible (e.g., `call_fake_branch` calls `param_fake_branch`), but there's no documentation of the call graph. The relationship between `test_obf_opt_edge` and all the test functions is present but not explicitly documented. Global variables like `jmp_buffer`, `segv_buffer` are used but their purpose isn't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped in the output but in address order, not logical grouping. The original source organizes functions by category (OBF-L4-02, OBF-L4-03, etc.) but the decompiled output just lists them by address. Static functions aren't distinguished from public ones.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code appears to compile (metadata says "Compilation Result: Yes"). External dependencies (signal, longjmp, setjmp, printf) are referenced but not declared - this would need standard library headers. The code structure is valid C.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **COMPLETE SEMANTIC LOSS**: `param_fake_branch` decompiles to `return x;` but original contains intentional fake branches (always-false conditions `x*x < 0` and `strlen(str) < 0`) that should be preserved. This is the core obfuscation technique being tested.
+- **INCORRECT ARITHMETIC**: `param_instruction_substitution` shows `21*x` but source computes `60*x` (from `(x<<3) - (x<<1) = 6x` plus other terms). The decompiled formula `((unsigned int)x >> 1) + (x & 0xF) + 21 * x` equals `x/2 + x%15 + 21x` = `22.5x + x%15`, not the original `x*6 + x/2 + x%15 + x*15 = 22.5x + x%15` - wait, let me recalculate: source: `(x<<3)-(x<<1) = 8x-2x=6x`, `ux>>1 = x/2`, `x&0xF = x%16`, `(x<<4)-x = 16x-x=15x`. Total = 6x + x/2 + x%16 + 15x = 21x + x/2 + x%16. For x=10: 210 + 5 + 10 = 225. Decompiled: `(x>>1) + (x&0xF) + 21*x = 5 + 10 + 210 = 225`. Actually this is CORRECT! My mistake. The decompiled version is mathematically equivalent.
+- **NO OBFUSCATION RECOGNITION**: The fake branch obfuscation technique is completely invisible in decompiled output
+- **MISSING VARIABLES**: The local variable `result` from source is eliminated; the string "test" and its strlen check are completely gone
+- **NO DOCUMENTATION**: Zero comments explaining the obfuscation patterns or that code has been simplified
+
+**Best Quality Aspect:** Build System Compatibility (scored 8/10)  
+The code is valid C that compiles successfully. Function signatures are reasonable and the overall structure is syntactically correct.
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)  
+The decompiler fails to indicate that significant semantic information has been lost. It presents `return x;` as if it's correct, when actually the fake branch logic has been eliminated. There's no warning about this critical loss of obfuscation semantics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect eliminated dead code branches**: At -O0, always-false conditions should NOT be optimized away. The decompiler should flag when binary shows simplified logic that doesn't match expected structure from debug info.
+2. **Add semantic annotations for obfuscation patterns**: When fake branches, opaque predicates, or instruction substitutions are detected, add comments explaining what the code is doing (e.g., "// OBFUSCATION: fake branch eliminated - condition always false")
+3. **Recover local variable names from debug symbols**: The original has `result`, `str` - these should be recoverable from debug info at -g compilation level, not replaced with generic `v1`, `v2`

@@ -1,0 +1,44 @@
+{
+  "trace_format_version": 2,
+  "trace_capture_mode": "write_raw_bytes_v2",
+  "trace_runs_complete": true,
+  "arch": "x86",
+  "src_name": "1",
+  "source_path": "src/1.c",
+  "target_src_names": [
+    "1"
+  ],
+  "build_cmd": "i686-linux-gnu-gcc -O2 src/1.c -o build/x86/1/1_gcc_O2_no_g",
+  "original_bin": "results_minimax_v4_full/x86/1/1_gcc_O2_no_g/ghidra/semantic/native_x86_bin/1_gcc_O2_no_g_native",
+  "decompiled_bin": "results_minimax_v4_full/x86/1/1_gcc_O2_no_g/ghidra/syntactic/bin/1_gcc_O2_no_g_fixed",
+  "trace_runs": {
+    "original": {
+      "status": "success",
+      "label": "Original",
+      "binary_path": "results_minimax_v4_full/x86/1/1_gcc_O2_no_g/ghidra/semantic/native_x86_bin/1_gcc_O2_no_g_native",
+      "src_name": "1",
+      "target_src_names": [
+        "1"
+      ],
+      "error": null,
+      "event_count": 83,
+      "entry_count": 10,
+      "exit_count": 10,
+      "print_count": 63
+    },
+    "decompiled": {
+      "status": "success",
+      "label": "Decompiled",
+      "binary_path": "results_minimax_v4_full/x86/1/1_gcc_O2_no_g/ghidra/syntactic/bin/1_gcc_O2_no_g_fixed",
+      "src_name": "1",
+      "target_src_names": [
+        "1"
+      ],
+      "error": null,
+      "event_count": 1,
+      "entry_count": 1,
+      "exit_count": 0,
+      "print_count": 0
+    }
+  }
+}

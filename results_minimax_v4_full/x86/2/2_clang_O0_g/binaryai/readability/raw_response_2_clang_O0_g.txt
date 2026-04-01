@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `local_c`, `local_8`, `local_14`. For example, in `array_1d_stack`, parameters should be `arr` and `n`, but are `param_1` and `param_2`. Loop variables like `local_c` and `local_8` obscure their roles as iteration counters and accumulators.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Minor variations exist (e.g., `process_ll` instead of `process_ll`) but semantics are preserved. External library functions correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x41` (65 = 'A'), `0x62` (98 = 'b'), `0x28` (40 for array offset), and `0x2c` (44 for 2D array stride) appear without explanation. Some values like `100`, `200` in test calls are clear. No symbolic constant recovery for enum values or array sizes.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No excessive register spilling code, redundant casts, or debug instrumentation. Some type conversion noise exists (e.g., `SUB84`, `CONCAT44` for long long operations) but is manageable. Clean decompilation overall.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Loops are properly recovered as `for` loops with clear initialization, condition, and increment. Example: `for (local_c = 0; local_c < param_2; local_c = local_c + 1)`. Switch statements correctly used in `enum_switch`. No goto abuse. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching original source. `test_data_types_l1` calls individual test functions. No over-fragmentation or monoliths. Parameter counts match original (e.g., `ptr_func_complex` takes 2 parameters as in source).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_complex_index`. Some forward jumps in complex functions like `binary_tree_sum` but traceable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop unrolling is minimal at -O0. Some repeated calculations in struct access (e.g., `param_1 + local_c * 0xc` computed multiple times) but not severe. Clean code without significant redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved: `char`, `short`, `int`, `bool`. However, `long` is shown as `int` (should be 64-bit on ARM64), `long long` uses complex `undefined8` with `CONCAT44`, and floating-point types show as `longdouble`. No `int32_t`/`uint64_t` specificity. Const/volatile not always preserved in parameter types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - all struct/union types completely lost. `struct_simple` takes `int *param_1` instead of `Point3D *p`. Fields accessed via array indexing: `*param_1 + param_1[1] + param_1[2]` instead of `p->x + p->y + p->z`. No struct/union type definitions recovered anywhere. Union handling shows as `float *param_1` instead of `UnionData *u`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic is explicit (e.g., `param_1 + local_c * 4`). Function pointers use generic `code *` type. Array access without bounds checking in `array_oob` (the off-by-one bug `local_c <= param_2` is preserved but not flagged). Minor type confusion in `ptr_triple` using `undefined4 *param_1`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The original source had extensive comments (e.g., "// DT-L1-01: 字符类型") that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognizable from code structure (e.g., linked list traversal in `linked_list`: `for (local_c = param_1; local_c != (int *)0x0; local_c = (int *)local_c[1])`). However, no explicit pattern naming or documentation. State machine in `enum_switch` is implicit but not labeled.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain or anomalous code. The off-by-one bug in `array_oob` (`local_c <= param_2` causing out-of-bounds) is presented confidently without warning. Indirect function calls in `ptr_func_simple` and `struct_func_ptr` not flagged as potentially unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected NULL checks, buffer size requirements, or return value guarantees. The original source had clear semantics (e.g., "返回元素个数差，非字节差" for ptr_diff) that are not communicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., `main` calls `test_data_types_l1`, `test_array_types`, etc.). However, no explicit documentation of who calls what, callback relationships, or global variable usage. Static function visibility not indicated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in a logical order matching execution flow: data type functions → array functions → pointer functions → composite functions → test functions → main. However, all in a single file with no grouping markers or clear module boundaries beyond function ordering.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard library functions (`printf`, `memcpy`) that require `<stdio.h>` and `<string.h>`. External declarations present. No obvious compilation blockers - should compile with appropriate headers. No compiler-specific hacks observed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Variable naming**: All variables use generic names (`param_1`, `local_c`) instead of semantic names (`arr`, `n`, `sum`, `i`)
+- **Composite type loss**: All structs/unions completely lost - `Point3D`, `Node`, `Rect`, `Widget`, `UnionData` all become raw `int *` pointers with array-indexed field access
+- **No comments**: Zero documentation explaining algorithms, contracts, or decompilation confidence
+- **Type precision**: `long` shown as `int` (losing 64-bit on ARM64), `long long` uses complex `undefined8` with `CONCAT44`
+- **Anomaly silent**: The intentional off-by-one bug in `array_oob` (`local_c <= param_2`) presented without any warning
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+- Loops properly recovered as `for` loops, switch statements used correctly, no goto abuse. At -O0, the decompiled control flow closely mirrors the original source structure.
+
+**Most Needs Improvement:** Comment Quality (scored 1/10)  
+- Zero comments in the entire decompiled output. The original source had extensive documentation explaining each test case, expected values, and semantic details that are completely absent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Use field offset analysis and access pattern recognition to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Add semantic comments**: Include algorithm explanations, decompilation confidence indicators, and recovered contracts/preconditions
+3. **Improve variable naming**: Infer names from usage patterns (e.g., `param_1` used as array base → `arr`, `local_8` accumulating sum → `sum`)

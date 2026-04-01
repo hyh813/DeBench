@@ -1,0 +1,5 @@
+Test: Obfuscation optimizations and edge cases
+
+Value: 10
+Opaque predicate result: 20
+Instruction substitution result: 225

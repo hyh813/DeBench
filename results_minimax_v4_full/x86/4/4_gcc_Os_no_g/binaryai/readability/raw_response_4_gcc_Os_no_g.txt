@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All variables use generic auto-generated names like `iVar1`, `iVar2`, `uVar1`, `param_1`, `param_2`, `local_20`, `auStack_128`. These provide no semantic information about their purpose (e.g., `param_1` should be `count` in `varargs_func`, `param_2` should be `a` in `cdecl_func`).
+
+### 2. Function Naming Quality
+**Score: 6/10**
+Justification: Mixed results - core test functions correctly named (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`, `main`), and callback functions match source (`func_a`, `func_b`, `callback_func`). However, many utility functions use generic patterns like `FUN_00011030`, `FUN_00011090`, and internal helpers like `__i686_get_pc_thunk_bx`.
+
+### 3. Literal Clarity
+**Score: 2/10**
+Justification: Every literal is a magic number - `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0xad` (173). String constants are referenced as `&DAT_00012008`, `&DAT_000120c9` with no recovery of actual string content. No named constants or enum values recovered.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Relatively clean output with minimal compiler artifacts. Some noise present: `in_GS_OFFSET` for stack canary access, `__stack_chk_fail_local` calls, and `code *` type for function pointers. These are manageable and don't significantly impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Control flow is generally natural - loops use `do-while` constructs which are readable, conditionals are clear. At `-O0` optimization, the flow closely matches source. Minor transformation: switch statements become if-else chains, which is acceptable.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function granularity is appropriate - each function has a single responsibility. Test wrapper functions (`call_cdecl`, `call_stdcall`) are properly separated from implementation. No 500-line monoliths; largest functions are test drivers at ~50 lines.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `test_calling_conventions` but don't severely disrupt flow. Early returns used appropriately in functions like `param_double_ptr`.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Some loop unrolling visible in `test_calling_conventions` (the array initialization loop). No dead code elimination issues. The redundancy is moderate and doesn't severely obscure logic.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Uses Ghidra-specific types: `undefined4` (32-bit), `undefined8` (64-bit), `code *` (function pointer). Integer types not recovered as `int`/`long`. Function parameters lose signedness info. Mixed precision with some inference possible but significant type erosion.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct recovery. LargeStruct accessed via raw pointer arithmetic in `func_struct_byval`. SmallStruct fields accessed as `*param_1` and `param_1[1]` instead of `p->x * p->y`. All composite types lost to raw memory access patterns.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe operations present: pointer arithmetic in `varargs_func` accessing `&stack0x00000008 + iVar1 * 4`, function pointer stored as generic `code *` type. No bounds checking on array accesses. Moderate risk of undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No meaningful comments. Only auto-generated function headers like `// Function: cdecl_func @ 0x112ac`. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source comments about calling conventions completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some C idioms partially recognized - varargs handling shows loop over variadic arguments, function pointer callbacks recognized. But no explicit pattern naming (e.g., "Implements: Strategy pattern"). Idioms present but not highlighted.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly indication. The architecture mismatch (source says ARM64, binary is x86) is not flagged. Indirect calls not resolved. Unusual stack layouts not documented. Code presents everything with equal confidence.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. Null checks in `func_struct_byptr` and `param_double_ptr` not documented as implicit requirements. No contract information recovered from source assertions or documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are visible through direct calls. But no documentation of who calls whom, no callback relationships documented. Static functions not marked as file-local. External dependencies not listed.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions logically grouped - test functions together, implementation functions grouped by category (calling conventions, parameter passing, return values). Static functions properly scoped. Reasonable organization matching source structure.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined8`, `code *`) that won't compile with standard C. References undefined symbols like `DAT_00012008`, `PTR_DAT_00014008`. Requires significant patching to compile - not standalone ready.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 2 + 7) / 4 = 4.25
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.00
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 5 + 2 + 2) / 4 = 2.50
+L5_avg = (5 + 7 + 2) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (7.00 × 0.25) + (3.67 × 0.20) + 
+          (2.50 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.75 + 0.734 + 0.375 + 0.467
+        = 4.60/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming completely generic**: All parameters named `param_1`, `param_2`; all locals are `iVar1`, `uVar1`, `local_X`. Cannot track which variable holds what semantic value.
+
+2. **No struct recovery**: Composite types like `LargeStruct` (128 bytes) and `SmallStruct` completely lost, accessed via raw pointer arithmetic (`param_1[1]` instead of `p->y`).
+
+3. **Magic numbers everywhere**: All constants are hex values - `0xf`, `0x32`, `0x2a` - with no recovery of meaningful constant names like `EXPECTED_SUM`, `CALL_L1_01`.
+
+4. **No comments or documentation**: Zero semantic information about algorithm intent, calling convention behavior, or decompilation confidence.
+
+5. **Non-compilable output**: Uses Ghidra-specific types (`undefined4`, `code *`) and undefined data references (`DAT_00012008`), making the output useless for compilation testing.
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Functions are appropriately sized with clear single responsibilities. Test wrapper functions properly separated from implementations. No excessive inlining or fragmentation.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality (1/10)** - The decompiled code has zero meaningful comments. Original source had extensive documentation about calling conventions, parameter semantics, and test expectations - all completely lost. Adding just basic semantic annotations would dramatically improve readability.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When `param_1` is used as a loop counter in `varargs_func`, name it `count` or `num_args`. When `param_2` is dereferenced as string, name it `str`.
+
+2. **Recover struct types from allocation/field access patterns**: Group related pointer accesses into struct definitions. `param_1[1]` + `*param_1` in `func_struct_byptr` clearly indicates a 2-field struct.
+
+3. **Replace magic numbers with named constants**: Detect repeated literal values and suggest constant names. `0xf` appearing in multiple test outputs should be labeled `EXPECTED_CDECL_RESULT` or similar.

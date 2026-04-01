@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_8`, `local_c` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). This is the decompiler's strongest aspect - original intent is clear through naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0xf` (15), `0x10` (16). String literals replaced with opaque `DAT_00013008` references. Original had readable constants and inline strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `get_pc_thunk` warnings, `stack0x00000008` references, unreachable block warnings. Stack manipulation code visible where original had clean C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as for-loops correctly, but `test_calling_conventions` has broken printf calls missing format arguments. Conditionals are natural but some function signatures wrong (`call_cdecl` returns void instead of int).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but signatures degraded. `func_struct_byval` takes no parameters in decompiled version but should take `LargeStruct`. Return types often wrong (void vs int).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear loop structures. Forward references to `DAT_*` labels disrupt flow slightly but execution path is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Struct passing implemented via verbose copy loops (`piVar2`, `piVar3` copying 16 elements). Original had simple pass-by-value semantics now expanded to manual memory operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, double, longlong) but degraded to `undefined*`, `undefined4`, `undefined8`. Function pointers use generic `code*` instead of proper signatures like `int (*)(int)`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `LargeStruct`, `SmallStruct` completely lost. Become `int` arrays or raw pointers. `func_struct_byptr` takes `int*` instead of `SmallStruct*`. No field names preserved anywhere.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)&stack0x00000008`, `(undefined4 *)*param_1`. Varargs implemented via raw stack pointer arithmetic. Function pointer calls use untyped `code*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler warnings as comments ("WARNING: Function... replaced"). Zero algorithm explanations, no decompilation confidence indicators. Original had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (shows manual `stack0x00000008` manipulation). Struct passing patterns appear as raw memory copies. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present (unreachable blocks, function replacements) but no semantic anomaly flags. Broken printf calls not flagged despite missing arguments.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Null checks present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables shown as `DAT_*` references without context. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. Single output file with no header separation. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined symbols (`DAT_*`, `printf`, `strlen`, `__libc_start_main`). Would require extensive stubbing and type definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+2+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.65/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` become raw `int*` with no field names
+- **Function signatures incorrect** - `call_cdecl`, `call_stdcall` return void instead of int, losing return value semantics
+- **Printf calls broken** - Format strings separated from arguments (e.g., `printf("CALL-L1-01: %d\n");` without the value)
+- **Varargs implemented as raw stack manipulation** - `local_8 = (int *)&stack0x00000008` instead of `va_list`
+- **All variable names generic** - `param_1`, `local_c` provide zero semantic information
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved accurately, making it possible to identify test purposes despite other degradation
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct/union types transforms clear C code into pointer arithmetic, fundamentally breaking readability
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from stack access patterns** - Detect repeated offset access (`param_1`, `param_1[1]`) and propose struct definitions with field names
+2. **Preserve function return type semantics** - Track return value usage at call sites to infer correct return types (void vs int)
+3. **Recognize standard library patterns** - Identify `printf` format string + argument relationships and varargs `va_list` patterns to restore high-level constructs

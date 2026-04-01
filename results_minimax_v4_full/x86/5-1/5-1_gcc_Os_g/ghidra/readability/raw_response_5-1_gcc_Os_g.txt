@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `sVar2`, `uVar6`, `piVar2`, `local_10`, `puVar1`). The only meaningful name is `in_GS_OFFSET` for stack canary. Compare to source where variables like `result`, `capture_by_value`, `capture_by_ref` are semantic - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Test functions perfectly match source names (`test_cpp_member_func`, `test_cpp_virtual_func`, `test_cpp_lambda`). Member functions correctly identified (`Base::virtual_func`, `Derived::virtual_func`, `template_max<int>`). Minor issue: some internal functions have generic names but public API is excellent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Code is littered with unexplained magic numbers: `0x2a` (42), `0x14` (20), `0x3e9` (1000), `0x47` (71), `0x2bf` (703), `0xfa` (250). The source uses meaningful values like `instance_count * 1000` but decompilation shows only raw numbers. No constants or enum values recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with 50+ WARNING comments: "WARNING: Unknown calling convention", "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". These 96 functions include many compiler artifacts that obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for`/`while`, conditionals are `if` statements. However, `call_virtual_func` has "WARNING: Could not recover jumptable" and treats indirect jump as call. At -O0, this is acceptable but shows limitation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition - each test function is separate (12 test functions), member functions properly extracted as separate functions (`Base::virtual_func`, `Derived::virtual_func`, `template_max<int>`, `template_swap<int>`). Function granularity matches source well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Minor issues: some forward jumps exist, and unreachable block warnings indicate dead code paths. Overall flow is mostly linear without spaghetti code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Template instantiations are properly deduplicated. Some stack canary checks are present but they're legitimate compiler additions at -O0, not redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - basic types like `int`, `double`, `char*`, `size_t` are correct. However, many uses of `undefined4`, `undefined`, `undefined1` instead of specific types. Some const correctness lost. Template type parameters partially recovered (`Container<int>`, `Container<double>`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Partial struct recovery - `SimpleClass` has `name` field, `Base` has `_vptr_Base`, `Derived` has `multiplier`, `Container` has `data` and `size`. However, many fields are generic (`field_0x8`, `field_0x10`, `_8_4_`, `_16_4_`). Virtual inheritance structure shows overlapping field warnings.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - complex pointer arithmetic in virtual function thunks (`(int)&this->_vptr_MiddleA + (int)this->_vptr_MiddleA[-3]`), many `undefined*` types. However, no obvious buffer overflows or severe safety violations. The unique_ptr handling shows complex but type-aware operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Many comments present but 90% are auto-generated warnings ("WARNING: ..."), DWARF prototypes ("DWARF original prototype: ..."), or unresolved var notices. No comments explaining algorithm logic, purpose, or non-obvious decisions. Compare to source which has extensive explanatory comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms recognized: vtable mechanism (`_vptr_Base`), thiscall calling convention, template instantiation. However, no explicit naming of patterns like "RAII", "virtual dispatch", "diamond inheritance". The code shows the mechanisms but doesn't name them.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Most anomalies are flagged with warnings: "Unknown calling convention", "Could not recover jumptable", "Unresolved local var", "Struct overlapping field". However, warnings are generic - they don't explain potential impact or provide resolution guidance.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The source has implicit contracts (e.g., "requires: ptr != NULL" for getData) but these are completely lost. No error condition documentation beyond what code shows.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Relationships are somewhat clear through structure - test functions call member functions, virtual dispatch through vtables, template instantiations are grouped. However, no explicit documentation of call graphs, global usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions together, member functions by class, template functions grouped, destructors grouped. This reasonably matches source organization where classes are defined separately. Minor: all in single file rather than logical separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone - missing standard library declarations (`std::ios_base::Init`, `std::unique_ptr`, `operator_new`), undefined types (`EVP_PKEY_CTX`, `undefined4`), complex nested template types. Requires extensive patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`iVar1`, `sVar2`, `uVar6`) - loses all semantic meaning from source
+- Magic numbers everywhere without explanation (`0x2a`, `0x3e9`, `0x2bf`) - source had meaningful expressions
+- Severe noise pollution with 50+ WARNING comments obscuring actual logic
+- No explanatory comments - only auto-generated decompiler warnings
+- No contract/precondition/postcondition recovery despite -O0 debug build
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler correctly recovered all test function names and most member function names from the source. This is the strongest area - function names are semantic and match the original.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+At -O0 debug level, variables should have meaningful names. The decompiler used generic temp names throughout, completely losing the semantic intent visible in source (`result`, `capture_by_value`, `capture_by_ref`, `ptr1`, `ptr2`, `arr`).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: At -O0, use DWARF debug info to recover local variable names. For `iVar3 = sVar2 + 0x125c`, infer `result` or `return_value` from the assignment to return.
+2. **Replace magic numbers with named constants**: Detect repeated literal patterns and suggest constants. `0x3e9` (1000) appears with `instance_count` - name it `THOUSAND` or detect the multiplication pattern.
+3. **Reduce warning noise in output**: Move compiler warnings to separate log or suppress unless user requests verbose mode. The 96 functions include many that are just noise, not user code.

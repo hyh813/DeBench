@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `a0`, `a1`, `a2`. The original source had meaningful names like `temp1`, `temp2`, `sum`, `count`, `target`, `arr` - all completely lost. Even loop indices are `v0`, `v1` rather than `i`, `j`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `test_control_flow_l1`) but many use auto-generated addresses like `sub_401030`, `sub_401090`, `_init`, `_start`. The test functions are properly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive use of unexplained magic numbers throughout. The value `4294967295` (representing -1 as unsigned) appears frequently as error return but has no explanation. Constants like `1001`, `101` for loop limits are unexplained. No named constants recovered.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Very clean decompilation with minimal compiler artifacts. No debug code, register spilling artifacts, or redundant casts visible. The code is straightforward.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Basic control flow structures (while, do-while, switch) are recovered. However, `loop_for_fixed` uses a completely broken formula instead of a loop: `(((a0 - 1) * (a0 - 2) >> 32 CONCAT...)` - this is semantically incorrect and should be a simple loop. The `loop_while` and `loop_dowhile` also have confusing division-by-10 logic instead of clear loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. Each function handles one logical unit. No obvious inlining issues. Test functions properly call individual test cases.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with good flow. Switch statements have forward jumps but that's expected. No excessive goto abuse. Some nested conditions but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present, particularly in the complex formula in `loop_for_fixed`. Loop unrolling is not an issue here since it's -O0. Minor duplication in test functions but acceptable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters are `unsigned int` but original source used `int` (signed). This is a critical type error - signed/unsigned mismatch. No use of precise types like `int32_t`, `size_t`, or `bool`. All integers are generic `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. Some attempts with generic `struct_0`, `struct_1` in startup code, but actual data structures like arrays in `loop_break` (original: `int arr[] = {10, 20, 30, 40, 50}`) are completely lost - decompiled as string `"\n"` which is wrong.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Acceptable type safety with some issues. Pointer arithmetic is present but expected in C. No obviously dangerous casts. The main issue is the signed/unsigned mismatch throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled code. Zero explanation of algorithm intent, no documentation of parameters, no recovery notes. The original had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not named or explained. Duff's device is partially recognized with labels (`LABEL_401777`, etc.) but not identified as Duff's device. State machines identified as switch statements but not named. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of problems. The completely broken `loop_for_fixed` formula is presented as correct code. No warnings about potential decompilation issues. The `loop_break` array decompilation as `"\n"` string is clearly wrong but not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postcondition documentation. No recovery of implicit contracts like "requires: n > 0" or "ensures: return value is sum of 0 to n-1". Zero contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. External dependencies use `extern` declarations. However, no documentation of call relationships (who calls what, callbacks, etc.). Basic clarity but no relationship documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are in a single file which is reasonable. Related functions grouped together (test functions, helper functions). Static functions properly scoped. Decent logical grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses `extern` declarations for globals. Should compile with minimal changes. Some missing prototypes but easily fixable. No compiler-specific hacks that would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+1. **`loop_for_fixed` completely broken**: Uses nonsensical formula instead of loop - `(a0-1)*(a0-2) >> 32 CONCAT...` - this is mathematically wrong and should be a simple `for` loop computing sum 0 to n-1
+2. **`loop_break` array wrong**: Original `int arr[] = {10,20,30,40,50}` decompiled as string `"\n"` - completely loses the array data
+3. **All types wrong**: Original used `int` (signed) but decompiled as `unsigned int` throughout - loses negative number handling semantics
+4. **No variable names**: All variables are `v0`, `v1`, `a0`, `a1` - completely generic, losing all semantic meaning
+5. **No comments**: Zero documentation explaining algorithm intent, parameters, or return values
+
+### Best Quality Aspect: Noise Reduction (8/10)
+The decompiled code has minimal compiler artifacts and reads relatively cleanly without debug instrumentation clutter.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiler produces completely uncommented code. With -O0 debug build, there should be ample information to recover meaningful comments explaining each function's purpose, parameters, and logic.
+
+### Top 3 Recommendations:
+1. **Fix loop recovery**: The `loop_for_fixed` formula is completely wrong - should be a simple `for` loop. The decompiler failed to recognize the loop pattern.
+2. **Recover variable names from debug symbols**: With `-g` flag, variable names like `temp1`, `sum`, `count`, `target` should be recoverable from DWARF info.
+3. **Add comments**: At minimum, document function purpose, parameters, and return values. Flag anomalies like the broken `loop_for_fixed` and incorrect array decompilation.

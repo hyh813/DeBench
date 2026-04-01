@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `v3`, `v4`) with no semantic meaning. Original source had descriptive names like `result`, `encrypted`, `decrypted`, `buffer`, `key` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). However, some helpers are generic (`sub_860`, `init_proc`) and library functions show "FAILED to decompile".
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals referenced as opaque `asc_1328`, `unk_1358` instead of actual content. Signal numbers (8, 11) not explained as SIGFPE/SIGSEGV. Some calculations constant-folded obscuring original logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Register annotations (`w0`, `x0`, `x1`, `w19`) add noise. Type decorations (`__fastcall`, `__cdecl`, `__int64`, `_BOOL4`) clutter code. "FAILED to decompile" messages for 14 library functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs reasonably well. However, `param_fake_branch` lost all conditional branches (永假 conditions eliminated). Tail recursion converted to loops (`param_tail_call_optimized`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well. However, `param_buffer_overflow_stack` is completely empty (optimization eliminated it). `call_*` functions constant-folded instead of calling `param_*` functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear loop structures. `test_obf_opt_edge` has some forward references but remains traceable. No excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (e.g., `call_fake_branch` returns 10 directly instead of calling `param_fake_branch(10)`). Some expressions over-simplified losing original computation structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, size_t). However, uses generic `__int64`, `_BOOL4` instead of standard types. Some unsigned/signed distinctions lost in bit operations.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered (`a[8]`, `b[8]`, `c[8]`). However, the bitfield struct in `param_implementation_defined` is completely lost (returns constant 48). No struct field names recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(unsigned int)x >> 1`, `(__sighandler_t)`). Pointer arithmetic present but generally safe. No buffer overflow warnings despite original code having intentional overflows.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments except auto-generated attributes (`thunk`, `noreturn`, `BYREF`). Original source comments explaining obfuscation techniques completely lost. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. Tail call optimization recognized and converted but not documented. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages for library functions. However, empty function `param_buffer_overflow_stack` not flagged as anomalous. No warnings about eliminated dead code branches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Error conditions not documented. Original source's expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`encrypted_0`, `jmp_buffer`, `segv_buffer`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. However, no file organization visible (single output). Static functions not clearly scoped. No header recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 14 library functions failed to decompile requiring stubs. Type definitions missing for external functions. Cannot compile standalone without significant patching and external dependencies.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+5+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (3+4+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source
+- **Dead code branches eliminated** - `param_fake_branch` lost both 永假 conditions that were core to the obfuscation test
+- **No comment recovery** - Original documentation explaining obfuscation techniques completely absent
+- **Constant folding over-aggressive** - `call_*` functions return constants instead of calling `param_*` functions, hiding program structure
+- **14 library functions failed to decompile** - Requires external stubs for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names preserved from source code, maintaining semantic connection to original purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or expected values documented; original source's test expectations completely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., `v1` used in string operations should be named `buffer` or `str`)
+2. **Preserve dead code branches with annotations** - Instead of eliminating 永假 conditions, mark them as "OPTIMIZED: condition always false" to preserve original intent
+3. **Recover and display string literal content** - Replace `asc_1328`, `unk_1358` references with actual string content where recoverable from binary

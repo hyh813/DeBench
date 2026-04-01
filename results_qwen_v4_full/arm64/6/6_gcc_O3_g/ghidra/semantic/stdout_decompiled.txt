@@ -1,0 +1,28 @@
+Testing standard library functions...
+strlen result: 8
+memcmp result 1: 0
+call_strlen result: 12
+call_memcpy result: 90
+memcmp combined: -1
+Value: 42, Name: TestName
+call_printf result: 26
+call_scanf result: 579
+call_fopen_fclose result: 42
+call_fread_fwrite result: 42
+call_malloc_free result: 90
+call_memset result: 0
+call_strchr_strstr result: 15
+Testing system calls...
+call_linux_syscall result: 42
+call_win32_api result: 42
+call_fork_exec result: 42
+call_pipe_communication result: 42
+call_socket_create result: 42
+call_shmget_shmat result: 42
+call_signal_handling result: 0
+Testing thread concurrency...
+call_pthread_create result: 49
+call_pthread_join result: 465
+call_mutex_lock result: 42
+call_condition_variable result: 42
+call_atomic_ops result: 42

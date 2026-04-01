@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic auto-generated names: `param_1`, `param_2`, `param_3` for parameters; `iVar1`, `uVar1`, `local_8`, `local_10` for locals. These cryptic names completely obscure the semantic purpose that the original source clearly expresses with names like `dst`, `src`, `buffer`, `result`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly match source: `param_strcpy`, `param_memcpy`, `param_fork_exec`, `signal_handler`, `thread_sum`. However, many remain as `FUN_0010xxxx` (e.g., `FUN_0010218c` which is `call_strcmp`). The inconsistent naming requires guesswork to map to source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Format strings like "Value: %d, Name: %s\n" are preserved, but critical magic numbers lack explanation: `0x2a` (42), `0x38` (SYS_open), `0x39` (SYS_close), signal numbers `10` (SIGUSR1) and `0xe` (SIGALRM). These syscall numbers require external knowledge to interpret.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact pollution: `___stack_chk_guard` references, `__printf_chk` instead of `printf`, `__isoc99_sscanf` instead of `sscanf`, `undefined8`/`undefined4` types, auto-generated atomic helpers `__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`. These distract from actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Generally uses proper loop structures (`do-while`), conditionals, and function calls. However, `thread_sum` shows heavy loop unrolling (4-way) and the `param_memset` function has deeply nested if-chains that could be cleaner. At -O0, this unrolling is unnecessary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable size and cohesion. Thread functions (`thread_compute`, `thread_increment`, `thread_sum`) are properly separated. Test functions call the parameter functions. Minor issue: some test code inlined into `test_standard_library_functions` could be separate functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without goto statements. Some forward declarations exist but don't significantly disrupt flow. Early returns used appropriately in error handling.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling in `thread_sum` (unrolled 4-way), `param_malloc_free`, and `param_memset` (16-byte chunks). Dead code not present, but optimization artifacts create visual noise. The redundancy makes the logic harder to verify against source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types extensively: `undefined4` instead of `int`, `undefined8` instead of `long` or `void*`, `ulong` for sizes. Return types often wrong: `void` instead of `int` for functions like `param_strlen`, `call_strlen`, `param_scanf`. Function pointers are just generic addresses.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. The `ThreadData` struct is completely lost - in `param_pthread_join`, the decompiler shows raw offsets like `*(int *)((long)&uStack_28 + lVar3)` instead of `data[i].result`. Structs like `sockaddr` and `ThreadData` remain as separate variables.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The code uses raw pointer arithmetic extensively (e.g., in `param_fread_fwrite`: `*(undefined *)((long)local_28 + sVar1) = 0`). However, casts between similar types are minimal. Mixed atomic type handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments exist. Only the decompilation header and function signatures are present. No explanation of algorithm, no documentation of pre/postconditions, no hints about indirect calls or uncertain decompilations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Threading patterns (producer-consumer, mutex, condition variables) are present in code structure but not explicitly named or commented. The decompiler doesn't recognize these as common concurrency idioms. No pattern names like "state machine" or "double-checked locking" appear.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings or flags for suspicious code. The indirect function calls through function pointers aren't flagged. No indication of uncertain decompilation. The TLS handling using `tpidr_el0` register isn't explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error handling exists but isn't explained. The contracts implied by the source (e.g., "requires: dst buffer large enough") are completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function naming shows some caller-callee relationships (e.g., `call_strcpy` → `param_strcpy`), but this is inconsistent. No documentation of global variable usage, callback relationships, or virtual dispatch. The `signal_received` and `signal_number` globals aren't identified as inter-thread communication.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped in address order, not logically. Static functions are properly marked. But the organization doesn't reflect source file structure (test functions, library wrappers, system calls aren't grouped separately). No headers or API contracts.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code cannot compile standalone. Missing includes, undefined types (`undefined4`, `undefined8`), external function declarations needed. Architecture-specific code (`tpidr_el0`, atomic intrinsics) would need ports. No `#ifdef` for portability.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `iVar1`, `local_8`), losing all semantic meaning from the original (`dst`, `src`, `buffer`)
+- No struct recovery - the `ThreadData` struct is completely lost to raw pointer arithmetic
+- No comments or documentation - zero explanation of algorithms, contracts, or anomalies
+- Missing return types - many functions return `void` instead of their original `int` return type
+- Heavy compiler noise - `__stack_chk_guard`, `__printf_chk`, architecture-specific atomic intrinsics overwhelm the logic
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions maintain reasonable size and cohesion. Thread functions are properly separated, and the parameter/wrapper function pattern from the source is preserved in most cases.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The generic `param_X`, `iVarX`, `local_X` naming scheme completely obscures variable purpose. Even simple cases like loop counters lose their semantic meaning.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: Track how variables are used (string operations → likely `src`/`dst`, arithmetic → likely `counter`/`index`, size checks → likely `size`/`length`) and suggest descriptive names
+2. **Recover struct types**: Analyze allocation patterns (consecutive `malloc` with same size, related fields accessed together) to reconstruct structs like `ThreadData` instead of exposing raw offsets
+3. **Add meaningful comments**: Include preconditions, postconditions, and indicate confidence levels for indirect calls or ambiguous patterns

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `exec_mem`, `page_size` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), but wrapper functions like `function_1030` through `function_1090` for library calls are meaningless.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`7`, `34` in mmap calls, `0xdef0`, `0xffffffff`). String literals stored as hex-encoded globals (`g1` through `g19`) with Chinese UTF-8 bytes unreadable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive noise from redundant casts (`& 0xffffffff`, `& 0xfffffffe`), assembly intrinsics (`__asm_movaps`, `__asm_paddd`), and uninitialized variable declarations (`int64_t v1; // 0x1550`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recovered as while constructs (`param_asm_clobber`), but overflow checks use convoluted expressions like `v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g24)) < 0` instead of simple comparisons.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Several functions have incorrect parameter counts (`param_dynamic_code` takes 6 parameters instead of 1, `call_asm_clobber` takes 4 instead of 0). Constant folding collapsed some functions entirely (`call_macro_constants` just returns 64).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well, but forward jumps and while loops with manual index management disrupt natural flow in assembly-related functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bit masking patterns (`& 0xffffffff`) throughout code. Constant folding creates redundancy where original computation logic is lost but magic return values remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—everything is `int64_t` regardless of original type. Original `int`, `size_t`, `char*` distinctions lost. Signed/unsigned sometimes incorrect (`uint64_t a2` in `param_asm_clobber`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union definitions recovered. Array access uses pointer arithmetic (`*(int32_t *)(4 * v1 + a1)`) instead of proper array indexing. Custom `int128_t` typedef is incorrect.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`(int32_t)a1`, `(int64_t)&v1`). Pointer arithmetic without bounds checking. Assembly intrinsic return types unclear and potentially unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No semantic comments explaining logic. Only auto-generated address ranges (`// Address range: 0x1000 - 0x101b`) and section headers. Original source's extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No macro expansion recognition (SQUARE, MAX, ADD_16 patterns lost). Assembly patterns not identified. Conditional compilation branches collapsed without indication.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Uninitialized variables not flagged. Assembly intrinsics (`__asm_movaps_1`, `__asm_xorps`) used without explanation. No warnings about potential decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Original source's expected return values and test cases not preserved as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible through direct calls, but global variable relationships unclear (`g20`, `g21`, `g22` usage opaque). No documentation of callback or dispatch relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 57 functions in single file with arbitrary ordering. No logical grouping by feature (preprocessing vs. assembly). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone—missing definitions for `__asm_movaps`, `__asm_paddd`, `__asm_xorps`, `__asm_hlt`. Custom `int128_t` typedef incorrect. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.96/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `a1`) losing all semantic meaning from original (`size`, `counter`, `exec_mem`)
+- **Function signatures corrupted** (`param_dynamic_code` has 6 parameters instead of 1, `call_macro_constants` takes no arguments in source but decompiler adds parameters to callers)
+- **Type system collapsed** to `int64_t` everywhere, losing `int32_t`, `size_t`, `char*` distinctions
+- **No struct/union recovery**—all composite types reduced to pointer arithmetic
+- **Assembly intrinsics unresolvable** (`__asm_movaps`, `__asm_paddd`) prevent compilation and understanding
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Core function names like `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features` were preserved from debug symbols, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)**—Complete failure to recover any struct, union, or array types; all composite data accessed through raw pointer arithmetic losing all semantic structure.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming**—When `-g` flag is present, extract original variable names from DWARF debug info instead of generating `v1`, `v2`
+2. **Recover type information from function signatures**—Use calling convention analysis and debug info to restore `int32_t` vs `int64_t` distinctions and proper pointer types
+3. **Add decompilation confidence annotations**—Flag uncertain reconstructions (assembly intrinsics, indirect calls) with comments like `// DECOMPILER_UNCERTAIN: assembly intrinsic not fully resolved`

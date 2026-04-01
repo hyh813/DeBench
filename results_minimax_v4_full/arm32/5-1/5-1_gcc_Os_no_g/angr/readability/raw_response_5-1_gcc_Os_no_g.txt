@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `ptr`, `result` throughout. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` - all lost in decompilation. Even stack frame comments like `// lr`, `// r0` don't provide semantic meaning.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions like `call_virtual_func` and `test_cpp_oo_features` are well-named, but many use mangled C++ names (`_Z18test_cpp_exceptionv`) or mechanical addresses (`sub_109bc`, `sub_10c34`). Member functions partially demangled but lack clarity (e.g., `_ZN4Base12virtual_funcEi` should be `Base::virtual_func`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Code is littered with unexplained magic numbers: `42` (thrown exception), `72432`, `72456` (vtable addresses), `72736`, `72760`, `72788` (diamond inheritance vtables), `0x21e70`, `0x11c88` (type info pointers). No constants or enum values recovered. These obscure the actual logic completely.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`GLIBC_2.4::__stack_chk_guard`, `__stack_chk_fail()`), register spill comments (`// lr`, `// r0`, `// r3`), computed goto for vtable dispatch (`goto *((int *)*((int *)arg_0))`). At -O0, these should be minimal but are pervasive.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of goto statements disrupts readability: `goto g_22008`, `goto LABEL_10b38`, computed goto for vtable dispatch. Exception handling uses convoluted control flow with nested conditionals and re-throw patterns. Loop constructs not properly recovered - uses labels instead of while/for.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions properly extracted (template functions, member functions), but several test functions are empty stubs returning immediately (`test_cpp_constructor`, `test_cpp_multiple_inheritance`, `test_cpp_lambda`). The original source had complete implementations that are missing in decompilation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearity due to frequent forward jumps (`goto LABEL_10b38`, `goto LABEL_10b60`), computed gotos, and nested exception handling. Code does not read top-to-bottom; requires tracing multiple paths to understand logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy in exception handling with repeated `__cxa_begin_catch()`/`__cxa_end_catch()` pairs. Template instantiation code shows some duplication. Not severe but noticeable compared to original source.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type recovery - class names partially recovered (`class Base`, `class Derived`), but extensive use of `unsigned int` instead of specific types (`int32_t`, `size_t`). Many `void*` pointers where more specific types exist. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct/class field recovery. Classes declared but empty (`class Base { } Base;`). Only generic typedef `struct_0 { void* field_0; unsigned int field_4; }` for MiddleA/MiddleB. Original source had clear fields like `multiplier`, `dataA`, `dataB`, `shared_data` - all lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: type punning `*(unsigned int *)&ptr[40]`, unsafe pointer arithmetic `(int)(*(p))[4]`, incorrect pointer casting. Member function `this` pointers passed as `void*` instead of proper typed pointers. Multiple `// Other Possible Types: unsigned int` annotations indicate uncertainty.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: variable location hints (`// [bp-0x10]`, `// lr`), register assignments. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive Chinese comments explaining each feature - completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Virtual function dispatch not recognized as vtable pattern. Exception handling not identified as try-catch pattern. Template instantiation not recognized as generic pattern. Lambda expressions completely missing (function is empty stub).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for indirect calls that couldn't be resolved. No warnings about empty function bodies. No indication that `test_cpp_constructor`, `test_cpp_multiple_inheritance`, `test_cpp_lambda` return immediately without doing anything. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation. Original source had clear expectations (e.g., "期望: 4704") - completely absent. This dimension has the worst recovery.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some `extern` declarations present for external dependencies, but relationships not clearly documented. Function call graph not explicit. Virtual dispatch relationships not clearly explained. Callback relationships not identified.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions organized by address in memory, not logically grouped. Related test functions scattered. Original source had clear sections (CPP-L3-01, CPP-L3-02, etc.) - completely lost. Static function scoping not indicated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has `extern` declarations but missing definitions for many symbols. Won't compile as-is. Template instantiations present but class definitions incomplete. Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All meaningful variable names lost - `value`, `name`, `data`, `size`, `multiplier` replaced with `v0`, `v1`, `ptr`, `result`
+- **Magic numbers**: Dozens of unexplained hex values (vtable addresses like `72432`, `72736`) and integers (`42`) without context
+- **Empty function stubs**: `test_cpp_constructor()`, `test_cpp_multiple_inheritance()`, `test_cpp_lambda()` return immediately with no implementation
+- **Struct field loss**: All struct/class fields generic (`field_0`, `field_4`) or missing entirely
+- **Control flow**: Excessive goto statements and computed jumps instead of natural loops/conditionals
+
+### Best Quality Aspect: Type System Fidelity (scored 4.3/10)  
+- Some class names recovered (Base, Derived, Container) and template functions partially identified. At least the general category of types is sometimes correct.
+
+### Most Needs Improvement: Semantic Transparency (scored 2.0/10)  
+- Zero meaningful comments, no pattern recognition, no anomaly detection, no contract recovery. The decompiler provides no semantic understanding beyond raw translation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: `v0` used as size check in `Container<int>::push` should be named `index` or `size`
+2. **Recover expected values**: Detect test functions with expected return values (e.g., "期望: 4704") and add as comments
+3. **Flag empty functions**: Mark functions like `test_cpp_constructor` that return immediately without computation as potential stub/inline candidates

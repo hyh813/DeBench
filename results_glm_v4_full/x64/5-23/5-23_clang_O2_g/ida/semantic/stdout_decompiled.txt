@@ -1,0 +1,21 @@
+=== Preprocessing Features Test ===
+PPL201: macro_constants = 64
+PPL202: macro_functions = 30
+PPL203: conditional_compile = 32
+PPL204: multi_branch_compile = 57122
+PPL301: macro_recursion = 116
+PPL302: stringize = 19
+PPL303: token_paste = 60
+LOG: Values: 10, 20, 30
+PPL304: variadic_macro = 60
+PPL305: macro_override = 16
+PPL306: include_guard = 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:50
+PPL307: builtin_macros = 382
+=== ASM Features Test ===
+ASM401: basic = 15
+ASM402: clobber = -1843073088 (v0=0 i=5 v1=19 v2=0 v12=7fff9224f1c0 v13=7980b0e87dda)
+ASM403: multi_insn = 42 (str= flags=0 v5=86 v6=0 v12=5341206f6c6c6548 v13=4d v14=0)
+ASM404: simd = 330
+ASM405: atomic = 30
+ASM406: privileged = 77

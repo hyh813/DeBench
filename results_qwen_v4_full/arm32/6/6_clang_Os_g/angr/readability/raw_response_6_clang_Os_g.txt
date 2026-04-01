@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `result`) with no semantic meaning; `param_malloc_free` has duplicate `ptr` variable names in the same function, making tracking impossible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retain original names (`param_strcpy`, `call_strcpy`) but helper functions use mechanical names (`sub_400c48`, `$a.34`); signal handler named `$a.34` loses all semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (unsigned -1), `4294967293`, `4294967294` for error codes without explanation; success code `42` appears throughout without context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition()` calls, redundant assignments (`v0 = v1`), and spurious goto labels (`LABEL_401088`, `LABEL_401304`) that obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive goto usage instead of structured loops; `param_signal_handling` uses nested if-else with goto instead of clean sequential logic; `armg_calculate_condition` replaces simple boolean expressions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `call_*` functions are buggy (call param function twice, e.g., `call_printf`); some functions like `call_strlen` just return constants instead of calling original logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow; `param_fopen_fclose` has scattered goto labels making top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_printf` calls `printf` twice with identical arguments; `param_strcpy` calls `strlen(strcpy(...))` twice instead of using the cached `len` variable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `size_t` degraded to `unsigned int`; `const char*` becomes `char*`; `FILE*` partially recovered but function signatures use `unsigned int` for pointers; lost all const-correctness.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `FILE` struct recovered but empty; `sockaddr` has generic `sa_data[14]`; `ThreadData` struct completely lost (fields accessed via array indexing in `thread_sum`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit pointer-to-int conversions throughout; `param_fopen_fclose` has 8 parameters instead of 1; `thread_compute` returns `unsigned int*` but source returns `void*`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output; no algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `memcpy`) but not explicitly identified as such; producer-consumer pattern in `param_condition_variable` not named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `armg_calculate_condition` calls not explained as decompilation artifacts; no warnings about unresolved indirect calls or uncertain type recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`); no postconditions; error return values (`4294967295`) not explained as -1 equivalents.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear; global variables (`signal_received`, `atomic_counter`) referenced without usage documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping; test functions mixed with implementation; no header file or API boundary indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: `armg_calculate_condition` is non-standard and won't compile; missing external declarations; would require extensive patching to build standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+LEVEL 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+LEVEL 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+LEVEL 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+LEVEL 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+OVERALL SCORE:                                  = 3.999 ≈ 4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **`armg_calculate_condition` artifacts** replace all boolean expressions, making conditions unreadable
+- **Variable name collisions**: `ptr` used twice in `param_malloc_free`, `len` reused inconsistently
+- **`call_*` function bugs**: Functions call their `param_*` counterpart twice instead of once (e.g., `call_printf`)
+- **Magic error codes**: `4294967293`, `4294967294`, `4294967295` used throughout without explanation as -3, -2, -1
+- **Signal handler anonymized**: Original `signal_handler` renamed to `$a.34`, losing all semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core test functions retained original names (`param_strcpy`, `call_memcpy`, etc.), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace `armg_calculate_condition` with native boolean expressions** - This single change would dramatically improve control flow readability
+2. **Implement variable name inference from usage patterns** - Detect `ptr` used in malloc context should be named `buffer` or `allocation`
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: indirect call target`) to guide manual review

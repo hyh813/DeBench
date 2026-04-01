@@ -1,0 +1,8 @@
+Testing standard library functions
+Len: 4
+Result: 0
+Value: 12
+Count: 90
+Compare: 1
+Value: 42, Name: Test
+Printf: 22

@@ -1,0 +1,12 @@
+==
+Obfuscated Function Test Suite
+==
+
+ObfL4: call_opaque_predicate: 10
+ObfL4: param_opaque_predicate: 20
+ObfL4: param_instruction_substitution: 225
+ObfL4: param_string_encryption: 102
+OptL4: param_tail_call_optimized: 500500
+OptL4: param_non_tail_call: 5050
+OptL4: param_vectorized_loop: 72
+OptL5: call_link_time_optimization: 20

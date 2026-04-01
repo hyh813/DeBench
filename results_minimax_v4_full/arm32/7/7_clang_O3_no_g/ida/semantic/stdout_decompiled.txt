@@ -1,0 +1,15 @@
+Obfuscated-L1: opaque predicate
+ObfL4-02: 10
+ObfL4-03: 20
+ObfL4-04: 225
+ObfL4-05: 79
+OptL4-01: 500500
+OptL4-02: 5050
+OptL4-03: 72
+OptL5-01: LTO: 20
+EdgeL3-01: 1
+EdgeL3-02: 41
+EdgeL3-03: 30
+EdgeL3-04: 2000000000
+EdgeL4-01: 10
+EdgeL4-02: 44

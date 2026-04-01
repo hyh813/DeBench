@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, `v0` and `v1` obscure the `SimpleClass` object and its name buffer, providing no semantic context.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z18test_cpp_exceptionv` to `test_cpp_exception`), which is helpful. However, many functions are reduced to generic names like `sub_401020` or `sub_40102d`, and critical logic is often hidden inside these unnamed stubs.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are recovered, but magic numbers dominate the logic. In `test_cpp_oo_features`, results like `4700`, `42`, and `71` are hardcoded instead of showing the calculation logic, obscuring the source's intent.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output is cluttered with numerous wrapper functions (e.g., `sub_40102d` simply calls `sub_401030`) and compiler-generated thunks that add no semantic value and significantly fragment the code listing.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily obscured, particularly in `test_cpp_exception` where `try/catch` blocks are flattened into complex `if` statements and `goto` jumps involving `__cxa_*` functions, making the logic difficult to follow.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: Most high-level logic functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) are decompiled as empty functions with just a `return` statement. The logic is either lost or inlined elsewhere, resulting in a failure to decompose the program into meaningful logical units.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code reads linearly within small stubs, but the overall flow is disjointed due to the fragmentation of logic into many tiny `sub_` functions and thunks, requiring constant jumping between definitions.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of trivial wrapper functions (e.g., `sub_40104f` calling `sub_401050`) that serve no purpose other than to pad the listing, likely artifacts of the compilation or decompilation process.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded. Class methods use `void* this` instead of the specific class type. Pointers are often `unsigned long long` or generic `void*`, losing the distinction between `int*`, `char*`, and class types.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: C++ class structures are almost entirely unrecovered. `SimpleClass`, `Base`, and `Derived` are not defined as structs with members; instead, the code manipulates raw memory offsets (e.g., `*(ptr) = &g_403c70` for vtable setup), completely losing the object-oriented layout.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic, such as `(char *)a0 + (*(a0))[24]` in `thunk to MiddleA::func()`, which mimics the compiler's generated code but lacks type safety and is hard to read.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are auto-generated headers (e.g., "Function: ...") or obscure notes like `[D] Unsupported jumpkind`, offering no help in understanding the C++ semantics.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler successfully identifies low-level C++ idioms like "non-virtual thunk" and "virtual thunk," as well as ABI calls like `__cxa_throw`. However, it fails to reconstruct the high-level idioms like RAII or smart pointer usage.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication that the majority of functions are empty or that logic is missing. The decompiler confidently presents `void test_cpp_constructor() { return; }` without flagging this as a potential failure or optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The contracts of the original functions (e.g., "returns the sum of computed values") are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls like `printf` and `operatornew` are visible, the relationships between class methods and their definitions are obscured by the use of `void*` and indirect calls via vtables, making the call graph hard to trace.
+
+**17. Module Organization:** Score: 3/10
+Justification: Functions are ordered strictly by memory address (e.g., `sub_401020`, `sub_40102d`), mixing unrelated logic and thunks together. There is no logical grouping by class or functionality as seen in the source.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on implicit declarations of standard library functions and compiler intrinsics. It would not compile standalone without significant manual intervention to add headers and fix type mismatches.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.75
+L2_avg: 3.00
+L3_avg: 2.00
+L4_avg: 2.25
+L5_avg: 3.33
+
+Overall = (3.75 × 0.30) + (3.00 × 0.25) + (2.00 × 0.20) + 
+          (2.25 × 0.15) + (3.33 × 0.10)
+Overall = 1.125 + 0.75 + 0.40 + 0.3375 + 0.333
+Overall ≈ 2.95/10
+```
+
+### Overall Readability Score: **2.9/10**
+
+### Critical Defects
+- **Logic Loss**: Most test functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) are decompiled as empty `void` functions, completely erasing the source logic.
+- **Missing Class Definitions**: C++ class structures (members, inheritance) are not recovered; objects are manipulated as raw `void*` pointers and byte offsets.
+- **Incorrect Return Types**: Functions returning `int` in the source (e.g., `test_cpp_member_func`) are decompiled as returning `void`, losing the result propagation.
+- **Hardcoded Results**: Computed values are replaced by magic numbers (e.g., `4700`, `42`) in `test_cpp_oo_features`, likely due to constant propagation, making the algorithm invisible.
+
+### Best Quality Aspect
+- **Idiom Recognition (Score: 6/10)**
+- **Why?** The decompiler successfully identifies and names low-level C++ ABI artifacts like "non-virtual thunk" and "virtual thunk," which is crucial for understanding the underlying implementation of polymorphism, even if the high-level logic is missing.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 1/10)**
+- **Why?** The complete absence of recovered class structures (fields, types) turns the code into a stream of pointer arithmetic, making it impossible to understand the data model of the program.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Control Flow Recovery for Empty Functions**: Investigate why functions with logic in the source are decompiled as empty stubs; ensure the analysis engine lifts the actual basic blocks associated with these symbols.
+2.  **Reconstruct C++ Class Hierarchies**: Implement analysis to aggregate vtables and member access patterns into reconstructed `struct` or `class` definitions with correct field types and offsets.
+3.  **Lift Exception Handling**: Transform the low-level `__cxa_begin_catch`/`__cxa_throw` and control flow graph manipulations back into high-level `try`/`catch` blocks to improve readability.

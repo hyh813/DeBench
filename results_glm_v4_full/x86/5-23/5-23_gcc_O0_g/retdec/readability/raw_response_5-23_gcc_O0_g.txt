@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`), providing no semantic context. While parameters like `size` and `arr` are preserved, local variables lose all meaning, forcing the reader to trace data flow manually.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names (e.g., `param_macro_constants`, `param_asm_basic`) are accurately preserved and descriptive. However, runtime/library wrappers are reduced to generic names like `function_10d0`, losing context for system-level interactions.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Constant recovery is severely broken. In `param_macro_constants`, the constant `1024` is decompiled as `(int32_t)"n_start__"` (a string literal cast to int), and `512` becomes `(int32_t)&g1` (an address). This obfuscates the simple logic `size > 1024`.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is polluted with Position Independent Code (PIC) artifacts, specifically the `__x86_get_pc_thunk_ax(v1)` sequence at the start of nearly every function. While stack canary checks are expected, the repetitive thunk calls significantly hinder readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow generally matches the source's structure (if-else, loops) because of the `-O0` optimization level. However, loop constructs in functions like `param_asm_clobber` are slightly awkward, initializing variables outside the loop structure compared to the source's `for` loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are perfectly preserved with no inlining, matching the source granularity exactly. Each logical unit from the source is represented as a distinct function in the decompiled output.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or spaghetti logic. The execution flow is easy to follow, aside from the intrusive PIC setup code.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code or redundancy, which is expected for `-O0`. The main redundancy is the repetitive `__x86_get_pc_thunk` pattern, which is a compiler artifact rather than a logic redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, using `int32_t`, `char *`, and `uint32_t` appropriately. The SIMD operation correctly identifies `int128_t` (or `__m128i` equivalent via intrinsics), showing good type recovery for vector operations.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: While the source doesn't use complex structs, the decompiler correctly handles array types and pointer arithmetic (e.g., `int32_t * arr`). The SIMD vector type is recovered as a composite `int128_t`.
+
+**11. Type Safety:** Score: 5/10
+Justification: There are unsafe and confusing casts present. Specifically, casting a string literal pointer to an integer `(int32_t)"n_start__"` for comparison is a type safety violation in the decompiled view, misrepresenting the original integer constant comparison.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata (module name, address range, line numbers). There are no semantic comments explaining the logic, algorithms, or the purpose of the recovered code.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize high-level preprocessing idioms. For example, `param_stringize` uses raw offsets (`v2 + 3015`) to access strings rather than recovering the string literals or the `STRINGIZE` macro intent.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The bizarre constant recovery (comparing an integer to a string literal address) is presented as normal code without any warning or "UNCERTAIN" marker, potentially misleading the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For instance, the `mmap` calls do not have comments indicating expected return values or error states.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to other user-defined functions are clear and use the correct names. Global variable accesses (like `g1`) are explicit, though the semantic meaning of `g1` is lost.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and the file structure mirrors the source's organization. Static functions are correctly identified within the scope of the translation unit.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes standard headers, but the reliance on custom intrinsic functions like `__asm_movaps` and the specific PIC thunk implementations might require stubs or a specific environment to compile successfully.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **Constant Recovery Failure**: In `param_macro_constants`, the constant `1024` is incorrectly decompiled as a cast string literal `(int32_t)"n_start__"`, completely breaking the logic's readability.
+- **Generic Variable Naming**: Local variables are named `v1`, `v2`, etc., obscuring the data flow and logic.
+- **Excessive PIC Noise**: The `__x86_get_pc_thunk` calls appear in almost every function, cluttering the code and distracting from the actual logic.
+- **String Literal Loss**: In `param_stringize`, string constants are represented as numeric offsets (e.g., `3015`) rather than the actual string values.
+- **Lack of Semantic Context**: No comments explain the "why" of the code, particularly for the complex macro behaviors that were compiled away.
+
+**Best Quality Aspect:** Function Decomposition (Score: 9/10)
+- **Why?** The `-O0` compilation allowed the decompiler to perfectly preserve function boundaries and granularity, making the high-level structure of the program easy to navigate.
+
+**Most Needs Improvement:** Literal Clarity (Score: 2/10)
+- **Why?** The failure to recover basic integer constants (replacing them with string addresses or global variable addresses) makes understanding simple conditional logic nearly impossible without deep analysis of the binary's data section.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Constant Propagation**: Distinguish between immediate values used in comparisons and data addresses. Do not cast string literals to integers for arithmetic comparisons unless the code explicitly does so.
+2.  **Abstract PIC Artifacts**: Detect and hide or simplify `__x86_get_pc_thunk` patterns, as they are standard boilerplate that rarely adds value to high-level understanding.
+3.  **Recover String Literals**: Map numeric offsets used in `strlen` or `printf` calls back to their corresponding string literals in the data section to restore semantic meaning.

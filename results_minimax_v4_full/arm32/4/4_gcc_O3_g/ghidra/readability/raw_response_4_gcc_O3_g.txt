@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Many variables marked as "Unresolved local var" with cryptic names like `int sum@[???]`, `int i@[???]`. Parameters like `a`, `b` are good, but local variables lack semantic names. The decompiler couldn't recover meaningful names for most stack-allocated variables.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func` perfectly match the original source. The decompiler accurately recovered all function names from the symbol table.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex values (e.g., `0xf` for 15, `0x2a` for 42) without explanatory comments. While the values are correct, the lack of decimal equivalents or named constants makes the code harder to read for humans familiar with the source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive compiler artifacts including "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var" annotations, and DWARF prototype comments clutter the output. These auto-generated warnings significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with clear if/else structures and returns. Loop constructs like in `param_ptr_array` and `varargs_func` are properly recovered. At -O0, control flow should be nearly 1:1 with source, and mostly achieved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility. No over-fragmentation or monoliths observed. The decomposition closely matches the original source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some complex expressions could be better linearized but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in `func_struct_byval` where the compiler expanded the loop. This is expected at higher optimization but creates verbose code. Dead code elimination is mostly successful.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (int, char*, int*) are correctly inferred. However, `va_list` handling shows issues - the decompiler shows raw register/stack access instead of proper va_list usage. Function pointer types like `_func_int_int` are somewhat cryptic.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct` are correctly recovered with field names. The `LargeStruct` with its `data[16]` array is properly reconstructed. Union types not present in this code.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with correct pointer usage. Some unsafe patterns in `func_mixed_args` with raw float/double handling via `__aeabi_*` functions. No major type confusion issues observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Most comments are auto-generated warnings ("WARNING: Unknown calling convention") or DWARF metadata. No meaningful algorithm documentation or intent explanation. The decompiler provides no insight into what the code is trying to accomplish.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard calling convention patterns (cdecl, stdcall, fastcall) are visible but not explicitly named as patterns. The varargs handling shows standard stdarg.h usage but not highlighted as a recognized idiom.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some anomalies with "WARNING" comments (unknown calling conventions, unreachable blocks). However, many "unresolved" items are flagged without clear explanation of what couldn't be resolved or why.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. Functions like `func_struct_byptr` that have implicit contracts (null check) are not annotated. The decompiler provides no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from the code itself (e.g., `main` calls `test_calling_conventions`). However, there's no explicit documentation of call graphs or caller/callee relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, implementation functions together. Static functions like `func_a`, `func_b` are properly scoped. Organization roughly matches source file structure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code uses standard library functions (`puts`, `__printf_chk`) correctly. External dependencies are minimal. Should compile with minimal patching. The "Compilation Result: Yes" in metadata confirms this.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming: "Unresolved local var" annotations leave many variables with cryptic names like `sum@[???]`, losing semantic meaning
+- Literal clarity: Hex values like `0xf`, `0x2a` lack decimal equivalents or named constants
+- Comment quality: Auto-generated warnings dominate instead of meaningful documentation
+- Noise: Extensive "WARNING" and "Unresolved" annotations clutter the output
+- Contract recovery: No preconditions/postconditions documented for functions with implicit contracts
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are perfectly recovered from symbols, matching the original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+The decompiler fails to infer meaningful names for local variables, leaving them as "Unresolved" or generic names, severely impacting the ability to understand code logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Variable name inference**: Analyze usage patterns (e.g., loop counters, accumulators, pointers) to generate semantic names instead of leaving them as "Unresolved local var"
+2. **Literal conversion**: Convert hex literals to decimal when they're simple constants, or add comments explaining computed values
+3. **Comment filtering**: Suppress verbose auto-generated warnings unless explicitly requested; focus on meaningful decompilation comments that explain algorithm intent

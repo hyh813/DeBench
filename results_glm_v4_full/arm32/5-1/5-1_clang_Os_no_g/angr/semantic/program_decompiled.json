@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-1/5-1_clang_Os_no_g/angr/syntactic/bin/5-1_clang_Os_no_g_fixed",
+  "stdout": "Testing C++ OO features\n\n4704\n21\n42\n71\n650\n22\n39\n16\n85\n703\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

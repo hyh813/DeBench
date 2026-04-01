@@ -1,0 +1,123 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `local_1c`) with zero semantic meaning recovered. For a `-O0` debug build, variable names like `count`, `sum`, `args` should have been recoverable from debug symbols.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some helper functions remain generic (`FUN_00011030`, `FUN_000110c0` for printf).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic hex constants everywhere (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. These are constant-folded results but lack symbolic names indicating their meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__i686.get_pc_thunk.bx`, `__do_global_dtors_aux`, `deregister_tm_clones`). Many stub functions that add noise without value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals recovered well (varargs `do-while`, `if` statements). Some functions show awkward stack iteration patterns but remain readable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: `call_*` functions are constant-folded to single returns (e.g., `call_cdecl` returns `0xf` directly), losing the call structure entirely. Original call relationships destroyed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Loop constructs use natural `do-while` patterns. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or duplicate expressions. Constant folding actually reduces redundancy, though at cost of semantic clarity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`). Double parameters split into multiple `undefined4` (`param_4`, `param_5` for one `double`). `int*` used where `struct*` should be.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Catastrophic failure. `LargeStruct` (128 bytes) becomes 32+ individual `int`/`undefined4` parameters in `func_struct_byval`. `SmallStruct` becomes `int*`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `CONCAT44` for double reconstruction, `undefined4*` cast to `int*`, `code*` for function pointers. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of algorithms, calling conventions, or optimization artifacts. Completely bare code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern visible but not identified. No recognition of calling convention patterns, struct passing patterns, or callback patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. Constant folding of `call_*` functions should be noted as optimization. Architecture mismatch (arm64 source vs x86 decompilation) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but aren't annotated). No postconditions or invariants recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph. Global references (`DAT_00012008`, `handle1_1`) lack context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping by test category (calling conventions vs parameter passing vs return values).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Undefined references (`handle1_1`, `handle2_0`, `DAT_*` symbols, `FUN_000110c0` for printf). Requires extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):   (7+5+7+8)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type System):  (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):     (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):   (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.74/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+---
+
+### Critical Defects
+
+- **`func_struct_byval` has 32+ parameters** instead of accepting a `LargeStruct` - complete struct recovery failure
+- **All `call_*` functions return constants** (e.g., `call_cdecl` returns `0xf`) instead of calling underlying functions - semantic meaning destroyed
+- **Zero comments** explaining any logic, calling conventions, or optimization artifacts
+- **`undefined4`/`undefined8` types** used throughout instead of precise integer types
+- **Architecture mismatch** not indicated (source says arm64, decompilation shows x86 patterns)
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making basic navigation possible.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompiler confidence indicators makes understanding intent nearly impossible.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct definitions from stack layouts** - Analyze parameter patterns to reconstruct `LargeStruct` and `SmallStruct` types instead of flattening to primitive parameters.
+
+2. **Preserve call relationships over constant folding** - When debug symbols exist (`-O0 -g`), maintain function call structure even if compiler optimized; add comments noting constant-folded values.
+
+3. **Generate semantic comments automatically** - Add comments for calling conventions (`// cdecl: caller cleans stack`), varargs patterns (`// variadic: count + n integers`), and type reconstructions (`// reconstructed: double from 2x 32-bit`).

@@ -1,0 +1,18 @@
+=== Standard Library Function Tests ===
+String length: 8
+strcmp result: 0
+strlen result: 12
+memcmp result: 0x5a
+Total memcmp: 0xffffffff
+Value: 42, Name: test
+printf result: 22
+scanf result: 579
+fopen/fileno result: 42
+fread/fwrite result: 42
+malloc/free result: 0x5a
+memset result: 0
+strchr/strstr result: 15
+=== System Call Tests ===
+syscall result: 42
+stat result: 42
+fork/waitpid result: 42

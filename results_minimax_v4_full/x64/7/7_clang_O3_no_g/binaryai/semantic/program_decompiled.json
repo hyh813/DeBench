@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O3_no_g/binaryai/syntactic/bin/7_clang_O3_no_g_fixed",
+  "stdout": "Test: Opaque Predicate\nOpaque predicate (branch): 10\nOpaque predicate (call): 20\nInstruction substitution: 225\nString encryption: 135\nTail call optimized: 500500\nNon-tail call: 5050\nVectorized loop: 72\nTesting division by zero...\nTesting null pointer dereference...\nNull pointer dereference: 41\nBuffer overflow: 30\nInteger overflow: 2000000000\nUndefined behavior: 10\nImplementation defined: 47\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

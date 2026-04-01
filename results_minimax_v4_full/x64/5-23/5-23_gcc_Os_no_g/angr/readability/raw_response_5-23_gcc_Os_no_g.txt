@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3`, `ptr`, `idx` throughout. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` but these are completely lost. Even stack variables like `v1` at `[bp-0x10]` provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered (e.g., `param_macro_constants`, `call_macro_constants`, `main`, `my_func`, `test_preprocessing_features`, `test_asm_features`), but many use address-based naming like `sub_401020`, `sub_40102d`, `sub_401030`. The target functions from the source are mostly recovered, but helper/initialization functions are not.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `64` for BUFFER_COUNT*4, `0x200` for MAX_SIZE/2, `57122` for 0xDF22), but magic numbers persist: `30` for sysconf(_SC_PAGESIZE), `7` for PROT_READ|PROT_WRITE|PROT_EXEC, `34` for MAP_PRIVATE|MAP_ANONYMOUS. The decompiler computed some constant expressions but didn't name them.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. No excessive casts, no debug instrumentation visible. Some type mismatches handled with casts but not overwhelming. The code is readable without significant noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if-else constructs. Loops are correctly recognized (e.g., `for (idx = 0; (unsigned int)idx < a1; idx = (unsigned int)idx + 1)`). Some goto in initialization code is standard for ELF binaries. At -O0, the flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. The original source's functions (param_*, call_*, test_*) are all recovered as separate functions. Some small initialization functions exist but are appropriate. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately. No deep nesting (>4 levels) observed. The flow is easy to follow in most functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Common subexpression elimination is minimal at -O0. Loop unrolling not present (as expected for debug build). Clean code without duplication.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision - `unsigned int`, `unsigned long`, `unsigned long long` used but original `int` types lost. Parameters like `a0` in `param_macro_constants` should be `int` not `unsigned int`. Some type confusion between signed/unsigned. Function return types sometimes wrong (e.g., should be `int` not `unsigned long long`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. The original source had no complex structs but the decompiler shows no attempt at composite type reconstruction. All operations use primitive types and raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic visible (e.g., `ptr + idx * 4`). Some type casts like `(unsigned int)idx` for loop bounds. No bounds checking. The atomic operations use proper atomic_* functions. Overall moderate type safety issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled output whatsoever. The original source had extensive comments explaining preprocessing, assembly, and test scenarios. Zero recovery of documentation. This is a critical gap for understanding the code's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not named - atomic operations use `atomic_exchange_add`, SIMD shows `AddV` function. However, no explicit identification of patterns like "macro expansion", "inline assembly", "conditional compilation". The preprocessing macros are completely lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198725()`. However, many issues not flagged: the indirect function call `ptr(a0)` in param_dynamic_code is suspicious (calling void* as function), the memory protection flow issues, and the incorrect type usage. Limited anomaly detection.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., mmap returns valid pointer, array bounds) that are not indicated. Zero contract recovery.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through the code structure (e.g., `test_preprocessing_features()` calls `call_macro_constants()`). However, no explicit documentation of call graphs, global variable usage, or relationships. The extern declarations show some dependencies but not comprehensive.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - initialization functions at start, test functions together, param/call pairs adjacent. However, the file is a single monolithic output. Related preprocessing tests and assembly tests are grouped but not separated into modules/namespaces.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has extern declarations for library functions (`__printf_chk`, `mmap`, `munmap`, `mprotect`, `sysconf`, `atomic_exchange_add`). Should compile with libc. Some issues: `ptr(a0)` is invalid C syntax (calling function pointer incorrectly). Moderate patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `idx`) - loses all semantic meaning from original source
+- Zero comments recovered - the extensive documentation explaining preprocessing, assembly, and test scenarios is completely lost
+- Type precision issues: parameters declared as `unsigned int`/`unsigned long` when original used signed `int`
+- No macro semantics recovered - the core purpose of this source (testing preprocessor behavior) is obscured
+- Anomaly detection incomplete - suspicious code like `ptr(a0)` (calling void* as function) not flagged
+
+**Best Quality Aspect:** Structural Intelligibility (scored 7.75/10)  
+Control flow is natural, functions are properly decomposed, code linearizes well, and no redundancy issues. At -O0, the structure closely matches the original source.
+
+**Most Needs Improvement:** Lexical Clarity (scored 5.25/10)  
+Variable naming is nearly unusable with generic names throughout. Function naming is inconsistent. While some literals are computed, many magic numbers remain unexplained. Combined with zero comment recovery, the code is semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0 > 0x400` suggests `size` or `threshold`; `ptr + idx * 4` suggests `array` with `int` elements)
+2. **Recover macro semantics**: Detect constant expressions that likely came from macro expansion (e.g., `0x400` → MAX_SIZE, `64` → BUFFER_COUNT*4) and suggest original macro names
+3. **Add semantic comments**: Generate comments explaining detected patterns (e.g., "// Likely macro expansion", "// Atomic operation", "// Conditional compilation branch")

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `result` with no semantic meaning. For example, in `test_cpp_exception()`, variables `v6`, `v7`, `v8` obscure their roles as exception handlers and result accumulators.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions named `sub_401XXX` (e.g., `sub_401030`, `sub_401180`) with no semantic meaning. Only a few C++ mangled names recovered (e.g., `_Z18test_cpp_exceptionv`), but even these don't match original readable names like `test_cpp_exception`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers scattered throughout without explanation (e.g., `42` for exception value, `100`/`200` for RTTI results). Original constants like `0x1234` for `getClassID()` not preserved as named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `__x86.get_pc_thunk.*` functions, excessive `padding_0` arrays in structs, and redundant wrapper functions (`sub_40104e` → `sub_401050` → `sub_40105e` chain).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy use of `goto` statements instead of structured loops (e.g., `goto v1->field_60` in `sub_401180`). Original while/for loops converted to jump-based patterns even at -O0 optimization level.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with 50+ tiny wrapper functions that appear to be vtable thunks. Original cohesive test functions split into incomprehensible pieces (e.g., 2517 LOC vs 540 LOC original).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearization with frequent forward jumps disrupting flow. Multiple `goto LABEL_40138f` patterns interrupt natural top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy from vtable thunk proliferation (e.g., `sub_401030` through `sub_4012c0` chain). Repeated struct definitions with different padding sizes for same logical types.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Types degraded to generic `unsigned int`, `void*`, `char*`. Original C++ types (`SimpleClass`, `std::unique_ptr<int>`, `Container<double>`) lost. Architecture mismatch (ARM64 source → X86 decompilation).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs have meaningless field names (`field_0`, `padding_0[96]`, `field_60`). Original class members (`value`, `name[32]`, `data`, `size`) completely lost. Multiple conflicting `struct_0` definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts and pointer arithmetic without type checking. Raw pointer manipulation (`*(ptr) = 42`) instead of typed access. No const-correctness preserved from original `const` methods.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Original extensive comments (e.g., "// 虚表(vtable)机制，运行时多态") completely lost. Only decompilation failure markers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (vtables, inheritance, templates, lambdas) not recognized. Virtual function calls appear as raw pointer dereferences. Template instantiations not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `[D]` markers for decompilation failures (e.g., `[D] Unsupported jumpkind Ijk_SigTRAP`), but many semantic errors not flagged. Failed functions like `_Z12template_maxIdET_S0_S0_` not clearly marked.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original exception handling contracts (`try`/`catch`) converted to opaque conditional jumps without semantic meaning.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function relationships unclear; vtable dispatch not properly recovered. Virtual function calls appear as `goto *((int *)*((int *)arg_0))` without indicating polymorphic behavior.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Original class hierarchy (Base/Derived, MiddleA/MiddleB/DiamondDerived) not preserved in organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains decompilation failures (`[D] unsupported_<class 'pyvex.expr.GetI'>`) that prevent compilation. Architecture mismatch (X86 output from ARM64 binary) makes compilation impossible.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+3+4+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):   (3+4+3+3)/4 = 3.25 × 0.25 = 0.81
+Level 3 (Type System):  (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):     (2+2+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):   (3+4+2)/3   = 3.00 × 0.10 = 0.30
+
+Overall Score: 0.90 + 0.81 + 0.60 + 0.38 + 0.30 = 2.99/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 binary decompiled as X86, causing fundamental incompatibility
+- **Variable naming**: All variables generic (`v0`, `v1`, `ptr`) with no semantic meaning recoverable
+- **Struct recovery failure**: Class members completely lost; `struct_0` with `padding_0[96]` instead of `SimpleClass { int value; char name[32]; }`
+- **Control flow degradation**: `goto` statements replace all loops and structured conditionals
+- **Decompilation failures**: Multiple `[D]` markers indicating unresolved expressions that prevent compilation
+
+### Best Quality Aspect: **Anomaly Indication (4/10)**
+- At least some decompilation failures are marked with `[D]` indicators, though many semantic errors remain unflagged
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover C++ class structures; all fields named generically with no relationship to original member variables
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class recovery**: Detect vtable patterns and reconstruct class hierarchies with original member names from debug symbols when available (-g flag present)
+2. **Improve control flow reconstruction**: Convert `goto`-based patterns back to structured loops/conditionals, especially at -O0 where original structure should be preserved
+3. **Add architecture validation**: Detect and report architecture mismatches before decompilation to prevent fundamentally incorrect output

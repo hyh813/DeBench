@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v54`, `v55`) with zero semantic meaning. In `binary_tree_sum`, variables like `v25`, `v27`, `v23` obscure their roles as tree node pointers and accumulators.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retained names (`test_data_types_l1`, `test_array_types`) but all processing functions (`process_char`, `process_int`, `ptr_single`, etc.) are completely missing from decompilation output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) instead of readable strings. Magic numbers like `0x2710` (10000) appear without explanation in test output.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive code bloat (11154 LOC vs 830 original = 13× expansion). Redundant variable assignments throughout `binary_tree_sum` with no dead code elimination.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: `binary_tree_sum` catastrophically unrolls 5-line recursive function into 1000+ lines of nested while loops. Natural recursion pattern completely lost despite -O0 compilation.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: All `process_*` functions missing entirely. `binary_tree_sum` is one massive function instead of clean recursive structure. Test functions constant-folded losing original logic.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: `binary_tree_sum` has extreme non-linearity with deep nesting (20+ levels). Cannot read top-to-bottom meaningfully due to repetitive conditional chains.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Same pattern repeats thousands of times in `binary_tree_sum` (e.g., `v51 = binary_tree_sum(*(int32_t *)(v16 + 4))` appears hundreds of times). No common subexpression elimination.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int32_t` or `void*`. No distinction between `char`, `short`, `int`, `long`, `float`, `double`. Function pointer types completely lost.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Zero struct/union/enum recovery. `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Graph`, `Flags`, `UnionData` all reduced to raw pointer arithmetic. Catastrophic for -O0.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int32_t)&arr1`, `(int32_t *)v3`). Pointer arithmetic without type safety. No bounds checking or const correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments ("From module: /work/src/2.c"). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: Recursion pattern in `binary_tree_sum` completely unrecognized. Linked list traversal, tree traversal, graph traversal patterns all lost. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that `binary_tree_sum` decompilation failed catastrophically. No warnings about 13× code expansion. Missing functions not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: root != NULL"). NULL checks present but not documented as contracts. No error condition explanations.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but many original functions missing entirely. Global variables `g1-g4` are hex strings with no semantic meaning. No callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions somewhat grouped but poorly organized. No header file structure. Static functions not properly scoped. Original module structure lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims "Compilation Result: Yes" but missing many original functions. Would need significant modification to restore original functionality. External dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (2×0.10 + 5×0.10 + 4×0.05 + 3×0.05) / 0.30 = 3.5/10
+Level 2 (25%): (2×0.08 + 3×0.07 + 3×0.05 + 2×0.05) / 0.25 = 2.48/10
+Level 3 (20%): (3×0.08 + 1×0.07 + 3×0.05) / 0.20 = 2.30/10
+Level 4 (15%): (2×0.05 + 1×0.03 + 2×0.03 + 2×0.04) / 0.15 = 1.80/10
+Level 5 (10%): (3×0.04 + 4×0.03 + 5×0.03) / 0.10 = 3.90/10
+
+Overall = 3.5×0.30 + 2.48×0.25 + 2.30×0.20 + 1.80×0.15 + 3.90×0.10
+        = 1.05 + 0.62 + 0.46 + 0.27 + 0.39
+        = 2.79/10
+```
+
+**Overall Readability Score: 2.8/10**
+
+### Critical Defects
+- **`binary_tree_sum` catastrophically decompiled**: 5-line recursive function expanded to 1000+ lines of repetitive while loops
+- **Zero composite type recovery**: All structs (`Point3D`, `TreeNode`, `Graph`, etc.), unions, and enums completely lost to pointer arithmetic
+- **All `process_*` functions missing**: `process_char`, `process_int`, `ptr_single`, `struct_simple` etc. not recovered at all
+- **Variable names completely generic**: `v1`, `v2`, `v54` convey zero semantic information about purpose
+- **13× code bloat**: 830 LOC original expanded to 11154 LOC decompiled output
+
+### Best Quality Aspect
+- **Build System Compatibility (5/10)**: Metadata indicates code compiles, though functionality is severely degraded
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**: Complete failure to recover any struct, union, or enum types despite -O0 compilation that should preserve type information
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement recursive pattern recognition**: Detect tail recursion and tree traversal patterns to recover natural recursive structure instead of unrolling into while loops
+2. **Add composite type reconstruction**: Analyze pointer arithmetic patterns to recover struct layouts with field names (e.g., `*(ptr+4)` → `node->next`)
+3. **Preserve original function boundaries**: At -O0, inline functions should remain separate; implement better function boundary detection to recover missing `process_*` functions

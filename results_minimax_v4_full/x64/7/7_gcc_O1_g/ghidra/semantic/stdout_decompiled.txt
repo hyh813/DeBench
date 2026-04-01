@@ -1,0 +1,5 @@
+=== Testing Obfuscated Optimizations ===
+
+call_opaque_predicate(5) = 10
+param_opaque_predicate(5) = 20
+instruction_substitution(5) = 225

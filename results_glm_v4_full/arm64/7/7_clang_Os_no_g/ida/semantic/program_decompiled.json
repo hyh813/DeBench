@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_clang_Os_no_g/ida/syntactic/bin/7_clang_Os_no_g_fixed",
+  "stdout": "Starting tests...\n\nparam_fake_branch: 10\nparam_opaque_predicate: 20\nparam_instruction_substitution: 225\nparam_string_encryption: 113\nparam_tail_call_optimized: 500500\nparam_non_tail_call: 5050\nparam_vectorized_loop: 0\nparam_link_time_optimization: 20\nparam_division_by_zero: 2\nparam_null_pointer_deref: 41\nparam_buffer_overflow: 30\nparam_integer_overflow: 2000000000\nparam_undefined_behavior: 10\nparam_implementation_defined: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

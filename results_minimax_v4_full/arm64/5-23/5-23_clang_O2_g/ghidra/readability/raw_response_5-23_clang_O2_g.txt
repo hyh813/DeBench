@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses generic names like `iVar1`, `piVar1`, `uVar5`, `uVar7`, `lVar6` throughout. Multiple functions have "Unresolved local var" annotations (e.g., `param_conditional_compile` has unresolved `result`, `param_stringize` has unresolved `str1`, `str2`, `str3`). The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_memory_protection`, `param_dynamic_code`, etc. The naming accurately reflects the original function purposes with appropriate action verbs.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `0x40` = 64, `0x200` = 512, `0xdf22` = 57122), but most are unexplained magic numbers. The original macros like `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE`, `MAX` are completely lost - only their computed values appear. The decompiler correctly computed constant expressions but didn't recover the macro names.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Only "WARNING" comments about unknown calling conventions and unresolved local variables add noise. No redundant casts, debug instrumentation, or frame pointer manipulation clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. Loops use proper while/do-while constructs, conditionals use if-else patterns. The `param_asm_clobber` function shows loop unrolling at -O2 but it's still readable. At -O0, the control flow closely matches the original source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity. Each function has a single responsibility (e.g., `param_macro_constants` does one thing, `param_asm_basic` does another). The `call_*` wrapper functions are properly separated from `param_*` implementations. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns are used appropriately. No goto statements or confusing jumps. The code structure is highly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. The loop unrolling in `param_asm_clobber` is a legitimate optimization artifact from -O2, not redundant code. Common subexpressions are properly handled.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int`, `void*`, `size_t` are correctly identified. However, many local variables have "Unresolved" status. The decompiler uses generic `int` where the original might have had specific types like `uint32_t`. Function signatures are mostly correct but lack const correctness in some cases.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct or union types were recovered. The original source had no complex structs anyway (mostly primitives), but the decompiler shows raw pointer arithmetic in places like `param_asm_clobber` where it could have inferred array access patterns. The `param_asm_simd` function correctly identifies `int*` parameters but doesn't recover the 4-element array semantics.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with no obvious buffer overflows or dangerous pointer operations. The atomic operations use proper `__aarch64_ldadd4_acq_rel` intrinsics. Minor issues include some void* to typed pointer conversions without explicit casts, but nothing severe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") and "Unresolved local var" annotations. No comments explaining algorithm intent, macro recovery rationale, or inline assembly purpose. The original source had extensive comments about preprocessing behavior - none recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of preprocessing idioms (macro constants, macro functions, token pasting, stringization). The inline assembly patterns are completely lost - replaced with C implementations or intrinsics. The conditional compilation branches (#ifdef DEBUG_MODE) are not flagged as such. Design patterns like include guards are not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged with generic warnings (unknown calling conventions, unresolved local variables). However, the warnings don't explain WHY things couldn't be resolved or provide actionable guidance. The inline assembly replacement with C code isn't flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., `param_asm_atomic` requires valid pointer, `param_memory_protection` requires page-aligned memory) - none recovered. Error return values (-1, -2, -3) aren't explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit (e.g., `call_macro_constants` calls `param_macro_constants`) but not explicitly documented. Global variable `global_var` is used in `param_memory_clobber_demo` but its scope isn't explained. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the order they appear in the binary. Related functions (param/call pairs) are adjacent. However, there's no separation into logical sections matching the original source's "5.2 Preprocessing" and "5.3 Inline Assembly" groupings.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code should compile with minor modifications. The "Unresolved local var" annotations are comments, not code, so won't cause compilation errors. External dependencies (printf, memcpy, mmap, sysconf) are properly declared. However, the code relies on `__aarch64_ldadd4_acq_rel` which is an architecture-specific intrinsic.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `piVar1`, `uVar5`) with many "Unresolved local var" annotations
+- No recovery of macro semantics - only computed constant values appear (e.g., `0x40` instead of `BUFFER_COUNT * 4`)
+- No comment recovery explaining preprocessing behavior, inline assembly intent, or algorithm logic
+- Inline assembly completely replaced with C code without flagging as an anomaly
+- No idiom recognition for macro functions, token pasting, stringization, or conditional compilation
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify the purpose of each function at a high level.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The decompiler failed to infer meaningful variable names from usage patterns. Even simple cases like `result` for return values or `counter` for loop indices remain as generic `iVar1` or "Unresolved".
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., variables used as loop counters should be named `i` or `index`, variables returned should be `result` or `return_val`
+2. Recover macro semantics by detecting constant expressions and suggesting original macro names (e.g., `0x40` → likely `BUFFER_COUNT * 4`)
+3. Add semantic comments explaining what was lost in decompilation - e.g., "Inline assembly replaced with C equivalent", "Macro constant computed at compile time"

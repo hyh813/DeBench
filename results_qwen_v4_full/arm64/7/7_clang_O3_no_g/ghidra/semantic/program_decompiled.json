@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/7/7_clang_O3_no_g/ghidra/syntactic/bin/7_clang_O3_no_g_fixed",
+  "stdout": "Test output:\n\nValue: 10\nResult: 20\nHex: 225\nSum: 0\nVal1: 500500\nVal2: 5050\nVal3: 72\nVal4: 20\nDiv result: 2\nPtr result: 41\nBuffer: 30\nOverflow: 2000000000\nUB: 10\nImpl: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

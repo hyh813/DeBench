@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_Os_g/angr/syntactic/bin/5-23_clang_Os_g_fixed",
+  "stdout": "Preprocessing Features Test:\nMacro Constants: 64\nMacro Functions: 30\nConditional Compile: 32\nConditional Compile: 57122\nMacro Recursion: 116\nStringize: 19\nToken Paste Test: 60\nLOG: Values: 10, 20, 30\nToken Paste: 60\nMacro Override: 16\nInclude Guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=03:00:19, time=03:00:19\nBuiltin Macros: 382\nAssembly Features Test:\nASM Basic: 15\nASM Clobber: 10\nASM Multi Insn: -1\nASM SIMD: 500\nASM Atomic: 25\nASM Privileged: -1\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

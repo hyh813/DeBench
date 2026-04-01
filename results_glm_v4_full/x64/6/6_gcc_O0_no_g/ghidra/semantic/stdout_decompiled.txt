@@ -1,0 +1,4 @@
+Testing Standard Library Functions...
+  strcpy: 0
+  strcmp: 4294967295
+  strlen: 0

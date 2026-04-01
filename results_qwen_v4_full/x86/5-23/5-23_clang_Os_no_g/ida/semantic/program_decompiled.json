@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/5-23/5-23_clang_Os_no_g/ida/syntactic/bin/5-23_clang_Os_no_g_fixed",
+  "stdout": "=== Preprocessing Features Test ===\nResult: 64\nMacro constants result: 30\nConditional compile result: 32\nMulti-branch compile result: 57122\nMacro recursion result: 116\nStringize result: 19\nToken paste result: 60\nLOG: Values: 10, -1076679156, 134515377\nVariadic macro result: 60\nMacro override result: 16\nInclude guard result: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:21\nResult: 382\n=== ASM Features Test ===\nASM basic result: 15\nASM clobber result: -1208813200\nASM multi-instruction result: 42\nSIMD result: 0\nAtomic result: 30\nPrivileged result: -1\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

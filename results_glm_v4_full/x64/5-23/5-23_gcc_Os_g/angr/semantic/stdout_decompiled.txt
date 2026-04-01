@@ -1,0 +1,20 @@
+Testing macro constants: 1626702104
+Result: 64
+Result: 30
+Result: 32
+Result: 57122
+Result: 116
+Result: 19
+Result: 60
+LOG: Values: 10, 20, 30
+Result: 60
+Result: 16
+Result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:00:39
+Result: 382
+Testing ASM features:
+Result: 191860772
+Result: -1
+Result: 6
+Result: 35
+Result: 15

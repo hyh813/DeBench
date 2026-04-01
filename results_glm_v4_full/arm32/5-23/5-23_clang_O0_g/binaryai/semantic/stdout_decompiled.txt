@@ -1,0 +1,18 @@
+call_macro_constants: 3203405700
+call_macro_functions: 64
+call_conditional_compile: 30
+call_multi_branch_compile: 32
+call_macro_recursion: 57122
+call_stringize: 116
+call_token_paste: 19
+call_variadic_macro: 60
+LOG: Values: 10, 20, 30
+call_macro_override: 60
+call_macro_override: 16
+call_include_guard: 0
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:13
+call_builtin_macros: 382
+Testing ASM features:
+call_asm_basic: 0
+call_asm_clobber: 0
+call_asm_multi_insn: 4294967295

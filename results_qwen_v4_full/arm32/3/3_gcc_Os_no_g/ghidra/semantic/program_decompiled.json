@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/3/3_gcc_Os_no_g/ghidra/syntactic/bin/3_gcc_Os_no_g_fixed",
+  "stdout": "Testing stack memory operations\n\nMEM-L1-01 (local_vars): 20\nMEM-L1-02 (local_array): 0\nMEM-L1-03 (local_struct): 15\nMEM-L1-04 (address_of_local): 42\nMEM-L1-05 (address_of_array): 2\nMEM-L2-01 (large_stack_frame): 0\nMEM-L2-02 (vla_stack): 0\nMEM-L2-03 (alloca_usage): 0\nMEM-L2-04 (stack_alias): 20\nTesting heap memory operations\n\nHEAP-L2-01 (heap_basic): 10\nHEAP-L2-02 (heap_calloc): 0\nHEAP-L2-03 (heap_realloc): 50\nHEAP-L2-04 (heap_array): 15\nHEAP-L2-05 (heap_struct): 15\nHEAP-L2-06 (heap_nested): 0\nHEAP-L3-01 (linked_list_heap): 100\nHEAP-L3-02 (tree_heap_traversal): 60\nHEAP-L3-03 (memory_leak): 2\nHEAP-L3-04 (dangling_pointer): value before free: 42\nChild process exited normally\nExit status: 0\nTesting static and global variables\n\nSTM-L1-01 (global_var_access): 1\nSTM-L1-01 (global_var_read): 2\nSTM-L1-02 (global_array_access): 5\nSTM-L1-03 (static_local): 1\nSTM-L1-03 (static_local): -629969664\nSTM-L1-04 (call_static_func): 11\nSTM-L2-01 (access_extern_global): 123\nSTM-L2-02 (call_extern_func): 0\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `uVar1`, and `piVar1`, completely losing the semantic intent of original names like `a`, `b`, `sum`, or `args`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from symbols (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting the original source's intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Integer literals are converted to hexadecimal (e.g., `0xf` instead of `15`, `0x2a` instead of `42`), and global offsets like `0x2ecb` appear as magic numbers without context.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant decompiler-specific noise such as `undefined4` types, `CONCAT44` macros for 64-bit reconstruction, and stack references like `stack0x00000008`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Simple loops in the source (e.g., `ret_large_struct`, `varargs_func`) are decompiled into unrolled sequences or complex pointer arithmetic loops, obscuring the original logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps or spaghetti logic, making execution paths easy to trace despite the unrolling.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: Significant redundancy is present due to loop unrolling; for example, `ret_large_struct` contains 16 sequential assignment statements instead of a simple loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic (`undefined4`) or split; 64-bit integers (`long long`) are split into two `undefined4` parameters combined with `CONCAT44`, losing the original type semantics.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `LargeStruct` passed by value is exploded into 21 separate integer parameters (`param_1` through `param_21`), rendering the data structure invisible.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the logic is generally sound, the pervasive use of `undefined4` and implicit pointer arithmetic (e.g., `param_1[1]`) removes type safety guarantees present in the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like the varargs stack walking) unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `va_list` (varargs) are not recognized; instead, the decompiler outputs raw stack pointer manipulation (`(int *)&stack0x00000008`), obscuring the high-level intent.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies or potential issues are flagged; the decompiler presents the complex unrolled code and stack manipulations as standard, confident code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the non-null check in `func_struct_byptr` is present but not highlighted as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand despite the type issues.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the original file's logical grouping and ordering of functions perfectly.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on Ghidra-specific macros (`CONCAT44`, `undefined4`) and would not compile without significant modification or a compatibility header.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable `param_1` through `param_21` in `func_struct_byval` should be a single `LargeStruct` argument.
+- Control flow in `varargs_func` uses raw stack pointer arithmetic and loop unrolling instead of `va_list` idioms.
+- Function `ret_large_struct` is unrolled into 16 assignment lines, losing the loop structure.
+- Types are degraded to `undefined4` and `CONCAT44` macros instead of standard C types like `long long`.
+- No comments explain the complex stack manipulations or ABI-specific details.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered symbol names, making the high-level purpose of each function immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover `LargeStruct` (exploding it into 21 parameters) makes the signature of `func_struct_byval` unreadable and misleading.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggregate parameter recovery to group stack-passed arguments back into struct types based on size and alignment.
+2. Recognize and abstract `va_list`/varargs patterns into idiomatic C constructs rather than exposing stack pointer math.
+3. Detect and re-roll loop unrolling patterns (e.g., `param[i] = seed + i`) to restore the original loop structure, especially at `-O0`.

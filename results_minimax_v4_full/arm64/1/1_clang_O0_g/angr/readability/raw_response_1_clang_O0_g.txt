@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2` instead of semantic names. Compare source `int temp1 = a + b` to decompiled `v2 = a0 + a1`. Loop variables like `i`, `j` are acceptable but inconsistent with other generic names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, `duffs_device`, etc. Only minor address-based names for some internal functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Severe magic number issues: `3169126501123975826038943907850` (array {10,20,30,40,50}), `4294967295` (0xFFFFFFFF), `4294967294` (0xFFFFFFFE) used repeatedly. Bit manipulation `(v2 * 2 | v2 >> 31) & 4294967294` obscures signed multiplication. No constant recovery.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. Some unnecessary stack frame setup visible but not obstructive. No debug instrumentation or redundant casts. Clean overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow matches source well. Loops use `for`/`do-while` correctly. Switches use goto tables appropriately. At -O0, structure should be near-perfect and largely achieved.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries match source exactly. Each function has single responsibility. No inlining or outlining artifacts. Good granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minor goto usage for switch cases. Early returns used appropriately. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in Duff's device but structurally necessary. Clean code without significant redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` where source has `int` (signedness mismatch). Parameters named `a0`, `a1` without type hints. Function pointers use `unsigned long long*`. Minor type erosion but mostly inferable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery. Arrays handled via raw memory copies (`memcpy(&v2, &g_402b18, 48)`) and pointer arithmetic (`*((int *)&(&v2)[16 * i + 4 * j])`). Expected at -O0 but loses semantic clarity.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations: bit manipulation masking signed operations, function pointer type confusion in `call_func_ptr_array`. Not severely dangerous but requires careful analysis.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers like `// Function: sequential_ops at 0x400a54`. No algorithm explanations, no recovery of original comments, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Structural patterns recognized (switch tables, loops) but not explicitly named. No pattern naming like "Duff's device" or "state machine" in comments.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior. Silent on anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error conditions or invariants. Original assertions completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function headers show addresses but no call graph information. No indication of who calls each function or global variable usage.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed in address order (0x400a54, 0x400a9c, etc.) rather than logical grouping. Original source had L1/L2/L3 sections; decompiled output loses this organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses `extern` declarations appropriately. Should compile with standard C library headers. Minor patching needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 4 + 7) / 4 = 5.75
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (6 + 5 + 6) / 3 = 5.67
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg = (3 + 5 + 7) / 3 = 5.00
+
+Overall = (5.75 × 0.30) + (8.25 × 0.25) + (5.67 × 0.20) + (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 2.0625 + 1.134 + 0.45 + 0.5 = 5.87/10
+```
+
+**Overall Readability Score:** 5.87/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `v0`/`v1`/`v2` instead of semantic names like `temp1`/`temp2` from source
+- Magic number `3169126501123975826038943907850` completely obscures array {10,20,30,40,50}
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Type signedness mismatch: decompiled uses `unsigned int` where source has `int`
+- No struct recovery; raw pointer arithmetic loses semantic meaning
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names almost perfectly match the original source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`, etc.), making it easy to identify each function's purpose.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+No useful comments recovered. Original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. The decompiled output has only auto-generated function headers with addresses.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used as loop index, name it `i`/`j`; when it holds a sum, name it `sum`; when it's a temporary calculation, use `temp` with number suffix
+2. **Detect and explain magic numbers**: Recognize array initializations (like 10,20,30,40,50), common constants (0xFFFFFFFF), and explain bit manipulation patterns like signed multiplication
+3. **Recover comments from debug symbols**: Use `-g` debug info to recover original comments and documentation that explain function behavior and test scenarios

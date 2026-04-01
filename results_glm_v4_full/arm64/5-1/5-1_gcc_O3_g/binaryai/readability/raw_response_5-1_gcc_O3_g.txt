@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_8`, `iVar1`, and `acStack_2c`, completely obscuring semantic intent such as `value`, `multiplier`, or `name`.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names are well-recovered from debug symbols (e.g., `test_cpp_member_func`, `Base::virtual_func`), and template instantiations are demangled (e.g., `template_max_int_`), providing clear entry points.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers (e.g., `0x2a`, `0x125c`, `0x3e9`) corresponding to source constants (42, 4704, 1000) without any named constant recovery or explanatory comments.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the control flow is clean, there is significant noise from stack canary checks (`___stack_chk_guard`) and generic `undefined` types that clutter the logic, though this is expected for unoptimized code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally linear and readable due to `-O0`, but high-level C++ constructs like exception handling (`try-catch`) are reduced to low-level library calls (`__cxa_throw`), breaking the natural flow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated, including constructors, destructors, and template instantiations, maintaining the original granularity well (e.g., `Container<int>::push` is distinct).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with minimal jumps or spaghetti logic, making it easy to trace execution paths within individual functions.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Several functions (e.g., `test_cpp_smart_ptr`, `test_cpp_virtual_func`) are reduced to simple constant returns (e.g., `return 0x2bf`), which eliminates the source logic entirely, making the code functionally opaque despite being "clean."
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: High-level types are degraded to generic primitives (`undefined8`, `undefined4`, `long`); while `Base*` is recovered, specific class types like `Derived` or `SimpleClass` are lost in the function signatures.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not reconstructed; member access is replaced by raw pointer arithmetic (e.g., `*(int *)(this + 8)` instead of `this->multiplier`), completely hiding the object layout.
+
+**11. Type Safety:** Score: 4/10
+Justification: Virtual function calls are exposed as unsafe indirect calls through vtables (e.g., `(***(code ***)param_1)(param_1,param_2)`), and casts to `code *` are frequent, erasing type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of complex operations like RTTI checks or exception handling.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: C++ idioms are reduced to C implementations; RAII is invisible, polymorphism is pointer arithmetic, and templates are just suffixed functions, with no indication of the original design patterns.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents low-level implementation details (like `__dynamic_cast` internals) confidently as standard code without flagging them as complex ABI artifacts requiring manual interpretation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null checks or size constraints present in `Container::get` are visible but not explicitly stated as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, the inheritance relationships (e.g., `Derived` inherits from `Base`) are not explicitly documented, leaving the user to infer vtable layouts manually.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped, but the lack of class-based grouping or namespace reconstruction makes it difficult to understand the modular structure of the original C++ classes.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on `undefined` types and specific compiler intrinsics (`___stack_chk_guard`) and would require significant manual type definition to compile or verify.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Class member access reduced to raw pointer arithmetic (e.g., `*(int *)(this + 8)`) instead of field names.
+- Logic for `test_cpp_smart_ptr` and `test_cpp_virtual_func` is completely lost, replaced by constant return values.
+- Exception handling logic (`try-catch` blocks) is missing, replaced by low-level `__cxa_throw` calls.
+- Variable names are entirely generic (`local_8`, `iVar1`), providing no semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully leveraged debug symbols to recover accurate function names, including demangled template instantiations, which is crucial for navigation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct class structures with named fields is the single biggest barrier to understanding, as it turns object-oriented code into obscure pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class reconstruction to map `this + offset` accesses to named member variables based on vtable or constructor analysis.
+2. Detect and preserve the logic of functions that are optimized to constants by folding the constant back into a pseudo-code representation or adding a comment explaining the optimization.
+3. Recognize and reconstruct high-level exception handling blocks (`try-catch`) from `__cxa_*` personality routines and landing pads.

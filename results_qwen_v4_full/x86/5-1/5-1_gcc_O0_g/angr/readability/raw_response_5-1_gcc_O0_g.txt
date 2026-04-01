@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. For example, in `test_cpp_member_func()`, `v0`, `v1`, `v2` should be `r1`, `r2`, `r3` matching the source's return values.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names are preserved (`_Z20test_cpp_member_funcv`) which aids identification, but many helper functions are named `sub_402020`, `sub_402030` with no semantic meaning. Test functions are recoverable but wrapper functions are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT32_MAX mask), `65535`, `0x4004000000000000` (double representation). Source constants like `0x1234` for `getClassID()` are lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: stack canary checks (`__stack_chk_fail()`), numerous tiny wrapper functions (`sub_402020` through `sub_402170`), and redundant type casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto labels (`LABEL_402e4a`, `LABEL_402e7b`) instead of structured conditionals. Stack checking code at function ends disrupts natural flow. At `-O0`, this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe fragmentation with ~100+ tiny wrapper functions that just call other functions. Original cohesive test functions are split across multiple decompiled functions with unclear boundaries.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to labels disrupt top-to-bottom reading. Stack canary checks at function ends create artificial non-linearity. Some functions read reasonably but many don't.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from wrapper function chains (e.g., `sub_40202d` → `sub_402030` → `sub_402020`). Duplicate type_info operations and repeated vtable access patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `unsigned int`, `char*`) but many `void*` and `unsigned long long` where specific types existed. Template type information partially lost in instantiation.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). Class vtable pointers visible but not explicitly identified. Lambda capture structs partially recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(unsigned long long)call_virtual_func()`, pointer arithmetic on `void*`. Some correct type preservation but many questionable conversions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no C++ feature documentation, no decompilation confidence indicators. Only one anomaly note (`[D] Unsupported jumpkind`).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (vtable calls, smart pointer operations) but not explicitly identified. No recognition of RAII, virtual dispatch, or template instantiation patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`) but most potential issues silent. Exception handling complexity not flagged, vtable uncertainty not documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception safety contracts lost. No documentation of object lifetime requirements for smart pointers.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered (thunk functions present) but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Related class methods scattered. No namespace or header file organization. Static initialization functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires many external stubs (`operatornew`, `__cxa_throw`, `__cxa_allocate_exception`). C++ runtime dependencies not documented. Would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+3+5+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                              4.25/10
+```
+
+**Overall Readability Score:** 4.25/10
+
+### Critical Defects:
+- **Variable names are entirely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from source (`r1`, `r2`, `r3`, `capture_by_value`)
+- **Excessive function fragmentation** with 100+ wrapper functions that just call other functions, obscuring original structure
+- **Zero meaningful comments** - no explanation of C++ features (vtables, smart pointers, exceptions, templates)
+- **Magic numbers without context** - `4294967295`, `65535`, hex doubles unexplained
+- **Struct fields all generic** (`field_0`, `padding_4`) losing class member semantics (`value`, `name`, `data`)
+
+### Best Quality Aspect:
+- **Type Precision (6/10)** - Basic C/C++ types are mostly preserved correctly (int, unsigned int, char*, class pointers), providing a foundation for understanding despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - The complete absence of explanatory comments makes understanding C++-specific constructs (vtables, smart pointers, exception handling, templates) extremely difficult without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to rename `v0`, `v1` to meaningful names like `result`, `return_value`, `instance_count` based on context and C++ semantics.
+
+2. **Consolidate wrapper function chains** - Detect and merge trivial wrapper functions (`sub_40202d` → `sub_402030` → `sub_402020`) into single coherent functions matching original source structure.
+
+3. **Add C++ feature annotations** - Automatically detect and comment on vtable calls, smart pointer operations, exception handling, template instantiations, and lambda captures to explain high-level semantics.

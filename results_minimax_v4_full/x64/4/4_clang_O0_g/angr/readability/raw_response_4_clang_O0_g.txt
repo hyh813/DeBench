@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `i`. The source uses meaningful names like `count`, `sum`, `args`, `val`, `result`. No semantic meaning recovered.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (`cdecl_func`, `stdcall_func`, `fastcall_func`, `call_cdecl`), but most use auto-generated names like `sub_401020`, `sub_40102c`. Mixed result - about 30% of functions properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently without explanation. String format pointers like `&g_403020` are opaque. Some constants like `48`, `8` in varargs functions lack context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts include: incomplete function `param_struct_byval` returning nothing, unused variable declarations, `uint128_t` types for varargs that don't match source, and `AddV` function calls that appear invented.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is mostly natural. Loops use `for` constructs correctly. Some ternary operators reversed (`a0 <= a1` vs `a0 > a1`) but logic is traceable. Minor goto usage in startup code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines). No excessive inlining at -O0. Some wrapper functions like `sub_401172` just call `call_cdecl()` but this is reasonable for the call graph structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but appropriate. Some forward jumps in varargs handling but manageable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant memory copies in `test_calling_conventions` (multiple `memcpy` calls). Loop unrolling not excessive. Minor dead code in unused variables. Overall acceptable for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `int` becomes `unsigned int`, pointers become `unsigned long` or `unsigned long long`. Function parameters like `char*` become `unsigned long`. Const correctness lost. `size_t` not recovered.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only one struct recovered (`struct_0` with `field_0`), and it's incorrectly defined. Original structs like `LargeStruct`, `SmallStruct`, `TestIntPair` not recovered. All struct operations use raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: pointer arithmetic in struct functions (`ptr[8 * i]`), incorrect pointer casting in `param_complex_cast`, function pointer called as `a0(a1)` without proper type. Moderate risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function headers. Original source comments explaining calling conventions, parameter purposes, and expected values are completely lost. Zero documentation of test expectations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: varargs handling (though incorrectly), function pointers as parameters. But design patterns like "cdecl calling convention test" not identified. Mixed parameter types not recognized as test scenarios.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code. The broken `param_struct_byval` returning nothing, the invented `AddV` function calls, and the incorrect `ret_opaque_handle` returning string literal "d" are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source's expected return values (e.g., "期望: 15") completely lost. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships not documented. No indication which functions call which. Global variables like `g_405de0` used without explanation. Callback relationships not clarified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address, not by logical purpose. Original source organizes by calling convention type, parameter pattern, return value handling - this organization completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations needed. Some functions won't compile (e.g., `param_struct_byval` returns nothing). `AddV` function undefined. Moderate patching required.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are all generic (`v0`, `v1`, `a0`, `a1`) - no semantic meaning recovered
+- Function names mostly auto-generated (`sub_401020`) instead of meaningful names
+- Type precision severely degraded: `int` → `unsigned int`, `char*` → `unsigned long`
+- Struct types not recovered - all composite types lost to raw pointer arithmetic
+- No comments explaining original test expectations or calling convention semantics
+- `param_struct_byval` returns incomplete code (just `return;`)
+- `AddV` function appears invented with no definition
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- At -O0, loops and conditionals are structurally correct and readable
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every local variable uses generic names making it nearly impossible to track purpose without constant cross-referencing to source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as `sum` accumulator should be named `sum`
+2. Recover struct types from stack layout analysis - `LargeStruct` with 16 `long long` fields should be reconstructed
+3. Add semantic comments for test functions - document expected return values and calling convention being tested

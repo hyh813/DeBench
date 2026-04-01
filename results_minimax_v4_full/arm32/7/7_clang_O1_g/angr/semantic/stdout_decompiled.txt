@@ -1,0 +1,5 @@
+Testing obfuscation techniques
+
+Value: 10
+Opaque predicate result: 35
+Instruction substitution result: 225

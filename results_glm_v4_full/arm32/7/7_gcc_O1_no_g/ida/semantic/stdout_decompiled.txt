@@ -1,0 +1,15 @@
+Test output
+10
+Opaque predicate result: 20
+Instruction substitution: 225
+0
+500500
+5050
+72
+20
+1
+41
+30
+2000000000
+10
+44

@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Variables like `v1`, `v2`, `v3`, `v4` dominate, while the original source uses meaningful names like `dst`, `src` in param_strcpy, `s1`, `s2` in param_strcmp, `filename`, `tmpfile`, `buffer`. The only well-named variables are generic ones like `result` and `buffer`. This makes tracking variable purpose across the 2400+ lines extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+The core test functions are correctly named: `param_strcpy`, `call_strcpy`, `param_strcmp`, etc. match the source exactly. However, standard library wrapper functions use generic names like `function_1400` (setsockopt), `function_1410` (pthread_mutex_unlock), `function_14a0` (memcpy). The param_*/call_* functions are good, but the library function wrappers lack semantic naming.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Magic numbers like `0x1000` (4096 bytes for shared memory), `42` (success indicator), and `127` (exit code) appear without explanation. String literals are referenced via computed addresses (e.g., `v1 + (int32_t)&g14 - 0x2e44`) rather than being displayed clearly. The decompiler fails to reconstruct string constants meaningfully.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution includes: `__x86_get_pc_thunk_bx/ax/dx` calls (x86_64 PC-relative addressing), `__readgsdword(20)` (stack canary checks), `__stack_chk_fail_local()` calls. Most critically, the decompiled code shows x86_64 architecture artifacts despite the source being ARM64 -O0, indicating a fundamental architecture mismatch. Many redundant casts between int/pointer types litter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Some control flow is natural (if/else, while loops recognized), but the code uses goto statements and labels (e.g., `lab_0x1f54`, `lab_0x2df5`) for complex logic. Conditional expressions are convoluted, like `strcmp_rc >= 0 == (strcmp_rc != 0) ? 1 : (int32_t)(strcmp_rc < 0)` which should be a simple ternary. At -O0, this level of complexity is unexpected.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+The decompiler correctly preserves the function structure from the source. Functions like `param_strcpy`, `call_strcpy`, `param_fread_fwrite` are properly separated. However, some functions like `param_fread_fwrite` (~50 lines) and `param_pthread_join` (~80 lines) are quite large. The decomposition matches the source well but could be better.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+The code generally reads top-to-bottom but has multiple goto-based jumps that disrupt flow. Forward jumps into loop bodies and complex nested conditionals (especially in `param_pthread_join` and `param_mutex_lock`) make linear reading difficult. The goto usage is excessive for -O0 code.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Some redundant patterns exist, particularly in complex functions. For example, repeated stack canary checks (`if (v4 != __readgsdword(20))`) appear in nearly every function. Loop unrolling is minimal in this -O0 code. The redundancy is manageable but adds noise.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+The decompiler uses `int32_t` appropriately for x86_64. However, many pointers are generic `char*` or `int32_t*` without proper type specificity. Function parameters like `int32_t n` for size parameters should be `size_t`. The const qualifier is largely lost - `const char *src` becomes `char *src`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+The decompiler created stub struct definitions at the top (`struct _IO_FILE`, `struct shmid_ds`, `struct sockaddr`, `struct stat`) but these have generic field names (e0, e1, e2...). The original source uses standard types like `FILE*`, `struct stat`, `struct sockaddr_in` but these are not recovered - instead we get raw pointer arithmetic in many places.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe patterns exist: casts between integers and pointers (e.g., `int32_t mutex = 0; pthread_mutex_lock((int32_t *)mutex);`), function pointer type confusion (e.g., `(int32_t * (*)(int32_t *))&g17`), and pointer arithmetic without bounds checking. The code has several potential undefined behavior issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+The only comments are metadata: address ranges (e.g., `// Address range: 0x1921 - 0x195b`), line ranges (e.g., `// Line range: 45 - 49`), and module information (e.g., `// From module: /work/6.c`). There are no semantic explanations of what the code does, no algorithm documentation, and no decompilation confidence indicators.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Basic standard library functions are recognized: strcpy, strlen, strcmp, memcpy, memcmp, fopen, fclose, pthread_create, etc. However, no higher-level patterns are identified or named. The threading patterns (producer-consumer, mutex locking) are not labeled as such.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomaly warnings are present. The decompiler silently produces incorrect or uncertain code without flagging it. The architecture mismatch (ARM64 source → x86_64 output) is not flagged. Indirect calls and uncertain patterns are not annotated.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. There is no recovery of error handling contracts (e.g., "returns -1 on error"), no null-check documentation, and no buffer size assumptions are stated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function prototypes are declared at the top, showing relationships. However, there's no explicit documentation of which functions call which, no global variable usage annotations, and no callback relationship documentation. The call graph must be inferred from the code.
+
+### 17. Module Organization
+**Score: 6/10**
+
+The code is in a single large file (~2400 lines) with functions grouped reasonably (standard library tests, system calls, threading). However, there's no clear separation into modules or header files. The original source organization by comment sections is not reflected.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code has severe compilation issues: architecture mismatch (x86_64 decompiled code from ARM64 source), incomplete struct definitions, missing function implementations, and many stub declarations. It would require extensive patching to compile. The decompiler metadata claims "Compilation Result: Yes" but this appears incorrect.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+4+2)/4 = 3.50
+L2_avg = (5+7+5+6)/4 = 5.75
+L3_avg = (5+4+4)/3 = 4.33
+L4_avg = (3+5+2+2)/4 = 3.00
+L5_avg = (5+6+2)/3 = 4.33
+
+Overall = (3.50 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.050 + 1.438 + 0.866 + 0.450 + 0.433
+        = 4.24/10
+```
+
+### Overall Readability Score: 4.24/10
+
+### Critical Defects (Bullet List)
+- **Architecture mismatch**: Decompiled code shows x86_64 artifacts (__x86_get_pc_thunk, __readgsdword) despite source being ARM64 -O0 - this is a fundamental decompilation failure
+- **Variable naming**: Generic `v1`, `v2`, `v3` used throughout instead of semantic names like `dst`, `src`, `filename`, `buffer`
+- **No semantic comments**: Only metadata comments (address/line ranges) present; no explanation of algorithms or intent
+- **Type degradation**: Const qualifiers lost, size_t → int32_t, proper struct types not recovered
+- **No anomaly indication**: Architecture mismatch and uncertain patterns not flagged to user
+
+### Best Quality Aspect: Function Decomposition (7/10)
+The decompiler correctly preserves the function boundaries from the source. The param_*/call_* function pairs are properly separated and match the original source organization.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The generic numbered variables (v1, v2, v3, v4) make the code nearly impossible to read without constant reference to the source. This is the most severe readability issue.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `strlen(v1)` suggests v1 is a string, `fopen(v1, "r")` suggests v1 is a filename) to generate semantic names
+2. **Fix architecture detection**: The ARM64 source being decompiled to x86_64 output indicates a fundamental issue in binary detection or the decompilation pipeline
+3. **Add semantic comments**: Include algorithm explanations, flag uncertain decompilations, and document recovered contracts (preconditions/postconditions)

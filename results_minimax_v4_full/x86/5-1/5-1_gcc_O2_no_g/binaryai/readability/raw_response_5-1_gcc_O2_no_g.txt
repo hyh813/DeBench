@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic Ghidra names like `local_30`, `local_2c`, `iVar1`, `piVar3`, `param_1`. The original source uses meaningful names like `value`, `name`, `data`, `size`, `result`. At -O0, these should be recoverable from debug symbols.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Test functions correctly named (`test_cpp_exception`, `test_cpp_member_func`), class methods recovered (`Base::virtual_func`, `Derived::virtual_func`), template instantiations identified (`template_max_int_`, `template_swap_int_`). However, many utility functions remain as `FUN_000111xx`.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Some literals are meaningful (e.g., `0x2a`=42 for throw value, `0x125c`=4704 for expected result), but many magic numbers lack explanation (e.g., `0x54` vtable offset, `0x14` stack canary offset). String "Test" appears as `0x74736554` (little-endian).
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts; stack protector checks (`__stack_chk_fail_local`) present but expected at -O0. No redundant casts or debug instrumentation cluttering the code significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: `test_cpp_exception` shows complex nested try-catch with rethrow, creating non-linear flow. Some functions like `test_cpp_member_func` are straightforward. Exception handling creates unavoidable complexity but is handled reasonably.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Template instantiations properly separated (`template_max_int_`, `template_max_double_`, `template_swap_int_`). Class methods extracted individually. Some functions like `test_cpp_exception` are large (80+ lines) but this matches source.
+
+### 7. Code Linearization
+**Score: 5/10**
+Justification: `test_cpp_exception` has multiple forward jumps and complex nesting disrupting top-to-bottom reading. Early returns and breaks used appropriately in smaller functions. Exception handling inherently creates non-linearity.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Duplicate function definitions present (e.g., two `MultiDerived::funcB`, two `MiddleA::func`, multiple `DiamondDerived::~DiamondDerived`). This appears to be multiple entry points or vtable variants rather than true redundancy.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Integer types use `int` appropriately. Some generic types like `undefined4`, `undefined *` instead of specific types. Floating point correctly identified as `double`, `longdouble`. Const correctness not preserved in return types.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Classes reconstructed with correct names (`Base`, `Derived`, `MultiDerived`, `Container_int_`, `Container_double_`). Member function calling conventions show `this` pointer. Template class instantiations properly distinguished. Struct field names lost but layout recoverable.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Some pointer arithmetic visible (e.g., `this + *(int *)(*(int *)this + -0xc)` for virtual inheritance). No obviously dangerous operations. Minor concerns with `undefined *` casts.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments present in decompiled output. Original source has extensive Chinese comments explaining each feature. At -O0 with debug info, decompiler could recover some context.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: C++ idioms recognizable: virtual function calls through vtable (`***(code ***)param_1`), constructor/destructor patterns, exception handling structure, RAII patterns in `test_cpp_smart_ptr`. Template instantiation recognized.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: No explicit flags for uncertain decompilation. Some indirect calls could not be fully resolved (e.g., `call_virtual_func` shows `***(code ***)param_1`()). No warnings about potential issues.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No pre/postcondition comments recovered. No documentation of function contracts. Original source has no formal contracts, but decompiler could infer some (e.g., "requires: obj != nullptr" for virtual calls).
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships clear through direct calls. Class inheritance visible through vtable usage. Template instantiations properly linked. No explicit call graph documentation.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions logically grouped - test functions together, class methods with their classes, template instantiations grouped. Matches source file organization reasonably well.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Marked as "Compilation Result: Yes" in metadata. Code uses standard types and patterns. Some external dependencies (std:: functions) would need stubs. Minimal patching required.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+5+7)/4 = 5.50
+L2_avg = (5+7+5+6)/4 = 5.75
+L3_avg = (6+7+7)/3 = 6.67
+L4_avg = (2+7+4+2)/4 = 3.75
+L5_avg = (6+7+7)/3 = 6.67
+
+Overall = (5.50 × 0.30) + (5.75 × 0.25) + (6.67 × 0.20) + 
+          (3.75 × 0.15) + (6.67 × 0.10)
+        = 1.65 + 1.4375 + 1.334 + 0.5625 + 0.667
+        = 5.65/10
+```
+
+### Overall Readability Score: 5.65/10
+
+### Critical Defects
+- Variable names are entirely generic (`local_30`, `iVar1`, `param_1`) losing all semantic meaning from original source
+- No comments recovered despite -O0 -g compilation with debug symbols available
+- No anomaly indication for uncertain decompilation (indirect vtable calls)
+- Duplicate function definitions (multiple `DiamondDerived::func`, `MultiDerived::funcB`) create confusion
+- Magic numbers like `0x54`, `0xc`, `-0xc` used without explanation
+
+### Best Quality Aspect: Function Naming Quality (7/10)
+Test functions and class methods are correctly named, matching source almost perfectly. Template instantiations properly distinguished with type suffixes.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+At -O0 with debug symbols, the decompiler should recover significantly more context including variable names from debug info and meaningful comments explaining the code structure.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover debug symbol information**: At -O0 with -g, variable names like `value`, `name`, `result` should be extracted from DWARF debug info rather than generating generic names
+2. **Add explanatory comments**: Document vtable offset calculations, exception handling structure, and virtual inheritance pointer adjustments
+3. **Flag uncertain decompilations**: Mark indirect calls and complex patterns that couldn't be fully resolved with confidence indicators

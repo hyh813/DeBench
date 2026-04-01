@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a1`, `a2`) with occasional meaningful names like `Value`, `Data`, `Size`, and `exception`. Original source had semantic names like `capture_by_value`, `ptr1`, `obj` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods recovered with class scope (`SimpleClass::getValue`). However, helper functions remain generic (`sub_10A68`, `sub_11564`) and lambda names are mangled.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x1Fu` for buffer size, `0x14u` for array allocation). The `getClassID()` returns `4660` instead of preserving `0x1234` hex notation. No named constants recovered from original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including 30 failed decompilations, excessive template instantiation helpers (50+ STL helper functions), thunk functions for virtual dispatch, and stack manipulation comments ("positive sp value has been detected").
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is reasonable for -O0, but exception handling is broken (`test_cpp_exception` marked `__noreturn` incorrectly). Lambda captures shown as struct manipulation rather than clean syntax. Virtual dispatch uses explicit vtable calls.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template expansion creates excessive fragmentation (50+ STL helper functions for `unique_ptr`). Original test functions remain intact, but class methods are split into multiple destructor variants (D0, D1, D2) and thunk functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but virtual thunk functions interrupt logical flow. Exception handling flow is broken. Complex inheritance cases have forward references that disrupt reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from template instantiations across int/double types. Multiple destructor variants for same class. Thunk functions create duplicate dispatch paths. No dead code elimination visible despite -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, double), but complex types degraded to pointer arithmetic. `__fastcall` calling convention annotations present. Template types shown with mangled names. Some type information lost to `void*` and `_DWORD`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Classes recognized but fields accessed via pointer arithmetic (`*(_DWORD *)this`, `*((_DWORD *)this + 1)`). No struct definitions with named fields recovered. Inheritance visible through vtable setup but field semantics lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many explicit casts visible (`(_DWORD *)`, `(SimpleClass *)`). Pointer arithmetic on class objects throughout. Vtable manipulation patterns present. No const-correctness preserved in decompiled output despite `const` methods in source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments—only function headers with parameter info. No algorithm explanations, no confidence indicators for uncertain code. Failed decompilations listed at end but no inline warnings for problematic constructs.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns recognized (constructors, destructors, virtual functions, smart pointers) but expanded to implementation details. Lambda expressions shown as functor objects. No pattern naming or semantic explanation provided.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (30 functions). One warning present ("positive sp value has been detected"). No inline anomaly markers for uncertain indirect calls or exception handling issues within function bodies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions inferred. Exception contracts not recovered. No invariant documentation for class state or object lifecycle.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible through direct invocation. Class relationships shown through method calls. Virtual dispatch visible but complex. No call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Class methods grouped by naming convention (`SimpleClass::`, `Base::`). No header/implementation separation. No logical grouping beyond alphabetical ordering.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 30 functions failed to decompile (listed as `__imp_*`). External dependencies not resolved. STL dependencies expanded but incomplete. Would require significant stubbing and manual repair to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (6+4+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (3+5+4+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.70/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Field access via pointer arithmetic**: Class fields accessed as `*(_DWORD *)this` and `*((_DWORD *)this + 1)` instead of named members like `this->value`
+- **30 failed decompilations**: External functions listed as `__imp_*` without recovery, breaking build compatibility
+- **Exception handling broken**: `test_cpp_exception` marked `__noreturn` incorrectly, losing try/catch semantics
+- **Template explosion**: 50+ STL helper functions for `unique_ptr` instead of clean smart pointer abstraction
+- **No const-correctness**: `const` member functions lose const qualification in decompiled signatures
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved accurately from source (`test_cpp_member_func`, `test_cpp_virtual_func`), and class method scope recovered through mangling analysis.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or exception contracts documented; critical for understanding C++ object lifecycle and error handling semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/class field names** from debug symbols (-g flag present) instead of showing raw pointer arithmetic offsets
+2. **Reconstruct high-level C++ constructs** (try/catch, smart pointers, lambdas) from pattern recognition rather than expanding to implementation details
+3. **Add inline anomaly markers** for uncertain indirect calls and exception handling paths with confidence indicators

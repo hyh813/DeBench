@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `xmmword_29D0`); original semantic names like `large_buf`, `arr`, `head` are completely lost, making code tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`double_value`, `local_vars`, `heap_basic`), but helper functions use generic labels (`sub_9B0`, `init_proc`); mixed quality overall.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers like `0x400000004LL`, `0x1000000010LL` appear without explanation; some decimal constants (42, 10) remain readable but SIMD vector constants obscure intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts including SIMD intrinsics (`vaddq_s32`, `vmovn_s16`), architecture-specific types (`int32x4_t`, `__int64`), and register spilling variables pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original for-loops transformed into SIMD vectorized do-while patterns; some functions like `stack_alias` collapse to constant returns losing all control flow structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but aggressive constant folding merges logic (e.g., `alloca_usage_0` returns constant 15); original structure partially obscured.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with occasional forward jumps from optimization; loop structures somewhat recoverable despite SIMD transformation.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling and SIMD vectorization create verbose code that obscures original simple patterns; redundant vector operations mask intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: ARM-specific types (`int32x4_t`, `__int64`, `_DWORD`) replace standard C types; frequent casting between types degrades portability and clarity.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` and `TreeNode` structs partially recovered with field names (`data`, `next`, `left`, `right`), but some access degrades to pointer arithmetic (`v3[1]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int32x4_t *)`, `(_DWORD *)`); pointer arithmetic patterns (`v2->n128_u32[v7]`) could introduce undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function signatures; zero explanation of optimization transformations or algorithm intent; completely lacks semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition; SIMD optimizations not identified as vectorization; original loop/array patterns completely obscured by intrinsics.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some "FAILED to decompile" notices for 19 library functions, but no warnings about optimization artifacts or potential semantic loss from constant folding.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; error conditions not clearly marked; null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variable usage (`global_counter`, `file_scope_static`) visible but not contextualized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order; no logical grouping by category (stack/heap/static); original section organization completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 19 library functions marked "FAILED to decompile" requiring external stubs; would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.15/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `xmmword_29D0`) - original semantic meaning entirely lost
+- **SIMD intrinsics exposed** (`vaddq_s32`, `vmovn_s16`) instead of recovered high-level loop constructs
+- **Constant folding obscures logic** - functions like `stack_alias` return constant `20` instead of showing alias detection logic
+- **Zero documentation** - no comments explaining optimization transformations or algorithm intent
+- **19 library functions failed** - requires external stubs for compilation
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`double_value`, `heap_basic`, `local_vars`) providing some semantic anchors
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding optimization artifacts nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level constructs from SIMD patterns** - Detect vectorized loops and present as original for/while constructs with optimization notes
+2. **Infer variable names from usage context** - Analyze variable roles (array index, buffer pointer, counter) to generate semantic names
+3. **Add optimization transparency comments** - Document where constant folding, inlining, or vectorization occurred with confidence indicators

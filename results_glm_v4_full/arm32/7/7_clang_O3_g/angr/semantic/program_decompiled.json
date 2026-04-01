@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/7/7_clang_O3_g/angr/syntactic/bin/7_clang_O3_g_fixed",
+  "stdout": "Running obfuscation and optimization tests...\n\n10\n35\n225\n-1097800104\n500500\n5050\n72\nLink time optimization: 20\nDivision by zero test: 1\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

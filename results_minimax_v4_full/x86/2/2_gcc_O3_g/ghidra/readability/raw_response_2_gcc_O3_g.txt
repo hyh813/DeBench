@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables use cryptic generic names like `iVar1`, `iVar2`, `piVar1`, `pPVar1`. Many loop variables are marked as "Unresolved local var: int i@[???]". The decompiler provides no semantic meaning - e.g., `iVar1` should be `sum` based on accumulation pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names largely match the original source: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Minor internal functions like `FUN_00011030` are cryptic but don't impact the main analysis functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show hardcoded results (e.g., `0x61` for 'a', `0xb` for 11) rather than actual computation. Magic numbers like `0x1a`, `0xbf` in `process_char` are unexplained. The original test logic calling functions is lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler/decompiler artifacts: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". Test functions replaced with hardcoded values instead of actual test logic. Injected functions like `get_pc_thunk_bx` pollute output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is readable (do-while loops, if-else). However, `process_bool` has inverted logic - original checks `(x > 0 && x % 2 == 0)` but decompiled shows `~(byte)x & 1` which doesn't match. Loop unrolling in `array_3d` creates 125-line function from 12-line source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain appropriately granular - small functions like `process_char` stay separate. However, `array_3d` is expanded from 12 lines to 60+ lines due to full loop unrolling, and `binary_tree_sum` is massively expanded with manual tree traversal.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Minor forward jumps in some functions. The `pointer_array` function has deep nesting (9 levels of if-statements) but is still traceable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling - `array_3d` explicitly lists all 125 elements, `array_2d_stack` lists 10 diagonal elements. No comments indicating these are unrolled loops. `pointer_array` has repetitive if-else chains.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types mostly correct: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool`. However: `process_ld` returns `longdouble *` instead of `long double`; function pointers use generic `_func_int_int`; `volatile` qualifier missing from `volatile_access` parameter.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph` all correctly identified with field names. Unions (`UnionData`) and enums (`State`) recovered. Bitfields show raw operations but structure is clear.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `process_ll` uses `CONCAT44` with complex casting - likely incorrect. `ptr_diff` computes `(int)p1 - (int)p2 >> 2` which is wrong (should be `p1 - p2` for element count, not byte arithmetic). Function pointer types are generic but not dangerous. Some unsafe casts in bitfield operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler warnings present ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No explanatory comments about algorithm purpose, no @param/@return documentation. Auto-generated warnings don't help understanding.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Recognizable patterns: linked list traversal (`while (current != NULL)`), tree traversal, switch statements via jump tables. However, no explicit naming like "linked list traversal" or "binary tree DFS". Patterns can be inferred but not identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for unknown calling conventions and unresolved local variables. However, no explanation of what these mean or their impact. The `process_bool` logic error is not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of expected input constraints (e.g., "requires: n > 0"). The original source had no assertions either, but decompiler could infer some.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: `main` shows calls to test functions. Callback relationships visible in `ptr_func_simple` and `ptr_func_complex`. However, no documentation of which functions call which, or data flow between functions.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped: data types (`process_*`), arrays (`array_*`), pointers (`ptr_*`), composites (`struct_*`, `enum_*`, `linked_*`). Matches original source organization well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Does not compile - `process_ld` returns wrong type (`longdouble *` vs `long double`). Test functions have hardcoded values, not actual test logic. External dependencies (puts, __printf_chk) not declared. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `piVar1`, `pPVar1`) with "Unresolved local var" markers
+- `process_bool` has incorrect logic - original checks `(x > 0 && x % 2 == 0)` but decompiled shows inverted semantics
+- `ptr_diff` uses incorrect pointer arithmetic: `(int)p1 - (int)p2 >> 2` instead of `p1 - p2`
+- `process_ld` returns `longdouble *` instead of `long double`
+- Test functions replaced with hardcoded values, losing original test logic entirely
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct, union, and enum types are excellently recovered with accurate field names. `Point3D`, `Node`, `TreeNode`, `Graph` all match original definitions.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Nearly all variables use cryptic generic names. The decompiler should infer names from usage patterns (e.g., accumulation variables should be `sum`, loop counters should be `i`, `j`, `k`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `iVar1` accumulating values should be `sum`, pointer variables dereferencing data should suggest `ptr` or `current`
+2. Fix logic errors in boolean expressions - `process_bool` clearly doesn't match source semantics
+3. Recover test function logic instead of hardcoding results - the original called functions and printed actual output

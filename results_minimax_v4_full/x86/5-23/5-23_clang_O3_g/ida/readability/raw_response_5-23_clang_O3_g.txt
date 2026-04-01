@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic IDA-generated names like `v2`, `v3`, `i`, `result` that obscure semantic purpose. While parameter names like `size`, `x`, `y` are preserved from source, the vast majority of variables lack meaningful names that would indicate their role (e.g., `temp_1` should indicate it's a loop index or accumulator).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: All user-defined functions from the source retain their original names (e.g., `param_macro_constants`, `param_asm_basic`, `call_asm_privileged`). However, runtime/internal functions use generic names like `sub_1030`, `sub_10B0`. The primary function naming is excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Macros are replaced with computed values (e.g., `512` for `MAX_SIZE/2`, `57072` for `0xDEF0`), losing symbolic meaning. The literal `1025` instead of `1024` in comparisons is a compiler artifact. While values are correct, the connection to named constants like `MAX_SIZE` or `BUFFER_COUNT` is completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some loop unrolling visible in `call_asm_clobber` with explicit array initialization, and `qmemcpy` appears as a library call substitute. No significant dead code or register spilling artifacts clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with clear if-else and for-loop structures. However, `call_asm_simd` contains complex shuffle operations (`_mm_shuffle_epi32`) that obscure the original loop-based vector addition. At -O0, this level of complexity is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches the original source - small, focused functions like `param_macro_constants` (3 lines), `param_asm_basic` (2 lines) are preserved. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns in functions like `param_dynamic_code` are appropriately used. No deep nesting (>4 levels) or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling present in `call_asm_clobber` and `call_asm_simd`, but these are manageable. No significant dead code or common subexpression duplication that would obscure logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `int` for integers, `size_t` for sizes, `void*` for generic pointers. However, the decompiler uses generic types rather than the more precise `int32_t` or `uint64_t`. The signed/unsigned distinction is mostly preserved.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: No complex structs were present in the original source code to recover. The decompiler correctly handles primitive arrays (e.g., `int *arr`) without attempting to fabricate struct definitions.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. Minor unsafe casts present in SIMD code (e.g., `*(__m128i *)result`), but these are necessary for intrinsic operations. No dangerous pointer arithmetic or type-confused function pointers observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. The only comment is the decompiler header. All the extensive source code comments explaining macro semantics, assembly constraints, and test scenarios are completely lost. This is a critical deficiency for understanding the code's purpose.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Some idioms are recognized and rendered using standard library equivalents - `qmemcpy` for memory copy, `_mm_add_epi32` for SIMD, `_InterlockedExchangeAdd` for atomic operations. However, these are not explicitly labeled as patterns (e.g., "SIMD vector addition").
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: The decompiler correctly marks 8 functions as "FAILED to decompile" (e.g., `__libc_start_main`, `mprotect`, `printf`, `sysconf`). This indicates uncertainty appropriately. However, some potentially anomalous code (like the complex SIMD shuffles) is presented without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but semantic contracts (e.g., "requires: x > 0" for certain functions) are not inferred or indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No call graph or relationship information provided. While functions call each other (e.g., `main` calls `test_preprocessing_features`), there's no documentation of which functions call which, or global variable usage patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear roughly in source order, but there's no logical grouping or separation. Static functions aren't explicitly marked as such, and no module/header structure is indicated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code won't compile standalone - it references undefined string constants like `asc_22C9`, `aPpL201D`, `xmmword_231C`. These are data references that should be resolved. External dependencies (libc functions) are used but not declared.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable names are almost entirely generic (`v2`, `v3`, `i`, `result`) with no semantic meaning
+- All comments are lost - the extensive source documentation explaining macro behavior and assembly constraints is completely absent
+- Macro constants replaced with magic numbers (e.g., `512`, `57072`) losing symbolic meaning
+- String constants and data references are unresolved (`asc_22C9`, `xmmword_231C`), preventing compilation
+- No cross-reference or relationship information between functions
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.8/10)  
+Types are mostly accurate and appropriate. The decompiler correctly handles integer types, pointers, and SIMD intrinsics without significant type confusion.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.5/10)  
+The combination of no comments, no idiom labeling, no contract recovery, and only partial anomaly indication makes the code very difficult to understand semantically.
+
+**Top 3 Recommendations:**
+1. **Recover macro semantics**: Instead of replacing `MAX_SIZE` with `1024`, add comments like `// MAX_SIZE (1024)` to preserve symbolic meaning
+2. **Add meaningful variable names**: Infer names from usage patterns - a variable used as loop index should be named `i` or `index`, not `v3`
+3. **Include cross-reference information**: Document which functions call which, and mark static functions appropriately to show module boundaries

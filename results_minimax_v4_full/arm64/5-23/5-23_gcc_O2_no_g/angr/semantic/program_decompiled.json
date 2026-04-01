@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/5-23/5-23_gcc_O2_no_g/angr/syntactic/bin/5-23_gcc_O2_no_g_fixed",
+  "stdout": "Testing preprocessing features:\nparam_macro_constants returned: 64\nparam_macro_functions returned: 30\nparam_conditional_compile returned: 32\nparam_multi_branch_compile returned: 57122\nparam_macro_recursion returned: 116\nparam_stringize returned: 19\ncall_stringize returned: 60\nLOG: Values: 10, 20, 30\ncall_token_paste returned: 60\ncall_macro_override returned: 16\ncall_include_guard returned: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:30\ncall_builtin_macros returned: 382\nTesting asm features:\ncall_asm_basic returned: 15\ncall_asm_clobber returned: 1399644908\ncall_asm_multi_insn returned: 42\ncall_asm_simd returned: 6\ncall_asm_atomic returned: 30\ncall_asm_privileged returned: 924921856\ncall_asm_privileged returned: 924921856\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

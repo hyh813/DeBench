@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `lVar2`, `uVar3`, `piVar1` with no semantic meaning. Original variables like `arr`, `local`, `p`, `head` are completely lost, replaced with "Unresolved local var" comments.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source (`local_vars`, `heap_basic`, `test_stack_memory`). However, some helper functions like `FUN_00101020` remain unnamed, and `double_value` appears at end of file rather than top.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `0x2a` (should be `42`), `0x14` (should be `20`), `0x3c` (should be `60`). No constants recovered; hex values obscure intent compared to original decimal literals.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extreme noise from loop unrolling (16+ byte variables `bVar2` through `bVar17` in `large_stack_frame`). Excessive temporary variables (`iVar1` through `iVar20` in single functions) from optimization artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple for-loops transformed into complex unrolled patterns with manual index tracking. `large_stack_frame` has 128+ lines of repetitive assignments instead of a 4-line loop. Original loop structure completely lost.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but internal structure destroyed. `linked_list_heap` expanded from 40 lines to 60+ with inlined loop bodies. No inappropriate merging of separate functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple `goto LAB_XXXX` patterns disrupt reading flow. `vla_stack` and `alloca_usage` have 5+ jump labels each. Forward jumps into loop bodies make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Severe loop unrolling creates massive redundancy. `large_stack_frame` repeats similar assignment patterns 128 times. No abstraction or consolidation of repeated code blocks.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `void*`, `char*`) but precision lost. `size_t` becomes `ulong`, `int32_t` becomes generic `int`. Function pointer types partially recovered (`_func_int_int*`) but inconsistent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `Node` struct recovered with `data` and `next` fields. `Point` struct completely lost (fields accessed as `x * 3` in `local_struct`). `TreeNode` partially recovered but field access inconsistent.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int *)`, `(ulong)(uint)`). Pointer arithmetic visible but not flagged as dangerous. `double_free` missing actual double-free logic (returns early without second free).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated "Unresolved local var" comments present. No algorithm explanations, no API contracts. Comments indicate decompiler uncertainty but don't help understanding.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Memory allocation patterns (`malloc` + loop + `free`) not identified as "heap array initialization". Linked list traversal not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" comments indicate recovery failures. "WARNING: Removing unreachable block" notes present. However, critical semantic losses (missing `free` in `memory_leak`) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `n > 0` checks not explained). Null pointer checks present but not documented as contracts. Error return values (`-1`, `-2`) unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. `double_value` referenced by `call_global_callback` but defined far away. Global variable usage visible but not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file regardless of original organization. Static functions not marked consistently. Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with proper headers. External dependencies (`extern_global_var`, `extern_function`) declared. Some type definitions missing (`Node`, `TreeNode` need forward declarations).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (3+6+4+2)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 4.196 ≈ 4.2/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Loop unrolling destroyed readability**: `large_stack_frame` expanded from 8 lines to 150+ with 128 repetitive assignments instead of simple for-loop
+- **Variable names completely generic**: `iVar1`, `lVar2`, `uVar3` provide zero semantic information compared to original `arr`, `local`, `p`
+- **Critical logic lost**: `double_free` function missing actual double-free (returns -2 without second `free()` call)
+- **Magic numbers everywhere**: `0x2a`, `0x14`, `0x3c` instead of `42`, `20`, `60` with no constant recovery
+- **Struct type information lost**: `Point` struct fields accessed as arithmetic (`x * 3`) rather than struct member access
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`) making function identification straightforward
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- No pattern detection whatsoever; memory allocation loops, linked list operations, and tree traversals all appear as raw pointer arithmetic without semantic labeling
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement loop reconstruction**: Detect unrolled loop patterns and recover original for/while constructs with proper loop variables
+2. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables used in malloc size calculations should be named `size` or `count`)
+3. **Flag semantic-critical losses**: When optimization removes observable behavior (like missing `free()` calls), add explicit warnings about potential logic loss

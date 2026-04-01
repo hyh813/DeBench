@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm64/5-23/5-23_gcc_O1_no_g/angr/syntactic/bin/5-23_gcc_O1_no_g_fixed",
+  "stdout": "Macro constants: 281474145157000\nCall macro constants: 64\nMacro functions: 30\nCall macro functions: 32\nMulti branch compile: 57122\nCall multi branch: 116\nStringize: 19\nCall stringize: 60\nLOG: Values: 10, 20, 30\nVariadic macro: 60\nMacro override: 16\nInclude guard: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:28\nBuiltin macros: 382\nASM basic: 0\nCall asm basic: 15\nASM clobber: 3338049603\n",
+  "stderr": "*** buffer overflow detected ***: terminated\n/usr/bin/stdbuf: process killed by signal 6\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function parameters often preserve original names (`int x`, `char c`, `int *p`), but local variables use generic names (`iVar1`, `iVar2`, `local_10`, `cVar1`). Test functions have better names (`val1`, `arr1`, `matrix`) but temporaries remain opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Only compiler helper functions have generic names (`FUN_00011030`, `__x86_get_pc_thunk_ax`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation (`0x2c` in array_2d_stack offset calculation, `0x191d` in struct_bitfields). String literals preserved well, but enum switch uses hex (`0x32` instead of `50`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.ax` warnings throughout every function, stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) in all test functions, redundant local variables (`c_local`, `a_local` that just copy parameters).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for/while constructs correctly. However, `enum_switch` converted to nested if-else chains instead of switch, and `ptr_diff` uses bit shift (`>> 2`) instead of clean pointer arithmetic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain original granularity matching source. Helper functions preserved (`complex_callback`, `opaque_handle_create`). No inappropriate inlining or outlining observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Test functions have initialization scattered but remain traceable. No excessive goto usage; loop structures are clear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant local variables throughout (`c_local`, `d_local`, `x_local` that just copy parameters). Stack canary code repeated in every test function. Some duplicate type casts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, short, long, float, double). Critical degradation: `process_ld` returns `longdouble *` instead of `longdouble`. Function pointer types use custom typedefs (`_func_int_int`) instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names and field names preserved well (`Point3D`, `Rect`, `Widget` with `x`, `y`, `z`, `position`, `size`). Critical failure: bitfield struct shows raw access (`f._0_2_`, `f._4_4_`) instead of named fields (`flag1`, `flag2`, `value`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(int)handle`, `(void *)size` in opaque functions). Pointer arithmetic shown explicitly in some cases. No buffer overflow warnings despite `array_oob` function existing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical failure.** No meaningful comments recovered. Only compiler warnings as comments ("WARNING: Function: __x86.get_pc_thunk.ax replaced"). Original source comments explaining test cases completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns visible (linked list traversal, tree recursion, array iteration) but not labeled or identified. No design pattern recognition. Algorithms not named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Compiler warnings present for calling conventions. **Critical issue not flagged:** `process_ld` completely broken (returns pointer to `_GLOBAL_OFFSET_TABLE_` instead of computing `d * d + 1.0L`). Stack canary checks visible but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions inferred. NULL checks present in linked list functions but not explained as contracts. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within the file. Global variable references shown (`DAT_00013010`, etc.) but not named. Callback relationships visible (`ptr_func_simple` calls `double_value`) but not documented as relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No file separation matching source sections (Data Types, Arrays, Pointers, Composite). Compiler runtime functions mixed with user code. No header file recovery.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies not documented. Undefined symbols present (`DAT_00013010`, etc.). Would need stubs for runtime functions (`__libc_start_main`, `__stack_chk_fail`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6 + 8 + 6 + 5) / 4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7 + 8 + 7 + 6) / 4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (6 + 7 + 6) / 3 = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2 + 4 + 5 + 3) / 4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6 + 5 + 6) / 3 = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────────
+Overall Score:                                  6.0/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **`process_ld` completely broken**: Returns `(longdouble *)&_GLOBAL_OFFSET_TABLE_` instead of computing `d * d + 1.0L` - semantic loss
+- **Bitfield struct destroyed**: Fields `flag1`, `flag2`, `flag3`, `value` reduced to raw access `f._0_2_`, `f._4_4_`
+- **Zero comment recovery**: All original documentation explaining test purposes completely lost
+- **Generic variable naming**: `iVar1`, `iVar2`, `local_10` obscure variable purposes throughout test functions
+- **Compiler noise pollution**: `__x86.get_pc_thunk.ax` warnings appear in nearly every function header
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most user-defined functions preserved original semantic names (`process_char`, `array_1d_stack`, `struct_simple`), making code navigation straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation; only compiler warnings remain as comments, severely impacting understandability of test purposes.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover or infer comments from debug symbols** - When `-g` flag is present, extract and preserve original source comments in decompiled output
+2. **Improve bitfield structure reconstruction** - Analyze access patterns to recover named bitfield members instead of raw memory offsets (`f._0_2_` → `f->flag1`)
+3. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators) to suggest semantic names (`iVar1` → `sum`, `i`)

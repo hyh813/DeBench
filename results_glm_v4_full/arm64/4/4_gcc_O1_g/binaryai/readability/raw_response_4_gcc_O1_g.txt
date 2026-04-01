@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generically named `param_1`, `param_2`, etc., losing the semantic meaning of original names like `a`, `b`, `count`, or `seed`. Local variables like `local_50` or `iVar1` provide no context about their role in calculations (e.g., accumulating a sum).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly recovered, matching the source exactly. This provides excellent high-level navigation despite the poor variable naming.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved intact (e.g., `"CALL-L1-01: %d\n"`), which is excellent. However, integer constants are often displayed in hex (e.g., `0xf` instead of `15`, `0x32` instead of `50`), which requires mental conversion to match the source's intent.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but stack canary checks (`___stack_chk_guard`) appear in almost every function, cluttering the prologue and epilogue. This is a security feature of the binary but acts as noise for readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is highly linear and matches the source structure well, as expected with `-O0`. However, `varargs_func` uses a `do-while` loop with manual pointer arithmetic (`local_50 = local_50 + 8`) instead of the source's `for` loop with `va_arg`, which is slightly harder to read.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are perfectly preserved. There is no inlining or outlining; every function in the source corresponds 1:1 to a function in the decompiled code, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads naturally from top to bottom. There are no confusing forward jumps or spaghetti logic; the flow is straightforward, especially in the test functions which simply sequence calls.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code or redundancy. The decompiler successfully presents the logic without unnecessary temporary variables or duplicated expressions often seen in higher optimization levels.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `void*` are mostly correct. However, some functions returning `int` are typed as `undefined8` (e.g., `call_cdecl`), and `size_t` is sometimes demoted to `int` or `undefined`, reducing precision.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct types are not recovered. `func_struct_byval` takes a `long *param_1` instead of a `LargeStruct` value, and the logic relies on raw pointer arithmetic (`param_1 + 0x10`) rather than struct field access (`s.data[i]`), completely obscuring the data structure.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined8` and `undefined4` implies the decompiler is unsure of the exact types, leading to a loss of type safety guarantees. Pointer arithmetic on `void*` or `undefined*` types is prevalent, which is inherently unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of specific code blocks. The only comments are the header "Decompiled by BinaryAI" and address labels, offering no semantic help.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level idioms are lost. The `va_list` usage in `varargs_func` is decompiled into raw stack walking (`local_50` manipulation) rather than the standard `va_start`/`va_arg` pattern, making the "varargs" intent hard to see.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag anomalies. For instance, the complex stack manipulation in `varargs_func` is presented as standard code without warning that it represents a variable argument list pattern.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no indication of preconditions (e.g., `param_3 != NULL` checks are just code, not documented contracts) or postconditions. The logic is visible, but the "contracts" are not abstracted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names. The relationship between `test_calling_conventions` and the specific `call_*` functions is obvious through the naming convention.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, generally matching the source file's structure. Helper functions and their callers are grouped reasonably well in the listing.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on external symbols like `__printf_chk` and `___stack_chk_guard` without providing headers or definitions. While syntactically mostly valid C, it would not compile without significant stubbing and type fixing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Struct arguments devolved to pointers (`LargeStruct` -> `long *`), losing all field semantics.
+- Variable names are generic (`param_1`, `local_50`), obscuring the logic's intent.
+- Varargs idiom is lost, replaced by confusing pointer arithmetic on stack offsets.
+- Return types are imprecise (`undefined8` used instead of `int`).
+
+**Best Quality Aspect:** Function Decomposition (scored 10/10)
+- The 1:1 mapping of functions preserves the original architecture perfectly, making high-level navigation easy.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to recover `LargeStruct` and `SmallStruct` turns structured data access into raw pointer math, which is the single biggest barrier to understanding the data manipulation logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to detect and reconstruct struct arguments passed by value (identifying hidden pointers or stack copies).
+2. Recognize standard `va_list` stack walking patterns (e.g., `fp = (char*)fp + 8`) and re-synthesize `va_arg` idioms or comments.
+3. Improve type inference for return values to avoid `undefined` types when the register usage clearly indicates a specific integer size.

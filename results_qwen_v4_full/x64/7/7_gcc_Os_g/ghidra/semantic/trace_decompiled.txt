@@ -1,0 +1,11 @@
+TRACE_ENT|0|test_obf_opt_edge|0|Arg0=1,Arg1=-500225160,Arg2=-500225144,Arg3=-1950642824|rax=0x0,rbx=0x7ffee22f2b78,rcx=0x5f6a8bbb8d78,rdx=0x7ffee22f2b88,rsi=0x7ffee22f2b78,rdi=0x1,r8=0x0,r9=0x73bc9112d380
+TRACE_PRINT|0|%54%65%73%74%20%73%74%61%72%74%69%6E%67%0A
+TRACE_PRINT|0|%0A
+TRACE_PRINT|0|%56%61%6C%75%65%3A%20%31%30%0A
+TRACE_ENT|1|call_opaque_predicate|1|Arg0=-500225984,Arg1=-500225904,Arg2=0,Arg3=0|rax=0xa,rbx=0x7ffee22f2b78,rcx=0x0,rdx=0x0,rsi=0x7ffee22f2890,rdi=0x7ffee22f2840,r8=0xa,r9=0x0
+TRACE_ENT|2|param_opaque_predicate|2|Arg0=5,Arg1=-500225904,Arg2=0,Arg3=0|rax=0xa,rbx=0x7ffee22f2b78,rcx=0x0,rdx=0x0,rsi=0x7ffee22f2890,rdi=0x5,r8=0xa,r9=0x0
+TRACE_EXT|2|param_opaque_predicate|2|20
+TRACE_EXT|1|call_opaque_predicate|1|20
+TRACE_PRINT|0|%4F%70%61%71%75%65%3A%20%32%30%0A
+TRACE_PRINT|0|%53%75%62%73%74%3A%20%32%32%35%0A
+TRACE_ENT|3|param_string_encryption|1|Arg0=-500225984,Arg1=-500225904,Arg2=0,Arg3=0|rax=0xb,rbx=0x7ffee22f2b78,rcx=0x0,rdx=0x0,rsi=0x7ffee22f2890,rdi=0x7ffee22f2840,r8=0xb,r9=0x0

@@ -1,0 +1,9 @@
+TRACE_ENT|0|test_standard_library_functions|0|Arg0=1,Arg1=-1091930092,Arg2=-1091930084,Arg3=76168|r0=0x1,r1=0xbeea7814,r2=0xbeea781c,r3=0x12988,r4=0xbeea76d8,r5=0x0,r6=0x0,r7=0x0
+TRACE_ENT|1|param_strcpy|1|Arg0=143804,Arg1=-1091930092,Arg2=-1091930084,Arg3=76168|r0=0x231bc,r1=0xbeea7814,r2=0xbeea781c,r3=0x12988,r4=0xbeea76d8,r5=0x23140,r6=0x0,r7=0x0
+TRACE_ENT|2|param_strlen|2|Arg0=143804,Arg1=-1091930092,Arg2=-1091930084,Arg3=76168|r0=0x231bc,r1=0xbeea7814,r2=0xbeea781c,r3=0x12988,r4=0xbeea76d8,r5=0x23140,r6=0x0,r7=0x0
+TRACE_EXT|1|param_strcpy|1|4
+TRACE_EXT|2|param_strlen|2|4
+TRACE_ENT|3|param_strcpy|1|Arg0=143728,Arg1=0,Arg2=1,Arg3=76168|r0=0x23170,r1=0x0,r2=0x1,r3=0x12988,r4=0xbeea76d8,r5=0x23140,r6=0x0,r7=0x0
+TRACE_ENT|4|param_strlen|2|Arg0=143728,Arg1=0,Arg2=1,Arg3=76168|r0=0x23170,r1=0x0,r2=0x1,r3=0x12988,r4=0xbeea76d8,r5=0x23140,r6=0x0,r7=0x0
+TRACE_EXT|3|param_strcpy|1|3
+TRACE_EXT|4|param_strlen|2|3

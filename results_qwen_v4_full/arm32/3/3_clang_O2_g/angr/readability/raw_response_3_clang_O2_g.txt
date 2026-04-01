@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `a0`, `idx`) with no semantic meaning. For example, `vla_stack` uses `v0`, `v1`, `v2` instead of meaningful names like `array`, `index`, or `size`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retain original names (`local_vars`, `heap_basic`, `global_var_access`), but many are generic (`sub_400568`, `$a.30`). Function names don't indicate parameter types or purpose consistently.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound: `4294967295` (should be `-1`), `0x800` (should be `2048`), `4294966295` (obscure constant). No named constants recovered despite source having clear intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive `armg_calculate_condition` calls obscure simple comparisons. Redundant variable assignments (`v1 = v3; v0 = v4;`) and compiler artifacts pollute nearly every function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Goto patterns replace natural loops (e.g., `LABEL_4008a4` in `alloca_usage`). At `-O0`, loops should be recovered as `for/while` constructs, not backward jumps with labels.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but some have incorrect signatures (`heap_nested` has 8 parameters instead of 1). `linked_list_heap` is overly fragmented with duplicate cleanup code blocks.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps (`goto LABEL_`) disrupt top-to-bottom reading. `call_weak_fn` and `deregister_tm_clones` have confusing label-based branching.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate printf calls in `test_stack_memory` (`printf("MEM-L2-04...")` appears twice). Redundant condition checks in `memop_memset` with nested `armg_calculate_condition` calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `unsigned int` instead of proper types (`int`, `size_t`, `char*`). `create_tree_node` returns `unsigned int [3]` instead of `TreeNode*`. Pointer types frequently degraded to `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs named generically (`struct_0`, `struct_1`, `struct_2`) with fields `field_0`, `field_4`. Original `Point` and `Node` structures lost semantic meaning. No union recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`*((unsigned int *)((char *)&v8 - (7 + i * 4 & 0xfffffff8) + 4 * idx))`). Multiple implicit casts between pointer and integer types without warnings.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Linked list creation in `linked_list_heap` not identified as such. Memory allocation patterns not annotated as heap operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flagging for suspicious code like `dangling_pointer` (use-after-free) or `double_free`. `armg_calculate_condition` calls not explained as decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not annotated). No postconditions or error condition documentation. Return values like `4294967295` not explained as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships unclear without documentation. Global variables referenced as `g_413008`, `g_402d56` without semantic names. Callback relationships (`global_func_ptr`) not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. Related functions not grouped (e.g., `global_var_access` and `global_var_read` separated). No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`extern_function`, `extern_global_var`) declared but not defined. `armg_calculate_condition` is decompiler-specific and won't compile standalone. Multiple undefined symbols.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 3.47/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on semantic usage (e.g., `array_ptr`, `index`, `result`)
+- **`armg_calculate_condition`** calls obscure simple comparisons and should be recovered as standard C operators
+- **Struct fields `field_0`, `field_4`** lose all semantic meaning from original `Point`, `Node` structures
+- **Magic numbers** like `4294967295` should be recovered as `-1` error codes
+- **Goto-based control flow** in simple loops should be recovered as `for/while` constructs at `-O0`
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names were preserved (`local_vars`, `heap_basic`, `global_var_access`), providing minimal semantic anchors
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Replace `armg_calculate_condition`** with standard C comparison operators and document uncertainty where indirect calls cannot be resolved
+3. **Recover struct/union field names** from access patterns and add comments indicating decompilation confidence levels for complex transformations

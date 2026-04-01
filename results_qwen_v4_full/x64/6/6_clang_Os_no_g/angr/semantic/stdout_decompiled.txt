@@ -1,0 +1,23 @@
+Testing standard library functions...
+strlen: 8
+strcmp: 0
+strlen result: 12
+memcpy: 90
+memcmp: -1
+Value: 42, Name: Test
+printf: 22
+sscanf: 579
+fopen_fclose: 42
+fread_fwrite: 42
+malloc_free: 0
+memset: 0
+strchr_strstr: 15
+Testing system calls...
+linux_syscall: 43
+win32_api: 42
+fork_exec: -1
+pipe_communication: 42
+socket_create: 42
+shmget_shmat: 42
+signal_handling: 42
+Testing thread concurrency...

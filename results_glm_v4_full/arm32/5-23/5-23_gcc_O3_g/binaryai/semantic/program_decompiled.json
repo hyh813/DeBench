@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/5-23/5-23_gcc_O3_g/binaryai/syntactic/bin/5-23_gcc_O3_g_fixed",
+  "stdout": "Result: -1095936084\nparam_macro_constants(64) = 516557312\nResult: 30\nResult: 32\nResult: 57122\nResult: 116\nResult: 19\nResult: 60\nLOG: Values: 10, 20, 30\nLOG: Values: 60, 516557312, 30\nResult: 16\nResult: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:07\nResult: 382\ntest_asm_features(516557312, 0, -1095936408)\nasm_basic: 15\nasm_clobber: 15\nasm_multi_insn: 42\nasm_simd: 36\nasm_atomic: 30\nMemory protection test passed\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `ptr`, `v3`, `v4` throughout. While `ptr` and loop indices `i`, `j` are acceptable, the vast majority of variables lack semantic meaning. For example, in `heap_basic`, variables like `v12`, `v4`, `v5`, `v6`, `v7` obscure their roles as size counters and pointers.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named (`local_vars`, `local_array`, `heap_basic`, `double_value`, `memop_memset`, `test_stack_memory`), but many use generic addresses like `sub_400b54`, `sub_400b60`, `sub_400b68`. The test functions are well-named, but helper functions lost their semantic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Hardcoded values like `42`, `10`, `15`, `20`, `60` appear without explanation. Magic numbers such as `4294967295` (error return), `17179869180`, `34359738376` are unexplained. The decompiler correctly identified some string literals but didn't convert them to named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present: vector intrinsics (`AddV`, `MulV`, `ShlNV`), bit manipulation (`__ROL__`), memory barrier artifacts (`[D] MBusEvent-Imbe_Fence()`), redundant CONCAT operations, and frame pointer manipulations. These compiler artifacts severely impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is readable - loops and conditionals are present. However, vector operation patterns (`do-while` with `AddV`) and complex index calculations obscure natural flow. At `-O0`, more natural loops should be recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity (not monolithic). Parameter lists are preserved. Some functions like `test_stack_memory` correctly inline constant expressions. Minor issues with outline artifacts in complex functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `vla_stack` and `heap_basic` with multiple exit paths. Early returns used appropriately in error checking.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present in `large_stack_frame`, `heap_basic`, `heap_array` - this is expected at higher optimization but source was `-O0`. Some duplicate expressions but not severe. Dead code minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are mostly correct (`unsigned int`, `unsigned long long`, `void*`) but generic. Missing precise types like `uint32_t`, `size_t`. Function pointer types are vague (`unsigned long`). Const correctness partially preserved in `const_string` but inconsistent.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs reconstructed with generic names (`struct_0`, `struct_1`, `struct_2`, `struct_3`, `struct_4`). Field names are meaningless (`field_0`, `field_8`, `field_10`, `padding_4`). Original `Point` and `Node` structures lost. In `heap_nested`, multiple struct types created but semantically unclear.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code with correct pointer usage. Some unsafe patterns: in `memop_memcpy`, complex index calculation `*((int *)(-4 + (n & 18446744073709551612) + (char *)a0))` is error-prone. No severe violations but some complex arithmetic could cause issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. Zero explanation of algorithm intent, no documentation of preconditions/postconditions, no indication of decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (malloc/free pairs, linked list traversal) but not explicitly named or documented. Memory leak pattern in `memory_leak` not flagged. Dangling pointer in `dangling_pointer` not indicated as dangerous.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. Dangerous patterns like `dangling_pointer` returning `*(ptr)` after `free(ptr)` are presented as normal code. No warnings about undefined behavior or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions (null checks) not documented as requirements. Postconditions (heap allocation, error returns) not explained. Invariants not identified.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are clear and direct. Global variable usage documented with `extern` keyword. Callback relationships partially shown (e.g., `global_func_ptr`). Some cross-file references noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped by category (stack, heap, static, memory ops). Test functions grouped together. Static functions properly indicated. Minor organization issues with some helper functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues: `[D]` prefixes not valid, `CONCAT` macro usage problematic, some type casts invalid. External dependencies documented via `extern`. Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning
+- No comments or documentation explaining algorithm intent
+- Struct field names are generic (`field_0`, `field_1`) losing original `Point`, `Node` semantics
+- Noise artifacts (`AddV`, `MulV`, `__ROL__`, `[D] MBusEvent-Imbe_Fence()`) severely impact readability
+- No anomaly indication for dangerous patterns like dangling pointers and memory leaks
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Functions maintain reasonable size and parameter lists, with test functions properly organized
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Zero comments present; without any documentation, even simple functions require reverse engineering to understand
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `ptr` used with `malloc`/`free` should be named `heap_ptr` or similar)
+2. **Recover struct field names from context**: Use field offsets and usage to reconstruct meaningful names like `Node.next`, `Point.x` instead of `field_8`
+3. **Add semantic comments**: Document preconditions (null checks), postconditions (return values), and flag dangerous patterns (dangling pointers, memory leaks)

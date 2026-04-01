@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all local variables are unresolved or use generic names like `local_28`, `uStack_24`, `iVar1`, `sVar1`, `puVar1`. The original source had meaningful names like `value`, `name`, `obj`, `r1`, `r2`, `r3` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`). Template instantiations show as `template_max<int>` which is acceptable. Minor issues with internal operators (e.g., `operator_new` vs `::operator new`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x125c` (4704), `0x3e9` (1001), `0x2a` (42), `0x47` (71), `0x28a` (650). These represent computed results but lack explanation. The string "Test" is visible as hex `0x74736554` but not decoded.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from 15+ "WARNING" comments about unreachable blocks, unknown calling conventions, and unresolved local variables. However, no register spilling artifacts or debug instrumentation visible. The noise level is moderate but distracting.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else, loops, returns. However, virtual function calls show as indirect jumps with warning "WARNING: Treating indirect jump as call". Exception handling shows as raw `__cxa_throw` without try-catch structure recovery.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are extracted appropriately. Template functions (`template_max<int>`, `template_swap<int>`) and class methods (`Container<int>::push`, `Container<double>::get`) are properly separated. However, some class methods like constructors show `__thiscall` without proper `this` parameter handling.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns present in `Container<int>::push` and `get` functions. No goto statements or spaghetti code observed. Minor disruption from indirect calls in virtual functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Computed values like `strlen` result stored in `sVar1` and reused. Loop unrolling not excessive. Clean code in this dimension.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered: `int`, `double`, `size_t`. However, many stack variables use `undefined4`, `undefined1` for uninitialized data. Pointer types are generic (`int*`, `void*`) rather than specific. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures not properly recovered. `SimpleClass` appears as raw stack variables (`local_28` for name buffer, `local_1c` for value). No struct field names like `value`, `name`, `data`, `size` recovered. The decompiler shows "Unresolved local var" for all class instances.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Virtual function call shows unsafe pattern: `iVar1 = (**obj->_vptr_Base)();` with warning about indirect jump. Some pointer arithmetic in `Container<double>::push` using raw offsets. No bounds checking comments. Mixed safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical warnings present ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No explanatory comments about algorithm logic, C++ idioms, or what the code does. DWARF prototypes mentioned but not utilized for documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of C++ idioms. RAII patterns (smart pointers, constructors/destructors) not identified. Virtual dispatch shown as raw vtable access. Exception handling not recognized as try-catch pattern. Lambda expressions not identified as such.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection - flags unresolved local variables, unknown calling conventions, indirect jumps that couldn't be resolved. Warnings are specific: "Too many branches" for virtual call, "Unresolved local var" for each variable. However, no guidance on how to resolve.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges. The decompiler provides no contract information whatsoever.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Static member access is clear (`LifecycleClass::instance_count`). Function calls preserved. Virtual function relationships partially shown via vtable. However, no documentation of who calls whom or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions ordered by binary address, not logically grouped. Template instantiations scattered. Class methods separated but not grouped by class. No namespace recovery. Arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses standard library functions but incompletely qualified (`operator_new` vs `::operator new`). Would require stubs for `__cxa_throw`, `__dynamic_cast`, etc. Not standalone compilable without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable naming**: All local variables are unresolved or generic (`local_28`, `iVar1`, `puVar1`), losing all semantic meaning from original source
+- **Composite type recovery**: Class structures completely lost - `SimpleClass`, `LifecycleClass`, `Base`, `Derived` all appear as raw stack variables
+- **Magic numbers**: Results like `0x125c`, `0x3e9`, `0x2a` unexplained, requiring manual reverse-engineering to understand
+- **No idiom recognition**: C++ features (RAII, virtual dispatch, exceptions, lambdas) not identified as patterns
+- **Comment poverty**: Only technical warnings, no explanatory comments about what the code does
+
+### Best Quality Aspect: Function Naming (scored 7/10)
+Core test function names match original source exactly (`test_cpp_member_func`, `test_cpp_virtual_func`). Template instantiations properly disambiguated.
+
+### Most Needs Improvement: Variable Naming Quality (scored 2/10)
+Every local variable in every function is either "Unresolved" or uses generic names like `local_28`, `iVar1`. The original source had meaningful names like `value`, `name`, `obj`, `r1`, `capture_by_value` - all completely lost.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If a variable is used as array index, name it `idx` or `index`. If it's a size, name it `size` or `count`. Use data flow analysis.
+2. **Recover class/struct layouts**: Use type information and field access patterns to reconstruct composite types with meaningful field names
+3. **Add explanatory comments**: Document what each test function computes, explain magic numbers, identify C++ idioms (virtual calls, exceptions, RAII)

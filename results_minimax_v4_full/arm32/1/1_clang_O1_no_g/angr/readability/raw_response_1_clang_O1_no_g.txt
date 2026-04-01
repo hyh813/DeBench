@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic register-style names (`a0`, `a1`, `a2`) instead of original names (`a`, `b`, `c`). Local variables are `v0`, `v1`, `v2`, `v3` - completely generic. For example, `sequential_ops` should have variables named `temp1`, `temp2`, `temp3` but instead uses only parameter names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About half the functions retain original names (`sequential_ops`, `single_if`, `loop_for_fixed`), but many are auto-generated (`sub_4004dc`, `sub_400594`) or use `$a.16` style names. The mix makes it partially usable but inconsistent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers appear: `4294967295` (0xFFFFFFFF for -1), `1717986919` (magic constant for division by 10), `6100` in switch_small. These obscure the actual logic - e.g., `(a0 * 1717986919 >> 34)` should be `a0 / 10`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. The main noise is `armg_calculate_condition` helper calls and register annotations (`// r0`, `// [bp-0x4]`), which are manageable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control structures preserved correctly (switch, while, do-while), but `loop_for_fixed` uses goto-based loop instead of for construct, and `single_if` has convoluted bit manipulation: `a0 << ((char)(0 < a0 ? 1 : 0) & 31)`. Mixed results.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (mostly under 100 lines) with appropriate granularity. No extreme monoliths or over-fragmentation observed. Good decomposition overall.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive goto usage disrupts linear reading. `loop_for_fixed` uses goto for loop, and `nested_if_deep` has multiple labeled sections with forward jumps. Flow is difficult to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some duplicate calls exist, e.g., in `call_func_ptr`: `v0 = a0(a1); return a0(a1);` calls function twice. Also `tail_recursion` has redundant recursive calls. Moderate redundancy present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All parameters use `unsigned int` when original had `int` (losing signedness). Function pointers typed as `unsigned int*` instead of proper function signatures. Some type precision lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic names: `struct_0`, `struct_1` with fields `field_0`, `field_4`, `field_8`. Original array data like `int arr[] = {10,20,30,40,50}` becomes `*((int *)(4200820 + 4 * v0))` - completely opaque.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: function pointers called through `unsigned int*` type, pointer arithmetic without bounds, missing const correctness. The `loop_break` function accesses hardcoded address `4200820` with no safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only register annotations like `// r0`, `// [bp-0x4]` which are noise. No explanation of algorithm, no recovery confidence indicators, no documentation of intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic control structures recognized (switch, while, for), but no pattern naming. State machine in `state_machine` is not identified as such. No algorithm or design pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls, or uncertain decompilation. The `computed_goto` function is completely empty - should indicate failure. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts completely absent. Should have notes like "requires: n >= 0" for factorial.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of which functions call which. Global variables like `g_401988` appear but relationships unclear. Callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped together in output but no logical organization by feature. All in single file with no grouping hints. Arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple `extern` declarations needed. Missing `setjmp.h` for `non_local_jump`. Cannot compile standalone without significant patching. Dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`a0`, `v0`, `v1`) - should infer semantic names from usage like `temp1`, `packet_size`
+- Magic number `1717986919` used for division by 10 without explanation - should be `a0 / 10`
+- No comments explaining any algorithm or intent - completely opaque
+- Type precision lost - all `int` become `unsigned int`, losing sign semantics
+- Function pointer types not properly recovered - uses `unsigned int*` instead of `int (*)(int)`
+
+**Best Quality Aspect:** Noise Reduction (7/10)  
+The decompiled code has minimal compiler artifacts and is relatively clean to read aside from other issues.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic register-style names (`a0`, `v0`, `v1`) completely obscure variable purpose. At -O0, decompiler should easily infer semantic names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v0 = v1 + v2` computing sum should be named `sum`
+2. Recognize magic numbers for division/modulo operations and replace with operator expressions
+3. Add comments explaining algorithm intent and flag uncertain decompilations (e.g., indirect calls)

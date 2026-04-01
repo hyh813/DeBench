@@ -1,0 +1,166 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables are almost entirely generic (`local_c`, `local_d`, `local_10`, `local_14`, `iVar1`, `puVar1`, `param_1`). The original source uses meaningful names like `value`, `name`, `data`, `size`, `multiplier`, but these are completely lost. Only `acStack_2c` hints at stack allocation. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Justification: Test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) perfectly match source names. Template functions like `template_max<int>` and `template_swap<int>` are correctly named. However, internal helper functions like `FUN_000109bc` and some thunk functions lack semantic meaning. The `call_virtual_func` is correctly identified.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x125c` (4704), `0x47` (71), `0x16` (22), `0x55` (85), `0x2bf` (703), `0x32` (50), `0x96` (150), `0xfa` (250), `0x3e9` (1000). These correspond to expected return values but are never explained. String literals like `"Test"` are preserved but not connected to the `name` member.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: Significant decompilation noise present: 15+ "WARNING" comments about unreachable blocks, unknown calling conventions, and stack_chk_fail. Comments like `/* WARNING: Subroutine does not return */` and `/* WARNING: Could not recover jumptable */` clutter the output. However, core logic is distinguishable from noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Basic control flow is preserved - if/else, loops, and function calls are recognizable. However, some awkward constructs exist: `call_virtual_func` has a comment "Could not recover jumptable at 0x00010d84. Too many branches". At -O0, this should be cleaner. The virtual function thunks add complexity but are necessary for C++ semantics.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are properly decomposed with reasonable granularity. Each test function is separate. Template instantiations are correctly separated (`template_max<int>`, `template_max<double>`). Member functions are properly extracted. Minor issue: some thunk functions could be better organized.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `template_max<int>`. Some forward declarations of vtable pointers exist but don't severely disrupt flow. The code is mostly linear.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy detected. Dead code from unreachable blocks is flagged with warnings rather than left in. Loop unrolling is minimal at -O0. The code is clean with no obvious duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Major type degradation. Instead of `int`, we see `undefined4`. Instead of `char`, we see `undefined1`. Instead of `size_t`, we see `undefined4` or `ulonglong`. Function signatures use `undefined4` for return types. The decompiler uses its own type system rather than recovering C++ types. Const correctness is lost.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: No class/struct recovery. The decompiled code uses raw pointer arithmetic: `*(int *)(this + 0x28)` instead of `this->size`. Field names like `dataA`, `dataB`, `multiplier`, `shared_data` are completely lost, replaced with offsets. The original class hierarchy is not reconstructed - we see `BaseA`, `BaseB` as separate vtable pointers but not their layout.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Significant type safety issues throughout. Multiple unsafe pointer arithmetic operations: `*(int *)(this + 4)`, `*(int *)(this + 0x28)`, `*(int **)(*piVar1 + -4)`. The code uses C-style casts everywhere: `(unique_ptr<int[],std::default_delete<int[]>> *)&local_10`. Function pointer type confusion exists in virtual call handling.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 6/10**
+
+Justification: Mixed comment quality. Some excellent comments like `/* Base::virtual_func(int) */`, `/* Container<int>::push(int) */` correctly identify functions. However, many comments are auto-generated warnings: `/* WARNING: Unknown calling convention */`, `/* WARNING: Removing unreachable block */`. No explanation of algorithm logic or C++ semantics. The "WARNING" noise significantly reduces usefulness.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some C++ patterns are recognized: `__thiscall` convention, `virtual thunk` functions, `operator_new`, `operator_delete`. However, higher-level idioms like RAII (in smart pointers), polymorphism patterns, and exception handling are not explicitly identified or explained. The decompiler treats C++ as if it were C with some annotations.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: Decompiler does flag anomalies with warnings: "Could not recover jumptable", "Too many branches", "Treating indirect jump as call". However, these are generic warnings without specific guidance on how to resolve or interpret them. Some indirect calls are silently handled without flagging.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No precondition/postcondition recovery. No documentation of expected invariants (e.g., "requires: obj != nullptr", "ensures: return value is valid"). The original source had bounds checking in `getData()` but this isn't reflected in the decompiled code as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships are somewhat clear through direct calls. Virtual dispatch is indicated through vtable manipulation. However, the relationship between test functions and the main `test_cpp_oo_features` function isn't explicitly documented. Global variable `instance_count` usage is visible but not explained.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are loosely grouped by class (all `Container` functions together, all `DiamondDerived` functions together) but the overall organization is alphabetical by address rather than logical. Related functions like constructors and destructors are separated. No namespace or class structure is implied in the organization.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code does NOT compile as-is. Types like `undefined4`, `undefined8`, `undefined1` are not valid C/C++ types. The code uses Ghidra's internal type system. External dependencies (`std::` namespace functions, `__cxa_*` functions) are referenced but not declared. Significant patching would be required to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+4+5)/4 = 4.75
+L2_avg = (6+7+7+8)/4 = 7.00
+L3_avg = (4+3+4)/3 = 3.67
+L4_avg = (6+5+6+3)/4 = 5.00
+L5_avg = (5+5+3)/3 = 4.33
+
+Overall = (4.75 × 0.30) + (7.00 × 0.25) + (3.67 × 0.20) + 
+          (5.00 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.75 + 0.734 + 0.75 + 0.433
+        = 5.092/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming completely generic**: `local_c`, `local_d`, `local_10`, `iVar1`, `puVar1` provide no semantic meaning - original names like `value`, `size`, `multiplier` are lost
+
+2. **No struct/class recovery**: All class members accessed via raw pointer arithmetic (`*(int *)(this + 0x28)`) instead of named fields (`this->size`)
+
+3. **Type precision severely degraded**: Uses `undefined4`, `undefined8`, `undefined1` instead of `int`, `char`, `size_t` - not valid C/C++
+
+4. **Magic numbers unexplained**: Values like `0x125c` (4704), `0x2bf` (703), `0x3e9` (1000) appear without context or named constants
+
+5. **Excessive decompilation noise**: 15+ WARNING comments about unreachable blocks, unknown calling conventions - obscures actual logic
+
+---
+
+### Best Quality Aspect
+- **Function Decomposition (Level 2, Score: 7/10)**
+- **Why?** At -O0, functions are properly separated with correct boundaries. Template instantiations are correctly distinguished (`template_max<int>` vs `template_max<double>`). Test functions match source names exactly.
+
+---
+
+### Most Needs Improvement
+- **Composite Type Recovery (Level 3, Score: 3/10)**
+- **Why?** The decompiler failed to reconstruct any C++ class structures. All class members are accessed via raw pointer arithmetic with hex offsets. Original field names (`dataA`, `dataB`, `multiplier`, `shared_data`) are completely lost. This is the single biggest factor making the code unreadable.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover class/struct field names from vtable and constructor analysis**: Analyze constructor implementations to identify field assignments and their offsets, then map these to meaningful names. For `LifecycleClass`, the constructor shows `data = new int[s]` at offset 0 and `size = s` at offset 4 - these should be recovered as field names.
+
+2. **Replace generic variable names with usage-based inference**: When a variable is used in specific patterns (e.g., `*(int *)(this + 4)` repeatedly, or compared against array bounds), infer semantic names. `local_38[10]` used with `push()` should become `int_container_data`.
+
+3. **Map magic numbers to expected values with context**: When a function returns constant values that match known expected outputs (e.g., `0x1234` for `getClassID()`, `0x2bf` for smart_ptr test), add comments explaining these are return values matching source expectations. This helps verify decompilation correctness.

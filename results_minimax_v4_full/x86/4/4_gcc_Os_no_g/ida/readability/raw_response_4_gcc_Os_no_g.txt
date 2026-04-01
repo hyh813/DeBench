@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Function parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `x`, `y`, `count`. Local variables use `v2`, `v3`, `v4`, `i`, `result` which obscure their purpose. For example, in `func_mixed_args`, parameters should be `x`, `s`, `d`, `ll` but are `a1`, `s`, `a3`, `a4`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user-defined functions correctly preserve original names: `cdecl_func`, `stdcall_func`, `func_a`, `func_b`, `callback_func`, `test_calling_conventions`. However, internal/runtime functions use generic names like `sub_1030`, `sub_1040` for startup code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Computed return values like `return 15;` (for cdecl_func call) are clear results. However, string format references use cryptic names like `asc_2008`, `unk_20C9`, `unk_20F1` making it unclear what they're for. The varargs handling shows `char a2` instead of `...` making the literal unclear.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains `__asm { jmp dword ptr [ebx+8] }` blocks in startup functions. Has warning comment "positive sp value has been detected" in `_start` function. Multiple internal functions (`sub_1030`-`sub_1090`) add noise. However, no debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use `while` constructs naturally, conditionals use `if` statements. Switch statements are reasonably handled. However, `varargs_func` shows `char a2` parameter instead of `...` making the varargs pattern unclear. The `_start` function has unusual stack manipulation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `cdecl_func` is 3 lines, `test_calling_conventions` is ~30 lines. Good separation between test functions and helper functions. No 500-line monoliths. Minor issue: some small wrapper functions like `call_cdecl` could be inlined.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `if (!a1) return -1;` in `func_struct_byptr`). No excessive forward jumps. Loop bodies are straightforward.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some constant folding present: `call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`. This is expected at -O0 for trivial functions. Loop unrolling not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout. Pointers shown as `_DWORD *` or `_QWORD` rather than specific types. The varargs functions incorrectly show `char a2` instead of `...`. Function pointers have partial signatures like `int (__stdcall *a1)(int)`. Signed/unsigned distinction often lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` (128 bytes) is completely lost - `func_struct_byval` shows 16 separate `int` parameters instead of a struct. `SmallStruct` is not recovered - `func_struct_byptr` uses raw `_DWORD *a1` with array indexing. The original had meaningful struct definitions that are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Varargs functions have wrong signature (`char a2` instead of `...`). Pointer arithmetic in struct handling is potentially unsafe. Function pointer types have mismatched calling conventions (`__stdcall` in `param_func_ptr`). Some null checks present but incomplete.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Header comment identifies IDA Pro decompilation but provides no algorithm explanation. No `@param` or `@return` documentation. No indication of decompilation confidence. The warning about "positive sp value" is useful but isolated.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs handling is partially recognized as a loop but incorrectly typed. Struct by-value passing is partially recognized (16 parameters). Calling conventions (`__cdecl`, `__stdcall`, `__fastcall`) are correctly preserved. However, AAPCS and other platform-specific conventions aren't clearly documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flag: "positive sp value has been detected" in `_start`. No indication of indirect calls that couldn't be resolved. No flags for potential undefined behavior. Failed to decompile functions noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: ptr != NULL"). No postcondition recovery. Some null checks are present in code but not documented as contracts. Error return values not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within test functions (e.g., `test_calling_conventions` calls various functions). However, no explicit documentation of who calls whom. Callback relationships (e.g., `callback_func` passed to `param_func_ptr`) not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, helper functions together. Static functions properly scoped. However, startup/runtime functions interspersed with user code. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. External functions (`puts`, `__printf_chk`, `strlen`, `_gmon_start__`, `frame_dummy`) not declared. References to undefined symbols like `handle1_1`, `handle2_0`. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct recovery completely failed**: `LargeStruct` (128 bytes) and `SmallStruct` are lost - `func_struct_byval` shows 16 separate int parameters instead of struct, losing all semantic meaning
+- **Varargs functions incorrectly typed**: `varargs_func` and `param_varargs` show `char a2` instead of `...`, making the variadic nature unclear
+- **Variable naming is generic**: Parameters `a1`, `a2`, `a3` and locals `v2`, `v3`, `v4` provide no semantic information about their purpose
+- **No struct type definitions**: Code uses raw pointer arithmetic (`*a1`, `a1[1]`) instead of struct field access (`p->x`, `p->y`)
+- **Won't compile**: Missing declarations for external functions and undefined symbols prevent standalone compilation
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are appropriately sized with good separation between test functions and helpers. No excessive inlining or fragmentation. The decomposition matches the original source structure well.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+Struct types are completely lost - the decompiler shows raw pointer arithmetic instead of struct field access. This is a fundamental loss of semantic information that severely impacts readability.
+
+### Top 3 Recommendations:
+1. **Recover struct types**: Use field sensitivity and memory access patterns to reconstruct struct definitions with meaningful field names instead of showing 16 separate int parameters
+2. **Fix varargs handling**: Recognize `...` in function signatures instead of showing `char a2` for variadic parameters
+3. **Improve variable naming**: Infer names from usage patterns (e.g., `a1` used as count → `count`, `a2` used as string → `str`)

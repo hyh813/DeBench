@@ -1,0 +1,163 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `v3`, `v4` for locals and `a0`, `a1`, `a2` for parameters. In `local_array`, variables `cur`, `v0`, `v1`, `v2`, `v3`, `v4` provide no semantic indication of their purpose (array pointer, index, return value). Only a few variables like `ptr`, `idx`, `i` are somewhat descriptive. The original source had clear names like `arr`, `n`, `out` which are completely lost.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Justification: Some functions correctly preserve original names (`double_value`, `local_vars`, `local_struct`, `address_of_local`, `test_stack_memory`, `test_heap_memory`, `main`), but the majority use cryptic address-based names like `sub_400c14`, `sub_400c28`, `sub_400d18`. The pattern `sub_` + hex address provides zero semantic meaning. Functions like `memop_memset` and `memop_memcpy` are correctly named, showing the decompiler can recover function names when they match standard library patterns.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: The code is saturated with unexplained magic numbers. `4294967295` (0xFFFFFFFF) appears repeatedly as error return without explanation. Complex expressions like `a0 * 0x100000000 >> 63 & 0xfffffffc00000000 | __ROL__(a0, 2) & 17179869180 & 17179869183` for multiplication are incomprehensible. The original source had clear constants like `10`, `2048`, `100` with semantic meaning in context. No attempt to name these as `MAX_SIZE`, `BUFFER_LEN`, etc.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise pollution throughout. Examples include: spurious variable declarations like `unsigned long v12; // cc_dep2` and `unsigned long v13; // cc_ndep` (ARM64 condition code registers); redundant code like `memcpy(v0, v1, v2)` called twice in `sub_4009c4`; unnecessary casts and frame pointer manipulations. The decompiled output includes internal decompiler state variables that should never appear in output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Basic control flow structures (loops, conditionals) are present and recognizable. However, some patterns are awkward - the `register_tm_clones` function has an extremely convoluted conditional expression that obscures logic. At `-O0`, we should see cleaner code. The `vla_stack` function has complex loop bounds that are hard to follow. Some goto usage exists but is limited.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Function boundaries generally match the original source. The original 40+ functions are preserved as separate entities. Function sizes are reasonable - no extreme monoliths. However, some helper functions from the original (`create_tree_node`) are correctly extracted. The main issue is that many test wrapper functions (`test_stack_memory`, `test_heap_memory`) are inlined with hardcoded values rather than calling the actual functions with parameters.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error-checking code (e.g., `if (!ptr) return 4294967295;`). Some functions have deeper nesting (3-4 levels) in conditionals. The `vla_stack` and `alloca_usage` functions have complex nested logic that disrupts linear reading. Overall acceptable for decompiled code.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Justification: Significant redundancy present. The `call_extern_func` calls `extern_function(5)` twice. In `sub_4009c4`, `memcpy` is called twice with identical arguments. The `test_*` functions have hardcoded return values instead of calling the actual functions (e.g., `__printf_chk(1, "MEM-L1-01 (local_vars): %d\n", 20);` instead of `local_vars(5)`). Loop unrolling is present in `large_stack_frame` but not commented.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Significant type degradation. Original `int` becomes `unsigned int` or `unsigned long long` inconsistently. The original `int *arr` becomes `void* ptr` or `char*`. Size calculations use complex bit manipulation instead of `sizeof()`. Function parameters like `int n` become `unsigned long a0`. The original `Point*` struct pointer becomes generic `void*`. No `const` correctness preserved. The original `size_t` parameters are lost.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some struct recovery attempted with generic names. The `Node` struct becomes `struct struct_0` with `field_0`, `field_8` (for `data` and `next`). The `TreeNode` struct has `field_0`, `field_8`, `field_10`. The `Point` struct is mostly lost - in `heap_struct` it just returns `a0 * 3` without struct reconstruction. The original struct definitions with named fields (`x`, `y`, `data`, `next`, `left`, `right`) are completely lost, replaced with generic `field_N` nomenclature.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several type safety issues present. In `heap_basic`, after `free(ptr)`, the code attempts to return `ptr[n/2]` - classic use-after-free bug that the original code avoided by saving the result before freeing. In `heap_struct`, memory is freed before using the allocated data. Pointer arithmetic like `ptr + idx * 4` is error-prone. The complex expressions for size calculation (like `a0 * 0x100000000 >> 63 & ...`) are likely incorrect and could cause issues. No `restrict` or `_Atomic` annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments present. The only comments are auto-generated noise like `// x0`, `// [bp-0x20]`, `// cc_dep2`. No explanation of algorithm logic, no documentation of preconditions/postconditions. The original source had extensive comments explaining each test case (e.g., `// MEM-L1-01: 局部变量（基础类型）⭐`). Zero recovery of these meaningful comments. Some functions have `/* do not return */` annotations which are helpful.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some common patterns are implicitly present but not named. The memory allocation/free pattern (malloc + check + use + free) is recognizable. The linked list traversal pattern is present but not identified as such. The original source's test categories (MEM-L1, MEM-L2, HEAP-L2, etc.) are completely lost. No recognition of patterns like "initialize-check-use-free" or "traverse-and-sum".
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No flagging of suspicious code. The `dangling_pointer` function has clear undefined behavior (access after free) but no warning. The `double_free` function shows the bug but isn't flagged. The `memory_leak` function allocates without freeing - a deliberate test case that should be annotated. The complex condition code calculations (`arm64g_calculate_condition`) are unexplained artifacts. No indication of uncertainty in indirect calls or unresolved references.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No recovery of preconditions, postconditions, or invariants. The original source had implicit contracts (e.g., `if (n <= 0 || n > 1000) return -1;` in `vla_stack`). These are partially preserved in the control flow but not documented. No `@param` or `@return` style documentation. No indication that `NULL` checks are preconditions. The error return values (-1, -2, etc.) have no explanation of what they signify.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function call relationships are visible in the code (e.g., `test_stack_memory` calls `local_array`, `local_struct`, etc.). However, the test functions use hardcoded values instead of calling the actual functions, breaking the reference chain. Global variable usage is partially clear (e.g., `extern unsigned int global_counter`). Callback relationships (like `set_global_callback` + `call_global_callback`) are present but not documented. The call graph is inferable but not explicit.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are roughly grouped by type (stack functions, heap functions, static functions, memory operations) but the organization is implicit rather than explicit. No header file structure recovered. Static functions vs. extern functions distinction is partially preserved through `extern` keywords. The original source's logical grouping into sections (3.1 Stack, 3.2 Heap, 3.3 Static) is lost - functions are listed by address rather than by semantic category.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code would not compile as-is. Missing declarations for many extern functions (`__printf_chk`, `__stack_chk_guard`, `puts`, `malloc`, `free`, etc.). The `arm64g_calculate_condition` function is undefined. Type incompatibilities (e.g., struct definitions are incomplete). The complex expressions involving `__ROL__` and condition code registers are not valid C. Would require significant patching to compile. No documentation of dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+4+3+2)/4 = 3.0
+L2_avg = (5+7+6+4)/4 = 5.5
+L3_avg = (4+4+5)/3 = 4.33
+L4_avg = (2+4+2+2)/4 = 2.5
+L5_avg = (4+5+3)/3 = 4.0
+
+Overall = (3.0 × 0.30) + (5.5 × 0.25) + (4.33 × 0.20) + (2.5 × 0.15) + (4.0 × 0.10)
+        = 0.90 + 1.375 + 0.866 + 0.375 + 0.40
+        = 3.906 ≈ 3.9/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning from original (`arr`, `n`, `out`, `x`)
+
+2. **Function naming**: ~70% of functions use `sub_XXXX` address-based naming with zero semantic value
+
+3. **Noise pollution**: Severe contamination from decompiler internals (`cc_dep1`, `cc_dep2`, `cc_ndep`, `arm64g_calculate_condition`)
+
+4. **Type loss**: Struct fields all become `field_0`, `field_8`, `padding_0`; original `Point.x`, `Point.y`, `Node.data`, `Node.next` completely lost
+
+5. **Test function corruption**: `test_*` functions use hardcoded values (e.g., `20`) instead of calling actual functions, breaking the reference chain to tested code
+
+6. **Magic numbers**: Unexplained constants like `4294967295`, `17179869180` throughout code without named constants
+
+7. **No comments**: Zero recovery of original source comments explaining test scenarios and expected values
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)**: Function boundaries mostly match original source; reasonable granularity maintained; helper functions like `create_tree_node` correctly extracted
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Almost no useful comments; original source had extensive documentation explaining each test case (MEM-L1-01, HEAP-L2-03, etc.) which is completely lost; no algorithm explanations, no preconditions/postconditions documented
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `idx` or `index`; when used as size, use `size` or `count`. The original names (`arr`, `n`, `out`) should be recoverable from context.
+
+2. **Recover struct field names from type information**: Use debug symbols (available at -O0 -g) to recover `Point.x`, `Node.data`, etc. The field names should not become generic `field_0`, `field_8`.
+
+3. **Eliminate decompiler internal artifacts**: Variables like `cc_dep1`, `cc_dep2`, `v27`, `v28` and functions like `arm64g_calculate_condition` should be filtered out - they provide no value to the analyst and severely degrade readability.
+
+4. **Preserve test function calls**: Instead of hardcoding `printf("MEM-L1-01: %d\n", 20)`, the decompiler should call `printf("MEM-L1-01: %d\n", local_vars(5))` to maintain the reference chain to actual code.
+
+5. **Add semantic comments for complex expressions**: When generating code like `a0 * 0x100000000 >> 63 & ...`, add a comment explaining it's computing `a0 * 4` or similar - the intent is recoverable from the mathematical transformation.

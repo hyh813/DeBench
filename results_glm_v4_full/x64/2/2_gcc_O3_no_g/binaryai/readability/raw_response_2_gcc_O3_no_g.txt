@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, `piVar2`, and `uVar6`, completely losing semantic context (e.g., `arr`, `sum`, `n` in `array_1d_stack`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered original function names like `process_char`, `array_1d_stack`, and `main` from symbols, making the high-level purpose immediately clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure logic; `process_char` uses `0x20` and `0x19` instead of `32` and range bounds, and `test_data_types_l1` uses hex constants like `0x61` instead of `'a'`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While stack canary checks (`__stack_chk_fail`) are legitimate, the pervasive use of `undefined8` and `undefined4` types acts as noise that hinders understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple loops are replaced by complex unrolled logic (e.g., `array_1d_stack` uses a `do-while` loop processing 4 items at a time), and range checks are obfuscated (e.g., `0x19 < (byte)((char)param_1 + 0xbfU)`).
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Core logic functions are distinct and cohesive, but test harness functions like `test_data_types_l1` were reduced to constant prints by the compiler, flattening the structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The unrolled loops in functions like `array_1d_stack` and `array_vla` introduce significant non-linearity and pointer arithmetic that disrupts top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler presents loop unrolling artifacts (e.g., four separate accumulators `iVar7` through `iVar10` in `array_1d_stack`) as verbose, repetitive code rather than abstracting them back into a loop.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are significantly degraded; `struct_simple` takes `int *` instead of `Point3D *`, `ptr_triple` takes `undefined8 *` instead of `int ***`, and `long long` is demoted to `long`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are completely lost; `struct_simple` accesses fields via array indexing (`param_1[1]`), and `struct_bitfields` uses manual bit shifts (`bVar1 >> 1 & 3`) instead of field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on `undefined` types and raw pointer arithmetic (e.g., `*(int *)(param_1 + 0x14)` in `struct_deep`), which are unsafe and obscure memory layout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures in the decompiled output.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms are obscured; the "uppercase to lowercase" check in `process_char` is hidden behind bitwise arithmetic, and array summation is hidden behind unrolling.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags `UNRECOVERED_JUMPTABLE` in the signature of `ptr_func_simple`, which is helpful, but fails to annotate other complex or recovered patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `array_complex_index` that `x` and `y` be within bounds is implicit).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., `main` calling `test_data_types_l1`).
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order that roughly matches the source file structure, grouping related test functions together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to `undefined` types, missing struct definitions, and specific Ghidra types like `code *`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 4 + 6) / 4 = 5.5
+L2_avg: (5 + 7 + 6 + 4) / 4 = 5.5
+L3_avg: (4 + 2 + 5) / 3 = 3.67
+L4_avg: (1 + 3 + 5 + 1) / 4 = 2.5
+L5_avg: (8 + 7 + 2) / 3 = 5.67
+
+Overall = (5.5 * 0.30) + (5.5 * 0.25) + (3.67 * 0.20) + 
+          (2.5 * 0.15) + (5.67 * 0.10)
+Overall = 1.65 + 1.375 + 0.734 + 0.375 + 0.567
+Overall = 4.70
+```
+
+### Overall Readability Score: 4.7/10
+
+### Critical Defects
+- **Composite Type Loss**: Structs like `Point3D` and `Flags` are completely unrecovered, replaced by raw pointer arithmetic and array indexing (e.g., `param_1[1]`).
+- **Loop Unrolling Artifacts**: Simple loops (e.g., in `array_1d_stack`) are decompiled into complex unrolled `do-while` blocks with multiple accumulators, destroying readability.
+- **Generic Variable Naming**: All variables use generic names (`param_1`, `iVar1`), removing all semantic meaning of parameters and locals.
+- **Obfuscated Control Flow**: Simple range checks (e.g., `c >= 'A' && c <= 'Z'`) are transformed into confusing bitwise comparisons (`0x19 < (byte)((char)param_1 + 0xbfU)`).
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully recovered the original function names from the binary symbols, which is the strongest anchor for understanding the code.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The failure to reconstruct `struct` and `union` definitions, turning them into raw memory accesses, is the single biggest barrier to understanding the data model.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Structure Recovery**: Implement aggressive pattern matching to identify struct/union layouts from pointer arithmetic and field offsets, restoring field names and types.
+2.  **Loop Rolling**: Detect and simplify loop unrolling artifacts (e.g., Duff's devices or simple unrolling) back into standard `for` or `while` loops to improve linearity.
+3.  **Semantic Variable Renaming**: Infer variable names from usage context (e.g., `sum` for accumulators, `i` for loop counters, `n` for size limits) to replace generic `iVar1`/`param_1`.

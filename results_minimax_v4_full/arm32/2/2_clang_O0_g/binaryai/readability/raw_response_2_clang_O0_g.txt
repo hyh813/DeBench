@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_10`, `uVar1`, `local_c`. These provide no semantic meaning - it's impossible to infer from names that `param_1` represents a character code, `local_10` is a sum accumulator, or `local_8` is a string length counter.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names closely match original source: `process_char`, `process_int`, `double_value`, `struct_simple`, etc. The naming preserves semantic intent and uses appropriate action verbs. Minor deduction for some internal functions with generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals like array indices (`0xc`, `0x28`, `0x14`) are unexplained magic numbers representing struct sizes. Values like `0x5b` for 'Z' boundary are used without explaining they're ASCII ranges. However, numeric constants in test functions are reasonable.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise from compiler intrinsics: `__mulsf3`, `__adddf3`, `__divdf3`, `__extendsfdf2`, `__floatsidf`, `__fixsfsi` and many more. These 40+ lines of math library functions clutter the output. Also includes debug entry points like `_init`, `_start`, `deregister_tm_clones`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is relatively natural. Loops use `for` constructs correctly. However, `process_short` uses complex bit manipulation `(((uint)param_1 + (uint)param_2) * 0x10000) >> 0x10` instead of simple `a + b`. Some pointer arithmetic in arrays is harder to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated and maintain single responsibility. Each function (e.g., `array_1d_stack`, `ptr_single`) handles one logical operation. Good granularity matching original source.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_complex_index` and `process_bool`. No excessive goto statements or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Some minor expression duplication in tests but minimal. Loop unrolling is absent as expected at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are generic `int` everywhere. Original `short` (16-bit) becomes `int` in `process_short`. `char` becomes `byte`. Original `float` vs `double` distinction lost - both use `undefined4` or `undefined8`. `const int *p` loses const qualifier in `const_param`. No `size_t`, no `uint32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is the most severe failure. Original `Point3D` struct becomes flat pointer arithmetic: `*param_1 + param_1[1] + param_1[2]` instead of `p->x + p->y + p->z`. Nested structs like `Rect` are accessed as raw offsets. Unions completely lost. Linked list nodes accessed via `local_c[1]` instead of `node->next`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Most operations are type-safe but some concerns. Array access `*(int *)(param_1 + local_10 * 4)` uses raw pointer arithmetic without bounds checking. Function pointer calls `(*param_1)(param_2)` lack signature info. Some implicit conversions (int to bool, pointer to int) but no severe violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in decompiled code at all. Zero explanation of algorithm intent, parameter purposes, return values, or any semantic context. The original source has extensive comments explaining test scenarios but none were recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some recognizable patterns: linked list traversal (`while (local_c != NULL)`), array summing loops. But no explicit naming of patterns (e.g., "Implements: linked list traversal"). Nested struct offset calculations not identified as struct field access.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly warnings. The code confidently presents everything as correct, including potentially problematic patterns like the intentional buffer overflow in `array_oob` (loop `i <= n` accessing `arr[i]`). No indication of indirect function calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_complex_index` requires bounds checking, or that `ptr_void` handles multiple type interpretations based on the `type` parameter.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (e.g., `process_char`, `array_1d_stack` called from test functions) but relationship context missing. No documentation of which functions call which, callback relationships, or global variable usage. Static function scoping not indicated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions loosely grouped by category (data types, arrays, pointers, composites) in the output. However, it's one flat file with ~60 functions mixed with library intrinsics. No indication of original file structure or header declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses external functions (`printf`, `memset`, `abort`) but these aren't declared. No `#include` statements. The intrinsics (e.g., `__mulsf3`) are defined in the file but should be library calls. Would need significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Variable names completely generic**: `param_1`, `local_10`, `uVar1` provide zero semantic meaning - impossible to understand without comparing to source
+- **Struct/union types completely lost**: `Point3D p = {1,2,3}` becomes `*param_1 + param_1[1] + param_1[2]` - destroys all semantic information about data structures
+- **No comments**: Zero explanatory text despite 830-line source with extensive documentation
+- **Type qualifiers lost**: `const`, `volatile`, and size-specific types (`short`, `long`) all become generic `int`
+- **Compiler intrinsics clutter**: 40+ lines of math library functions (`__mulsf3`, `__adddf3`, etc.) obscure the actual program logic
+
+**Best Quality Aspect:** Function Naming Quality (9/10)
+- Function names match original almost perfectly: `process_char`, `array_1d_stack`, `double_value`
+- Uses appropriate action verbs and clearly indicates purpose
+
+**Most Needs Improvement:** Variable Naming Quality and Comment Quality (both 1-2/10)
+- Variable names are unusable for analysis (all generic names)
+- Zero comments make understanding algorithm intent impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: If a parameter is used in a loop bound, name it `count` or `length`. If `param_1 + param_2` computes a sum, name variables accordingly.
+2. **Recover struct layouts**: Analyze memory access patterns to detect structured data. `param_1[0]`, `param_1[1]`, `param_1[2]` accessing sequential offsets suggests a 3-field struct - reconstruct it.
+3. **Add semantic comments**: At minimum, document parameter purposes ("param_1: input string"), algorithm intent ("Calculates string length by scanning for null terminator"), and known contracts ("returns: sum of array elements").

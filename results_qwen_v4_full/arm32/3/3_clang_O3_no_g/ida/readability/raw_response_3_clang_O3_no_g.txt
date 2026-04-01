@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`a1`, `a2`, `v0`, `v1`, `v2`) with no semantic meaning. For example, in `heap_basic`, `v2` is the malloc'd array but named generically; `v5` holds the result but provides no hint of purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `global_var_access`), accurately reflecting functionality. However, some helper functions use generic names (`sub_568`, `call_weak_fn`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (e.g., `0xFFFFFFF8`, `0xFFFFFFFD` in VLA calculations). Some constants are clear (42, 100) but alignment masks and bit operations lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: redundant casts (`(_DWORD *)`, `(char *)`), alignment calculations (`(4 * a1 + 7) & 0xFFFFFFF8`), and bit-shift tricks (`a1 + ((unsigned int)a1 >> 31)`) that obscure original intent.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as `for`/`do-while` constructs, but optimization artifacts create awkward patterns. The `vla_stack` function uses complex conditional logic instead of simple bounds checking from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. However, `linked_list_heap` became a 100+ line monolith with deeply nested conditionals that could be better structured.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps and nested conditionals disrupt reading flow. The `linked_list_heap` function has 6+ levels of nested `if` statements for allocation failure handling.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminated some redundancy (e.g., `local_struct` returns `3 * a1` directly), but introduced new redundancy through repeated alignment calculations and type casts throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int *` becomes `_DWORD *`, `Point *` becomes generic pointer, `size_t` often becomes `int`. Function `set_file_static` incorrectly shows `int *` parameter instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `Point` struct (x, y fields) lost entirely; `Node` struct (data, next) reduced to `_DWORD` array access (`v4[0]`, `v4[1]`). No struct definitions present in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts throughout (`(_DWORD *)`, `(char *)`). Pointer arithmetic on void pointers without proper casting. However, no obvious buffer overflow patterns introduced by decompiler.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated annotations like "BYREF" and register hints. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal) not identified or named. The linked list creation pattern in `linked_list_heap` could be labeled but isn't.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present ("positive sp value has been detected, the output may be wrong!"), but critical issues like `dangling_pointer` undefined behavior not flagged. 18 failed decompilations listed but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `a1 > 0` requirements). Null checks present in code but not documented as contracts. Error return values (-1, -2) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. `global_func_ptr = double_value` assignment visible but callback relationship not documented. Global variable usage not summarized.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure (stack → heap → static → memory ops). However, all in single file with no header separation or module boundaries.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 library functions failed to decompile (`__imp_malloc`, `__imp_printf`, etc.). External dependencies (`extern_global_var`, `extern_function`) declared but undefined. Requires significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):   (6+7+5+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System):  (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):     (2+3+4+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):   (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall = 1.50 + 1.50 + 0.73 + 0.45 + 0.47 = 4.65/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Complete struct type loss**: `Point` and `Node` structs reduced to `_DWORD` array indexing, losing all field semantics
+- **Generic variable naming**: All variables use `a1`, `v0`, `v1` pattern with zero semantic recovery
+- **18 failed library function decompilations**: Critical functions like `malloc`, `printf`, `free` not recovered
+- **No type precision**: `int *` becomes `_DWORD *`, function signatures degraded (e.g., `set_file_static` shows wrong parameter type)
+- **Zero documentation**: No comments explaining algorithms, contracts, or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names largely preserved (`local_vars`, `heap_basic`, `global_var_access`), maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to reconstruct any struct/union types; all composite data accessed through raw pointer arithmetic losing all field semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference**: Analyze consistent field access patterns (e.g., `v4[0]` always assigned before `v4[1]` read) to recover struct definitions with field names.
+2. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables passed to `malloc` size parameter should be named `size` or `count`).
+3. **Generate decompilation confidence annotations**: Flag uncertain reconstructions (indirect calls, complex pointer arithmetic) with comments explaining limitations and suggesting manual review.

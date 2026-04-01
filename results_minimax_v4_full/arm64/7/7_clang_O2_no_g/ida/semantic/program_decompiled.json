@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/7/7_clang_O2_no_g/ida/syntactic/bin/7_clang_O2_no_g_fixed",
+  "stdout": "=== Testing Obfuscation and Optimization Features ===\n\nObf/L4_02: Opaque predicate (param): 10\nObf/L4_03: Opaque predicate (call): 20\nObf/L4_04: Instruction substitution (call): 225\nObf/L4_05: String encryption (param): 133\nOpt/L4_01: Tail call optimization (call): 500500\nOpt/L4_01: Non-tail call (call): 5050\nOpt/L4_02: Vectorized loop (call): 72\nOpt/L5_01: Link-time optimization (call): 20\nEdge/L3_01: Division by zero (call): 2\nEdge/L3_02: Null pointer deref (call): 41\nEdge/L3_03: Buffer overflow (call): 30\nEdge/L3_04: Integer overflow (call): 2000000000\nEdge/L4_01: Undefined behavior (call): 10\nEdge/L4_02: Implementation-defined (call): 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

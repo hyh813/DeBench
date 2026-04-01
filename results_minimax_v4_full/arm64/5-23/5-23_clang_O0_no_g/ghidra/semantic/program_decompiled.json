@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm64/5-23/5-23_clang_O0_no_g/ghidra/syntactic/bin/5-23_clang_O0_no_g_fixed",
+  "stdout": "Testing preprocessing features...\nparam_macro_constants(1024) = 34\nparam_macro_functions(5,3) = 33\nparam_conditional_compile(10) = 32\nparam_multi_branch_compile(10) = 35\nparam_macro_recursion(100) = 36\nparam_stringize() = 32\nparam_token_paste(5) = 23\nLOG: Values: 10, 20, 30\nparam_variadic_macro() = 26\nparam_macro_override(5) = 28\ncall_include_guard() completed\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:38\nparam_builtin_macros(100) = 31\nTesting asm features...\ncall_asm_basic(5) = 24\ncall_asm_clobber() = 23\ncall_asm_multi_insn() = 42\n",
+  "stderr": "/usr/bin/stdbuf: process killed by signal 7\n",
+  "exit_code": 1,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/4/4_gcc_O3_g/angr/syntactic/bin/4_gcc_O3_g_fixed",
+  "stdout": "PARAM-L1-00: %d\n\nPARAM-L1-01: 15\nPARAM-L1-02: 11\nPARAM-L2-01: 8\nPARAM-L2-02: 173\nPARAM-L2-03: 300\nPARAM-L2-04: 100\nPARAM-L3-01: 20\nPARAM-L3-02: 21\nPARAM-L3-03: 305419896\nPARAM-L3-04: 15\nPARAM-L3-05: 4\nRET-L1-01: %d\n\nRET-L1-02: 42\nRET-L1-03: 20\nRET-L1-04: 7\nRET-L1-05: 215\nRET-L1-06: 10\nRET-L1-07: 0\nRET-L1-08: 40\nRET-L1-09: 60\nRET-L1-10: 21\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

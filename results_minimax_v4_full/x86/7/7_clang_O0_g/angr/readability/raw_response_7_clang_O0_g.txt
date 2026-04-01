@@ -1,0 +1,164 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+Let me analyze the decompiled code against the original source for this specific function.
+
+### Original Source Analysis
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    // Always-false: x*x < 0 for real numbers
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // Always-false: strlen can't be negative
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Code Analysis
+```c
+unsigned int param_fake_branch(unsigned int a0)
+{
+    unsigned int v0;  // [bp-0x14]
+    unsigned int v1;  // [bp-0x10]
+    unsigned int v2;  // [bp-0xc]
+
+    v0 = &_GLOBAL_OFFSET_TABLE_;
+    v2 = a0;
+    if (a0 * a0 < 0)
+        v2 = v2 * 2 - 559038737;
+    v1 = v0 - 8184;
+    if (strlen(v1) >= 0)
+        return v2;
+    v2 += 1000;
+    return v2;
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, a0). Parameter `a0` should be named `x`, and local variables should reflect their purpose (e.g., `result`, `str_ptr`). The name `v1` is used for what should be the string pointer `str`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The function is correctly named `param_fake_branch`, matching the original source exactly. This is excellent recovery of the original function name.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `-559038737` appears without explanation (should be recognized as `0xDEADBEEF`). The string literal "test" is completely lost - the decompiler uses `v0 - 8184` (a computed offset from GOT) which is nonsensical. The condition `strlen(v1) >= 0` is inverted from source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. The `_GLOBAL_OFFSET_TABLE_` reference is a minor artifact from position-independent code, but doesn't significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The control flow is mostly natural (if statements), but there's a **critical semantic error**: the second condition is inverted (`strlen(v1) >= 0` instead of `strlen(str) < 0`). This changes the function's behavior - the decompiled version will always take the early return, while the source never executes that branch.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized (~15 lines) with clear single responsibility. No over-fragmentation or inlining issues.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. The early return pattern is appropriate and natural.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code observed. Clean, no dead code or duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Major type error**: function returns `unsigned int` instead of `int`. Parameter is `unsigned int a0` instead of `int x`. The string pointer `v1` is computed via pointer arithmetic rather than being recognized as a `const char*`. This loses sign information critical to understanding the obfuscation.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex composite types in this function, so none needed to be recovered. Simple case.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The computed pointer `v1 = v0 - 8184` is unsafe - it's treating a GOT address as a string pointer. This is a significant type safety issue. The inverted condition also creates potential undefined behavior confusion.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the fake branch obfuscation technique. The original source has clear comments about "永假条件" (always-false condition). The decompiled code provides no context about what this function does or why these strange conditions exist.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The fake branch/obfuscation idiom is not recognized or documented. The decompiler doesn't indicate that these are intentionally always-false conditions for obfuscation purposes.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The critical anomaly - inverted condition `strlen(v1) >= 0` - is not flagged. The suspicious pointer computation `v0 - 8184` is not flagged as potentially incorrect. No indication that something is wrong.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. The function should document that it returns the input unchanged (since both branches are always false).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The function calls `strlen` which is clear. The relationship to `call_fake_branch()` is preserved. However, the string "test" is completely lost.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function is properly placed in the binary with other obfuscation-related functions. Good grouping with similar functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code would compile but has semantic errors. The `_GLOBAL_OFFSET_TABLE_` reference requires external linkage. The inverted condition would cause incorrect runtime behavior.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 7) / 4 = 5.5
+L2_avg = (4 + 10 + 8 + 9) / 4 = 7.75
+L3_avg = (3 + 8 + 5) / 3 = 5.33
+L4_avg = (2 + 3 + 2 + 3) / 4 = 2.5
+L5_avg = (7 + 8 + 6) / 3 = 7.0
+
+Overall = (5.5 × 0.30) + (7.75 × 0.25) + (5.33 × 0.20) + 
+          (2.5 × 0.15) + (7.0 × 0.10)
+        = 1.65 + 1.9375 + 1.066 + 0.375 + 0.7
+        = 5.73/10
+```
+
+**Overall Readability Score:** 5.73/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Inverted condition**: `if (strlen(v1) >= 0)` should be `if (strlen(v1) < 0)` - this is a semantic error that changes function behavior
+- **Lost string literal**: The string "test" is completely lost; replaced with meaningless `v0 - 8184` computation
+- **Type mismatch**: Function returns `unsigned int` instead of `int`; parameter is `unsigned int a0` instead of `int x`
+- **Magic number unexplained**: `-559038737` should be recognized as `0xDEADBEEF` with comment explaining it's part of fake branch obfuscation
+- **No obfuscation context**: Comments should explain this implements OBF-L4-02 fake branch obfuscation
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+The function name `param_fake_branch` was correctly recovered, matching the original source exactly.
+
+### Most Needs Improvement: Semantic Transparency (2.5/10)
+The decompiled code lacks any context about the obfuscation technique. No comments explain the fake branch idiom, the inverted condition is not flagged as an anomaly, and there's no documentation of the function's purpose or the always-false conditions.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Detect and flag inverted conditions**: The condition `strlen(ptr) >= 0` is always true, not always false like the source. The decompiler should detect this semantic discrepancy and flag it as an anomaly.
+
+2. **Recover string literals**: The string "test" at `&_GLOBAL_OFFSET_TABLE_ - 8184` should be recognized as a string literal and displayed as `const char *str = "test";`
+
+3. **Recognize obfuscation idioms**: Add pattern recognition for fake branch obfuscation (always-false conditions) and add explanatory comments about the obfuscation technique being used.

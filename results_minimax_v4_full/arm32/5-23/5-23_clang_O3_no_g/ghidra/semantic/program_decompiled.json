@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/5-23/5-23_clang_O3_no_g/ghidra/syntactic/bin/5-23_clang_O3_no_g_fixed",
+  "stdout": "Testing Preprocessing Features:\n\nparam_macro_constants(64)\ncall_macro_constants: 30\nparam_macro_functions(32)\ncall_macro_functions: 57122\nparam_conditional_compile(116)\ncall_conditional_compile: 19\nparam_multi_branch_compile(60)\nLOG: Values: 10, 20, 30\ncall_multi_branch_compile: 60\nparam_macro_recursion(16)\ncall_macro_recursion: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:22\ncall_builtin_macros: 382\n\nTesting Inline Assembly Features:\n\nparam_asm_basic(15)\ncall_asm_basic: 15\nparam_asm_clobber: 42\ncall_asm_simd: 36\ncall_asm_atomic: 30\ncall_asm_privileged: 77\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

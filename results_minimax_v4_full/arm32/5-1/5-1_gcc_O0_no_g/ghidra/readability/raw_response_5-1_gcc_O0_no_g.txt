@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables are almost entirely generic: `local_c`, `local_14`, `local_10`, `iVar1`, `iVar2`, `uVar1`, `puVar1`. While stack objects like `aSStack_30` indicate allocation location, they don't convey semantic purpose. Compare to source where variables like `value`, `name`, `result` are descriptive.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Member functions are named precisely: `SimpleClass::getValue`, `SimpleClass::setValue`, `LifecycleClass::getData`. Template instantiations correctly use `template_max<int>`, `template_swap<int>`. Static functions like `SimpleClass::getClassID` are accurate. Minor扣分 for some internal helpers with generated names.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: String literals like "Test" preserved correctly. Magic number `0x1234` appears without explanation in `getClassID`. Buffer size `0x1f` (31) in `SimpleClass` constructor is unexplained. Some constants like `0x14` (20) in loops are clear from context.
+
+### 4. Noise Reduction
+**Score: 5/10**
+Justification: Excessive "WARNING" comments about unreachable blocks and unknown calling conventions clutter output. Stack canary checks (`__stack_chk_fail`) are compiler artifacts. Some redundant type casts present. However, core logic is relatively clean of true noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Control flow is generally natural - loops use `for` constructs, conditionals are clear. Exception handling shows `__cxa_throw` directly rather than try-catch, which is expected at -O0. Some computed jumps in virtual function dispatch are unavoidable.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Functions are appropriately sized and match source granularity. Member functions properly separated. Template instantiations create multiple functions but this is necessary. Some template helper functions could be consolidated.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns present and appropriate. Some forward references in virtual function tables but these are structural necessities. No excessive nesting.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No obvious dead code. Template instantiations create similar patterns but this reflects actual generated code. Some common subexpression patterns visible but not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Heavy use of `undefined4`, `undefined*` instead of proper types like `int32_t` or `uint32_t`. Pointer types generally correct but `int*` vs `char*` distinction sometimes lost. The decompiler uses `undefined` for unconfirmed types extensively, reducing readability significantly.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: Class names are well-preserved: `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `Point`, `Container`. Member access patterns recognized. Struct layouts generally accurate. Minor issues with some nested template types.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Some unsafe casts present (e.g., `(int*)` conversions). Pointer arithmetic is explicit which is good. Function pointer types sometimes generic. Memory operations are clear but could be safer. Overall moderate type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Many auto-generated "WARNING" comments about unreachable blocks and unknown calling conventions provide little value. Function signatures have some useful annotations. No meaningful algorithm explanations or intent comments. Sparse useful content.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Virtual function dispatch patterns recognized through vtable access. Constructor/destructor patterns identified. Some C++ idioms like RAII in smart pointers partially recognized. Not explicitly named but patterns are visible.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: WARNING comments flag unreachable blocks and unknown calling conventions. Some indirect calls noted. However, many anomalies are generic warnings rather than specific descriptions of what couldn't be resolved.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: Almost no preconditions, postconditions, or invariants recovered. Bounds checking in `Container::get` is visible but not documented as a contract. No documentation of error conditions or requirements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls are clear and traceable. Virtual dispatch relationships visible through vtable pointers. Some callback relationships inferable. However, no explicit documentation of call graphs or relationships.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions grouped logically by class. Related member functions appear together. Static functions properly scoped. Some standard library internals mixed in but this is expected from full binary analysis.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+Justification: Would not compile without significant work. Many undefined types: `EVP_PKEY_CTX`, `type`, `tuple`, `unique_ptr` (incomplete), `operator_new`, `operator_delete`. Missing standard library declarations. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+6+5)/4 = 5.50
+L2_avg = (7+7+7+7)/4 = 7.00
+L3_avg = (5+8+6)/3 = 6.33
+L4_avg = (4+6+6+3)/4 = 4.75
+L5_avg = (6+7+2)/3 = 5.00
+
+Overall = (5.50 × 0.30) + (7.00 × 0.25) + (6.33 × 0.20) + 
+          (4.75 × 0.15) + (5.00 × 0.10)
+        = 1.650 + 1.750 + 1.266 + 0.713 + 0.500
+        = 5.88/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable naming**: Generic names like `local_c`, `iVar1`, `local_14` make tracking purpose extremely difficult
+- **Type precision**: Heavy use of `undefined4`, `undefined*` obscures actual data types
+- **Build incompatibility**: Code uses undefined types (`type`, `tuple`, `unique_ptr`) making compilation impossible
+- **Comment quality**: Mostly auto-generated warnings with no meaningful algorithm documentation
+- **Contract recovery**: No preconditions, postconditions, or invariants documented
+
+### Best Quality Aspect
+**Function Naming Quality (8/10)** - Member functions, template instantiations, and class methods are named accurately matching source intent.
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic stack variable names (`local_*`, `iVar*`) completely obscure semantic purpose. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names like `packet_size` instead of `local_14`
+2. **Replace `undefined*` types**: Use type inference from operations (pointer arithmetic → likely correct pointer type, bitwise ops → integer) to provide more precise types
+3. **Add meaningful comments**: Replace generic "WARNING" comments with specific explanations of what couldn't be resolved and why it matters

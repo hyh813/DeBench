@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/6/6_clang_O3_no_g/ida/syntactic/bin/6_clang_O3_no_g_fixed",
+  "stdout": "Testing standard library functions\nString length: 8\nStrcpy result: 0\nStrlen result: 12\nMemcpy result: 90\nCompare result: 4294967295\nValue: 42, Name: Test\nPrintf result: 22\nScanf result: 579\nFile operation result: 42\nFile read/write result: -3\nMalloc test result: 90\nMemset test result: 0\nString search result: 15\nTesting system calls\n\nSyscall result: 42\nStat result: 42\nFork/exec result: 42\nPipe communication result: 42\nSocket creation result: 42\nShared memory result: 42\nSignal handling result: 42\nTesting thread concurrency\n\nThread create result: 49\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

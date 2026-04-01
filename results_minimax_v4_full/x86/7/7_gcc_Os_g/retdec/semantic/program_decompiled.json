@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_gcc_Os_g/retdec/syntactic/bin/7_gcc_Os_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0x90 in position 0: invalid start byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

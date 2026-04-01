@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameters retain some meaning (`dst`, `src`, `filename`) but local variables are generic (`v1`, `v2`, `v3`). Critical issue: `char buffer[1]` should be `buffer[32]` losing size semantics.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved well (`param_strcpy`, `call_strlen`, `thread_compute`) but 100+ wrapper functions use mechanical names (`function_2030`, `function_2040`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals preserved but stored as hex-encoded globals (`g4`, `g5`). Magic numbers like `42`, `255`, `0x100000` lack semantic naming.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: 127 functions detected with ~100 being unnecessary standard library wrappers. Excessive type casts (`(int64_t *)`, `(int32_t)`) throughout code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive goto usage in `param_pthread_join`, `param_mutex_lock`, `param_thread_local_storage`. At `-O0` this is unacceptable—should use natural loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved but excessive wrapper functions created. `param_thread_local_storage` is 200+ lines with complex goto-based logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jump labels (`lab_0x37e1`, `lab_0x399d`, `lab_0x3fe6_2`) disrupt top-to-bottom reading. Threading functions particularly affected.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: 100+ wrapper functions for standard library calls create massive redundancy. Same pattern repeated for `strcpy`, `strlen`, `printf`, etc.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of `int32_t`, `int64_t`, `uint32_t` used but `const` correctness lost (`char *` vs `const char *`). Pointer types often generic (`int64_t *` instead of specific types).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined but fields completely generic (`e0`, `e1`, `e2`...). Despite `-g` debug flag, no field name recovery for `struct stat`, `struct sockaddr`, etc.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts throughout (`(int64_t *)dst`, `(int32_t *)&tid`). Pointer arithmetic with generic types creates potential undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated line range comments ("// Line range: 45 - 48"). No semantic explanations, no decompilation confidence indicators, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `printf`, `pthread_create`) but no higher-level pattern identification (producer-consumer, mutex protection patterns not named).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Zero anomaly warnings despite suspicious code (complex goto patterns, type mismatches). No indication of decompilation uncertainty anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Error conditions not documented. Function contracts completely absent despite being test functions with clear expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variable usage opaque (`g34`, `g35`, `g36` for signal handling state). No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All code in single file but functions grouped logically (test functions together, thread functions together). No header separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included but type mismatches may cause compilation warnings. Wrapper functions may cause linking issues with actual libc.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+7+6+4)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):   (4+6+4+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):         (6+3+5)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):     (3+5+2+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):   (5+6+6)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.79/10 ≈ 4.8/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects
+- **Buffer size lost**: `char buffer[1]` should be `buffer[32]` in `call_strcpy`, `call_memset`, etc.
+- **Excessive goto usage**: Threading functions use labels (`lab_0x37e1`, `lab_0x399d`) instead of natural loops at `-O0`
+- **Struct field names generic**: All struct fields named `e0`, `e1`, `e2` despite debug symbols available
+- **100+ unnecessary wrapper functions**: `function_2030` through `function_23b0` add noise without value
+- **No anomaly indication**: Zero warnings despite significant decompilation uncertainty in complex functions
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test function names preserved accurately (`param_strcpy`, `call_strlen`, `thread_compute`), maintaining semantic connection to original source.
+
+### Most Needs Improvement
+- **Anomaly Indication (2/10)** - Complete absence of decompilation uncertainty warnings despite complex control flow, type mismatches, and potential recovery errors throughout the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage debug symbols fully**: With `-g` flag, recover original variable names, struct field names, and buffer sizes from DWARF debug information instead of generic `v1`, `e0`, `buffer[1]`.
+
+2. **Eliminate standard library wrappers**: Detect direct libc calls and emit them inline rather than creating 100+ wrapper functions (`function_2030`-`function_23b0`) that add noise.
+
+3. **Recover natural control flow at -O0**: When debug symbols indicate no optimization, reconstruct loops and conditionals from jump patterns instead of emitting goto-based control flow with labels.

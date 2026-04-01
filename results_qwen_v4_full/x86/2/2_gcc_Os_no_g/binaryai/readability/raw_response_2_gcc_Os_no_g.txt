@@ -1,0 +1,135 @@
+# Decompilation Readability Assessment
+
+## Executive Summary
+
+This assessment evaluates Ghidra's decompilation of a comprehensive C test suite compiled with `-O0 -g` (debug mode). The decompiler successfully recovered most function names but failed significantly on type recovery, especially for composite types.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_500` with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `edge` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`). Runtime helpers use generic names (`FUN_00011030`) but this is acceptable for compiler-generated code.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x20` (ASCII offset), `0xbf`, `0x6e`, `0xb` (array strides). Test functions show pre-computed constants (`0x61`, `0x62`) instead of character literals `'a'`, `'b'`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) appear in every test function. Compiler thunks (`__x86.get_pc_thunk.*`) and runtime init functions clutter the output without clear separation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as for/while, but `array_2d_stack` uses awkward do-while with pointer arithmetic instead of nested for loops. `enum_switch` uses jump table lookup instead of clean switch statement.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified with reasonable sizes. However, some signatures are wrong (`ptr_func_simple` loses second parameter, `ptr_const_ptr` returns `void` instead of `int`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `process_char` has confusing conditional logic with `(byte)((char)param_1 + 0xbfU)` that obscures the simple `'A' && c <= 'Z'` check.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions contain excessive local variable declarations (`local_518`, `local_514`, etc.) for simple constant values. Some test calls show pre-computed results instead of actual function invocations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_short` takes `int` instead of `short`, `process_ll` returns `undefined8` instead of `long long`, all float functions return `longdouble`. Pointer types often just `int*` losing const/volatile qualifiers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - ALL struct/union types lost. `struct_simple` takes `int*` instead of `Point3D*`, accessed via `param_1[1] + *param_1 + param_1[2]`. No struct definitions recovered. `struct_bitfields` manually extracts bits instead of using bitfield syntax.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointers degraded to `code*` losing signature information. `ptr_triple` has confusing `**(int **)*param_1` casting. Pointer arithmetic on `int*` for struct field access is unsafe and obscures intent.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments recovered**. Original source had extensive documentation explaining each test case, expected values, and scenarios. No decompilation confidence indicators or uncertainty warnings.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), graph traversal (`graph_traverse`) all appear as raw loops without pattern labeling.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about type mismatches, uncertain decompilation, or potential issues. `volatile_access` loses volatile semantics without flagging. `array_oob` undefined behavior not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Null checks exist in code but aren't documented as contracts. Error conditions not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) not explained. No call graph or dependency information.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in similar order to source, maintaining logical grouping. However, no file/namespace structure and runtime functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile** - undefined references to `FUN_000110b0`, `FUN_000110c0`, `DAT_*` symbols. Missing printf declarations. Type mismatches would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.0 | 30% | 1.50 |
+| L2: Structural | 4 | 6.25 | 25% | 1.56 |
+| L3: Type System | 3 | 3.0 | 20% | 0.60 |
+| L4: Semantic | 4 | 2.0 | 15% | 0.30 |
+| L5: Contextual | 3 | 4.67 | 10% | 0.47 |
+
+**Overall Readability Score: 4.43/10**
+
+---
+
+### Critical Defects
+
+- **Composite types completely lost** - All structs/unions reduced to `int*` with array indexing, losing field names and type semantics
+- **Zero comment recovery** - Original had extensive documentation; decompiled code has none
+- **Type precision severely degraded** - `short`, `long`, `long long`, `float`, `double` all collapsed to generic types
+- **Volatile semantics lost** - `volatile_access` shows `*param_1 + *param_1` without volatile qualifier, losing optimization barrier semantics
+- **Function signature errors** - `ptr_func_simple` missing second parameter, `ptr_const_ptr` wrong return type, `array_string` returns `void` instead of `int`
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - User-defined function names were successfully preserved (`process_char`, `array_1d_stack`, `struct_simple`), making it possible to identify function purposes despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions. All composite types accessed via raw pointer arithmetic, making complex data structure code nearly unreadable and requiring manual reverse engineering of layouts.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement struct/union type inference** - Analyze consistent field access patterns (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]` always together) to reconstruct struct definitions with field names based on usage context.
+
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments into decompiled output, especially for function purposes and test case expectations.
+
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (type mismatches, lost qualifiers, ambiguous control flow) with comments like `// DECOMPILER: volatile qualifier may be lost` to guide manual review.
+
+---
+
+### Assessment Notes
+
+- **Optimization Level Consideration**: Code was compiled with `-O0 -g` (debug mode), so high readability was expected. The 4.43/10 score reflects significant decompiler limitations, not optimization artifacts.
+- **Architecture Mismatch**: Source metadata says `arm64` but decompiled code shows x86 constructs (`__x86.get_pc_thunk.*`, `in_GS_OFFSET`), suggesting potential metadata error or cross-compilation issues.
+- **Debug Symbol Utilization**: Despite `-g` flag, type information and comments were not recovered, indicating the decompiler isn't fully leveraging debug sections.

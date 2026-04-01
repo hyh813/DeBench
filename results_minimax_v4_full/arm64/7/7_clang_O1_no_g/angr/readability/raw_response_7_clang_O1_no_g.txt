@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled function uses generic variable `v0` for the return value. While there's minimal code, the naming provides no semantic insight into what the variable represents (the input parameter `x` or the result).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function name `param_fake_branch` correctly matches the original source. The naming is accurate and preserves the semantic identity of the function from the source.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: The literal `10` in `call_fake_branch` is meaningful - it represents the expected return value. However, the decompiler failed to recover the magic numbers from the fake branches (0xDEADBEEF, 1000).
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The decompiled code is extremely clean with no compiler artifacts, redundant casts, or debug instrumentation. The minimal nature of the output eliminates noise entirely.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: **CRITICAL DEFECT** - The decompiler completely eliminated the fake branch logic. The original source contains two always-false conditionals (`x*x < 0` and `strlen(str) < 0`), but the decompiled version shows only a simple return. This is a severe loss of semantic content - the obfuscation technique is completely invisible.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The function has been reduced to a trivial stub. While `call_fake_branch` is properly separated, the decomposition is meaningless because the core logic was lost entirely.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The trivial function structure reads perfectly top-to-bottom with no jumps or disruption to flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code exists in the minimal output - though this is because the meaningful code was eliminated, not because it was properly cleaned.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: The original function used `int` for both parameter and return type, but the decompiler uses `long long` and `unsigned long`. This type widening loses precision and could affect interpretation of arithmetic operations in the fake branches.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: N/A - no structs or unions are used in this function. Not applicable to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The code is type-safe with no unsafe casts. However, the type mismatches (int vs long long) could lead to subtle issues if this decompiled code were used for further analysis.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explain the fake branch obfuscation technique. The decompiler should have noted that the conditionals were always-false or marked this as an optimization artifact, but there is complete silence about the missing logic.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (永假分支) obfuscation idiom is completely lost. The decompiler should recognize this as an obfuscation pattern but instead presents it as trivial code.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication is given that the function body is suspiciously simple or that significant logic is missing. The decompiler presents this as if it's the complete, correct recovery.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The contract that the function should return the input `x` is trivially visible but offers no insight into the original obfuscation logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The relationship between `call_fake_branch` and `param_fake_branch` is clear - the caller passes the constant 10. The call graph is understandable.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are organized in a reasonable order matching typical binary layout. The test function `test_obf_opt_edge` properly calls the wrapper functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code would compile as C code, but it's semantically incorrect - it doesn't preserve the obfuscation logic from the original. External dependencies (puts, printf, etc.) are properly declared or referenced.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Control flow loss**: The fake branch conditionals (`x*x < 0`, `strlen(str) < 0`) are completely eliminated, losing the core obfuscation technique
+- **No anomaly indication**: The decompiler presents trivial code without flagging that significant logic is missing
+- **Type imprecision**: Original `int` types are widened to `long long`/`unsigned long`
+- **No idiom recognition**: The "fake branch" obfuscation pattern is not identified or documented
+- **Missing magic numbers**: The constants 0xDEADBEEF and 1000 from the fake branches are lost
+
+**Best Quality Aspect:** Noise Reduction (scored 10/10)  
+The decompiled output is clean with no compiler artifacts or redundant code - though this is largely because the meaningful code was eliminated rather than properly cleaned.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 1/10)  
+The decompiler failed to recover the core obfuscation logic - the fake branch conditionals that are the entire point of this function. The output misrepresents the original source by presenting it as trivial code when it actually contains intentional obfuscation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve always-false conditionals**: Detect永假 (always-false) conditions and either recover them or explicitly mark them as "dead code branches" rather than eliminating them
+2. **Add anomaly warnings**: Flag functions where the decompiled body is suspiciously simple compared to the function's role in the binary
+3. **Improve type precision**: Use `-O0` debug info to recover exact integer types rather than defaulting to 64-bit types

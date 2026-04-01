@@ -1,0 +1,114 @@
+Let me carefully analyze the decompiled code against the original source code across all dimensions. This is a comprehensive evaluation task.
+
+Key observations:
+1. Original code was compiled with -O0 -g (debug mode), so we expect high readability recovery
+2. Function names are mostly preserved (process_char, array_1d_stack, etc.)
+3. Variable names are completely generic (a1, a2, v0, v1, etc.)
+4. Struct/union types are completely lost - accessed via pointer arithmetic
+5. Test functions lost their structure and variable initialization clarity
+6. Long double operations became extremely complex (compiler runtime functions)
+7. No comments in decompiled output
+8. Many type casts and compiler artifacts present
+
+Let me score each dimension with specific evidence.
+</think>
+
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `v2`) with zero semantic meaning. Original source had meaningful names like `sum`, `i`, `c`, `arr`, `n` that indicated purpose clearly.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`, `test_data_types_l1`). Only runtime functions have generic names (`sub_6D0`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40`, `0x5A` (ASCII bounds), `32` (case conversion offset), `40LL`, `100LL` (array strides) lack explanation. Float literals (`1.5`, `2.0`, `0.1`) remain clear.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(unsigned int)`, `(__int64)`, `(_DWORD *)`), stack variable declarations with `BYREF` annotations, and register spill variables (`v0` through `v55`) clutter the code significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if/else structures. However, test functions lost loop structures (became sequential calls), and `long double` operations have extremely complex control flow with 200+ labels (`LABEL_100`, `LABEL_132`, etc.).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Individual functions are appropriately sized and cohesive. Helper functions preserved (`complex_callback`). Test functions are monolithic but this matches source structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom naturally. Complex functions (`_addtf3`, `_multf3`) have excessive forward jumps disrupting flow. Test functions maintain reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some redundant type casts present. At `-O0` compilation, loop unrolling is absent which is appropriate. Minimal duplication observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int` often becomes `__int64` or `_DWORD`. `char` becomes `unsigned __int8`. Float/double preserved correctly. Pointer types severely degraded to `__int64` or `void*` losing type information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs completely lost. Accessed via pointer arithmetic (`a1[0]`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`). No struct/union definitions recovered. Bitfields converted to manual bit operations (`(*a1 & 1) + ((*a1 >> 1) & 3)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(unsigned int)(2 * a1)`). Pointer arithmetic without type safety (`*(_DWORD *)(a1 + 4LL * i)`). `void*` used extensively for generic pointers losing type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations. No decompilation confidence indicators. Only function headers with parameter types present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Common patterns (linked list traversal, array sum, string length) not recognized or named. Tree recursion not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations noted at end (7 functions: `__libc_start_main`, `printf`, etc.). No warnings about uncertain code within functions. No flags for potentially unsafe operations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions. No invariants. Array bounds checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage unclear. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by category (data types, arrays, pointers, composites). No header file structure. Source organization completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 7 external functions marked as FAILED requiring stubs. Some type definitions missing (`_DWORD`, `_QWORD`, `__int64`). Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.0 | 30% | 1.50 |
+| L2: Structural | 4 | 6.5 | 25% | 1.63 |
+| L3: Type Fidelity | 3 | 3.7 | 20% | 0.73 |
+| L4: Semantic | 4 | 2.8 | 15% | 0.41 |
+| L5: Contextual | 3 | 4.7 | 10% | 0.47 |
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **All struct/union types completely lost** - accessed via raw pointer arithmetic (`a1[0]`, `a1[1]`) instead of field names (`p->x`, `p->y`)
+- **Variable names completely generic** (`a1`, `v0`, `v1`) with zero semantic meaning despite `-O0 -g` debug compilation
+- **No comments or documentation** recovered despite source having extensive comments explaining each test case
+- **Test function structure destroyed** - variable initialization and test data setup obscured by generic temporaries
+- **Long double operations became unreadable** - 500+ lines of compiler runtime code with 200+ labels
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User function names preserved accurately from source, making it possible to identify what each function does at a high level.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions, forcing all composite type access through opaque pointer arithmetic, severely impacting code understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Detect consistent offset patterns (`+0`, `+4`, `+8` for 3-int struct) and generate struct definitions with field names like `field0`, `field1`, `field2`
+2. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, `j`, `k`; accumulator variables should be `sum`; size parameters should be `n`, `count`, `len`
+3. **Preserve source comments when debug symbols available** - With `-g` flag, extract and embed original source comments into decompiled output for semantic context

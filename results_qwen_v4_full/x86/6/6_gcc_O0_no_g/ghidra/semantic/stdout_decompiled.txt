@@ -1,0 +1,8 @@
+Testing standard library functions
+call_strcpy result: 0
+call_strcmp result: 0
+call_strlen result: 12
+call_memcpy result: -1210269613
+call_memcmp result: 2
+Value: 42, Name: TestName
+call_printf result: 26

@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic patterns (`iVar1`, `uVar1`, `puVar4`, `local_50`). The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name from the original source is preserved exactly: `cdecl_func`, `call_cdecl`, `varargs_func`, `param_by_value_int`, `ret_pointer`, `ret_small_struct`, etc. The decompiler correctly recovered all function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed representation - some values like `0xf` (15), `0x2a` (42), `0x14` (20) use hex while original uses decimal. The magic number `0x3e27` in `__do_global_dtors_aux` is unexplained. However, return values in wrapper functions like `call_cdecl()` are correctly computed.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: compiler runtime functions (`__gmon_start__`, `frame_dummy`, `__do_global_ctors_aux`), placeholder functions (`FUN_00011030`, `FUN_00011090`), undefined data references (`DAT_00012008`, `UNK_00011cbd`), and stack canary functions. These 100+ lines of artifacts obscure the actual test code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use do-while constructs correctly, conditionals are clear. However, `ret_multi_branch` uses formula `(param_1 * 5 + 5) * 2` instead of switch-case reconstruction, which obscures the original logic. At -O0, this should be a switch statement.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity is appropriate - each test function is separate and cohesive. The original source's modular structure (calling conventions, parameter passing, return values sections) is well preserved. No over-fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. The `test_calling_conventions` function is long but follows sequential logic. No excessive forward jumps or goto abuse. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Loop unrolling is minimal at -O0. Dead code is absent. The code is clean in this dimension.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: integers are generic `int` or `undefined4` instead of specific types. Pointers lack const - `char *param_1` should be `const char *param_1`. Function pointers use `code *` instead of proper signatures. `func_mixed_args` has `undefined4 param_4, param_5` for `long long` parameter.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Critical failure - no struct types recovered. `LargeStruct` (128 bytes) and `SmallStruct` are completely missing. `func_struct_byval` uses raw stack offsets (`&stack0x00000004` to `&stack0x00000084`) instead of struct parameter. `ret_small_struct` uses manual pointer manipulation instead of struct return.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate issues: pervasive use of `undefined4` creates type confusion. The `param_complex_cast` function works but uses raw `int *` instead of `void *`. Stack-based struct access without type definitions risks undefined behavior. No `restrict` or alignment annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments. Only the decompilation banner header exists. Original source has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定", "PARAM-L2-06: 可变参数函数") - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The varargs pattern (`va_list`, `va_start`, `va_arg`, `va_end`) is not recognized - appears as manual stack access. The test structure (calling convention tests, parameter tests, return tests) isn't documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The incorrect formula in `ret_multi_branch` is presented confidently without warning. Unresolved indirect calls (e.g., `(*(code *)(undefined *)0x0)()`) have no "UNCERTAIN" indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contracts recovered. Preconditions like "ptr != NULL" in `func_struct_byptr`, postconditions, and invariants are not documented. The original source has clear expectations for each function.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit through code but not documented. No comments indicating which functions call which. The wrapper pattern (e.g., `call_cdecl()` calling `cdecl_func()`) is visible but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all calling convention functions together, parameter functions together, return functions together. However, all in single file with no header separation. Static function scoping not indicated.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile. Undefined symbols: `FUN_000110c0`, `FUN_000110e0` (printf stubs), `DAT_00012008` (string data), `handle1_1`, `handle2_0` (static variables). Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Struct type recovery completely failed** - `LargeStruct` and `SmallStruct` are lost; `func_struct_byval` uses raw stack offsets instead of struct parameter
+- **Variable naming is unusable** - All parameters are `param_N`, locals are `iVar1`, `uVar1`, `local_50` - no semantic meaning preserved
+- **No comments or documentation** - Original source's extensive test case explanations (e.g., "CALL-L1-01: cdecl调用约定") completely lost
+- **Type precision severely degraded** - All types are generic `int`/`undefined4`; const correctness lost; function pointers use `code *`
+- **Incorrect logic reconstruction** - `ret_multi_branch` uses formula `(param_1 * 5 + 5) * 2` instead of switch-case, producing wrong results for case 2 (expects 30, formula gives 40)
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names from original source are preserved exactly, making it easy to locate specific test functions.
+
+**Most Needs Improvement:** Composite Type Recovery (1/10)  
+Struct types are completely lost - this is a fundamental failure that makes code involving structs nearly incomprehensible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types from stack frame layout analysis** - The 128-byte `LargeStruct` in `func_struct_byval` can be reconstructed by analyzing the stack offset range (`&stack0x00000004` to `&stack0x00000084`)
+2. **Infer variable names from semantic usage** - Parameters like `param_1` used as `*param_1 << 1` should suggest `value` or `multiplier`; `param_2` in string functions should suggest `length` or `count`
+3. **Add decompilation confidence comments** - Flag uncertain reconstructions like the `ret_multi_branch` formula with "NOTE: switch-case may be more appropriate"

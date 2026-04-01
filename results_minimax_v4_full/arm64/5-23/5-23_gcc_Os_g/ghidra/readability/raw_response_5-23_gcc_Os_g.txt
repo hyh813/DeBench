@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables are either generic (iVar1, lVar1, lVar2) or marked as "Unresolved local var" with DWARF offsets. For example, `param_conditional_compile` has an unresolved result variable, and `param_stringize` has three unresolved string pointers. Only parameters like `size`, `x`, `y` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name from the source is perfectly preserved: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler correctly recovered all 40+ function names from the source.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are preserved correctly (0x40 for 64, 0xdef0 for 57072, 0xdf22 for 57122). String literals like "LOG: Values: %d, %d, %d\n" are exact. However, macro names like MAX_SIZE, BUFFER_COUNT are lost - only their computed values remain. The decompiler correctly shows `0x200` (512) for `MAX_SIZE / 2`.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts - no redundant casts, dead code, or debug instrumentation visible. Some stack guard checks (`___stack_chk_guard`) and "Unknown calling convention" warnings are present but don't significantly impede readability. Assembly code is properly converted to C.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for`/`do-while` constructs, conditionals use `if`. Example: `param_asm_simd` uses a clear do-while loop. At -O0, the flow closely matches source. Minor issue: some unresolved local variables create gaps in the code comments.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: All functions from source are preserved as separate entities with correct boundaries. Function granularity is appropriate - no monoliths. The decompiler correctly separated `param_asm_atomic` from `param_atomic_c11` even though they have similar implementations.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. No goto statements or forward jumps into loops. Nesting depth is reasonable (max 2-3 levels). The `param_memory_protection` function has nested ifs but remains traceable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. Loop unrolling is minimal (param_asm_simd uses a 4-iteration loop which is appropriate). No common subexpression duplication. Clean code overall.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Integer types are generic `int` rather than specific widths (int32_t), but this is acceptable for -O0. Pointers are correctly typed (`int*`, `void*`, `size_t`). The decompiler properly identifies `size_t` for page sizes and array indices. Minor issue: some variables use `long` where `int` would be more precise on ARM64.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types are reconstructed. All composite data is accessed via raw pointer arithmetic. For example, arrays like `arr` in `param_asm_clobber` are just `int*` without any struct wrapper. The decompiler shows `*(int *)((long)result + lVar1)` instead of a proper array access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe operations present. Pointer arithmetic like `*(int *)((long)result + lVar1)` is common. Some casts between pointer types. However, no obvious buffer overflow patterns or type-confused function pointers. The atomic operations use proper ARM64 intrinsics (`__aarch64_ldadd4_acq_rel`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are sparse and mostly auto-generated warnings like "WARNING: Unknown calling convention" and "Unresolved local var". The DWARF debug info comments (e.g., "Unresolved local var: int result@[DW_OP_breg0(x0): +10; DW_OP_stack_value]") are technical but not helpful for understanding the code's purpose. No explanation of macro semantics or assembly behavior.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The decompiler doesn't recognize this as a test file for preprocessing features or inline assembly demonstrations. The atomic operations, SIMD loops, and self-modifying code patterns are not labeled or explained.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged with warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). However, many "Unresolved local var" issues are just mentioned as comments without explaining the impact on analysis. The indirect function call resolution is not attempted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't indicate that `param_dynamic_code` requires aligned memory or that `param_memory_protection` depends on page size alignment. Error return values (-1, -2, -3) are not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are implicit in the code but not documented. There's no indication which functions call `param_*` functions or the relationship between test functions and their targets. Global variable `global_var` is used in `param_memory_clobber_demo` but its origin isn't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 54 functions are in a single file without logical grouping. The original source's clear separation between preprocessing tests (PP-L2-01 through PP-L3-07) and assembly tests (ASM-L4-01 through ASM-L4-06) is lost. Runtime functions (_init, _start, _fini) are interleaved with test functions.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code compiles successfully (marked as "Compilation Result: Yes" in metadata). External dependencies like `mmap`, `munmap`, `mprotect`, `sysconf`, `__printf_chk` are properly declared. Stack guard functions are linked from standard library.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming is severely degraded - most locals are "Unresolved local var" with DWARF offsets instead of semantic names
+- No composite type recovery - all structs/unions lost, replaced with raw pointer arithmetic
+- Comments are auto-generated technical noise rather than semantic explanations
+- No macro semantics recovered - only computed literal values remain (e.g., 0x40 instead of BUFFER_COUNT * 4)
+- Cross-reference relationships between functions not documented
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name from the source is perfectly preserved, making it easy to locate specific test cases
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic names like iVar1, lVar1, lVar2 and "Unresolved local var" annotations make it difficult to track variable purposes without constant reference to the source
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., the variable used in `if (0x400 < size)` should be named `size` or `input_size`
+2. Recover struct types from pointer arithmetic patterns - the array accesses in `param_asm_simd` should suggest a 4-element int array type
+3. Add semantic comments explaining what each test function demonstrates (e.g., "Tests macro constant expansion" for param_macro_constants)

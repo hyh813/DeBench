@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Local variables use generic names (v0, v1, v2, v27) obscuring purpose, though some are meaningful (sum, i, len, arr). Function parameters retain source names (x, c, p, arr, n) which helps significantly.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (double_value, process_char, struct_simple), but helper functions use generic names (sub_1030, sub_1040) and some runtime functions failed to decompile.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like 65, 90, 32 in process_char instead of 'A', 'Z', 32; no character literals recovered. Numeric constants in float operations (1.5, 0.5, 2.0) remain clear.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (__readgsdword(0x14u)) appear throughout; type annotations like "// eax" add clutter; compiler artifacts visible but not overwhelming.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered as for/while constructs correctly; enum_switch uses if-else chain instead of switch statement but logic remains clear; no spurious gotos.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching source; each has single responsibility; no excessive inlining or fragmentation observed at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally; loop structures are clear; no excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casts visible; no obvious dead code; volatile_access optimized to `2 * *p` losing the semantic intent of two separate reads.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, float, double); long becomes int on x86 (platform adjustment); __int16/__int64 used for short/long long; pointer types generally preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct field access preserved (p->x, p->y) but struct definitions not shown in output; bitfield struct completely lost—converted to byte manipulation `((*(_BYTE *)f >> 3) & 7)`; union types preserved.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Unsafe casts (*(int*)p, *(char*)p) match original source behavior; no additional type safety issues introduced by decompiler; void* handling preserved correctly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output; original source had extensive documentation; no decompilation confidence indicators or algorithm explanations provided.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion, array summation) not labeled or identified; no design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted at end (5 libc functions); no warnings about volatile optimization loss or bitfield reconstruction issues; stack canary checks unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., arr != NULL); no postconditions inferred; array_oob's undefined behavior not flagged despite being intentional negative test.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and visible; no call graph documentation; callback relationships (ptr_func_simple, struct_func_ptr) visible but not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source; no file/module structure preserved; related test functions grouped but not explicitly organized.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 5 functions failed to decompile (printf, puts, libc functions); would need stubs for external functions; compiler-specific constructs (__readgsdword) require platform-specific handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+5+5)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (8+9+8+7)/4 = 8.00  × 0.25 = 2.00
+Level 3 (Type):        (7+5+7)/3   = 6.33  × 0.20 = 1.27
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+5)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  6.17/10
+```
+
+**Overall Readability Score: 6.2/10**
+
+### Critical Defects
+- **Bitfield struct completely lost**: `struct_bitfields` converted from field access to byte manipulation `((*(_BYTE *)f >> 3) & 7)`, losing all semantic meaning
+- **No comments recovered**: Original source had extensive documentation; decompiled output has zero explanatory comments
+- **Magic numbers not converted**: Character literals (65, 90, 32) not shown as 'A', 'Z', 32 in process_char
+- **volatile semantics lost**: `volatile_access` optimized to `2 * *p` instead of two separate reads, losing the volatile testing intent
+- **5 external functions failed**: printf, puts, __libc_start_main, etc. not decompiled, requiring stubs for compilation
+
+### Best Quality Aspect
+- **Function Decomposition (9/10)**: Function boundaries and granularity perfectly preserved; each function maintains single responsibility matching original source structure.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Complete absence of comments loses all semantic documentation from original source, making complex operations harder to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover symbolic constants**: Convert magic numbers to character literals ('A' not 65) and suggest named constants for repeated values
+2. **Preserve volatile semantics**: Detect volatile-qualified accesses and maintain separate read operations instead of optimizing them away
+3. **Add decompilation confidence annotations**: Insert comments indicating reconstruction certainty, especially for bitfields, unions, and optimized-away patterns

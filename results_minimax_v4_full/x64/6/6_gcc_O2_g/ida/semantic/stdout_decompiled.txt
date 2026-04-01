@@ -1,0 +1,20 @@
+Standard Library Tests
+LibL101: strcmp: 8
+LibL102: strcmp result: 0
+LibL103: strlen: 12
+LibL104: memcpy: 90
+LibL105: memcmp: -1
+Value: 42, Name: Test
+LibL106: printf: 22
+LibL107: sscanf: 579
+LibL108: fopen/fileno: 42
+LibL109: fread/fwrite: 42
+LibL110: malloc/free: 90
+LibL111: memset: 0
+LibL112: strchr/strstr: 15
+System Call Tests
+SysL301: syscall: 42
+SysL302: stat: 42
+SysL303: fork/exec: 42
+SysL304: pipe: 42
+SysL305: socket: 42

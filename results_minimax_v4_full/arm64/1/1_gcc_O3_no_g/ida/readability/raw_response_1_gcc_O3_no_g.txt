@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic parameter names (`a1`, `a2`, `a3`) and local variables (`v2`, `v3`, `v4`, `result`). For example, `sequential_ops(int a1, int a2, int a3)` should preserve meaningful names like `a`, `b`, `c` from the original. The generic naming makes it nearly impossible to track variable purpose without analyzing every usage.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Most function names match the original source accurately (e.g., `sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`). However, some artifacts remain like `non_local_jump.constprop.0` which exposes compiler internal naming. The core function naming is semantically accurate.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+The decompiled code contains numerous unexplained magic numbers. For example, `loop_for_fixed` uses `1001` as loop bound without explanation (original was `n`), and `switch_large` computes `10 * a1` instead of using the original lookup table pattern. The constant `-1` is returned as `0xFFFFFFFFLL` without clarity on its meaning.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+The code is heavily polluted with SIMD/NEON vector operations (`int32x4_t`, `vmulq_s32`, `vaddq_s32`, `vextq_s8`) and type conversions (`LODWORD`, `_OWORD`) that are compiler artifacts, not present in the original -O0 code. These artifacts make the code nearly unreadable.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+While simple functions like `sequential_ops` and `if_else` maintain natural flow, complex functions show severe restructuring. `loop_for_fixed` and `loop_continue` use goto-based unrolling instead of loops. `loop_complex_cond` uses nested if-else chains instead of the original while with && conditions. At -O0, this transformation is unexpected.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Functions remain properly separated with reasonable granularity. Each original function is preserved as a distinct decompiled function. However, some functions like `recursion_factorial` have become bloated (60+ lines) due to optimization artifacts.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Most functions read reasonably top-to-bottom, but `loop_for_fixed` and `loop_continue` have deeply nested if-else chains (6+ levels) that disrupt linear reading. Forward jumps are used appropriately in some switch constructs.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Extensive loop unrolling in `loop_for_fixed`, `loop_continue`, `goto_backward`, `recursion_factorial`, and `tail_recursion` creates massive redundancy. The decompiler makes no attempt to recognize or comment these unrolled patterns.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Types are generic: `int` for parameters, `__int64` for returns. No use of fixed-width types like `int32_t` or `uint64_t`. Function pointers use generic `__int64 (__fastcall *)(_QWORD)` signatures. The original `int` return types are widened to 64-bit unnecessarily.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+No struct recovery is evident. Arrays are accessed via pointer arithmetic. The switch jump tables like `CSWTCH_55` are present but not explained as lookup tables. The original array usage in functions like `loop_break` is lost.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe patterns: frequent `LODWORD()` casts, generic function pointer types, and pointer arithmetic without bounds. The `duffs_device` function shows raw pointer manipulation without safety. No `restrict` or alignment annotations.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Only minimal auto-generated comments like `/* Function: name @ address */`. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. The original's rich comments are completely lost.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+No pattern recognition. `duffs_device` appears as convoluted goto spaghetti. State machines like `state_machine` and `fsm_func_table` are not identified as such. Recursion patterns are not highlighted. The original's clear idioms are obscured.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Only basic failure messages for undecompilable functions. No flags for suspicious patterns, optimization artifacts, or potential undefined behavior. The heavy SIMD usage in what should be -O0 code is not flagged as anomalous.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The original's parameter validation (e.g., `if (x < 0) return -1`) is present but not explained as contract enforcement.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function calls are present but relationships are not documented. No indication of which functions call which, callback relationships, or global usage patterns. The test functions' call graph is opaque.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Functions appear in binary address order, not logically grouped. The original's clear section organization (CF-L1, CF-L2, CF-L3) is lost. Static functions are not distinguished from public APIs.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Code uses standard library functions (`puts`, `memset`, `__printf_chk`) without declarations. Would require significant patching to compile standalone. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+4+2)/4 = 3.75
+L2_avg = (4+7+5+3)/4 = 4.75
+L3_avg = (5+4+4)/3 = 4.33
+L4_avg = (3+2+3+1)/4 = 2.25
+L5_avg = (4+5+4)/3 = 4.33
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.125 + 1.1875 + 0.866 + 0.3375 + 0.433
+        = 3.95/10
+```
+
+### Overall Readability Score: 3.95/10
+
+### Critical Defects
+- **Variable naming**: Parameters use generic `a1`, `a2`, `a3` instead of semantic names from source
+- **Noise pollution**: Heavy SIMD/NEON artifacts (`int32x4_t`, `vmulq_s32`) that shouldn't exist at -O0
+- **Loop unrolling**: Extensive unrolling in `loop_for_fixed`, `loop_continue` without recognition or comments
+- **No idiom recognition**: `duffs_device`, state machines, recursion patterns not identified
+- **Type degradation**: Generic `int`/`__int64` instead of precise types; no struct recovery
+
+### Best Quality Aspect: Function Naming (7/10)
+Function names mostly match the original source accurately, preserving semantic meaning for identification.
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+Comments are absent, idioms unrecognized, anomalies unflagged, and contracts undocumented. The decompiled code provides no guidance for understanding.
+
+### Top 3 Recommendations
+1. **Variable naming inference**: Analyze usage patterns to infer semantic names (e.g., `temp1` used as sum accumulator → `sum`)
+2. **Loop unrolling detection**: Recognize unrolled loops and reconstruct original loop structure or add explanatory comments
+3. **Idiom pattern library**: Implement recognition for common patterns (Duff's device, state machines, recursion) with explicit naming

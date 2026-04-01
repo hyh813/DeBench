@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. For example, `local_array` uses `v0`, `v1`, `v3` instead of `arr`, `i`, `result`. Only occasional names like `result` and `idx` provide minimal hints.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`local_vars`, `heap_basic`, `test_stack_memory`), but runtime functions use generic names (`sub_400568`, `call_weak_fn`). Function names don't indicate parameter types or counts.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation: `4294967295` (unsigned -1), `4294967286`, `0x800`, `0xfffffff8`. No constants are recovered. The value `42` in `address_of_local` is preserved but unexplained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from `armg_calculate_condition()` calls throughout (e.g., `vla_stack`, `heap_nested`). Redundant variable assignments (`v1 = v3; v0 = v4;`) and compiler artifacts pollute nearly every function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops use `do-while` with goto labels instead of `for` constructs. Example: `local_array` uses `i -= 1` with `while (i != 4294967286)` instead of `for (i = 0; i < 10; i++)`. Excessive goto statements disrupt flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many have incorrect signatures. `heap_nested` has 6 parameters instead of 1. `call_global_callback` has 6 parameters instead of 2. Some functions are over-fragmented with label blocks.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps (`goto LABEL_4006b0`, `goto LABEL_40076c`) disrupt top-to-bottom reading. Deep nesting in `test_heap_memory` with multiple conditional branches makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate condition checks appear repeatedly (e.g., `armg_calculate_condition` called multiple times with same arguments). `test_stack_memory` prints "MEM-L2-04 (stack_alias)" twice with identical code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` regardless of original (`int` became `unsigned int`). Pointer types often lost (`int *` becomes `unsigned int`). No const-correctness preserved. Function pointers become generic `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_4`, `padding_0`). `Node` struct recovered as `struct_0` with `field_0` (data) and `field_4` (next). Original field names (`data`, `next`) lost completely.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout: `*((unsigned int *)((char *)&v0 + 2 * idx))`. Multiple implicit casts between pointer and integer types. `dangling_pointer` returns dereferenced freed memory without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompiler confidence indicators. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal, tree creation) not identified or named. `armg_calculate_condition` obscures standard comparison idioms. No pattern hints provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code like `dangling_pointer` (use-after-free) and `double_free` not flagged. `stack_alias` simplified to `return 20` losing the aliasing semantics entirely. No warnings about undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `vla_stack`). Null checks present but not explained as contracts. Return value meanings not documented (what does -1 vs -2 mean?).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `extern_function` called but definition separate. Global variables referenced (`global_counter`, `global_array`) but usage patterns not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order roughly but mixed with runtime stubs (`_init`, `_start`, `_fini`). Test functions grouped but not logically separated from implementation functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`extern unsigned int global_counter`) but many undefined symbols (`g_414008`, `g_402f62`). `armg_calculate_condition` requires runtime support. Would need significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+2)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+4+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 3.58/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **`armg_calculate_condition()` calls** obscure all conditional logic, making control flow nearly unreadable
+- **Variable names** like `v0`, `v1`, `v2` provide zero semantic information about purpose
+- **Function signatures corrupted** - `heap_nested` has 6 parameters instead of 1, `call_global_callback` has 6 instead of 2
+- **Zero comments** - original source had extensive documentation, all lost in decompilation
+- **Magic numbers** like `4294967295` (unsigned -1) and `4294967286` appear without explanation
+- **Struct field names** all generic (`field_0`, `field_4`) losing semantic meaning like `data`, `next`, `left`, `right`
+- **`stack_alias` function** incorrectly simplified to `return 20`, completely losing the aliasing test semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original names (`local_vars`, `heap_basic`, `test_stack_memory`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompiler confidence indicators makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace `armg_calculate_condition()` with native C conditionals** - This single change would dramatically improve control flow readability across all functions
+2. **Infer variable names from usage patterns** - Variables used in loop bounds should be named `i`, `count`, `size`; pointers should be named `ptr`, `arr`, `buf`
+3. **Add decompiler confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: indirect call target unknown` to guide manual review

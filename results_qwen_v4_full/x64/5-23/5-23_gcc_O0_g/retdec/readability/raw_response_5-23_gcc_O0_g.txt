@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables are almost entirely generic (`v1`, `v2`, `v3`, `result`), obscuring their semantic purpose. Function parameters preserve original names (`size`, `x`, `y`, `counter`), but locals like `v1 = __readfsqword(40)` should be named `stack_canary`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Action-oriented naming clearly indicates purpose and matches original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0xdef0`, `282`, `0x5341206f6c6c6548` for "Hello SA"). Compile-time macro evaluations became opaque literals (64, 512) without indicating their macro origin.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) add verbosity to every function. Unnecessary type casts (`(int64_t)x`, `(int32_t *)&v2`) clutter the code without improving clarity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if-else and while constructs. However, `param_macro_functions` has an awkward conditional expression for MAX recovery: `(v1 < 0 == ((v1 ^ y) & (y ^ x)) < 0 ? y : x)`.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches original source perfectly. Each function has clear single responsibility with appropriate size. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with clear early returns. No excessive goto usage. Loop structures in `param_asm_clobber` and `param_asm_multi_insn` are recognizable despite being decompiled from assembly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks add redundancy to every function. Some redundant type casts present. No obvious dead code, but security instrumentation adds noise throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `int64_t`, `uint32_t` appropriately for most cases. Some type confusion exists (`int64_t *` for mmap return when it should be `void*`). Pointer types are generally correct.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in this code to recover. Arrays handled reasonably (`result[4]`, `v1[2]`). Inline assembly SIMD operations use `int128_t` which is a reasonable approximation for XMM registers.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int64_t)arr`, `(int32_t *)&v2`). Pointer arithmetic without clear bounds in `param_asm_clobber`. Atomic operations lost their semantics (`param_asm_atomic` just does regular assignment).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical issue**: Zero comments in decompiled code despite original having extensive Chinese documentation. No decompilation confidence indicators. No explanation of macro expansions or assembly recovery.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions recognized (ADD_16 became `x + 16`, SQUARE became `x * x`). MAX macro recovery is awkward but present. No design pattern recognition or algorithm naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious code. Inline assembly represented as pseudo-functions (`__asm_movaps`, `__asm_paddd`) without warning they won't compile. Atomic semantics lost silently.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. No error condition documentation. Stack canary checks present but not documented as safety contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are clear and traceable. Global variable usage visible (`g1`, `g2`, `global_var`). No callback relationship documentation. String globals have hex-encoded content without explanation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped but not by original sections (preprocessing vs. assembly). All in one file without header organization. Runtime initialization functions (`_init`, `_fini`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: **Will not compile standalone**: pseudo-assembly functions (`__asm_movaps`, `__asm_paddd`, `__asm_hlt`) are not real functions. Missing proper headers for some system calls. External dependencies declared but not all resolvable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+9+5+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):   (7+9+8+7)/4 = 7.75 × 0.25 = 1.9375
+Level 3 (Type System):  (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):     (2+5+3+3)/4 = 3.25 × 0.15 = 0.4875
+Level 5 (Contextual):   (7+6+5)/3   = 6.00 × 0.10 = 0.600
+---------------------------------------------------------
+Overall Score:                                  = 6.30/10
+```
+
+**Overall Readability Score: 6.3/10**
+
+### Critical Defects:
+- **Zero comments recovered** despite original having extensive documentation explaining macro behavior and expected values
+- **Pseudo-assembly functions** (`__asm_movaps`, `__asm_paddd`) will not compile - should be represented as inline assembly or C equivalents
+- **Atomic semantics lost** in `param_asm_atomic` - just does regular assignment, losing thread-safety guarantees
+- **Magic numbers unexplained** (`0xdef0`, `282`, `0x5341206f6c6c6548`) without indicating their macro or string origin
+- **Variable names generic** (`v1`, `v2`, `v3`) obscuring semantic purpose despite debug symbols being available (-g flag)
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names preserved perfectly from source, making code navigation and understanding significantly easier
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe readability degradation, especially given the original's extensive documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol comments** - When `-g` flag is present, extract and preserve source comments and variable documentation from DWARF debug information
+2. **Flag non-compilable constructs** - Add warnings when generating pseudo-functions like `__asm_movaps` that won't compile, suggesting inline assembly or C equivalents instead
+3. **Infer semantic variable names** - Use usage patterns and debug symbols to name variables meaningfully (e.g., `stack_canary` instead of `v1` for `__readfsqword(40)` results)

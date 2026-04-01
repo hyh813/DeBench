@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2` throughout. For example, `ptr_single(int *param_1)` should be `ptr_single(int *p)` to match source. Local variables are often unnamed or use patterns like `uVar2`, `iVar1` which obscure semantic purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions correctly named: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`. However, `FUN_00011275` and `FUN_00011295` should be `process_float` and `process_double`. The helper function `double_value` is not visible in decompiled output.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x61` ('a'), `0x62` ('b') are correct but unexplained. The condition `0x19 < (byte)((char)param_1 + 0xbfU)` in process_char is cryptic. Test functions have hardcoded expected values which is acceptable for decompiled test scaffolding.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Warnings about inlined functions (`__x86.get_pc_thunk.bx`) are appropriately flagged. No redundant casts or debug instrumentation in the actual function logic. Clean output overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recognized as for/while constructs. Some loop unrolling in array functions (`array_1d_stack`, `array_3d`) - this is expected at -O0 for performance. Control flow generally matches source structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized (20-50 lines typical). Good cohesion - each function handles one logical operation. Parameter counts match source. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns present in functions like `array_complex_index`. Some nested conditions but no severe disruption to flow. Acceptable for decompiled code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling present but represents compiler behavior at -O0, not decompiler failure. No obvious dead code. Some duplicated expressions in unrolled loops but these are optimization artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types used throughout: `int`, `uint`, `short`, `ushort` instead of `int32_t`/`uint32_t`. `process_ll` returns `undefined8` instead of `long long`. Function pointers use generic `code *` type. Const/volatile qualifiers partially preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct recovery. `struct_simple` uses `param_1[1]`, `*param_1`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Nested structs accessed via raw offsets. Unions not recovered - `union_type` treats memory as float. All composite types lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns: `ptr_diff` divides by 4 incorrectly (`param_1 - param_2 >> 2` should be pointer subtraction). Function pointer casts use generic `code *`. Pointer arithmetic generally correct. No severe safety violations but some questionable operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: File-level header with decompiler attribution present. No function-level documentation explaining purpose. No recovery of original comments like "// 大写转小写" (uppercase to lowercase). Auto-generated warnings present but not helpful for understanding.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like linked list traversal (`while (param_1 != (int *)0x0)`) visible but not explicitly named as "linked list traversal". No recognition of specific algorithms or design patterns from source.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra warns about unresolved indirect calls and inlined functions. No flags for suspicious code like the intentional out-of-bounds access in `array_oob`. Some awareness but inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had no explicit contracts, so none to recover. However, no inference of implicit contracts (e.g., "requires: n > 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are explicit and traceable. `main` clearly calls test functions. No documentation of call graph relationships or callback patterns. Basic clarity but no additional context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by type (data types, arrays, pointers, composites). Static functions properly indicated. Single file output is standard for decompilation. Reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Uses standard C library functions (printf, puts). No obvious compilation barriers. External dependencies minimal. Should compile with minor stubs for undefined symbols like `__gmon_start__`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- **Composite type recovery completely failed** - All structs/unions converted to raw pointer arithmetic with offsets, losing all semantic meaning of fields (e.g., `param_1[1]` instead of `p->y`)
+- **Variable naming is generic** - Parameters use `param_1`, `param_2` pattern throughout instead of semantic names
+- **Two functions misnamed** - `FUN_00011275` and `FUN_00011295` should be `process_float` and `process_double`
+- **Type precision severely degraded** - Returns `undefined8` for 64-bit integers, uses generic `int` instead of `int32_t`
+- **No struct field names recovered** - All struct access uses array-index notation losing field semantics
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with good cohesion, matching the source's logical decomposition. Each function handles a single responsibility.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+The decompiler failed to reconstruct any struct or union types from the binary. All composite types are represented as raw pointer arithmetic with numeric offsets, completely losing the semantic structure of the original source.
+
+**Top 3 Recommendations:**
+1. **Recover struct layouts** - Analyze memory access patterns to identify struct fields and generate proper struct definitions with field names
+2. **Infer variable names from usage** - Use data flow analysis to suggest semantic names (e.g., `param_1` used as array index → suggest `arr` or `array`)
+3. **Fix long long type handling** - `process_ll` returning `undefined8` should return `long long` or `int64_t`

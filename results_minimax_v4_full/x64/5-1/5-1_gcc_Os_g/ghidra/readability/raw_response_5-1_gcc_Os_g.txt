@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `lVar1`, `iVar1`, `iVar2`, `sVar2`, `puVar1`, `plVar3`, `plVar4`, `local_10` are generic Ghidra-generated names. While some like `obj`, `base`, `derived`, `ptr1`, `ptr2` are somewhat descriptive, the vast majority use cryptic abbreviations that obscure semantic purpose (e.g., `lVar1` should be `canary` based on stack check usage).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All test functions retain their exact original names: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_exception`, `test_cpp_smart_ptr`, `test_cpp_rtti`. Member functions like `Base::virtual_func`, `Derived::virtual_func` are also correctly recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x2a` (42 thrown as exception), `0x125c` (4704 expected result), `0x3e9` (1000), `0x47` (71), `0x16` (22), `0x55` (85), `0x2bf` (703), `0x32` (50), `0x96` (150), `0xfa` (250). These should be named constants like `EXPECTED_RESULT`, `CLASS_ID`, etc.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution includes: 15+ "WARNING" comments about unknown calling conventions, unreachable blocks, unresolved local variables ("Unresolved local var: RTTIDerivedA * derivedA@[???]"), struct overlap warnings ("Struct DiamondDerived: ignoring overlapping field"), and "WARNING: Subroutine does not return" annotations. This significantly clutters readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with readable if-else structures and loops. However, some issues exist: `call_virtual_func` has "WARNING: Could not recover jumptable at 0x001024fc. Too many branches" indicating indirect jump handling problems. The virtual function dispatch uses raw vtable dereferencing which is harder to follow than source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity (most under 50 lines). Template instantiations are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Member functions are correctly extracted. However, `test_cpp_oo_features` at ~40 lines is somewhat large but acceptable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `template_max`. Some complexity exists in virtual function thunks and diamond inheritance destructors, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination artifacts are not prominent. The code is relatively clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate: `int`, `long`, `size_t`, `double`, `char*`, `uint`. However, some degradation exists: function pointers use generic `_func_int_varargs **` instead of proper signatures, and some pointers use `undefined4`/`undefined8`. Const correctness is partially preserved in function signatures but not always.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class names are recovered (`SimpleClass`, `Base`, `Derived`, `Container<int>`, `DiamondDerived`), but field names are lost (`obj.name`, `base._vptr_Base`, `derived.multiplier` uses actual field names where visible). The decompiler shows struct-like layouts but with generic internal field names like `field_0x20`, `_40_4_`. Virtual inheritance produces overlapping field warnings.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: raw vtable indirect calls (`(**obj->_vptr_Base)()`), pointer arithmetic in virtual function overrides (`*(int *)((long)&this->dataA + (long)this->_vptr_MiddleA[-3])`), and manual this pointer adjustments in thunks. These are necessary for C++ semantics but create unsafe-looking code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Mixed quality - DWARF original prototypes are recovered ("DWARF original prototype: int virtual_func(Base * this, int x)"), and warnings about anomalies are present. However, most comments are auto-generated warnings rather than explanatory content about algorithm logic. No comments explaining the C++ features or expected behavior.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are visible (vtable usage, virtual dispatch, unique_ptr internal structure), but not explicitly named or documented. The virtual function mechanism is partially understood (shown via vtable pointers) but the decompiler doesn't explain the polymorphism pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection: "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "WARNING: Struct DiamondDerived: ignoring overlapping field", "Unresolved local var" annotations. However, some anomalies are silently handled (e.g., some virtual calls just show indirect jumps without explanation).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't indicate expected states (e.g., "requires: obj != nullptr", "ensures: return value is valid"). This is a significant gap for understanding function contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear within each test function. However, external dependencies (like `__cxa_throw`, `operator_new`, `std::unique_ptr` destructors) are not documented in terms of which functions call them or are called by them. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions first, then member function implementations, then template instantiations, then destructors. Related functions (like multiple destructor variants) are near each other. However, everything is in one flat namespace without C++ namespace recovery.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile standalone. Many unresolved symbols: `__cxa_allocate_exception`, `__cxa_throw`, `operator_new`, `operator_delete`, `__dynamic_cast`, `std::ios_base::Init`, `__cxa_atexit`. No header declarations or dependency documentation. The "WARNING: Unknown calling convention" indicates additional issues.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`lVar1`, `iVar2`, `local_10`) obscuring semantic purpose
+- Magic numbers throughout without named constants (e.g., `0x125c` for expected result 4704)
+- Heavy noise from 15+ WARNING comments about calling conventions, unreachable blocks, unresolved variables
+- No contract/precondition documentation (e.g., "requires: ptr != NULL")
+- Build system compatibility is poor - many unresolved external symbols with no dependency documentation
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10) - All test function names exactly match the original source, and member function names are correctly recovered with proper class scoping.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10) - The vast majority of local variables use cryptic Ghidra-generated names (lVar1, iVar1, puVar1, etc.) that provide no semantic information about their purpose or usage.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `lVar1` compared against stack canary → should be `stack_canary`; `sVar2` from `strlen()` → should be `name_len`)
+2. **Detect and name magic numbers**: Recognize computed constants (0x125c = 4704 expected result) and suggest or create named constants based on context
+3. **Recover function contracts**: Add precondition/postcondition inference (e.g., "requires: obj != nullptr" for virtual function calls, "ensures: return is valid")

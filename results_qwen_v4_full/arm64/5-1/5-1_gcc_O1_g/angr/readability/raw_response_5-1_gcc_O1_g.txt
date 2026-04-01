@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, ptr, result) with zero semantic meaning. For example, `v1[31]` in `test_cpp_member_func` should be `name` based on the `strncpy` usage pattern.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use C++ mangled names (_Z20test_cpp_member_funcv) which are technically recoverable but not human-readable. Some functions have meaningless "sub_" prefix with addresses (sub_401484).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout (42, 50, 100, 250) without explanation. String literals are external globals (&g_402148) losing their actual content visibility.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive stack frame setup (v0 = &v1), stack canary checks in every function, and redundant variable assignments obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses goto statements (goto g_413ef0) instead of proper function calls. Many functions lack proper return statements despite having return types.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Multiple test functions are completely empty stubs (test_cpp_multiple_inheritance, test_cpp_operator_overload, test_cpp_lambda, test_cpp_smart_ptr all just return).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps and thunk functions disrupt natural reading flow. Stack canary checks at function end create artificial branching.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. Some functions call the same operation twice (call_weak_fn calls __gmon_start__ twice).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type loss - test functions return void instead of int. Class this pointers degraded to void*. Template functions lose type specialization clarity.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes not recovered as proper types (class Base {} Base;). Only generic structs exist (struct_2, struct_3) with meaningless field names (field_0, field_8).
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts throughout. Pointer arithmetic on void* (char *)a0 + (*(a0))[24]. This pointers passed as void* losing const-correctness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex C++ mechanisms (vtable, virtual inheritance, exception handling).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized - virtual dispatch appears as raw pointer dereference, inheritance as thunk functions without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about incomplete decompilation. Empty functions and missing return values not flagged as potential errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., idx bounds checking in Container::get). Exception contracts not recovered from try/catch blocks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Global variables referenced by address (g_413958) without semantic meaning.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related class methods scattered throughout file without logical grouping.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing external dependencies (operatornew[], __cxa_throw), undefined globals, and incomplete function bodies.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (3+3+2)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.34/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Return type corruption**: Test functions return `void` instead of `int`, losing all return value semantics
+- **Empty function bodies**: 5+ test functions (multiple_inheritance, operator_overload, lambda, smart_ptr, template_class) are completely empty stubs
+- **Class structure lost**: C++ classes not recovered; this pointers degraded to `void*`
+- **Variable naming**: All variables are generic (v0, v1, v2) with zero semantic meaning
+- **Template corruption**: `template_max<double>` contains nonsensical floating-point comparison logic that doesn't match source
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - C++ mangled names are at least recoverable to original function names through demangling, providing some semantic anchor points
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments explaining any C++ mechanisms, making complex features like virtual inheritance and exception handling completely opaque
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover return types from calling conventions** - Analyze how return values are used by callers to infer correct function signatures (void vs int)
+2. **Implement C++ class structure recovery** - Recognize vtable patterns, this pointer adjustments, and reconstruct class hierarchies with proper field names
+3. **Add decompilation confidence annotations** - Flag incomplete functions, uncertain type recoveries, and complex C++ constructs that need manual review

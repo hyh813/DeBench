@@ -1,0 +1,16 @@
+Testing obfuscation and optimization features:
+
+Opaque predicate result: 10
+Instruction substitution result: 20
+String encryption length: 225
+Decrypted string length: 36
+Tail call optimization result: 500500
+Non-tail call result: 5050
+Vectorized loop result: 72
+Link time optimization result: 20
+Division by zero handling result: 1
+Null pointer deref handling result: 41
+Buffer overflow result: 30
+Integer overflow result: 2000000000
+Undefined behavior result: 10
+Implementation defined result: 44

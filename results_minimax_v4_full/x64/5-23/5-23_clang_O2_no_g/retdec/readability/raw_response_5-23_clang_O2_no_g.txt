@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables are sequentially numbered (`v1`, `v2`, `v3`, `v4`). The original source used meaningful names like `size`, `x`, `y`, `result`, `counter` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retain their semantic names (`param_macro_constants`, `call_asm_basic`, `param_builtin_macros`). However, utility functions are generic (`function_1030`, `function_1040`) and assembly helper functions use auto-generated names (`__asm_movaps_1`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xdef0`, `0xdf22`, `0xffffffff` appear without explanation. The original source had clear constants (MAX_SIZE=1024, BUFFER_COUNT=16) that are now buried in computation. Chinese strings are hex-encoded (`\xe6\x9c\x9f\xe6\x9c\x9b`).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: redundant `& 0xffffffff` casts throughout, decompiler-generated `__asm_*` pseudo-functions, unused variable declarations, and meaningless type conversions. The code is cluttered with artifacts that obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/else, while loops) is recognizable. However, the SIMD functions (`call_asm_simd`, `call_asm_multi_insn`) contain convoluted patterns with uninitialized variables and confusing pointer arithmetic that doesn't reflect the original straightforward loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - each test function is separate and focused. The original's modular structure (multiple test categories) is preserved. No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but `param_asm_multi_insn` and `call_asm_multi_insn` contain complex nested operations with multiple pointer manipulations that disrupt linear flow. Some forward jumps present.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns like repeated `v1 = v1 + 1 & 0xffffffff` in loops. The original macro expansions (e.g., ADD_16) are correctly simplified to `a1 + 16`, which is appropriate. However, the `& 0xffffffff` operations are redundant noise.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` for most values, losing the original `int` vs `size_t` distinctions. The original had `int` parameters but the decompiled version uses `int64_t` everywhere. Some unsigned types preserved (`uint64_t`, `uint32_t`) but inconsistently.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct or union recovery. The original had no complex structs, but the decompiler fails to recognize the array parameters in functions like `param_asm_simd` where `int *a, *b, *result` should be clearly arrays. Everything is treated as raw pointers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: uninitialized local variables used directly (`int64_t v1;` then `if (v1 == 0)` in `param_asm_multi_insn`), pointer arithmetic without type safety, and casting through `int128_t` for SIMD operations without proper annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only meta-information comments at file level. No function-level documentation explaining what each test does. The original had extensive comments describing each test scenario (PP-L2-01, ASM-L4-01, etc.) - completely lost. No indication of preprocessor behavior or assembly semantics.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some assembly patterns recognized via `__asm_*` pseudo-functions, but no explicit naming of patterns (e.g., "This implements a loop copy" or "SIMD vector addition"). The original's macro idioms (STRINGIZE, CONCAT, VA_ARGS) are reduced to simple computations without recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication whatsoever. The decompiled code presents uninitialized variable usage (`int64_t v1;` used in condition) as if it's normal code. No warnings about indirect calls, potential undefined behavior, or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear expectations (e.g., "期望: 64", "期望: 15") that are completely lost. No documentation of what values functions should return or what parameters require.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear, but relationships aren't documented. No indication that `call_*` functions invoke `param_*` functions. No documentation of which functions are test harnesses vs. implementation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing tests together, asm tests together. The original's chapter structure (5.2 Preprocessing, 5.3 Inline Assembly) is roughly preserved in function ordering. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but missing `<string.h>` for `memcpy` used in original. Some function signatures don't match (e.g., `param_asm_clobber` has 4 parameters vs original's 2). Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+4+2)/4 = 3.75
+L2_avg = (5+7+5+5)/4 = 5.50
+L3_avg = (5+1+4)/3 = 3.33
+L4_avg = (2+4+1+1)/4 = 2.00
+L5_avg = (4+7+5)/3 = 5.33
+
+Overall = (3.75 × 0.30) + (5.50 × 0.25) + (3.33 × 0.20) + (2.00 × 0.15) + (5.33 × 0.10)
+        = 1.125 + 1.375 + 0.666 + 0.30 + 0.533
+        = 4.00/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters are `a1`, `a2`, `a3` and locals are `v1`, `v2`, `v3` - completely losing original semantics (`size`, `x`, `y`, `counter`)
+- **No comments**: Original's extensive test documentation (PP-L2-01, ASM-L4-01, expected values) completely lost
+- **Type precision loss**: Original `int` parameters become `int64_t`, losing size semantics
+- **Uninitialized variables**: `param_asm_multi_insn` uses uninitialized `v1`, `v2`, etc. directly - appears as undefined behavior
+- **No anomaly indication**: Uninitialized variable usage presented as normal code without warnings
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (7/10)**: Functions maintain appropriate granularity and modularity matching the original's test structure. Core test functions are properly separated.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming (2/10)**: The most severe degradation - every meaningful variable name from the original (`size`, `x`, `y`, `result`, `counter`, `arr`, `n`) is replaced with generic `a1`, `a2`, `v1`, `v2`, making it nearly impossible to understand what each function does without reading the implementation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `a1` is compared to `1024` (MAX_SIZE), name it `size` or `max_size`. When `a2` is used as array length, name it `count` or `length`.
+2. **Recover preprocessor semantics**: The original uses macros extensively - the decompiler should recognize constant expressions (like `16*4`) and suggest they may come from macros (BUFFER_COUNT * 4).
+3. **Add confidence indicators**: Flag uninitialized variable usage (`int64_t v1; if (v1 == 0)`) as potential undefined behavior with a warning, rather than presenting it as valid code.

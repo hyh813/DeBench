@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Function parameters retain original names (c, x, p, arr), but test function locals use generic names like `v0`, `v1`, `v2` for return values and `ii`, `jj`, `kk` for loop indices. The variable `v4` is used as sum accumulator without semantic meaning.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `enum_switch`, etc. The decompiler recovered all 50+ function names accurately.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Enum values like `STATE_IDLE`, `STATE_RUNNING` are properly preserved. However, ASCII magic numbers like `0x41` ('A') and `0x5A` ('Z') in `process_char` lack comments explaining their meaning. The literal `32` for case conversion is also unexplained.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Very clean output with minimal compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation visible. Only minor artifacts like `*(_DWORD *)p` casts in `ptr_void` which are necessary for type safety.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow structures match source exactly - `for` loops, `while` loops, `if-else` chains, and `switch` statements all preserved naturally. The `process_bool` has slightly awkward structure with local `v2` but overall flow is readable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function remains separate with appropriate granularity. No inlining artifacts - all test helper functions (`test_data_types_l1`, `test_array_types`, etc.) are properly extracted. Functions average 10-30 lines each.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in `array_complex_index` and `array_oob` are appropriate. Minor forward jump in `test_array_types` loop setup but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. Loop unrolling is minimal (the 3D array loop is fully expanded but that's source behavior). No common subexpression duplication visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types precise - `char`, `short`, `int`, `long`, `float`, `double` all correct. `long long` becomes `__int64`. Minor issue: `process_ld` uses `long double` but references `xmmword_3620` for constant, showing some type erosion. `bool` correctly recovered as `bool`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Excellent struct recovery. All typedef structs preserved: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Device`, `UnionData`, `Flags` with all field names (`x`, `y`, `z`, `next`, `data`, `adjList`, etc.). Union/struct distinction maintained.
+
+**11. Type Safety:** Score: 9/10  
+Justification: Generally type-safe. Minor issues: `ptr_void` uses `*(_DWORD *)p` and `*(unsigned __int8 *)p` which are necessary for void pointer handling. `struct_bitfields` uses bit manipulation but is correct for the pattern. No buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only standard IDA Pro header comment present. No algorithm explanations, no non-obvious logic documentation, no decompilation confidence indicators. The comment `// local variable allocation has failed, the output may be wrong!` appears twice but provides no useful context about the actual code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern naming (no "implements linked list traversal" or "state machine pattern"). However, the code structure implicitly shows patterns like linked list traversal in `linked_list()` and binary tree recursion in `binary_tree_sum()`. Could be more explicit.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No flags for suspicious code. The "local variable allocation has failed" messages are decompiler errors, not semantic anomaly indicators. No warnings about potential undefined behavior in `array_oob` (which has intentional off-by-one error).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. No indication that `array_oob` has intentional buffer overflow. No error condition documentation for functions like `array_complex_index` that return -1 on invalid input.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit call graph documentation. However, function names and signatures allow inference of relationships (e.g., `ptr_func_simple` calls `double_value`). No indication of global variable usage or callback relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file. No logical grouping of related functions. All 50+ functions in one block without section headers or visual separation between data type tests, array tests, pointer tests, and composite tests.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C types and should compile with `gcc -c`. Requires linking against libc. External dependencies (`printf`) are clear. No compiler-specific hacks visible. Minor issues with some complex expressions but generally compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Variable naming in test functions uses generic names (`v0`-`v30`, `ii`, `jj`) obscuring semantic purpose
+- No comments explaining algorithms, magic numbers (0x41, 0x5A), or non-obvious logic
+- No anomaly indication for intentional bugs like `array_oob` off-by-one error
+- No cross-reference documentation showing function call relationships
+- Single monolithic output without logical grouping
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.0/10)  
+The decompiler excellently recovered all struct/union types with field names, maintained type precision, and preserved type safety. Composite types like `Point3D`, `Node`, `Graph` are perfectly reconstructed.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.0/10)  
+The decompiled code lacks comments, pattern recognition, anomaly indicators, and contract documentation. While the code is structurally correct, there's no explanatory context to help analysts understand the intent or identify potential issues.
+
+**Top 3 Recommendations:**
+1. Add variable name inference from usage patterns - `v0` in test functions should be named based on the function it calls (e.g., `char_result` for `process_char` results)
+2. Include comments for magic numbers and ASCII literals (e.g., `// 'A' (0x41)`)
+3. Add decompilation confidence indicators and semantic annotations for intentional patterns (e.g., `// Linked list traversal`, `// OBO error: off-by-one`)

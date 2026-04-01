@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/arm32/5-23/5-23_clang_O1_g/angr/syntactic/bin/5-23_clang_O1_g_fixed",
+  "stdout": "Preprocessing features test\n643032571221161960LOG: Values: 10, 20, 30\n6016500file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:15\n382382ASM features test\n1515420307777",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `a1`, `a2`, `v0`, `v1` instead of semantic names (e.g., `size`, `counter`, `result`). Only `result`, `len`, and `i` have meaningful names based on usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved (`param_macro_constants`, `call_asm_basic`), clearly indicating purpose. However, helper functions like `sub_1030`, `sub_10B0` are cryptic and auto-generated.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `sysconf(30)` instead of `_SC_PAGESIZE`, `mmap(..., 7, ...)` instead of `PROT_READ|PROT_WRITE|PROT_EXEC`, `57072` instead of `0xDEF0`. Original constants lost during optimization.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some noise from stack variable annotations (`[esp+0h] [ebp-4h] BYREF`) and calling convention markers (`__usercall`, `__cdecl`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures recovered well (for/while loops, if statements). However, aggressive constant folding creates unnatural patterns like `call_macro_constants()` returning literal `64` instead of calling the underlying function.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No monolithic functions or over-fragmentation. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Early returns used appropriately. No problematic goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminates redundancy but obscures original intent (e.g., `param_macro_constants` logic collapsed to `if(a1 >= 1025) return 64`). Some expressions over-simplified losing semantic meaning.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types accurate (`int`, `char*`, `size_t`). SIMD types preserved (`__m128i`). Some degradation: `volatile signed __int32 *` instead of `atomic_int *`, and `__int128` used inconsistently.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source. Array handling correct, SIMD vector types (`__m128i`, `__int128`) preserved. No struct recovery issues since source had minimal struct usage.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(int *)mmap(...)`, `(char *)global_var + 50`. Pointer arithmetic used but generally correct. Atomic operations use `_InterlockedExchangeAdd` appropriately.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No explanation of optimization artifacts, constant folding, or decompilation confidence. String references like `asc_22C9` unexplained.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Basic C idioms recognized (loops, conditionals). SIMD intrinsics preserved (`_mm_add_epi32`). Atomic operations identified (`_InterlockedExchangeAdd`). No higher-level pattern recognition (test function semantics lost).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked "FAILED to decompile" (8 functions). However, no warnings about optimization artifacts, constant folding, or architecture mismatches (source claims arm64, decomp shows x86).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Return values unexplained. Error conditions not documented (e.g., `mmap` failure returns `-1` without explanation).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and visible. Global variables referenced (`global_var`, `xmmword_2030`). No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order (test functions grouped). Related functions kept together. Single file organization appropriate for this codebase size.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile (`printf`, `mmap`, `mprotect`, etc.). Platform-specific types (`__m128i`, `__int128`) require headers. Would need significant stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+4+7)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):   (7+8+8+6)/4 = 7.25  × 0.25 = 1.81
+Level 3 (Type System):  (7+7+6)/3   = 6.67  × 0.20 = 1.33
+Level 4 (Semantic):     (2+6+5+2)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):   (6+7+5)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.10/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `sysconf(30)`, `mmap(..., 7, ...)`, `57072` lose all semantic meaning from original constants
+- **No comments**: Zero documentation explaining optimization artifacts, constant folding, or decompilation confidence
+- **Architecture mismatch**: Source claims arm64 but decompiled code shows x86-specific constructs (`_x86_get_pc_thunk_bx`)
+- **Constant folding obscures logic**: Functions like `call_macro_constants()` return literal `64` instead of showing the actual computation
+- **8 external functions failed**: `printf`, `mmap`, `mprotect`, `sysconf`, etc. not decompiled, limiting standalone usability
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Original function boundaries preserved correctly with appropriate granularity and no problematic inlining or fragmentation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments explaining optimization artifacts, constant folding, or decompilation confidence, making semantic understanding difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant names from debug symbols**: When `-g` flag is present, map magic numbers back to original `#define` constants (MAX_SIZE, BUFFER_COUNT, etc.)
+2. **Add decompilation confidence annotations**: Flag aggressively optimized code sections with comments like "// OPTIMIZED: constant folded from original conditional"
+3. **Detect and document architecture-specific patterns**: Warn when decompiled architecture differs from expected source architecture, and explain platform-specific constructs

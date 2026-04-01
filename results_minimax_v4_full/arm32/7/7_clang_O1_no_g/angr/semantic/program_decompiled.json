@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/arm32/7/7_clang_O1_no_g/angr/syntactic/bin/7_clang_O1_no_g_fixed",
+  "stdout": "Test obf opt edge\n\nResult: 10\nOpaque predicate result: 35\nInstruction substitution result: 225\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

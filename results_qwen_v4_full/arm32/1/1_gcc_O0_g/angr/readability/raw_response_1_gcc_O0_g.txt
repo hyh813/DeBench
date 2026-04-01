@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. For example, `sequential_ops` uses `v0`, `v1`, `v2` instead of `temp1`, `temp2`, `temp3` from source, making it harder to track data flow.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`sequential_ops`, `single_if`, `nested_if_2`), which is excellent. However, helper functions like `sub_10430`, `sub_104f4` have meaningless auto-generated names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (should be `-1`), `1717986919` (division optimization constant), `74856/74864/74872/74880` (label addresses). No constants are named or explained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_guard`) appear in nearly every function, adding 5-10 lines of boilerplate. ARM-specific operations like `armg_calculate_condition` appear without explanation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops are recovered (`loop_for_fixed`, `loop_nested`), but `loop_while` uses multiplication/division magic instead of `/10`. `switch_fallthrough` incorrectly converts fall-through to if-else chain, breaking semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are mostly preserved, but `indirect_recursion_a/b` have wrong parameter counts (4 params instead of 2). Some functions like `duffs_device` are severely truncated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `computed_goto` uses explicit `goto (&v1)[a1]` which disrupts flow. Some functions have unnecessary label patterns (`LABEL_10518`).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Critical redundancy: `tail_recursion` calls itself twice in the same path, `call_func_ptr` calls function pointer twice, `conditional_func_ptr` calls `v0(a1)` twice. This is decompiler error, not optimization.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All `int` converted to `unsigned int` universally, losing signed semantics. `ternary_op` returns `int` while similar functions return `unsigned int`. Function pointer types degraded to `unsigned int *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays like `int arr[] = {10, 20, 30, 40, 50}` become individual variables (`v2`, `v3`, `v4`, `v5`, `v6`). No struct recovery attempted. Matrix access in `loop_multi_exit` uses pointer arithmetic `(&result)[4 * v0 + v1]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointers cast as `unsigned int *`, `call_func_ptr` signature mismatch (`unsigned int *a0` should be function pointer), `op_shl` has `char a1` parameter inconsistent with source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of magic numbers, no algorithm descriptions, no decompiler confidence indicators. Original source had extensive documentation; none recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: State machine pattern in `state_machine` reduced to simple ternary. Switch-case fall-through not recognized. Duff's device completely lost. No pattern naming or identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken functions (`switch_small` returns division result, `switch_large` always returns 90). Incorrect parameter counts not flagged. Decompiler presents broken code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions. Error conditions not explained. Stack canary checks present but not documented as security features.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. `test_control_flow_l1/2/3` call target functions but no call graph documentation. Global variables like `g_24008`, `g_12aa8` have no context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order, but mixed with runtime startup code (`_init`, `_start`, `_fini`). No file separation between test functions and utility functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external symbols (`GLIBC_2.4::__stack_chk_guard`, `__aeabi_idiv`) without declarations. ARM-specific intrinsics (`armg_calculate_condition`, `Clz`) not portable. Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Context):     (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 4.26/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **`nested_if_deep`** only accepts 3 parameters instead of 5, references undefined variable `v1`, completely broken logic
+- **`switch_small`** and **`switch_large`** don't implement switch logic at all (returns division result / constant 90)
+- **`duffs_device`** completely truncated - switch only has case 0 and default, loses all copy logic
+- **Function call redundancy**: `tail_recursion`, `call_func_ptr`, `conditional_func_ptr` all call functions twice in same path
+- **Universal type degradation**: All `int` converted to `unsigned int`, losing signed semantics and causing potential bugs
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved, making it possible to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments recovered despite extensive original documentation; no explanation of magic numbers, algorithms, or decompiler confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover signed/unsigned type distinctions** - Currently all integers are `unsigned int`, losing critical semantic information about negative value handling
+2. **Detect and flag semantic errors** - Functions calling themselves twice or with wrong parameter counts should be marked as UNCERTAIN with warnings
+3. **Preserve or infer comments from debug symbols** - With `-g` flag, original comments and variable names should be recoverable from DWARF debug information

@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) with zero semantic meaning. Original names like `temp1`, `temp2`, `sum`, `count` were completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_deep`). Some helpers degraded to `sub_1020`, but core test functions remain identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0xFFFFFFFFLL` (error code), `0x7FFFFFF8` (bit mask), `0x12345678` (opaque predicate constant). No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: register comments (`// rax`, `// ecx`), redundant casts (`(unsigned int)`, `(__int64)`), SIMD intrinsics (`__m128i`, `_mm_load_si128`) obscuring simple logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into closed-form formulas (`loop_for_fixed` uses arithmetic series formula). `loop_continue` expanded to 150+ lines of SIMD instead of simple `for` loop with `continue`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved, but optimization caused massive bloat (`goto_backward` is 100+ lines for 15-line source). Test functions constant-folded to print statements only.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Goto constructs mostly recovered as structured control flow. Some SIMD loops disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling not recognized as optimization pattern. SIMD vector operations repeated without abstraction. No dead code elimination visible.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types present (`int`, `__int64`) but signedness confused. Function pointers degraded to `__int64 (__fastcall *)(_QWORD)`. SIMD types technically accurate but obscure intent.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays optimized away (`arr[]` in `loop_break` became switch-case). No complex structs in test code to evaluate. Pointer arithmetic mostly preserved.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(unsigned int)(result + 1)`, `(__int64)(__fastcall *)`. Function pointer signatures lost. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero useful comments. Only register annotations (`// rax`). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (loops, switches, state machines) not identified. `state_machine` function not recognized as state machine pattern. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Library functions marked "FAILED to decompile" but optimization artifacts not flagged. SIMD expansion in simple functions goes unremarked. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions recovered (e.g., `n > 0` for factorial). No postconditions. Error conditions undocumented. Original test validation comments lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global `jump_buffer` appears without context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No logical grouping. Static functions not properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing external declarations (`xmmword_3140`, `_libc_start_main`). 7 functions failed decompilation. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `v1`, `result`) - zero semantic recovery from usage patterns
+- **Simple loops expanded to 150+ lines of SIMD** - `loop_continue` and `goto_backward` unreadable compared to 10-line source
+- **Test functions constant-folded** - `test_control_flow_l1()` prints hardcoded values instead of calling functions
+- **Zero comments** - no algorithm explanations, confidence indicators, or documentation
+- **Build fails** - undefined symbols (`xmmword_3140`), 7 functions failed decompilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names mostly preserved, making identification possible despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding optimized code nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., loop counters, accumulators, size variables)
+2. **Detect and annotate aggressive optimizations** - flag SIMD-expanded loops with "OPTIMIZED: original was simple loop" comments
+3. **Recover test harness semantics** - don't constant-fold test functions; preserve actual function calls for verification

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/x86/6/6_clang_Os_no_g/ida/syntactic/bin/6_clang_Os_no_g_fixed",
+  "stdout": "=== Standard Library Functions Test ===\nLibL1: 8\nLibL2: 0\nLibL3: 12\nLibL4: 90\nLibL5: 1\nValue: 42, Name: Test\nLibL6: 22\nLibL7: 579\nLibL8: 42\nLibL9: 42\nLibL10: 90\nLibL11: 0\nLibL12: 15\n=== System Calls Test ===\nSysL3: 42\nSysL4: 42\nSysL5: 42\nSysL6: 42\nSysL7: 42\nSysL8: 42\nSysL9: 42\n=== Thread Concurrency Test ===\nThrL3: 49\nThrL4: 410\nThrL5: 42\nThrL6: 42\nThrL7: 42\nThrL8: -3\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

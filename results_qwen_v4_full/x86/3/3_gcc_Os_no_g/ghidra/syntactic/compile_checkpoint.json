@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 21,
+  "source_file": "decompiled/ghidra_out/x86/3/3_gcc_Os_no_g.c",
+  "fixed_file": "results_qwen_v4_full/x86/3/3_gcc_Os_no_g/ghidra/syntactic/fix_3_gcc_Os_no_g.c"
+}

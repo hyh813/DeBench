@@ -1,0 +1,16 @@
+=== Testing Obfuscation and Optimization Features ===
+
+Obf/L4_02: Opaque predicate (param): 10
+Obf/L4_03: Opaque predicate (call): 20
+Obf/L4_04: Instruction substitution (call): 225
+Obf/L4_05: String encryption (param): 133
+Opt/L4_01: Tail call optimization (call): 500500
+Opt/L4_01: Non-tail call (call): 5050
+Opt/L4_02: Vectorized loop (call): 72
+Opt/L5_01: Link-time optimization (call): 20
+Edge/L3_01: Division by zero (call): 2
+Edge/L3_02: Null pointer deref (call): 41
+Edge/L3_03: Buffer overflow (call): 30
+Edge/L3_04: Integer overflow (call): 2000000000
+Edge/L4_01: Undefined behavior (call): 10
+Edge/L4_02: Implementation-defined (call): 48

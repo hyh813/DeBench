@@ -1,0 +1,15 @@
+Hello World
+
+Fake branch: 10
+Opaque predicate: 35
+Instruction substitution: 225
+String encryption: 140731035953441
+Tail call: 500500
+Non-tail call: 5050
+LTO: 20
+Division by zero: 2
+Null pointer deref: 4294967337
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 47

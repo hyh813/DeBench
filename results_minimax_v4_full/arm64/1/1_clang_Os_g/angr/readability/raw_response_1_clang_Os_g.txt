@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`, `w8`, `x9`). The original source used descriptive names like `temp1`, `temp2`, `sum`, `i`, `count` - all completely lost. Even ARM register names (`x8`, `x30`) are used as variable names, providing no semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+Justification: Some functions correctly recovered their source names (e.g., `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`), but many remain as address-based generic names like `sub_400a54`, `sub_400970`, `sub_400988`. The test functions were correctly named, but helper/static functions lost their semantic names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for -1 without explanation. Some constants like `100` are used correctly, but the decompiler doesn't recognize that `100 * a0 + 100` could be `100 * (a0 + 1)`. The value `1717986919` (0x66666667) used in division-by-10 is unexplained.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Relatively clean output with minimal compiler artifacts. However, there are unusual constructs like `[D] unsupported_Iop_ZeroHI64ofV128()` appearing in `loop_continue` and `goto_backward`, indicating decompiler limitations. Some complex bit manipulation expressions appear but don't severely impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural - loops recovered as `while`/`do-while`, switch statements properly structured. However, `loop_continue` shows unusual pattern with `i += 4` and bitwise operations instead of `i++`. Function pointer calls use `goto` which is unconventional. At -O0, this should be cleaner.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are properly separated with good granularity. No obvious outline artifacts (functions that are just basic block collections). Each function has a single responsibility matching the source. The test functions are correctly extracted as separate functions.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, `loop_while` and `loop_dowhile` have confusing loop conditions with complex arithmetic that obscures the simple "divide by 10" logic. Some functions have early returns which is appropriate.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Some redundant expressions visible (e.g., `v0 = v3` then `v0 = (unsigned long long)(v4 + 1)` in `loop_modify_var`). At -O0, loop unrolling is minimal which is correct. The code is mostly clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Parameters use `unsigned int` when source used `int`, losing sign information. Some functions return `long long` when `int` would be correct. The decompiler frequently uses `unsigned long long` for pointers. Type precision is inconsistent - some correct, many degraded.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct/union recovery visible. The `loop_break` function accesses array via `*((int *)(4200812 + 4 * v0))` - raw pointer arithmetic with magic address. The matrix in `loop_multi_exit` is accessed via pointer arithmetic without reconstructing the 2D array structure. All composite types are lost.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several unsafe operations present. The array access in `loop_break` uses unchecked indexing. Function pointer calls use `goto a0` which bypasses type safety. Some pointer arithmetic without bounds checking. However, no severe violations that would cause immediate undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. None of this semantic information was recovered. Even simple inline comments explaining non-obvious logic are absent.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are recognized - switch statements recovered, loops identified. However, no explicit naming of patterns (e.g., "Duff's device" for `duffs_device`, "state machine" for `state_machine`). The `duffs_device` function shows the switch-case structure but the pattern isn't identified or named.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: Some anomalies are flagged with `[D] unsupported_Iop_ZeroHI64ofV128()` indicating decompiler limitations. However, many suspicious constructs are presented confidently without warnings. The complex division-by-10 magic in loops should have a warning. Indirect function calls could have uncertainty indicators.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., "n must be > 0" for `duffs_device`, "ptr != NULL" for some functions). None of this semantic contract information was recovered. The code provides no guidance on expected input ranges.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Some external references are documented with `extern` declarations (e.g., `extern unsigned long long g_412ff8`). Global variables like `g_401950` for switch tables are identified. However, function call relationships are not documented - no comments indicating which functions call which, or the callback relationships in `process_with_callback`.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: Functions are somewhat grouped by type (test functions together, helper functions together), but there's no clear logical organization matching the source's section comments (Control Flow Level 1, 2, 3). Static functions are not properly scoped with `static` keyword visibility.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Uses `extern` declarations for external symbols. Should compile with appropriate stubs. However, the `[D] unsupported_Iop_ZeroHI64ofV128()` construct will not compile. Some functions reference undefined external symbols. Moderate patching would be needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 5 + 7) / 4 = 4.75
+L2_avg = (7 + 8 + 6 + 7) / 4 = 7.00
+L3_avg = (5 + 2 + 5) / 3 = 4.00
+L4_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L5_avg = (5 + 5 + 6) / 3 = 5.33
+
+Overall = (4.75 × 0.30) + (7.00 × 0.25) + (4.00 × 0.20) + 
+          (3.25 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.75 + 0.8 + 0.4875 + 0.533
+        = 4.9955 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming completely generic**: All variables use `a0`, `v0`, `w8`, `x9` style names instead of semantic names like `temp1`, `sum`, `i`, `count` from source
+
+2. **No struct/union recovery**: Matrix and array accesses use raw pointer arithmetic (`*((int *)(4200812 + 4 * v0))`) instead of reconstructing `int matrix[3][4]`
+
+3. **No comments recovered**: Zero comments in output despite extensive documentation in source explaining function purposes, test scenarios, and difficulty ratings
+
+4. **Type precision lost**: Parameters use `unsigned int` when source used signed `int`, losing sign semantics. Some return types are `long long` when `int` would be correct
+
+5. **Anomalies silently presented**: Complex expressions like division-by-10 using magic constant `1717986919` presented without explanation or warning
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Decomposition (8/10)**
+- **Why?** Functions are properly separated with good granularity, no obvious outline artifacts, and each function maintains single responsibility matching the source
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (2/10)**
+- **Why?** Zero comments in the entire decompiled output. The original source had extensive documentation (961 LOC with detailed comments) explaining each function's purpose, test verification values, difficulty ratings, and scene tags - all completely lost
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v0 += 1` suggests a counter named `i` or `count`; `a0 + a1` suggests `sum` or `total`) to generate semantic names instead of generic `v0`, `v1`
+
+2. **Recover struct/union types from pointer arithmetic**: When seeing `*(base + offset * sizeof(T))` patterns, attempt to reconstruct the original struct layout. The matrix access `*((int *)(4200812 + 4 * v0))` should reconstruct `matrix[i][j]`
+
+3. **Add semantic comments from source analysis**: When decompiling test functions that call other functions with known expected outputs, generate comments documenting the function's purpose and behavior (e.g., "// Returns (a+b)*2-c for sequential_ops")
+
+4. **Flag anomalous expressions**: The magic number `1717986919` (0x66666667) used for division-by-10 should be flagged with a comment explaining it's a multiplicative inverse for fast division
+
+5. **Preserve type signedness**: Use signed types for parameters and returns when the original source used `int` vs `unsigned int`. The current `unsigned int a0` for `single_if(x)` loses the semantic that negative numbers should return unchanged

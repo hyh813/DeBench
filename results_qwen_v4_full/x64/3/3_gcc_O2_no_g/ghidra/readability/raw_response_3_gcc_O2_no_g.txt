@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `uVar2`, `plVar1`, `local_10`). Original source had meaningful names like `arr`, `head`, `current`, `sum` that are completely lost. Only `__ptr` for malloc results shows minimal semantic awareness.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). Some internal functions use generic names (`FUN_00101020`), but core test functions maintain semantic clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Extensive use of hex magic numbers without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60), `0x1e` (30). Original source used clear decimal constants and expressions that conveyed intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`, `in_FS_OFFSET`) appear in every function. Compiler artifacts like `*(undefined8 *)(puVar2 + -8)` obscure logic. WARNING comments about unreachable blocks add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as do-while constructs, but VLA/allocation code (`vla_stack`, `alloca_usage`) is extremely complex with manual stack manipulation. Test functions show constant folding instead of actual function calls, losing execution flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but signatures changed (`create_tree_node` returns void instead of `TreeNode*`). Some functions like `stack_alias` collapsed to return constant `0x14` instead of actual logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Stack check at function end disrupts flow. Error handling paths use goto-like patterns in complex functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions heavily optimized—actual computations replaced with constants (e.g., `test_stack_memory` prints `0x14` instead of calling `local_vars(5)`). This optimization destroys semantic traceability to source.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive type degradation: `undefined4`, `undefined8`, `ulong` instead of `int32_t`, `int64_t`, `size_t`. Pointer types often generic `void*` or `undefined*`. Original had precise types throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—struct types (`Point`, `Node`, `TreeNode`) completely lost. `heap_struct` shows `malloc(8)` instead of `sizeof(Point)`. Field access via pointer arithmetic (`__ptr[2]`) instead of named fields (`p->x`, `p->y`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(undefined4 *)`, `(long)`). Function pointers degraded to generic `code*`. Pointer arithmetic on void pointers without explicit casts in some locations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler header comments present. No algorithm explanations or logic documentation. Original source had extensive comments explaining each test case purpose and expected values.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Linked list creation (`linked_list_heap`), tree traversal (`tree_heap_traversal`), and memory allocation patterns not identified or named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some WARNING comments present ("Could not recover jumptable", "Subroutine does not return"). Stack check failures noted. However, semantic anomalies (like `dangling_pointer` UB) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference. Original source had implicit contracts (e.g., "n > 0" for VLA) that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `extern_global_var`) referenced without context. Callback relationships (`set_global_callback`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file organization. Static functions not properly scoped. Original source had clear section organization (stack, heap, static, memory ops).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__printf_chk`, `malloc`, `fork`) without declarations. Undefined symbols (`global_counter`, `extern_global_var`, `counter_1`). Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+4+5)/4 = 5.00  → 5.00 × 0.30 = 1.50
+L2 Average: (5+6+6+4)/4 = 5.25  → 5.25 × 0.25 = 1.31
+L3 Average: (4+2+4)/3 = 3.33    → 3.33 × 0.20 = 0.67
+L4 Average: (3+2+6+3)/4 = 3.50  → 3.50 × 0.15 = 0.53
+L5 Average: (5+5+4)/3 = 4.67    → 4.67 × 0.10 = 0.47
+
+Overall Score: 4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` structures not recovered; all access via pointer arithmetic
+- **Test functions optimized to constants**: Actual function calls replaced with hardcoded values, destroying semantic traceability
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar2` provide no semantic information about purpose
+- **Magic numbers in hex**: `0x2a`, `0x14`, `0xf` instead of meaningful decimal constants
+- **Type system degraded**: `undefined4`, `undefined8` instead of precise integer types
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, allowing immediate identification of test purposes
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, forcing all composite data access through opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from consistent field access patterns (e.g., `__ptr[0]` and `__ptr[2]` at fixed offsets suggests a struct with two int fields and a pointer)
+2. **Preserve semantic computation in test functions** - avoid aggressive constant folding that replaces function calls with results, as this destroys code traceability
+3. **Add semantic variable naming** - infer names from usage context (e.g., variables used in malloc size calculations should be named `size` or `count`, loop indices should be `i`, `j`, `idx`)

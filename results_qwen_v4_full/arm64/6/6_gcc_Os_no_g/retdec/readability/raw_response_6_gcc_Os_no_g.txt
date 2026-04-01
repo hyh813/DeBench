@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `str`, `str2`, `mem`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`param_strcpy`, `call_strcpy`, `test_standard_library_functions`), but helper functions degraded to `function_13c0`, `function_13d0`. Some function signatures are incorrect (e.g., `param_strcpy(void)` should take `char* dst, const char* src`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved but encoded as hex in globals (`g17`, `g18`). Magic numbers like `18`, `42`, `255`, `0xffffffff` appear without explanation. Error codes (`0xfffffffd`, `0xfffffffe`) obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_fail()`), excessive `int64_t` casts, ARM64 assembly intrinsics (`__asm_stlr`, `__asm_ubfx`), and redundant variable assignments throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive `goto` usage replaces natural loops (e.g., `lab_0x1fe4`, `lab_0x2004` in `param_fread_fwrite`). At `-O0` optimization, this restructuring is inappropriate and severely hampers readability.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but many have incorrect signatures. `param_strcpy(void)` loses both parameters. Thread functions (`thread_compute`, `thread_sum`) have broken parameter passing through globals.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Heavy use of forward jumps and labels disrupts top-to-bottom reading. Functions like `param_fread_fwrite` have 4+ jump labels creating spaghetti-like flow that requires constant backtracking.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in nearly every function. Variable state tracking (`v2 = v8; v4 = str; v6 = v9;`) before jumps creates redundant assignments that obscure actual logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - everything becomes `int64_t` or `int32_t`. Original `char*`, `size_t`, `FILE*`, `pthread_t` all degraded. Pointer arithmetic on `int64_t*` instead of proper types makes code dangerous.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined but with meaningless field names (`e0`, `e1`, `e2`...). `ThreadData` struct not recovered - accessed via raw offsets (`v1 + 4`, `v1 + 8`). `struct sockaddr` reduced to generic fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int64_t *)str`, `(char *)str2`, `(int32_t)v1`. Pointer arithmetic on typed pointers (`4 * v3 + v2`) without proper array types. Function pointer casts lose signature information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated headers ("Address range:", "UNREACHABLE"). Original source had extensive documentation explaining each function's purpose, test scenarios, and expected values - all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`strcpy`, `pthread_create`, `fork`) identifiable but not annotated. Producer-consumer pattern in `param_condition_variable` not recognized. Atomic operations reduced to `__aarch64_ldadd4_acq_rel` without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Minimal anomaly marking. Only `// UNREACHABLE` after `_exit()` calls. No warnings about parameter loss, type degradation, or potentially incorrect decompilation decisions that would help analysts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error contracts documented. Original had clear error return values (`-1`, `-2`, `-3`) with meanings - decompiled code just shows magic numbers without context.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g6`, `g7`, `g8`...) used for signal handling and synchronization without indicating their purpose. Thread callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Original had clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) - decompiled output mixes everything. No header file for declarations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code compiles with proper includes but requires stubs for some functions. Assembly intrinsics (`__aarch64_cas4_acq_rel`) may need platform-specific handling. Dependency on pthread library not explicitly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.17/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Function signature loss**: `param_strcpy(void)` missing both `dst` and `src` parameters - fundamentally broken
+- **Universal int64_t typing**: All variables become `int64_t`, losing `char*`, `size_t`, `FILE*` distinctions
+- **Goto-based control flow**: Natural loops converted to label/jump patterns even at `-O0` debug build
+- **Generic struct fields**: All struct members named `e0`, `e1`, `e2` losing semantic meaning
+- **Zero documentation**: Original comments explaining test scenarios, expected values, and API contracts completely absent
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names preserved (`param_strcpy`, `call_strlen`, `test_thread_concurrency`) allowing basic identification of test structure
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of any explanatory comments makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery**: Analyze calling conventions to restore function parameters (e.g., `param_strcpy` should have 2 pointer parameters based on `strcpy` call pattern)
+2. **Type inference from usage**: Detect `char*` from `strcpy`/`strlen` calls, `FILE*` from `fopen`/`fclose`, `pthread_t` from thread APIs
+3. **Control flow reconstruction**: At `-O0` optimization level, preserve original loop structures instead of converting to goto/label patterns

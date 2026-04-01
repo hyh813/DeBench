@@ -1,0 +1,6 @@
+{
+  "compile_success": true,
+  "iteration": 50,
+  "source_file": "decompiled/ghidra_out/arm32/2/2_gcc_O0_g.c",
+  "fixed_file": "results_minimax_v4_full/arm32/2/2_gcc_O0_g/ghidra/syntactic/fix_2_gcc_O0_g.c"
+}

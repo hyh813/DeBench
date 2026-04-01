@@ -1,0 +1,5 @@
+test_obf_opt_edge called
+
+opaque predicate result: 10
+string encryption result: 0
+call_instruction_substitution done: 225

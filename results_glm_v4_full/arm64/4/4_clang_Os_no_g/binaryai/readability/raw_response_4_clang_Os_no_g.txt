@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`param_1`, `local_8`, `iVar1`), losing semantic context like `count` or `sum` found in the source. While `a` and `b` in the source are also simple, the decompiler's use of `param_1` for `count` in `varargs_func` obscures the loop control logic.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `cdecl_func`, `varargs_func`, and `test_calling_conventions` are perfectly recovered, matching the source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Logic in test functions is replaced by magic numbers (e.g., `return 0xf` instead of `return cdecl_func(5, 10)`), and hex literals like `0x2a` (42) are used without context, making the purpose of the code harder to discern than the source.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains low-level artifacts like `CONCAT44` (register merging), `undefined8` types, and references to `register0x00000008`, which clutter the high-level view.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The `varargs_func` implementation is exposed as complex pointer arithmetic and `do-while` loops involving stack pointers (`register0x00000008`), rather than the clean `va_list` abstraction found in the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without unnecessary inlining or fragmentation.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal jumps, though the complex pointer arithmetic in struct handling slightly disrupts the flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The initialization of `LargeStruct` in `test_calling_conventions` is represented as a verbose loop with manual offset calculations (`lVar4 + 0x88`), which is harder to read than the source's simple array assignment.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Return types for simple functions are often `undefined8` instead of `int`, and parameter order in `func_mixed_args` is rearranged (double, int, char*, long) due to ARM64 register separation, deviating from the source's logical order.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are not recovered; `LargeStruct` is passed as a raw pointer (`long param_1`) and accessed via pointer arithmetic (`*(long *)(param_1 + lVar2)`), completely losing the `data[i]` field access semantics.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic to access struct fields (e.g., casting `void*` or `long` to access array elements), which obscures type boundaries and safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code, leaving complex logic like varargs handling or struct packing unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms like `va_arg` and struct returns are not recognized; instead, they are represented as low-level register manipulation and bit-packing (`param_1 & 0xffffffff | param_2 << 0x20`).
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No specific anomalies are flagged, though the presence of `undefined8` and `register0x00000008` could be considered anomalies warranting explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions, even where the source implies them (e.g., `param_string`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and reference the correct recovered functions, maintaining the call graph structure effectively.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order that roughly follows the source flow, though the lack of section separators (like the "4.1" comments in source) makes it flatter.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `code *`) and macros (`CONCAT44`), making it non-compilable without significant modification or a specific header.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Struct types completely lost; `LargeStruct` is accessed via raw pointer arithmetic (`*(long *)(param_1 + lVar2)`) instead of field names.
+- Varargs logic is obscured by low-level stack pointer manipulation (`register0x00000008`) instead of `va_list` idioms.
+- Test functions contain hardcoded hex results (e.g., `0xf`) instead of the original function calls, hiding the logic being tested.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered the original function names, making it easy to locate specific test cases.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct `LargeStruct` and `SmallStruct` turns readable data access into obscure memory offset calculations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct type recovery for ARM64 to map stack/register arguments back to struct fields and names.
+2. Recognize and abstract varargs patterns (`va_start`, `va_arg`) into idiomatic C constructs rather than exposing stack pointer math.
+3. Optionally disable aggressive constant propagation in "test" or "main" functions to preserve the logic of function calls that were optimized away by the compiler.

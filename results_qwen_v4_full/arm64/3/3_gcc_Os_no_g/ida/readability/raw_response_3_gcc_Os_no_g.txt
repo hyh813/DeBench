@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `result`) with no semantic meaning. For example, `heap_basic` uses `v2` for the malloc'd array instead of `arr`, and `i` for loop counter is one of the few readable names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`), making purpose clear. However, some functions like `sub_9B0` remain unnamed, and `stack_alias` loses meaning since it just returns constant 20.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x14u`, `0x28u`, `0x10u` for malloc sizes, `0x3E7` for bounds checking. No constants recovered (e.g., `MAX_VLA_SIZE` instead of `0x3E7`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: register comments (`// x0`, `// w19`), excessive type casts (`(unsigned int)`, `(__int64)`), stack frame annotations (`[xsp+10h] [xbp+10h]`), and BYREF markers throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered as for/while, but `vla_stack` and `alloca_usage` have complex stack alignment code with `while (v6 != v3);` that obscures original simple VLA semantics. Some functions use awkward do-while patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, but optimization collapsed simple functions (`local_struct` returns `3 * a1` instead of showing struct field access). `stack_alias` reduced to single return statement, losing all pointer aliasing logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `linked_list_heap` has nested loops with break conditions that disrupt flow. Some functions have early returns that could be cleaner.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts throughout (`(unsigned int)`, `(unsigned __int8)`). Stack alignment code in VLA functions is duplicated between `vla_stack` and `alloca_usage` without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `__int64`, `_DWORD`, `_QWORD`, `_BYTE` instead of proper C types. Return types are `__int64` even for functions returning `int`. Pointer types often `void*` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs completely lost - `Point` struct operations simplified to arithmetic (`3 * a1`). `Node` struct represented as `_QWORD` arrays with field access like `v3[1]` instead of `node->next`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD *)`, `(_QWORD *)`, `(unsigned int *)`. Pointer arithmetic on void pointers. `dangling_pointer` returns `*v1` after free with no warning about undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only auto-generated type annotations (`// x0`). No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Memory allocation patterns (`malloc` + loop + `free`) not identified. Linked list traversal in `linked_list_heap` not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked "FAILED to decompile" at end, but no warnings about suspicious code within decompiled functions. `dangling_pointer` and `double_free` have no undefined behavior warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 > 0` requirements). No postconditions. Null checks exist in code but not documented as contracts. Error return values (`-1`, `0xFFFFFFFFLL`) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without context. Callback mechanism in `call_global_callback` not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping visible. Static functions not distinguished from external. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 19 external functions "FAILED to decompile" including `malloc`, `free`, `printf`. Cannot compile standalone. Missing includes and type definitions. Architecture-specific types (`__int64`, `_QWORD`) not portable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):   (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type System):  (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):     (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):   (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `arr`, `index`, `result` in `heap_basic`)
+- **Struct types completely lost** - `Point` and `Node` structs reduced to `_QWORD` arrays with no field names
+- **`stack_alias` function** collapsed to constant return `20`, losing all pointer aliasing semantics
+- **19 external functions failed to decompile** including critical libc functions (`malloc`, `free`, `printf`)
+- **No comments or documentation** explaining algorithm intent, preconditions, or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), making high-level purpose immediately clear
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error semantics documented; null checks exist in code but aren't expressed as contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in malloc size calculations should be named `size` or `count`)
+2. **Recover composite type definitions** - Reconstruct struct/union definitions from field access patterns instead of raw array indexing
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, flag potential undefined behavior (use-after-free in `dangling_pointer`), and document failed external dependencies

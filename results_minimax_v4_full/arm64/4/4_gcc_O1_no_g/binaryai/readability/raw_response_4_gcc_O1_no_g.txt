@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`. Local variables are cryptic: `iVar1`, `lVar2`, `plVar3`, `local_50`, `alStack_110`. The original source used meaningful names like `a`, `b`, `count`, `args`, `sum`. This is a severe degradation making tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions correctly preserve original names: `cdecl_func`, `stdcall_func`, `callback_func`, `func_a`, `func_b`, `test_calling_conventions`. Only some internal functions like `FUN_00100750` are cryptic. The main API functions match source well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0x40091eb851eb851f` (3.14 double). No named constants recovered. The original source had clear values like `5, 10` or `1, 2, 3, 4, 5`. These hex values require mental conversion.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts. Stack canary checks (`___stack_chk_guard`) are expected at -O0. Some redundant stack frame setup in test functions. Overall clean compared to optimized builds.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recognized as do-while constructs. Conditionals are clear (`if (param_1 == 0)`). Switch statements converted to if-else chains appropriately. The original source's `for` loops are correctly recovered. Minor awkwardness in varargs handling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Test functions properly separated. No excessive inlining - each function like `cdecl_func`, `varargs_func` remains distinct. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex functions like `test_calling_conventions` with multiple printf statements. Early returns used appropriately. Acceptable for -O0.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Some loop unrolling in test initialization (`do { alStack_110[lVar2] = lVar2; ... }`) but this reflects the original loop structure. Clean code overall.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of specific types. Parameters like `int param_1` lose the original `int a, int b` clarity. Pointers are correctly typed but `char*` vs `const char*` distinction lost. Function pointers use `code *` which is non-standard. Mixed precision.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` (128 bytes) is not properly recovered - appears as `long *param_1` in `func_struct_byval`. `SmallStruct` appears as `int *param_1` in `func_struct_byptr`. Original had clear `typedef struct { int x, y; } SmallStruct`. All struct semantics lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations. `param_1[1]` in `func_struct_byptr` assumes adjacent memory. Pointer arithmetic like `param_1 + lVar2 * 8` is raw. No bounds checking. However, no obviously dangerous casts. Moderate risk.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in decompiled code. Only auto-generated header with SHA256. Original source had extensive comments explaining each test case (e.g., "// CALL-L1-01: cdecl调用约定"). Zero algorithm or logic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C patterns partially recognizable. Varargs handling shows `va_list` pattern (though incorrectly implemented). The original's calling convention tests are not identified as such. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. External functions marked `<EXTERNAL>::strlen` but no uncertainty indication. The original source's conditional compilation (`#ifdef _WIN32`) is completely lost with no indication. Silent failures possible.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information. Original had clear expectations like "// 期望: 15" for return values. Preconditions like `if (!p) return -1` in `func_struct_byptr` are preserved but not documented as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`cdecl_func(5, 10)` becomes `call_cdecl`). External dependencies marked as `<EXTERNAL>`. However, no documentation of call graph or relationships. The original's test orchestration is not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically: calling convention functions together, parameter passing functions together, return value functions together. Matches source organization reasonably well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has compilation issues. Types like `undefined8`, `undefined4`, `code *` are Ghidra-specific. External declarations present but incomplete. Would require significant patching to compile (replacing Ghidra types with standard C types).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: all parameters are `param_N`, locals are cryptic (`iVar1`, `lVar2`, `local_50`), losing all semantic meaning from original `a`, `b`, `count`, `sum`
+- Composite types completely lost: `LargeStruct` and `SmallStruct` appear as raw pointers `long *` and `int *` with no field recovery
+- No comments or documentation: original's extensive test case explanations and expected values are completely absent
+- Magic numbers everywhere: `0xf`, `0x32`, `0x2a` instead of meaningful constants like `15`, `50`, `42`
+- Type precision lost: generic `int` instead of specific types, `code *` for function pointers instead of proper signatures
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- Loops, conditionals, and switch statements are correctly recovered and readable. The decompiler properly recognized the original control structures.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every parameter and local variable uses generic names that require constant cross-referencing to understand purpose. This single dimension most severely impacts readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 + param_2` suggests addition operands → name as `addend` or `lhs/rhs`)
+2. **Recover struct/union types from stack layout and access patterns**: Detect sequential memory accesses like `param_1[0]`, `param_1[1]` to reconstruct composite types
+3. **Add semantic comments for test/harness code**: Detect constant propagation patterns (e.g., `printf("EXPECTED: %d\n", 15)`) and add expected value annotations

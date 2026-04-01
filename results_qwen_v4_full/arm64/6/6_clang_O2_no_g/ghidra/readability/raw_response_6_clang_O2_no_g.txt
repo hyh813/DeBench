@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `uVar1`, `local_30`, `param_1`) losing all semantic meaning from original names like `dst`, `src`, `buffer`, `thread_count`. Only pointer variables like `__stream`, `__ptr`, `__s` retain some type hinting.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`param_strcpy`, `param_strcmp`, `thread_compute`, `param_mutex_lock`), but helper functions use generic names (`FUN_001012e0`, `FUN_0017fc`) and some return types are wrong (`param_strcpy` returns `void` instead of `int`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xffffffff` (-1), syscall numbers `0x38`/`0x39` instead of `SYS_open`/`SYS_close`, signal numbers `10`/`0xe` instead of `SIGUSR1`/`SIGALRM`. String literals preserved correctly.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler runtime artifacts present (`_init`, `__do_global_dtors_aux`, `register_tm_clones`), architecture-specific atomics (`__aarch64_ldadd4_acq_rel`), and "WARNING: Removing unreachable block" annotations add noise but don't completely obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` constructs, but `param_malloc_free` shows aggressive loop unrolling with 8 parallel accumulators despite claimed `-O0`. Goto labels (`LAB_00101c34`, `LAB_00102390`) disrupt natural flow in several functions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with clear separation (thread functions vs. test functions). However, `param_malloc_free` is overly complex due to unrolling, and some functions have excessive local variables indicating poor decomposition.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels (`LAB_00101c58`, `LAB_001025f4`, `LAB_00102ec8`) create forward jumps. Deep nesting (4+ levels) in `param_signal_handling` and `param_thread_local_storage` reduces linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling in `param_malloc_free` (8 parallel accumulators `iVar5` through `iVar12`) and `param_memset`. Multiple similar variable assignments obscure the simple original logic of summing bytes.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many `undefined8`, `undefined4` types instead of proper types. `param_strcpy` returns `void` instead of `int`. `ulong` used where `size_t` appropriate. Some good recovery: `FILE*`, `pthread_t`, `sockaddr` types preserved correctly.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct completely lost - uses array indexing `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `start`, `end`, `result` fields. TLS accessed via raw offset `*(int *)(lVar3 + 0x10)`. `sockaddr` partially recovered with byte-level field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(pthread_mutex_t *)`, `(volatile int*)&atomic_counter`. Type punning with `atomic_counter._0_4_`. Function pointers often `void*` instead of proper signatures. Buffer operations lack bounds checking visibility.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated warnings ("WARNING: Subroutine does not return"). No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `printf`, `pthread_create`). System calls recognized but not symbolically named (`syscall(0x38,...)`). No design pattern identification (producer-consumer, mutex protection patterns not labeled).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). No uncertainty markers for indirect calls. No indication of potential type casting issues. Atomic operation implementations clearly show architecture-specific code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation. Error return values undocumented (-1, -2, -3 meanings unclear). Return value `0x2a` (42 = success) not explained. No invariant recognition for shared state. Original source had clear `// 期望: 42` comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear within decompiled code. Global variables (`atomic_counter`, `shared_counter`, `signal_received`) referenced but not documented. Callback relationships (thread functions) not explicitly marked. String references sometimes shown as `&DAT_00103156`.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping comments. Test functions and implementation functions mixed together. Initialization code (`_init`, `_start`) mixed with application code. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone - `undefined8`, `undefined4` types need definition. External dependencies (pthread, libc) not documented. Architecture-specific intrinsics need special handling. Requires significant stubbing and type definitions to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 5 + 6) / 4 = 5.50
+Level 2 (Structural):  (6 + 7 + 6 + 5) / 4 = 6.00
+Level 3 (Type):        (5 + 4 + 4) / 3     = 4.33
+Level 4 (Semantic):    (2 + 5 + 5 + 3) / 4 = 3.75
+Level 5 (Contextual):  (5 + 4 + 4) / 3     = 4.33
+
+Overall = (5.50 × 0.30) + (6.00 × 0.25) + (4.33 × 0.20) + (3.75 × 0.15) + (4.33 × 0.10)
+        = 1.65 + 1.50 + 0.87 + 0.56 + 0.43
+        = 5.01
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects
+- **Variable `param_1`, `param_2`** should be named `dst`, `src` based on `strcpy` usage pattern in `param_strcpy`
+- **Return type of `param_strcpy`** is `void` but should be `int` (original returns `strlen(dst)`)
+- **Magic numbers `0x2a`, `0x5a`, `0xc`** should be recovered as constants (42=success, 90=expected sum, 12=string length)
+- **`ThreadData` struct** completely lost - uses array indexing `param_1[0/1/2]` instead of named fields `start/end/result`
+- **No comments** explaining error codes, expected values, or function contracts despite extensive original documentation
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core function names preserved accurately (`param_strcpy`, `param_mutex_lock`, `thread_compute`), maintaining semantic connection to original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source had extensive comments explaining expected values, test purposes, and API contracts that are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover symbolic constants from usage patterns** - Detect repeated values like `0x2a` (42) used as success codes and suggest named constants like `TEST_SUCCESS`
+2. **Infer struct types from consistent field access patterns** - When `param_1[0]`, `param_1[1]`, `param_1[2]` are consistently accessed, suggest struct recovery with semantic field names
+3. **Preserve return type information from call sites** - When a function's return value is used in arithmetic/comparison, infer proper return type instead of defaulting to `void` or `undefined`

@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`, `result`) with no semantic meaning. For example, `param_fake_branch(unsigned int a0)` should use `x` to match source intent, and `param_opaque_predicate` uses `v3`, `v4`, `v13` instead of meaningful names like `p1`, `p2`, `p3`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`param_fake_branch`, `call_opaque_predicate`, `param_instruction_substitution`) which is excellent. However, runtime functions use mechanical names (`sub_401030`, `sub_4010c0`, `sub_401143`) obscuring their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1` or `UINT_MAX`), `0x77359400` (overflow result), signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`. XOR key `90` is at least recognizable but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime initialization noise (`_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_ctors_aux`) not present in original source. Unsupported jumpkind markers (`[D] Unsupported jumpkind Ijk_SigTRAP`) add confusion.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `param_opaque_predicate` uses confusing `_ccall` and `CONCAT` operations instead of clear conditionals. Some functions use `goto` patterns (`sub_401030`: `goto ptr[2]`) that should be structured loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Core functions are appropriately sized, but caller functions are over-optimized with constant folding (`call_fake_branch()` returns `10` directly, eliminating educational value). Runtime functions are unnecessarily fragmented.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. However, complex expressions with `CONCAT` operations disrupt flow, and some functions have forward jumps that could be structured as early returns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding removes redundant computation but also eliminates the obfuscation patterns being tested. Some functions show duplicated GCD calculation logic in both `param_opaque_predicate` and `call_opaque_predicate`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types frequently become `unsigned int` (e.g., `param_fake_branch(unsigned int a0)` should be `int`). Pointer types degrade to `unsigned int` in `param_vectorized_loop`. Signedness information is often lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions exist but use generic field names (`padding_0`, `field_2ea7`, `field_2e43`). The bitfield struct from `param_implementation_defined` is completely lost. Padding arrays obscure actual structure layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(char *)&ptr[3017]`, `(int)v1[16]`. Pointer arithmetic on generic `unsigned int` types. Function signatures don't match original (e.g., `param_division_by_zero()` missing `int x` parameter).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic or purpose. Only auto-generated markers like `[D] Unsupported jumpkind` and `/* do not return */`. No explanation of obfuscation patterns or optimization artifacts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (fake branches, opaque predicates, instruction substitution) are not identified or labeled. GCD algorithm in `param_opaque_predicate` is not recognized. String decryption pattern not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked (`[D] Unsupported jumpkind`), but type mismatches, parameter losses, and optimization artifacts go unexplained. No indication that `param_fake_branch` was simplified due to dead code elimination.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Signal handler relationships not explained. No indication of expected return values or error conditions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships lack documentation. Global variables use generic names (`g_402008`, `g_402028`, `g_402048`) instead of meaningful names. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Runtime initialization code mixes with application logic. No separation between obfuscation tests, optimization tests, and edge case tests.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`signal`, `longjmp`, `strlen`, `printf`) declared but not defined. Global variables need stubs. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.26/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Parameter loss**: `param_division_by_zero()` and `param_null_pointer_deref()` missing critical parameters (`int x`, `int *p`)
+- **Generic variable names**: `v0`, `v1`, `a0` throughout obscure semantic meaning (e.g., `a0` should be `x` in `param_fake_branch`)
+- **Magic numbers unexplained**: `4294967295`, `0x77359400`, signal numbers `8`/`11` without symbolic names
+- **Complex expressions**: `_ccall` and `CONCAT` operations in `param_opaque_predicate` are nearly unreadable
+- **No comments**: Zero documentation of obfuscation patterns, optimization effects, or anomaly explanations
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, etc.) enabling immediate identification of test purposes
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding obfuscation patterns and optimization artifacts nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter semantics**: Analyze call sites to restore lost parameters (e.g., `param_division_by_zero` should have `int x` parameter based on `10/x` usage)
+2. **Add anomaly annotations**: Flag optimization artifacts, dead code elimination, and type mismatches with explanatory comments
+3. **Replace magic numbers with symbols**: Detect signal numbers, error codes, and common constants, replacing with symbolic names (`SIGFPE`, `UINT_MAX`)

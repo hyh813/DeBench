@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/5-23/5-23_clang_Os_no_g/ghidra/syntactic/bin/5-23_clang_Os_no_g_fixed",
+  "stdout": "Testing Preprocessing Features:\n\nResult: 64\nResult: 30\nResult: 32\nResult: 57122\nResult: 116\nResult: 19\nResult: 60\nLOG: Values: 10, 20, 30\nResult: 60\nResult: 16\nResult: 500\nfile=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:00\nResult: 382\nTesting ASM Features:\n\nSum of array elements: 15\nCopied string length: 5\nString match result: 4294967295\nSIMD result: 36\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 4,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

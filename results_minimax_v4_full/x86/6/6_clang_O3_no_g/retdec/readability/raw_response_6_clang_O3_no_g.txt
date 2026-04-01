@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+After analyzing the original source and decompiled code, I need to evaluate the decompilation quality across all 18 dimensions. The decompiled output is from RetDec (not Ghidra as mentioned in metadata), and shows significant readability issues.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `str2`) that provide no semantic meaning. The original parameters `dst` and `src` are completely lost. This makes it impossible to understand parameter purposes without cross-referencing.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Functions retain partial semantic names (`param_strcpy`, `call_strcpy`) matching source, but use mechanical prefixes. The naming is functional but not idiomatic - should be `strcpy_wrapper` or similar.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The literal `0x6c6c6548` in `call_strcpy` represents "Hell" (part of "HelloLib") but is presented as raw hex. No named constants for magic values like buffer sizes. The decompiler failed to recognize this as a string literal.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Address comments (`// 0x1590`) add noise but are relatively minimal. Redundant casts like `(char *)a2` are present but not excessive. Some dead code patterns visible in other functions but `param_strcpy` itself is relatively clean.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is straightforward - simple function call sequence. At `-O0`, this should be nearly identical to source. No goto abuse or confusing conditionals. The flow is easy to follow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The critical issue: `call_strcpy` does NOT call `param_strcpy` at all! It inlines the logic incorrectly:
+```c
+// Decompiled (WRONG):
+int32_t call_strcpy(int32_t a1) {
+    int32_t str = 0x6c6c6548;
+    return strlen((char *)&str);  // Only returns strlen, no strcpy!
+}
+```
+The original calls `param_strcpy(buffer, "HelloLib")` which should copy the string AND return length. This is a severe decomposition failure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with no forward jumps or complex branching. Simple sequential execution makes it easy to trace.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in this function. Some loop unrolling visible in other functions (like `param_malloc_free`) but `param_strcpy` itself is clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` which is reasonable for ARM64 at -O0, but loses `const` correctness - original has `const char *src` but decompiled has no const. Parameter types are wrong: takes 3 parameters instead of 2, with extra unused `a1`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex structs needed for this simple function. The `_IO_FILE` struct definitions at the top are present but use generic field names (`e0`, `e1`). Not applicable to this specific function but indicates overall quality.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The cast `(char *)a2` is necessary but indicates type uncertainty. The incorrect function signature (3 params vs 2) creates potential type confusion. No bounds checking annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address comments present (`// 0x1590`). No explanation of what the function does, what parameters mean, or the relationship to `strcpy`/`strlen`. No indication that this is a wrapper function.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The `strcpy` + `strlen` pattern is recognized (calls are preserved), but not identified as a common idiom. The decompiler doesn't note this is a "copy and get length" pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about the incorrect function signature or the missing strcpy in call_strcpy. The decompiler presents incorrect code as if it were correct.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions (e.g., "ensures: dst is null-terminated"). The contract is completely implicit.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function names suggest relationships but no explicit documentation. The critical issue: `call_strcpy` should call `param_strcpy` but doesn't - this relationship is completely broken.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (param_* and call_* pairs). Related string functions are near each other. However, the file is massive (2000+ lines) with all functions in one place.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes proper headers. The code should compile standalone. However, the incorrect function signature in `call_strcpy` would cause runtime bugs (missing strcpy call).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+1. **Function call missing**: `call_strcpy` does NOT call `param_strcpy` - it only computes `strlen` directly, completely losing the `strcpy` functionality
+2. **Wrong parameter count**: `param_strcpy` has 3 parameters (`a1, a2, str2`) instead of 2 (`dst, src`)
+3. **Generic variable names**: All parameters use meaningless names (`a1`, `a2`, `str2`) losing semantic intent
+4. **String literal not recognized**: `0x6c6c6548` should be displayed as string "HelloLib" or similar
+5. **No comments**: No explanation of function purpose, parameters, or behavior
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+The sequential execution is clear and matches the simple logic flow. At -O0, the basic structure is preserved.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of semantic parameter names (`dst`, `src` → `a2`, `str2`) makes the code nearly impossible to understand without external reference.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer parameter names from usage**: Analyze how parameters are used (passed to strcpy, strlen) to infer names like `dst` and `src`
+2. **Detect and preserve function calls**: Ensure wrapper functions actually call the functions they should - the missing `strcpy` call is a critical semantic error
+3. **Recognize string literals**: Convert ASCII hex constants back to string literals when they represent printable text ("Hell" from 0x6c6c6548)

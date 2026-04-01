@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `iVar1`, `x_local`, `a_local` are generic and obscure semantic meaning; original names like `temp1`, `temp2`, `sum`, `count` are partially preserved but many functions use `_local` suffix unnecessarily (e.g., `sequential_ops` declares `a_local`, `b_local`, `c_local` but doesn't use them).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`); however, some helper functions remain as `FUN_00100930`, `FUN_00100abc` without meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex literals without explanation (0x14=20, 0x1e=30, 0x3e9=1001, 0x65=101); original decimal constants converted inconsistently, making values harder to interpret at a glance.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary `_local` variable copies throughout (e.g., `x_local = x`), stack canary checks (`___stack_chk_guard`) in many functions, and "WARNING: Removing unreachable block" comments add clutter without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered well (`for`, `while`, `do-while`), but switch statements degraded to nested if-else chains (`switch_small`, `switch_large`); `switch_fallthrough` uses goto labels (`LAB_00100fec`) instead of proper fall-through semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity; helper functions (`double_value`, `triple_value`) remain separate; however, some functions include unnecessary stack canary epilogue code bloating their size.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `duffs_device` has excessive forward jumps and nested conditions disrupting flow; `switch_fallthrough` uses goto labels that break linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable copies throughout (`x_local = x` pattern in 20+ functions); `op_div` has redundant zero-check (`if (b == 0) { iVar1 = 0; } if (b != 0) { iVar1 = a / b; }`); stack canary code duplicated across functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic int types preserved correctly, but function pointers use generic `_func_int_int *` typedef instead of proper signatures; some casts like `(ulong)uVar1` in printf calls add noise; signed/unsigned distinctions not always preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`int arr[5]`, `int matrix[3][4]`); function pointer arrays show degradation (`_func_int_int *funcs[3]`); no complex structs in this codebase to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer calls use proper syntax (`(*f)(x)`); some unnecessary casts present (`(ulong)uVar1`); stack canary checks add safety; no obvious unsafe pointer arithmetic or buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: All original source comments explaining purpose, test cases, and logic completely lost; only auto-generated Ghidra headers with addresses remain; warning comments ("WARNING: Removing unreachable block") provide no semantic value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop patterns recognized (for/while/do-while); switch-case patterns often degrade to if-else chains; fall-through switch not properly recognized (uses goto labels); Duff's device completely fails to recognize the unrolled loop pattern, producing convoluted nested conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra flags some issues ("WARNING: Could not recover jumptable", "Removing unreachable block"); stack canary checks noted; however, many semantic anomalies (like lost fall-through intent) not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or return value semantics documented; original test case expectations completely lost; error conditions not explained (e.g., what -1 return means in various functions).
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear with proper names; global variables referenced (`jump_buffer`, `completed_0`); function pointer relationships visible but not explicitly documented; no call graph provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file; no logical grouping by feature level (L1/L2/L3); test functions separate from implementation but helper functions scattered throughout without organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds; external dependencies noted (printf, puts, setjmp/longjmp); stack canary requires proper linking; some Ghidra-specific types (`_func_int_int`) may need definition.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+5+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.76/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects:
+- **All original comments lost** - No documentation explaining function purpose, test cases, or logic intent
+- **Switch statements degraded** - `switch_small`, `switch_large`, `switch_default` converted to nested if-else chains instead of switch constructs
+- **Fall-through switch broken** - `switch_fallthrough` uses goto labels (`LAB_00100fec`) obscuring intentional fall-through semantics
+- **Duff's device unreadable** - Complex nested conditions and goto labels make the unrolled loop pattern completely unrecognizable
+- **Redundant variable copies** - `_local` suffix variables (e.g., `x_local = x`) add noise without semantic value in 20+ functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, maintaining semantic clarity about purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation, test case expectations, and logic explanations makes understanding intent difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve or infer comments** - Detect function patterns and add semantic comments explaining purpose (e.g., "Calculates factorial recursively" for `recursion_factorial`)
+2. **Recover switch statements from jump tables** - Recognize dense if-else chains comparing against constants as switch-case constructs
+3. **Eliminate redundant variable copies** - Detect when `_local` variables are immediate copies of parameters and use parameters directly

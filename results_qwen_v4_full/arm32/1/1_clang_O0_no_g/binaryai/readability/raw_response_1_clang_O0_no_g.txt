@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_4`, `local_8`, `local_c`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly preserved from source (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`). Names accurately reflect functionality and match original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Decimal literals converted to hex (`0x14` instead of `20`, `0xffffffff` instead of `-1`). Some values recoverable but obscures intent compared to original decimal constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts present: `SCARRY4()` overflow checks, `__divsi3()` calls, stack arrays (`local_2c [4]`, `uStack_1c`). Test functions show missing arguments (`sequential_ops()` with no parameters).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic structures recovered well (if/else, for, while, switch). Duff's device shows goto labels (`switchD_00011658_caseD_7`) but logic is traceable. Some while loops converted to for loops appropriately.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source. No excessive inlining or fragmentation. Test functions have parameter issues but structure is preserved.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Duff's device has goto jumps disrupting flow. Some functions use `do-while(true)` patterns instead of cleaner constructs.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments present (`local_8 = param_1;` then reassigned). Duff's device has significant code duplication from fall-through labels.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` types instead of specific sizes. Some functions return `undefined4` instead of `int`. Boolean functions correctly return `bool` (`if_else`, `state_idle`). Function pointers use Ghidra-specific `code *`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`local_2c [4]`, `local_48 [4]`). Function pointer arrays reconstructed. No complex structs in this code to evaluate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts visible (`(code *)param_2`). `SCARRY4` indicates overflow checks but semantics unclear. Function pointer calls use generic types losing signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Control flow patterns recognized (loops, conditionals, switch). Duff's device partially recognized but with goto artifacts. No explicit pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious code. `SCARRY4` calls not explained. Missing arguments in test function calls not flagged as potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite original having clear test expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions have missing arguments. Global variables referenced (`jump_buffer`) without context. Function pointer relationships visible but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. No logical grouping visible. External functions marked appropriately (`<EXTERNAL>::`). No header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains Ghidra-specific types (`code *`, `undefined4`, `__jmp_buf_tag *`). Would require significant modification to compile standalone. External dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+4)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (7+7+6+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (5+7+5)/3   = 5.67  × 0.20 = 1.134
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00  × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.28/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_4`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Test function calls missing arguments** (`sequential_ops()` instead of `sequential_ops(5,7,3)`) indicating decompilation errors
+- **Hex literals obscure intent** (`0xffffffff` instead of `-1`, `0x14` instead of `20`)
+- **Ghidra-specific types** (`undefined4`, `code *`) prevent standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, accurately reflecting each function's purpose and matching original intent exactly.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments despite original having extensive documentation; decompiler provides no confidence indicators or algorithm explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., `local_8` used as accumulator → `sum`)
+2. **Preserve or generate documentation** from available debug info, including function purpose and parameter descriptions
+3. **Fix test function parameter recovery** - missing arguments indicate stack analysis failures that need correction

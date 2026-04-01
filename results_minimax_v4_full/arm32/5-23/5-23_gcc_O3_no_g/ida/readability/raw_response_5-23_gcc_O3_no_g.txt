@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`a1`, `a2`, `v3`, `v4`, `v5`, `v6`). The decompiler uses numbered parameters and local variables with no semantic meaning. For example, in `param_macro_constants`, parameter `a1` should be named `size` based on the original source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Mixed results - some functions have correct names like `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, but many use generic names like `sub_10438`, `init_proc`, `frame_dummy`. The wrapper functions (`call_*`) are well-named, matching source.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Constants like 1024, 64, 512 are correctly recovered but lack symbolic names. Magic numbers appear directly in code (e.g., `return 5 * a1 + 57072;` for `0xDEF0`). The decompiler correctly computed constant expressions but didn't recover the original macro names.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. The `_printf_chk` and `_sync_fetch_and_add_4` are legitimate libc functions, not noise. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with clear if-else structures. The loop in `param_asm_clobber` is properly recovered as a do-while loop. At -O0, the control flow closely matches source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The `call_*` wrapper functions correctly separate caller from callee. Some small functions like `my_func` are properly extracted.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Early returns are used appropriately. The structure is easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. The atomic operation functions are duplicated but that's necessary for the library implementations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type information is partially lost. Parameters use generic `int` instead of specific types. The decompiler uses `_DWORD` for 32-bit integers but loses `size_t`, `uint32_t` distinctions. Function signatures like `int __fastcall param_asm_simd(int *a1, _DWORD *a2, _DWORD *a3)` show inconsistent type naming.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct types are reconstructed. The original source had no complex structs, but the decompiler uses raw pointer arithmetic (e.g., `a3[1] = a1[1] + a2[1]`) instead of recognizing the array semantics.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with no obvious unsafe casts. Pointer arithmetic is used correctly. Minor issues with `void*` handling in some functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled output. The original source had extensive comments explaining macro behavior, inline assembly, and test scenarios - all lost in decompilation. The header notes "Decompiled by IDA Pro" but provides no functional documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Some patterns are recognizable (atomic operations, SIMD vector operations) but not explicitly labeled. The original source's macro expansions are correctly computed but not identified as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+The output correctly flags "FAILED to decompile" for 10 functions (sysconf, mmap, printf_chk, etc.). However, it presents these as import failures rather than explaining why decompilation failed.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+No preconditions, postconditions, or invariants are documented. The original source's error handling (e.g., checking `MAP_FAILED`) is present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Function call relationships are visible in the code but not documented. The `test_preprocessing_features` and `test_asm_features` functions clearly call other functions, but the call graph isn't explicitly stated.
+
+**17. Module Organization:** Score: 6/10  
+Functions are grouped logically by feature (preprocessing functions, asm functions, test functions). However, the file is monolithic with no separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+The code uses standard libc functions and should compile with minimal changes. Dependencies on `libc` are implicit but not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+6+7+8)/4 = 6.0
+L2_avg = (8+7+8+9)/4 = 8.0
+L3_avg = (5+4+7)/3 = 5.33
+L4_avg = (2+5+6+3)/4 = 4.0
+L5_avg = (5+6+7)/3 = 6.0
+
+Overall = (6.0 × 0.30) + (8.0 × 0.25) + (5.33 × 0.20) + 
+          (4.0 × 0.15) + (6.0 × 0.10)
+Overall = 1.8 + 2.0 + 1.066 + 0.6 + 0.6 = 6.066 ≈ 6.1/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects (Bullet List)
+- Variable naming is almost entirely generic (`a1`, `a2`, `v3`, `v4`) - loses all semantic meaning from original source parameter names like `size`, `x`, `y`
+- No comments explaining macro expansions, inline assembly semantics, or test scenarios from original source
+- Type precision is degraded - uses generic `int` and `_DWORD` instead of specific types like `size_t`, `uint32_t`
+- No struct recovery - uses raw pointer arithmetic where original had clear array semantics
+- Cross-reference relationships not documented - caller/callee relationships visible but not explicitly stated
+
+### Best Quality Aspect: Structural Intelligibility (8.0/10)
+Control flow is natural and matches the original source well. At -O0, loops and conditionals are properly recovered. Function decomposition is appropriate with clear single responsibilities.
+
+### Most Needs Improvement: Semantic Transparency (4.0/10)
+No comments are present to explain macro behavior, inline assembly semantics, or algorithm intent. The original source had extensive documentation that is completely lost. Anomaly indication is minimal - only import failures are flagged.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a parameter is compared against 1024 and used as array size, infer `size` or `buffer_size` rather than `a1`
+2. **Recover macro semantics**: When constant expressions like `5 * a1 + 57072` appear, recognize this as `x * 5 + 0xDEF0` and suggest the original macro constant name
+3. **Add semantic comments**: Document what preprocessing macros expanded to, what inline assembly does, and explain non-obvious transformations rather than leaving code without context

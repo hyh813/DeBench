@@ -1,0 +1,199 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses completely generic variable names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`. For example, in `param_strcpy`, parameters are named `a0` and `a1` instead of the semantic names `dst` and `src` from the original. The local variable `dst` is introduced but the return value calculation uses `len` which shadows the earlier assignment. This makes tracking variable purpose nearly impossible across the 1955 lines of decompiled code.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Some functions like `param_strcpy`, `param_strcmp`, `param_memcpy` correctly preserve the original function names, but many others use cryptic addresses like `sub_400c48`, `sub_400fa8`, `sub_400c48`. The signal handler function is named `$a.34` which is completely meaningless. Internal helper functions like `thread_compute`, `thread_sum`, `thread_increment` are reasonably named, but the overall naming strategy is inconsistent between preserved names and auto-generated addresses.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+String literals like `"Value: %d, Name: %s\n"` and `"/etc/passwd"` are correctly preserved. However, error return values use the magic number `4294967295` (which is -1 as unsigned) without explanation. The condition codes like `armg_calculate_condition(66, pid, 0, 0)` are opaque - the value 66 should be explained as a condition code (e.g., "less than zero"). Constants like `0x2a` (42 in decimal) used in return statements are not explained.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+The code contains significant compiler artifacts including:
+- Redundant register assignments: `v0 = v1;` followed by usage of both
+- Excessive type conversions: `*((unsigned int *)&v0[-4 * i])` 
+- Condition calculation functions: `armg_calculate_condition(209, v0, 1, 0)` appearing repeatedly
+- Dead code from register spilling visible in multiple functions
+- The pattern `if ((Not Conv(32I->1I, armg_calculate_condition(...)))) { Goto None }` adds massive noise
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+While basic loops and conditionals are present, the code uses excessive goto statements and confusing conditional expressions. In `param_strcmp`, the logic `if (1 > result) return v5; return 1;` is awkward compared to the clean ternary in source. The condition `armg_calculate_condition(66, pid, 0, 0)` (checking if pid < 0 for fork) obscures the intent. Many functions have deeply nested conditionals with goto labels that make tracing execution difficult.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Functions are appropriately separated and most maintain reasonable size (30-80 lines). The decomposition generally matches the source organization with separate functions for `param_*` operations. However, some functions like `test_system_calls` at 0x401f60 are quite large and could benefit from splitting. The parameter lists are generally reasonable but expose implementation details (e.g., passing `&v1` for thread handles).
+
+### 7. Code Linearization
+**Score: 4/10**
+
+The code frequently disrupts linear reading with forward jumps and goto statements. In `param_fork_exec`, the code jumps between labels `LABEL_401a49`, `LABEL_401a4a` making it hard to follow. Early returns are used but often obscured by condition checks. The pattern of checking conditions then goto-ing to error handlers interrupts the natural flow.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Significant redundancy exists throughout. In `param_strcpy`, `strlen(dst)` is called twice:
+```c
+len = strlen(dst);
+return strlen(dst);
+```
+This is a clear Common Subexpression Elimination (CSE) failure. Similarly, `param_printf` calls `printf` twice:
+```c
+v0 = printf("Value: %d, Name: %s\n", a0, a1);
+return printf("Value: %d, Name: %s\n", a0, a1);
+```
+Many functions show this pattern of computing a value twice.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Types are often imprecise. Parameters declared as `char *a0` in `param_strcpy` should be `const char *` for the source parameter. Return types use `unsigned int` where `int` or `size_t` would be more appropriate (e.g., `strlen` returns `size_t`). The function `param_strlen` has:
+```c
+int param_strlen()
+{
+    char *v0;  // r0  <-- uninitialized parameter!
+    unsigned int len;  // r0
+    len = strlen(v0);
+    return strlen(v0);
+}
+```
+The parameter `v0` is never assigned, showing type information loss.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Some struct recovery is attempted - `FILE` is recognized but empty. The `sockaddr` struct is partially reconstructed:
+```c
+typedef struct sockaddr {
+    unsigned short sin_family;
+    char sa_data[14];
+} sockaddr;
+```
+However, many structures use raw offsets like `*((unsigned int *)&v0.sa_data[10])` instead of proper field access. Thread data structures like `ThreadData` are not recovered - instead raw offsets are used.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Multiple type safety issues exist:
+- Unsafe pointer arithmetic: `ptr[-1 * i]` in multiple functions
+- Incorrect casts: `*((unsigned int *)&v0[-4 * i])` 
+- Uninitialized variables used as parameters (param_strlen)
+- Type-confused pointers: `char v2[24]` used as thread handle storage
+- Buffer access without bounds: `(&v0)[count] = 0` could overflow
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+There are essentially no useful comments in the decompiled code. The only comments are the function headers like `// Function: param_strcpy at 0x4010d8` which are auto-generated metadata, not semantic explanations. No comments explain algorithm intent, non-obvious logic, or decompilation confidence levels.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Some idioms are recognizable - the fork/exec pattern in `param_fork_exec` is identifiable despite the noisy conditionals. The pthread create/join pattern is visible. However, no design patterns or algorithms are explicitly named or documented. The signal handling pattern could be identified but isn't highlighted.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomalies are flagged. The code silently presents potentially incorrect information, such as the uninitialized parameter in `param_strlen`. Indirect calls that couldn't be resolved are not indicated. The condition calculation functions suggest uncertainty but this isn't communicated to the reader.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. Error conditions are handled but not explained - the meaning of return values like `-1`, `-2`, `-3` is not documented. The contract of functions (e.g., "returns length of copied string") is lost.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Function calls are visible but relationships aren't documented. There's no indication of which functions call `param_strcpy` or what callbacks are used. Global variables like `signal_number`, `signal_received` are declared as `extern` but their usage relationships aren't explained.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are grouped logically - standard library functions, system calls, and thread functions are separated. The organization roughly matches the source file structure with test functions grouped together. However, it's a single flat listing rather than organized into logical sections or files.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+The code has many issues preventing compilation:
+- Missing `#include` statements
+- Undefined types like `pthread_t` without includes
+- Incomplete struct definitions
+- The code references many undefined externals
+- Would require significant patching to compile
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 5 + 3) / 4 = 3.5
+L2_avg = (4 + 6 + 4 + 3) / 4 = 4.25
+L3_avg = (4 + 5 + 3) / 3 = 4.0
+L4_avg = (1 + 5 + 2 + 2) / 4 = 2.5
+L5_avg = (3 + 6 + 5) / 3 = 4.67
+
+Overall = (3.5 × 0.30) + (4.25 × 0.25) + (4.0 × 0.20) + (2.5 × 0.15) + (4.67 × 0.10)
+        = 1.05 + 1.0625 + 0.8 + 0.375 + 0.467
+        = 3.755 / 10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects
+
+1. **Variable naming is completely generic**: Parameters `a0`, `a1` and locals `v0`-`v15` make tracking semantics impossible across 1955 lines
+
+2. **Redundant computations not eliminated**: `strlen(dst)` called twice in `param_strcpy`, `printf` called twice in `param_printf` - clear CSE failure
+
+3. **No comments whatsoever**: Zero semantic explanation for algorithms, contracts, or intent
+
+4. **Type precision severely degraded**: Parameters lost `const` qualifiers, `size_t` became `unsigned int`, uninitialized variables used as parameters
+
+5. **Excessive noise from condition calculations**: `armg_calculate_condition(66, pid, 0, 0)` obscures simple "if (pid < 0)" checks
+
+### Best Quality Aspect
+
+**Function Decomposition (6/10)** - Functions are appropriately separated and maintain reasonable size, roughly matching the source organization with separate functions for param_* operations.
+
+### Most Needs Improvement
+
+**Comment Quality (1/10)** - There are essentially no useful comments. The decompiled code provides zero semantic explanation for algorithms, error handling, or decompilation confidence, making it nearly impossible to understand the original intent without referring back to the source.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When a parameter is used as destination in `strcpy`, name it `dst`; when used in `strlen`, name it `str` or `len`. The current `a0`, `a1` approach is unusable.
+
+2. **Eliminate redundant computations**: The decompiler should recognize when `strlen(dst)` is computed, store the result, and reuse it rather than calling it twice in the return statement.
+
+3. **Add semantic comments**: At minimum, document what each function does, what parameters mean, and what return values indicate. Flag uncertain decompilations with comments like "UNCERTAIN: could not resolve indirect call".

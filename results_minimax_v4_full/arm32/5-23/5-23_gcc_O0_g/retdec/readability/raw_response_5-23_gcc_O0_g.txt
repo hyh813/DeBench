@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: The decompiler extensively uses generic names like `v1`, `v2`, `v3` throughout the code (e.g., in `param_asm_clobber`, `param_asm_simd`, `call_asm_simd`). These obscure semantic meaning - `v1` in `param_asm_simd` represents an index, and `v2`/`v3` represent array elements. Only parameter names like `x`, `y`, `z`, `size` are preserved from source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from the source: `param_macro_constants`, `call_asm_basic`, `param_asm_atomic`, `test_preprocessing_features`. The decompiler accurately recovered all 42 function names with their original semantic intent.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are meaningful - `1024`, `512`, `64` from macro expansion are clear; `0xdef0` from `#elif` branch is preserved. However, some magic numbers like `7` (for PROT_READ|PROT_WRITE|PROT_EXEC) and `34` (for MAP_PRIVATE|MAP_ANONYMOUS) lack symbolic names. The string literal handling shows issues - `"\x17\x01"` incorrectly represents `__LINE__`.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean without obvious compiler artifacts like register spilling or debug instrumentation. Minor noise exists in some array initializations (e.g., `{1, 0, 0, 0}` for arrays), but overall the output is readable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops are properly rendered as `while` loops (e.g., `param_asm_clobber`), conditionals use ternary operators appropriately. At `-O0`, the decompiler correctly avoided introducing goto statements. Minor awkwardness in `call_asm_privileged` with chained comparisons.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The decompiler preserved the fine-grained function decomposition from the source. Each small function (`param_macro_constants`, `call_macro_constants`, etc.) remains separate. The 42 functions are appropriately sized with clear single responsibilities, matching the source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom. However, `param_asm_clobber` has a slightly confusing structure with the loop starting mid-function after an initial iteration. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or common subexpression duplication observed. The decompiler correctly avoided duplicating the loop body that was present in the original assembly. Minor redundancy in `call_asm_simd` where `v1` is used but not clearly defined.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: The decompiler uses precise types: `int32_t` for most integers, `uint32_t` for `n` in `param_asm_clobber`, `char*` for strings. However, `mmap` return type is incorrectly cast to `int32_t*` instead of `void*`, and the `result` parameter in `param_asm_simd` loses some precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are properly recovered (e.g., `int32_t arr[5]`, `int32_t a[4]`). No complex struct reconstruction was needed in this code. The decompiler correctly handles array types vs pointer types in most cases.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several type safety issues exist: incorrect pointer arithmetic in `param_asm_simd` using `4 * i + (int32_t)a` instead of proper indexing; the `mmap` return type mismatch (`int32_t*` vs `void*`); the bizarre `"\x17\x01"` cast to `int32_t` for `__LINE__`. These create potential undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: The decompiler provides source file references and address/line ranges (e.g., "From module: /work/src/5-23.c, Address range: 0x1061c - 0x10654"), but lacks explanatory comments about macro semantics, assembly behavior, or algorithm intent. No indication that macros were expanded or that inline assembly was simplified.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops and conditionals are recognized, but the decompiler doesn't identify the macro expansion patterns (e.g., that `SQUARE(x) + MAX(x, y)` was originally a macro). The inline assembly simplifications aren't flagged as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags are present. The `"\x17\x01"` literal (corrupted `__LINE__` value) is presented as valid code without warning. The `call_asm_privileged` with its complex chained comparisons should have been flagged as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The `mmap`/`mprotect` sequences in `param_dynamic_code` and `param_memory_protection` lack any indication of their memory protection semantics.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls (e.g., `call_macro_constants()` calls `param_macro_constants(2048)`). However, the relationship between `param_asm_atomic` and `__sync_fetch_and_add_4` isn't explained, nor is the connection to the atomic operations in the original source.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - preprocessing functions first, then assembly-related functions, then test functions. The global string constants are grouped together. This matches the source file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`). However, it references `unknown_ffff0fc0` which is undefined, and some constructs like array initializations `{1, 0, 0, 0}` may not compile in standard C without extension support.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`, `v2`, `v3` throughout, obscuring semantic meaning (e.g., index, array elements)
+- Type safety issues: `mmap` returns `int32_t*` instead of `void*`, causing potential undefined behavior
+- The `"\x17\x01"` literal incorrectly represents `__LINE__` macro and is cast to `int32_t` - a severe semantic error
+- No anomaly indication for the corrupted builtin macro representation
+- Missing comments explaining macro expansion, inline assembly simplification, and memory protection semantics
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler preserved almost all function names exactly as they appeared in the source, enabling easy navigation and understanding of the code structure.
+
+**Most Needs Improvement:** Anomaly Indication (3/10)  
+The decompiler fails to flag suspicious code patterns. The corrupted `__LINE__` representation, undefined `unknown_ffff0fc0` function reference, and complex chained comparisons in `call_asm_privileged` should all have been flagged as potential issues requiring manual review.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v1` in loop contexts should be named `i` or `index`; `v2`/`v3` accessing array elements should reflect the data being accessed
+2. Add anomaly flags for suspicious literals like `"\x17\x01"` that clearly represent corrupted decompilation of builtin macros
+3. Recover macro semantics by adding comments indicating when code was expanded from macros (e.g., "// Expanded from SQUARE(x) + MAX(x, y)")

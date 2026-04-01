@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generic (`param_1`, `param_2`, `local_8`, `local_c`, `uVar1`, `iVar1`) instead of semantic names like `temp1`, `sum`, `count`, `result` from source. Makes tracking variable purpose difficult across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). Some helper functions have generic names (`FUN_00011030`), but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Decimal constants converted to hex (`0x14`=20, `0x1e`=30, `0x32`=50, `0xffffffff`=-1) without explanation. Magic numbers like `0x3e9` (1001) and `0x65` (101) obscure original intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) added to many functions. Repeated `get_pc_thunk_*` warnings and "Removing unreachable block" notices clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops well-recovered (`for`, `while`, `do-while`). Some switch statements degraded to if-else chains (`switch_small`, `switch_default`). `switch_fallthrough` uses goto labels which is acceptable for fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity preserved well. Helper functions (`double_value`, `triple_value`, `op_add`, `op_sub`) remain separate. No excessive inlining or monolithic functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some goto usage in `switch_fallthrough` (labels `LAB_0001158c`, `LAB_00011594`) and `loop_break` disrupts flow but is semantically correct.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated in ~15 functions add redundancy. Otherwise clean with no significant dead code or duplicate expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int` often becomes `undefined4`, `bool` functions return `undefined4` instead of `bool` (`if_else`, `state_idle`). Function pointers use generic `code *` instead of proper signatures. Some signedness lost (`uint` vs `int`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`local_24[8]`, `local_40[15]`, `local_1c[3]`). No complex structs in this benchmark, but array indexing and initialization patterns preserved well.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(int)local_8`, `(undefined4 *)0x0`). Function pointer calls use generic `code *` type. Stack canary checks add runtime safety but indicate potential issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: All original documentation comments lost. Only decompiler warnings remain ("WARNING: Function...replaced", "Could not recover jumptable"). No algorithm explanations or purpose documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop/conditional patterns recognized. Switch-case patterns partially recognized (some become if-else). No design pattern identification (state machine, callback patterns not named).
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage: "Could not recover jumptable", "Removing unreachable block", "Subroutine does not return" for longjmp. Helps identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original test validation comments (e.g., "输入5,7,3应返回21") completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear. Global variables visible (`jump_buffer`, `completed_1`). Callback relationships visible through `code *` parameters but signature information lost.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All 80 functions in single output file. No header separation. Static functions properly identified (`indirect_recursion_b`, `double_value`). Test functions grouped but not organized by level.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Requires stubs for external functions (`__libc_start_main`, `printf`, `puts`). Compiler-specific constructs (`get_pc_thunk_*`) need handling. Stack canary infrastructure required.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+5+7+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (7+6+6)/3   = 6.33 × 0.10 = 0.63
+
+Overall Score: 5.83/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_8`) instead of semantic names (`a`, `b`, `sum`, `count`)
+- **All original documentation comments lost** - no function purpose or test validation info
+- **Type precision degraded** - `undefined4` used instead of `int`, `bool` return types lost
+- **Decimal literals converted to hex** without explanation (`0x14`, `0x3e9`, `0x65`)
+- **Stack canary noise** repeated across ~15 functions obscures core logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation, test validation comments, and algorithm explanations severely impacts understandability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols when `-g` flag is present (e.g., `local_8` → `sum` in `loop_for_fixed`)
+2. **Preserve and recover source comments** from DWARF debug information when available, especially test validation expectations
+3. **Maintain type fidelity** by using `int` instead of `undefined4` when type can be confidently inferred from operations and debug info

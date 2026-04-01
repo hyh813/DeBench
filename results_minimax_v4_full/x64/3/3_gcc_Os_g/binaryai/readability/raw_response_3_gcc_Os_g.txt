@@ -1,0 +1,163 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler uses completely generic variable names throughout. Parameters are named `param_1`, `param_2`, etc. Local variables use cryptic names like `local_38`, `lVar1`, `iVar2`, `puVar5`, `auStack_18`. For example, in `local_array`, the array `arr[10]` becomes `local_38[10]` with loop counter `lVar1`, completely obscuring that `arr[i] = i * n`. The original source had clear names like `x`, `arr`, `i`, `n`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Most function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `memory_leak`, `double_free`, `heap_overflow`. External library functions are correctly marked with `<EXTERNAL>`. Minor deduction for some internal thunks like `FUN_00101020`.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Multiple magic numbers appear without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x28` (40), `0x1e` (30), `0x32` (50), `0xb` (11). While some like `0x2a` can be inferred from context (e.g., `*param_1 = 0x2a` corresponds to `local = 42`), most are unexplained. The original source had meaningful constants like `n * 2`, `n/2`, array indices.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Significant compiler artifacts pollute the code: stack canary checks (`__stack_chk_fail` with `in_FS_OFFSET`), verbose undefined types (`undefined4`, `undefined8`, `undefined [16]`), complex array declarations like `undefined auVar1 [16]`, and redundant parameter passing in test functions. The `vla_stack` and `alloca_usage` functions contain complex memory allocation scaffolding that obscures the simple logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Core control flow is preserved - loops use `do-while` constructs, conditionals are clear. However, `vla_stack` and `alloca_usage` show complex flow due to stack probe loops for large allocations. At `-O0`, this is unexpected complexity. The `stack_alias` function is completely collapsed to `return 0x14`, losing the pointer aliasing logic entirely.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Good decomposition matching the original. Each test function remains separate: `test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions`. The helper functions like `double_value`, `local_vars`, `heap_basic` are properly extracted. Minor issue: some small functions like `stack_alias` are oversimplified.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Most functions read top-to-bottom. However, `vla_stack` and `alloca_usage` have complex flow with multiple backward jumps for stack probing. The `linked_list_heap` function has nested loops that require careful tracing. Early returns are used appropriately in error handling.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+No significant redundancy in the decompiled logic. Loop unrolling is minimal (the original small loops are preserved). Some dead code exists in complex functions but it's manageable. The main issue is the verbose stack canary handling that adds visual noise.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Type precision is poor. The decompiler uses generic types: `undefined4` (should be `int`), `undefined8` (should be `long` or `void*`), `undefined` (should be `char`). Function signatures are incorrect - `heap_basic` has 4 parameters instead of 1 (`undefined  [16] heap_basic(int param_1,undefined8 param_2,undefined8 param_3,undefined8 param_4)`). The return type `undefined  [16]` is incorrect for functions returning `int`.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+No struct recovery. The original `Point` struct (with fields `x`, `y`) is completely lost - `local_struct` computes `param_1 * 3` directly instead of `p.x + p.y`. The `Node` struct for linked lists is not recovered - `linked_list_heap` uses raw pointer arithmetic with `*(int **)(__ptr + 2)` instead of `node->next`. The `TreeNode` struct is similarly lost.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Some unsafe operations present but manageable. The main issues stem from generic types: pointer arithmetic like `*(int *)((long)__ptr + lVar1 * 4)` is correct but verbose. Function pointer types are generic (`code *`). No `const` correctness. The oversimplified `stack_alias` function has type issues with its return value.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+No useful comments in the decompiled code. Only the header with decompiler info and SHA256 hash is present. No explanation of algorithm logic, no indication of uncertainty, no documentation of what the functions do. The original source had extensive comments explaining each test case.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Some patterns are recognizable but not explicitly named or documented. The linked list creation/traversal/destruction pattern is visible in `linked_list_heap`. The tree creation pattern is visible in `tree_heap_traversal`. However, there's no explicit identification of these as data structure patterns. Memory allocation patterns (malloc/free pairs) are visible but not highlighted.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No indication of anomalies or suspicious code. The `dangling_pointer` function accesses memory after `free()` - this dangerous pattern is presented without warning. The `double_free` function shows the double-free bug but isn't flagged. The `memory_leak` function allocates but doesn't free - not indicated.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No pre/postcondition documentation. The original source had implicit contracts (e.g., `if (arr == NULL) return -1;` for malloc failure handling) but these aren't documented. No indication of what parameters require (e.g., `n > 0` for `alloca_usage`).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are clear through direct invocation. The relationship between `test_stack_memory` and its called functions is visible. However, global variable usage (like `global_counter`, `global_array`) isn't explicitly documented. Callback relationships (like `set_global_callback` and `call_global_callback`) are visible but not explained.
+
+### 17. Module Organization
+**Score: 5/10**
+
+The decompiled output is a single monolithic file with all functions. The original source had logical grouping with section comments (Stack Memory, Heap Memory, Static & Global Memory, Memory Operations). This organization is lost. Static vs. external linkage isn't clearly indicated.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+The code does not compile as-is. Issues include: `undefined` types are not valid C, missing `#include` statements, external functions need declarations, return type `undefined [16]` is invalid. The decompiler output is for analysis only, not compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2 + 8 + 4 + 4) / 4 = 4.50
+Level 2 avg: (6 + 8 + 6 + 7) / 4 = 6.75
+Level 3 avg: (4 + 3 + 5) / 3 = 4.00
+Level 4 avg: (1 + 4 + 2 + 2) / 4 = 2.25
+Level 5 avg: (5 + 5 + 3) / 3 = 4.33
+
+Overall = (4.50 × 0.30) + (6.75 × 0.25) + (4.00 × 0.20) + (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.6875 + 0.80 + 0.3375 + 0.433
+        = 4.61/10
+```
+
+**Overall Readability Score: 4.61/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is completely generic**: `param_1`, `local_38`, `lVar1`, `puVar5` - no semantic meaning, making it impossible to track variable purpose without cross-referencing source.
+
+2. **No struct recovery**: The `Point`, `Node`, and `TreeNode` structs from the original are completely lost, replaced with raw pointer arithmetic that obscures the data structure semantics.
+
+3. **Type precision is severely degraded**: All specific types replaced with `undefined4`, `undefined8`, `undefined`, losing int/char distinction, signed/unsigned, and const correctness.
+
+4. **No comments or documentation**: Zero explanation of algorithm logic, no indication of uncertainty, no recovery of original comments that documented each test case.
+
+5. **Function oversimplification**: `stack_alias` is completely collapsed to `return 0x14`, losing the entire pointer aliasing logic that was the point of that test case.
+
+---
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**: Most function names match the original source exactly, making it easy to identify which function is being analyzed.
+
+---
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: The decompiled code has zero useful comments. At -O0 debug level, the decompiler should be able to recover significantly more semantic information and provide meaningful documentation.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as an array index, name it `index` or `i`. When it's used in size calculations, name it `size` or `count`. The current `param_1`, `local_38` scheme provides no semantic information.
+
+2. **Recover struct/union types from allocation patterns**: When `malloc(sizeof(Point))` is detected, create a struct type. When fields are accessed via offset (e.g., `*(int*)(ptr+8)`), infer field names like `next` or `data` based on usage context.
+
+3. **Add semantic comments for non-trivial logic**: Document what functions do, flag suspicious patterns (dangling pointers, memory leaks, double-free), and indicate uncertainty when indirect calls cannot be resolved. At -O0, there's no optimization excuse for zero documentation.

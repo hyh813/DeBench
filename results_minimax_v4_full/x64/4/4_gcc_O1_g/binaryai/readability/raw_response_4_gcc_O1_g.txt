@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic identifiers like `local_10`, `local_58`, `iVar1`, `uVar1`, `plVar3`. At -O0, the decompiler should infer meaningful names from usage patterns, but instead produces completely generic placeholders that make tracking data flow extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly named (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) and target functions like `cdecl_func`, `stdcall_func`, `varargs_func` recovered accurately. However, some internal functions like `FUN_00101020` remain unnamed, and the external library stubs use placeholder names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `0xf` (15), `0x32` (50), `0x15` (21), `0x2a` (42), `0x40091eb851eb851f` (3.14 as double). The decompiler correctly identifies constant return values but provides no named constants or comments explaining what these values represent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise includes stack canary checks (`__stack_chk_fail`), FS register offset references (`in_FS_OFFSET`), redundant undefined type annotations (`undefined8`, `undefined4`), and external function stubs with recursive calls. However, at -O0 these compiler artifacts are expected and relatively manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is mostly preserved naturally. Loops use do-while constructs, conditionals are readable. Minor awkwardness in `ret_multi_branch` where ternary replaces switch, and some ternary operators could be clearer. Overall flow is traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. Each test function (`call_cdecl`, `call_stdcall`, etc.) is properly separated. Functions are reasonably sized with clear single responsibilities. The decomposition closely mirrors the original 665-line source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with good linearity. Early returns used appropriately. Minor disruptions from stack canary checks and some forward references. Overall flow is not difficult to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant code patterns present, particularly in `test_calling_conventions` where struct initialization uses explicit element-by-element copy (`local_98[0] = local_118[0]` etc.) instead of cleaner aggregate initialization. Loop unrolling present but not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation - integers become generic `int` or `undefined4`, pointers become `long` or `undefined8`. Function pointer in `param_func_ptr` uses generic `code *` instead of proper function signature. `param_double_ptr` incorrectly uses `long *` for what should be `int **`. Mixed use of signed/unsigned (e.g., `uint` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery - `LargeStruct` and `SmallStruct` completely lost. Code uses raw pointer arithmetic with stack offsets like `stack0x00000008`, `stack0x00000088`. The `func_struct_byval` iterates over raw memory instead of accessing named fields. `param_struct_byptr` uses pointer arithmetic rather than struct member access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety issues: incorrect pointer types in `param_double_ptr` (uses `long *` for `int *`), improper function pointer handling in `param_func_ptr` (uses `code *` instead of proper signature), raw pointer arithmetic throughout struct handling. These create potential undefined behavior and memory safety risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source contains extensive comments explaining calling conventions, parameter patterns, and test scenarios - none of this semantic information was recovered. Zero helpful documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No explicit pattern recognition. The decompiler doesn't identify calling convention patterns (cdecl, stdcall, fastcall), parameter passing patterns (by value, by pointer, varargs), or return value patterns. These semantic distinctions from the original source are completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code or potential issues. The decompiler presents all code with equal confidence, including potentially problematic patterns like the indirect function call resolution in `param_func_ptr` or the complex struct handling. No warnings or uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions (e.g., "ptr != NULL" for `func_struct_byptr`), postconditions, and invariants are not documented. The original source's explicit error handling and validation logic is not highlighted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat inferable from code structure (e.g., `test_calling_conventions` calls `varargs_func`), but there's no explicit documentation of call graphs, global variable usage, or callback relationships. Reader must manually trace relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in binary order rather than logical grouping. The original source's clear section organization (Calling Conventions, Parameter Passing, Return Values) is not reflected. Some grouping exists but feels arbitrary rather than intentional.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing declarations: `EVP_PKEY_CTX`, undefined data references (`DAT_00102008`, `DAT_00102030`, etc.), undeclared globals (`completed_0`, `__dso_handle`, `handle1_1`, `handle2_0`). Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic placeholders (`param_1`, `local_58`, `iVar1`) making data flow tracking extremely difficult
+- No struct type recovery - `LargeStruct` and `SmallStruct` completely lost, replaced with raw pointer arithmetic
+- Zero comments or documentation - all semantic information from original source comments lost
+- Type precision severely degraded - uses `undefined4`/`undefined8`, generic `code *` for function pointers, incorrect `long *` for `int **`
+- Build system compatibility failure - code won't compile without extensive fixes for missing declarations
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Function granularity closely matches original source with proper separation of test functions and target functions
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Zero comments in output; all semantic context from original source (calling convention explanations, parameter patterns, test scenarios) completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - at -O0, track how variables are used (arithmetic, indexing, dereferencing) to generate meaningful names like `packet_size` instead of `param_1`
+2. Recover struct/union types from stack access patterns - analyze consecutive memory accesses to reconstruct composite types with field names
+3. Preserve or generate comments explaining semantic patterns - document calling conventions, parameter passing modes, and non-obvious logic that was clear in the original source

@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `result`, `ptr`, `a0`, `a1`, `a2`, `a3`. The original source had meaningful names like `x`, `result`, `str`, `packet_size` - all completely lost. These cryptic names make tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions use the pattern `sub_XXXXXX` (e.g., `sub_401020`, `sub_40102d`). Only a few functions like `param_fake_branch`, `call_fake_branch`, `div_zero_handler`, `segv_handler` were correctly named. The vast majority are auto-generated address-based names with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF), `340282366683253975865241362417122803708` appear without explanation. The original code's `0xDEADBEEF` constant is completely absent (fake branch was eliminated). Some return values like `10`, `20`, `225` are correct but unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: `[D] Unsupported jumpkind` annotations, `CONCAT` operations in expressions, `uint128_t` with SIMD operations like `AddV`, excessive type casts, and dead code fragments. The decompiled output is cluttered with compiler/intermediate representation artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved - if/else, loops, function calls exist. However, the fake branch logic (`if (x*x < 0)`) was completely eliminated by the compiler, losing the original obfuscation intent. Some goto patterns and unusual jumps present. At -O0, more faithful structure expected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are reasonably sized but many tiny wrapper functions exist (e.g., `sub_40102d` just calls `sub_401030`). The original source had 8 test functions plus helpers - decomposition is adequate but not optimal. Some functions like `param_tail_call_optimized` are 80+ lines with complex logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with some forward jumps. The tail call optimization functions have complex nested conditionals that disrupt linear flow. Not terrible but requires effort to trace execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in tail call functions with repeated pattern: `cur += result - 1; v11 = v1; if (v11 != 2) { cur += v11 - 2; ...}`. This loop unrolling is present but not commented or abstracted. Dead code from eliminated fake branches not indicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are imprecise - `unsigned long long` used where `int` would be appropriate (e.g., `param_fake_branch` returns `int` but decompiled as `unsigned int`). Parameters like `a0` typed as `unsigned long` instead of `int`. Mix of signed/unsigned creates confusion. No `int32_t`/`uint64_t` precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. The original source had bitfields in `param_implementation_defined` but decompiled shows only primitive operations. The `jmp_buffer` is declared as `extern unsigned long long` instead of proper `jmp_buf` type. All composite types lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: pointer/integer casts throughout, `&v0` taking address of local variable, `strncpy` with buffer size 31 on 2-byte declared buffer (`char dst[2]`). Some operations could cause undefined behavior. Not terrible but room for improvement.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output whatsoever. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), test expectations, and algorithm explanations. All completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (gcd algorithm in `param_opaque_predicate`, string decryption loop) but not explicitly named or documented. The obfuscation patterns (fake branch, opaque predicate, instruction substitution) are not identified as such - just appears as dead code or simplified math.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] Unsupported jumpkind Ijk_NoDecode`. However, the elimination of the fake branch logic is not flagged as an anomaly. No indication that control flow was optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original source had no formal contracts but the test expectations (e.g., "期望: 10") are not captured. No documentation of error handling or signal handler contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear (e.g., `call_fake_branch` calls `param_fake_branch`). However, global variable usage is unclear - `extern unsigned long long g_403fe8` etc. have no documentation of purpose. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are in address order, not logical grouping. The original grouped by category (obfuscation, optimization, edge cases) but this organization is lost. Standard library functions (`deregister_tm_clones`, `register_tm_clones`) mixed with test functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many `extern` declarations requiring stubs. The `uint128_t` type and `AddV` function are not standard. Would require significant patching to compile. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable names**: All generic (`v0`, `v1`, `a0`, `result`) - original semantic names completely lost
+- **Function names**: Most use `sub_XXXXXX` pattern with no semantic meaning
+- **No comments**: Original source had extensive documentation explaining obfuscation techniques - all lost
+- **Type precision**: Uses `unsigned long long` where `int` appropriate; no `int32_t`/`uint64_t`
+- **Fake branch elimination**: The core obfuscation feature (`if (x*x < 0)`) was eliminated by compiler but not flagged as anomaly
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)
+- Basic control structures (if/else, loops, function calls) are preserved and recognizable
+- The decompiler correctly identified function boundaries and call relationships
+
+### Most Needs Improvement: Comment Quality & Assertion Recovery (1/10)
+- Zero comments in output; original had extensive documentation
+- No contract/precondition/postcondition recovery
+- No indication of what the code is supposed to do or test
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Use data flow analysis to suggest names like `x` for function parameters used in arithmetic, `result` for return value assignments, `ptr` for pointer variables
+2. **Recover comments from debug symbols**: The source was compiled with `-g` (debug info); extract comment strings from DWARF data
+3. **Flag optimized-away code**: When decompiling at -O0, flag control flow that appears eliminated (like the fake branch) as potential anomaly for analyst review

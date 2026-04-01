@@ -1,0 +1,102 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`...`v37` in `test_calling_conventions`), though some semantic names preserved (`sum`, `count`, `test_str`, `large`). Original source had meaningful names like `packet_size` equivalents lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some runtime helpers use generic names (`sub_40C`, `call_weak_fn`) but test functions match source.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation (loop bounds `15`, `16`, `0xFFFFFFFF` mask). Format strings renamed to `aCallL206`, `aCallL207` losing semantic meaning from original `"CALL-L2-06: varargs_func..."`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts visible: register annotations (`// r0`, `// [sp+4h]`), type casts (`__int64`, `__fastcall`), and stack variable comments. Some redundant temporaries (`v1 = v0` patterns) present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural for/while loops and if-else structures. `test_calling_conventions` has awkward do-while memcpy loop that could be simplified. At `-O0`, flow should match source closely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized and separated. Each test function is cohesive. `test_calling_conventions` is large (200+ lines) but matches source structure appropriately.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in complex functions (`test_calling_conventions` memcpy loop). Early returns used appropriately in pointer check functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments present (`v12 = v20`, `v13 = v18` in memcpy). The struct copy loop in `test_calling_conventions` is overly verbose compared to simple `memcpy` or assignment.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types correct (int, char*, double). Some degradation: `__int64` instead of `long long`, `_DWORD` in varargs. Function pointer types recovered (`func_ptr_t`) but some signatures altered (`ret_small_struct` has extra `__return_ptr` parameter).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs `LargeStruct`, `SmallStruct`, `BigStruct` recovered with field names. However, struct-by-value returns use hidden pointer pattern (`__return_ptr retstr`) obscuring original semantics. Field access `s.data[i]` preserved correctly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(_DWORD *)v11`, `(__int64 *)`, `(char *)v19`. Pointer arithmetic visible in memcpy loop. No buffer overflow warnings despite array operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments, mostly auto-generated stack/register info. No algorithm explanations. Original source had extensive comments (`// CALL-L1-01: cdecl 调用约定 ⭐⭐`) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern recognized (`va_start`, `va_arg`, `va_end`). Loop patterns identified. No design pattern identification. Calling convention attributes (`__fastcall`) present but not explained.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "positive sp value has been detected", "local variable allocation has failed". Failed decompilations listed at end (`__imp___libc_start_main`). Could be more specific about confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks present (`if (!p) return -1`) but not documented as contracts. Original source's test expectations completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variable references present but not documented (`dword_70`, `byte_4`). No call graph documentation. Callback relationships (`callback_func`) preserved.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No clear module separation visible. Related test functions grouped but no header file structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile (`__imp_printf`, `__imp_strlen`, etc.). Would require significant stubbing to compile. Platform-specific attributes (`__fastcall`) may not port.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (4+5+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.17/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Variable `v0`-`v37`** should be named semantically (e.g., `cdecl_result`, `stdcall_result`) based on usage in `test_calling_conventions`
+- **Format strings renamed** to `aCallL206`, `aCallL207` losing test case identification from original `"CALL-L2-06: varargs_func..."`
+- **Struct return convention obscured** - `ret_small_struct` uses hidden `__return_ptr` parameter not present in source
+- **Memcpy loop overly complex** - 30+ line do-while instead of simple assignment or library call
+- **7 external functions failed** to decompile requiring manual stubbing (`__imp_printf`, `__imp_strlen`, etc.)
+- **All source comments lost** - original had extensive documentation explaining each test case purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation recovered; test expectations and validation logic completely absent from decompiled output
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage context** - Variables used in printf format strings should inherit semantic names from the format (e.g., `sum` from `"varargs_func(5, 1-5) = %d"`)
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments into decompiled output
+3. **Simplify struct copy patterns** - Recognize common memcpy/struct assignment patterns and emit clean C assignments instead of byte-by-byte loops

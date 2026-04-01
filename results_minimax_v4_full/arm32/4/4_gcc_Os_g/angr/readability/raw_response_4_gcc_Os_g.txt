@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `a3`, `idx`, `ptr`, `result` throughout. For example, in `cdecl_func`, parameters are named `a0` and `a1` instead of the original `a` and `b`. The variable `v0` in `varargs_func` should be named `args` or `ap` based on its usage as a va_list. No semantic meaning is conveyed.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retain original names (`cdecl_func`, `func_a`, `func_b`, `callback_func`, `test_calling_conventions`), but many are named with address-based identifiers like `sub_103e8`, `sub_104ac`, `sub_109b8`. The naming is inconsistent - some test functions are recovered correctly while infrastructure functions use cryptic names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Format string addresses like `0x1148c`, `0x1154d`, `0x11575` are used directly without explanation. Magic numbers like `4294967295` (0xFFFFFFFF) for -1 are unexplained. The value `15` appears in multiple places without context that it represents `cdecl_func(5, 10)`. No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: stack canary checks (`GLIBC_2.4::__stack_chk_guard`), condition code calculations (`armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v`), spurious variable declarations like `char v0; // [bp-0x8], Other Possible Types: unsigned int`, and complex floating-point helper functions that obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive use of goto statements (e.g., `goto LABEL_104d0`, `goto LABEL_10a20`). The `arm_aapcs_func` shows awkward control flow with stack parameter access via `*((int *)&v0)`. Some simple functions like `call_cdecl` are correctly inlined to return constants, but complex functions like `ret_multi_branch` have convoluted conditional chains that are hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is mostly preserved - each test function remains separate. However, some issues: `test_calling_conventions` is 195 lines mixing many test cases; `call_ptr_array` includes stack setup logic that should be in the caller. The parameter list for `func_struct_byval` exposes 16 individual parameters instead of a struct.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Many forward jumps disrupt flow. In `varargs_func`, the loop uses `while(true)` with break conditions instead of natural `for` loop. The `test_calling_conventions` function has deeply nested loops and goto statements that make linear reading difficult. Early returns are used but mixed with goto patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy in `test_calling_conventions` - the loop initializing `large.data[0..15]` is manually unrolled in the decompilation with complex pointer arithmetic. Duplicate calls like `param_varargs(4, 10, 20, 30)` appear twice in `call_varargs_param`. Stack frame setup code is duplicated across functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost all types are generic `unsigned int` or `char*`. The original `int` parameters become `unsigned int`. No `int32_t`, `size_t`, or other specific types. Function signatures like `int (*callback)(int)` become `unsigned int a0` without proper function pointer typing. Const correctness is lost - `const char *str` becomes `char *a0`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct recovery. The `LargeStruct` (128 bytes) is passed as 16 separate `unsigned int` parameters. The `SmallStruct` is not recovered in `func_struct_byptr` - instead there's confusing conditional code with `armg_calculate_condition`. The `TestIntPair` struct is not recovered in `param_complex_cast`. All composite types are lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic in `func_struct_byval` using `ptr + 2`, casting between `char*` and `int*` without proper alignment, incorrect pointer arithmetic in `param_ptr_array` using `a0 + v2 * 4`. The `param_double_ptr` uses a typedef'd struct that doesn't match the original. No bounds checking is indicated.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in the decompiled code. Only auto-generated register location comments like `// r0`, `// [bp-0x4]` appear. No explanation of algorithm intent, no recovery of original comments from source. The format string addresses are not identified as printf format strings.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognized but not named. The varargs handling in `varargs_func` is partially recognized but uses raw pointer arithmetic instead of va_list/va_arg idioms. The callback pattern in `param_func_ptr` correctly calls `callback_func` but doesn't identify it as a function pointer parameter. No design patterns identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of anomalies. The `func_struct_byptr` has completely broken decompilation with nonsensical conditionals (`if ((vvar_0 == 0x0<32>)) { Goto None }`) but no warning. The `param_complex_cast` has similar issues with `vvar_1` but no anomaly flag. Unresolved indirect calls are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. Preconditions like `ptr != NULL` in `func_struct_byptr` are not documented. The `param_double_ptr` null-check behavior is not explained. Postconditions are not indicated anywhere. The source code's explicit error handling (-1 returns) is present but undocumented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are somewhat visible (e.g., `call_cdecl` calls `cdecl_func`), but not documented. Global variable usage is unclear - `GLIBC_2.4::__stack_chk_guard` appears without explanation. Callback relationships (callback_func → param_func_ptr) are not documented. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by type (test functions, helper functions, libc functions) but the organization is arbitrary. The original source's logical sections (calling conventions, parameter passing, return values) are not reflected in the decompiled output structure. Static functions are not distinguished from extern functions.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile as-is. Many `extern` declarations for undefined symbols (`GLIBC_2.4::__stack_chk_guard`, `handle1.1`, `handle2.0`). The `armg_calculate_condition` and similar functions are not defined. Format string handling is broken. Significant patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`, `a0`, `a1`, `idx`, `ptr`) with no semantic meaning
+- No struct/union recovery - `LargeStruct` passed as 16 separate parameters, `SmallStruct` lost entirely
+- Severe noise from stack canaries, condition code calculations, and register tracking comments
+- `func_struct_byptr` has completely broken decompilation with nonsensical conditionals and no anomaly flag
+- No comments explaining any logic - format strings, algorithm intent, or contracts are undocumented
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Function granularity mostly preserved; test functions remain separate and identifiable
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)  
+- All struct types are lost; the decompiler produces 16 separate parameters for a 128-byte struct instead of recovering the struct definition
+
+**Top 3 Recommendations:**
+1. Recover struct definitions from stack layout and parameter passing patterns instead of expanding to individual parameters
+2. Replace generic variable names (v0, a0, idx) with semantic names inferred from usage patterns and source variable names
+3. Add comments explaining format strings, algorithm intent, and flag anomalies like the broken `func_struct_byptr` decompilation

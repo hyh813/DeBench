@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `uVar1`, and `lVar1`. For example, in `cdecl_func`, parameters `a` and `b` are lost to `param_1` and `param_2`, offering no semantic hint.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `cdecl_func`, `test_calling_conventions`, `main`), matching the original source exactly.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: Integer constants are represented in Hex (e.g., `0xf` for 15, `0x2a` for 42) rather than the decimal used in the source. While accurate, this adds a translation step for human readers checking simple math.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is polluted with Ghidra-specific artifacts like `undefined8`, `undefined4`, and `CONCAT44` macros (e.g., in `ret_large_struct`), which obscure the underlying C logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompilation of `varargs_func` is a disaster, replacing a simple `for` loop with nested `do-while` structures and manual stack pointer arithmetic (`iVar2 = -0x38`), making the logic nearly unrecognizable.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source. There is no inlining or outlining, which is correct for `-O0` code, preserving the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: Aside from the complex `varargs` reconstruction, most functions read linearly from top to bottom with standard returns, matching the source flow well.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but the `varargs` reconstruction introduces redundant loop logic that doesn't exist in the source, slightly cluttering the view.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Return types are frequently degraded to `undefined8` (e.g., `main`, `call_cdecl`) instead of `int`. Structs passed by value (e.g., `LargeStruct`) are demoted to pointers (`long *`), losing type information.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct definitions are not recovered in function signatures. `func_struct_byval` takes `long *param_1` instead of `LargeStruct s`, and `ret_small_struct` returns two separate `ulong` parameters instead of a struct value.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined` types removes type safety guarantees. However, pointer arithmetic in `param_ptr_array` is handled reasonably well as `long` arithmetic on ARM64.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to auto-generated warnings like "WARNING: Removing unreachable block" or "WARNING: Globals starting with '_' overlap...". There are no semantic comments explaining the logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler completely failed to recognize the `va_list`/`stdarg` idiom in `varargs_func`, representing it as raw stack manipulation. It also failed to recognize the "Struct Return" idiom, splitting it into registers.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra correctly flags unreachable blocks and overlapping globals, which is helpful for understanding compiler artifacts, though it doesn't flag the semantic loss of the `varargs` pattern.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., `param_3 != NULL` checks in source are just `if` statements in decompiled code) or postconditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `test_calling_conventions` and its sub-functions is obvious.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order (mostly address order, which correlates with source order here), and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without significant modification due to `undefined` types, `CONCAT44` macros, and missing struct definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable `param_1` in `cdecl_func` should be named `a` (or at least `int_a`) to reflect source semantics.
+- Control flow in `varargs_func` is obfuscated into nested loops instead of a standard `for` loop with `va_arg`.
+- Struct return values in `ret_small_struct` are split into `ulong` parameters instead of a `struct SmallPoint` return type.
+- Return types like `undefined8` in `main` and `call_cdecl` should be `int`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Symbols were preserved in the binary, allowing perfect recovery of function names like `cdecl_func` and `test_calling_conventions`.
+
+**Most Needs Improvement:** Idiom Recognition (scored 2/10)
+- The failure to recognize standard C idioms like `va_list` (varargs) and struct passing by value makes the decompiled code look significantly more complex and low-level than the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for `va_list` stack walking to reconstruct `for` loops with `va_arg` instead of raw pointer arithmetic.
+2. Improve type inference for return values by analyzing register usage (e.g., W0 register implies `int` return, not `undefined8`).
+3. Enhance composite type recovery to reassemble split register returns or hidden pointer arguments back into struct definitions.

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `local_8`, `param_1`) with no semantic meaning. At `-O0` with debug symbols, the decompiler should recover names like `value`, `size`, `capture_by_value` but fails completely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions preserve original names (`test_cpp_member_func`, `test_cpp_virtual_func`), but compiler-generated code is mangled (`test_cpp_lambda()::{lambda(int)#1}::operator__`, `template_max_int_`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` (getClassID) and `0x1f` (name buffer size) appear without explanation. String literals reference external data (`&DAT_001045e8`) instead of showing actual content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Every function contains stack canary boilerplate (`local_8 = ___stack_chk_guard`...`__stack_chk_fail`). Compiler initialization functions (`__do_global_dtors_aux`, `register_tm_clones`) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but exception handling uses goto labels (`LAB_00102620`, `LAB_00102664`). Virtual calls use awkward indirect syntax: `(***(code ***)param_1)(param_1,param_2)`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable, but smart pointer implementation explodes into 30+ helper functions (`std::__uniq_ptr_impl`, `std::_Tuple_impl`, `std::_Head_base`) that obscure the original simple code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but RTTI and exception handling introduce disruptive forward jumps. Stack canary checks add conditional branches at every function exit.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code repeats identically in every function. Template instantiations create duplicate code (`template_max_int_`, `template_max_double_`). Virtual table setup repeats in each constructor.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recover correctly (`int`, `double`), but many degrade to `undefined4`, `undefined8`, `void*`. Template types become mangled (`Container_int_`, `unique_ptr_int_test_cpp_smart_ptr_____lambda_int___1__`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct definitions with named fields. All class access uses offset arithmetic: `*(int *)this`, `*(int *)(this + 4)`, `*(undefined ***)this`. Inheritance visible only through constructor call chains.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(undefined4 *)`, `(long *)`, `(type *)`, `(code ***)`. Pointer arithmetic on class objects (`this + 8`, `this + 0x10`) with no bounds checking. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only a header comment with SHA256 hash. Zero comments explaining algorithm logic, non-obvious patterns, or decompilation confidence. No API documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns not identified. Virtual function calls visible but not labeled as vtable dispatch. RAII patterns in smart pointers not explained. Exception handling mechanism undocumented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for uncertain recovery. Indirect calls not marked as potentially incorrect. Stack canary checks present but not explained as compiler artifacts. No confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` checks not explained). No postconditions inferred. Exception safety not mentioned. Invariants completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible through vtable access patterns. Inheritance relationships visible through constructor calls but no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping comments. External functions listed separately at top. No namespace structure preserved from C++ source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References many external functions requiring stubs (`operator_new`, `__cxa_throw`, `__dynamic_cast`). Type definitions missing. Would require significant work to compile standalone. C++ runtime dependencies unclear.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 7 + 5 + 4) / 4 = 4.75
+Level 2 Average: (6 + 7 + 6 + 5) / 4 = 6.00
+Level 3 Average: (5 + 4 + 4) / 3 = 4.33
+Level 4 Average: (2 + 3 + 3 + 2) / 4 = 2.50
+Level 5 Average: (5 + 5 + 4) / 3 = 4.67
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (4.33 × 0.20) + (2.50 × 0.15) + (4.67 × 0.10)
+        = 1.425 + 1.500 + 0.866 + 0.375 + 0.467
+        = 4.63/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Variable `iVar1`, `local_8` should be named semantically** (e.g., `result`, `stack_guard`) based on usage patterns and debug symbols available at -O0
+- **No struct/class field names recovered** - all access via offset arithmetic (`*(int *)(this + 4)`) loses all semantic meaning
+- **Zero comments explaining C++ idioms** - virtual dispatch, RAII, exception handling completely undocumented
+- **Stack canary boilerplate in every function** obscures actual logic and should be filtered or commented
+- **Smart pointer implementation exploded** into 30+ helper functions making simple code unreadable
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined test functions and class methods preserved their original names accurately, making high-level navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding C++ semantics (virtual tables, exception handling, RAII) extremely difficult for analysts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols at -O0** to recover original variable names from DWARF information instead of generating generic `iVar1`, `local_8` names
+2. **Recover struct/class definitions with named fields** from type information rather than emitting offset-based pointer arithmetic throughout
+3. **Add semantic annotations for C++ patterns** - label vtable calls, mark RAII regions, document exception handling flow, and explain compiler artifacts like stack canaries

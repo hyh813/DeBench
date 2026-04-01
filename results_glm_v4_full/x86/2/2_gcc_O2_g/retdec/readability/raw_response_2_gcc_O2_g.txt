@@ -1,0 +1,95 @@
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality (3/10)
+**Justification:** The decompiler relies exclusively on generic names like `a1`, `v1`, `v2`, `v3`, and `result`. For example, in `process_int`, the parameter is `a1` and the return is `result`, whereas the source uses `x`. In `array_1d_stack`, `a1` represents the array pointer and `a2` the count, losing the semantic clarity of `arr` and `n`.
+
+#### 2. Function Naming Quality (9/10)
+**Justification:** The decompiler successfully preserves the original function names exactly (e.g., `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `binary_tree_sum`). This allows for easy cross-referencing with the source code and maintains the semantic intent of the functions.
+
+#### 3. Literal Clarity (4/10)
+**Justification:** String literals are represented as offsets from a base address (e.g., `(v1 + 0x1c5d)`), which obscures the actual string content. Magic numbers like `44` (struct size) and `4` (pointer increment) appear without explanation, making it hard to understand the logic behind these values.
+
+#### 4. Noise Reduction (6/10)
+**Justification:** The output is cluttered with runtime artifacts such as `__x86_get_pc_thunk_ax`, `__readgsdword`, and `__stack_chk_fail_local`. While these are necessary for the binary to run, they significantly distract from the actual logic of the target program.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness (7/10)
+**Justification:** Most functions exhibit natural control flow with standard `while` loops and `if` statements. However, the `binary_tree_sum` function is a catastrophic failure; it is decompiled as a massive, inlined, non-recursive loop nest (approx. 500 lines) that completely obscures the recursive logic of the original source.
+
+#### 6. Function Decomposition (8/10)
+**Justification:** The functions are generally well-separated and cohesive. The issue lies in the `binary_tree_sum` function, which appears to have inlined the recursive logic into a monolithic block, violating the principle of appropriate granularity.
+
+#### 7. Code Linearization (7/10)
+Justification:** Most functions read top-to-bottom with clear entry and exit points. The `binary_tree_sum` function is the exception, containing deep nesting and jumps that make it nearly impossible to read linearly.
+
+#### 8. Redundancy Elimination (7/10)
+**Justification:** The `binary_tree_sum` function contains massive redundancy due to the decompiler's failure to recognize recursion, resulting in repeated code blocks. Other functions are relatively clean, but this specific failure significantly impacts the overall score.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision (7/10)
+**Score: 7/10**
+**Justification:** Basic types are accurate (`int32_t`, `float32_t`, `float64_t`, `float80_t`). However, composite types are degraded to raw pointers, and the distinction between `int` and `long` is lost (both become `int32_t`).
+
+#### 10. Composite Type Recovery (2/10)
+**Justification:** Struct definitions are completely missing. Accesses are performed via raw pointer arithmetic (e.g., `*(int32_t *)a1 + 4`), which makes it impossible to understand the data layout without referring back to the source.
+
+#### 11. Type Safety (8/10)
+**Justification:** No unsafe casts are observed in the simple functions. Pointer arithmetic is explicit and correct. The massive `binary_tree_sum` function is logically unsafe due to its complexity, but this is a decompiler failure rather than a type safety issue in the source.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence (2/10)
+**Justification:** The decompiled code is almost entirely devoid of comments. It only includes address ranges and line ranges, providing no explanation of the logic, especially for complex algorithms like the tree traversal.
+
+#### 13. Idiom Recognition (5/10)
+**Score: 5/10**
+**Justification:** Simple patterns (loops, arithmetic, pointer arithmetic) are clear. However, the recursive tree traversal idiom is completely lost in the `binary_tree_sum` function, which is flattened into a loop nest.
+
+#### 14. Anomaly Indication (4/10)
+**Justification:** The `binary_tree_sum` function is a major anomaly. It is decompiled as a massive, inlined, non-recursive loop nest, which is clearly incorrect. The decompiler flags this as a recursive function but fails to reconstruct the logic.
+
+#### 15. Assertion & Contract Recovery (1/10)
+**Justification:** No contracts or preconditions are visible. The code lacks any indication of input constraints (e.g., `ptr != NULL` checks are missing).
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity (8/10)
+**Justification:** Function names match the source, and calls are visible. The relationships are mostly clear through naming and structure, despite the poor variable names.
+
+#### 17. Module Organization (7/10)
+**Justification:** Functions are listed in roughly the same order as source. The massive `binary_tree_sum` function disrupts the organization, but the rest of the code is reasonably organized.
+
+#### 18. Build System Compatibility (6/10)
+**Justification:** The code includes standard headers (`stdio.h`, `stdint.h`) and function prototypes. It might compile, but the `binary_tree_sum` logic is likely buggy or hard to maintain due to its complexity.
+
+---
+
+### FINAL SUMMARY
+
+### Overall Readability Score: 5.75/10
+
+**Critical Defects:**
+1.  **Recursive Logic Destruction:** The `binary_tree_sum` function is decompiled as a massive, inlined, non-recursive loop nest (approx. 500 lines), completely losing the recursive logic.
+2.  **Variable Naming:** Generic names (`a1`, `v1`, `v2`) are used everywhere, losing semantic context (e.g., `x`, `a`, `b`, `sum`).
+3.  **Missing Struct Definitions:** Struct fields are accessed via raw offsets (e.g., `*(int32_t *)a1 + 4`), making it hard to understand the data layout.
+4.  **Lack of Comments:** The decompiled code lacks comments explaining logic, especially for complex algorithms like the tree traversal.
+5.  **Runtime Noise:** Boilerplate code (`__x86_get_pc_thunk_ax`, `__readgsdword`) clutters the output.
+
+**Best Quality Aspect:** **Function Naming (9/10)**. The decompiler successfully preserved the original function names (e.g., `process_char`, `array_1d_stack`, `ptr_single`), which is crucial for navigation.
+
+**Most Needs Improvement:** **Composite Type Recovery (2/10)**. The decompiler failed to reconstruct struct definitions, relying on raw pointer arithmetic (`*(int32_t *)a1 + 4`), which makes understanding data structures extremely difficult.
+
+**Top 3 Recommendations:**
+1.  **Improve Recursive Logic Recovery:** The decompiler should detect recursive patterns and reconstruct them as such, rather than unrolling them into massive loop nests.
+2.  **Enhanced Variable Naming:** Use semantic inference to rename variables based on their usage (e.g., `a1` -> `root`, `v1` -> `sum`).
+3.  **Reconstruct Structs:** Analyze access patterns to reconstruct struct definitions and replace raw offsets with field names.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are exclusively generic names like `param_1`, `local_b8`, and `in_stack_00000010`, failing to recover semantic names like `count`, `seed`, or `sum` used in the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names such as `cdecl_func`, `test_calling_conventions`, and `ret_large_struct` match the original source exactly, indicating excellent symbol recovery.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with opaque pointers (e.g., `&DAT_0010238a`), and while hex constants like `0xf` are accurate, they lack the context of the original decimal values or named constants.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The decompilation of `varargs_func` exposes low-level stack pointer arithmetic (`local_d8`, `local_d0`) and array indexing (`local_b8`) that obscures the high-level `va_list` logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally linear and readable, but `varargs_func` uses a complex `do-while` loop with manual pointer arithmetic instead of a standard iterator pattern.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler perfectly maps 1:1 to the original source functions without inlining or outlining artifacts, maintaining the exact modularity of the test suite.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal forward jumps or spaghetti logic, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The loop in `ret_large_struct` is fully unrolled into 16 separate assignment statements (`param_1[0]` through `param_1[0xf]`), significantly degrading readability compared to the original `for` loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Return types for simple functions like `call_cdecl` are incorrectly identified as `undefined8` instead of `int`, and parameter types in `func_mixed_args` are reordered or imprecise (e.g., `double` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Large structures passed by value (e.g., `LargeStruct` in `func_struct_byval`) are completely disintegrated into a void function with a long list of integer stack arguments (`in_stack_00000010`), losing all structural context.
+
+**11. Type Safety:** Score: 6/10
+Justification: While generally safe, the use of `undefined8` and the casting of stack offsets to pointers in `varargs_func` (e.g., `(int *)((long)local_b8 + uVar3)`) introduces type confusion not present in the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the rich documentation explaining calling conventions and test scenarios in the source is entirely absent.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The standard `va_list`/`va_arg` idiom in `varargs_func` is not recognized; instead, it is presented as raw stack walking, obscuring the variable argument pattern.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the "hidden pointer" parameter in `ret_large_struct` (the first argument `param_1` is actually the return buffer address) or the struct splitting in `func_struct_byval`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement that `param_1` in `param_double_ptr` be non-null is not explicitly stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved accurately to their correct targets (e.g., `cdecl_func` calls are clear), and the relationship between test functions and their implementation is preserved.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically in the output, matching the source file's organization of calling conventions, parameter passing, and return values.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to `undefined8` types, references to undefined global data labels (`DAT_...`), and missing structure definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `local_b8`), losing all semantic meaning.
+- Large structure parameters are exploded into individual stack arguments, destroying the data structure view.
+- The `va_list` abstraction is lost, replaced by complex pointer arithmetic on stack offsets.
+- Loops are unrolled (e.g., in `ret_large_struct`), making the code verbose and harder to read.
+- String literals are replaced with data pointers (`&DAT_...`), obscuring the actual text being printed.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names, making navigation and high-level understanding trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct `LargeStruct` and `SmallStruct` parameters, instead showing them as lists of disjointed integers, is the single biggest barrier to understanding the data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to aggregate stack-based integer parameters back into structure types when they are accessed contiguously.
+2. Detect and re-roll unrolled assignment loops (e.g., `arr[i] = val + i`) back into iterative `for` loops to improve conciseness.
+3. Recover `va_list` idioms by recognizing standard stack-walking patterns for variable argument functions and replacing them with `va_arg` macros.

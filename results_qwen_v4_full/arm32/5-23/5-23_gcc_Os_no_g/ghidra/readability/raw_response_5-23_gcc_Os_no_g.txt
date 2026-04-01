@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_20` throughout; original source had meaningful names like `size`, `counter`, `increment`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`) matching original source exactly, making navigation straightforward.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: All constants converted to hex magic numbers (`0x401` instead of `MAX_SIZE`, `0xdef0` instead of platform constant, `0x1e` for `_SC_PAGESIZE`); no symbolic constant recovery attempted.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from `__printf_chk` wrappers, `__stack_chk_fail` calls, and dozens of `__sync_*` helper functions; core logic remains readable despite artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well recovered (if-else, for loops, do-while); `param_asm_clobber` correctly shows for-loop from assembly; natural C patterns preserved.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with single responsibility; however, excessive `__sync_*` helper function proliferation (20+ variants) creates fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; stack check epilogues at function ends (`if (local_c != 0) __stack_chk_fail()`) disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Significant redundancy in `__sync_*` functions (same pattern for 1/2/4 byte variants); constant folding eliminated some original structure (e.g., `call_macro_constants` returns `0x40` directly).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined1` types; generic `int` instead of `int32_t`; `param_asm_atomic` takes `undefined4` for pointer parameter losing type information.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union definitions recovered; arrays handled as pointer arithmetic (`*(int *)(param_1 + iVar2 * 4)`); complete loss of composite type semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `undefined4` for pointers, implicit casts throughout, `param_stringize` signature changed from `(int value)` to `(void)` losing parameter entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block"); no algorithm explanations, no parameter documentation, no semantic recovery comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro semantics completely lost through constant folding (`ADD_16(x)` became `x + 0x10`); no pattern identification for atomic operations or assembly patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present for unreachable blocks and non-returning subroutines; `__sync_fetch_and_add_4` implementation shows uncertainty with indirect call pattern.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; error conditions not documented; `mmap` failure paths present but no contract explanation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names; global variables visible (`global_var`, `completed_0`); no call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping comments; static functions not properly scoped; no header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Cannot compile as-is: `undefined4` types invalid in C, `__printf_chk` requires specific headers, `__sync_*` builtins need implementation, significant patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+3+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (8+7+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (3+3+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.05/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `uVar1`) losing all semantic meaning from original source
+- **All constants converted to hex magic numbers** (`0x401`, `0xdef0`, `0x1e`) with no symbolic recovery
+- **Invalid C types** (`undefined4`, `undefined1`) prevent standalone compilation
+- **No struct/union recovery** - all composite types lost to pointer arithmetic
+- **Macro semantics lost** through aggressive constant folding (e.g., `ADD_16(x)` → `x + 0x10`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, enabling easy navigation and understanding of program structure.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No precondition, postcondition, or error condition documentation recovered; critical for understanding function behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant-to-symbol mapping** - Cross-reference magic numbers against common system constants (`_SC_PAGESIZE`, `PROT_*`, `MAP_*`) and suggest named replacements.
+2. **Recover variable semantics from usage patterns** - Analyze how variables are used (size comparisons, loop counters, pointers) to suggest meaningful names like `page_size`, `counter`, `buffer_ptr`.
+3. **Add contract inference for system calls** - Detect `mmap`, `malloc`, `fopen` patterns and auto-generate precondition comments (e.g., "requires: size > 0", "ensures: returns NULL on failure").

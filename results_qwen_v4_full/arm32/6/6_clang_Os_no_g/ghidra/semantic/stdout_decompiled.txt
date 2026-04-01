@@ -1,0 +1,24 @@
+Testing Standard Library...
+
+Strlen: 4
+Result: 0
+Memcpy: 12
+Memcpy: 90
+Memcmp: 0
+Value: 42, Name: TestName
+Printf: 26
+Scanf: -1098524656
+Fopen: 42
+Fread: 42
+Malloc: 90
+Memset: 0
+Strchr: 15
+Testing System Calls...
+
+Open: 42
+Stat: 42
+Fork: 42
+Pipe: 42
+Socket: 42
+Shm: 42
+Signal: 42

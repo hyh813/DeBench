@@ -1,0 +1,15 @@
+Testing obfuscation and optimization techniques:
+Fake branch: 10
+Opaque predicate: 20
+Instruction substitution: 225
+String encryption: 50
+Tail call optimization: 500500
+Non-tail call: 5050
+Vectorized loop: 151587080
+Link-time optimization: 20
+Division by zero: 1
+Null pointer dereference: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation-defined: 43

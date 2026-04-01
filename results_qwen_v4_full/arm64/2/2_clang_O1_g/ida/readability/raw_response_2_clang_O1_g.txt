@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (v0, v1, v2, v3, v4, result) obscuring their purpose; function parameters retain reasonable names (c, x, arr, n, p) but complex functions like `test_array_types` have 20+ generically-named temporaries.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names well-preserved (process_char, array_1d_stack, ptr_single, struct_simple); some helper functions have generic names (sub_620, init_proc) but core functionality is clearly named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation (65 for 'A', 32 for case conversion, 0x1Au for range); test functions show computed constants directly (97, 98, 300) instead of original function calls, losing semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts abundant (register variables v0-v20+, explicit type casts like unsigned __int8, __int64); floating-point functions (__addtf3, __multf3) contain 70+ temporary variables; one function has "local variable allocation has failed" warning.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use natural if-else and loops; complex functions like `array_2d_stack` use unnatural patterns (v1 += 11 instead of proper 2D indexing); floating-point functions use excessive gotos and labels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved correctly; test functions are monolithic (test_array_types spans 200+ lines); helper functions properly separated but some failed to decompile entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom well; floating-point functions have excessive forward jumps disrupting flow; test functions have complex variable initialization blocks that break linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show aggressive optimization artifacts (constants printed instead of function calls); floating-point functions have significant variable redundancy; simple functions are reasonably clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, short, long, float, double); pointer types generally correct (int*, int**, int***); long long shown as __int64; volatile keyword lost in volatile_access function.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery with field names (Point3D, Rect, Widget, Node, DNode, TreeNode); union types recovered (UnionData); enum types preserved (State with STATE_IDLE, etc.); bitfield struct recovered (Flags with flag1, flag2, etc.).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (void* to int*, char* conversions in ptr_void); pointer arithmetic shown explicitly; no major type confusion but implicit conversions from decompilation present.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered; original source comments completely lost; only auto-generated function attribute comments present; no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not explicitly identified (linked list traversal, tree recursion); no design pattern recognition; idioms preserved through structure only without naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some functions marked "FAILED to decompile" (puts, printf, __libc_start_main); one function has "local variable allocation has failed" warning; no specific anomaly flags for suspicious code patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., arr != NULL); no postconditions inferred; no invariants recognized; no error condition documentation for edge cases.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented; no call graph information; global variable usage not clearly documented; callback relationships (function pointers) not explicitly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source; related functions grouped (data types, arrays, pointers, composites); no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six functions failed to decompile (puts, printf, __libc_start_main, etc.); external dependencies not declared; would require stubs for library functions; architecture-specific code (arm64 registers) present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (7+9+7)/3   = 7.67 × 0.20 = 1.53
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              5.78/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects:
+- **Variable `v0-v20+`** should be named based on usage (e.g., `sum`, `index`, `counter`) in test functions
+- **Test functions print constants** (97, 98, 300) instead of showing actual function calls, losing semantic traceability
+- **No comments recovered** from original source despite `-g` debug flag being used during compilation
+- **Volatile keyword lost** in `volatile_access` function, changing semantic meaning
+- **Six library functions failed to decompile** (puts, printf, __libc_start_main, etc.) breaking compilation
+
+### Best Quality Aspect:
+- **Composite Type Recovery (9/10)** - Struct, union, enum, and bitfield types recovered with accurate field names matching original source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original source comments despite debug symbols; no decompilation confidence indicators added
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** when debug symbols (-g) are available, especially for function documentation and test case explanations
+2. **Infer semantic variable names** from usage patterns (e.g., variables used in accumulation should be named `sum`, loop counters should be `i`, `j`, `k`)
+3. **Add decompilation confidence annotations** for uncertain reconstructions (e.g., "// DECOMPILE UNCERTAIN: indirect call target not resolved")

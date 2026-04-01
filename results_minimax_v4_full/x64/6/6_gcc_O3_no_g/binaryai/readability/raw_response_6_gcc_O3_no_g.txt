@@ -1,0 +1,87 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named generically as `param_1`, `param_2`, `local_48`, `iVar1`, `pcVar1`. The original source uses meaningful names like `dst`, `src`, `buffer`, `len` but these are completely lost in decompilation. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions like `param_strcpy`, `call_strcpy`, `thread_compute` are correctly named matching source. However, internal functions like `FUN_00102020` and many `<EXTERNAL>` stubs have no semantic meaning. The core functions are properly named but helper/utility functions lack clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0xffffffff` (-1), `0x1000` (4096) appear without explanation. String literals like "Value: %d, Name: %s\n" are preserved correctly. However, numeric constants used for flags (e.g., `0x42` for open flags) are not explained or replaced with meaningful constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including stack canary checks (`__stack_chk_fail`), `in_FS_OFFSET` references for stack frame handling, and `LOCK()`/`UNLOCK()` macros for atomic operations. These add noise but are manageable. Some redundant type casts present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/else and while loops. The `thread_sum` function shows loop unrolling (4-way unrolling) which is expected at -O0 but creates verbose code. The `param_memset` function has excessive nested conditionals that could be simplified to a loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and decomposed. The original test functions (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`) are preserved. Some functions like `param_thread_local_storage_constprop_0` are slightly large but maintain reasonable cohesion.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling. Some deep nesting in `param_memset` (up to 10 levels) but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `thread_sum` and `param_malloc_free` creates redundant code patterns. The 4-way unrolling could be recognized as optimization. Some duplicate error handling patterns present but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Original `size_t`, `ssize_t`, `pid_t` are often rendered as `int` or `undefined4`/`undefined8`. The `param_strcpy` returns `int` instead of `size_t`. Const correctness is lost - `const char *src` becomes `char *param_2`. Function pointers are not properly typed.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Very poor struct recovery. The original uses `ThreadData` struct with `start`, `end`, `result` fields, but decompilation uses raw offsets like `param_1[1]`, `param_1[2]`. The `sockaddr_in` structure is accessed via raw memory `local_28.sa_data`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic like `__ptr + (param_1 & 0xfffffffffffffffc)` is potentially error-prone. Casts from `void*` to specific types are frequent. However, no severe type-confused function pointers or buffer-overflow patterns that would make code dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. Zero explanation of algorithm intent, no documentation of pre/postconditions, no indication of uncertainty. The code provides no guidance to help analysts understand non-obvious logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcmp, strlen, memcpy, pthread_create) are correctly identified and named. However, patterns like producer-consumer (condition variables), thread pool patterns, and TLS usage are not explicitly labeled or explained as recognizable design patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiled code presents indirect calls and unusual patterns without any warnings. For example, the TLS access via `*(int *)((long)in_FS_OFFSET + -0x24)` could be flagged as unusual but isn't.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (-1, -2, etc.) are not explained. The contract that `param_strcpy` returns string length is not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit through direct calls but not documented. No indication of which functions call `param_strcpy` or what callbacks expect. Global variables like `shared_counter`, `atomic_counter` are used across functions but relationships not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - standard library tests, system call tests, thread tests. Static functions like `signal_handler`, `thread_compute` are properly scoped. However, the file is a single monolithic output with no clear section boundaries.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions are marked with `<EXTERNAL>` and proper declarations are present. The code would compile with appropriate libc/pthread linking. Dependencies are implicit rather than documented. Some functions like `__snprintf_chk` are compiler-specific.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic names (`param_1`, `param_2`) losing semantic meaning of `dst`, `src`
+- **No struct recovery**: `ThreadData` struct accessed via raw offsets `param_1[0]`, `param_1[1]`, `param_1[2]`
+- **No comments**: Zero documentation of algorithm intent, error handling, or contracts
+- **Type precision loss**: `size_t`, `ssize_t`, `pid_t` reduced to generic `int` or `undefined4`
+- **No anomaly indication**: Unusual patterns like TLS access presented without warnings
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+Control flow structures (if/else, while loops) are correctly recovered and readable. The decompiler properly identifies branching logic and loop constructs.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiled code has zero comments. This is critical for readability as the generic variable names and type losses make the code very difficult to understand without explanatory text.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns**: `param_1` used as destination buffer in strcpy should be named `dst` or `dest`
+2. **Recover struct definitions**: Identify structured data accesses like `param_1[1]` and reconstruct `ThreadData { int start; int end; int result; }`
+3. **Add explanatory comments**: Document algorithm intent, flag uncertain decompilations, explain error return conventions

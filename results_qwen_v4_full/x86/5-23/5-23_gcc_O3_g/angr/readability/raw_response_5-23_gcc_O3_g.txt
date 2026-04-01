@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `ptr`) with no semantic meaning; only occasional better names like `idx`, `result`, `cur` appear in recovered loops.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed recovery—some original names preserved (`param_macro_constants`, `test_preprocessing_features`) but many are mechanical `sub_XXXXXX` format; runtime functions properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x400`, `57072`, `4294967295`, `279`); string literals preserved but numeric constants not recovered as named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `deregister_tm_clones`, stack canary checks (`__stack_chk_fail_local`), and empty stub functions (`sub_40117c`, `sub_401835`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed patterns—some functions use proper if/else (`param_macro_constants`), but others use inappropriate goto (`sub_401030`, `sub_4010b0`); loops recovered in some places (`param_asm_clobber`).
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Poor decomposition with many trivial wrapper functions (`sub_4012c1` just calls `param_macro_constants`); constant-folded functions lose original structure entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto statements disrupt flow in several functions; stack canary checks at function ends add minor non-linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy (both caller and callee contain same constants); wrapper functions add unnecessary indirection layers.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mostly generic `unsigned int`, `int`, `char*`; some `uint128_t` for SIMD recovered but no const-correctness; pointer types often lack specificity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are meaningless padding with generic fields (`struct_0 { char padding_0[11863]; struct struct_1 *field_2e57; }`); no semantic field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts and generic pointer arithmetic; some unsafe patterns but no egregious type-confused function pointers detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except single header line; no algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition—assembly patterns not identified as such, no algorithm naming, SIMD operations shown as generic `AddV` without context.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`); stack canary checks indicate issues but no systematic anomaly flagging.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but undocumented; global variables referenced (`g_402041`, etc.) without context; no call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single file with no logical grouping; runtime functions mixed with application code; no namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has external declarations but would need significant stubs to compile; some undefined references and platform-specific artifacts.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (5+2+5)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (4+3+4)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────
+Overall Score:                                  4.03/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+- **Architecture mismatch**: Original claims ARM64 but decompiled code is x86 with x86-specific thunk functions
+- **Optimization level discrepancy**: Metadata says `-O0` but decompiled code shows aggressive O3 optimizations (constant folding, inlining)
+- **Struct recovery failure**: All composite types reduced to meaningless padding with generic field names (`padding_0[11863]`)
+- **Function name loss**: Many functions named `sub_XXXXXX` instead of recovering original semantic names
+- **Zero documentation**: No comments explaining algorithm intent, magic numbers, or decompilation confidence
+
+### Best Quality Aspect
+- **Control Flow Naturalness (5/10)**: Some functions successfully recovered natural C constructs like for-loops (`param_asm_clobber`, `param_asm_multi_insn`) showing the decompiler can recognize basic patterns when optimization permits.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: Struct definitions are essentially useless with massive padding arrays and generic field names, completely losing the semantic structure of any data types in the original code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement architecture-aware decompilation**: Detect and flag architecture mismatches between binary and expected target; don't mix x86 thunk functions with ARM64 source expectations.
+2. **Recover struct semantics from access patterns**: Analyze pointer arithmetic and field access to infer meaningful struct layouts instead of generating massive padding arrays.
+3. **Add decompilation confidence annotations**: Flag constant-folded functions, unresolved indirect calls, and optimization artifacts so users understand what was recovered vs. what was simplified by the compiler.

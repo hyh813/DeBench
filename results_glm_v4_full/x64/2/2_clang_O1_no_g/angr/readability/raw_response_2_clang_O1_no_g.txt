@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `a0`, `a1`, `v0`, `v1`, `v2`), providing no semantic context about their purpose, such as `ptr` or `idx` which appear rarely.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Core logic functions like `process_char` and `process_int` retain their names, but many wrapper functions and helpers are reduced to generic addresses like `sub_401020` or `sub_401085`.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Floating-point constants are represented as opaque hex values (e.g., `0x3fc00000` for 1.5, `0x3f000000` for 0.5) and magic numbers like `4294967295` (UINT_MAX) appear without context, severely obscuring logic.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is littered with internal representation artifacts such as `[D] Unsupported_<class 'pyvex.expr.GetI'>()`, `AddV`, `MulV`, and `PutI` statements, which are pure noise to a C reader.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Loop structures are frequently represented as `do-while` loops with awkward initialization (e.g., starting counters at `4294967295` to simulate `for` or `while` logic), making the flow harder to follow than the original `for` loops.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map well to the original source granularity; there is no excessive inlining or monolithic merging, maintaining the original modular structure effectively.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the use of `do-while` for simple iterations and the presence of VEX IR blocks interrupt the natural reading flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: While dead code is removed, the decompiler (or binary) aggressively inlined constants in test functions (e.g., `printf("... %d\n", 97)` instead of `process_char('A')`), which hides the program's actual logic and call structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Floating-point types are completely degraded into hex constants and VEX operations (`AddV`, `MulV`), and `long double` operations are unrecoverable, leaving only integer types somewhat intact.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structures are recovered with correct layout and padding (e.g., `struct_0` with `field_0`, `padding_4`, `field_8`), but all semantic field names are lost, reducing them to generic offsets.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on explicit casts (e.g., `(unsigned int)v2`, `(char *)a0`) to manage types, and the `volatile` qualifier appears to have been lost/optimized away (`volatile_access` reads `*p` only once), creating a safety mismatch with the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments; the only text present are error markers like `[D] Unsupported...`, which indicate failure rather than explaining the code.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like `strlen` (in `array_string`) are not recognized and are instead represented as complex `do-while` loops with magic numbers, obscuring the standard library usage.
+
+**14. Anomaly Indication:** Score: 9/10
+Justification: The decompiler clearly flags where it failed using `[D] Unsupported...` markers, explicitly distinguishing between recoverable C code and internal IR dumps.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the pointer validity checks in the source are not explicitly documented as contracts in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally preserved by name (e.g., `puts`, `printf`), and the relationships between the test functions and their implementation are visible, despite the inlining of arguments.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping, mixing initialization code, test harnesses, and core logic together.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as C due to the inclusion of VEX IR syntax (`[D]`, `PutI`), non-standard variable declarations, and pseudo-operators like `AddV`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Floating-point arithmetic is represented as hex constants and VEX IR operations (`AddV`, `MulV`), making it unreadable.
+- `long double` handling is completely broken, dumping internal IR statements instead of C code.
+- Test functions have inlined constant arguments (e.g., `97` instead of `process_char('A')`), hiding the program's control flow.
+- Variable names are entirely generic (`a0`, `v1`), stripping all semantic meaning.
+
+**Best Quality Aspect:** Anomaly Indication (scored 9/10)
+- The tool explicitly marks sections it failed to decompile with `[D] Unsupported...` tags, preventing the user from misinterpreting garbage as valid code.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)
+- The failure to recover standard floating-point types and `long double` into readable C operations is the single biggest barrier to understanding this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a lifting pass to convert VEX IR floating-point operations (`AddV`, `MulV`) and hex constants back into standard C floating-point arithmetic.
+2. Improve constant propagation analysis to avoid inlining function results in `printf` statements, as this obscures the call graph and program logic.
+3. Develop a heuristic to rename generic parameters (`a0`, `a1`) based on type information (e.g., `ptr`, `size`, `val`) to improve lexical clarity.

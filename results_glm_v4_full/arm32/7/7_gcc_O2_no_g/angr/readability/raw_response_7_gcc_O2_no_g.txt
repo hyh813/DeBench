@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0` through `v14` in `call_vectorized_loop`, `flag1`, `ptr`). In `param_opaque_predicate`, variables like `flag2` and `flag1` provide minimal semantic insight into the opaque predicate logic.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: High-level function names like `param_fake_branch`, `main`, and `test_obf_opt_edge` are preserved accurately from the source symbols. However, low-level helpers like `sub_10514` and `sub_10624` lack semantic names.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced by raw memory addresses (e.g., `puts(0x11154)`), obscuring the output messages. Magic numbers like `90` (XOR key) and `0x22058` (data address) are used without explanation, though some constants like `225` are preserved.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with heavy lifting artifacts, specifically `armg_calculate_condition` calls and `vvar_` syntax (e.g., `vvar_69{r64|4b}`), which represent IR-level operations rather than clean C code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is frequently obscured by `armg_calculate_condition` calls instead of standard `if` statements. `param_opaque_predicate` uses `goto` labels (`LABEL_10776`) and `do-while` loops that make the logic hard to follow compared to the source's clear conditional structure.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler successfully separates the high-level logic into distinct functions that match the source structure (e.g., `param_tail_call_optimized`, `call_vectorized_loop`). The granularity is appropriate, though some internal logic is inlined.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While some functions read linearly, others like `param_integer_overflow` and `param_opaque_predicate` use `goto` jumps (`LABEL_10c1e`, `LABEL_10776`) that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: `call_vectorized_loop` contains a massive block of redundant variable assignments (`v1 = 2; v2 = 3...`) representing array initialization, which clutters the function. Loop unrolling is present but not abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic; `int` in source is frequently decompiled as `unsigned int`. The return type of `decrypt_string` is listed as `char [2]` instead of `char*`, and pointer types are sometimes vague.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered. In `param_implementation_defined`, the source uses a bitfield struct, but the decompiler simply returns a constant `44` (due to compiler optimization) or uses raw variables, losing the structural definition entirely.
+
+**11. Type Safety:** Score: 3/10
+Justification: The pervasive use of `armg_calculate_condition` acts as a type-unsafe escape hatch for logic. Invalid syntax like `vvar_69{r64|4b}` suggests type confusion at the register/memory level in the decompiler's IR.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the opaque predicate calculations or the string decryption loop, is left unexplained.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler recognizes that `param_tail_call_optimized` is a loop (converting recursion to iteration), which is good. However, it fails to identify higher-level patterns like the opaque predicates or the string encryption idiom, presenting them as raw math and XOR loops.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The presence of `armg_calculate_condition` and `vvar_` artifacts indicates the decompiler struggled with the lifting process, but these are not flagged as anomalies or uncertainties; they are presented as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the buffer size requirements in `decrypt_string` are not explicit in the decompiled signature.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are generally clear and use the correct names. Global variable accesses (like `__stack_chk_guard`) are explicit, but the usage of data addresses (e.g., `0x22058`) instead of global variable names weakens context.
+
+**17. Module Organization:** Score: 6/10
+Justification: The code is presented as a flat list of functions, roughly ordered by address. While the main test functions are grouped, the lack of logical separation (e.g., sections for "Obfuscation" vs "Edge Cases") reduces coherence.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. Syntax errors like `vvar_69{r64|4b}` and calls to non-existent functions like `armg_calculate_condition` prevent any compilation attempt without significant manual cleanup.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **IR Artifacts**: Pervasive use of `armg_calculate_condition` and `vvar_` syntax makes the code look like IR assembly rather than C.
+- **Variable Naming**: Generic names (`v0`, `v1`) dominate, making it nearly impossible to track data flow without the source.
+- **String Loss**: String literals are replaced with memory addresses (e.g., `0x11154`), removing all semantic meaning from print statements.
+- **Struct Recovery**: Complete failure to recover composite types (structs/unions), reducing complex data structures to raw integers/pointers.
+- **Invalid Syntax**: The output contains syntax that is not valid C, rendering it unusable for a build system.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- The decompiler successfully preserved symbol names for the high-level test functions, making it easy to locate specific logic blocks compared to the source.
+
+**Most Needs Improvement:** Noise Reduction (Score: 2/10)
+- The lifting artifacts (`armg_calculate_condition`, `vvar_`) are the single biggest barrier to readability, obscuring the actual logic behind low-level IR details.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Condition Code Folding**: Implement a pass to fold `armg_calculate_condition` calls back into native C `if`/`else` statements to restore control flow clarity.
+2.  **String Literal Recovery**: Automatically resolve data section references to recover string literals instead of printing raw addresses.
+3.  **Variable Renaming Heuristics**: Apply data-flow analysis to infer variable names (e.g., `len`, `str`, `result`) based on usage context and standard library function calls.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result` instead of semantic names (e.g., `loop_counter`, `sum`, `index`). In `array_1d_stack`, the loop counter `v2` should be `i`; in `struct_array`, `p_z` obscures it's a pointer to struct fields.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - core functions preserve original names (`process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`). Only startup/runtime helpers use generic names (`sub_1030`, `sub_1070`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (32 for ASCII conversion, 65 for 'A', 0x1Au for range). Test functions print pre-computed constants (15, 300, 10000) instead of showing actual computation, losing semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler artifacts present (`__usercall`, `@<eax>`, `@<ebx>` annotations, `BYREF` markers). Generally clean but these annotations add visual clutter without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For-loops transformed to do-while patterns (e.g., `array_1d_stack` uses `do...while(n != v2)` instead of `for(i=0; i<n; i++)`). `array_2d_stack` uses `v1 += 11` instead of proper 2D indexing, obscuring diagonal access pattern.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - no excessive inlining or fragmentation. Each test function remains separate. Helper functions appropriately sized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward references in test functions but manageable. No excessive goto usage in core logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions heavily optimized - print constants instead of calling functions, losing computational semantics. Core functions are clean but test code redundancy obscures original intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Excellent type recovery - int, char, short, long, long long (`__int64`), float, double, long double all preserved correctly. Pointer types accurate. Some generic `int` where `size_t` would be better.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Outstanding struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`, `Edge` all preserved with field names (`x`, `y`, `z`, `position`, `size`, `data`, `next`, `prev`). Union `UnionData` recovered correctly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`void*` to `int*`, `char*` conversions in `ptr_void`, `ptr_cast`). Function pointer types preserved correctly. No buffer overflow patterns introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Original source had extensive comments explaining each test case (DT-L1-01, ARR-L1-01, etc.). Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition (linked list traversal, tree recursion, graph traversal not identified). Code presented as-is without algorithmic context.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies noted ("FAILED to decompile" for library functions, "positive sp value has been detected" warning). Core logic anomalies not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present in code but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code. Global variables referenced (`dword_3654`, `asc_35BF`) without context. No call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source structure (data types → arrays → pointers → composites). Startup/runtime functions mixed in.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Four library functions failed to decompile (`__libc_start_main`, `printf`, `__cxa_finalize`, `puts`). Would need stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+9+5+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):   (6+8+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type System):  (8+9+7)/3   = 8.00 × 0.20 = 1.600
+Level 4 (Semantic):     (2+4+6+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):   (6+7+5)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.326/10
+```
+
+**Overall Readability Score: 6.3/10**
+
+### Critical Defects:
+- **Variable `v2` in `array_1d_stack`** should be named `i` or `index` based on loop counter usage pattern
+- **Test functions print constants** instead of calling actual functions, losing computational semantics (e.g., `test_data_types_l1` prints `97` instead of calling `process_char('A')`)
+- **No comments recovered** from original source's extensive documentation (DT-L1-01, ARR-L1-01 labels completely lost)
+- **Control flow transformed** from for-loops to do-while patterns, obscuring original iteration intent
+- **Magic numbers unexplained** (32, 65, 0x1Au) without ASCII constant recovery
+
+### Best Quality Aspect:
+- **Composite Type Recovery (9/10)** - Struct/union types perfectly reconstructed with accurate field names (`Point3D`, `Widget`, `Node`, `TreeNode` all preserved with semantic field names)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original source documentation; no algorithm explanations, test case labels, or semantic context recovered
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze loop counters, accumulators, and pointer arithmetic to infer semantic names (`v2` → `i`, `result` → `sum`)
+2. **Preserve test function call semantics** - Avoid constant folding in test functions; maintain actual function calls to show computational flow
+3. **Extract and preserve source comments** - Recover debug symbol comments and section headers (DT-L1-01, ARR-L1-01 labels) from DWARF/debug info

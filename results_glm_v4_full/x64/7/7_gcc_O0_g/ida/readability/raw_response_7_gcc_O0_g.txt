@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Variables inside logic functions like `x`, `a`, `b` in `param_opaque_predicate` match the source well. However, the wrapper function `test_obf_opt_edge` uses generic names `v0` through `v13`, obscuring the specific test results being printed.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names, including `param_fake_branch`, `param_opaque_predicate`, and `call_...` wrappers, are perfectly recovered from the symbol table, matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Critical clarity is lost in `param_implementation_defined` where the entire logic is replaced by the magic number `47`. Additionally, system calls use raw numbers (e.g., `signal(8, ...)` instead of `SIGFPE`), reducing readability.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is generally clean, with minimal compiler artifacts. The only notable noise is the stack canary check `__readfsqword(0x28u)` inserted into functions with stack buffers, which is unavoidable but slightly clutters the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is highly natural; loops (like the GCD calculation in `param_opaque_predicate`) and conditionals are reconstructed into idiomatic C structures (while, if) that match the source intent perfectly.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The decompiler maintains a 1-to-1 mapping with the source file's functions. No functions are inlined or split incorrectly, preserving the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or `goto` chains interrupting the flow, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: While simplifying `param_instruction_substitution` (e.g., `6*x` instead of shifts) improves readability, the aggressive constant folding in `param_implementation_defined` (reducing logic to `return 47`) eliminates the actual implementation details, which is a negative for understanding the source code's behavior.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally accurate, with `int`, `char *`, and `size_t` (mapped to `unsigned __int64`) correctly identified. The use of `__int64` for some return values is a minor genericization but acceptable.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays and stack buffers (like `char buffer[8]`) are correctly recovered. While the bitfield struct in `param_implementation_defined` was optimized away, the remaining structures are handled well.
+
+**11. Type Safety:** Score: 9/10  
+Justification: Necessary casts, such as `(__sighandler_t)div_zero_handler`, are preserved. Pointer arithmetic and buffer accesses are type-safe and match the source's usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of specific functions (e.g., the GCD algorithm or the obfuscation intent).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The code correctly implements the logic (e.g., the GCD loop), but it fails to explicitly identify or name these patterns (e.g., no comment indicating "Euclidean algorithm" or "Opaque Predicate").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The decompiler fails to flag the suspicious constant folding in `param_implementation_defined` or the removal of dead code in `param_fake_branch`, presenting the simplified code as absolute truth without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no indication of preconditions (e.g., buffer requirements) or postconditions. The error handling logic (like `return -2` in `malloc` failure) is visible but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10  
+Justification: Function calls are resolved perfectly. The relationship between `call_...` functions and their `param_...` counterparts is clear and matches the source structure.
+
+**17. Module Organization:** Score: 9/10  
+Justification: Functions are ordered logically, matching the source file's segmentation. The separation between obfuscation, optimization, and edge-case tests is preserved in the function sequence.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: While the C code is syntactically correct, it relies on standard library functions (printf, malloc) without including the necessary headers (stdio.h, stdlib.h), requiring patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.1/10
+
+**Critical Defects:**
+- Function `param_implementation_defined` is reduced to `return 47;`, completely hiding the implementation-defined logic (bitfields, shifts, sizeof).
+- Function `param_fake_branch` removed the fake branches (`if (x*x < 0)`), hiding the obfuscation technique used in the source.
+- System call `signal(8, ...)` uses a magic number instead of the named constant `SIGFPE`.
+- Wrapper function `test_obf_opt_edge` uses generic variable names (`v0`-`v13`) instead of descriptive names like `fake_branch_result`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler perfectly recovered all function names from the symbol table, making the API and module structure immediately understandable.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- The lack of comments and the aggressive constant folding (removing logic in favor of results) makes it impossible to understand the *intent* or the *algorithmic implementation* of certain functions without referencing the binary or source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and Flag Constant Folding**: When a function is reduced to a constant return (like `return 47;`), insert a comment warning that logic was optimized away or provide an option to view the pre-folded logic.
+2. **Preserve Dead Code for Obfuscation Analysis**: Add a setting to preserve "always false" branches or "unreachable" code blocks, as these are often intentional obfuscation techniques in security research.
+3. **Map Signal Numbers to Constants**: Replace raw signal numbers (e.g., `8`, `11`) with their standard macro names (`SIGFPE`, `SIGSEGV`) to improve readability of system-level code.

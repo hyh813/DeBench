@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `param_1`, `param_2`, `iVar1`, `uVar1`, `piVar1`, `lVar3`. The decompiler uses a systematic naming scheme (prefixes indicate type: i=int, u=uint, p=pointer, l=long) but provides no semantic meaning. Compare to source where variables like `sum`, `i`, `arr`, `n` clearly indicate purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions correctly recovered: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. Test functions also match: `test_data_types_l1`, `test_array_types`. Only some internal functions have generic names like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions have hardcoded results (e.g., `printf("DT-L1-03 (process_int): %d\n",0xb);` for expected value 11). Some magic numbers in logic: `0x20` (32 for case conversion), `0xfffffff8` (alignment mask). Mixed clarity - computed values are clear but some arithmetic constants unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output. No obvious debug artifacts or register spilling visible. Some type casts present but minimal. The code is readable without excessive compiler-generated noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `process_char`, `process_int` have natural if-else and return patterns. However, array functions (`array_1d_stack`, `array_3d`) show aggressive loop unrolling that obscures the original loop structure. At -O0 this is unexpected; the decompiler may be misinterpreting the code or the binary has additional transformations.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each test case function is separate. Helper functions like `double_value` are correctly extracted. No 500-line monoliths; each function has a single clear purpose matching the source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Complex array functions have multiple code paths and early returns that disrupt linear flow. The `array_1d_stack` function has deeply nested do-while loops that require careful tracing.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in array functions. `array_1d_stack` and `array_vla` are nearly identical copies (copy-paste from decompiler). Loop unrolling creates massive redundant code blocks (32+ local variables in `array_1d_stack`). This severely impacts readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved: `int`, `uint`, `long`, `float`, `double`, `bool`. However, many are generic: `int` instead of `int32_t`, `long` without specific width. Function pointers use `code *` instead of proper signatures. Const/volatile not always preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure.** Structs completely lost. Compare source `Point3D p = {x, y, z}` with decompiled `param_1[0] + param_1[1] + param_1[2]`. The decompiler accesses struct fields as raw array offsets with no field names. Unions similarly lost - `union_type` accesses `*param_1` as float regardless of actual type. Nested structs become pointer arithmetic chains.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. Pointer arithmetic with raw offsets: `*(int *)(param_1 + uVar10 * 4)`. Function pointer calls use `code *` type allowing any function. However, basic type correctness maintained - no completely wrong types like treating int as pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever.** The decompiled code contains zero explanatory comments. Source had extensive comments (e.g., "// DT-L1-01: 字符类型", "// 测试: 大小写转换"). The decompiler provides no guidance on algorithm intent, parameter meanings, or return value expectations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic C idioms present (loops, conditionals) but not named or highlighted. The source contains recognizable patterns: linked list traversal, binary tree recursion, state machine via enum switch. These are not identified in the decompiled output. Some functions have `UNRECOVERED_JUMPTABLE` markers indicating incomplete recovery.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only `UNRECOVERED_JUMPTABLE` appears for function pointer parameters. No flags for suspicious code, potential undefined behavior, or decompilation confidence. The source's intentional bug `array_oob` (off-by-one loop) shows no warning. No indication of the volatile access pattern that prevents optimization.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0"), postconditions, or invariants documented. The source has implicit contracts (null checks, bounds checks) that are not recovered. Error handling paths not labeled or explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are resolved (e.g., `test_data_types_l1()` calls `printf`). However, no documentation of who calls whom, global variable usage, or callback relationships. The `complex_callback` function used in `ptr_func_complex` is not linked to its usage site.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped: data type functions first, then arrays, pointers, composites. Static function `double_value` correctly placed. Matches source organization of test functions. Minor issue: some internal functions (`_init`, `_start`, `_fini`) interleaved with user code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs. External functions `puts`, `printf` declared with proper signatures. Some type mismatches may require fixes (e.g., `undefined4` vs `int`). No header dependencies documented. The `code *` type for function pointers may need casting.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- **Struct/union recovery completely failed** - all composite types accessed as raw pointer arithmetic with numeric offsets (e.g., `param_1[0]`, `param_1[1]` instead of `p->x`, `p->y`)
+- **No variable naming** - every variable is `param_N`, `iVarN`, `uVarN`, making code comprehension extremely difficult
+- **Massive redundancy** - `array_1d_stack` and `array_vla` are nearly identical 80+ line functions with aggressive loop unrolling
+- **Zero comments** - no explanation of algorithm intent, parameter meanings, or return value expectations
+- **Loop unrolling at -O0** - array functions show extreme unrolling that obscures original simple for-loop structure
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered most function names matching the source exactly (`process_char`, `array_1d_stack`, `ptr_double`, etc.), making it easy to locate specific functions.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+Struct and union types are completely lost. The decompiler treats all composite types as raw memory blocks accessed via array indexing, losing all semantic information about field names, types, and layout.
+
+**Top 3 Recommendations:**
+1. **Recover struct field names** - Analyze struct layouts and assign meaningful field names based on usage patterns (e.g., `param_1[0]` + `param_1[1]` + `param_1[2]` should become `p->x + p->y + p->z`)
+2. **Add semantic variable naming** - Infer names from usage: variables used as loop counters should be `i`, `j`, `n`; accumulators should be `sum`, `total`; array parameters should be `arr`, `data`
+3. **Deduplicate common functions** - `array_1d_stack` and `array_vla` are functionally identical; recognize this pattern and produce a single clean function

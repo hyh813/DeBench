@@ -1,0 +1,16 @@
+Testing obfuscation optimizations:
+
+Opaque predicate: 10
+Instruction substitution: 20
+String encryption: 225
+String encryption value: 86
+Tail call optimization: 500500
+Non-tail call: 5050
+Vectorized loop: -1073745905
+LTO: 20
+Division by zero: 2
+Null pointer deref: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation-defined: 48

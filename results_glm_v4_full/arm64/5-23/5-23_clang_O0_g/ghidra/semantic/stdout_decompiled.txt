@@ -1,0 +1,18 @@
+Testing macro constants...
+  macro_constants result: 64
+  macro_functions result: 30
+  conditional_compile result: 32
+  multi_branch_compile result: 57122
+  macro_recursion result: 116
+  stringize result: 19
+  token_paste result: 60
+LOG: Values: 10, 20, 30
+  variadic_macro result: 60
+  macro_override result: 16
+  include_guard result: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:37
+  builtin_macros result: 382
+Testing ASM features...
+  asm_basic result: 15
+  asm_clobber result: 15
+  asm_multi_insn result: 42

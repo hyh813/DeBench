@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but appear as `a1`, `a2`, `a3`, `a4`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `call_cdecl`, `varargs_func`). However, some runtime functions show as `sub_1020` and `__do_global_dtors_aux` without clear purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x28`, `238` (SIMD shuffle), and `0xFFFFFFFFLL` appear without explanation. Return constants (15, 50, 42) are clear but don't show computation logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant SIMD artifacts (`_mm_add_epi64`, `_mm_shuffle_epi32`) obscure simple arithmetic. Stack variables like `v12[8]`, `v13-v17` are compiler artifacts from va_list handling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but `varargs_func` uses complex loop with `v8 > 0x28` check that obscures the simple va_arg iteration from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, caller functions like `call_cdecl()` are constant-folded to `return 15` instead of showing the actual function call.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some functions like `ret_large_struct` have loop structures that are harder to follow due to SIMD operations.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding eliminates actual computation logic. `test_calling_conventions` shows SIMD vector operations for what was a simple loop initializing `large.data[i] = i + 1`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `__int64`, `_DWORD`, `_BYTE` instead of precise types. `func_struct_byptr` takes `_DWORD *` instead of `SmallStruct *`. Function pointers lose signature clarity.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `LargeStruct` and `SmallStruct` completely lost. `func_struct_byval` takes 14 separate parameters instead of one struct. `func_struct_byptr` uses `_DWORD *` with array indexing instead of `p->x`, `p->y`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts like `(unsigned int)(a1 + a2)`. Pointer arithmetic in `func_struct_byptr` (`*a1 * a1[1]`) loses type safety. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments present (e.g., `// rax`, `// [rsp+0h]`). No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern partially recognized but implemented with complex stack handling. SIMD vectorization not identified as compiler optimization artifact.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (`// positive sp value has been detected, the output may be wrong!`). Failed decompilations listed at end but no inline warnings for uncertain code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `a1 != NULL`). Null checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_calling_conventions` calls `varargs_func` but parameter passing is obscured. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Runtime initialization functions (`_init_proc`, `deregister_tm_clones`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 6 functions failed to decompile (`printf`, `puts`, `strlen`, etc.). Uses compiler-specific types (`__int64`, `_OWORD`). Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Context):     (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.67/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` passed as 14 separate parameters instead of single struct argument
+- **Constant folding eliminates computation logic** - `call_cdecl()` returns `15` directly instead of showing `cdecl_func(5, 10)` call
+- **All variable names are generic** - `a1`, `a2`, `v1`, `v2` provide no semantic information about purpose
+- **SIMD artifacts obscure simple operations** - Loop initialization shown as `_mm_add_epi64` operations instead of simple array assignment
+- **6 external functions failed to decompile** - `printf`, `puts`, `strlen` etc. listed as FAILED, breaking code completeness
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names largely preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct definitions; `LargeStruct` and `SmallStruct` lost entirely, forcing parameter explosion and pointer arithmetic instead of field access.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze memory access patterns to recover struct layouts and field names from pointer dereferences like `a1[0]`, `a1[1]`
+2. **Preserve call semantics over constant folding** - Show actual function calls even when arguments are constants to maintain code flow understanding
+3. **Add semantic variable naming** - Use usage context to infer names (e.g., parameters used in `strlen` should be named `str` or `string`)

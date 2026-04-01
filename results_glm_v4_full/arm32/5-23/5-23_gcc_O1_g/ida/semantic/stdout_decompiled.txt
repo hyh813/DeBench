@@ -1,0 +1,21 @@
+=== Preprocessing Features ===
+PPL2.01: 64
+PPL2.02: 30
+PPL2.03: 32
+PPL2.04: 57122
+PPL3.01: 116
+PPL3.02: 19
+PPL3.03: 60
+LOG: Values: 10, 20, 30
+PPL3.04: 60
+PPL3.05: 16
+PPL3.06: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:02
+PPL3.07: 382
+=== ASM Features ===
+ASML4.01: 15
+ASML4.02: -1211644699
+ASML4.03: 42
+ASML4.04: 36
+ASML4.05: 25
+ASML4.06: 77

@@ -1,0 +1,110 @@
+Looking at this decompilation task, I'll analyze the original source and decompiled code systematically across all 18 dimensions.
+
+## Analysis Summary
+
+The original source is a comprehensive test file (709 LOC) testing preprocessing features and inline assembly, compiled with gcc -O0 (debug mode) for arm64. The decompiled code is 600 LOC from Ghidra.
+
+### Key Observations:
+1. **Macro constants lost**: All `#define` constants became magic numbers (0x401, 0x200, 0x40, etc.)
+2. **Variable names generic**: `param_1`, `local_c`, `iVar1` instead of meaningful names
+3. **Function names preserved**: Most function names match source
+4. **No comments**: Complete absence of documentation
+5. **Type precision lost**: Uses generic `int` instead of specific types
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `param_1`, `param_2`, `local_c`, `local_18`, `iVar1`, `uVar2` are generic auto-generated names. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. Only `global_var` was recovered.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_asm_clobber`, `my_func`, `header_func`. Minor issue: `FUN_00101020` is an unknown stub function.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: All macro constants were lost and replaced with magic numbers: `0x401` (should be MAX_SIZE=1024), `0x200` (should be MAX_SIZE/2=512), `0x40` (should be BUFFER_COUNT*4=64), `0xdef0` (should be 0xDEF0 constant), `0x10` (should be ADD_16), `0x32` (should be 50). No constant recovery attempted.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, dead code, or debug instrumentation visible. The output is straightforward.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow matches source well. The if-else in `param_macro_constants` (`if (param_1 < 0x401)`), loops in `param_asm_clobber` and `param_asm_multi_insn` are natural. At -O0, no loop unrolling or goto transformation expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines each), matching the original decomposition. Each function has single responsibility. The test wrapper functions (`call_*`) are properly separated from implementation functions (`param_*`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without goto or excessive jumps. Early returns in `param_dynamic_code` and `param_memory_protection` are appropriate. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The loop in `param_asm_clobber` is properly formed. At -O0, no loop unrolling or CSE artifacts expected.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` (shown as `undefined4` or `int`) instead of specific types like `int32_t`, `uint32_t`, `size_t`. Parameter types are imprecise: `param_1` is `int` but could be `size_t` in some contexts. The `uint` type appears in `param_variadic_macro` which is good.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Not heavily applicable since source uses mostly scalar types. The `undefined (*param_3) [16]` in `param_asm_simd` is an interesting attempt at recovering the 128-bit SIMD type, though it's not perfect. No struct recovery needed for this code.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. The `param_asm_simd` uses pointer arithmetic correctly (`param_1 + uVar2 * 4`). Minor concern: the `undefined *` types in `param_asm_multi_insn` could be `char *` for clarity. No obvious unsafe casts.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (PP-L2-01, PP-L2-02, etc.) and the purpose of each macro. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of preprocessing idioms. The code doesn't indicate that `param_macro_constants` is the result of macro expansion (MAX_SIZE, BUFFER_COUNT). No indication that `param_asm_*` functions contain inline assembly (though at -O0, assembly is often not inlined). The `LOCK()`/`UNLOCK()` in atomic functions hints at assembly but isn't explicitly marked.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The dynamic code generation in `param_dynamic_code` writes machine code (`0xc083f889`) to memory and executes it - this is highly unusual and should be flagged. No indication of potential undefined behavior or security-sensitive operations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. The original source has implicit contracts (e.g., `param_asm_atomic` requires `counter != NULL`, `param_dynamic_code` requires page_size > 0). None of this is documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `param_macro_constants(0x800)`). However, no documentation of which functions call which, or the relationship between test functions and their targets. The `<EXTERNAL>` markers indicate library functions but don't specify which headers are needed.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably organized: initialization (`_init`, `_start`), then test functions grouped by category (preprocessing, asm), then `main`. Matches the binary layout reasonably well. Static functions like `header_func` are placed near their callers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `<EXTERNAL>` declarations for standard library functions (printf, mmap, munmap, mprotect, sysconf, strlen, memcpy). These would need proper includes (`<stdio.h>`, `<sys/mman.h>`, `<unistd.h>`, `<string.h>`) to compile. The code structure is compilable with minor patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`param_1`, `local_c`, `iVar1`) - should infer names from usage patterns
+- All macro constants lost (0x401, 0x200, 0x40, 0xdef0, etc.) - should attempt constant recovery
+- Zero comments recovered - original source had extensive documentation
+- No anomaly indication for dangerous operations like self-modifying code in `param_dynamic_code`
+- Type precision lost - generic `int` instead of specific types
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to identify which function is which.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+Complete absence of comments. The original source had detailed explanations of each test case, macro semantics, and expected results - all lost in decompilation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover macro constants**: Use value pattern matching to identify magic numbers that correspond to source constants (e.g., 0x401 = 1024 = MAX_SIZE)
+2. **Add semantic comments**: When decompiling test code, recover the test case descriptions (PP-L2-01, PP-L2-02) and explain what each function tests
+3. **Flag security-sensitive operations**: Mark self-modifying code (writing executable bytes to memory), atomic operations, and other dangerous patterns with warnings

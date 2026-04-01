@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameter names like `dst`, `src` in `param_strcpy` are well-preserved, but local variables use generic names like `v1`, `v2`, `v3`, `result`. For example, in `param_strcmp`, variables `v2`, `v3`, `v4` obscure the comparison logic.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `param_strcpy`, `call_strcpy`, `param_strcmp`, `param_memcpy`, `param_fork_exec`, etc. The decompiler correctly preserved the naming convention.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` and `"HelloLib"` are preserved correctly. However, magic numbers like `0x12` (18) for string length and `42` as return value lack explanation. The format string in `param_scanf` is correctly recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present - 59 functions "FAILED to decompile" listed at the end, spurious constructs like `JUMPOUT(0)`, and unusual annotations like "positive sp value has been detected". These artifacts severely clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with standard if-else and loops. However, `param_strcmp` uses an unusual pattern: `v3 = -(v2 != 0)` followed by `v4 = v2 <= 0` to compute the ternary result, which is obfuscated compared to the clean source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler correctly preserved the function granularity - all 12 test wrapper functions and their corresponding param functions are separate. Each function maintains single responsibility as in the source.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately (e.g., `param_fopen_fclose` returns -1 on failure). No excessive forward jumps disrupt the flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some constant folding creates redundancy - `call_strlen` returns constant 12 instead of calling `param_strlen`, and `call_memcpy` returns 90 directly. However, the core logic in param functions is not redundant.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `char *dst`, `const char *src`, `size_t n` in `param_memcpy`. However, `int` is used generically where `size_t` or `ssize_t` would be more precise. The decompiler correctly identifies `FILE*` and `pthread_t`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The decompiler shows sophisticated recovery in `param_fread_fwrite` using `__m128i v5[4]` for the buffer (SIMD type). However, struct parameters like in `param_socket_create` show raw struct declaration `struct sockaddr v5` without field recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe patterns exist - in `param_scanf`, complex pointer arithmetic `(char *)&v4 + 4` is confusing. The `HIDWORD` macro usage suggests unsafe 64-bit to 32-bit conversions. No `const` correctness on return values where applicable.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining logic, algorithm, or purpose. The only annotations are decompiler metadata like "positive sp value has been detected" which are not helpful for understanding the code semantics.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions are correctly recognized: `strcpy`, `strlen`, `strcmp`, `memcpy`, `memcmp`, `printf`, `fopen`, `pthread_create`, etc. However, no explicit pattern naming (e.g., "this implements strcmp pattern") is provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "FAILED to decompile" section lists 59 unresolved functions, which indicates problems. However, there's no explanation of why these failed or what they should be. The "positive sp value" warning is vague.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error handling (return -1, -2, etc.) is present but not explained. The semantic meaning of error codes is lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No documentation of which functions call which, global variable usage, or callback relationships. The code is presented in isolation without context about the broader program.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are organized roughly in source order (standard library calls first, then system calls, then threading). However, the file is a single monolithic output without any logical grouping or section headers.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Multiple undefined symbols: `signal_received`, `signal_number`, `counter_mutex`, `cond_mutex`, `ready`, `data`, `atomic_counter`, `tls_counter`, `tls_thread_name`. These are global variables from the source that aren't declared in the decompiled output.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Global variables (`signal_received`, `counter_mutex`, `atomic_counter`, etc.) are used without declaration, making code uncompilable
+- Variable naming uses generic names (`v1`, `v2`, `v3`, `result`) obscuring logic in most functions
+- No comments explaining any algorithm, contract, or non-obvious logic
+- 59 functions listed as "FAILED to decompile" with no recovery
+- Type safety issues with unsafe pointer arithmetic in `param_scanf`
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler preserved nearly all function names exactly as they appear in the source, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (1/10)  
+No semantic contracts, preconditions, or postconditions are documented. The code presents as a black box with no explanation of what conditions must hold or what error codes mean.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Declare undefined global variables that are referenced (e.g., `static volatile int signal_received;`) so code compiles
+2. Infer variable names from usage patterns - `v1` used as length should be named `len` or `size`
+3. Add comments explaining error return values and algorithm intent, not just decompiler warnings

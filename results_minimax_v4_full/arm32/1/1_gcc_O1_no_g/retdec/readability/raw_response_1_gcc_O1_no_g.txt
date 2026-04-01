@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `result`, `v1`-`v6`, and globals `g1`-`g5`. The original source had meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count`, `x`. These cryptic names make tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names correctly match the original source (e.g., `recursion_factorial`, `loop_for_fixed`, `loop_while`, `goto_backward`). However, parameter names are generic (`a1`, `a2`, `result`) rather than reflecting actual parameter semantics like `f`, `x` or `target`, `arr`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x3039` (should be 12345), `0x2694` (should be 9876), and `0x10600` (function pointer address) appear without explanation. The original source used clear decimal literals; the decompiler exposes raw hex values that obscure the actual values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some noise artifacts present including unusual typedef `int33_t`, the bizarre `_setjmp` struct initialization with nested anonymous structs, and some unnecessary casts. However, no debug instrumentation or frame pointer manipulation clutter. The _setjmp construct is particularly egregious though.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Multiple critical failures: `loop_while` and `loop_dowhile` are rendered as `while(true)` with internal infinite loops - completely incorrect. `loop_for_fixed` uses a mathematical formula instead of a loop. `loop_nested` uses formula `(a2 > 0 ? a2 : 0) * a1` instead of nested loops. These are severe control flow distortions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition matching original - 28 functions detected matching the source's modular structure. Function sizes are reasonable. The test wrapper functions are properly separated from logic functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but the `while(true)` patterns in `loop_while` and `loop_dowhile` create confusing non-linear flow. Some forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling to formulas is present but unexplained. The mathematical transformations in `loop_for_fixed`, `loop_nested`, and `loop_modify_var` are optimization artifacts without comments explaining the equivalence to loops.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` and `uint32_t` which is good. However, function pointers are typed as plain `int32_t` rather than proper function signatures. The unusual `int33_t` typedef appears without justification. Some signed/unsigned mixing in comparisons.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The original `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` is rendered as pointer arithmetic on `int32_t v1 = 10` with manual offset calculations. Arrays are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: pointer arithmetic without bounds checking in array access (`v3 += 4`), unusual struct initialization in `_setjmp`, and function pointers treated as `int32_t`. The `loop_break` function has confusing pointer manipulation that could lead to undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., "// Address range: 0x105d8 - 0x10600"). No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The code is completely devoid of meaningful comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like switch statements and while loops are somewhat recognizable. However, no design patterns (state machine, callback, etc.) are explicitly identified or named. The original's Duff's device is completely unrecognizable.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `call_func_ptr` and `call_func_ptr_array` functions return the parameter directly without calling anything - this is clearly wrong but not flagged. No indication of indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition, postcondition, or invariant documentation. The original had explicit return value expectations and parameter validation that is completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear but no documentation of call relationships. The callback pattern in `process_with_callback` is not documented - no indication that `a3` is a function pointer callback or what it should do.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions together, helper functions together). Static functions properly scoped. However, everything in one file with no header separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds ("Compilation Result: Yes"). Some unusual constructs like the `_setjmp` struct initialization might cause portability issues, but the code is syntactically valid.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`a1`, `v1`, `result`) making semantic tracking impossible
+- **Control flow distortion**: `loop_while` and `loop_dowhile` rendered as infinite `while(true)` - semantically incorrect
+- **Loop to formula transformation**: `loop_for_fixed`, `loop_nested` converted to mathematical formulas without explanation
+- **No composite type recovery**: Arrays like `int arr[] = {10,20,30,40,50}` lost to pointer arithmetic
+- **No comments**: Complete absence of meaningful documentation explaining algorithms or intent
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- The 28 functions are properly decomposed matching the original source structure
+- Function names mostly preserved correctly
+- Logical grouping of test vs. implementation functions
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+- Zero useful comments
+- No pattern recognition
+- No anomaly indication
+- No contract recovery
+- The code is essentially a "black box" with no explanatory context
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: `a1` used as array base in `loop_break` should be named `arr`; `result` accumulating sums should be named `sum`
+2. **Recover loop constructs properly**: The `while(true)` pattern in `loop_while` should be recognized as a counting loop and rendered as `while(x != 0)` with proper termination
+3. **Add explanatory comments for optimizations**: When loops are transformed to formulas, add comments like "// Optimized: loop unrolled to formula n*(n-1)/2" to aid understanding

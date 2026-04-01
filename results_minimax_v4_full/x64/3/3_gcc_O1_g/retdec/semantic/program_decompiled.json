@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/3/3_gcc_O1_g/retdec/syntactic/bin/3_gcc_O1_g_fixed",
+  "stdout": "",
+  "stderr": "'utf-8' codec can't decode byte 0x94 in position 0: invalid start byte",
+  "exit_code": null,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

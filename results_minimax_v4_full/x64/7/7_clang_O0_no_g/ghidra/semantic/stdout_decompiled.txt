@@ -1,0 +1,15 @@
+Fake branch: 140724679288536
+Opaque predicate: 10
+Instruction substitution: 20
+String encryption: 225
+Tail call optimized: 0
+Non-tail call: 500500
+Vectorized loop: 5050
+Link-time optimization: 106
+Division by zero: 20
+Null pointer deref: 1
+Buffer overflow: 41
+Integer overflow: 30
+Undefined behavior: 1000000000
+Implementation-defined: 10
+Done

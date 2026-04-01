@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_8`, `lVar2` with no semantic meaning. For example, `param_1` in `param_macro_constants` should be `size` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_macro_constants`, `call_asm_clobber`, `test_preprocessing_features`). Only a few generic names like `FUN_00100810` for internal functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without macro recovery: `0x400` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0xdef0`, `0x10` (16). Original macros like `MAX_SIZE`, `BUFFER_COUNT` completely lost during preprocessing.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) add noise to many functions. Some compiler artifacts present but code is generally readable without excessive register spilling artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow recovered naturally with if-else and do-while loops (e.g., `param_asm_clobber` loop). Some functions constant-folded by compiler (e.g., `call_macro_constants` returns `0x40` directly), which is optimization artifact not decompiler failure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with single responsibility. Each test function properly separated. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive gotos disrupting flow, though some functions have stack check epilogues that interrupt reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Compiler constant folding removed runtime computation redundancy. Loop structures not unnecessarily unrolled.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4`, `undefined8` instead of specific types like `int32_t`, `size_t`. Pointer types often degraded to `long` or `void*`. For example, `param_asm_simd` uses `long` for array pointers instead of `int*`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in this code. Arrays handled as pointer arithmetic. Stack arrays like `local_38[16]` in `call_asm_multi_insn` recovered but without semantic field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(void *)0x0`, `(undefined4 *)0xffffffffffffffff`). Pointer arithmetic present but generally safe. No obvious buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except decompiler warnings ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No algorithm explanations or macro semantics recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. Standard C idioms (array sum loops, string operations) not identified. Assembly-to-C recovery good but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unreachable blocks and non-returning subroutines. Stack canary checks noted with warnings. No detailed explanations of why anomalies exist.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Error conditions (e.g., `mmap` failure returns) not explained. No parameter validation contracts recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graphs. Global variable usage (`global_var`, `__aarch64_have_lse_atomics`) not explained. No callback relationships identified.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped together. No header file structure or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external dependencies (`__printf_chk`, `mmap`, `sysconf`, `memcpy`). Architecture-specific code (`__aarch64_ldadd4_acq_rel`) needs platform support. Would need stubs to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.64/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on comparison usage pattern
+- **All macro constants lost** - `0x400`, `0x40`, `0xdef0` should be `MAX_SIZE`, `BUFFER_COUNT*4`, platform constant
+- **No comments explaining assembly recovery** - inline assembly converted to C without indicating original intent
+- **Type degradation to `undefined4/8`** loses semantic information about return types and parameter sizes
+- **Architecture mismatch unexplained** - source has x86_64 assembly but decompiled code shows ARM64 (`__aarch64_ldadd4_acq_rel`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making code navigation and understanding significantly easier despite other deficiencies.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Almost complete absence of comments means readers cannot understand the original intent, macro semantics, or why certain transformations occurred.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from debug symbols** - When `-g` flag is present, extract macro definitions and replace magic numbers with named constants (e.g., `0x400` → `MAX_SIZE`)
+2. **Infer variable names from usage patterns** - Analyze how variables are used (size comparisons, array indexing, pointer arithmetic) to suggest semantic names
+3. **Add decompilation confidence annotations** - Mark recovered code sections with comments indicating original constructs (e.g., "// Recovered from inline assembly", "// Constant-folded at compile time")

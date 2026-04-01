@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`param_1`, `local_30`), and struct arguments are degraded to stack offsets (`in_stack_00000008`), obscuring the original semantic meaning like `seed` or `data[i]`.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Original function names like `cdecl_func` and `test_calling_conventions` are preserved, but compiler-generated artifacts like `.cold` and `.constprop.0` pollute the namespace.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0xf` (15) and `0x32` (50) appear in `test_calling_conventions` due to constant propagation, replacing the original function calls and losing the context of the operation.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Code is mostly clean, but compiler security features like `__stack_chk_fail` and stack canary checks (`in_FS_OFFSET`) are present, adding minor noise to the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Aggressive optimization (-O3) has unrolled loops (e.g., `ret_large_struct`) into linear assignment sequences, and varargs handling (`varargs_func`) is reduced to complex pointer arithmetic with magic checks (`0x2f`).
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The compiler has split functions into specialized versions (`.constprop.0`) and exception paths (`.cold`), which fragments the original source structure, though the granularity is manageable.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom; however, the varargs implementation contains nested loops and conditional jumps that disrupt the flow compared to the simple `for` loop in the source.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The compiler successfully removed redundancy (e.g., `call_cdecl` is just a return), and the decompiler reflects this concise, albeit logic-obscuring, state.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly scrambled; `func_mixed_args` parameters are reordered in the signature (double, int, char*, long vs int, char*, double, long long), and return types are often generic `undefined8`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are poorly recovered; `LargeStruct` in `func_struct_byval` is completely lost, replaced by individual stack variables (`in_stack_00000008`, etc.), and `SmallStruct` returns are split into register macros (`CONCAT44`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The scrambling of parameter types in `func_mixed_args` and the use of `undefined8` for specific integer returns create type confusion that would lead to unsafe usage if the code were recompiled without fixes.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to standard compiler warnings (e.g., "Subroutine does not return") and offer no explanation for optimized-away logic or complex stack manipulations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level idioms are lost; the `va_list` iteration in `varargs_func` is obscured by stack offset arithmetic, and struct initialization loops are unrolled into raw assignments.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Standard anomalies like unreachable blocks are flagged, but the semantic loss of struct parameters and the constant folding in test functions are not highlighted as potential readability issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are recovered; for example, the requirement for `count` in `varargs_func` is implicit in the messy control flow rather than documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are often inlined or replaced by constants (e.g., `test_calling_conventions` prints `0xf` instead of calling `cdecl_func`), breaking the call graph clarity present in the source.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which roughly groups related logic, but the compiler's outlining of cold code scatters the implementation of single logical functions.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific macros (`CONCAT44`, `undefined8`) and would require significant modification to compile, lacking standard headers and type definitions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.25
+L2_avg: 6.50
+L3_avg: 3.00
+L4_avg: 3.50
+L5_avg: 4.67
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (3.00 × 0.20) + 
+          (3.50 × 0.15) + (4.67 × 0.10) = 4.79
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects
+- **Struct Loss**: `LargeStruct` in `func_struct_byval` is completely disintegrated into stack offsets (`in_stack_00000008`...), losing all semantic structure.
+- **Type Scrambling**: `func_mixed_args` has incorrect parameter types and order in the signature (e.g., `double` listed before `int`), misrepresenting the source ABI.
+- **Idiom Obfuscation**: The `va_list` pattern in `varargs_func` is lost, replaced by obscure pointer arithmetic and magic number checks (`0x2f`).
+- **Constant Propagation**: Test functions like `test_calling_conventions` print hardcoded constants (`0xf`) instead of showing the function calls, hiding the program's logic.
+- **Generic Return Types**: Functions returning `int` are often typed as `undefined8`, reducing type safety and clarity.
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**: Despite optimization, the majority of original function names were preserved in the symbol table, making it easy to identify the general purpose of most blocks.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The decompiler failed to reconstruct struct arguments and return values, breaking the high-level data model of the program significantly.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Enhanced Struct Recovery**: Implement better analysis of stack layouts to reconstruct large struct arguments passed by value, grouping `in_stack_` variables into a coherent struct definition.
+2. **Mixed-Type ABI Handling**: Improve parameter ordering and typing for x64 ABI functions mixing integer (GPR) and floating-point (XMM) arguments to match source signatures.
+3. **Varargs Idiom Reconstruction**: Detect and re-symbolize `va_list` usage patterns, replacing raw stack pointer arithmetic with standard `va_start`/`va_arg` pseudo-ops.

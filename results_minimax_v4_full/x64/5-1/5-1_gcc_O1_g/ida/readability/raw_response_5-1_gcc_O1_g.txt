@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v4`, `v6` are generic throughout. In `test_cpp_rtti`, all variables `v0`-`v6` are unnamed. Only `obj`, `a`, `b`, `r2` have minimal semantic hints. The decompiler fails to infer purposes like `instance_count` from static variable usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Many functions retain mangled C++ names like `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`. Helper functions are named `sub_2020`, `sub_2030` with no semantic meaning. Some member functions like `Base::virtual_func` are properly demangled, but the inconsistency is confusing.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u` (20 for array size), `0x28u` (stack canary offset), and `0x1234` appear without explanation. The value `4700` in `test_cpp_member_func` should be explained as computed constant. Some literals like `3` for `multiplier` are recoverable from context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains 23 "FAILED to decompile" messages for library functions. Stack canary checks (`__readfsqword(0x28u)`) add noise. The `JUMPOUT(0)` in `sub_2020` is a decompilation artifact. However, no debug instrumentation or register spilling artifacts clutter the main logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow - sequential statements with returns. However, `test_cpp_diamond_inheritance` uses confusing pointer arithmetic (`&obj.MiddleB`) that obscures the virtual function dispatch logic. The control flow is correct but not always idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well - each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate. Member functions like `Base::virtual_func`, `Derived::virtual_func` are properly extracted. The granularity is appropriate with no 500-line monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without forward jumps. Early returns are used appropriately. The `test_cpp_diamond_inheritance` has some back-and-forth with `obj.dataB` reassignment, but overall flow is linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some functions like `test_cpp_multiple_inheritance` are reduced to constant returns (`return 71`), which appears to be compiler optimization at -O0 surprising behavior, not decompiler redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correct - `int`, `double`, `unsigned __int64`. Pointers are properly typed (`Base *obj`). However, vtable function pointers use generic `int (**)(...)` instead of specific signatures. The `size_t` is not recovered (shows as `unsigned __int64`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some class members recovered: `base._vptr_Base`, `derived.multiplier`, `obj.dataB`. However, `SimpleClass` is not reconstructed - the decompiler uses raw `*(_QWORD *)obj.name` instead of `obj.value` and `obj.name`. The `LifecycleClass` members are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: pointer arithmetic in virtual function thunks (`*(_QWORD *)(*((_QWORD *)&this[-1].dataB + 1) - 24LL)`), unusual casts like `&v3[*v3 == 42]`. The virtual thunk functions use complex pointer manipulations that could cause undefined behavior if misinterpreted.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm or intent. The only comments are function signatures. No indication of decompilation confidence or uncertain indirect calls. The "positive sp value" warning in `_start` is noted but not explained.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Virtual function dispatch through vtable is correctly shown (`*obj->_vptr_Base`), but not labeled as a pattern. Exception throwing (`__cxa_throw`) is recognized but not explained as C++ exception mechanism. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The "positive sp value has been detected" warning in `_start` is present. "FAILED to decompile" messages are listed for 23 functions. However, these aren't integrated into the code flow - they're just listed at the end. No inline warnings about suspicious operations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. The decompiler doesn't document expected states (e.g., "requires: obj != nullptr" for virtual calls). No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (`call_virtual_func(&base, 5)`), but not documented. No indication of who calls each function or global variable usage. Static functions aren't labeled as such.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Test functions, member functions, and runtime support functions are mixed together. No namespace or class structure organization visible in the output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses mangled names requiring C++ name demangling. Missing `#include` statements. 23 functions failed to decompile. Would require significant patching to compile. The "Compilation Result: Yes" in metadata seems incorrect given the mangled names and missing includes.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`-`v6`, `temp` patterns) - should infer from usage like `instance_count++`
+- `SimpleClass` and `LifecycleClass` structures not recovered - uses raw memory access instead of named members
+- 23 library functions failed to decompile, breaking code completeness
+- No comments explaining algorithms, virtual dispatch, or exception handling
+- Mangled C++ names (`_Z20test_cpp_member_funcv`) should be demangled to `test_cpp_member_func`
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function boundaries match source well - each test function and member function is properly separated with appropriate granularity.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Nearly all local variables use generic names (`v0`, `v1`, `v2`) that obscure their semantic purpose. The decompiler should analyze usage patterns (e.g., `instance_count++`, `strlen(obj.name)`) to infer meaningful names.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v1` used as `LifecycleClass::instance_count++` should be named `instance_count`
+2. Recover class/struct member names by analyzing constructor initialization and member access patterns
+3. Demangle all C++ names consistently and add comments explaining vtable dispatch and exception mechanisms

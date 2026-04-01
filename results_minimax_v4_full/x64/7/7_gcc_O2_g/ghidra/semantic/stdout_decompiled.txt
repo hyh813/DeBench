@@ -1,0 +1,8 @@
+===== AntiGravity Obfuscator Test Suite =====
+
+Opaque Predicate: 10
+Call Opaque Predicate: 20
+Instruction Substitution: 0xe1
+String Encryption: -80
+Tail Call Optimization: 500500
+Non-Tail Call: 5050

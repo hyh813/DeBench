@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `uVar4`, `pbVar2`, `bVar3`) with no semantic meaning. "Unresolved local var" comments show original names like `result`, `str`, `p1`, `p2` were lost during decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_fake_branch`, `call_opaque_predicate`, `param_tail_call_optimized`). Action-oriented naming clearly indicates purpose and matches original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x5a`, `0x1f`, `0x2a`, `0x14`, `0xe1`). Some are constant-folded results (0x14=20, 0xe1=225) but no named constants were recovered from the original source.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "Unresolved local var" comments clutter the output. Compiler runtime functions (`__aeabi_idiv`, `__aeabi_idivmod`) are included but necessary for ARM compatibility.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while instead of for loops. Critical issue: `param_fake_branch` dead branches completely eliminated (returns just `x`), losing the obfuscation intent. Constant folding in `call_*` functions hides actual logic flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions completely optimized away (`param_buffer_overflow_stack` is empty, returns nothing). Multiple versions of `param_division_by_zero` exist (3 different implementations), suggesting decompilation inconsistencies.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but do-while loops disrupt natural for-loop reading. Some functions have early returns that could be cleaner. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Three different versions of `param_division_by_zero` create confusion. Constant folding in caller functions (`call_fake_branch` returns 10 directly) duplicates logic that should reference the actual function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (int, char*, size_t, unsigned int). Pointer types generally correct. Some type information lost in "Unresolved local var" comments showing DW_OP expressions instead of clean types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct bitfield mentioned in comments (`anon_struct_4_3_4e909822 bitfield@[???]`) but not reconstructed. Arrays shown as pointers in many cases. No struct field names recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(code *)`, `(__sighandler_t)0x0`, `(int *)0x0`). Pointer arithmetic visible in loop constructs. No buffer overflow warnings despite original code having intentional overflow tests.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: "Unresolved local var" and "WARNING" comments are helpful decompiler metadata but no algorithm explanations. Original source comments about obfuscation techniques (OBF-L4-02, opaque predicates) completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Obfuscation patterns (fake branches, opaque predicates, instruction substitution) not identified or documented. GCD algorithm in `param_opaque_predicate` not recognized.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with "WARNING: Removing unreachable block", "Could not recover jumptable", "Subroutine does not return" warnings. Helps identify decompilation uncertainty areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Signal handler contracts not documented. No indication that `param_division_by_zero` requires x≠0 for normal execution path.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced (`jmp_buffer`, `encrypted_0`, `div_zero_caught`) without clear relationship mapping. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output. No logical grouping by section (obfuscation vs. optimization vs. edge cases). Original source's clear section headers (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies visible (signal, malloc, strlen, printf) but would need significant stubs. Multiple `__aeabi_*` ARM runtime functions required. Does not compile standalone without toolchain support.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (7+4+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (5+3+7+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.38/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **`param_fake_branch` obfuscation completely lost**: Dead branches eliminated, function just returns `x` - the entire obfuscation purpose is destroyed
+- **Generic variable naming**: `iVar1`, `iVar2`, `uVar4` throughout obscures semantic meaning that original names (`result`, `p1`, `p2`, `a`, `b`) provided
+- **Multiple function versions**: Three different `param_division_by_zero` implementations create confusion about which is correct
+- **No obfuscation pattern documentation**: Opaque predicates, fake branches, and instruction substitution patterns not identified or explained
+- **Constant folding hides logic**: `call_*` functions return pre-computed constants instead of showing actual function calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, maintaining semantic clarity about purpose
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** - No recognition of obfuscation patterns, cryptographic idioms, or algorithm patterns that were explicit in source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code at low optimization levels**: When debug symbols indicate `-O0`, do not eliminate branches even if statically unreachable - this preserves obfuscation intent
+2. **Recover variable names from debug symbols**: DWARF debug info contains original variable names that should be used instead of `iVar1`, `iVar2` generics
+3. **Add obfuscation pattern detection**: Recognize and annotate common obfuscation techniques (opaque predicates, fake branches, instruction substitution) with explanatory comments

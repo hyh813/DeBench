@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `a1`, completely losing semantic meaning (e.g., `sum`, `count`, `i` in the source).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully recovered the original function names for the main test cases (e.g., `sequential_ops`, `loop_for_fixed`), which is excellent, though some helpers are mangled (e.g., `$a.16`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers like `4294967295` (UINT_MAX/-1) and `1717986919` (inverse for division by 10) without named constants or comments to explain them.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with `armg_calculate_condition` calls and artifacts like `vvar_112{r64|4b}`, which represent low-level IR operations rather than high-level C logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple control flows are often obfuscated; for example, `single_if` is turned into complex bit-shifting logic, and loops are replaced by mathematical formulas (e.g., `loop_for_fixed`), making them unrecognizable as loops.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Functions are generally mapped 1:1 with the source, which is good, but the internal logic is flattened or inlined aggressively, making individual functions harder to parse.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While the code mostly flows top-to-bottom, the frequent use of `goto` labels (e.g., `LABEL_4005b8`) and the `armg_calculate_condition` checks disrupt the linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler (or compiler) eliminated loop redundancy by converting them to math, which is efficient but hurts readability; however, the decompiler introduces its own redundancy in the form of repeated condition checks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often degraded to `unsigned int` even when the source used `int` (e.g., `sequential_ops`), and function pointers are frequently represented as raw pointers or integers, losing signature information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are recovered only as generic layouts with fields named `field_0`, `field_4`, etc. (e.g., `struct struct_0`), completely losing the semantic context of the original structures.
+
+**11. Type Safety:** Score: 3/10
+Justification: There are unsafe casts present, such as treating function pointers as `unsigned int *` and calling them, which obscures the actual call targets and violates type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex logic, the math formulas, or the purpose of the `armg_calculate_condition` calls.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like "sum of integers" or "count digits" are not recognized; instead, they are presented as raw mathematical formulas or bit-manipulation sequences, failing to convey the algorithm's intent.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the `armg_calculate_condition` calls and weird math formulas as standard code without flagging them as potential decompilation artifacts or optimization results.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the requirement for `n > 0` in `duffs_device` is not explicitly documented in the decompiled view.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls to standard library (`printf`) and other internal functions are visible, but the loss of type information makes the interface less clear than it could be.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are organized by memory address rather than logical grouping (e.g., all Level 1 tests together), making it harder to navigate the codebase compared to the source.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on non-standard functions like `armg_calculate_condition` and uses specific compiler intrinsics (`__divsi3`), making it impossible to compile without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- The pervasive use of `armg_calculate_condition` calls makes the code look like low-level IR rather than C.
+- Loops are aggressively converted into complex mathematical formulas (e.g., `loop_for_fixed`), destroying the original control flow structure.
+- Variable names are entirely generic (`v0`, `a0`), providing no semantic context.
+- Composite types are recovered with generic field names (`field_0`), losing all structural meaning.
+
+**Best Quality Aspect:** Function Naming (scored 7/10)
+- The decompiler successfully preserved the original symbol names for the main test functions, which is the only strong link back to the source code's intent.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- The presence of `armg_calculate_condition` and other low-level artifacts makes the code extremely difficult to read; these should be abstracted into standard C boolean expressions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a simplification pass to convert `armg_calculate_condition` calls and flag manipulations into standard C comparison operators (e.g., `>`, `<`, `==`).
+2. Add an option to preserve loop structures even when they are mathematically optimized in the binary, or at least annotate the resulting math formulas with comments like "/* loop: sum 0 to n */".
+3. Utilize debug information (if available, as `-g` was used) to recover original variable and struct field names instead of defaulting to `v0` and `field_0`.

@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic stack-offset names like `param_1`, `param_2`, `local_c`, `local_10`, `local_14`. The original source used semantic names like `temp1`, `temp2`, `sum`, `i`, `count`, `target`. For example, in `sequential_ops`, the decompiler uses `param_1/2/3` instead of the original `a/b/c`, making it impossible to track variable purpose without cross-referencing source.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names are perfectly preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`, `recursion_factorial`, `tail_recursion`, `duffs_device`, `state_machine`, etc. Only a few internal thunks like `FUN_00101020` lack meaningful names.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Some magic numbers are explained via comments (e.g., `0x3e9` = 1001, `0x65` = 101), but most remain unexplained. The literal `0xfffffffb` appears for -5 without explanation. Constants like `0x14` (20), `0x1e` (30) in switch statements are not named. The original source had clear constants like `10, 20, 30, 100, 200` which are preserved as values but not as named constants.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail`) appear but are expected at -O0 with -fstack-protector. No redundant casts or debug instrumentation. The code is relatively clean except for some FS register offset references (`*(long *)(in_FS_OFFSET + 0x28)`) which are compiler-generated stack frame checks.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural and matches source patterns. Loops are correctly identified as `for` or `do-while`. However, `switch_fallthrough` uses goto labels (`LAB_001014b1`, `LAB_001014b9`) instead of explicit fallthrough comments, and `duffs_device` has awkward label-based switch reconstruction. The `goto_forward` and `goto_backward` are correctly recovered as such.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized and match the original decomposition. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) is correctly separated. No over-fragmentation or inlining issues at -O0. Parameter counts match original signatures (e.g., `sequential_ops(int, int, int)`).
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some disruption from goto labels in `switch_fallthrough` and `duffs_device`. Deep nesting in `nested_if_deep` (5 levels) is preserved but could be flattened for readability.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy at -O0. Loop unrolling is minimal. Common subexpression elimination artifacts are not present. Dead code is not observed. The code is clean except for some repeated stack canary checks.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Integer types are generally correct (`int`, `uint`). Function pointers use `code *` which is imprecise but functional. The `switch_small` function has a strange return type of `undefined [16]` which doesn't match the original `int`. Some parameters use `undefined4` or `undefined8` instead of proper types. Signed/unsigned confusion exists (e.g., `multi_return` takes `uint` but source uses `int`).
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: No complex structs were in the original source code (all functions use primitive types and arrays). Arrays are correctly identified (e.g., `local_28[4]` for the matrix in `loop_multi_exit`, `local_48[3]` for function pointer arrays). The decompiler handles simple arrays well.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Some issues: `switch_small` returns `undefined [16]` which is concerning. Function pointer type `code *` is too generic. The `op_div` function has unusual signature with `undefined8 param_3` for what should be a pointer. Stack canary comparisons like `*(long *)(in_FS_OFFSET + 0x28) == *(long *)(in_FS_OFFSET + 0x28)` are always true but present.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. Zero recovery of documentation. This is a critical gap for understanding decompiled code.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Some patterns are recognizable: `switch_large` uses proper switch-case with jump table. `duffs_device` is correctly identified (though awkwardly rendered). `fsm_func_table` shows state machine pattern via function pointer array. However, no explicit naming or documentation of these patterns. The ternary operator in `ternary_op` is rendered as if-else instead of `?:`.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No anomaly indication. The `switch_small` function returning `undefined [16]` is suspicious but not flagged. The always-true stack canary comparisons are not flagged as anomalies. No indication of uncertain indirect calls or unusual patterns. The decompiler presents everything as confident output.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear contracts (e.g., "n must be > 0" for duffs_device). Zero contract recovery. The decompiled code provides no guidance on expected input ranges or error conditions.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are present but relationships are not documented. The test functions call many others but there's no comment indicating this. Callback relationships (e.g., `process_with_callback` taking function pointer) are not explained. External dependencies like `printf`, `puts`, `_setjmp`, `longjmp` are marked as `<EXTERNAL>` but not documented.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are grouped logically: control flow test functions together, helper functions near their callers, external functions at the beginning. Static functions are properly scoped. The organization matches the original source file structure reasonably well.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: The code should compile with minimal stubs. External functions (`printf`, `puts`, `_setjmp`, `longjmp`) need standard library linkage. The `jump_buffer` global needs `jmp_buf` type definition. Some type issues (`undefined [16]`, `code *`) may cause compilation warnings but the code is structurally sound.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+9+6+8)/4 = 6.5
+L2_avg = (7+8+7+8)/4 = 7.5
+L3_avg = (7+8+7)/3 = 7.33
+L4_avg = (2+6+3+2)/4 = 3.25
+L5_avg = (4+8+7)/3 = 6.33
+
+Overall = (6.5 × 0.30) + (7.5 × 0.25) + (7.33 × 0.20) + 
+          (3.25 × 0.15) + (6.33 × 0.10)
+Overall = 1.95 + 1.875 + 1.466 + 0.4875 + 0.633 = 6.42/10
+```
+
+**Overall Readability Score: 6.4/10**
+
+### Critical Defects
+- **Variable naming**: All variables use generic stack-offset names (`param_1`, `local_c`, `local_10`) instead of semantic names from source (`a`, `b`, `temp1`, `sum`, `i`)
+- **No comments**: Zero documentation recovered from original source's extensive comments explaining function purpose, test scenarios, and difficulty ratings
+- **No anomaly indication**: Suspicious code patterns (e.g., `switch_small` returning `undefined [16]`, always-true stack canary checks) are not flagged
+- **No contract recovery**: Preconditions, postconditions, and invariants are not documented despite clear contracts in source
+- **Type issues**: `switch_small` returns `undefined [16]` instead of `int`; function pointers use generic `code *` type
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - Nearly all function names are perfectly preserved from the original source, making it easy to identify each function's purpose at a glance.
+
+### Most Needs Improvement
+**Semantic Transparency (3.25/10)** - The decompiled code lacks comments, pattern documentation, anomaly indication, and contract recovery. This dimension severely impacts understanding of the code's intent and guarantees.
+
+### Top 3 Recommendations
+1. **Recover variable names from usage patterns**: Infer semantic names from how variables are used (e.g., `param_1 + param_2` suggests `a + b`, `local_c < param_1` suggests loop counter `i < n`)
+2. **Add comments for non-trivial logic**: Document switch fallthrough behavior, complex conditions, and algorithm intent
+3. **Flag anomalies and uncertain constructs**: Mark suspicious return types, always-true conditions, and indirect calls that couldn't be resolved

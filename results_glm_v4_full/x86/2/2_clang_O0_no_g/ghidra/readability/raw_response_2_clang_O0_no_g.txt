@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_8`, and `local_c`, completely obscuring semantic intent (e.g., `sum` becomes `local_8`, loop counter `i` becomes `local_c`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table (e.g., `process_char`, `array_1d_stack`, `test_data_types_l1`), matching the source exactly and preserving high-level intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: While some literals are clear (e.g., `' '` instead of `32`), array strides and struct offsets appear as magic hex numbers (e.g., `0x2c`, `0x14`), and enum constants are replaced by raw integers (e.g., `0` instead of `STATE_IDLE`).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant noise from type casts (e.g., `(int)(short)`, `(longdouble)`) and artificial types (`undefined4`, `undefined8`), though control flow is clean of artifacts like `goto` or spurious jumps.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; loops are recovered as natural `for` statements, and `switch` statements are correctly identified, making the execution path easy to follow despite the low-level variable handling.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly with appropriate granularity; no inlining or outlining artifacts are present, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing branches, facilitating a straightforward reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling; however, the decompiler incorrectly collapsed the two volatile reads in `volatile_access` into a single expression `*param_1 + *param_1`, losing semantic redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type precision is poor due to the 32-bit binary vs 64-bit source mismatch; `long long` is split into two 32-bit parameters (`uint`, `int`), and `float`/`double` are promoted to `longdouble`, obscuring the original data types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are not recovered; access to struct fields is replaced by raw pointer arithmetic and array indexing (e.g., `param_1[1]` instead of `p->y`), completely hiding the data structure layout.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code is functionally safe, it relies heavily on explicit casts (e.g., `*(int **)`, `(undefined4 *)`) to handle types, which makes the code verbose and harder to verify manually.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining logic, algorithms, or data structures; only auto-generated warnings about injected functions are present.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic idioms like loops and linked list traversals are recognizable, but higher-level patterns like state machines (enums) or specific data structure traversals (trees) are not explicitly identified or annotated.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler flags standard compiler injections (e.g., `__x86.get_pc_thunk`) but fails to flag the semantic loss in `volatile_access` or the confusing 64-bit split in `process_ll`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for non-null pointers in `ptr_single` is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but there is no documentation of caller-callee relationships or global variable usage patterns beyond the immediate syntax.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's organization (e.g., all `process_*` types together), which aids in navigating the code.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile standalone due to Ghidra-specific types (`undefined4`, `undefined8`, `CONCAT44`) and missing struct definitions, requiring significant manual intervention.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.75
+L2_avg: 8.50
+L3_avg: 3.67
+L4_avg: 2.75
+L5_avg: 5.67
+
+Overall = (5.75 × 0.30) + (8.50 × 0.25) + (3.67 × 0.20) + 
+          (2.75 × 0.15) + (5.67 × 0.10)
+Overall = 1.725 + 2.125 + 0.734 + 0.4125 + 0.567
+Overall = 5.56
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.6/10
+
+### Critical Defects (Bullet List)
+- **Struct/Composite Loss**: Struct fields accessed via array indices (`param_1[1]`) instead of field names (`p->y`), completely obscuring data structure layout.
+- **64-bit Type Fragmentation**: `long long` operations split into 32-bit halves (`CONCAT44`, multiple params), making simple math (`x*x`) unreadable.
+- **Variable Naming**: Total lack of semantic variable names (e.g., `sum` becomes `local_8`, `i` becomes `local_c`), forcing manual tracking of logic.
+- **Enum/Constant Loss**: Symbolic constants (e.g., `STATE_IDLE`) replaced with magic integers (`0`), losing state machine context.
+- **Magic Number Offsets**: Array strides and struct offsets represented as hex literals (e.g., `0x2c`) instead of calculated sizes or field accesses.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** Ghidra perfectly recovered the original function names from the symbol table, making the high-level flow easy to follow despite low-level issues.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The decompiler failed to reconstruct struct definitions, reducing complex data structures to raw pointer arithmetic and array indexing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover Struct Definitions**: Utilize stack variable analysis and type propagation to reconstruct `struct` types and replace array indexing with field member access (e.g., `param_1[1]` -> `p->y`).
+2. **Improve Variable Naming**: Implement heuristic-based naming (e.g., variables used in accumulation should be named `sum`, loop counters `i` or `idx`).
+3. **Handle 64-bit on 32-bit**: Detect patterns of 64-bit integer manipulation (like `CONCAT44` or register pairs) and abstract them into native `long long` or `int64` operations.

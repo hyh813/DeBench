@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic stack offsets like `local_24`, `uStack_20`, and `param_1`. For example, `local_24` holds the string "Test" but gives no indication of its purpose as a class member or name buffer.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully recovered C++ mangled names, resulting in accurate semantic names like `Container<int>::push` and `test_cpp_member_func`. However, some symbols remain generic like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers that obscure the original logic, such as `0x125c` (4704) in `test_cpp_member_func` and `0x2a` (42) in `test_cpp_virtual_func`, with no comments explaining their derivation.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: There is significant stack padding noise, such as `undefined3 uStack_14` and `undefined4 uStack_11`, which clutters the variable list without adding semantic value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The control flow of the test functions is largely destroyed; complex logic involving object creation, method calls, and arithmetic is reduced to simple constant returns (e.g., `return 0x2a`), making the original execution path impossible to follow.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While class methods like `Container<int>::get` are correctly separated into their own functions, the high-level test logic is flattened into constants, failing to decompose the procedural steps shown in the source.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads very linearly, mostly consisting of variable assignments and return statements, with minimal jumping or complex branching artifacts.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler has over-optimized the logic by eliminating the actual code execution (e.g., removing the `try-catch` block logic in `test_cpp_exception` and replacing it with just a throw), resulting in a loss of necessary redundancy for understanding the flow.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently imprecise, using generic `undefined4` and `undefined8` instead of concrete types like `int`. Additionally, `test_cpp_exception` is decompiled as `void` despite the source defining it as `int`.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: The decompiler successfully identifies class types like `Container_int_` and `Base`, and correctly recovers the `this` pointer passing convention in methods like `Container<int>::push`.
+
+**11. Type Safety:** Score: 4/10
+Justification: Virtual function calls are represented as unsafe indirect calls through function pointers, such as `(**(code ***)param_1)();`, which bypasses type safety checks present in the high-level source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, data structures, or the purpose of the recovered functions, leaving the user to interpret raw assembly-derived code.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While C++ idioms like vtable calls are technically visible (`(**(code ***)param_1)();`), they are not annotated or recognized as high-level polymorphism, making them look like arbitrary pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication of anomalies, such as the fact that `test_cpp_exception` is defined as `void` but called as if it returns a value in `test_cpp_oo_features`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the bounds check in `Container<int>::get` is decompiled but not explicitly labeled as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to standard library functions like `operator_new` and `printf` are clear, and the relationship between class methods and their usage is preserved through naming.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat structure without any logical grouping or namespace recovery, making it difficult to see the original class hierarchy organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types like `undefined4` and `undefined8`, which will not compile without manual modification to standard C/C++ types.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`local_24`, `uStack_20`), obscuring all semantic intent.
+- Control flow logic is destroyed; complex test functions are reduced to constant returns (e.g., `return 0x2a`), hiding the object-oriented interactions.
+- Type precision is poor, using `undefined` types and incorrectly identifying `test_cpp_exception` as `void` instead of `int`.
+- No comments or semantic annotations are provided to explain the C++ constructs (vtables, RTTI) or logic.
+
+**Best Quality Aspect:** Function Naming (scored 8/10)
+- The decompiler successfully demangled C++ symbols, preserving readable names for class methods and test functions.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- The complete lack of comments and the failure to preserve the high-level logic (replacing it with constants) makes understanding the code's purpose extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Disable Aggressive Constant Propagation in View:** Provide an option to view the logic before constant folding replaces calculations with magic numbers, so users can see the actual operations performed.
+2. **Improve Variable Naming from Context:** Infer variable names from string literals (e.g., `local_24` containing "Test" should be named `name` or `str_test`) and constructor parameters.
+3. **Recover Exception Handling Flow:** Correctly identify and reconstruct `try-catch` blocks rather than just showing the `throw` instruction, and ensure return types match the source definition.

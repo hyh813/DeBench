@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_38`, `uStack_2c`, `iVar1`, `puVar1`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions degraded to `FUN_00100d60`. Class method names recovered (`Container<int>::push`, `RTTIDerivedA::getType`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy magic numbers throughout (`0x125c`, `0x3e9`, `0x2a`, `0x47`) with no explanation. These are constant-folded results that obscure the original computation logic (e.g., `0x125c` = 4704 expected result).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`undefined4`, `undefined8`, `uStack_25`). Multiple "WARNING: Unknown calling convention" annotations add noise but don't severely impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions collapsed to single return statements due to constant folding. Exception handling in `test_cpp_exception()` shows raw `__cxa_throw` calls instead of try-catch blocks.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but many are trivialized (just return constants). Template instantiations properly separated (`template_max<int>`, `template_max<double>`), but original logic structure lost.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom reasonably well. No excessive gotos in recovered code, though this is partly because complex control flow was optimized away.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. The constant folding actually eliminates redundancy, though at the cost of semantic clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - class types preserved (`Container<int>`, `RTTIDerivedA`) but many variables degraded to `undefined4`, `undefined8`, `long*`. Original `size_t`, `int32_t` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class names recovered but field access is pointer arithmetic (`*(int *)(this + 0x28)`). No struct field names recovered - `data`, `size` members accessed via offsets instead of named fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)`, `(long *)`, `(ulong)&local_58 | 4`). The bit-or operation on addresses is particularly concerning and obscures actual memory layout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable"). No semantic comments explaining what code does or why.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no recognition of RAII patterns, virtual dispatch, template instantiation, or lambda captures. Exception handling shows raw `__cxa_*` calls instead of try-catch.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues ("WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return"). However, these are generic warnings without specific guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original code's expected return values (e.g., "期望: 4704") completely absent from decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch reduced to `(*(code *)**(undefined8 **)param_1)`. No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably but no namespace/package structure. C++ class methods properly associated with classes (`Container<int>::push`), but no file-level organization matching source.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references external symbols (`operator_new`, `__cxa_throw`, `std::ios_base::Init`) without declarations. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+7+8)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type System): (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.05/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Constant folding destroyed semantics**: Test functions return precomputed constants (`0x2a`, `0x47`) instead of showing actual computation logic
+- **Variable names completely generic**: `local_38`, `uStack_2c`, `iVar1` provide zero semantic information
+- **Struct fields accessed via offsets**: `*(int *)(this + 0x28)` instead of `this->size`
+- **C++ idioms not recognized**: Exception handling shows `__cxa_throw` instead of try-catch, virtual calls show raw vtable dereference
+- **Magic numbers unexplained**: `0x125c`, `0x3e9`, `0x28a` are constant-folded results with no documentation
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved accurately from source, and template instantiations properly differentiated by type
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- C++ language features (exceptions, virtual dispatch, lambdas, RAII) completely reduced to low-level runtime calls without pattern recognition
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect constant-folded functions and show original computation**: When a function returns a constant, attempt to recover and display the original expression tree
+2. **Recover C++ exception handling patterns**: Recognize `__cxa_*` call sequences and reconstruct try-catch blocks with proper scope
+3. **Infer struct field names from usage patterns**: Analyze field access patterns across multiple functions to suggest semantic field names (e.g., offset 0x28 consistently used for size → name it `size`)

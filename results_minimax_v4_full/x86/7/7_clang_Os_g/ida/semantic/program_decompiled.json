@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x86/7/7_clang_Os_g/ida/syntactic/bin/7_clang_Os_g_fixed",
+  "stdout": "...\nObf/L4_02: 10\nObf/L4_03: 20\nObf/L4_04: 225\nObf/L4_05: 119\nOpt/L4_01: 500500\nOpt/L4_01: 5050\nOpt/L4_02: 0\nOpt/L5_01: LtoD: 20\nEdge/L3_01: D: 1\nEdge/L3_02: D: 41\nEdge/L3_03: 30\nEdge/L3_04: 2000000000\nEdge/L4_01: D: 10\nEdge/L4_02: D: 43\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

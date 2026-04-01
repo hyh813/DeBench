@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all local variables use generic names like `iVar1`, `__addr`, `__len`, `local_c` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names (`exec_mem`, `page_size`, `old_value`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`) matching original source exactly. This is the decompiler's strongest aspect.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x200` (should be MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0xdef0`, `0x117` (line number). Original had named constants that are completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "WARNING: Unknown calling convention -- yet parameter storage is locked" on 20+ functions. Multiple "Unresolved local var: [???]" comments clutter the code without providing useful information.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/else and do-while constructs. The `param_asm_clobber` loop is correctly recovered as a do-while. Some constant folding from O3 optimization is present but readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly with appropriate granularity. No over-fragmentation or monolithic functions. Each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps disrupting flow. The `param_memory_protection` nested conditionals are well-structured.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Call functions show aggressive constant folding (`call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants(2048)`). This loses the call relationship from source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, void*, size_t) but 30+ "Unresolved local var: [???]" annotations indicate type recovery failures. Original had precise types like `const char*`, `int*` that are degraded.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays correctly shown as `int[5]`, `char[32]`, `int[4]`. No complex structs in this code, but array types are properly recovered with bounds.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts visible. Atomic operations preserved as `__atomic_fetch_add_4`. Pointer arithmetic in `param_asm_clobber` is correctly typed as `arr = arr + 1`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no semantic comments. Only auto-generated warnings like "WARNING: Removing unreachable block". Original had extensive documentation (// 预处理后会替换为...) completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Macro expansions (SQUARE, MAX, ADD_16) not identified. Atomic operations not labeled as such. Stringize/token-paste patterns invisible.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" indicates issues but lacks detail. No explanation of WHY variables are unresolved or what manual analysis might help.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: arr != NULL"). No postcondition inference. Error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph. `test_preprocessing_features` calls shown but relationships not documented. Global `global_var` usage not highlighted.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source order. Preprocessing tests grouped, then ASM tests. Logical grouping preserved from original structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple unresolved references (`DAT_00011283`, `DAT_0001108f`). String literals externalized to data section. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+8+6)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (5+7+7)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+7+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.64/10
+```
+
+### Overall Readability Score: **5.6/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `iVar1`, `__addr`, `local_c` instead of `result`, `exec_mem`, `counter`
+- **Magic numbers unexplained**: `0x200`, `0x40`, `0xdef0`, `0x117` lose all semantic meaning from original constants
+- **30+ unresolved local variables**: "[???]" annotations indicate type recovery failures without explanation
+- **No semantic comments**: Original documentation (macro expansion explanations, expected values) completely lost
+- **String literals externalized**: `DAT_00011283` references prevent standalone compilation
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names preserved exactly from source (`param_macro_constants`, `param_asm_atomic`), making navigation intuitive.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero semantic documentation; only auto-generated warnings that add noise without insight into original intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant recovery**: Detect magic numbers that match common patterns (0x200=512, 0x40=64) and suggest named constant recovery from debug symbols or pattern analysis.
+2. **Variable name inference from debug info**: When `-g` flag is present, extract DWARF variable names instead of generating `iVar1`, `local_c`.
+3. **Semantic comment generation**: Add comments explaining optimization artifacts (e.g., "// Constant folded: original called param_macro_constants(2048)") and unresolved elements with actionable guidance.

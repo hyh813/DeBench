@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_minimax_v4_full/x64/7/7_clang_O2_g/ghidra/syntactic/bin/7_clang_O2_g_fixed",
+  "stdout": "Testing obfuscation and optimization edge cases\n\nopaque_predicate: 10\ninstruction_substitution: 20\nstring_encryption: 225\ntail_call_optimized: 139\nnon_tail_call: 500500\nvectorized_loop: 5050\nlink_time_optimization: 72\n\nDivision by zero test...\n\nNull pointer dereference test...\nnull_pointer_deref: 41\nbuffer_overflow: 30\ninteger_overflow: 2000000000\nundefined_behavior: 10\nimplementation_defined: 47\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

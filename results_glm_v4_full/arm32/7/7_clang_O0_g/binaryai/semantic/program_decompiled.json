@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm32/7/7_clang_O0_g/binaryai/syntactic/bin/7_clang_O0_g_fixed",
+  "stdout": "Testing fake_branch: -1095919660\nResult: 10\nTesting opaque_predicate: 35\nTesting instruction_substitution: 225\nTesting string_encryption: 0\nTesting tail_call_optimized: 500500\nTesting non_tail_call: 5050\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

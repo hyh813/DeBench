@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `a0`, `a1`, `v0` through `v17` in `test_calling_conventions`). While `ptr` and `cur` appear occasionally, most identifiers like `v10`, `v11` in `varargs_func` provide no semantic context about their role (e.g., loop counter, accumulator).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: High-level function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are preserved accurately from the source symbols. However, runtime stubs are named generically (e.g., `sub_401020`), which is expected but lowers the score slightly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers such as `4294967295` (0xFFFFFFFF, used for masking/casts) and `0x100000000` (bit shifting for struct packing). While string literals like `"CALL-L1-01: %d\n"` are clear, the numeric constants lack the named constants (e.g., `UINT32_MAX`) present in the source logic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present from compiler intrinsics and type safety checks, such as `__printf_chk` instead of `printf`, `AddV` in `func_mixed_args`, and frequent `& 4294967295` truncation casts. These artifacts obscure the original source's simplicity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The `varargs_func` implementation is unnatural, using a `do-while` loop with complex pointer arithmetic (`v0 = 8`, `ptr = &(&v3)[v12 & 4294967295]`) instead of the standard `va_list` macros. While `test_calling_conventions` is linear, the logic of varargs is obfuscated.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While user functions are distinct, aggressive optimization has inlined logic into `test_calling_conventions`, making it a large monolith (1044 LOC total, with this function containing many constant-folded operations) rather than a series of clear calls.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps or spaghetti logic. Even the complex `varargs_func` is contained within a single loop structure, making it traceable despite its opacity.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized state of the binary cleanly; for example, `call_cdecl` simply returns `15`. While this loses the source's structure, it accurately reflects the optimized binary without redundant dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost or incorrect. In `param_func_ptr`, the callback parameter is typed as `unsigned long long *` instead of a function pointer, yet it is called as `a0(a1)`. In `ret_small_struct`, the return type is `unsigned long long` (a packed integer) rather than the struct `SmallPoint`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are poorly recovered. `func_struct_byval` has no parameters in the decompiled signature (`void func_struct_byval()`), whereas the source accepts a `LargeStruct`. The struct access is replaced by raw stack pointer arithmetic (`cur = &v0`).
+
+**11. Type Safety:** Score: 3/10
+Justification: The code exhibits unsafe type confusion. `param_func_ptr` casts a function pointer to a data pointer type and then invokes it. `func_mixed_args` uses the `AddV` intrinsic and manual masking, bypassing standard type safety mechanisms.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the `va_list` emulation in `varargs_func` or the struct packing in `ret_small_struct`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are not recognized. The `varargs` pattern is not recovered as `va_start`/`va_arg` but exposed as raw pointer manipulation. The "Small Struct Return" idiom (packing two ints into a register) is shown as bitwise operations rather than a struct return.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the confusing `varargs_func` pointer math and the function pointer type mismatch in `param_func_ptr` with absolute confidence, offering no warnings or indicators that these might be reconstruction errors or complex patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_double_ptr` does not indicate that `ptr` must not be NULL, despite the check existing in the logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear where not inlined. The relationship between `main` and the test functions is preserved. However, the loss of struct parameters breaks the expected interface for functions like `func_struct_byval`.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in a logical order that roughly matches the source flow (calling conventions, parameters, returns). Related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses non-standard intrinsics like `AddV` and glibc internals like `__printf_chk`. The type mismatches (e.g., calling a `unsigned long long *` as a function) would prevent compilation without significant manual fixing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 8 + 4 + 5) / 4 = 5.0
+L2_avg: (5 + 6 + 8 + 8) / 4 = 6.75
+L3_avg: (4 + 2 + 3) / 3 = 3.0
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (7 + 8 + 4) / 3 = 6.33
+
+Overall = (5.0 × 0.30) + (6.75 × 0.25) + (3.0 × 0.20) + 
+          (1.25 × 0.15) + (6.33 × 0.10)
+Overall = 1.5 + 1.6875 + 0.6 + 0.1875 + 0.633
+Overall = 4.608
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet List)
+- **Struct Parameter Loss**: `func_struct_byval` is decompiled as taking no arguments, completely losing the `LargeStruct` parameter and replacing it with implicit stack access.
+- **Varargs Obfuscation**: `varargs_func` is represented as raw pointer arithmetic and loops (`v0 = 8`, `ptr = &(&v3)[...]`) instead of using `va_list` macros for readability.
+- **Function Pointer Type Confusion**: `param_func_ptr` types the callback as `unsigned long long *` instead of a function pointer, creating a type safety violation in the output.
+- **Small Struct Return Obscured**: `ret_small_struct` returns a packed `unsigned long long` with bit-masking (`| a1 * 0x100000000`) instead of returning a `SmallPoint` struct.
+- **Magic Numbers**: Frequent use of `4294967295` (0xFFFFFFFF) for truncation masks instead of explicit casts or named constants.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (8/10)
+- **Why?** The decompiler successfully preserved the original symbol names for almost all user-defined functions (e.g., `cdecl_func`, `test_calling_conventions`), making the high-level intent of the code blocks immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The decompiler failed to recover struct definitions and parameters; structs passed by value disappeared from signatures, and struct returns were demoted to raw integers or pointer copies, severely impacting semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Varargs Pattern Recognition**: Detect the standard `va_list` prologue/epilogue sequences (stack pointer manipulation) and emit standard `va_start`, `va_arg`, `va_end` idioms instead of raw pointer arithmetic.
+2.  **Recover Stack-Based Struct Parameters**: Analyze stack frame layouts to identify contiguous blocks passed as arguments and reconstruct them as struct parameters in function signatures, rather than omitting them or treating them as void.
+3.  **Enhance Function Pointer Typing**: Propagate function signature types through pointers more aggressively to avoid representing function pointers as generic data pointers (e.g., `void*` or `unsigned long long*`) that are subsequently called.

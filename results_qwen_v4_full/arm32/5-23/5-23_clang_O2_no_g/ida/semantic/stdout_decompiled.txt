@@ -1,0 +1,21 @@
+Testing preprocessing features
+PP L201: 64
+PP L202: 30
+PP L203: 32
+PP L204: 57122
+PP L301: 116
+PP L302: 19
+PP L303: 60
+LOG: Values: 10, 20, 30
+PP L304: 60
+PP L305: 16
+PP L306: 500
+file=src/5-23.c, func=param_builtin_macros, line=279, date=Jan 15 2026, time=03:01:19
+PP L307: 382
+Testing ASM features
+ASM L401: 15
+ASM L402: 15
+ASM L403: 42
+ASM L404: 36
+ASM L405: 30
+ASM L406: 77

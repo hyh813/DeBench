@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `len`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_strcpy`, `call_strcpy`) but many are mechanical (`sub_4012f4`, `$x`, `$d.5`). Thread helpers like `thread_compute` retained names but lost parameter semantics.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers: `4294967295` (UINT_MAX/-1), `18446744073709551612`, `7521977183824144706`. String comparisons use raw XOR with constants instead of `strcmp()`. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant ARM64 artifacts: `__ROL__()`, `arm64g_calculate_condition()`, `[D] MBusEvent-Imbe_Fence()`. Redundant stack frame setup (`v0 = &v1`) in every function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops converted to manual do-while with counter management. Conditionals obscured by bit operations (`(char)(v2 >> 31) & 1`). Original if-else chains replaced with complex condition calculations.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but `call_strcpy` incorrectly inlines `strncpy` instead of calling `param_strcpy`. Thread helpers separated but with broken parameter passing.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps and goto patterns. `param_malloc_free` has deeply nested loops with manual index management disrupting top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls (`call_memcpy` calls `param_memcpy` twice in return). Repeated bit-mask operations throughout. Dead code from register spilling not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned long long`, `unsigned int`, or `char*`. Original `size_t`, `pid_t`, `FILE*`, `pthread_t` lost. `param_strlen` missing `const char*` parameter entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` partially recovered but with generic `sa_data[14]`. `ThreadData` struct completely lost (fields accessed via pointer arithmetic). TLS uses anonymous `struct_0` with `field_0`, `field_5`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(volatile int*)&atomic_counter`, `(char *)ptr + v7`. Pointer arithmetic on void pointers. Function signatures mismatch (e.g., `param_strlen()` has no parameters).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only decompiler metadata ("Failed to decompile function"). No algorithm explanations, API contracts, or parameter documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls (`strcpy`, `memcpy`) recognized but not annotated. Producer-consumer pattern in `param_condition_variable` not identified. Atomic operations shown as raw intrinsics.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Two functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`). ARM64-specific artifacts not explained. No warnings about suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc results). No postconditions or return value guarantees. Error conditions (-1, -2, -3) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`) used without declaration context. No call graph information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Test functions mixed with implementation. No logical grouping by functionality (library vs. syscall vs. thread).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`pthread_mutex_lock`, `printf`). Two functions failed to decompile requiring stubs. Would need significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+2+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+4+5)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.62/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `dst`, `src`, `buffer_size`)
+- **`param_strlen()` missing parameter** - function signature completely broken
+- **Magic number `4294967295`** used throughout instead of `-1` or `UINT_MAX`
+- **`call_strcpy` doesn't call `param_strcpy`** - semantic relationship lost
+- **ARM64 artifacts** (`arm64g_calculate_condition`, `__ROL__`) obscure simple conditionals
+
+### Best Quality Aspect: **Build System Compatibility (5/10)**
+- External function declarations present and most functions have callable signatures despite type degradation
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero semantic comments recovered; decompiler provides no guidance on algorithm intent or API contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - analyze how variables are used (e.g., passed to `strlen` → `string_ptr`, used in loop counter → `index`)
+2. **Replace magic numbers with symbolic constants** - detect common patterns like `4294967295` = `-1` (signed) and suggest named constants
+3. **Preserve original function signatures** - `param_strlen(const char*)` should not lose its parameter; use debug symbols from `-g` flag more effectively

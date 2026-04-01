@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `iVar1`, `piVar2`, `uVar6`, `lVar1` with type prefixes. Multiple unresolved variables marked as `int i@[???]`, `int sum@[???]`, `Node * current@[???]`. Only a few well-named like `param_1` in pointer functions. The original's meaningful names like `sum`, `i`, `current` are lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `process_char`, `process_short`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`. Minor issues: internal functions like `FUN_00101020` and some test helper functions have generic names. The core functionality is well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x19`, `0xbfU`, `0x61` ('a'), `0x62` ('b') appear without explanation. The boolean logic in `process_bool` uses cryptic bit manipulation `~(byte)x & 1` instead of the original `(x > 0 && x % 2 == 0)`. Some literals like `0x14` (20) in volatile test are unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING" comments about unreachable blocks and unknown calling conventions. Unresolved local variables marked with `@[???]`. Stack canary checks (`__stack_chk_fail`) add noise. However, no register spilling artifacts or debug instrumentation visible. Mixed result - some compiler artifacts present but not overwhelming.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `process_char`, `process_int` have natural if-else. However, `array_1d_stack` shows aggressive loop unrolling with 4-element processing that obscures the original `for` loop. At `-O0` this unrolling is unexpected. The `array_3d` function is completely unrolled into 125 individual additions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain separate as in source. Most functions are appropriately sized. The `binary_tree_sum` is very large (80+ lines) due to unrolling, but the original recursive structure is somewhat preserved. No obvious inlining of small functions like `double_value` (which is not even decompiled - likely inlined away).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Simple functions read top-to-bottom. However, `array_1d_stack` has complex nested conditions with forward jumps. The `pointer_array` function uses deeply nested if-statements instead of a loop. The `array_3d` is completely linearized (125 terms added) destroying the original nested loop structure.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Severe loop unrolling in `array_1d_stack`, `array_3d`, `array_vla`, `ptr_increment`, `union_array` - all expanded into 4-element chunks. The `array_3d` function has 125 explicit array accesses instead of nested loops. This is the most severe readability issue in the entire decompilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (int, short, char, float, double) are correct. Pointers are properly typed (`int *`, `int **`, `int ***`). Function pointer types use `_func_int_int *` which is reasonable. Minor issues: some `long` vs `int` ambiguity, and `process_ld` returns `longdouble *` incorrectly (should be `longdouble`).
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Device`, `Flags` all recovered with correct field names. Unions properly identified as `UnionData`. Nested structures handled well: `(r->position).x`, `(w->style).fill.r`. Bitfields partially recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Pointer arithmetic appears correct. Some potentially unsafe patterns: `ptr_diff` does `(long)p1 - (long)p2 >> 2` which relies on int size assumption. Function pointer calls have warnings about indirect jumps. No major buffer overflow patterns visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No algorithm explanations. The comment "WARNING: Could not recover jumptable" is useful but generic. No decompilation confidence indicators. Original comments about test scenarios completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic constructs recognized (loops, if-else, switch). The original test scenarios (SCENE-ALL, SCENE-DESK, etc.) not identified. No recognition of specific patterns like "string length calculation" or "linked list traversal" - just raw code. Some algorithm hints in `array_complex_index` (2D to 1D mapping).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for unresolved items: "Unresolved local var", "Could not recover jumptable". However, these are generic and don't explain the impact. The `process_ld` returning wrong type (`longdouble *` instead of `longdouble`) is not flagged as an anomaly. Some false positives (unreachable blocks that aren't really problematic).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original function contracts (e.g., "requires: ptr != NULL") are completely lost. Error conditions not documented. The `array_complex_index` boundary check could have a comment about valid range.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No function call graph documentation. Callback relationships not explained (e.g., `ptr_func_simple` calls function pointer `f`). The relationship between `binary_tree` and `binary_tree_sum` is unclear. Global/static relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by type (data types, arrays, pointers, composites) matching original source organization. Static functions properly marked. However, all in single file with no header/API separation. The original file structure (multiple test functions) is preserved in decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Cannot compile standalone - depends on `__printf_chk`, `__stack_chk_fail`, `__gmon_start__`, `__libc_start_main`, `__cxa_finalize`, `builtin_strncpy`. No dependency documentation. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Calculation:**
+- L1 avg: (3+8+4+5)/4 = 5.0
+- L2 avg: (5+7+4+2)/4 = 4.5
+- L3 avg: (7+9+7)/3 = 7.67
+- L4 avg: (4+5+6+3)/4 = 4.5
+- L5 avg: (4+6+4)/3 = 4.67
+
+Overall = (5.0 × 0.30) + (4.5 × 0.25) + (7.67 × 0.20) + (4.5 × 0.15) + (4.67 × 0.10) = 1.5 + 1.125 + 1.534 + 0.675 + 0.467 = 5.30
+
+Wait, let me recalculate with proper weighting:
+- L1: 5.0 × 0.30 = 1.50
+- L2: 4.5 × 0.25 = 1.125  
+- L3: 7.67 × 0.20 = 1.534
+- L4: 4.5 × 0.15 = 0.675
+- L5: 4.67 × 0.10 = 0.467
+
+Total: 5.30/10
+
+**Critical Defects:**
+- **Severe loop unrolling**: `array_3d` expanded to 125 individual additions instead of nested loops; `array_1d_stack`, `array_vla`, `ptr_increment`, `union_array` all use 4-element chunk unrolling
+- **Generic variable names**: Variables like `iVar1`, `piVar2`, `uVar6` obscure purpose; unresolved variables marked with `@[???]`
+- **Lost literal meaning**: Magic numbers like `0x19`, `0xbfU` unexplained; boolean logic `~(byte)x & 1` doesn't convey "positive even number"
+- **No contract documentation**: Preconditions, postconditions, and invariants completely absent
+- **Unresolved cross-references**: Function call relationships, callback patterns not documented
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Structures like `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`, `Device`, `Flags`, and unions are almost perfectly reconstructed with correct field names and nested structure handling.
+
+**Most Needs Improvement:** Redundancy Elimination (2/10)  
+The aggressive loop unrolling at -O0 (debug) level is completely inappropriate and destroys readability. Functions that should be 5-10 lines become 40-80 lines of repetitive code.
+
+**Top 3 Recommendations:**
+1. **Implement loop unrolling detection and reconstruction**: At -O0, loops should be preserved as loops. The decompiler should recognize 4-element chunk patterns and reconstruct the original loop structure.
+2. **Infer variable names from usage patterns**: Variables used as array indices should be named `i`, `j`, `k`. Variables accumulating sums should be named `sum`, `total`. The current type-prefix pattern is insufficient.
+3. **Add semantic annotations for magic numbers**: Detect patterns like `+ 32` for case conversion, `* 2` for doubling, and add comments explaining the operation. Flag suspicious literals with potential explanations.

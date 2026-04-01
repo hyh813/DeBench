@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `v3`, `v4` for locals. At -O0, we should expect meaningful names like `x`, `n`, `arr` matching source. Only loop counters `i`, `j`, `k` are somewhat descriptive.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+Justification: Mixed results - some functions correctly named (`local_vars`, `heap_basic`, `global_var_access`, `double_value`) while others use generic names like `sub_568`, `sub_924`. The test functions (`test_stack_memory`, `test_heap_memory`) are properly named, but helper functions like `static_helper` are inlined and lost.
+
+### 3. Literal Clarity
+**Score: 7/10**
+Justification: Test functions have constants inlined (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)`) which is actually helpful for understanding expected values. However, some magic numbers like array size calculations `(2 * (a1 + ((unsigned int)a1 >> 31))) & 0xFFFFFFFD` are obscure. The inlined test values appear intentional for verification.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts. The code shows `__fastcall` annotations and some type casts from decompilation, but no debug instrumentation or register spilling debris. The `_BYTE v4[40]` style declarations are standard decompilation output, not problematic noise.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow is natural - loops use `for`/`while` constructs, conditionals are clear. However, `vla_stack` and `alloca_usage` use complex pointer arithmetic for stack allocation that obscures the simple loop logic. At -O0, loops should be more directly recognizable.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Functions are mostly appropriately sized. The `call_static_func` incorrectly inlines `static_helper` and produces wrong output (`(2 * a1) | 1` instead of `2*a1 + 1`). Test functions correctly extracted. Some granularity issues but generally acceptable.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom. Early returns in functions like `heap_basic`, `heap_calloc` are appropriate. No excessive goto usage or forward jumps into loops. Good linear flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant redundancy. Loop unrolling is minimal. Dead code is not present. Some expressions could be simplified but nothing severe.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Return types generally correct (`int`). Parameters use generic `_DWORD` (32-bit) instead of `int`. Pointers often use `_DWORD*` or `char*` rather than specific types. Function pointers like `global_func_ptr` lose their signature. At -O0, more precise types should be recoverable.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: **Critical failure**. The `Point` struct is completely lost - `heap_struct` returns `3 * a1` and `global_struct_access` returns `30` without any struct reconstruction. The `Node` struct in `linked_list_heap` is accessed via raw pointer arithmetic (`*v1`, `v1[1]`) without struct recovery. The `TreeNode` struct is partially recovered in `create_tree_node` but fields are just `result[0]`, `result[1]`, `result[2]`.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Minor type safety issues present but not severe. Pointer arithmetic in array access (e.g., `*(_DWORD *)&v2[4 * i]`) is typical for decompilation. No obviously dangerous patterns like buffer overflows in the recovered logic. Some unsafe casts but manageable.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Almost no comments in the decompiled functions. Only the header comment about IDA Pro and binary path. No explanation of algorithm logic, no uncertainty markers, no @param/@return documentation. The decompiled code is bare except for the initial attribution.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms explicitly identified. The linked list creation/traversal in `linked_list_heap` is not labeled as such. Tree operations not identified. Memory allocation patterns (malloc/free pairs) not highlighted. Could benefit from pattern naming.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: The output shows "FAILED to decompile" for 18 functions (mostly import thunks like `__imp_printf`, `__imp_malloc`), but these aren't flagged within the code itself. No warnings about indirect calls or unusual stack layouts. The `call_static_func` semantic error (bitwise OR vs addition) is not flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. Null checks are present in code but not documented as contracts. Error return values (e.g., `-1` for allocation failure) not explained. No invariant documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function calls are correctly resolved (e.g., `malloc`, `free`, `printf`). Global variables like `global_counter`, `global_array` are properly identified and accessed. Callback relationships (e.g., `global_func_ptr` calling `double_value`) are traceable. Some external references like `extern_global_var` remain unresolved but that's expected.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are logically grouped - stack memory functions together, heap functions together, static/global functions together. Test functions grouped. Static functions like `static_helper` correctly inlined. The flat structure is typical for decompiled output.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: The code includes `main` function and should compile with standard library. However, 18 import functions failed to decompile (printf, malloc, free, etc.) which would require stubs. The "FAILED to decompile" messages indicate incomplete recovery. Some semantic errors (e.g., `call_static_func`) would cause incorrect output.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+5+7+8)/4 = 5.75
+L2_avg = (7+7+8+8)/4 = 7.50
+L3_avg = (6+2+7)/3 = 5.00
+L4_avg = (2+3+4+2)/4 = 2.75
+L5_avg = (7+7+6)/3 = 6.67
+
+Overall = (5.75 × 0.30) + (7.50 × 0.25) + (5.00 × 0.20) + 
+          (2.75 × 0.15) + (6.67 × 0.10)
+        = 1.725 + 1.875 + 1.0 + 0.4125 + 0.667
+        = 5.68/10
+```
+
+### Overall Readability Score: 5.7/10
+
+### Critical Defects
+- **Struct recovery completely failed**: `Point` and `Node` types lost; accessed via raw pointer arithmetic (`*v1`, `v1[1]`) instead of struct fields
+- **Semantic error in `call_static_func`**: Uses `(2 * a1) | 1` producing 11 for input 5 (correct is 5*2+1=11, but method is wrong - bitwise OR vs addition)
+- **Generic variable names**: Parameters `a1`, `a2`, locals `v1`, `v2` obscure purpose at -O0 where source names should be recoverable
+- **No comments**: Zero explanatory comments for algorithms, contracts, or uncertainty
+- **Function naming inconsistency**: Mix of correct names (`local_vars`) and generic names (`sub_568`)
+
+### Best Quality Aspect: Structural Intelligibility (7.5/10)
+Control flow is natural, functions are appropriately decomposed, and code reads linearly with minimal redundancy. At -O0, the decompiler preserved the basic program structure well.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+No comments, no idiom recognition, minimal anomaly indication, and no contract recovery. The code is a "black box" with no explanatory context.
+
+### Top 3 Recommendations
+1. **Recover struct types**: Use field access patterns to reconstruct `Point`, `Node`, `TreeNode` with meaningful field names instead of raw pointer arithmetic
+2. **Add explanatory comments**: Document algorithm intent, uncertainty markers for indirect calls, and preconditions/postconditions
+3. **Improve variable naming at -O0**: At debug optimization level, source variable names should be recoverable from debug symbols - leverage this for better naming like `x`, `n`, `arr` instead of `a1`, `v1`

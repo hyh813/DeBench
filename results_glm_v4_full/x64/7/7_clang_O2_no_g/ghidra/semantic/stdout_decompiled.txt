@@ -1,0 +1,15 @@
+Testing obfuscation and optimization techniques:
+Opaque predicate: 10
+Opaque predicate result: 20
+Instruction substitution: 225
+String encryption length: 0
+Tail call optimized: 500500
+Non-tail call: 5050
+Vectorized loop: 72
+Division by zero test:
+Division by zero test passed.
+Null pointer dereference: 41
+Buffer overflow: 30
+Integer overflow: 2000000000
+Undefined behavior: 10
+Implementation defined: 47

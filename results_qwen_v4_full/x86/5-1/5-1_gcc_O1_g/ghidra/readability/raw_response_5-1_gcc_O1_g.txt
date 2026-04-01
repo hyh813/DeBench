@@ -1,0 +1,123 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `iVar2`, `pvVar1`, `local_10`) with no semantic meaning. Only object instances (`obj`, `base`, `derived`) retain recognizable names from source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions preserved original names (`test_cpp_member_func`, `test_cpp_constructor`), and class methods include class scope (`Base::virtual_func`). However, helper functions use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x125c`, `0x14dc0`, `0x14da4`). Some optimized returns show expected values (`0x47`=71, `0x16`=22) but lack context linking to source expectations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk_*` injections, stack canary checks (`in_GS_OFFSET`), and multiple "WARNING: Removing unreachable block" annotations clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Stack canary checks create awkward `if (iVar1 == *(int *)(in_GS_OFFSET + 0x14))` patterns at function ends. Many functions optimized to single returns, losing original control structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions appropriately sized, but 6 functions completely optimized to constant returns (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, etc.), losing all original logic structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks create non-linear return paths. Virtual thunk functions add complexity with indirect call patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Optimized functions show no redundancy (return constants directly). Non-optimized functions have minimal redundancy beyond necessary stack checks.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (int, double, char*), but many generic types (`undefined4`, `void*`, `undefined1`). Pointer arithmetic common instead of proper typed access.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct fields use generic names (`field_0x10`, `_16_4_`, `_20_4_`). Multiple warnings: "Struct 'DiamondDerived': ignoring overlapping field 'super_MiddleB'". Some class structure recovered (`super_MiddleA`, `multiplier`) but incomplete.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(undefined4 *)`, `(int)pvVar1`, `(_func_int_varargs **)`. Raw pointer arithmetic on class objects obscures type boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF prototypes preserved ("DWARF original prototype: int virtual_func(Base * this, int x)"), but no explanatory comments for logic. WARNING comments indicate problems but don't explain solutions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially identified (vtable calls, virtual thunks, `__thiscall`), but not explicitly named as design patterns. No recognition of RAII, polymorphism patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system: "Unresolved local var: LifecycleClass obj@[???]", "WARNING: Struct...ignoring overlapping field". Clearly flags decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling logic in `test_cpp_exception` completely lost (only shows throw, no catch blocks).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, but virtual dispatch obscured through vtable pointer dereferencing (`(**obj->_vptr_Base)(obj,x)`). Class inheritance relationships partially visible through `super_` prefixes.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Class methods scattered throughout rather than grouped by class. No header/implementation separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would require extensive stubs: missing class definitions, vtable structures, operator overloads (`operator_new__`, `operator_delete__`), and standard library implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+7)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (5+5+7+2)/4 = 4.75  × 0.15 = 0.71
+Level 5 (Contextual):  (5+5+3)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.86/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+---
+
+### Critical Defects
+
+- **6 test functions completely optimized** to constant returns (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`, `test_cpp_exception` catch blocks) - original logic entirely lost
+- **Variable naming is generic** (`iVar1`, `pvVar1`, `local_10`) making data flow tracking difficult
+- **Struct field names lost** - fields named `field_0x10`, `_16_4_`, `_20_4_` instead of semantic names like `dataA`, `dataB`, `shared_data`
+- **Exception handling logic destroyed** - `test_cpp_exception` only shows throw path, catch blocks completely missing from decompilation
+- **Architecture mismatch** - Original compiled for ARM64 but decompiled as x86, indicating potential binary/source mismatch
+
+---
+
+### Best Quality Aspect
+
+**Anomaly Indication (7/10)** - The decompiler consistently flags unresolved variables, overlapping struct fields, and unreachable blocks with clear WARNING messages, helping analysts identify where manual intervention is needed.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (3/10)** - Generic names like `iVar1`, `pvVar1`, `local_10` dominate the output, making it extremely difficult to understand data flow and variable purposes without constant reference to the original source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `length`, `count`; variables holding object pointers should include class name)
+
+2. **Recover optimized-away logic** - When functions compile to constant returns at O0/O1, flag this explicitly and attempt to recover original logic from debug symbols or provide cross-reference to source line numbers
+
+3. **Improve C++ class structure recovery** - Better handle virtual inheritance, multiple inheritance this-pointer adjustments, and preserve field names from DWARF debug information instead of generic `field_0xXX` naming

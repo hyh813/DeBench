@@ -1,0 +1,90 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `local_24`, `local_3a4`. The source uses meaningful names like `c` for char, `arr` for arrays, `n` for count, but the decompilation lost ALL semantic variable names. This is the worst aspect of the decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from the source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. The decompiler correctly recovered all function names. Minor deduction for some internal labels like `FUN_000115c4`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions directly print hardcoded literal values (e.g., `printf("DT-L1-01 (process_char): %c\n",0x61);`) instead of showing computed results. Magic number `0xbfU` in char processing is unexplained. The decompilation pre-computed all test results rather than showing the actual computation flow.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present like `UNREPORED_JUMPTABLE` label, unnecessary casts in floating point code. The test functions contain precomputed constants but these are expected for -O0 debug builds. Moderate noise level that doesn't completely impede understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use do-while constructs (e.g., `do { ... param_2 = param_2 + -1; } while (param_2 != 0);`) instead of for-loops, but this is a typical decompilation artifact. The control flow is otherwise natural with no spurious gotos. At -O0, the structure is close to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - all test functions (`test_data_types_l1`, `test_array_types`, etc.) are separate from processing functions. Functions like `process_char`, `ptr_increment`, `linked_list` maintain reasonable size (~10-50 lines). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in some functions (e.g., `array_1d_stack`). Do-while loops are slightly less intuitive than for-loops but don't severely disrupt linear reading. No forward jumps into loops.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `test_array_types` but it's limited. No obvious dead code. The `array_3d` function has a lot of repetitive index calculations but this reflects the original loop structure. Overall acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results. Basic types mostly correct: `char`, `int`, `uint` for unsigned. However, `process_float` returns `void` instead of `float`, `process_double` receives two separate 32-bit values instead of one 64-bit double. `process_ld` similar issues. Function pointers use generic `code*` type.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost. Instead of `Point3D p`, source uses `int *param_1` and accesses fields via array indexing: `param_1[1] + *param_1 + param_1[2]`. Linked list nodes accessed as `param_1[1]` for `next` pointer instead of `node->next`. Nested structs use raw offsets like `param_1 + 0x14`. This is a severe degradation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several issues: bitfield handling uses bit manipulation (`(uVar1 >> 3 & 7)`) rather than proper field access, `process_double` splits double into two integers losing type safety, signed/unsigned mixing in `ptr_diff` (`param_1 - param_2 >> 2`). Function pointer calls lack proper type signatures. However, basic pointer operations are type-consistent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially no useful comments in the decompiled code. Only the decompilation header at the top (`// Decompiled by BinaryAI`). No explanation of algorithms, no recovery of source code comments about what each test case validates.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal and binary tree recursion are structurally visible but not explicitly identified. No pattern naming like "State machine", "KMP algorithm", etc. The enum switch statement uses a jump table (`&UNK_00012514 + param_1 * 4`) but the pattern isn't named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: `UNRECOVERED_JUMPTABLE` label appears for function pointer handling in `ptr_func_simple`, indicating incomplete recovery. External functions marked with `<EXTERNAL>`. However, many anomalies like the split double parameters or incorrect return types are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The source has comments like "DT-L1-01: 测试: 大小写转换" but none of this is reflected in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present (e.g., `main` calls all test functions) but relationships aren't documented. External library functions (`printf`, `puts`) are identified. No documentation of which functions call which, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are somewhat logically grouped - test functions together, processing functions together. Static functions from source (`double_value`) correctly identified as static. However, all in single flat namespace. Some arbitrary ordering visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code cannot compile standalone - has undefined references to `printf`, `puts`, and floating point library functions (`__muldf3`, `__adddf3`, `__mulsf3`). These are marked as `<EXTERNAL>` but no header dependencies documented. Would require linking with libc and libm.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.25/10
+
+**Critical Defects:**
+- **Variable naming completely generic**: All meaningful names lost (`arr` → `param_1`, `n` → `param_2`, `p` → `param_1`), making code essentially unreadable without constant reference to source
+- **Struct/composite types completely lost**: Source uses `Point3D`, `Node`, `Rect`, `Widget` structs but decompilation uses raw `int*` with array indexing (`param_1[2]` instead of `p->z`)
+- **No comments or documentation**: Original source has extensive test descriptions, expected values, and scenario markers; all lost
+- **Float/double type mishandling**: `process_float` returns `void`, `process_double` takes two 32-bit params instead of one 64-bit double
+- **Test functions hardcode results**: Instead of showing actual computation (`process_char('A')`), test functions print precomputed constants (`0x61`), losing the algorithm visibility
+
+**Best Quality Aspect:** Function Naming (scored 9/10) - The decompiler preserved virtually all original function names, making it easy to identify which function corresponds to which source function.
+
+**Most Needs Improvement:** Variable Naming (scored 2/10) - The generic `param_N`, `iVarN`, `local_NN` naming scheme makes the code nearly unusable for analysis. This is the single biggest factor degrading readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, function calls, comparisons) to infer semantic names like `array`, `count`, `node`, `buffer` rather than generic `param_1`
+
+2. **Recover struct/union layouts from memory access patterns**: When seeing consecutive accesses at fixed offsets (e.g., `[0]`, `[4]`, `[8]`), recognize this as struct field access and reconstruct the struct type with named fields
+
+3. **Preserve constant expressions in test code**: Instead of replacing function calls with hardcoded result literals, show the actual computation to preserve algorithm visibility and allow re-running tests
+
+4. **Fix floating-point type handling**: Ensure `float` functions return `float` and `double` functions receive proper `double` parameters, not split into multiple integers
+
+5. **Add semantic comments**: When possible, recover comments from debug info (line number comments) or at minimum document the expected behavior based on test patterns

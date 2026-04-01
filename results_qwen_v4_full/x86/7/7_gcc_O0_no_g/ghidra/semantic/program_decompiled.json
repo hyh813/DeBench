@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x86/7/7_gcc_O0_no_g/ghidra/syntactic/bin/7_gcc_O0_no_g_fixed",
+  "stdout": "Test Output:\n\nfake_branch: 10\nopaque_predicate: 20\ninstruction_substitution: 225\nstring_encryption: 0\ntail_call_optimized: 500500\nnon_tail_call: 5050\nvectorized_loop: -542545272\nlink_time_optimization: 0\ndivision_by_zero: 1\nnull_pointer_deref: 41\n",
+  "stderr": "*** stack smashing detected ***: <unknown> terminated\n",
+  "exit_code": null,
+  "signal": 6,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

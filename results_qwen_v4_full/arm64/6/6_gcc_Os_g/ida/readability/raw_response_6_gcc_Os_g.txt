@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v2` dominate (e.g., `thread_atomic_increment` uses `v1`, `v4`, `v5`), obscuring their semantic roles. Some functions preserve meaningful names (`buffer`, `dst`, `src` in `param_strcpy`), but most are generic temporaries.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `thread_compute`, `param_signal_handling`). A few generic names exist (`sub_13A0`, `init_proc`), but semantic naming is largely maintained.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers prevalent without explanation (e.g., `0x3E8u` for 1000ms usleep, `0x12u` for string length). String literals are clear ("HelloLib", "BinBench Test Data"), but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: stack frame comments (`[xsp+18h] [xbp+18h] BYREF`), redundant casts (`(_DWORD)`, `(_QWORD)`), and temporary variable assignments (`v1 = size;` then use `v1`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops generally use while/for constructs appropriately. Some nested if-else chains are verbose (e.g., `param_strcmp` normalizes to -1/0/1 with multiple branches). At -O0, flow mostly matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized and cohesive. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). No monolithic functions; decomposition matches source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions have deep nesting (`param_fread_fwrite` has 4+ levels), but no excessive goto usage in main logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments common (`v1 = size;` then `v1` used). Type cast redundancy throughout. No significant dead code, but optimization artifacts create verbosity.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, size_t, FILE*). Some degradation to generic types (`__int64`, `void*`). Pointer types generally correct but signedness sometimes unclear.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct referenced but fields accessed via offset. `thread_tls_test` uses raw pointer arithmetic (`StatusReg + 16`, `StatusReg + 20`) instead of struct fields. `sockaddr_in` partially recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD)v5 - (_DWORD)str` in `param_strchr_strstr`, `(_QWORD *)` casts throughout. Thread TLS access via `TPIDR_EL0` register with raw offsets is particularly concerning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Function headers show parameters but no algorithm explanations. No decompilation confidence indicators or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, strlen, malloc). Thread patterns visible (pthread_create/join) but not explicitly named. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 62 functions marked "FAILED to decompile" at end. No warnings about unsafe pointer arithmetic or potential undefined behavior. Indirect calls not flagged with uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error returns present (-1, -2, -3) but meaning not documented. No invariant recognition for shared state.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through naming. Global variables referenced (`signal_received`, `atomic_counter`, `shared_counter`) but usage not documented. No call graph visualization.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by functionality (library, syscall, thread sections visible). Test functions separate from param functions. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 62 library functions failed to decompile requiring stubs. External dependencies (pthread, libc) not documented. Would need extensive modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (7+5+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+5+4+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+6+3)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.82/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects
+- **Variable naming**: Generic names (`v0`, `v1`, `v2`) dominate, obscuring semantic meaning (e.g., `thread_atomic_increment` has no meaningful variable names)
+- **Type safety violations**: Unsafe pointer casts throughout (`(_DWORD)v5 - (_DWORD)str`, raw TLS offset access via `TPIDR_EL0 + 16`)
+- **Missing documentation**: No comments explaining algorithm logic, error codes, or function contracts
+- **62 failed decompilations**: Library functions not recovered, requiring external stubs for compilation
+- **Magic numbers**: Numeric constants like `0x3E8u` (1000), `0x12u` (18) lack symbolic names
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most function names preserved from source code (`param_strcpy`, `thread_compute`, `param_signal_handling`), maintaining semantic clarity about purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Almost no explanatory comments; decompiled code lacks algorithm documentation, error code meanings, and decompilation confidence indicators.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `v1` passed to `strlen` should be `string_ptr`, loop counters should be `i`, `j`, `index`)
+2. **Recover struct definitions from access patterns** - Convert offset-based access (`StatusReg + 16`) to named struct fields (`tls_context.counter`)
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments (e.g., `// UNCERTAIN: indirect call target not resolved`)

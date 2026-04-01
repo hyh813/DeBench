@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/7/7_clang_O0_g/angr/syntactic/bin/7_clang_O0_g_fixed",
+  "stdout": "test\nfake_branch: 10\nopaque_predicate: 35\ninstruction_substitution: 225\nstring_encryption: 122\ntail_call_optimized: 500500\nnon_tail_call: 5050\n",
+  "stderr": "",
+  "exit_code": null,
+  "signal": 11,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

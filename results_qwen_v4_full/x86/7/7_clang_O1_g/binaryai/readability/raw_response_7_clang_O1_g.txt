@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_28` instead of semantic names like `result`, `x`, `encrypted`, `decrypted` from the original source, making purpose tracking difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names are preserved from source (`param_fake_branch`, `call_opaque_predicate`), but helper functions use generic names (`FUN_00011030`, `FUN_000110c0`) and some external wrappers are redundant.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1`, `0x2b` appear without explanation; original source had comments explaining encryption key `0x5A` and expected values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains compiler artifacts (`__x86_get_pc_thunk_bx`, `deregister_tm_clones`, `register_tm_clones`) and redundant external function wrappers that don't exist in original source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `do-while` patterns instead of `for` loops in several places; `param_fake_branch` dead code branches completely eliminated despite `-O0` compilation claiming no optimization.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but `call_string_encryption` duplicates `param_string_encryption` code instead of calling it; some functions overly simplified (`param_fake_branch` returns just `param_1`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with moderate non-linearity from do-while loops; no excessive gotos but loop structures could be more natural.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `call_string_encryption` contains identical decryption logic to `param_string_encryption`; `test_obf_opt_edge` duplicates decryption code that should call existing functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int`, `uint`, `undefined4` instead of precise types like `size_t`, `int32_t`; `jmp_buf` cast to generic pointer `(__jmp_buf_tag *)` loses type information.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in this code; `jmp_buf` handled as opaque pointer; arrays treated as pointers without size information preservation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined4)(10 / (longlong)param_1)`, `(__sighandler_t)0x0`; pointer arithmetic without proper typing in buffer operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code; original source had extensive documentation explaining obfuscation techniques, expected values, and test scenarios.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of obfuscation patterns (dead code branches, opaque predicates); XOR decryption pattern not identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about optimized-away code (`param_fake_branch` dead branches silently removed); no indication that decompilation may have lost semantic intent.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division); no postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation; global variables (`jmp_buffer`, `div_zero_caught`) referenced without clear relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping; original source had section comments (7.1, 7.2, 7.3) organizing obfuscation, optimization, and edge cases.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present but would need stubs; metadata claims arm64 but decompiled code contains x86 thunk functions (`__i686.get_pc_thunk.bx`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (5+6+6+4)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type System):  (5+6+5)/3 = 5.33    × 0.20 = 1.07
+Level 4 (Semantic):     (2+3+3+3)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):   (5+5+6)/3 = 5.33    × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.82/10
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named semantically (e.g., `input_value`, `result`, `computed_predicate`) based on usage patterns
+- **`param_fake_branch` dead code completely eliminated** despite `-O0` compilation claiming no optimization—decompiler lost obfuscation intent
+- **Zero comments** in decompiled output when original had extensive documentation explaining obfuscation techniques
+- **`call_string_encryption` duplicates decryption logic** instead of calling `param_string_encryption`, creating maintenance burden
+- **Architecture mismatch**: Metadata claims arm64 but decompiled code contains x86 thunk functions (`__i686.get_pc_thunk.bx`)
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Main function names preserved from source code, maintaining semantic connection to original intent despite other degradations.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments loses all contextual information about obfuscation techniques, expected values, and test scenarios that were well-documented in source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**—analyze how variables are used (e.g., `param_1` in division context should be `divisor`, loop counters should be `i`)
+2. **Preserve dead code at -O0 optimization level**—detect compilation flags and avoid eliminating branches that may be intentional obfuscation
+3. **Generate semantic comments for recognized patterns**—identify XOR decryption loops, signal handlers, and setjmp/longjmp patterns with explanatory annotations

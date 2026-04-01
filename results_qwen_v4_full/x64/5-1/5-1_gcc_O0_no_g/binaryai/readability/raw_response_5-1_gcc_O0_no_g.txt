@@ -1,0 +1,105 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `local_38`, `local_10`, `param_1`) with no semantic meaning. For example, in `test_cpp_member_func`, `iVar1`, `iVar2`, `iVar3` should be `r1`, `r2`, `r3` based on source usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), and class methods preserve structure (`SimpleClass::getValue`). However, lambdas are mangled (`test_cpp_lambda()::{lambda(int)#1}::operator__`) and template instantiations lose clarity (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x1234` (recoverable as class ID), `0x1f` (name buffer size-1), `0x32` (decimal 50 for `shared_data`). No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks appear in every function (`local_10 = *(long *)(in_FS_OFFSET + 0x28)` followed by `__stack_chk_fail()`). Frame pointer manipulation (`in_FS_OFFSET`) clutters otherwise simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At `-O0`, control flow is mostly natural and linear. Exception handling decompiles to explicit `__cxa_*` calls with labels (`LAB_00102e46`) instead of try-catch, but this is expected for exception runtime.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved well. However, template instantiations create separate functions (`template_max_int_`, `template_max_double_`), and smart pointer internals explode into 40+ helper functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Test functions read top-to-bottom naturally. Exception handling introduces forward labels that disrupt flow. Virtual inheritance code has complex pointer arithmetic that breaks linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated in every function. Multiple destructor variants created (complete vs. base destructor). Smart pointer helper functions show significant code duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char, double), but extensive use of `undefined4`, `undefined8`, `undefined*` throughout. Template types mangled (`Container_int_`, `unique_ptr_int_std__default_delete_int__`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures accessed via offset arithmetic: `*(int *)this`, `*(char *)(this + 4)`, `*(undefined ***)this`. No field names recovered (e.g., `value`, `name[32]` in SimpleClass lost).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(long *)`, `(type *)`. Pointer arithmetic on class objects without proper typing. Virtual table access via `(***(code ***)param_1)` loses type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. Only decompiler header present. No algorithm explanations, confidence indicators, or API documentation recovered from source comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially visible (constructors call base constructors, vtable setup in `*(undefined ***)this = &PTR_*`). However, RAII patterns in smart pointers not identified, exception mechanism not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags or confidence warnings. Complex vtable operations and virtual inheritance pointer adjustments presented confidently without uncertainty markers. Indirect calls not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `idx < size` in `getData`). No postconditions inferred. Exception safety not documented. Source comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible through vtable dereferencing but not explained. Inheritance visible through constructor chaining but no hierarchy documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping beyond original function boundaries. Static initialization functions (`__static_initialization_and_destruction_0`) present but not organized with related code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many external function wrappers call themselves (infinite recursion risk): `operator_new__` calls `operator_new__`. Missing type definitions for many structures. Would require extensive manual fixing to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 7 + 5 + 5) / 4 = 5.00
+Level 2 Average: (7 + 7 + 7 + 6) / 4 = 6.75
+Level 3 Average: (5 + 4 + 4) / 3 = 4.33
+Level 4 Average: (1 + 5 + 2 + 1) / 4 = 2.25
+Level 5 Average: (5 + 5 + 3) / 3 = 4.33
+
+Overall = (5.00 × 0.30) + (6.75 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.50 + 1.69 + 0.87 + 0.34 + 0.43
+        = 4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `iVar1`, `iVar2`, `iVar3`** should be named `r1`, `r2`, `r3` based on source pattern in test functions
+- **Zero semantic comments** despite source having extensive documentation (expected values, test scenarios)
+- **Struct fields accessed by offset** (`*(int *)this`, `*(char *)(this + 4)`) instead of named fields (`value`, `name`)
+- **External function wrappers create infinite recursion** (e.g., `operator_new__` calls itself)
+- **No anomaly flags** for complex C++ features (virtual inheritance, RTTI, exception handling)
+
+### Best Quality Aspect:
+- **Structural Intelligibility (6.75/10)** - At `-O0` optimization, function boundaries and control flow are reasonably preserved, making the basic execution path traceable.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.25/10)** - Complete absence of comments, no idiom recognition, no anomaly indication, and no contract recovery makes understanding the code's intent extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `iVar1` holds return value from `getValue()`) to infer semantic names like `r1` or `result_value`.
+
+2. **Add confidence indicators for complex C++ features** - Flag virtual inheritance pointer adjustments, RTTI operations, and exception handling with uncertainty markers since these are notoriously difficult to decompile accurately.
+
+3. **Preserve source comments in debug builds** - When `-g` flag is present, extract and embed source comments (especially expected values and test documentation) to maintain semantic context.

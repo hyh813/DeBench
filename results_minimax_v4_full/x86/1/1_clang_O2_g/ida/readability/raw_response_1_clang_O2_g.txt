@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5` throughout. For example, in `nested_if_2`, the variable `v2` is used without indication it represents the clamped value of `b`. Only `result`, `count`, `target` have semantic meaning.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions like `sequential_ops`, `single_if`, `if_else` are correctly named matching source. However, many internal functions use generic names like `sub_1030`, `sub_1090`, and helper functions like `op_add`, `op_sub` lack context about their role in `large_jump_table`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Test functions print hardcoded constant values (e.g., `printf("CF-L1-01 (sequential_ops): %d\n", 21)`) instead of calling actual functions. Magic numbers like `0x65` (101), `0x12` (18), `0xA` (10) appear without explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; clean output without register spilling or debug instrumentation. Some low-level noise like `__asm { jmp dword ptr [ebx+8] }` in `sub_1030` and `__usercall` annotations, but these are manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with recognizable loops and conditionals. `loop_for_fixed` uses formula `((n-2)*(n-1))/2 + n-1` instead of explicit loop, which is acceptable at -O0. `goto_forward` correctly uses ternary expression. Minor issues like computed goto using function pointer arrays.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain original granularity - each function from source is separate in decompiled output. No 500-line monoliths. Parameter lists are reasonable. Static helper functions like `op_add` through `op_shr` properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `multi_return`. Some forward jumps in switch statements but these are structured. No severe non-linearity issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling present in `loop_continue` (unrolled by 4) but this is expected compiler behavior. Some common subexpression patterns but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` throughout instead of specific types like `int32_t` or `size_t`. Function pointer types are properly declared with signatures (e.g., `int (*f)(int)`). Signed/unsigned correctly distinguished in comparisons. No const correctness recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery. Arrays accessed via pointer arithmetic (e.g., `arr[v3++]`). The matrix in `loop_multi_exit` is accessed via `dword_30D8[target] + dword_3108[target]` - two separate arrays without struct reconstruction.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is minimal and appears safe. Function pointer types match signatures. No buffer-overflow-prone patterns evident. Some signed/unsigned mixing in comparisons but within acceptable bounds.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present (e.g., `/* Function: sequential_ops @ 0x1220 */`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Test functions have no comments about what they verify.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like switch-case recognized and reconstructed. Duff's device partially recognized with labeled sections (LABEL_3 through LABEL_10). However, no explicit naming of patterns (e.g., "Duff's device") or design patterns like state machine.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Indirect calls in `call_func_ptr_array` and `fsm_func_table` use function pointer arrays without indicating uncertainty. The `computed_goto` uses `funcs_212B[idx]()` without noting this is a computed dispatch.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Error conditions like division by zero in `op_div` are handled inline but not documented as contracts. No indication of expected input ranges.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. No indication that `double_value`, `triple_value` are used by `call_func_ptr_array`. No comments about call graph or which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order roughly matching source. Static functions properly scoped. No explicit logical grouping or header file structure. Single flat output file.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Function declarations present. Should compile with standard library linkage. External functions like `printf`, `puts`, `longjmp`, `_setjmp` properly declared. Some functions marked `__cdecl` for calling convention.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Test functions print hardcoded values instead of calling actual functions, making verification impossible
+- Variable names are generic (v1, v2, v3) throughout, obscuring semantic purpose
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Magic numbers like 0x65, 0x12, 0xA appear without named constants
+- No anomaly indication for indirect calls or computed dispatch patterns
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions maintain proper granularity matching the original source. Each function is separate and focused, with reasonable parameter lists.
+
+**Most Needs Improvement:** Literal Clarity (2/10)  
+Test functions are completely broken - they print constants instead of calling functions. Magic numbers are everywhere without explanation. The decompiler failed to recover the actual function calls in test code.
+
+**Top 3 Recommendations:**
+1. Recover function calls in test code instead of hardcoding return values - the test functions should call the actual functions being tested
+2. Infer variable names from usage patterns (e.g., `v1` used as loop counter should be named `i` or `count`)
+3. Add comments for magic numbers and flag uncertain decompilation decisions (indirect calls, computed jumps)

@@ -1,0 +1,10 @@
+{
+  "binary_path": "results_glm_v4_full/arm64/7/7_clang_O2_no_g/binaryai/syntactic/bin/7_clang_O2_no_g_fixed",
+  "stdout": "Testing obfuscation and optimization edge cases\n\nfake_branch result: 10\nopaque_predicate result: 20\ninstruction_substitution result: 225\nstring_encryption result: 32\ntail_call_optimized result: 500500\nnon_tail_call result: 5050\nvectorized_loop result: 72\nlink_time_optimization result: 20\ndivision_by_zero result: 2\nnull_pointer_deref result: 41\nbuffer_overflow result: 30\ninteger_overflow result: 2000000000\nundefined_behavior result: 10\nimplementation_defined result: 48\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false,
+  "capture_mode": "stdbuf_unbuffered",
+  "buffering_override": true
+}

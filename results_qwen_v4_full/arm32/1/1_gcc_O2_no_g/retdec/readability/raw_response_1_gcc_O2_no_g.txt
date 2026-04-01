@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `matrix` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retained original names (`recursion_factorial`, `double_value`, `op_add`), but critical functions like `sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed` are completely missing from decompilation output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions print hardcoded expected values (e.g., `__printf_chk(1, "CF-L1-01...: %d\n", 21)`) instead of computing them. String literals stored as hex-encoded globals (`g1`, `g2`, `g3`) without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__stack_chk_fail()`, redundant typedef (`int3_t`), and unnecessary global variables (`g4`, `g5`, `g6`). Stack check calls add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `recursion_factorial` incorrectly converted from recursive to iterative loop, changing semantic meaning. `computed_goto` returns an address (`0x11668`) instead of performing jumps. `duffs_device` has mangled switch with negative case values (-1, -2, -3, -4).
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Only 12 functions detected vs. 20+ in original source. Test functions are monolithic blocks of printf calls. Many original functions (`sequential_ops`, `if_else`, `loop_while`, etc.) completely missing.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `duffs_device` uses explicit `goto lab_0x10e50` creating artificial loops. Test functions have repetitive sequential printf calls but read reasonably top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in variable assignments (`v4`, `v5`, `v6` all pointing to similar pointer values). Test functions repeat identical `__printf_chk` patterns 20+ times without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but all original `int` types degraded to fixed-width. Function pointer types lost (e.g., `call_func_ptr` not decompiled). Custom typedef `int3_t` adds confusion.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `jmp_buf` structure shown inline with meaningless field names (`e0`, `e1`, `e2`). Array structures not recovered (e.g., `matrix[3][4]` becomes pointer arithmetic). No struct definitions for any composite types.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(int32_t)a2`, `(int32_t)a1`). `computed_goto` returns address as integer (`return 0x11668`). Pointer arithmetic without proper typing throughout `loop_multi_exit` and `duffs_device`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic. Only auto-generated header comments present. No algorithm explanations, confidence indicators, or documentation of non-obvious transformations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Duff's device optimization not recognized as such. State machine pattern in `state_processing` not identified. Recursive-to-iterative transformation not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken `computed_goto` presented confidently without warning. Missing functions not indicated. No flags for unresolved indirect calls or suspicious transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions or error condition explanations. Return value semantics not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g6`) have opaque purposes. Callback relationships from original source completely lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed without logical grouping. No header file structure. Static functions not properly scoped. Related functions (test functions) not grouped together.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes necessary headers but references external functions (`__printf_chk`, `__longjmp_chk`, `__stack_chk_fail`) requiring specific linking. `computed_goto` won't compile correctly as written.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3×10 + 5×10 + 4×5 + 5×5) / 30  = 4.17
+Level 2 (Structural):     (3×8 + 4×7 + 5×5 + 4×5) / 25    = 3.88
+Level 3 (Type System):    (5×8 + 3×7 + 3×5) / 20          = 3.80
+Level 4 (Semantic):       (2×5 + 2×3 + 2×3 + 2×4) / 15    = 2.00
+Level 5 (Contextual):     (4×4 + 4×3 + 5×3) / 10          = 4.30
+
+Overall = (4.17 × 0.30) + (3.88 × 0.25) + (3.80 × 0.20) + (2.00 × 0.15) + (4.30 × 0.10)
+        = 1.25 + 0.97 + 0.76 + 0.30 + 0.43
+        = 3.71/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Missing Functions**: 8+ original functions completely absent (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`)
+- **Broken Control Flow**: `computed_goto` returns address as integer instead of performing computed jumps
+- **Semantic Transformation**: `recursion_factorial` incorrectly converted from recursive to iterative, changing algorithm semantics
+- **Test Function Optimization**: Test functions print hardcoded expected values instead of actually calling and computing results
+- **No Variable Semantics**: All variables named `v1`, `v2`, `a1`, `a2` with no indication of purpose
+
+### Best Quality Aspect:
+- **Contextual Coherence - Build Compatibility (5/10)**: Code includes proper headers and function prototypes, requiring only moderate patching to compile despite other issues
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.0/10 average)**: Zero comments, no pattern recognition, no anomaly indication, and no contract recovery makes understanding the code's intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover missing functions**: Implement better function boundary detection to recover all 20+ original functions instead of only 12
+2. **Preserve recursive structures**: Do not convert recursion to iteration without explicit annotation; this changes algorithm semantics and complexity characteristics
+3. **Add confidence annotations**: Flag uncertain transformations (like `computed_goto`) with warnings so analysts know which code requires manual review

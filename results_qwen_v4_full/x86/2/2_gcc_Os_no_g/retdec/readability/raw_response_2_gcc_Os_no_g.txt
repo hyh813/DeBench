@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v1, v2, v3, a1, a2, result) with zero semantic meaning recovered. Original source had meaningful names like `x`, `arr`, `n`, `head`, `current` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (double_value, process_char, array_1d_stack, struct_simple, linked_list). However, helper functions like `function_1080`, `function_1090` remain unnamed, and test functions lack descriptive context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (65 for 'A', 32 for case conversion, 44/20 for struct offsets). String literals referenced indirectly via pointer arithmetic. No constants or enums recovered from original.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*` functions, `__readgsdword(20)` stack canary checks, `__asm_rep_movsd_memcpy` calls. Unnecessary helper functions (`frame_dummy`, `function_112c`) clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered but use `while` instead of `for`. Critical error: `array_2d_stack` contains "/ld-linux.so.2" string in loop condition (clearly wrong). `binary_tree_sum` has awkward nested while loops instead of clean recursion.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. However, `ptr_func_complex` is essentially broken (returns address instead of calling function). Helper functions like `__x86_get_pc_thunk_*` shouldn't appear in output.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has awkward forward jumps. Loop patterns like `while(v1 != a2)` could be cleaner `for` loops. `binary_tree_sum` has particularly confusing control flow with manual stack management.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant variable assignments (`v8 = result` patterns repeated). Duplicate code in test functions. No loop unrolling present (appropriate for -O0), but variable tracking is verbose.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—most types become `int32_t` regardless of original. Float/double partially preserved (`float32_t`/`float64_t`/`float80_t`). Pointer types all become `int32_t`. No const/volatile preservation. No unsigned types properly recovered.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—structs accessed via raw pointer arithmetic (`*(int32_t *)a1`, `*(int32_t *)(a1 + 4)`). Unions not recovered. Zero field names. Bitfields accessed via arithmetic operations (`*a1 / 64 % 1024`). Original had clear struct definitions with named fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts throughout. Pointer arithmetic without type safety. `void*` patterns everywhere. No const correctness preserved. Original had proper type distinctions (int*, int**, int***, struct pointers).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original had extensive comments explaining each function's purpose, test scenarios, and expected behavior. No decompilation confidence indicators or uncertainty markers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list traversal not recognized as such. Tree recursion not identified. Graph traversal appears as raw pointer chasing. Original had clear data structure patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite obvious errors. The "/ld-linux.so.2" string in `array_2d_stack` loop condition is clearly wrong but not flagged. Stack canary checks present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. No error condition documentation. Original had clear test expectations documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but no call graph documentation. Global variables (`g1`, `g2`, `g3`) with zero explanation. No callback relationships documented. Original had clear test-to-function mappings.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections (Data Types, Arrays, Pointers, Composite Types) with section headers. No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes but missing proper struct/union definitions. Some functions reference undefined symbols. Would require significant patching to compile. Metadata claims "Compilation Result: Yes" but code lacks type definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type System): (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+4+4)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.097 ≈ 4.1/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Complete struct/union type loss** - All composite types accessed via raw pointer arithmetic (`*(int32_t *)(a1 + 4)`) instead of field access (`p->x`)
+- **Zero comment recovery** - Original had extensive documentation; decompiled code has none
+- **Magic numbers without context** - Values like 65, 32, 44, 20 appear without explanation of their semantic meaning
+- **Corrupted control flow** - `array_2d_stack` contains "/ld-linux.so.2" string in loop condition (clearly erroneous)
+- **Generic variable naming** - All variables are `v1`, `v2`, `a1`, `a2` with no semantic meaning recovered
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (double_value, process_char, array_1d_stack, struct_simple, linked_list), providing crucial semantic anchors for understanding code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is the most severe deficit; original source had extensive documentation explaining each function's purpose, test scenarios, and expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze pointer access patterns to reconstruct struct/union definitions with field names based on access offsets and usage patterns.
+2. **Infer variable semantics from usage** - Use data flow analysis to name variables based on their role (e.g., loop counters → `i`, array parameters → `arr`, size parameters → `n`).
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (like the "/ld-linux.so.2" anomaly) and add comments explaining recovered logic patterns (e.g., "// Linked list traversal").

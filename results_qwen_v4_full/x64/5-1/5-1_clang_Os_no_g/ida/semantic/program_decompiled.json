@@ -1,0 +1,8 @@
+{
+  "binary_path": "results_qwen_v4_full/x64/5-1/5-1_clang_Os_no_g/ida/syntactic/bin/5-1_clang_Os_no_g_fixed",
+  "stdout": "test\n4700\ncpp_l302: 21\ncpp_l303: 42\ncpp_l304: 71\ncpp_l305: 650\ncpp_l306: 22\ncpp_l307: 39\ncpp_l308: 16\ncpp_l309: 85\n",
+  "stderr": "",
+  "exit_code": 0,
+  "signal": null,
+  "timed_out": false
+}

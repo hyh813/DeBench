@@ -1,0 +1,146 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: All variables use generic names like `param_1`, `param_2`, `local_28`, `iVar1`, `uVar1`. The original source uses meaningful names (`dst`, `src`, `buffer`, `len`) but these are completely lost. The decompiled code is essentially unreadable without cross-referencing the source.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly (`param_strcpy`, `call_strcpy`, `param_strcmp`, `test_standard_library_functions`). Some internal functions like `FUN_001012e0` have generic names, but the core test functions are correctly recovered.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: String literals like `"HelloLib"`, `"Value: %d, Name: %s\n"` are correctly preserved. However, numeric constants like `0x2a` (42), `0x38` (SYS_open), `0x39` (SYS_close) appear as magic numbers without explanation. The value `42` used as success indicator is not documented.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. No obvious debug instrumentation or register spilling artifacts. Type casts are minimal and appropriate. The main noise is the auto-generated function headers from Ghidra.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 9/10**
+Justification: Control flow is natural and matches the source. The `param_strcpy` function has straightforward sequential execution. Loops in `call_memset` and other functions use proper for/while constructs. At `-O0`, the control flow closely mirrors the source.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately decomposed. `param_strcpy` is a thin wrapper (2 lines), matching the source. The test harness functions properly call the param_ variants. Function sizes are reasonable with clear single responsibilities.
+
+### 7. Code Linearization
+**Score: 9/10**
+Justification: Code reads top-to-bottom with minimal jumps. Early returns in error handling are used appropriately (e.g., `param_fopen_fclose`). No excessive nesting or forward jumps that disrupt readability.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code observed. Common subexpressions are not excessively duplicated. The decompilation is clean without obvious redundancy from optimization artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Basic types are correct (`char *param_1`, `char *param_2` for strings). However, return types frequently use `undefined4` instead of `int`, and `undefined8` instead of `long` or `void*`. The `param_strlen` returns `ulong` which is imprecise. Mixed usage of `int` and `undefined4` creates inconsistency.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: For `param_strcpy`, no composite types are needed. In other functions like `param_pthread_join`, the `ThreadData` struct is partially recovered as `local_54` array with fields at offsets, though field names are lost. Basic struct handling is acceptable.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: No major type safety violations in `param_strcpy`. However, in `call_memset`, there's a suspicious expression `param_memset(local_3c + -10,local_38,0x28)` which appears to be incorrect - the original source passes `buffer` directly. Some pointer arithmetic could be unsafe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only auto-generated Ghidra headers present (decompiler name, binary path, compiler spec). No comments explaining algorithm logic, parameter purposes, or return value semantics. The comment "WARNING: Subroutine does not return" appears for `_exit` and `execl` which is helpful but minimal.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: Standard library functions (`strcpy`, `strlen`, `strcmp`, `memcpy`) are correctly identified. The pthread functions are recognized. However, no explicit naming of patterns like "string copy idiom" or "fork-exec pattern" is provided.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some anomalies are flagged: "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". However, the suspicious `call_memset` parameter issue is not flagged. No indication of potential issues in the code.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants are documented. The function contracts (e.g., "dst must be large enough to hold src") are not recovered. Error return semantics are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls to standard library functions are clear (`strcpy`, `strlen`). However, there's no documentation of which functions call `param_strcpy` or its role in the larger test suite. Global variables like `signal_received`, `atomic_counter` are used without explaining their purpose.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically (standard library tests, system calls, thread tests). The order roughly matches the source file structure. However, all functions are in a single flat list without any namespace or module grouping.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: The code should compile with standard C libraries (libc, libpthread). External dependencies are implicit (standard system calls). No header files or build instructions provided. The code uses standard POSIX APIs which should compile on Linux ARM64.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 6 + 8) / 4 = 6.25
+L2_avg = (9 + 9 + 9 + 8) / 4 = 8.75
+L3_avg = (6 + 8 + 7) / 3 = 7.00
+L4_avg = (3 + 7 + 5 + 3) / 4 = 4.50
+L5_avg = (6 + 7 + 7) / 3 = 6.67
+
+Overall = (6.25 × 0.30) + (8.75 × 0.25) + (7.00 × 0.20) + (4.50 × 0.15) + (6.67 × 0.10)
+        = 1.875 + 2.1875 + 1.4 + 0.675 + 0.667 = 6.80/10
+```
+
+**Overall Readability Score:** 6.8/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`param_1`, `param_2`) instead of semantic names (`dst`, `src`) from the original source
+- **Missing comments**: No explanation of function purpose, parameter contracts, or return value semantics
+- **Type inconsistency**: Mixed usage of `undefined4`/`undefined8` and concrete types (`int`, `void*`) creates confusion
+- **Anomaly not flagged**: The `call_memset` function has incorrect parameter passing (`local_3c + -10` instead of `buffer`) which could indicate a decompilation error
+- **Magic numbers**: Numeric constants like `0x38` (SYS_open), `0x2a` (42) appear without explanation
+
+---
+
+### Best Quality Aspect (Single Dimension)
+**Structural Intelligibility (Level 2)** scored highest at 8.75/10
+- Control flow is natural and matches source
+- Function decomposition is appropriate
+- Code linearization is clean with minimal jumps
+
+---
+
+### Most Needs Improvement (Single Dimension)
+**Semantic Transparency (Level 4)** scored lowest at 4.50/10
+- No useful comments explaining code logic
+- No pattern recognition or idiom identification
+- No anomaly detection for suspicious code patterns
+- No contract or assertion recovery
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how parameters are used within the function. For `param_strcpy`, `param_1` is the destination (used as first arg to strcpy), `param_2` is the source. Names like `dst` and `src` could be inferred.
+
+2. **Add semantic comments for function contracts**: Document preconditions (e.g., "requires: dst buffer large enough"), postconditions (e.g., "ensures: returns length of copied string"), and error returns. This is especially critical for security-sensitive functions like string operations.
+
+3. **Resolve type inconsistencies**: Standardize on concrete types (`int`, `long`, `void*`) instead of `undefined4`/`undefined8`. The mixed usage creates confusion about the actual types and makes the code harder to verify for correctness.

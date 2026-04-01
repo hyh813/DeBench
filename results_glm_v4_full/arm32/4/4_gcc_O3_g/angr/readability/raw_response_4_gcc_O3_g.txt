@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `a0`, `v0`, `v1`, and `ptr`. While `ptr` is acceptable, `v0` and `v1` provide no semantic hint about their role (e.g., `sum`, `count`).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `cdecl_func`, `varargs_func`, and `test_calling_conventions` are recovered perfectly. However, runtime/internal functions like `sub_103c4` and library implementations like `__aeabi_dadd` obscure the high-level flow.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The code contains many "magic numbers" resulting from compiler optimization (e.g., `return 15;` in `call_cdecl` instead of the function call). While semantically correct for the optimized binary, these literals lack the context of the original source logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompilation is heavily polluted with `armg_calculate_condition` calls (Angr lifting artifacts) and verbose stack canary checks (`__stack_chk_guard`). These artifacts significantly obscure the underlying logic, making the code difficult to read.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple functions like `cdecl_func` are natural, but complex logic like `__aeabi_dadd` (soft-float implementation) is a mess of nested ternaries and `goto` labels. The `varargs_func` loop is recovered reasonably well as a `do-while`.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decompiler correctly identifies specialized versions like `varargs_func.constprop.0`. However, `test_calling_conventions` is a monolithic list of inlined calls rather than a structured test function, reflecting the compiler's optimization.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While `test_calling_conventions` reads linearly, the presence of massive library implementations like `__aeabi_dadd` (hundreds of lines of bit-twiddling) in the middle of the output disrupts the linear reading flow of the user code.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The `__aeabi_dadd` function contains massive amounts of redundant bit-manipulation logic that is intrinsic to the soft-float implementation but unreadable. In `test_calling_conventions`, redundancy is low, but the code is just a list of `printf` calls.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `char*` are mostly correct. However, the return type of `ret_small_struct` is listed as `unsigned int [2]`, which is non-standard C syntax and should be a struct.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Large structs passed by value (e.g., `LargeStruct` in `func_struct_byval`) are completely exploded into 31 individual arguments (`a0` through `a30`). Small structs are often degraded to pointers or arrays, losing the semantic type information.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains `armg_calculate_condition` calls which appear to be type-confused pseudo-functions. Additionally, `param_by_value_ptr` contains a likely error: `*(ptr) = *(ptr) * 2 & 1;` (the `& 1` is not in the source and changes the logic).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex optimizations (like constant propagation resulting in `return 15`) are not explained, nor are the obscure `armg_calculate_condition` calls.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The varargs loop in `varargs_func` is recognized as a loop structure. However, the switch statement in `ret_multi_branch` is decompiled into a complex web of `if` statements and `goto` labels, failing to recognize the jump-table pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication of anomalies. The decompiler confidently presents the `armg_calculate_condition` calls and the exploded struct arguments as standard C code without warning the user about these lifting artifacts or ABI specifics.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `ptr` to be non-null in `func_struct_byptr` is not explicitly stated, though the `if (ptr)` check is present.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls like `cdecl_func` are clear. However, calls to runtime support like `__stack_chk_fail` and `__aeabi_dadd` are mixed in with user code without clear distinction, making it hard to separate application logic from compiler runtime.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While user functions are grouped, the massive inclusion of compiler runtime libraries (like `__aeabi_dadd`) breaks the logical organization of the source file.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile. The use of `armg_calculate_condition` (undefined function), non-standard return types (`unsigned int [2]`), and the sheer volume of runtime dependencies make it impossible to compile without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 7 + 5 + 2) / 4 = 4.5
+L2_avg: (5 + 6 + 5 + 4) / 4 = 5.0
+L3_avg: (6 + 3 + 4) / 3 = 4.33
+L4_avg: (1 + 4 + 1 + 1) / 4 = 1.75
+L5_avg: (6 + 5 + 2) / 3 = 4.33
+
+Overall = (4.5 * 0.30) + (5.0 * 0.25) + (4.33 * 0.20) + (1.75 * 0.15) + (4.33 * 0.10)
+Overall = 1.35 + 1.25 + 0.866 + 0.2625 + 0.433
+Overall = 4.16
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet Points)
+- **Lifting Artifacts**: The code is littered with `armg_calculate_condition` calls, which obscure the actual logic and make the code unreadable.
+- **Struct Explosion**: Large structures passed by value (e.g., `LargeStruct`) are exploded into 30+ individual arguments, completely destroying the semantic context of the function.
+- **Semantic Error**: In `param_by_value_ptr`, the expression `*(ptr) = *(ptr) * 2 & 1;` introduces a bitwise AND operation not present in the source (`*p = *p * 2`), altering the program's logic.
+- **Non-Standard Types**: Return types like `unsigned int [2]` are used for small structs, which is invalid C syntax and hinders understanding.
+- **Lack of Context**: Optimized-away functions (e.g., `call_cdecl` returning `15`) are presented without comments explaining that the logic was inlined/constant-folded.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 7/10)**
+- **Why?** The decompiler successfully recovered the original names for almost all user-defined functions (`cdecl_func`, `test_calling_conventions`), which provides a crucial anchor for understanding the code.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (Score: 1/10)**
+- **Why?** The complete absence of comments, especially regarding aggressive compiler optimizations (like constant propagation) and obscure lifting artifacts, makes the code extremely difficult to reverse engineer.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Suppress Lifting Artifacts**: Implement a pass to inline or remove `armg_calculate_condition` calls and replace them with the actual boolean expressions or arithmetic operations they represent.
+2.  **Aggregate Struct Arguments**: Analyze function signatures to detect when a sequence of register/stack arguments corresponds to a struct-by-value pass and reconstruct the struct type in the signature.
+3.  **Annotate Optimizations**: Add comments indicating when a function body has been optimized away (e.g., `// Inlined: result of cdecl_func(5, 10)`) to explain magic numbers.

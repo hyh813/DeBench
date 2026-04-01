@@ -1,0 +1,5 @@
+Testing Standard Library Functions:
+
+  [PASS] strcpy
+  [PASS] strcmp
+  [PASS] strlen

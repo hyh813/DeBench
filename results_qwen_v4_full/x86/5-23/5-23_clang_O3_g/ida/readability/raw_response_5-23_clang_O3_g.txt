@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v0`, `v1`, `v2`, `v8`, `v9`, `v10`) instead of semantic names; parameter names preserved (`size`, `x`, `y`, `arr`, `n`) but locals like `len` for page_size and `v3` for result obscure intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined function names excellently preserved (`param_macro_constants`, `call_asm_simd`, `test_preprocessing_features`); only internal runtime helpers use generic names (`sub_1030`, `sub_10B0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without constant recovery: `512`, `64`, `1025`, `57072`, `282` replace `MAX_SIZE`, `BUFFER_COUNT`; original macro semantics completely lost to constant folding.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization code present (`init_proc`, `frame_dummy`, `deregister_tm_clones`); stack annotations (`[esp-4h] [ebp-4h] BYREF`) and calling convention markers (`__usercall`, `__cdecl`) add visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs; conditionals use standard `if/return` patterns; however, aggressive constant folding eliminates original control flow structure entirely in many functions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well; no inappropriate inlining; but optimization reduces some functions to trivial constant returns (`call_macro_constants` just returns `64`), losing call relationship semantics.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally; early returns used appropriately; no `goto` statements in user code; stack variable declarations follow C89 style at function top.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy between callers and callees (both return same constant); `test_preprocessing_features` duplicates `printf` calls from individual test functions; no dead code removal for optimized-away branches.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`); SIMD types recovered (`__m128i`, `__int128`, `_OWORD`); some type annotations add noise (`signed __int32`, `volatile`); array types sometimes degraded to pointers.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in source; stack arrays shown with sizes (`v1[12]`, `v2[2]`); no field name recovery for stack structures; SIMD vector types properly typed but fields unnamed.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts in user code; atomic operations use proper intrinsics (`_InterlockedExchangeAdd`); pointer arithmetic minimal; implicit conversions (int to size_t) present but safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments in decompiled output; no algorithm explanations; no decompilation confidence indicators; original source comments completely lost; only metadata headers present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions recognized (ADD_16 → x+16); SIMD intrinsics preserved; atomic operations identified; but no pattern naming or explanation of optimization transformations applied.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: __libc_start_main`); one stack warning present; no indication that optimization level differs from stated `-O0`; constant folding not flagged as potentially misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation; no postcondition inference; error conditions undocumented (e.g., `mmap` failure returns `-1` without explanation); return value semantics not described.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly; global variables shown (`global_var`, `xmmword_2030`); string references use opaque names (`asc_22C9`, `aPpL201D`); no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file; no source file organization preserved; static functions not distinguished from external; runtime initialization code mixed with user code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External library functions listed as failed; requires stubs for 8 functions; compiler-specific types need headers (`__m128i` requires `<immintrin.h>`); intrinsics need appropriate compiler support.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+5)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+6+8)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (2+5)/2     = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+2+6+5+5)/5 = 4.60 × 0.10 = 0.460
+
+Overall Score: 5.735/10 ≈ 5.7/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects
+- **Magic numbers everywhere**: Constants like `57072`, `282`, `1025` replace named macros (`MAX_SIZE`, `BUFFER_COUNT`), losing semantic meaning
+- **Zero comments**: No documentation of algorithm intent, error conditions, or decompilation confidence
+- **Generic variable names**: Locals named `v0`, `v1`, `v8`, `v9` instead of semantic names like `page_size`, `result`, `counter`
+- **Optimization mismatch**: Metadata claims `-O0` but decompiled code shows aggressive `-O3` constant folding, misleading about original structure
+- **String references opaque**: Format strings named `aPpL201D`, `asc_22C9` instead of preserving content or meaningful names
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names are excellently preserved, making it easy to identify the purpose of each function and match to original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic comments means readers cannot understand intent, error handling, or decompilation confidence without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover named constants from usage patterns**: Detect repeated literals (1024, 512, 64) and suggest `#define MAX_SIZE 1024` based on comparison patterns
+2. **Add decompilation confidence annotations**: Flag functions where constant folding may have obscured original logic, especially when optimization level is unknown
+3. **Infer variable names from context**: Use data flow analysis to name `v3` as `result` when it's a return value, or `len` as `page_size` when derived from `sysconf(_SC_PAGESIZE)`
